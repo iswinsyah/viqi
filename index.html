@@ -1,72 +1,7 @@
-<!DOCTYPE html>
-<html lang="id" class="scroll-smooth">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Villa Quran Baron Malang - Pusat Pendidikan Al-Quran Terbaik</title>
-    <meta name="description" content="Pusat Pendidikan Al-Quran Terbaik di Malang. Mewujudkan generasi penghafal Al-Quran yang berkarakter, cerdas, dan mandiri.">
-    
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#064E3B', // Hijau gelap
-                        secondary: '#D97706', // Kuning emas
-                        urgent: '#DC2626'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="font-sans text-gray-800 bg-gray-50 antialiased">
-
-    <!-- NAVBAR -->
-    <nav class="fixed w-full bg-white shadow-md z-50 transition-all duration-300">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <!-- Logo Area -->
-                <div class="flex-shrink-0 flex items-center gap-3 cursor-pointer" onclick="window.scrollTo(0,0)">
-                    <div class="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold text-xl">
-                        VQ
-                    </div>
-                    <span class="font-bold text-xl text-primary hidden md:block">Villa Quran Baron</span>
-                </div>
-                
-                <!-- Desktop Menu -->
-                <div class="hidden md:flex space-x-8 items-center">
-                    <a href="#" class="text-gray-600 hover:text-primary font-medium transition">Beranda</a>
-                    <a href="#profil" class="text-gray-600 hover:text-primary font-medium transition">Profil</a>
-                    <a href="#program" class="text-gray-600 hover:text-primary font-medium transition">Program</a>
-                    <a href="#testimoni" class="text-gray-600 hover:text-primary font-medium transition">Testimoni</a>
-                    <a href="#daftar" class="bg-secondary hover:bg-yellow-600 text-white px-6 py-2 rounded-full font-bold transition shadow-lg transform hover:-translate-y-0.5">
-                        Daftar Sekarang
-                    </a>
-                </div>
-
-                <!-- Mobile menu button -->
-                <div class="md:hidden flex items-center">
-                    <button class="text-gray-600 hover:text-primary focus:outline-none p-2">
-                        <i class="fa-solid fa-bars text-2xl"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
+<?php
+    // Memanggil bagian header halaman
+    include 'templates/header.php';
+?>
 
     <!-- HERO SECTION -->
     <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden bg-primary">
@@ -246,35 +181,7 @@
         </div>
     </section>
 
-    <!-- FOOTER -->
-    <footer class="bg-gray-900 text-white pt-16 pb-8 border-t-4 border-secondary">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 mb-12 text-center md:text-left">
-                <div>
-                    <h3 class="text-2xl font-bold mb-4">Villa Quran Baron Malang</h3>
-                    <p class="text-gray-400 max-w-sm mx-auto md:mx-0">
-                        Pusat pendidikan Al-Quran yang berfokus pada hafalan bersanad, akhlaq mulia, dan kecakapan teknologi.
-                    </p>
-                </div>
-                <div class="md:text-right">
-                    <h4 class="text-lg font-bold mb-4">Hubungi Kami</h4>
-                    <p class="text-gray-400 mb-2"><i class="fa-solid fa-location-dot mr-2"></i> Malang, Jawa Timur, Indonesia</p>
-                    <p class="text-gray-400 mb-2"><i class="fa-brands fa-whatsapp mr-2"></i> +62 812-3456-7890</p>
-                </div>
-            </div>
-            <div class="border-t border-gray-800 pt-8 text-center text-sm text-gray-500">
-                &copy; <script>document.write(new Date().getFullYear())</script> Villa Quran Baron Malang. All rights reserved.
-            </div>
-        </div>
-    </footer>
-
-    <!-- FLOATING WHATSAPP BUTTON (Simulasi) -->
-    <a href="#" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] text-white rounded-full shadow-lg hover:bg-[#20bd5a] transition transform hover:scale-110 flex items-center justify-center group">
-        <i class="fa-brands fa-whatsapp text-3xl"></i>
-        <span class="absolute right-full mr-3 bg-gray-800 text-white text-xs font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition whitespace-nowrap">
-            Hubungi Admin
-        </span>
-    </a>
-
-</body>
-</html>
+<?php
+    // Memanggil bagian footer halaman
+    include 'templates/footer.php';
+?>
