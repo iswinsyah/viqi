@@ -4,6 +4,11 @@ RewriteEngine On
 # Tentukan file mana yang menjadi halaman utama (index)
 DirectoryIndex index.php index.html
 
+# Jika URL mengarah ke folder (seperti /admin), otomatis tambahkan garis miring di akhir ( /admin/ )
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_URI} !/$
+RewriteRule ^(.*)$ /$1/ [L,R=301]
+
 # Sembunyikan ekstensi .php dari URL
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
