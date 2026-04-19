@@ -5,7 +5,30 @@ ini_set('display_errors', 1);
 
 require_once 'koneksi.php';
 
-// Proses Simpan Data Agen Baru jika form disubmit
+// 1. Proses Hapus Data Agen
+if (isset($_GET['hapus_id'])) {
+    $hapus_id = (int)$_GET['hapus_id'];
+    $sql_hapus = "DELETE FROM agen WHERE id = $hapus_id";
+    if ($conn->query($sql_hapus) === TRUE) {
+        $pesan_sukses = "Data agen berhasil dihapus!";
+    } else {
+        $pesan_error = "Gagal menghapus data: " . $conn->error;
+    }
+}
+
+// 2. Ambil Data untuk Form Edit
+$edit_mode = false;
+$data_edit = null;
+if (isset($_GET['edit_id'])) {
+    $edit_mode = true;
+    $edit_id = (int)$_GET['edit_id'];
+    $result = $conn->query("SELECT * FROM agen WHERE id = $edit_id");
+    if ($result && $result->num_rows > 0) {
+        $data_edit = $result->fetch_assoc();
+    }
+}
+
+// 3. Proses Simpan / Update Data Agen jika form disubmit
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Gunakan isset() untuk mencegah Fatal Error (TypeError) di PHP 8+
     $nama = isset($_POST['nama']) ? $conn->real_escape_string($_POST['nama']) : '';
@@ -21,11 +44,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $kode_ref = strtolower(str_replace(' ', '', $nama)) . rand(10,99);
     }
 
-    // Masukkan ke database
-    $sql = "INSERT INTO agen (nama, whatsapp, bank, rekening, kode_ref) VALUES ('$nama', '$whatsapp', '$bank', '$rekening', '$kode_ref')";
+    // Cek apakah ini mode Update atau Insert baru
+    if (isset($_POST['id']) && !empty($_POST['id'])) {
+        $id_update = (int)$_POST['id'];
+        $sql = "UPDATE agen SET nama='$nama', whatsapp='$whatsapp', bank='$bank', rekening='$rekening', kode_ref='$kode_ref' WHERE id=$id_update";
+        $pesan_berhasil = "Data agen berhasil diperbarui!";
+    } else {
+        $sql = "INSERT INTO agen (nama, whatsapp, bank, rekening, kode_ref) VALUES ('$nama', '$whatsapp', '$bank', '$rekening', '$kode_ref')";
+        $pesan_berhasil = "Data agen berhasil disimpan!";
+    }
     
     if ($conn->query($sql) === TRUE) {
-        $pesan_sukses = "Data agen berhasil disimpan!";
+        $pesan_sukses = $pesan_berhasil;
+        // Reset form edit setelah sukses
+        $edit_mode = false;
+        $data_edit = null;
     } else {
         $pesan_error = "Gagal menyimpan data: " . $conn->error;
     }
@@ -136,49 +169,61 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <!-- FORM INPUT AGEN BARU -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
                 <div class="px-6 py-4 border-b border-gray-100 bg-emerald-50">
-                    <h2 class="font-bold text-emerald-800"><i class="fas fa-plus-circle mr-2"></i>Tambah Agen Baru</h2>
+                    <h2 class="font-bold text-emerald-800">
+                        <i class="fas <?= $edit_mode ? 'fa-edit' : 'fa-plus-circle' ?> mr-2"></i>
+                        <?= $edit_mode ? 'Edit Data Agen' : 'Tambah Agen Baru' ?>
+                    </h2>
                 </div>
                 <div class="p-6">
                     <form action="" method="POST">
+                        <!-- Hidden ID untuk mode Edit -->
+                        <input type="hidden" name="id" value="<?= $edit_mode ? $data_edit['id'] : '' ?>">
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Nama Agen -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap Agen <span class="text-red-500">*</span></label>
-                                <input type="text" name="nama" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Ustadz Budi / Bpk. Fulan">
+                                <input type="text" name="nama" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama']) : '' ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Ustadz Budi / Bpk. Fulan">
                             </div>
                             <!-- Nomor WA -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp <span class="text-red-500">*</span></label>
-                                <input type="number" name="whatsapp" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 081234567890">
+                                <input type="number" name="whatsapp" value="<?= $edit_mode ? htmlspecialchars($data_edit['whatsapp']) : '' ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 081234567890">
                             </div>
                             <!-- Nama Bank -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama Bank <span class="text-red-500">*</span></label>
                                 <select name="bank" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                     <option value="">-- Pilih Bank --</option>
-                                    <option value="BSI">BSI (Bank Syariah Indonesia)</option>
-                                    <option value="Mandiri">Bank Mandiri</option>
-                                    <option value="BCA">BCA</option>
-                                    <option value="BRI">BRI</option>
-                                    <option value="BNI">BNI</option>
-                                    <option value="Lainnya">Lainnya...</option>
+                                    <?php
+                                    $banks = ['BSI (Bank Syariah Indonesia)' => 'BSI', 'Bank Mandiri' => 'Mandiri', 'BCA' => 'BCA', 'BRI' => 'BRI', 'BNI' => 'BNI', 'Lainnya...' => 'Lainnya'];
+                                    foreach($banks as $label => $val) {
+                                        $selected = ($edit_mode && $data_edit['bank'] == $val) ? 'selected' : '';
+                                        echo "<option value=\"$val\" $selected>$label</option>";
+                                    }
+                                    ?>
                                 </select>
                             </div>
                             <!-- Nomor Rekening -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Rekening <span class="text-red-500">*</span></label>
-                                <input type="number" name="rekening" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nomor Rekening Tujuan Komisi">
+                                <input type="number" name="rekening" value="<?= $edit_mode ? htmlspecialchars($data_edit['rekening']) : '' ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nomor Rekening Tujuan Komisi">
                             </div>
                             <!-- Kode Referral Kustom -->
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Kode Referral (Opsional)</label>
-                                <input type="text" name="kode_ref" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50" placeholder="Biarkan kosong untuk generate otomatis, atau ketik: ustadzbudi">
+                                <input type="text" name="kode_ref" value="<?= $edit_mode ? htmlspecialchars($data_edit['kode_ref']) : '' ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50" placeholder="Biarkan kosong untuk generate otomatis, atau ketik: ustadzbudi">
                                 <p class="text-xs text-gray-500 mt-1">Kode ini akan digunakan di link: <code>villaquranindonesia.com/?ref=kode</code></p>
                             </div>
                         </div>
-                        <div class="mt-6 flex justify-end">
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <?php if($edit_mode) { ?>
+                                <a href="data-agen.php" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2.5 px-6 rounded-lg transition shadow-sm flex items-center">
+                                    Batal
+                                </a>
+                            <?php } ?>
                             <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg transition shadow-md flex items-center">
-                                <i class="fas fa-save mr-2"></i> Simpan Data Agen
+                                <i class="fas <?= $edit_mode ? 'fa-save' : 'fa-paper-plane' ?> mr-2"></i> <?= $edit_mode ? 'Update Data Agen' : 'Simpan Data Agen' ?>
                             </button>
                         </div>
                     </form>
@@ -224,7 +269,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">0 Orang</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="#" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
+                                        <a href="data-agen.php?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
+                                        <a href="data-agen.php?hapus_id=<?= $row['id'] ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus agen <?= addslashes($row['nama']) ?>?');" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
                                     </td>
                                 </tr>
                             <?php
