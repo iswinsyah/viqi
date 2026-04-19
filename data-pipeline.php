@@ -44,12 +44,12 @@ if (empty($leads)) {
 
 // Konfigurasi Tampilan Kolom Kanban
 $columns = [
-    'Level 1' => ['title' => '1. Download / Daftar', 'color' => 'bg-gray-50', 'border' => 'border-gray-300', 'text' => 'text-gray-700'],
-    'Level 2' => ['title' => '2. Ikut Kelas/Konsultasi', 'color' => 'bg-blue-50', 'border' => 'border-blue-300', 'text' => 'text-blue-800'],
-    'Level 3' => ['title' => '3. Survey Lokasi', 'color' => 'bg-indigo-50', 'border' => 'border-indigo-300', 'text' => 'text-indigo-800'],
-    'Level 4' => ['title' => '4. Bayar Pendaftaran', 'color' => 'bg-amber-50', 'border' => 'border-amber-300', 'text' => 'text-amber-800'],
-    'Level 5' => ['title' => '5. Test & Interview', 'color' => 'bg-orange-50', 'border' => 'border-orange-300', 'text' => 'text-orange-800'],
-    'Level 6' => ['title' => '6. Daftar Ulang', 'color' => 'bg-emerald-50', 'border' => 'border-emerald-300', 'text' => 'text-emerald-800']
+    'Level 1' => ['title' => '1. Download / Daftar', 'color' => 'bg-gray-100', 'border' => 'border-gray-300', 'text' => 'text-gray-700'],
+    'Level 2' => ['title' => '2. Ikut Kelas/Konsultasi', 'color' => 'bg-blue-100', 'border' => 'border-blue-300', 'text' => 'text-blue-800'],
+    'Level 3' => ['title' => '3. Survey Lokasi', 'color' => 'bg-indigo-100', 'border' => 'border-indigo-300', 'text' => 'text-indigo-800'],
+    'Level 4' => ['title' => '4. Bayar Pendaftaran', 'color' => 'bg-amber-100', 'border' => 'border-amber-300', 'text' => 'text-amber-800'],
+    'Level 5' => ['title' => '5. Test & Interview', 'color' => 'bg-orange-100', 'border' => 'border-orange-300', 'text' => 'text-orange-800'],
+    'Level 6' => ['title' => '6. Daftar Ulang', 'color' => 'bg-emerald-100', 'border' => 'border-emerald-300', 'text' => 'text-emerald-800']
 ];
 ?>
 <!DOCTYPE html>
@@ -164,7 +164,13 @@ $columns = [
                     <p class="text-sm text-gray-500">Geser prospek ke kanan saat tahapan mereka meningkat.</p>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span class="text-sm text-amber-600 font-bold animate-pulse hidden md:inline-block"><i class="fas fa-arrows-alt-h mr-1"></i> Geser layar ke kanan 👉</span>
+                    <!-- Tombol Navigasi Scroll -->
+                    <div class="hidden md:flex items-center bg-white rounded-lg border border-gray-200 shadow-sm p-1">
+                        <button id="btn-scroll-left" class="p-2 text-gray-500 hover:text-emerald-600 hover:bg-gray-100 rounded transition focus:outline-none disabled:opacity-30"><i class="fas fa-chevron-left"></i></button>
+                        <div class="w-px h-5 bg-gray-200 mx-1"></div>
+                        <button id="btn-scroll-right" class="p-2 text-gray-500 hover:text-emerald-600 hover:bg-gray-100 rounded transition focus:outline-none disabled:opacity-30"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+                    
                     <button onclick="window.location.reload()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm border border-emerald-200">
                         <i class="fas fa-sync-alt mr-2"></i> Segarkan Data
                     </button>
@@ -172,7 +178,7 @@ $columns = [
             </div>
 
             <!-- KANBAN CONTAINER -->
-            <div class="flex flex-nowrap gap-6 overflow-x-auto pb-4 pt-2 h-full items-start kanban-scroll">
+            <div id="kanban-container" class="flex flex-nowrap gap-6 overflow-x-auto pb-4 pt-2 h-full items-start kanban-scroll scroll-smooth">
                 
                 <?php
                 foreach ($columns as $level => $col) {
@@ -243,6 +249,28 @@ $columns = [
             openBtn.addEventListener('click', toggleSidebar);
             closeBtn.addEventListener('click', toggleSidebar);
             overlay.addEventListener('click', toggleSidebar);
+
+            // INISIALISASI TOMBOL SCROLL KANBAN
+            const kanbanContainer = document.getElementById('kanban-container');
+            const btnLeft = document.getElementById('btn-scroll-left');
+            const btnRight = document.getElementById('btn-scroll-right');
+            const scrollAmount = 340; // Kurang lebih selebar 1 kolom + gap
+
+            if(btnLeft && btnRight && kanbanContainer) {
+                btnRight.addEventListener('click', () => {
+                    kanbanContainer.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                });
+                btnLeft.addEventListener('click', () => {
+                    kanbanContainer.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                });
+                
+                // Cek status mentok untuk efek pudar (disabled) pada tombol
+                kanbanContainer.addEventListener('scroll', () => {
+                    btnLeft.disabled = kanbanContainer.scrollLeft <= 0;
+                    btnRight.disabled = kanbanContainer.scrollLeft + kanbanContainer.clientWidth >= kanbanContainer.scrollWidth - 5;
+                });
+                btnLeft.disabled = true; // Kondisi awal mentok kiri
+            }
 
             // INISIALISASI DRAG AND DROP KANBAN
             const kanbanColumns = document.querySelectorAll('.kanban-cards');
