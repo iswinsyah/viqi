@@ -1,6 +1,9 @@
 # Aktifkan modul rewrite URL
 RewriteEngine On
 
+# Tentukan file mana yang menjadi halaman utama (index)
+DirectoryIndex index.php index.html
+
 # Sembunyikan ekstensi .php dari URL
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME}\.php -f
