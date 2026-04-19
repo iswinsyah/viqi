@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mata Pelajaran & Program | Villa Quran Indonesia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="font-sans antialiased text-gray-800 bg-gray-50">
+
+    <!-- HEADER / NAVIGASI -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="index.html" class="font-extrabold text-2xl text-emerald-800 hover:text-emerald-600 transition">
+                        <i class="fas fa-leaf mr-2 text-emerald-500"></i>Villa Quran
+                    </a>
+                </div>
+                <nav class="hidden md:flex space-x-6 lg:space-x-8">
+                    <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
+                    <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
+                    <a href="program.html" class="text-emerald-700 font-bold transition border-b-2 border-emerald-600">Program</a>
+                    <a href="asrama.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Asrama</a>
+                    <a href="index.html#artikel" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Artikel</a>
+                    <a href="admin.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Admin</a>
+                </nav>
+                <div class="hidden md:flex">
+                    <a href="index.html#spmb" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
+                </div>
+                <div class="flex items-center md:hidden">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-md p-2">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- PAGE HEADER -->
+    <section class="bg-teal-700 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Kurikulum & Mata Pelajaran</h1>
+            <p class="text-xl text-teal-100 max-w-2xl mx-auto">Rincian program akademik dan diniyyah yang dirancang untuk menyeimbangkan ilmu akhirat, pengetahuan umum, dan keterampilan abad 21.</p>
+        </div>
+    </section>
+
+    <!-- DAFTAR MATA PELAJARAN (Vertikal Layout) -->
+    <section class="py-16">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+
+            <!-- MATA PELAJARAN 1: TAHFIDZ -->
+            <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition duration-300">
+                <!-- Kolom Foto -->
+                <div class="md:w-2/5 bg-teal-50 relative group">
+                    <img src="https://images.unsplash.com/photo-1609802422036-7c152a5a5460?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Kegiatan Tahfidz" class="w-full h-72 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                </div>
+                <!-- Kolom Keterangan -->
+                <div class="p-6 md:p-8 md:w-3/5 flex flex-col justify-center">
+                    <h3 class="text-2xl font-bold text-gray-900">Tahfidz & Tahsin Al-Quran</h3>
+                    <span class="inline-block bg-teal-100 text-teal-800 font-semibold px-4 py-1.5 rounded-full text-sm w-max mt-2 mb-6">Program Inti (Diniyyah)</span>
+                    
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start">
+                            <i class="fas fa-clock text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Alokasi Waktu:</strong> 15 Jam Pelajaran / Pekan</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-users text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Diajarkan di Kelas:</strong> Kelas VII s.d XII</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-calendar-alt text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Semester:</strong> Ganjil & Genap</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-info-circle text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Deskripsi:</strong> Fokus pada setoran hafalan baru (Ziyadah), pengulangan hafalan lama (Muraja'ah), serta standarisasi makhraj dan tajwid agar mencapai target Mutqin 30 Juz.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- MATA PELAJARAN 2: ADAB & TSAQOFAH -->
+            <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition duration-300">
+                <div class="md:w-2/5 bg-teal-50 relative group">
+                    <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Belajar Adab" class="w-full h-72 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                </div>
+                <div class="p-6 md:p-8 md:w-3/5 flex flex-col justify-center">
+                    <h3 class="text-2xl font-bold text-gray-900">Adab & Tsaqofah Islam</h3>
+                    <span class="inline-block bg-teal-100 text-teal-800 font-semibold px-4 py-1.5 rounded-full text-sm w-max mt-2 mb-6">Program Pembentukan Karakter</span>
+                    
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start">
+                            <i class="fas fa-clock text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Alokasi Waktu:</strong> 8 Jam Pelajaran / Pekan</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-users text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Diajarkan di Kelas:</strong> Kelas VII s.d XII</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-calendar-alt text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Semester:</strong> Ganjil & Genap</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-info-circle text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Deskripsi:</strong> Mempelajari kitab-kitab adab penuntut ilmu, aqidah akhlaq, fiqih dasar, dan sirah nabawiyah sebagai pondasi kepribadian santri sebelum menguasai ilmu lainnya.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- MATA PELAJARAN 3: DIGITALPRENEUR & AI -->
+            <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition duration-300">
+                <div class="md:w-2/5 bg-teal-50 relative group">
+                    <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Belajar Komputer" class="w-full h-72 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                </div>
+                <div class="p-6 md:p-8 md:w-3/5 flex flex-col justify-center">
+                    <h3 class="text-2xl font-bold text-gray-900">Digitalpreneur & AI Terapan</h3>
+                    <span class="inline-block bg-teal-100 text-teal-800 font-semibold px-4 py-1.5 rounded-full text-sm w-max mt-2 mb-6">Program Keterampilan Khusus</span>
+                    
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start">
+                            <i class="fas fa-clock text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Alokasi Waktu:</strong> 4 Jam Pelajaran / Pekan</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-users text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Diajarkan di Kelas:</strong> Kelas X s.d XII (Level SMA)</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-calendar-alt text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Semester:</strong> Ganjil & Genap</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-info-circle text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Deskripsi:</strong> Pengenalan dunia digital marketing, penggunaan Artificial Intelligence (AI) untuk produktivitas, serta dasar-dasar kepemimpinan berwirausaha.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- MATA PELAJARAN 4: PENGETAHUAN UMUM -->
+            <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition duration-300">
+                <div class="md:w-2/5 bg-teal-50 relative group">
+                    <img src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Belajar Umum" class="w-full h-72 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                </div>
+                <div class="p-6 md:p-8 md:w-3/5 flex flex-col justify-center">
+                    <h3 class="text-2xl font-bold text-gray-900">Pengetahuan Umum (Dinas)</h3>
+                    <span class="inline-block bg-teal-100 text-teal-800 font-semibold px-4 py-1.5 rounded-full text-sm w-max mt-2 mb-6">Program Akademik Formal</span>
+                    
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start">
+                            <i class="fas fa-clock text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Alokasi Waktu:</strong> 12 Jam Pelajaran / Pekan</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-users text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Diajarkan di Kelas:</strong> Kelas VII s.d XII</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-calendar-alt text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Semester:</strong> Ganjil & Genap</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-info-circle text-amber-500 w-6 mt-1 text-center"></i>
+                            <span><strong>Deskripsi:</strong> Materi kurikulum nasional (Matematika, IPA, Bahasa Indonesia, Bahasa Inggris) yang esensial untuk membekali santri menempuh ujian negara dan masuk PTN.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- FOOTER (Action Lanjutan) -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-white text-2xl font-bold mb-6">Mulai Perjalanan Tahfidz Putra-Putri Anda</h2>
+            <a href="index.html#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-950 px-8 py-3 rounded-full font-bold text-lg transition duration-300 shadow-md inline-block mb-8">Daftar SPMB Sekarang</a>
+            
+            <div class="mt-8 pt-8 border-t border-gray-800 text-sm">
+                &copy; 2026 Villa Quran Indonesia. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

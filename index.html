@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Villa Quran Indonesia | Sekolah Tahfidz Nyaman ala Villa</title>
+    <!-- Menggunakan Tailwind CSS dari CDN untuk purwarupa -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Menggunakan Font Awesome untuk Ikon -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="font-sans antialiased text-gray-800 bg-white">
+
+    <!-- HEADER / NAVIGASI -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="index.html" class="font-extrabold text-2xl text-emerald-800 hover:text-emerald-600 transition">
+                        <i class="fas fa-leaf mr-2 text-emerald-500"></i>Villa Quran
+                    </a>
+                </div>
+                <nav class="hidden md:flex space-x-6 lg:space-x-8">
+                    <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
+                    <a href="#profil" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil</a>
+                    <a href="#kurikulum" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Program</a>
+                    <a href="#asrama" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Asrama</a>
+                    <a href="#artikel" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Artikel</a>
+                    <a href="admin.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Admin</a>
+                </nav>
+                <div class="hidden md:flex">
+                    <a href="#spmb" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 1. ATTENTION: HERO SECTION -->
+    <section class="bg-teal-600 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+                Mencetak Hafidz Bersanad,<br class="hidden md:block"> di Lingkungan Nyaman ala Villa
+            </h1>
+            <p class="mt-4 text-xl md:text-2xl text-teal-100 max-w-3xl mb-10">
+                Sekolah tahfidz berasrama dengan metode terstruktur, pendampingan adab, dan nutrisi optimal untuk kebahagiaan putra-putri Anda dalam menghafal Al-Quran.
+            </p>
+            <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+                <a href="#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl">Informasi Pendaftaran</a>
+                <a href="virtual-tour.html" class="bg-white hover:bg-gray-100 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl flex items-center justify-center">
+                    <i class="fas fa-play-circle mr-2 text-xl"></i> Virtual Tour Villa
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 1. ATTENTION & 2. INTEREST: USP BAR (Highlight Cepat) -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 mb-16">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Card 1: Lingkungan Villa -->
+            <div class="bg-white rounded-xl shadow-lg p-6 flex items-center border-t-4 border-emerald-500 transform transition hover:-translate-y-1">
+                <div class="bg-emerald-100 p-4 rounded-full mr-4 text-emerald-600 text-2xl w-14 h-14 flex items-center justify-center">
+                    <i class="fas fa-leaf"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-gray-900">Lingkungan ala Villa</h3>
+                    <p class="text-gray-500 text-sm">Asri, bersih, dan anti-stres</p>
+                </div>
+            </div>
+            <!-- Card 2: Tahfidz Bersanad -->
+            <div class="bg-white rounded-xl shadow-lg p-6 flex items-center border-t-4 border-amber-500 transform transition hover:-translate-y-1">
+                <div class="bg-amber-100 p-4 rounded-full mr-4 text-amber-600 text-2xl w-14 h-14 flex items-center justify-center">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-gray-900">Tahfidz Bersanad</h3>
+                    <p class="text-gray-500 text-sm">Target mutqin dibimbing ahlinya</p>
+                </div>
+            </div>
+            <!-- Card 3: Gizi & Brain Food -->
+            <div class="bg-white rounded-xl shadow-lg p-6 flex items-center border-t-4 border-blue-500 transform transition hover:-translate-y-1">
+                <div class="bg-blue-100 p-4 rounded-full mr-4 text-blue-600 text-2xl w-14 h-14 flex items-center justify-center">
+                    <i class="fas fa-apple-alt"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-gray-900">Gizi & Brain Food</h3>
+                    <p class="text-gray-500 text-sm">Nutrisi khusus kecerdasan otak</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROFIL SECTION (Cuplikan Menu Navigasi) -->
+    <section class="py-16 bg-teal-50 border-t border-teal-100" id="profil">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div>
+                    <h2 class="text-3xl font-extrabold text-gray-900 mb-4">Tentang Villa Quran Indonesia</h2>
+                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">Berawal dari cita-cita mulia untuk menghadirkan lingkungan tahfidz yang jauh dari kesan kumuh dan menekan, Villa Quran Indonesia hadir dengan konsep pendidikan modern. Kami memadukan kurikulum Islam, adab, dan keterampilan abad 21 di lingkungan yang membahagiakan layaknya sebuah villa.</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-center text-gray-700"><i class="fas fa-check-circle text-emerald-500 mr-3"></i> Terakreditasi & Berizin Resmi Kementerian</li>
+                        <li class="flex items-center text-gray-700"><i class="fas fa-check-circle text-emerald-500 mr-3"></i> Didukung Asatidz Bersanad & Profesional IT</li>
+                    </ul>
+                </div>
+                <div class="relative">
+                    <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Gedung Villa Quran" class="rounded-2xl shadow-xl w-full h-80 object-cover">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PROFIL PENGAJAR SECTION -->
+    <section class="py-16 bg-white border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900">Asatidz & Pembimbing Profesional</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Santri dibimbing langsung oleh para pakar di bidangnya, memastikan kualitas hafalan, adab, serta kesehatan terjaga dengan baik.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Pengajar 1 -->
+                <div class="bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
+                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Ustadz 1" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
+                    <h3 class="font-bold text-lg text-gray-900">Ust. Abdullah, Lc.</h3>
+                    <p class="text-teal-600 text-sm font-semibold mb-2">Kepala Tahfidz</p>
+                    <p class="text-gray-500 text-sm"><i class="fas fa-certificate text-amber-500 mr-1"></i> Hafidz 30 Juz Bersanad</p>
+                </div>
+                <!-- Pengajar 2 -->
+                <div class="bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
+                    <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Ustadz 2" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
+                    <h3 class="font-bold text-lg text-gray-900">Ust. Abdurrahman, M.Pd.</h3>
+                    <p class="text-teal-600 text-sm font-semibold mb-2">Musyrif Asrama</p>
+                    <p class="text-gray-500 text-sm"><i class="fas fa-book-reader text-amber-500 mr-1"></i> Pakar Adab & Karakter</p>
+                </div>
+                <!-- Pengajar 3 -->
+                <div class="bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
+                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Pengajar 3" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
+                    <h3 class="font-bold text-lg text-gray-900">Bpk. Fulan, S.Kom.</h3>
+                    <p class="text-teal-600 text-sm font-semibold mb-2">Guru Digitalpreneur</p>
+                    <p class="text-gray-500 text-sm"><i class="fas fa-laptop-code text-amber-500 mr-1"></i> AI & Programming</p>
+                </div>
+                <!-- Pengajar 4 -->
+                <div class="bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
+                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Ahli Gizi" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
+                    <h3 class="font-bold text-lg text-gray-900">Dr. Zaid, Sp.GK.</h3>
+                    <p class="text-teal-600 text-sm font-semibold mb-2">Konsultan Gizi</p>
+                    <p class="text-gray-500 text-sm"><i class="fas fa-apple-alt text-amber-500 mr-1"></i> Brain Food Expert</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. INTEREST: GALERI KEGIATAN (Carousel) -->
+    <section class="py-16 bg-white overflow-hidden" id="asrama">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900">Galeri Kegiatan Santri</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Potret kebahagiaan dan semangat santri dalam menuntut ilmu, beribadah, dan beraktivitas di lingkungan asrama yang asri.</p>
+            </div>
+            
+            <!-- CSS Scroll Snap Carousel Container -->
+            <div class="relative w-full">
+                <div class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 pt-4 -mx-4 px-4 sm:mx-0 sm:px-0" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <!-- Item 1 -->
+                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
+                        <img src="https://images.unsplash.com/photo-1609802422036-7c152a5a5460?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Membaca Quran" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
+                            <h4 class="text-white font-bold text-xl">Halaqah Tahfidz</h4>
+                        </div>
+                    </div>
+                    <!-- Item 2 -->
+                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
+                        <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Kegiatan Belajar" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
+                            <h4 class="text-white font-bold text-xl">KBM di Kelas</h4>
+                        </div>
+                    </div>
+                    <!-- Item 3 -->
+                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
+                        <img src="https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Suasana Masjid" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
+                            <h4 class="text-white font-bold text-xl">Ibadah Bersama</h4>
+                        </div>
+                    </div>
+                    <!-- Item 4 -->
+                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
+                        <img src="https://images.unsplash.com/photo-1511649475669-e288648b2339?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Olahraga" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
+                            <h4 class="text-white font-bold text-xl">Olahraga Sunnah</h4>
+                        </div>
+                    </div>
+                    <!-- Item 5 -->
+                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
+                        <img src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Kenyamanan Asrama" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
+                            <h4 class="text-white font-bold text-xl">Kenyamanan Asrama</h4>
+                        </div>
+                    </div>
+                </div>
+                <!-- Instruksi Geser (Mobile/Desktop) -->
+                <div class="text-center mt-2 text-sm text-emerald-600 font-medium animate-pulse">
+                    <i class="fas fa-arrows-alt-h mr-2"></i>Geser foto untuk melihat lainnya
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- JADWAL HARIAN SANTRI SECTION -->
+    <section class="py-16 bg-teal-50 border-t border-teal-100" id="jadwal">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900">Jadwal Harian Santri</h2>
+                <p class="mt-4 text-lg text-gray-600">Disusun cermat untuk menyeimbangkan target hafalan, akademik, kesehatan fisik, dan waktu istirahat (termasuk sunnah Qailulah).</p>
+            </div>
+            
+            <!-- Timeline Container -->
+        <div class="relative border-l-2 border-teal-300 ml-4 md:ml-8">
+                
+                <!-- Waktu 1 -->
+                <div class="mb-8 ml-8">
+                    <span class="absolute flex items-center justify-center w-8 h-8 bg-emerald-600 rounded-full -left-4 ring-4 ring-emerald-50 text-white shadow-sm"><i class="fas fa-moon text-xs"></i></span>
+                    <h3 class="font-bold text-lg text-emerald-900">03:30 - 05:30 | Qiyamul Lail, Subuh & Ziyadah</h3>
+                    <p class="mt-1 text-gray-600 text-sm">Bangun untuk tahajud bersama, shalat Subuh berjamaah, dilanjutkan dengan setoran hafalan baru (Ziyadah) di waktu emas pagi hari.</p>
+                </div>
+                <!-- Waktu 2 -->
+                <div class="mb-8 ml-8">
+                    <span class="absolute flex items-center justify-center w-8 h-8 bg-amber-500 rounded-full -left-4 ring-4 ring-emerald-50 text-white shadow-sm"><i class="fas fa-sun text-xs"></i></span>
+                    <h3 class="font-bold text-lg text-emerald-900">05:30 - 07:00 | MCK & Sarapan Pagi (Brain Food)</h3>
+                    <p class="mt-1 text-gray-600 text-sm">Mandi, persiapan sekolah, dan menikmati sarapan bergizi dengan suplemen pendukung kecerdasan (madu/kurma).</p>
+                </div>
+                <!-- Waktu 3 -->
+                <div class="mb-8 ml-8">
+                    <span class="absolute flex items-center justify-center w-8 h-8 bg-blue-500 rounded-full -left-4 ring-4 ring-emerald-50 text-white shadow-sm"><i class="fas fa-school text-xs"></i></span>
+                    <h3 class="font-bold text-lg text-emerald-900">07:00 - 11:30 | KBM Akademik & Diniyah</h3>
+                    <p class="mt-1 text-gray-600 text-sm">Pembelajaran di kelas meliputi kurikulum Diknas, adab, bahasa Arab/Inggris, serta pengenalan Digitalpreneur & AI Terapan.</p>
+                </div>
+                <!-- Waktu 4 -->
+                <div class="mb-8 ml-8 hidden jadwal-extra">
+                    <span class="absolute flex items-center justify-center w-8 h-8 bg-emerald-500 rounded-full -left-4 ring-4 ring-emerald-50 text-white shadow-sm"><i class="fas fa-bed text-xs"></i></span>
+                    <h3 class="font-bold text-lg text-emerald-900">11:30 - 13:00 | ISHOMA & Qailulah (Tidur Siang)</h3>
+                    <p class="mt-1 text-gray-600 text-sm">Istirahat, shalat Dzuhur, makan siang, dan disunnahkan tidur siang sebentar (Qailulah) untuk meregenerasi energi otak.</p>
+                </div>
+                <!-- Waktu 5 -->
+                <div class="mb-8 ml-8 hidden jadwal-extra">
+                    <span class="absolute flex items-center justify-center w-8 h-8 bg-orange-500 rounded-full -left-4 ring-4 ring-emerald-50 text-white shadow-sm"><i class="fas fa-quran text-xs"></i></span>
+                    <h3 class="font-bold text-lg text-emerald-900">13:00 - 15:30 | Lanjutan KBM & Muraja'ah Sore</h3>
+                    <p class="mt-1 text-gray-600 text-sm">Penyelesaian kelas akademik, shalat Ashar berjamaah, lalu dilanjutkan dengan mengulang hafalan (Muraja'ah).</p>
+                </div>
+                <!-- Waktu 6 -->
+                <div class="mb-8 ml-8 hidden jadwal-extra">
+                    <span class="absolute flex items-center justify-center w-8 h-8 bg-red-500 rounded-full -left-4 ring-4 ring-emerald-50 text-white shadow-sm"><i class="fas fa-running text-xs"></i></span>
+                    <h3 class="font-bold text-lg text-emerald-900">15:30 - 17:30 | Ekstrakurikuler & Olahraga Sunnah</h3>
+                    <p class="mt-1 text-gray-600 text-sm">Waktu santai untuk berolahraga (memanah, berenang, bela diri) agar fisik tetap tangkas, bugar, dan tidak stres.</p>
+                </div>
+                <!-- Waktu 7 -->
+                <div class="mb-8 ml-8 hidden jadwal-extra">
+                    <span class="absolute flex items-center justify-center w-8 h-8 bg-indigo-500 rounded-full -left-4 ring-4 ring-emerald-50 text-white shadow-sm"><i class="fas fa-mosque text-xs"></i></span>
+                    <h3 class="font-bold text-lg text-emerald-900">17:30 - 20:30 | Maghrib, Isya & Halaqah Tahsin</h3>
+                    <p class="mt-1 text-gray-600 text-sm">Rangkaian ibadah malam, makan malam, dan perbaikan kualitas bacaan Al-Quran (Tahsin) bersama musyrif di masjid.</p>
+                </div>
+                <!-- Waktu 8 -->
+                <div class="ml-8 hidden jadwal-extra">
+                    <span class="absolute flex items-center justify-center w-8 h-8 bg-gray-600 rounded-full -left-4 ring-4 ring-emerald-50 text-white shadow-sm"><i class="fas fa-star-and-crescent text-xs"></i></span>
+                    <h3 class="font-bold text-lg text-emerald-900">20:30 - 03:30 | Belajar Mandiri & Istirahat Malam</h3>
+                    <p class="mt-1 text-gray-600 text-sm">Evaluasi harian, pendampingan adab asrama, lalu tidur awal agar segar dan mudah bangun di sepertiga malam.</p>
+                </div>
+
+        </div>
+        
+        <!-- Tombol Spoiler -->
+        <div class="text-center mt-10">
+            <button type="button" id="toggle-jadwal-btn" class="inline-flex items-center justify-center px-6 py-3 border-2 border-teal-600 text-teal-600 font-bold rounded-full hover:bg-teal-50 transition duration-300 focus:outline-none cursor-pointer">
+                <span>Lihat Jadwal Lengkap</span> <i class="fas fa-chevron-down ml-2"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- PROGRAM KURIKULUM SECTION -->
+    <section class="py-16 bg-white border-t border-gray-200" id="kurikulum">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900">Kurikulum Komprehensif</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Perpaduan ilmu syar'i, akademik formal, dan keterampilan abad 21 yang adaptif terhadap perkembangan zaman.</p>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mb-4"><i class="fas fa-quran"></i></div>
+                    <h3 class="font-bold text-gray-900">Tahfidz & Tahsin</h3>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-2xl mb-4"><i class="fas fa-book-reader"></i></div>
+                    <h3 class="font-bold text-gray-900">Adab & Tsaqofah Islam</h3>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl mb-4"><i class="fas fa-school"></i></div>
+                    <h3 class="font-bold text-gray-900">Pengetahuan Umum (Dinas)</h3>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-2xl mb-4"><i class="fas fa-bullseye"></i></div>
+                    <h3 class="font-bold text-gray-900">Olahraga Sunnah</h3>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-14 h-14 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-2xl mb-4"><i class="fas fa-laptop-code"></i></div>
+                    <h3 class="font-bold text-gray-900">Digitalpreneur</h3>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-14 h-14 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center text-2xl mb-4"><i class="fas fa-robot"></i></div>
+                    <h3 class="font-bold text-gray-900">AI Terapan</h3>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-14 h-14 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-2xl mb-4"><i class="fas fa-users-cog"></i></div>
+                    <h3 class="font-bold text-gray-900">Leadership</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TARGET LULUSAN SECTION (BARU) -->
+    <section class="py-16 bg-white border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900">Target Lulusan Villa Quran</h2>
+                <p class="mt-4 text-lg text-gray-600">Kami berkomitmen mencetak generasi Qurani yang siap menghadapi tantangan zaman.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4"><i class="fas fa-quran"></i></div>
+                    <h4 class="font-bold text-lg mb-2">Target 30 Juz Mutqin</h4>
+                    <p class="text-gray-500 text-sm">Hafalan kuat (mutqin) dengan standar tajwid yang benar.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4"><i class="fas fa-certificate"></i></div>
+                    <h4 class="font-bold text-lg mb-2">Bersanad</h4>
+                    <p class="text-gray-500 text-sm">Mendapatkan sanad bacaan Al-Quran tersambung hingga Rasulullah ﷺ.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4"><i class="fas fa-graduation-cap"></i></div>
+                    <h4 class="font-bold text-lg mb-2">Berijazah Resmi Negara</h4>
+                    <p class="text-gray-500 text-sm">Mendapatkan ijazah formal untuk melanjutkan pendidikan ke jenjang berikutnya.</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md text-center">
+                    <div class="w-16 h-16 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4"><i class="fas fa-lightbulb"></i></div>
+                    <h4 class="font-bold text-lg mb-2">Mandiri & Tangkas</h4>
+                    <p class="text-gray-500 text-sm">Dibekali kemampuan public speaking dan kemandirian hidup harian.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. DESIRE: SOCIAL PROOF / TESTIMONI -->
+    <section class="py-20 bg-teal-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl font-extrabold text-emerald-900 mb-10">Kepercayaan Orang Tua Adalah Prioritas Kami</h2>
+            <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12 max-w-4xl mx-auto relative mt-8">
+                <i class="fas fa-quote-left text-5xl text-teal-100 absolute top-8 left-8"></i>
+                <p class="text-xl md:text-2xl text-gray-700 font-medium italic relative z-10 mb-8 leading-relaxed">
+                    "Awalnya kami khawatir anak akan stres dipaksa menghafal. Ternyata di Villa Quran, anak saya sangat bahagia. Suasana asramanya bersih, makanannya bergizi penuh suplemen madu, dan alhamdulillah hafalannya sekarang sudah mutqin 10 Juz."
+                </p>
+                <div class="flex items-center justify-center">
+                    <div class="w-14 h-14 rounded-full bg-teal-800 flex items-center justify-center text-xl text-white font-bold mr-4 shadow-md">
+                        AF
+                    </div>
+                    <div class="text-left">
+                        <p class="font-bold text-gray-900 text-lg">Bpk. Ahmad Fauzi</p>
+                        <p class="text-sm text-gray-500 font-medium">Orang tua santri Tahun Ke-2</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ARTIKEL & BERITA (SEO SECTION) -->
+    <section class="py-16 bg-white border-t border-gray-200" id="artikel">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900">Artikel & Inspirasi Tahfidz</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Temukan berbagai tips menghafal Al-Quran, parenting Islami, dan kabar terbaru dari Villa Quran Indonesia.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Artikel 1 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition duration-300 border border-gray-100 flex flex-col">
+                    <img src="https://images.unsplash.com/photo-1590080825313-13851509fa92?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Anak menghafal Quran" class="w-full h-48 object-cover">
+                    <div class="p-6 flex flex-col flex-grow">
+                        <div class="flex items-center text-sm text-gray-500 mb-3">
+                            <span class="text-emerald-600 font-semibold">Tips Tahfidz</span>
+                            <span class="mx-2">&bull;</span>
+                            <span>12 Okt 2026</span>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-900 mb-2 hover:text-emerald-600 transition"><a href="artikel-detail.html">5 Cara Menghafal Al-Quran Tanpa Stres untuk Anak</a></h3>
+                        <p class="text-gray-600 text-sm mb-4 flex-grow">Menciptakan suasana yang menyenangkan adalah kunci agar anak betah menghafal. Berikut adalah tips dari para musyrif kami...</p>
+                        <a href="artikel-detail.html" class="text-emerald-600 font-bold hover:text-emerald-700 transition inline-flex items-center text-sm">Baca Selengkapnya <i class="fas fa-arrow-right ml-1"></i></a>
+                    </div>
+                </div>
+                <!-- Artikel 2 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition duration-300 border border-gray-100 flex flex-col">
+                    <img src="https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Al-Quran dan Sanad" class="w-full h-48 object-cover">
+                    <div class="p-6 flex flex-col flex-grow">
+                        <div class="flex items-center text-sm text-gray-500 mb-3">
+                            <span class="text-emerald-600 font-semibold">Edukasi</span>
+                            <span class="mx-2">&bull;</span>
+                            <span>05 Okt 2026</span>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-900 mb-2 hover:text-emerald-600 transition"><a href="artikel-detail.html">Mengenal Pentingnya Sanad dalam Bacaan Al-Quran</a></h3>
+                        <p class="text-gray-600 text-sm mb-4 flex-grow">Mengapa belajar Al-Quran harus bersanad? Menjaga keaslian bacaan Al-Quran dari generasi ke generasi adalah sebuah kewajiban...</p>
+                        <a href="artikel-detail.html" class="text-emerald-600 font-bold hover:text-emerald-700 transition inline-flex items-center text-sm">Baca Selengkapnya <i class="fas fa-arrow-right ml-1"></i></a>
+                    </div>
+                </div>
+                <!-- Artikel 3 -->
+                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition duration-300 border border-gray-100 flex flex-col">
+                    <img src="https://images.unsplash.com/photo-1550081699-6e3e4a233b8a?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Makanan bernutrisi" class="w-full h-48 object-cover">
+                    <div class="p-6 flex flex-col flex-grow">
+                        <div class="flex items-center text-sm text-gray-500 mb-3">
+                            <span class="text-emerald-600 font-semibold">Kesehatan</span>
+                            <span class="mx-2">&bull;</span>
+                            <span>28 Sep 2026</span>
+                        </div>
+                        <h3 class="font-bold text-xl text-gray-900 mb-2 hover:text-emerald-600 transition"><a href="artikel-detail.html">Brain Food: Nutrisi Terbaik Penunjang Kecerdasan Santri</a></h3>
+                        <p class="text-gray-600 text-sm mb-4 flex-grow">Menu makanan harian di Villa Quran dirancang khusus oleh ahli gizi. Dari madu hingga habbatussauda, ini daftar makanan yang memperkuat hafalan...</p>
+                        <a href="artikel-detail.html" class="text-emerald-600 font-bold hover:text-emerald-700 transition inline-flex items-center text-sm">Baca Selengkapnya <i class="fas fa-arrow-right ml-1"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. ACTION: CTA & SPMB -->
+    <section class="bg-teal-700 py-20" id="spmb">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-6">Penerimaan Santri Baru 2026/2027 Telah Dibuka</h2>
+            <p class="text-xl text-teal-100 mb-10 max-w-3xl mx-auto">Kuota asrama sangat terbatas demi menjaga kualitas hafalan dan kenyamanan santri. Amankan kursi putra-putri Anda sekarang.</p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <a href="daftar-spmb.html" class="bg-amber-500 hover:bg-amber-600 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl inline-flex items-center justify-center">
+                    <i class="fas fa-edit mr-2"></i> Mulai Pendaftaran
+                </a>
+                <button onclick="document.getElementById('brosur-modal').classList.remove('hidden')" class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 inline-flex items-center justify-center cursor-pointer">
+                    <i class="fas fa-download mr-2"></i> Unduh Brosur
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER (Action Lanjutan) -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div>
+                <span class="font-bold text-2xl text-white block mb-4">Villa Quran Indonesia</span>
+                <p class="text-sm leading-relaxed pr-4">Mencetak generasi Hafidz Quran bersanad yang beradab mulia, cerdas, dan mandiri di lingkungan berasrama yang nyaman ala villa.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 text-lg">Hubungi Admin Kami</h4>
+                <ul class="space-y-3 text-sm">
+                    <li class="flex items-start"><i class="fas fa-map-marker-alt mt-1 mr-3 text-emerald-500"></i> Jl. Sejuk Asri No. 1, Kota Quran</li>
+                    <li class="flex items-center"><i class="fas fa-phone mr-3 text-emerald-500"></i> (021) 1234-5678</li>
+                    <li class="flex items-center"><i class="fab fa-whatsapp mr-3 text-green-500 text-lg"></i> <a href="https://wa.me/6281234567890" target="_blank" class="hover:text-white transition">+62 812-3456-7890</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 text-lg">Akses Cepat</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="portal-ortu.html" class="hover:text-blue-400 transition">Portal Orang Tua</a></li>
+                    <li><a href="mutabaah.html" class="hover:text-blue-400 transition">Laporan Mutaba'ah</a></li>
+                    <li><a href="biaya.html" class="hover:text-blue-400 transition">Biaya Asrama</a></li>
+                    <li><a href="faq.html" class="hover:text-blue-400 transition">FAQ (Tanya Jawab)</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-sm text-center">
+            &copy; 2026 Villa Quran Indonesia. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Floating WhatsApp Action -->
+    <a href="https://wa.me/6281234567890" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl shadow-2xl hover:bg-green-600 transition-colors z-50 animate-bounce">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <!-- MODAL DOWNLOAD BROSUR (LEAD CAPTURE) -->
+    <div id="brosur-modal" class="fixed inset-0 bg-black bg-opacity-75 z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative transform transition-all">
+            <button onclick="document.getElementById('brosur-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+            <div class="bg-teal-600 px-6 py-4 text-white text-center">
+                <h3 class="text-xl font-bold">Unduh Brosur & Rincian Biaya</h3>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-600 text-sm mb-6 text-center">Silakan lengkapi data berikut untuk mendapatkan tautan unduhan brosur resmi Villa Quran Indonesia.</p>
+                <form id="lead-form" onsubmit="handleDownload(event)">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Anda <span class="text-red-500">*</span></label>
+                        <input type="text" required id="lead-nama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Bpk. Fulan">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">No. WhatsApp <span class="text-red-500">*</span></label>
+                        <input type="number" required id="lead-wa" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 081234567890">
+                    </div>
+                    <!-- Hidden input untuk menangkap kode agen dari URL -->
+                    <input type="hidden" id="lead-ref" value="organik">
+                    
+                    <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-teal-900 font-bold py-3 px-4 rounded-lg transition shadow-md flex items-center justify-center">
+                        <i class="fas fa-download mr-2"></i> Dapatkan Brosur
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Interaktif untuk Menu Mobile -->
+    <script>
+        // Pastikan HTML selesai diload sebelum menjalankan script
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // 1. Script Menu Mobile
+            const btn = document.getElementById('mobile-menu-btn');
+            const menu = document.getElementById('mobile-menu');
+            
+            if (btn && menu) {
+                const icon = btn.querySelector('i');
+                btn.addEventListener('click', () => {
+                    menu.classList.toggle('hidden');
+                    if(menu.classList.contains('hidden')) {
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    } else {
+                        icon.classList.remove('fa-bars');
+                        icon.classList.add('fa-times');
+                    }
+                });
+
+                const mobileLinks = menu.querySelectorAll('a');
+                mobileLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        menu.classList.add('hidden');
+                        icon.classList.remove('fa-times');
+                        icon.classList.add('fa-bars');
+                    });
+                });
+            }
+
+            // 2. Script Spoiler Jadwal Harian
+            const toggleJadwalBtn = document.getElementById('toggle-jadwal-btn');
+            const jadwalExtras = document.querySelectorAll('.jadwal-extra');
+
+            if (toggleJadwalBtn && jadwalExtras.length > 0) {
+                toggleJadwalBtn.addEventListener('click', function(e) {
+                    e.preventDefault(); // Hindari efek klik ganda
+                    
+                    jadwalExtras.forEach(item => {
+                        item.classList.toggle('hidden');
+                    });
+
+                    // Cek apakah item pertama sekarang tersembunyi
+                    if (jadwalExtras[0].classList.contains('hidden')) {
+                        toggleJadwalBtn.innerHTML = '<span>Lihat Jadwal Lengkap</span> <i class="fas fa-chevron-down ml-2"></i>';
+                    } else {
+                        toggleJadwalBtn.innerHTML = '<span>Tutup Jadwal</span> <i class="fas fa-chevron-up ml-2"></i>';
+                    }
+                });
+            }
+
+            // 3. Script Sistem Referral Agen & Download Brosur
+            // Tangkap URL jika ada parameter ?ref=... (misal: villaquran.com/?ref=agen01)
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('ref');
+            if (refCode) {
+                // Masukkan kode agen ke input yang tersembunyi
+                const refInput = document.getElementById('lead-ref');
+                if(refInput) refInput.value = refCode;
+            }
+        });
+
+        // Fungsi Menangani Form Prospek Brosur
+        function handleDownload(e) {
+            e.preventDefault(); // Mencegah reload halaman
+            const nama = document.getElementById('lead-nama').value;
+            const wa = document.getElementById('lead-wa').value;
+            const ref = document.getElementById('lead-ref').value;
+            
+            // Catatan: Di titik ini, data (nama, wa, ref) siap dikirim ke backend/database admin via AJAX/Fetch API.
+            console.log("Data Prospek Tertangkap: ", { Nama: nama, WhatsApp: wa, Referral: ref });
+            
+            // Tutup Pop-up & trigger download
+            document.getElementById('brosur-modal').classList.add('hidden');
+            window.open('brosur-villa-quran.pdf', '_blank'); // Ganti dengan URL file asli nanti
+            
+            alert(`Terima kasih ${nama}. Brosur segera diunduh dan Admin kami akan menghubungi Anda.`);
+            e.target.reset(); // Kosongkan form
+        }
+    </script>
+</body>
+</html>

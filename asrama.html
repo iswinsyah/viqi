@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fasilitas Asrama | Villa Quran Indonesia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="font-sans antialiased text-gray-800 bg-gray-50">
+
+    <!-- HEADER / NAVIGASI -->
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="index.html" class="font-extrabold text-2xl text-emerald-800 hover:text-emerald-600 transition">
+                        <i class="fas fa-leaf mr-2 text-emerald-500"></i>Villa Quran
+                    </a>
+                </div>
+                <nav class="hidden md:flex space-x-6 lg:space-x-8">
+                    <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
+                    <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
+                    <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Program</a>
+                    <a href="asrama.html" class="text-emerald-700 font-bold transition border-b-2 border-emerald-600">Asrama</a>
+                    <a href="index.html#artikel" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Artikel</a>
+                    <a href="admin.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Admin</a>
+                </nav>
+                <div class="hidden md:flex">
+                    <a href="index.html#spmb" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
+                </div>
+                <div class="flex items-center md:hidden">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-md p-2">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu (Dropdown) -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-xl absolute w-full left-0 top-20">
+            <div class="px-4 pt-2 pb-6 space-y-2">
+                <a href="index.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Beranda</a>
+                <a href="profil-pengajar.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Profil Pengajar</a>
+                <a href="program.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Program</a>
+                <a href="asrama.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Asrama</a>
+                <a href="index.html#artikel" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Artikel</a>
+                <a href="admin.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Admin</a>
+                <div class="pt-4 pb-2 border-t border-gray-100">
+                    <a href="index.html#spmb" class="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- PAGE HEADER -->
+    <section class="bg-teal-700 text-white py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4">Fasilitas Asrama & Lingkungan</h1>
+            <p class="text-xl text-teal-100 max-w-2xl mx-auto">Kami menghadirkan lingkungan yang aman, bersih, dan nyaman layaknya villa untuk mendukung kelancaran santri dalam menghafal Al-Quran.</p>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT -->
+    <section class="py-16">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-20">
+
+            <!-- 1. ASRAMA PUTRA -->
+            <div>
+                <div class="flex items-center mb-8">
+                    <i class="fas fa-male text-3xl text-emerald-600 mr-4"></i>
+                    <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-emerald-500 pb-2 inline-block">Kompleks Asrama Putra</h2>
+                </div>
+                
+                <div class="space-y-8">
+                    <!-- Putra: Kamar Tidur -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-teal-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Kamar Tidur Putra" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">1. Kamar Tidur Santri Putra</h3>
+                            <p class="text-gray-600">Kamar luas berventilasi baik yang diatur maksimal 4-6 santri per kamar untuk menjaga kenyamanan. Dilengkapi kasur tingkat (bunk bed) yang kokoh, lemari pakaian pribadi, dan diawasi langsung oleh Musyrif kamar.</p>
+                        </div>
+                    </div>
+                    <!-- Putra: Kamar Mandi -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-teal-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Kamar Mandi Putra" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">2. Kamar Mandi & Toilet</h3>
+                            <p class="text-gray-600">Area sanitasi yang selalu dijaga kebersihannya oleh petugas *cleaning service*. Rasio kamar mandi dan santri sangat memadai untuk mencegah antrean panjang di pagi hari. Dilengkapi air bersih dan fasilitas shower/bak.</p>
+                        </div>
+                    </div>
+                    <!-- Putra: Musholla -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-teal-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Musholla Putra" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">3. Musholla Asrama (Putra)</h3>
+                            <p class="text-gray-600">Fasilitas musholla khusus di dalam gedung asrama putra untuk ibadah sunnah malam (Qiyamul Lail), muraja'ah kelompok kecil, dan taklim ba'da shubuh sebelum berangkat ke kelas akademik.</p>
+                        </div>
+                    </div>
+                    <!-- Putra: Ruang Belajar -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-teal-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Ruang Belajar Putra" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">4. Ruang Belajar / Diskusi</h3>
+                            <p class="text-gray-600">Area kondusif yang dilengkapi dengan meja belajar, penerangan optimal, dan rak buku. Digunakan santri putra untuk mengerjakan tugas sekolah, membaca, atau berdiskusi kelompok di luar jam KBM kelas.</p>
+                        </div>
+                    </div>
+                    <!-- Putra: Dapur -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-teal-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1556910103-1c02745aae4d?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Dapur Putra" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">5. Dapur & Ruang Makan (Putra)</h3>
+                            <p class="text-gray-600">Ruang makan bersih yang menyajikan menu harian bergizi (Brain Food) yang disupervisi oleh ahli gizi. Terdapat wastafel cuci tangan dan area pendistribusian makanan yang higienis.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. ASRAMA PUTRI -->
+            <div>
+                <div class="flex items-center mb-8">
+                    <i class="fas fa-female text-3xl text-rose-500 mr-4"></i>
+                    <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-rose-400 pb-2 inline-block">Kompleks Asrama Putri</h2>
+                </div>
+                
+                <div class="space-y-8">
+                    <!-- Putri: Kamar Tidur -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-rose-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Kamar Tidur Putri" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">1. Kamar Tidur Santri Putri</h3>
+                            <p class="text-gray-600">Desain kamar tertutup yang menjamin privasi dan keamanan tinggi bagi santriwati. Dilengkapi pendingin ruangan/kipas, ranjang yang nyaman, cermin, dan lemari. Diasuh penuh oleh Musyrifah yang ramah.</p>
+                        </div>
+                    </div>
+                    <!-- Putri: Kamar Mandi -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-rose-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1620626011761-996317b8d101?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Kamar Mandi Putri" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">2. Kamar Mandi & Area Mencuci</h3>
+                            <p class="text-gray-600">Fasilitas sanitasi yang tertutup rapat, terang, dan bersih. Terintegrasi dengan area khusus untuk mencuci pakaian (laundry area mandiri) agar santriwati belajar kebersihan dan kemandirian sehari-hari.</p>
+                        </div>
+                    </div>
+                    <!-- Putri: Musholla -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-rose-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1609802422036-7c152a5a5460?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Musholla Putri" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">3. Musholla Asrama (Putri)</h3>
+                            <p class="text-gray-600">Area khusus bagi santriwati untuk melaksanakan shalat berjamaah asrama, halaqah tahsin khusus putri, dan kegiatan kajian kemuslimahan di bawah bimbingan Ustadzah.</p>
+                        </div>
+                    </div>
+                    <!-- Putri: Ruang Belajar -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-rose-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Ruang Belajar Putri" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">4. Ruang Belajar Interaktif</h3>
+                            <p class="text-gray-600">Ruangan estetis berkonsep *co-working space* mini agar santriwati tidak merasa jenuh saat belajar mandiri, menghafal Al-Quran, atau membaca literatur Islam.</p>
+                        </div>
+                    </div>
+                    <!-- Putri: Dapur -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-rose-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Dapur Putri" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">5. Dapur & Ruang Makan (Putri)</h3>
+                            <p class="text-gray-600">Selain sebagai area makan harian, dapur asrama putri juga dilengkapi fasilitas untuk ekstrakurikuler *cooking class* atau keputrian (tata boga) di akhir pekan.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. FASILITAS BERSAMA -->
+            <div>
+                <div class="flex items-center mb-8">
+                    <i class="fas fa-building text-3xl text-blue-600 mr-4"></i>
+                    <h2 class="text-3xl font-extrabold text-gray-900 border-b-4 border-blue-500 pb-2 inline-block">Fasilitas Bersama & Akademik</h2>
+                </div>
+                
+                <div class="space-y-8">
+                    <!-- Bersama: Ruang Belajar/Kelas -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-blue-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Ruang Kelas" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">1. Ruang Kelas Formal</h3>
+                            <p class="text-gray-600">Ruang pembelajaran utama untuk materi kurikulum diknas dan diniyyah klasikal. Dilengkapi papan tulis modern, proyektor, dan tata letak kursi yang mendukung interaksi guru-murid secara maksimal.</p>
+                        </div>
+                    </div>
+                    <!-- Bersama: Ruang Komputer -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-blue-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Lab Komputer" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">2. Laboratorium Komputer</h3>
+                            <p class="text-gray-600">Pusat pelatihan "Digitalpreneur & AI Terapan". Menyediakan unit PC berkecepatan tinggi dengan akses internet terfilter (*whitelist*) khusus untuk menunjang pembelajaran skill IT santri.</p>
+                        </div>
+                    </div>
+                    <!-- Bersama: Studio Podcast -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-blue-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1589903308904-1010c2294adc?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Studio Podcast" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">3. Studio Podcast & Multimedia</h3>
+                            <p class="text-gray-600">Fasilitas modern untuk melatih kepercayaan diri, *public speaking* (pengganti muhadharah konvensional), serta produksi konten dakwah digital oleh santri.</p>
+                        </div>
+                    </div>
+                    <!-- Bersama: Lapangan -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-blue-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1511649475669-e288648b2339?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Lapangan Olahraga" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">4. Lapangan Olahraga Serbaguna</h3>
+                            <p class="text-gray-600">Area hijau yang sangat luas untuk aktivitas fisik dan *refreshing*. Terdiri dari lapangan futsal/basket, area panahan (archery), serta tempat olahraga bela diri sunnah.</p>
+                        </div>
+                    </div>
+                    <!-- Bersama: Masjid -->
+                    <div class="flex flex-col md:flex-row bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-lg transition duration-300">
+                        <div class="md:w-1/3 bg-blue-50 relative group">
+                            <img src="https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Masjid Jami" class="w-full h-64 md:h-full object-cover transform group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-6 md:w-2/3 flex flex-col justify-center">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">5. Masjid Jami' Villa Quran</h3>
+                            <p class="text-gray-600">Masjid agung yang menjadi jantung utama seluruh kegiatan pesantren. Digunakan untuk shalat lima waktu berjamaah bersanad, halaqah akbar, kajian kitab kuning, hingga perayaan hari besar Islam.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-900 text-gray-400 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-white text-2xl font-bold mb-6">Mulai Perjalanan Tahfidz Putra-Putri Anda</h2>
+            <a href="index.html#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-950 px-8 py-3 rounded-full font-bold text-lg transition duration-300 shadow-md inline-block mb-8">Daftar SPMB Sekarang</a>
+            
+            <div class="mt-8 pt-8 border-t border-gray-800 text-sm">
+                &copy; 2026 Villa Quran Indonesia. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Script Interaktif untuk Menu Mobile -->
+    <script>
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+        const icon = btn.querySelector('i');
+
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+            if(menu.classList.contains('hidden')) {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            } else {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            }
+        });
+    </script>
+</body>
+</html>
