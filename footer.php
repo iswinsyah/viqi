@@ -29,6 +29,6 @@
         </span>
     </a>
 
-    <script src="assets/js/main.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>

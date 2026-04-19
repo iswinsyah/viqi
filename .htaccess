@@ -1,5 +1,6 @@
 # Aktifkan modul rewrite URL
 RewriteEngine On
+RewriteBase /
 
 # Tentukan file mana yang menjadi halaman utama (index)
 DirectoryIndex index.php index.html
