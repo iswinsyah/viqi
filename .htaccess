@@ -3,7 +3,7 @@ RewriteEngine On
 RewriteBase /
 
 # Tentukan file mana yang menjadi halaman utama (index)
-DirectoryIndex index.php index.html
+DirectoryIndex index.html index.php
 
 # Jika URL mengarah ke folder (seperti /admin), otomatis tambahkan garis miring di akhir ( /admin/ )
 RewriteCond %{REQUEST_FILENAME} -d
