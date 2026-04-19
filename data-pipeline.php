@@ -76,6 +76,19 @@ $columns = [
         .kanban-scroll::-webkit-scrollbar-thumb:hover {
             background: #94a3b8; 
         }
+        
+        /* Area Drop Kosong */
+        .kanban-cards { min-height: 120px; }
+        .kanban-cards:empty::after {
+            content: 'Tarik prospek ke sini';
+            display: block;
+            text-align: center;
+            padding: 1.5rem 0;
+            font-size: 0.875rem;
+            color: #9ca3af;
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
@@ -150,9 +163,12 @@ $columns = [
                     <h1 class="text-2xl font-bold text-gray-900">Pipeline Marketing (Kanban)</h1>
                     <p class="text-sm text-gray-500">Geser prospek ke kanan saat tahapan mereka meningkat.</p>
                 </div>
-                <button onclick="window.location.reload()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm border border-emerald-200">
-                    <i class="fas fa-sync-alt mr-2"></i> Segarkan Data
-                </button>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-amber-600 font-bold animate-pulse hidden md:inline-block"><i class="fas fa-arrows-alt-h mr-1"></i> Geser layar ke kanan 👉</span>
+                    <button onclick="window.location.reload()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm border border-emerald-200">
+                        <i class="fas fa-sync-alt mr-2"></i> Segarkan Data
+                    </button>
+                </div>
             </div>
 
             <!-- KANBAN CONTAINER -->
@@ -168,16 +184,16 @@ $columns = [
                     <!-- Header Kolom -->
                     <div class="p-3 border-b <?= $col['border'] ?> font-bold <?= $col['text'] ?> flex justify-between items-center bg-white/60 rounded-t-xl">
                         <span><?= $col['title'] ?></span>
-                        <span class="bg-white px-2 py-0.5 rounded-full text-xs shadow-sm border <?= $col['border'] ?>"><?= $count ?></span>
+                        <span class="bg-white px-2 py-0.5 rounded-full text-xs shadow-sm border <?= $col['border'] ?> badge-count"><?= $count ?></span>
                     </div>
                     
                     <!-- Isi Kartu (Scrollable Vertical) -->
-                    <div class="p-3 overflow-y-auto flex-1 space-y-3" style="scrollbar-width: none;">
+                    <div class="p-3 overflow-y-auto flex-1 space-y-3 kanban-cards" data-level="<?= $level ?>" style="scrollbar-width: none;">
                         <?php foreach($items as $lead) { 
                             $badge_color = ($lead['jenis_lead'] == 'acara_dan_ebook') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
                             $badge_text = ($lead['jenis_lead'] == 'acara_dan_ebook') ? 'Acara & Ebook' : (($lead['jenis_lead'] == 'hanya_ebook') ? 'Hanya Ebook' : 'Brosur');
                         ?>
-                        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-emerald-400 cursor-pointer hover:shadow-md transition group">
+                        <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-emerald-400 cursor-grab active:cursor-grabbing hover:shadow-md transition group" data-id="<?= $lead['id'] ?>">
                             <div class="flex justify-between items-start mb-2">
                                 <span class="font-bold text-gray-900 text-sm"><?= htmlspecialchars($lead['nama']) ?></span>
                                 <span class="text-[10px] px-2 py-0.5 rounded font-medium <?= $badge_color ?> whitespace-nowrap"><?= $badge_text ?></span>
@@ -200,22 +216,7 @@ $columns = [
                                 <span title="Tanggal Masuk"><?= date('d M', strtotime($lead['created_at'])) ?></span>
                             </div>
                             
-                            <!-- Action Tombol Pindah Status (Akan kita fungsikan di update selanjutnya) -->
-                            <div class="mt-3 flex justify-between items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button class="text-gray-400 hover:text-rose-600 text-[10px]"><i class="fas fa-trash"></i></button>
-                                <?php if($level != 'Level 6') { ?>
-                                <button class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded text-[10px] font-bold border border-emerald-200">Pindah Status <i class="fas fa-arrow-right ml-1"></i></button>
-                                <?php } else { ?>
-                                <span class="text-emerald-600 text-[10px] font-bold"><i class="fas fa-check-circle"></i> Selesai</span>
-                                <?php } ?>
-                            </div>
                         </div>
-                        <?php } ?>
-                        
-                        <?php if($count == 0) { ?>
-                            <div class="text-center py-6 text-sm text-gray-400 border-2 border-dashed border-gray-300 rounded-lg">
-                                Belum ada data
-                            </div>
                         <?php } ?>
                     </div>
                 </div>
@@ -225,6 +226,8 @@ $columns = [
         </main>
     </div>
 
+    <!-- SortableJS untuk Drag and Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
@@ -240,6 +243,45 @@ $columns = [
             openBtn.addEventListener('click', toggleSidebar);
             closeBtn.addEventListener('click', toggleSidebar);
             overlay.addEventListener('click', toggleSidebar);
+
+            // INISIALISASI DRAG AND DROP KANBAN
+            const kanbanColumns = document.querySelectorAll('.kanban-cards');
+            
+            kanbanColumns.forEach(col => {
+                new Sortable(col, {
+                    group: 'pipeline', // Memungkinkan kartu pindah antar kolom
+                    animation: 150,
+                    ghostClass: 'opacity-50', // Efek transparan saat ditarik
+                    
+                    // Event saat kartu selesai dilepas (dropped)
+                    onEnd: function (evt) {
+                        const itemEl = evt.item;
+                        const toCol = evt.to;
+                        const fromCol = evt.from;
+                        
+                        if(toCol === fromCol) return; // Batal jika dilepas di kolom yang sama
+
+                        const leadId = itemEl.getAttribute('data-id');
+                        const newLevel = toCol.getAttribute('data-level');
+
+                        // Update angka badge jumlah secara instan (UI)
+                        const fromBadge = fromCol.parentElement.querySelector('.badge-count');
+                        const toBadge = toCol.parentElement.querySelector('.badge-count');
+                        fromBadge.textContent = parseInt(fromBadge.textContent) - 1;
+                        toBadge.textContent = parseInt(toBadge.textContent) + 1;
+
+                        // Simpan ke Database via AJAX/Fetch
+                        const formData = new FormData();
+                        formData.append('id', leadId);
+                        formData.append('status', newLevel);
+
+                        fetch('update-lead-status.php', {
+                            method: 'POST',
+                            body: formData
+                        }).catch(err => console.error('Gagal update database:', err));
+                    }
+                });
+            });
         });
     </script>
 </body>
