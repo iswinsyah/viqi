@@ -557,13 +557,19 @@
             }
 
             // 3. Script Sistem Referral Agen & Download Brosur
-            // Tangkap URL jika ada parameter ?ref=... (misal: villaquran.com/?ref=agen01)
+            // Tangkap URL jika ada parameter ?ref=... (misal: villaquranindonesia.com/?ref=081234567890)
             const urlParams = new URLSearchParams(window.location.search);
             const refCode = urlParams.get('ref');
             if (refCode) {
-                // Masukkan kode agen ke input yang tersembunyi
+                // Simpan ke penyimpanan lokal browser agar tidak hilang meski pindah halaman
+                localStorage.setItem('agen_ref', refCode);
+            }
+            
+            // Cek apakah ada data agen di penyimpanan lokal
+            const savedRef = localStorage.getItem('agen_ref');
+            if (savedRef) {
                 const refInput = document.getElementById('lead-ref');
-                if(refInput) refInput.value = refCode;
+                if(refInput) refInput.value = savedRef;
             }
         });
 

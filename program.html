@@ -186,6 +186,14 @@
             </div>
         </div>
     </footer>
-
+    
+    <!-- Script Tracking Referral -->
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode) {
+            localStorage.setItem('agen_ref', refCode);
+        }
+    </script>
 </body>
 </html>

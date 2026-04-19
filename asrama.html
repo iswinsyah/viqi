@@ -279,6 +279,13 @@
                 icon.classList.add('fa-times');
             }
         });
+
+        // Tangkap Referral Link
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode) {
+            localStorage.setItem('agen_ref', refCode);
+        }
     </script>
 </body>
 </html>

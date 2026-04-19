@@ -220,7 +220,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                         <div class="text-sm text-gray-500"><?= htmlspecialchars($row['rekening']) ?></div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-xs border border-gray-200">?ref=<?= htmlspecialchars($row['kode_ref']) ?></span>
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-xs border border-gray-200">?ref=<?= htmlspecialchars($row['whatsapp']) ?></span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">0 Orang</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
