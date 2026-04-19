@@ -431,7 +431,7 @@
                     <i class="fas fa-edit mr-2"></i> Mulai Pendaftaran
                 </a>
                 <button onclick="document.getElementById('brosur-modal').classList.remove('hidden')" class="bg-transparent border-2 border-white text-white hover:bg-white hover:text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 inline-flex items-center justify-center cursor-pointer">
-                    <i class="fas fa-download mr-2"></i> Unduh Brosur
+                    <i class="fas fa-book-reader mr-2"></i> Ikut Parenting School
                 </button>
             </div>
         </div>
@@ -468,7 +468,7 @@
     </footer>
 
     <!-- Floating WhatsApp Action -->
-    <a href="https://wa.me/6281234567890" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl shadow-2xl hover:bg-green-600 transition-colors z-50 animate-bounce">
+    <a id="floating-wa" href="https://wa.me/6281234567890" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl shadow-2xl hover:bg-green-600 transition-colors z-50 animate-bounce">
         <i class="fab fa-whatsapp"></i>
     </a>
 
@@ -479,24 +479,31 @@
                 <i class="fas fa-times text-xl"></i>
             </button>
             <div class="bg-teal-600 px-6 py-4 text-white text-center">
-                <h3 class="text-xl font-bold">Unduh Brosur & Rincian Biaya</h3>
+                <h3 class="text-xl font-bold">Daftar Parenting School & E-Book</h3>
             </div>
             <div class="p-6">
-                <p class="text-gray-600 text-sm mb-6 text-center">Silakan lengkapi data berikut untuk mendapatkan tautan unduhan brosur resmi Villa Quran Indonesia.</p>
+                <p class="text-gray-600 text-sm mb-6 text-center">Dapatkan akses kelas eksklusif "Parenting Generasi Alpha" dan gratis unduh E-Book panduannya.</p>
                 <form id="lead-form" onsubmit="handleDownload(event)">
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nama Anda <span class="text-red-500">*</span></label>
                         <input type="text" required id="lead-nama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Bpk. Fulan">
                     </div>
-                    <div class="mb-6">
+                    <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-1">No. WhatsApp <span class="text-red-500">*</span></label>
                         <input type="number" required id="lead-wa" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 081234567890">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pilihan Partisipasi <span class="text-red-500">*</span></label>
+                        <select required id="lead-pilihan" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                            <option value="acara_dan_ebook">Daftar Acara & Unduh E-Book</option>
+                            <option value="hanya_ebook">Hanya Unduh E-Book</option>
+                        </select>
                     </div>
                     <!-- Hidden input untuk menangkap kode agen dari URL -->
                     <input type="hidden" id="lead-ref" value="organik">
                     
                     <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-teal-900 font-bold py-3 px-4 rounded-lg transition shadow-md flex items-center justify-center">
-                        <i class="fas fa-download mr-2"></i> Dapatkan Brosur
+                        <i class="fas fa-check-circle mr-2"></i> Daftar Sekarang
                     </button>
                 </form>
             </div>
@@ -571,6 +578,18 @@
                 const refInput = document.getElementById('lead-ref');
                 if(refInput) refInput.value = savedRef;
             }
+
+            // 4. Modifikasi Teks WhatsApp Otomatis berdasarkan Agen
+            const waBtn = document.getElementById('floating-wa');
+            if (waBtn) {
+                let waText = "Assalamu'alaikum Admin Villa Quran, saya ingin bertanya seputar pendaftaran santri baru.";
+                
+                // Jika ada data agen, ubah teksnya!
+                if (savedRef && savedRef !== 'organik') {
+                    waText = `Assalamu'alaikum Admin Villa Quran, saya mendapat rekomendasi dari Agen/WA: *${savedRef}*. Saya ingin bertanya seputar pendaftaran.`;
+                }
+                waBtn.href = `https://wa.me/6281234567890?text=${encodeURIComponent(waText)}`;
+            }
         });
 
         // Fungsi Menangani Form Prospek Brosur
@@ -578,16 +597,20 @@
             e.preventDefault(); // Mencegah reload halaman
             const nama = document.getElementById('lead-nama').value;
             const wa = document.getElementById('lead-wa').value;
+            const pilihan = document.getElementById('lead-pilihan').value;
             const ref = document.getElementById('lead-ref').value;
             
-            // Catatan: Di titik ini, data (nama, wa, ref) siap dikirim ke backend/database admin via AJAX/Fetch API.
-            console.log("Data Prospek Tertangkap: ", { Nama: nama, WhatsApp: wa, Referral: ref });
+            console.log("Data Prospek Tertangkap: ", { Nama: nama, WhatsApp: wa, Pilihan: pilihan, Referral: ref });
             
             // Tutup Pop-up & trigger download
             document.getElementById('brosur-modal').classList.add('hidden');
-            window.open('brosur-villa-quran.pdf', '_blank'); // Ganti dengan URL file asli nanti
+            window.open('ebook-parenting.pdf', '_blank'); // Ganti dengan URL file PDF E-book nanti
             
-            alert(`Terima kasih ${nama}. Brosur segera diunduh dan Admin kami akan menghubungi Anda.`);
+            if(pilihan === 'acara_dan_ebook') {
+                alert(`Terima kasih ${nama}. Anda berhasil terdaftar di acara Parenting School! E-book sedang diunduh, dan Admin kami akan segera menghubungi nomor WA Anda untuk info jadwal acara.`);
+            } else {
+                alert(`Terima kasih ${nama}. E-book Parenting sedang diunduh. Selamat membaca!`);
+            }
             e.target.reset(); // Kosongkan form
         }
     </script>
