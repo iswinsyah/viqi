@@ -1,3 +1,31 @@
+<?php
+require_once 'koneksi.php';
+
+// Proses Simpan Data Agen Baru jika form disubmit
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $nama = $conn->real_escape_string($_POST['nama']);
+    $whatsapp = $conn->real_escape_string($_POST['whatsapp']);
+    $bank = $conn->real_escape_string($_POST['bank']);
+    $rekening = $conn->real_escape_string($_POST['rekening']);
+    
+    // Generate Kode Referral jika kolom tidak diisi
+    if (!empty($_POST['kode_ref'])) {
+        $kode_ref = $conn->real_escape_string($_POST['kode_ref']);
+    } else {
+        // Format otomatis: nama huruf kecil tanpa spasi + angka random
+        $kode_ref = strtolower(str_replace(' ', '', $nama)) . rand(10,99);
+    }
+
+    // Masukkan ke database
+    $sql = "INSERT INTO agen (nama, whatsapp, bank, rekening, kode_ref) VALUES ('$nama', '$whatsapp', '$bank', '$rekening', '$kode_ref')";
+    
+    if ($conn->query($sql) === TRUE) {
+        $pesan_sukses = "Data agen berhasil disimpan!";
+    } else {
+        $pesan_error = "Gagal menyimpan data: " . $conn->error;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -11,18 +39,15 @@
 
     <!-- SIDEBAR -->
     <aside id="sidebar" class="bg-gray-900 text-white w-64 flex-shrink-0 hidden md:flex flex-col transition-all duration-300 z-20 h-full absolute md:relative">
-        <!-- Logo Admin -->
         <div class="h-16 flex items-center justify-center border-b border-gray-800 px-4">
             <span class="text-xl font-bold text-emerald-400">
                 <i class="fas fa-leaf mr-2"></i>VQ Admin
             </span>
-            <!-- Close button for mobile -->
             <button id="close-sidebar" class="md:hidden ml-auto text-gray-400 hover:text-white">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
         
-        <!-- Menu Navigasi -->
         <div class="flex-1 overflow-y-auto py-4">
             <nav class="space-y-1 px-2">
                 <a href="admin.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
@@ -39,7 +64,6 @@
                     <span class="ml-3 font-medium">Data Santri</span>
                 </a>
                 
-                <!-- Menu Keagenan & Marketing -->
                 <div class="pt-4 pb-2">
                     <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Marketing & Leads</p>
                 </div>
@@ -47,8 +71,8 @@
                     <i class="fas fa-bullhorn w-6 text-center"></i>
                     <span class="ml-3 font-medium">Data Prospek (Leads)</span>
                 </a>
-                <!-- ACTIVE MENU -->
-                <a href="data-agen.html" class="flex items-center px-4 py-3 bg-emerald-600 text-white rounded-lg group">
+                <!-- ACTIVE MENU (Link diubah ke .php) -->
+                <a href="data-agen.php" class="flex items-center px-4 py-3 bg-emerald-600 text-white rounded-lg group">
                     <i class="fas fa-handshake w-6 text-center"></i>
                     <span class="ml-3 font-medium">Data Agen</span>
                 </a>
@@ -58,41 +82,15 @@
                 </div>
                 
                 <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                    <i class="fas fa-file-alt w-6 text-center"></i>
-                    <span class="ml-3 font-medium">Artikel & Berita</span>
-                </a>
-                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                    <i class="fas fa-chalkboard-teacher w-6 text-center"></i>
-                    <span class="ml-3 font-medium">Profil Pengajar</span>
-                </a>
-                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                    <i class="fas fa-images w-6 text-center"></i>
-                    <span class="ml-3 font-medium">Galeri Kegiatan</span>
-                </a>
-                
-                <div class="pt-4 pb-2">
-                    <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Sistem</p>
-                </div>
-                
-                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
                     <i class="fas fa-cog w-6 text-center"></i>
                     <span class="ml-3 font-medium">Pengaturan Web</span>
                 </a>
             </nav>
         </div>
-        
-        <!-- User Footer Sidebar -->
-        <div class="p-4 border-t border-gray-800">
-            <a href="index.html" class="flex items-center w-full px-4 py-2 text-sm text-gray-400 hover:text-white transition">
-                <i class="fas fa-sign-out-alt w-5"></i> Keluar
-            </a>
-        </div>
     </aside>
 
     <!-- MAIN CONTENT AREA -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        
-        <!-- Overlay for mobile sidebar -->
         <div id="sidebar-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-10 hidden md:hidden"></div>
 
         <!-- TOP HEADER -->
@@ -101,23 +99,13 @@
                 <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                <div class="hidden sm:block">
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <i class="fas fa-search text-gray-400"></i>
-                        </span>
-                        <input type="text" placeholder="Cari agen..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent w-64">
-                    </div>
-                </div>
+                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2>
             </div>
-            
             <div class="flex items-center space-x-4">
                 <a href="index.html" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium hidden sm:flex items-center">
                     <i class="fas fa-external-link-alt mr-2"></i> Lihat Website
                 </a>
-                <div class="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-sm">
-                    A
-                </div>
+                <div class="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-sm">A</div>
             </div>
         </header>
 
@@ -127,28 +115,41 @@
                 <h1 class="text-2xl font-bold text-gray-900">Manajemen Agen Referral</h1>
             </div>
 
+            <!-- Notifikasi Sukses / Error -->
+            <?php if(isset($pesan_sukses)) { ?>
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative mb-6 shadow-sm flex items-center">
+                    <i class="fas fa-check-circle mr-2"></i> <?= $pesan_sukses ?>
+                </div>
+            <?php } ?>
+            
+            <?php if(isset($pesan_error)) { ?>
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-6 shadow-sm flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i> <?= $pesan_error ?>
+                </div>
+            <?php } ?>
+
             <!-- FORM INPUT AGEN BARU -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
                 <div class="px-6 py-4 border-b border-gray-100 bg-emerald-50">
                     <h2 class="font-bold text-emerald-800"><i class="fas fa-plus-circle mr-2"></i>Tambah Agen Baru</h2>
                 </div>
                 <div class="p-6">
-                    <form action="#" method="POST">
+                    <form action="data-agen.php" method="POST">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Nama Agen -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap Agen <span class="text-red-500">*</span></label>
-                                <input type="text" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Ustadz Budi / Bpk. Fulan">
+                                <input type="text" name="nama" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Ustadz Budi / Bpk. Fulan">
                             </div>
                             <!-- Nomor WA -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp <span class="text-red-500">*</span></label>
-                                <input type="number" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 081234567890">
+                                <input type="number" name="whatsapp" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 081234567890">
                             </div>
                             <!-- Nama Bank -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nama Bank <span class="text-red-500">*</span></label>
-                                <select required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                <select name="bank" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                     <option value="">-- Pilih Bank --</option>
                                     <option value="BSI">BSI (Bank Syariah Indonesia)</option>
                                     <option value="Mandiri">Bank Mandiri</option>
@@ -161,13 +162,13 @@
                             <!-- Nomor Rekening -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Rekening <span class="text-red-500">*</span></label>
-                                <input type="number" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nomor Rekening Tujuan Komisi">
+                                <input type="number" name="rekening" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nomor Rekening Tujuan Komisi">
                             </div>
                             <!-- Kode Referral Kustom -->
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Kode Referral (Opsional)</label>
-                                <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50" placeholder="Biarkan kosong untuk generate otomatis, atau ketik: ustadzbudi">
-                                <p class="text-xs text-gray-500 mt-1">Kode ini akan digunakan di link: <code>villaquran.com/?ref=kode</code></p>
+                                <input type="text" name="kode_ref" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50" placeholder="Biarkan kosong untuk generate otomatis, atau ketik: ustadzbudi">
+                                <p class="text-xs text-gray-500 mt-1">Kode ini akan digunakan di link: <code>villaquranindonesia.com/?ref=kode</code></p>
                             </div>
                         </div>
                         <div class="mt-6 flex justify-end">
@@ -192,31 +193,43 @@
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rekening Bank</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Link Referral</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leads</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Konversi</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <!-- Baris 1 -->
-                            <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="font-bold text-gray-900">Ustadz Budi</div>
-                                    <div class="text-sm text-gray-500"><i class="fab fa-whatsapp text-green-500 mr-1"></i> 0812-9999-8888</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">BSI (Bank Syariah Indonesia)</div>
-                                    <div class="text-sm text-gray-500">7123456789</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-xs border border-gray-200">?ref=UstadzBudi</span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">45 Orang</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-emerald-600 font-bold">5 Santri</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
-                                </td>
-                            </tr>
+                            <!-- SCRIPT PHP UNTUK MENAMPILKAN DATA ASLI -->
+                            <?php
+                            $sql_tampil = "SELECT * FROM agen ORDER BY id DESC";
+                            $result = $conn->query($sql_tampil);
+
+                            if ($result->num_rows > 0) {
+                                while($row = $result->fetch_assoc()) {
+                            ?>
+                                <tr class="hover:bg-gray-50 transition">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-bold text-gray-900"><?= htmlspecialchars($row['nama']) ?></div>
+                                        <div class="text-sm text-gray-500"><i class="fab fa-whatsapp text-green-500 mr-1"></i> <?= htmlspecialchars($row['whatsapp']) ?></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900"><?= htmlspecialchars($row['bank']) ?></div>
+                                        <div class="text-sm text-gray-500"><?= htmlspecialchars($row['rekening']) ?></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-xs border border-gray-200">?ref=<?= htmlspecialchars($row['kode_ref']) ?></span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">0 Orang</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="#" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                            <?php
+                                }
+                            } else {
+                            ?>
+                                <tr>
+                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500 italic">Belum ada data agen yang terdaftar. Silakan input di atas.</td>
+                                </tr>
+                            <?php } ?>
                         </tbody>
                     </table>
                 </div>
@@ -225,7 +238,6 @@
         </main>
     </div>
 
-    <!-- Script untuk Toggle Sidebar Mobile -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
