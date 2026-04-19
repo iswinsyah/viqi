@@ -1,12 +1,17 @@
 <?php
+// Tampilkan pesan error di layar jika ada masalah (Debugging)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 require_once 'koneksi.php';
 
 // Proses Simpan Data Agen Baru jika form disubmit
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nama = $conn->real_escape_string($_POST['nama']);
-    $whatsapp = $conn->real_escape_string($_POST['whatsapp']);
-    $bank = $conn->real_escape_string($_POST['bank']);
-    $rekening = $conn->real_escape_string($_POST['rekening']);
+    // Gunakan isset() untuk mencegah Fatal Error (TypeError) di PHP 8+
+    $nama = isset($_POST['nama']) ? $conn->real_escape_string($_POST['nama']) : '';
+    $whatsapp = isset($_POST['whatsapp']) ? $conn->real_escape_string($_POST['whatsapp']) : '';
+    $bank = isset($_POST['bank']) ? $conn->real_escape_string($_POST['bank']) : '';
+    $rekening = isset($_POST['rekening']) ? $conn->real_escape_string($_POST['rekening']) : '';
     
     // Generate Kode Referral jika kolom tidak diisi
     if (!empty($_POST['kode_ref'])) {
@@ -134,7 +139,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <h2 class="font-bold text-emerald-800"><i class="fas fa-plus-circle mr-2"></i>Tambah Agen Baru</h2>
                 </div>
                 <div class="p-6">
-                    <form action="data-agen.php" method="POST">
+                    <form action="" method="POST">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Nama Agen -->
                             <div>
@@ -202,7 +207,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             $sql_tampil = "SELECT * FROM agen ORDER BY id DESC";
                             $result = $conn->query($sql_tampil);
 
-                            if ($result->num_rows > 0) {
+                            if ($result && $result->num_rows > 0) {
                                 while($row = $result->fetch_assoc()) {
                             ?>
                                 <tr class="hover:bg-gray-50 transition">
