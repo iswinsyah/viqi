@@ -1,3 +1,27 @@
+<?php
+session_start();
+
+// Jika sudah login, langsung arahkan ke dashboard
+if (isset($_SESSION['is_admin']) && $_SESSION['is_admin'] === true) {
+    header("Location: dashboard.php");
+    exit;
+}
+
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
+
+    // Validasi username dan password permanen
+    if ($username === 'winsyah' && $password === 'Khilafet@1924') {
+        $_SESSION['is_admin'] = true;
+        header("Location: dashboard.php");
+        exit;
+    } else {
+        $error = 'Username atau Password salah!';
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -35,7 +59,12 @@
             <h1 class="text-3xl font-bold text-primary">Admin Panel</h1>
             <p class="text-gray-500">Silakan login untuk melanjutkan</p>
         </div>
-        <form class="space-y-6" action="#" method="POST">
+
+        <?php if ($error): ?>
+        <div class="p-4 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200"><?php echo $error; ?></div>
+        <?php endif; ?>
+
+        <form class="space-y-6" action="" method="POST">
             <div>
                 <label for="username" class="text-sm font-medium text-gray-700">Username</label>
                 <input type="text" name="username" id="username" required class="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-primary focus:border-primary">
