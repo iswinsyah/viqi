@@ -179,7 +179,7 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
             const payloadLeads = JSON.parse(JSON.stringify(rawLeadsData));
             payloadLeads.unshift({
                 jenis_lead: "SYSTEM_COMMAND",
-                sumber_info: `PENTING: WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: ${dateInput}. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat |. DILARANG memberikan teks pendahuluan yang panjang, LANGSUNG TAMPILKAN TABEL MARKDOWN!`,
+                sumber_info: `PENTING: WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: ${dateInput}. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan yang panjang, LANGSUNG TAMPILKAN TABEL MARKDOWN!`,
                 status: "URGENT"
             });
 
