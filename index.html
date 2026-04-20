@@ -483,16 +483,16 @@
             <!-- SISI KIRI: Cover E-Book Dummy (Sembunyi di HP, Tampil di Laptop) -->
             <div class="md:w-5/12 bg-teal-50 hidden md:flex flex-col items-center justify-center p-8 border-r border-teal-100">
                 <!-- Gambar Dummy dari Unsplash -->
-                <img src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Cover E-Book" class="w-48 h-64 object-cover rounded-lg shadow-lg mb-6 border-4 border-white transform -rotate-3 hover:rotate-0 transition duration-300">
-                <h4 class="font-bold text-teal-900 text-lg text-center leading-tight">E-Book Spesial:</h4>
-                <p class="text-teal-700 text-sm text-center font-medium mt-2">"Rahasia Mendidik Generasi Alpha Menjadi Hafidz Quran Berkarakter"</p>
+                <img id="popup-img" src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Cover E-Book" class="w-48 h-64 object-cover rounded-lg shadow-lg mb-6 border-4 border-white transform -rotate-3 hover:rotate-0 transition duration-300">
+                <h4 id="popup-kiri-judul" class="font-bold text-teal-900 text-lg text-center leading-tight">E-Book Spesial:</h4>
+                <p id="popup-kiri-sub" class="text-teal-700 text-sm text-center font-medium mt-2">"Rahasia Mendidik Generasi Alpha Menjadi Hafidz Quran Berkarakter"</p>
             </div>
 
             <!-- SISI KANAN: Form Pengisian Leads -->
             <div class="p-8 md:w-7/12 flex flex-col justify-center">
                 <div class="text-center mb-6">
-                    <h3 class="text-2xl font-extrabold text-gray-900 mb-2">Akses Parenting School <span class="text-amber-500">& E-Book Gratis!</span></h3>
-                    <p class="text-gray-600 text-sm">Masukkan data Anda untuk mendapatkan tautan unduhan E-Book dan jadwal kelas langsung ke WhatsApp Anda.</p>
+                    <h3 id="popup-kanan-judul" class="text-2xl font-extrabold text-gray-900 mb-2">Akses Parenting School <span class="text-amber-500">& E-Book Gratis!</span></h3>
+                    <p id="popup-kanan-desc" class="text-gray-600 text-sm">Masukkan data Anda untuk mendapatkan tautan unduhan E-Book dan jadwal kelas langsung ke WhatsApp Anda.</p>
                 </div>
                 <form id="lead-form" onsubmit="handleDownload(event)">
                     <div class="mb-4">
@@ -602,13 +602,29 @@
                 waBtn.href = `https://wa.me/6281234567890?text=${encodeURIComponent(waText)}`;
             }
             
-            // 5. Script Auto Pop-up (Memancing Leads setelah 5 detik)
-            if (!sessionStorage.getItem('ebook_popup_shown')) {
-                setTimeout(() => {
-                    document.getElementById('brosur-modal').classList.remove('hidden');
-                    sessionStorage.setItem('ebook_popup_shown', 'true');
-                }, 5000);
-            }
+            // 5. Script Auto Pop-up Dinamis dari Database
+            fetch('api-popup.php')
+                .then(res => res.json())
+                .then(data => {
+                    // Jika pop-up diaktifkan dari admin
+                    if (data.is_active == 1) {
+                        // Ganti Teks dan Gambar secara Real-time
+                        document.getElementById('popup-img').src = data.img_src;
+                        document.getElementById('popup-kiri-judul').textContent = data.kiri_judul;
+                        document.getElementById('popup-kiri-sub').textContent = data.kiri_sub;
+                        document.getElementById('popup-kanan-judul').innerHTML = data.kanan_judul;
+                        document.getElementById('popup-kanan-desc').textContent = data.kanan_desc;
+                        window.popupFileUrl = data.file_url; // Simpan URL file ke global variable
+
+                        // Trigger pop-up muncul otomatis setelah 5 detik
+                        if (!sessionStorage.getItem('ebook_popup_shown')) {
+                            setTimeout(() => {
+                                document.getElementById('brosur-modal').classList.remove('hidden');
+                                sessionStorage.setItem('ebook_popup_shown', 'true');
+                            }, 5000);
+                        }
+                    }
+                }).catch(err => console.error('Gagal memuat API Pop-up:', err));
         });
 
         // Fungsi Menangani Form Prospek Brosur
@@ -636,7 +652,8 @@
                 document.getElementById('brosur-modal').classList.add('hidden');
                 
                 // Trigger download dummy file
-                window.open('ebook-parenting.pdf', '_blank');
+                const downloadUrl = window.popupFileUrl || 'ebook-parenting.pdf';
+                window.open(downloadUrl, '_blank');
                 
                 alert(`Terima kasih ${nama}. File E-Book sedang disiapkan. Admin kami juga akan mengirimkan info lebih lanjut ke WhatsApp Anda.`);
                 

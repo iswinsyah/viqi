@@ -54,6 +54,25 @@ if ($conn->query($sql_spmb) === TRUE) {
     echo "❌ Error membuat tabel pendaftar_spmb: " . $conn->error . "<br>";
 }
 
+// 4. Membuat Tabel Pengaturan Pop-up
+$sql_popup = "CREATE TABLE IF NOT EXISTS pengaturan_popup (
+    id INT PRIMARY KEY,
+    is_active TINYINT(1) DEFAULT 1,
+    img_src VARCHAR(255),
+    kiri_judul VARCHAR(100),
+    kiri_sub VARCHAR(255),
+    kanan_judul VARCHAR(255),
+    kanan_desc TEXT,
+    file_url VARCHAR(255)
+)";
+
+if ($conn->query($sql_popup) === TRUE) {
+    echo "✅ Tabel <b>'pengaturan_popup'</b> berhasil dibuat.<br>";
+    // Masukkan data default jika masih kosong
+    $conn->query("INSERT IGNORE INTO pengaturan_popup (id, is_active, img_src, kiri_judul, kiri_sub, kanan_judul, kanan_desc, file_url) 
+    VALUES (1, 1, 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', 'E-Book Spesial:', '\"Rahasia Mendidik Generasi Alpha Menjadi Hafidz Quran Berkarakter\"', 'Akses Parenting School <span class=\"text-amber-500\">& E-Book Gratis!</span>', 'Masukkan data Anda untuk mendapatkan tautan unduhan E-Book dan jadwal kelas langsung ke WhatsApp Anda.', 'ebook-parenting.pdf')");
+}
+
 echo "<br><b>Selesai!</b> Database Anda sudah siap digunakan.";
 
 $conn->close();
