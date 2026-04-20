@@ -114,6 +114,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <i class="fas fa-handshake w-6 text-center"></i>
                     <span class="ml-3 font-medium">Data Agen</span>
                 </a>
+                <a href="admin-analisa.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-brain w-6 text-center text-purple-400"></i>
+                    <span class="ml-3 font-medium">Analisa Buyer Persona</span>
+                </a>
 
                 <div class="pt-4 pb-2">
                     <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Konten Web</p>

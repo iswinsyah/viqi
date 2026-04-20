@@ -65,6 +65,9 @@ if ($result && $result->num_rows > 0) {
                 <a href="data-agen.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition">
                     <i class="fas fa-handshake w-6 text-center"></i><span class="ml-3 font-medium">Data Agen</span>
                 </a>
+                <a href="admin-analisa.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-brain w-6 text-center text-purple-400"></i><span class="ml-3 font-medium">Analisa Buyer Persona</span>
+                </a>
                 <div class="pt-4 pb-2"><p class="px-4 text-xs font-bold text-gray-500 uppercase">Sistem</p></div>
                 <a href="admin-popup.php" class="flex items-center px-4 py-3 bg-emerald-600 text-white rounded-lg">
                     <i class="fas fa-bullhorn w-6 text-center"></i><span class="ml-3 font-medium">Pengaturan Pop-up</span>
