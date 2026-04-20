@@ -602,8 +602,8 @@
                 waBtn.href = `https://wa.me/6281234567890?text=${encodeURIComponent(waText)}`;
             }
             
-            // 5. Script Auto Pop-up Dinamis dari Database
-            fetch('api-popup.php')
+            // 5. Script Auto Pop-up Dinamis dari Database (Anti-Cache)
+            fetch('api-popup.php?_=' + new Date().getTime())
                 .then(res => res.json())
                 .then(data => {
                     // Jika pop-up diaktifkan dari admin
@@ -616,12 +616,16 @@
                         document.getElementById('popup-kanan-desc').textContent = data.kanan_desc;
                         window.popupFileUrl = data.file_url; // Simpan URL file ke global variable
 
-                        // Trigger pop-up muncul otomatis setelah 5 detik
-                        if (!sessionStorage.getItem('ebook_popup_shown')) {
+                        // Sistem Deteksi 1x Kunjungan (Sesi 30 Menit) yang kebal fitur "Restore" browser
+                        const now = new Date().getTime();
+                        const lastShown = localStorage.getItem('ebook_popup_time');
+                        const sessionDuration = 30 * 60 * 1000; // 30 menit (standar 1 sesi web)
+                        
+                        if (!lastShown || (now - parseInt(lastShown)) > sessionDuration) {
                             setTimeout(() => {
                                 document.getElementById('brosur-modal').classList.remove('hidden');
-                                sessionStorage.setItem('ebook_popup_shown', 'true');
-                            }, 5000);
+                                localStorage.setItem('ebook_popup_time', now.toString()); // Simpan waktu muncul
+                            }, 10000);
                         }
                     }
                 }).catch(err => console.error('Gagal memuat API Pop-up:', err));
