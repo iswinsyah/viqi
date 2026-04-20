@@ -34,6 +34,10 @@ $active_menu = 'analisa';
         .markdown-body ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 1rem; color: #334155; }
         .markdown-body li { margin-bottom: 0.25rem; }
         .markdown-body strong { color: #0f172a; }
+        /* Styling untuk Tabel (jika AI memunculkan tabel) */
+        .markdown-body table { width: 100%; border-collapse: collapse; margin-top: 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; }
+        .markdown-body th, .markdown-body td { border: 1px solid #cbd5e1; padding: 0.75rem; text-align: left; }
+        .markdown-body th { background-color: #f8fafc; font-weight: bold; color: #0f172a; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
@@ -145,7 +149,7 @@ $active_menu = 'analisa';
                 headers: {
                     'Content-Type': 'text/plain;charset=utf-8' // GAS Web App lebih stabil menerima plain text
                 },
-                body: JSON.stringify({ leads: rawLeadsData })
+                body: JSON.stringify({ leads: rawLeadsData, type: 'persona' })
             })
             .then(response => response.json())
             .then(data => {
