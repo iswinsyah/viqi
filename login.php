@@ -67,12 +67,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400"></i></div>
-                    <input type="password" name="password" required class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="••••••••">
+                    <input type="password" id="password" name="password" required class="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="••••••••">
+                    <button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-emerald-600 focus:outline-none">
+                        <i class="fas fa-eye" id="eyeIcon"></i>
+                    </button>
                 </div>
             </div>
             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition shadow-md">Masuk Dashboard</button>
         </form>
     </div>
 
+    <script>
+        const togglePassword = document.getElementById('togglePassword');
+        const password = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
+
+        togglePassword.addEventListener('click', function () {
+            // Mengubah tipe input dari password ke text dan sebaliknya
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            // Mengganti ikon mata terbuka dan tertutup (dicoret)
+            eyeIcon.classList.toggle('fa-eye');
+            eyeIcon.classList.toggle('fa-eye-slash');
+        });
+    </script>
 </body>
 </html>
