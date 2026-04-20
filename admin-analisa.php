@@ -13,6 +13,16 @@ if ($result && $result->num_rows > 0) {
 }
 $leads_json = json_encode($leads_data);
 
+// Proses Simpan Hasil Analisa ke file lokal
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_persona') {
+    $content = $_POST['content'] ?? '';
+    file_put_contents('saved_persona.txt', $content);
+    echo "Sukses";
+    exit;
+}
+
+$saved_persona = file_exists('saved_persona.txt') ? file_get_contents('saved_persona.txt') : '';
+
 $active_menu = 'analisa';
 ?>
 <!DOCTYPE html>
@@ -87,12 +97,15 @@ $active_menu = 'analisa';
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[400px] flex flex-col overflow-hidden">
                         <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                             <h3 class="font-bold text-gray-800"><i class="fas fa-chart-pie mr-2"></i> Laporan Analisa</h3>
-                            <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-200 text-gray-600">Menunggu Perintah</span>
+                            <div class="flex items-center space-x-2">
+                                <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan Hasil</button>
+                                <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full <?= !empty($saved_persona) ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600' ?>"><?= !empty($saved_persona) ? 'Tersimpan' : 'Menunggu Perintah' ?></span>
+                            </div>
                         </div>
                         
                         <div id="result-container" class="p-6 flex-1 overflow-y-auto relative">
                             <!-- Layar Awal -->
-                            <div id="state-idle" class="flex flex-col items-center justify-center h-full text-gray-400 py-12">
+                            <div id="state-idle" class="<?= !empty($saved_persona) ? 'hidden' : 'flex flex-col items-center justify-center h-full text-gray-400 py-12' ?>">
                                 <i class="fas fa-brain text-6xl mb-4 opacity-50"></i>
                                 <p>Klik "Mulai Analisa Data" untuk merancang Buyer Persona Anda.</p>
                             </div>
@@ -105,7 +118,7 @@ $active_menu = 'analisa';
                             </div>
 
                             <!-- Layar Hasil -->
-                            <div id="state-result" class="hidden markdown-body">
+                            <div id="state-result" class="<?= !empty($saved_persona) ? 'markdown-body' : 'hidden markdown-body' ?>">
                                 <!-- Hasil render Markdown dari Gemini akan masuk ke sini -->
                             </div>
                         </div>
@@ -122,6 +135,21 @@ $active_menu = 'analisa';
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec"; 
         
         const rawLeadsData = <?= $leads_json ?>;
+        const savedPersonaMarkdown = <?= json_encode($saved_persona) ?>;
+        let currentMarkdown = savedPersonaMarkdown;
+
+        // Render data tersimpan saat halaman dimuat
+        document.addEventListener("DOMContentLoaded", () => {
+            if (savedPersonaMarkdown) {
+                document.getElementById('state-result').innerHTML = marked.parse(savedPersonaMarkdown);
+                const btnSave = document.getElementById('btn-save');
+                btnSave.classList.remove('hidden');
+                btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
+                btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
+                btnSave.classList.replace('text-emerald-700', 'text-gray-500');
+                btnSave.disabled = true;
+            }
+        });
 
         function jalankanAnalisa() {
             if (rawLeadsData.length === 0) {
@@ -143,6 +171,16 @@ $active_menu = 'analisa';
             document.getElementById('btn-analisa').disabled = true;
             document.getElementById('btn-analisa').classList.add('opacity-50', 'cursor-not-allowed');
 
+            // Reset tombol save
+            const btnSave = document.getElementById('btn-save');
+            btnSave.classList.add('hidden');
+            btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan Hasil';
+            if(btnSave.classList.contains('bg-gray-100')) {
+                btnSave.classList.replace('bg-gray-100', 'bg-emerald-100');
+                btnSave.classList.replace('text-gray-500', 'text-emerald-700');
+            }
+            btnSave.disabled = false;
+
             // Tembak data ke Google Apps Script (GAS) menggunakan POST
             fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
@@ -155,7 +193,9 @@ $active_menu = 'analisa';
             .then(data => {
                 if(data.status === "success") {
                     // Ubah Markdown dari Gemini menjadi format HTML menggunakan Marked.js
-                    document.getElementById('state-result').innerHTML = marked.parse(data.result);
+                    currentMarkdown = data.result;
+                    document.getElementById('state-result').innerHTML = marked.parse(currentMarkdown);
+                    document.getElementById('btn-save').classList.remove('hidden');
                     
                     document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
                     document.getElementById('badge-status').textContent = "Selesai";
@@ -178,6 +218,32 @@ $active_menu = 'analisa';
                 document.getElementById('btn-analisa').disabled = false;
                 document.getElementById('btn-analisa').classList.remove('opacity-50', 'cursor-not-allowed');
             });
+        }
+
+        function simpanHasil() {
+            if (!currentMarkdown) return;
+
+            const formData = new FormData();
+            formData.append('action', 'save_persona');
+            formData.append('content', currentMarkdown);
+
+            const btnSave = document.getElementById('btn-save');
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan...';
+
+            fetch('admin-analisa.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.text())
+            .then(text => {
+                btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
+                btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
+                btnSave.classList.replace('text-emerald-700', 'text-gray-500');
+                btnSave.disabled = true;
+                document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700";
+                document.getElementById('badge-status').textContent = "Tersimpan";
+            })
+            .catch(err => alert("Gagal menyimpan hasil: " + err));
         }
     </script>
 </body>
