@@ -34,6 +34,8 @@ $result = $conn->query("SELECT * FROM pengaturan_popup WHERE id = 1");
 if ($result && $result->num_rows > 0) {
     $data = $result->fetch_assoc();
 }
+
+$active_menu = 'popup';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -46,38 +48,8 @@ if ($result && $result->num_rows > 0) {
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-    <!-- SIDEBAR -->
-    <aside id="sidebar" class="bg-gray-900 text-white w-64 flex-shrink-0 hidden md:flex flex-col transition-all duration-300 z-20 h-full absolute md:relative">
-        <div class="h-16 flex items-center justify-center border-b border-gray-800 px-4">
-            <span class="text-xl font-bold text-emerald-400">
-                <i class="fas fa-leaf mr-2"></i>VQ Admin
-            </span>
-        </div>
-        <div class="flex-1 overflow-y-auto py-4">
-            <nav class="space-y-1 px-2">
-                <a href="admin.html" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition">
-                    <i class="fas fa-tachometer-alt w-6 text-center"></i><span class="ml-3 font-medium">Dashboard</span>
-                </a>
-                <div class="pt-4 pb-2"><p class="px-4 text-xs font-bold text-gray-500 uppercase">Marketing & Leads</p></div>
-                <a href="data-pipeline.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition">
-                    <i class="fas fa-columns w-6 text-center"></i><span class="ml-3 font-medium">Pipeline Prospek</span>
-                </a>
-                <a href="data-agen.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition">
-                    <i class="fas fa-handshake w-6 text-center"></i><span class="ml-3 font-medium">Data Agen</span>
-                </a>
-                <a href="admin-analisa.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                    <i class="fas fa-brain w-6 text-center text-purple-400"></i><span class="ml-3 font-medium">Analisa Buyer Persona</span>
-                </a>
-                <div class="pt-4 pb-2"><p class="px-4 text-xs font-bold text-gray-500 uppercase">Sistem</p></div>
-                <a href="admin-popup.php" class="flex items-center px-4 py-3 bg-emerald-600 text-white rounded-lg">
-                    <i class="fas fa-bullhorn w-6 text-center"></i><span class="ml-3 font-medium">Pengaturan Pop-up</span>
-                </a>
-            </nav>
-        </div>
-        <div class="p-4 border-t border-gray-800">
-            <a href="index.html" class="flex items-center text-sm text-gray-400 hover:text-white transition"><i class="fas fa-sign-out-alt w-5"></i> Keluar</a>
-        </div>
-    </aside>
+    <!-- INCLUDE SIDEBAR -->
+    <?php include 'sidebar.php'; ?>
 
     <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
