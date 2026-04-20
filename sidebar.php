@@ -17,10 +17,9 @@
                 <i class="fas fa-tachometer-alt w-6 text-center"></i>
                 <span class="ml-3 font-medium">Dashboard</span>
             </a>
-            <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+            <a href="admin-spmb.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
                 <i class="fas fa-user-graduate w-6 text-center"></i>
                 <span class="ml-3 font-medium">Data Pendaftar SPMB</span>
-                <span class="ml-auto bg-rose-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">12</span>
             </a>
             <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
                 <i class="fas fa-users w-6 text-center"></i>

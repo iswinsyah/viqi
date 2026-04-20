@@ -34,7 +34,7 @@
                     <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
                     <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Program</a>
                     <a href="asrama.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Asrama</a>
-                    <a href="admin.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Admin</a>
+                    <a href="admin.php" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Admin</a>
                 </nav>
                 <div class="flex items-center md:hidden">
                     <button id="mobile-menu-btn" class="text-gray-600 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-md p-2">
@@ -94,7 +94,7 @@
                                 <!-- Jenjang -->
                                 <div class="col-span-1 md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Jenjang yang Dituju <span class="text-red-500">*</span></label>
-                                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                    <select name="jenjang" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                         <option value="">-- Pilih Jenjang --</option>
                                         <option value="smp-putra">SMP (Putra)</option>
                                         <option value="smp-putri">SMP (Putri)</option>
@@ -106,45 +106,45 @@
                                 <!-- Nama Lengkap -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap (Sesuai Akta) <span class="text-red-500">*</span></label>
-                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Muhammad Al Fatih">
+                                    <input type="text" name="nama_lengkap" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Muhammad Al Fatih">
                                 </div>
                                 <!-- Nama Panggilan -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Panggilan</label>
-                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Fatih">
+                                    <input type="text" name="nama_panggilan" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Fatih">
                                 </div>
 
                                 <!-- NIK -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Induk Kependudukan (NIK) <span class="text-red-500">*</span></label>
-                                    <input type="number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="16 Digit Angka Sesuai KK">
+                                    <input type="number" name="nik" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="16 Digit Angka Sesuai KK">
                                 </div>
                                 <!-- NISN -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">NISN <span class="text-red-500">*</span></label>
-                                    <input type="number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="10 Digit Angka">
+                                    <input type="number" name="nisn" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="10 Digit Angka">
                                 </div>
 
                                 <!-- Tempat & Tanggal Lahir -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Tempat Lahir <span class="text-red-500">*</span></label>
-                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Kota/Kabupaten">
+                                    <input type="text" name="tempat_lahir" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Kota/Kabupaten">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Lahir <span class="text-red-500">*</span></label>
-                                    <input type="date" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                    <input type="date" name="tanggal_lahir" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                 </div>
 
                                 <!-- Alamat -->
                                 <div class="col-span-1 md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Alamat Lengkap <span class="text-red-500">*</span></label>
-                                    <textarea rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nama Jalan, RT/RW, Kelurahan, Kecamatan"></textarea>
+                                    <textarea name="alamat" required rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nama Jalan, RT/RW, Kelurahan, Kecamatan"></textarea>
                                 </div>
 
                                 <!-- Penyakit -->
                                 <div class="col-span-1 md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Riwayat Penyakit Khusus / Alergi</label>
-                                    <textarea rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Kosongkan jika tidak ada. Sangat penting bagi Musyrif Asrama."></textarea>
+                                    <textarea name="riwayat_penyakit" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Kosongkan jika tidak ada. Sangat penting bagi Musyrif Asrama."></textarea>
                                 </div>
                             </div>
 
@@ -163,13 +163,13 @@
                                 <!-- Nama Sekolah -->
                                 <div class="col-span-1 md:col-span-2">
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Sekolah Asal <span class="text-red-500">*</span></label>
-                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: SDIT Nurul Ilmi / SMPN 1 Jakarta">
+                                    <input type="text" name="asal_sekolah" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: SDIT Nurul Ilmi / SMPN 1 Jakarta">
                                 </div>
 
                                 <!-- Status Sekolah & Tahun Lulus -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Status Sekolah Asal</label>
-                                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                    <select name="status_sekolah" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                         <option value="negeri">Negeri</option>
                                         <option value="swasta">Swasta</option>
                                         <option value="lainnya">Lainnya (Home Schooling/PKBM)</option>
@@ -177,7 +177,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Tahun Lulus</label>
-                                    <input type="number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 2025" value="2026">
+                                    <input type="number" name="tahun_lulus" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 2025" value="2026">
                                 </div>
 
                                 <!-- Data Tahfidz (Pemetaan Awal) -->
@@ -187,7 +187,7 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Kemampuan Membaca Saat Ini</label>
-                                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                    <select name="kemampuan_baca" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                         <option value="">-- Pilih --</option>
                                         <option value="iqra">Masih Iqra / Qiroati</option>
                                         <option value="terbata">Al-Quran (Masih Terbata-bata)</option>
@@ -197,7 +197,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Hafalan Saat Ini (Juz)</label>
-                                    <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                    <select name="jumlah_hafalan" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                         <option value="0">Belum ada / Juz 30 belum selesai</option>
                                         <option value="1">1 Juz (Juz 30)</option>
                                         <option value="2">2 Juz (Juz 30 & 29)</option>
@@ -225,31 +225,31 @@
                                 <!-- Identitas Ayah & Ibu -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap Ayah <span class="text-red-500">*</span></label>
-                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nama Ayah Kandung">
+                                    <input type="text" name="nama_ayah" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nama Ayah Kandung">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Pekerjaan Ayah</label>
-                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: PNS / Wiraswasta / Karyawan">
+                                    <input type="text" name="pekerjaan_ayah" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: PNS / Wiraswasta / Karyawan">
                                 </div>
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap Ibu <span class="text-red-500">*</span></label>
-                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nama Ibu Kandung">
+                                    <input type="text" name="nama_ibu" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nama Ibu Kandung">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Pekerjaan Ibu</label>
-                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Ibu Rumah Tangga">
+                                    <input type="text" name="pekerjaan_ibu" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Ibu Rumah Tangga">
                                 </div>
 
                                 <!-- Kontak -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">No. WhatsApp Aktif <span class="text-red-500">*</span></label>
-                                    <input type="number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 08123456789">
+                                    <input type="number" name="whatsapp_ortu" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 08123456789">
                                     <p class="text-xs text-gray-500 mt-1">Digunakan untuk informasi tagihan dan grup wali santri.</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Email Orang Tua <span class="text-red-500">*</span></label>
-                                    <input type="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="contoh@gmail.com">
+                                    <input type="email" name="email_ortu" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="contoh@gmail.com">
                                 </div>
                                 
                                 <!-- Hidden Input untuk Referral Agen -->
@@ -264,27 +264,27 @@
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">1. Pas Foto Calon Santri <span class="text-red-500">*</span></label>
-                                        <input type="file" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                        <input type="file" name="foto_santri" required accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">2. Foto Akte Kelahiran <span class="text-red-500">*</span></label>
-                                        <input type="file" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                        <input type="file" name="foto_akta" required accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">3. Foto Ijazah (Jika ada)</label>
-                                        <input type="file" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                        <input type="file" name="foto_ijazah" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">4. Foto Kartu Keluarga (KK) <span class="text-red-500">*</span></label>
-                                        <input type="file" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                        <input type="file" name="foto_kk" required accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">5. Foto KTP Orang Tua / Wali <span class="text-red-500">*</span></label>
-                                        <input type="file" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                        <input type="file" name="foto_ktp" required accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 mb-1">6. Bukti Transfer Uang Pendaftaran <span class="text-red-500">*</span></label>
-                                        <input type="file" accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                        <input type="file" name="bukti_transfer" required accept="image/*,.pdf" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
                                     </div>
                                 </div>
                             </div>
@@ -426,6 +426,40 @@
                 const refInput = document.getElementById('spmb-ref');
                 if(refInput) refInput.value = savedRef;
             }
+
+            // TANGANI SUBMIT FORM KE DATABASE
+            const form = document.getElementById('spmb-form');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Mengirim Data...';
+                submitBtn.disabled = true;
+
+                const formData = new FormData(form);
+                
+                fetch('simpan-spmb.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.status === 'success') {
+                        alert('Alhamdulillah! ' + data.message);
+                        window.location.href = 'index.html'; // Arahkan kembali ke beranda
+                    } else {
+                        alert('Gagal: ' + data.message);
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
+                })
+                .catch(err => {
+                    alert('Terjadi kesalahan koneksi server. Silakan coba beberapa saat lagi.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                });
+            });
         });
     </script>
 </body>
