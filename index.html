@@ -474,26 +474,37 @@
 
     <!-- MODAL DOWNLOAD BROSUR (LEAD CAPTURE) -->
     <div id="brosur-modal" class="fixed inset-0 bg-black bg-opacity-75 z-[60] hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden relative transform transition-all">
-            <button onclick="document.getElementById('brosur-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none">
-                <i class="fas fa-times text-xl"></i>
+        <!-- Lebar pop-up diubah dari max-w-md menjadi max-w-4xl untuk menampung gambar -->
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden relative transform transition-all flex flex-col md:flex-row">
+            <button onclick="document.getElementById('brosur-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none z-10">
+                <i class="fas fa-times text-2xl"></i>
             </button>
-            <div class="bg-teal-600 px-6 py-4 text-white text-center">
-                <h3 class="text-xl font-bold">Daftar Parenting School & E-Book</h3>
+            
+            <!-- SISI KIRI: Cover E-Book Dummy (Sembunyi di HP, Tampil di Laptop) -->
+            <div class="md:w-5/12 bg-teal-50 hidden md:flex flex-col items-center justify-center p-8 border-r border-teal-100">
+                <!-- Gambar Dummy dari Unsplash -->
+                <img src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80" alt="Cover E-Book" class="w-48 h-64 object-cover rounded-lg shadow-lg mb-6 border-4 border-white transform -rotate-3 hover:rotate-0 transition duration-300">
+                <h4 class="font-bold text-teal-900 text-lg text-center leading-tight">E-Book Spesial:</h4>
+                <p class="text-teal-700 text-sm text-center font-medium mt-2">"Rahasia Mendidik Generasi Alpha Menjadi Hafidz Quran Berkarakter"</p>
             </div>
-            <div class="p-6">
-                <p class="text-gray-600 text-sm mb-6 text-center">Dapatkan akses kelas eksklusif "Parenting Generasi Alpha" dan gratis unduh E-Book panduannya.</p>
+
+            <!-- SISI KANAN: Form Pengisian Leads -->
+            <div class="p-8 md:w-7/12 flex flex-col justify-center">
+                <div class="text-center mb-6">
+                    <h3 class="text-2xl font-extrabold text-gray-900 mb-2">Akses Parenting School <span class="text-amber-500">& E-Book Gratis!</span></h3>
+                    <p class="text-gray-600 text-sm">Masukkan data Anda untuk mendapatkan tautan unduhan E-Book dan jadwal kelas langsung ke WhatsApp Anda.</p>
+                </div>
                 <form id="lead-form" onsubmit="handleDownload(event)">
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nama Anda <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Nama Ayah / Ibu <span class="text-red-500">*</span></label>
                         <input type="text" required id="lead-nama" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: Bpk. Fulan">
                     </div>
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">No. WhatsApp <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">No. WhatsApp Aktif <span class="text-red-500">*</span></label>
                         <input type="number" required id="lead-wa" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 081234567890">
                     </div>
                     <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Pilihan Partisipasi <span class="text-red-500">*</span></label>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Pilihan Partisipasi <span class="text-red-500">*</span></label>
                         <select required id="lead-pilihan" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                             <option value="acara_dan_ebook">Daftar Acara & Unduh E-Book</option>
                             <option value="hanya_ebook">Hanya Unduh E-Book</option>
@@ -503,7 +514,7 @@
                     <input type="hidden" id="lead-ref" value="organik">
                     
                     <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-teal-900 font-bold py-3 px-4 rounded-lg transition shadow-md flex items-center justify-center">
-                        <i class="fas fa-check-circle mr-2"></i> Daftar Sekarang
+                        <i class="fas fa-download mr-2"></i> Download E-Book Sekarang
                     </button>
                 </form>
             </div>
@@ -590,6 +601,14 @@
                 }
                 waBtn.href = `https://wa.me/6281234567890?text=${encodeURIComponent(waText)}`;
             }
+            
+            // 5. Script Auto Pop-up (Memancing Leads setelah 5 detik)
+            if (!sessionStorage.getItem('ebook_popup_shown')) {
+                setTimeout(() => {
+                    document.getElementById('brosur-modal').classList.remove('hidden');
+                    sessionStorage.setItem('ebook_popup_shown', 'true');
+                }, 5000);
+            }
         });
 
         // Fungsi Menangani Form Prospek Brosur
@@ -600,18 +619,33 @@
             const pilihan = document.getElementById('lead-pilihan').value;
             const ref = document.getElementById('lead-ref').value;
             
-            console.log("Data Prospek Tertangkap: ", { Nama: nama, WhatsApp: wa, Pilihan: pilihan, Referral: ref });
-            
-            // Tutup Pop-up & trigger download
-            document.getElementById('brosur-modal').classList.add('hidden');
-            window.open('ebook-parenting.pdf', '_blank'); // Ganti dengan URL file PDF E-book nanti
-            
-            if(pilihan === 'acara_dan_ebook') {
-                alert(`Terima kasih ${nama}. Anda berhasil terdaftar di acara Parenting School! E-book sedang diunduh, dan Admin kami akan segera menghubungi nomor WA Anda untuk info jadwal acara.`);
-            } else {
-                alert(`Terima kasih ${nama}. E-book Parenting sedang diunduh. Selamat membaca!`);
-            }
-            e.target.reset(); // Kosongkan form
+            // Kirim Data ke Database (simpan-leads.php) menggunakan Fetch API
+            const formData = new FormData();
+            formData.append('nama', nama);
+            formData.append('whatsapp', wa);
+            formData.append('jenis_lead', pilihan);
+            formData.append('kode_ref', ref);
+
+            fetch('simpan-leads.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                // Tutup Pop-up
+                document.getElementById('brosur-modal').classList.add('hidden');
+                
+                // Trigger download dummy file
+                window.open('ebook-parenting.pdf', '_blank');
+                
+                alert(`Terima kasih ${nama}. File E-Book sedang disiapkan. Admin kami juga akan mengirimkan info lebih lanjut ke WhatsApp Anda.`);
+                
+                e.target.reset(); // Kosongkan form setelah sukses
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan jaringan saat menyimpan data. Silakan coba lagi.');
+            });
         }
     </script>
 </body>
