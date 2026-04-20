@@ -162,11 +162,19 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
             }
             btnSave.disabled = false;
 
+            // INJEKSI PROMPT KETAT KE DALAM PAYLOAD (Mencegah basa-basi AI dan simbol Markdown)
+            const payloadLeads = JSON.parse(JSON.stringify(rawLeadsData));
+            payloadLeads.unshift({
+                jenis_lead: "SYSTEM_COMMAND",
+                sumber_info: `ATURAN WAJIB: 1. LANGSUNG MULAI DARI JUDUL ARTIKEL. 2. DILARANG KERAS menuliskan teks basa-basi/sapaan AI seperti "Tentu, berikut adalah artikelnya...". 3. DILARANG menggunakan simbol Markdown seperti bintang (*) atau pagar (#). Tulis menggunakan format paragraf teks biasa yang rapi agar siap disalin-tempel (copy-paste) ke blog!`,
+                status: "URGENT"
+            });
+
             // Tembak data ke GAS dengan TYPE = 'seo'
             fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ leads: rawLeadsData, type: 'seo', date: dateInput })
+                body: JSON.stringify({ leads: payloadLeads, type: 'seo', date: dateInput })
             })
             .then(response => response.json())
             .then(data => {
