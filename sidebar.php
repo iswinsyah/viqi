@@ -70,6 +70,10 @@
                 <i class="fas fa-images w-6 text-center"></i>
                 <span class="ml-3 font-medium">Galeri Kegiatan</span>
             </a>
+            <a href="admin-media.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                <i class="fas fa-folder-open w-6 text-center text-indigo-400"></i>
+                <span class="ml-3 font-medium">Penyimpanan Media</span>
+            </a>
             
             <div class="pt-4 pb-2">
                 <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Sistem</p>
