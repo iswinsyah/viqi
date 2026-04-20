@@ -132,7 +132,40 @@ $columns = [
                     <i class="fas fa-handshake w-6 text-center"></i>
                     <span class="ml-3 font-medium">Data Agen</span>
                 </a>
+
+                <div class="pt-4 pb-2">
+                    <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Konten Web</p>
+                </div>
+                
+                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-file-alt w-6 text-center"></i>
+                    <span class="ml-3 font-medium">Artikel & Berita</span>
+                </a>
+                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-chalkboard-teacher w-6 text-center"></i>
+                    <span class="ml-3 font-medium">Profil Pengajar</span>
+                </a>
+                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-images w-6 text-center"></i>
+                    <span class="ml-3 font-medium">Galeri Kegiatan</span>
+                </a>
+                
+                <div class="pt-4 pb-2">
+                    <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Sistem</p>
+                </div>
+                
+                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-cog w-6 text-center"></i>
+                    <span class="ml-3 font-medium">Pengaturan Web</span>
+                </a>
             </nav>
+        </div>
+        
+        <!-- User Footer Sidebar -->
+        <div class="p-4 border-t border-gray-800">
+            <a href="index.html" class="flex items-center w-full px-4 py-2 text-sm text-gray-400 hover:text-white transition">
+                <i class="fas fa-sign-out-alt w-5"></i> Keluar
+            </a>
         </div>
     </aside>
 

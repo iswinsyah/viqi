@@ -120,10 +120,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 </div>
                 
                 <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-file-alt w-6 text-center"></i>
+                    <span class="ml-3 font-medium">Artikel & Berita</span>
+                </a>
+                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-chalkboard-teacher w-6 text-center"></i>
+                    <span class="ml-3 font-medium">Profil Pengajar</span>
+                </a>
+                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                    <i class="fas fa-images w-6 text-center"></i>
+                    <span class="ml-3 font-medium">Galeri Kegiatan</span>
+                </a>
+                
+                <div class="pt-4 pb-2">
+                    <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Sistem</p>
+                </div>
+                
+                <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
                     <i class="fas fa-cog w-6 text-center"></i>
                     <span class="ml-3 font-medium">Pengaturan Web</span>
                 </a>
             </nav>
+        </div>
+        
+        <!-- User Footer Sidebar -->
+        <div class="p-4 border-t border-gray-800">
+            <a href="index.html" class="flex items-center w-full px-4 py-2 text-sm text-gray-400 hover:text-white transition">
+                <i class="fas fa-sign-out-alt w-5"></i> Keluar
+            </a>
         </div>
     </aside>
 
@@ -249,7 +273,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <tbody class="bg-white divide-y divide-gray-200">
                             <!-- SCRIPT PHP UNTUK MENAMPILKAN DATA ASLI -->
                             <?php
-                            $sql_tampil = "SELECT * FROM agen ORDER BY id DESC";
+                            $sql_tampil = "SELECT a.*, (SELECT COUNT(id) FROM leads l WHERE l.kode_ref = a.kode_ref OR l.kode_ref = a.whatsapp) AS total_leads FROM agen a ORDER BY a.id DESC";
                             $result = $conn->query($sql_tampil);
 
                             if ($result && $result->num_rows > 0) {
@@ -267,7 +291,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-xs border border-gray-200">?ref=<?= htmlspecialchars($row['whatsapp']) ?></span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">0 Orang</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold"><?= $row['total_leads'] ?> Orang</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <a href="data-agen.php?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
                                         <a href="data-agen.php?hapus_id=<?= $row['id'] ?>" onclick="return confirm('Apakah Anda yakin ingin menghapus agen <?= addslashes($row['nama']) ?>?');" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
