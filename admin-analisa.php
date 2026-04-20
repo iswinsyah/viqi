@@ -102,7 +102,7 @@ $leads_json = json_encode($leads_data);
 
                     <div class="bg-purple-50 rounded-xl shadow-sm border border-purple-100 p-6">
                         <h4 class="font-bold text-purple-900 mb-2"><i class="fas fa-lightbulb text-amber-500 mr-2"></i> Mengapa Fitur Ini Penting?</h4>
-                        <p class="text-sm text-purple-800 leading-relaxed">AI akan mempelajari darimana prospek Anda berasal (Iklan, Brosur, dll) dan melihat interaksi mereka (Cek Biaya, Download E-Book). Ini membantu Anda menyusun materi promosi yang lebih tepat sasaran!</p>
+                        <p class="text-sm text-purple-800 leading-relaxed">AI akan mempelajari darimana prospek Anda berasal (Iklan, Brosur, dll) dan melihat interaksi mereka. Ini membantu Anda menyusun materi promosi sekaligus merekomendasikan platform media (Ads/Organik) yang paling efektif!</p>
                     </div>
                 </div>
 
