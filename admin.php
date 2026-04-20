@@ -18,16 +18,14 @@ $active_menu = 'dashboard';
     <!-- MAIN CONTENT AREA -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         
-        <!--    <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4">
+        <!-- TOP HEADER -->
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
+            <div class="flex items-center">
+                <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
                 <div class="hidden sm:block">
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <i class="fas fa-search text-gray-400"></i>
-                        </span>
-                        <input type="text" placeholder="Cari santri atau artikel..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent w-64">
-                    </div>
+                    <h2 class="font-bold text-gray-800">Sistem Informasi Manajemen (SIM)</h2>
                 </div>
             </div>
             
@@ -48,7 +46,7 @@ $active_menu = 'dashboard';
         <!-- MAIN DASHBOARD CONTENT -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6">
             <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                <h1 class="text-2xl font-bold text-gray-900">Dashboard Utama</h1>
                 <button class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
                     <i class="fas fa-download mr-2"></i> Unduh Laporan
                 </button>
@@ -102,7 +100,7 @@ $active_menu = 'dashboard';
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h2 class="font-bold text-gray-800">Pendaftar SPMB Terbaru</h2>
-                    <a href="#" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium">Lihat Semua</a>
+                    <a href="admin-spmb.php" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium">Lihat Semua</a>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -127,7 +125,7 @@ $active_menu = 'dashboard';
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">Menunggu Tes</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="#" class="text-emerald-600 hover:text-emerald-900 mr-3">Detail</a>
+                                    <a href="admin-spmb.php" class="text-emerald-600 hover:text-emerald-900 mr-3">Detail</a>
                                 </td>
                             </tr>
                             <tr class="hover:bg-gray-50 transition">
@@ -141,7 +139,7 @@ $active_menu = 'dashboard';
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-100 text-emerald-800">Lulus Seleksi</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="#" class="text-emerald-600 hover:text-emerald-900 mr-3">Detail</a>
+                                    <a href="admin-spmb.php" class="text-emerald-600 hover:text-emerald-900 mr-3">Detail</a>
                                 </td>
                             </tr>
                         </tbody>
@@ -150,12 +148,12 @@ $active_menu = 'dashboard';
             </div>
 
             <!-- TABEL DATA AGEN (REFERRAL) -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8 mb-8">
                 <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                     <h2 class="font-bold text-gray-800">Performa Agen (Referral)</h2>
-                    <button class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition shadow-sm">
-                        <i class="fas fa-plus mr-1"></i> Tambah Agen
-                    </button>
+                    <a href="data-agen.php" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition shadow-sm">
+                        <i class="fas fa-arrow-right mr-1"></i> Ke Data Agen
+                    </a>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -165,7 +163,6 @@ $active_menu = 'dashboard';
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Kode Referral</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leads (Brosur)</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Konversi Daftar</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
@@ -179,25 +176,6 @@ $active_menu = 'dashboard';
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">45 Orang</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-emerald-600 font-bold">5 Santri</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
-                                </td>
-                            </tr>
-                            <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="font-medium text-gray-900">Agen Depok 01</div>
-                                    <div class="text-sm text-gray-500">0856-7777-6666</div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-sm border border-gray-200">agendepok01</span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">12 Orang</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-emerald-600 font-bold">1 Santri</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="#" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-                                    <a href="#" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
-                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -216,13 +194,15 @@ $active_menu = 'dashboard';
             const overlay = document.getElementById('sidebar-overlay');
 
             function toggleSidebar() {
-                sidebar.classList.toggle('hidden');
-                overlay.classList.toggle('hidden');
+                if(sidebar && overlay) {
+                    sidebar.classList.toggle('hidden');
+                    overlay.classList.toggle('hidden');
+                }
             }
 
-            openBtn.addEventListener('click', toggleSidebar);
-            closeBtn.addEventListener('click', toggleSidebar);
-            overlay.addEventListener('click', toggleSidebar);
+            if(openBtn) openBtn.addEventListener('click', toggleSidebar);
+            if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
+            if(overlay) overlay.addEventListener('click', toggleSidebar);
         });
     </script>
 </body>
