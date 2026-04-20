@@ -11,6 +11,16 @@ if ($result && $result->num_rows > 0) {
     }
 }
 $leads_json = json_encode($leads_data);
+
+// Proses Simpan Hasil Analisa ke file lokal
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_kalender') {
+    $content = $_POST['content'] ?? '';
+    file_put_contents('saved_kalender.txt', $content);
+    echo "Sukses";
+    exit;
+}
+
+$saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_kalender.txt') : '';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -75,12 +85,15 @@ $leads_json = json_encode($leads_data);
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[500px] flex flex-col overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                     <h3 class="font-bold text-gray-800"><i class="fas fa-table mr-2"></i> Tabel Jadwal Konten</h3>
-                    <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-200 text-gray-600">Menunggu Perintah</span>
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan Hasil</button>
+                        <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full <?= !empty($saved_kalender) ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600' ?>"><?= !empty($saved_kalender) ? 'Tersimpan' : 'Menunggu Perintah' ?></span>
+                    </div>
                 </div>
                 
                 <div id="result-container" class="p-6 flex-1 overflow-x-auto relative">
                     <!-- Layar Awal -->
-                    <div id="state-idle" class="flex flex-col items-center justify-center h-full text-gray-400 py-16 text-center">
+                    <div id="state-idle" class="<?= !empty($saved_kalender) ? 'hidden' : 'flex flex-col items-center justify-center h-full text-gray-400 py-16 text-center' ?>">
                         <i class="fas fa-calendar-plus text-6xl mb-4 opacity-50"></i>
                         <p>Klik tombol di atas untuk merancang kalender 30 hari Anda.</p>
                     </div>
@@ -93,7 +106,7 @@ $leads_json = json_encode($leads_data);
                     </div>
 
                     <!-- Layar Hasil -->
-                    <div id="state-result" class="hidden markdown-body min-w-[800px]">
+                    <div id="state-result" class="<?= !empty($saved_kalender) ? 'markdown-body min-w-[800px]' : 'hidden markdown-body min-w-[800px]' ?>">
                         <!-- Hasil render Markdown dari Gemini akan masuk ke sini -->
                     </div>
                 </div>
@@ -104,6 +117,21 @@ $leads_json = json_encode($leads_data);
     <script>
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec"; 
         const rawLeadsData = <?= $leads_json ?>;
+        const savedKalenderMarkdown = <?= json_encode($saved_kalender) ?>;
+        let currentMarkdown = savedKalenderMarkdown;
+
+        // Render data tersimpan saat halaman dimuat
+        document.addEventListener("DOMContentLoaded", () => {
+            if (savedKalenderMarkdown) {
+                document.getElementById('state-result').innerHTML = marked.parse(savedKalenderMarkdown);
+                const btnSave = document.getElementById('btn-save');
+                btnSave.classList.remove('hidden');
+                btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
+                btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
+                btnSave.classList.replace('text-emerald-700', 'text-gray-500');
+                btnSave.disabled = true;
+            }
+        });
 
         function jalankanGenerator() {
             if (rawLeadsData.length === 0) {
@@ -119,6 +147,16 @@ $leads_json = json_encode($leads_data);
             document.getElementById('badge-status').textContent = "Membuat Konten...";
             document.getElementById('btn-generate').disabled = true;
             document.getElementById('btn-generate').classList.add('opacity-50', 'cursor-not-allowed');
+            
+            // Reset tombol save
+            const btnSave = document.getElementById('btn-save');
+            btnSave.classList.add('hidden');
+            btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan Hasil';
+            if(btnSave.classList.contains('bg-gray-100')) {
+                btnSave.classList.replace('bg-gray-100', 'bg-emerald-100');
+                btnSave.classList.replace('text-gray-500', 'text-emerald-700');
+            }
+            btnSave.disabled = false;
 
             // Tembak data ke GAS, ditambahkan TYPE = 'kalender'
             fetch(GAS_WEB_APP_URL, {
@@ -129,7 +167,9 @@ $leads_json = json_encode($leads_data);
             .then(response => response.json())
             .then(data => {
                 if(data.status === "success") {
-                    document.getElementById('state-result').innerHTML = marked.parse(data.result);
+                    currentMarkdown = data.result;
+                    document.getElementById('state-result').innerHTML = marked.parse(currentMarkdown);
+                    document.getElementById('btn-save').classList.remove('hidden');
                     document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
                     document.getElementById('badge-status').textContent = "Selesai";
                 } else {
@@ -148,6 +188,32 @@ $leads_json = json_encode($leads_data);
                 document.getElementById('btn-generate').disabled = false;
                 document.getElementById('btn-generate').classList.remove('opacity-50', 'cursor-not-allowed');
             });
+        }
+
+        function simpanHasil() {
+            if (!currentMarkdown) return;
+
+            const formData = new FormData();
+            formData.append('action', 'save_kalender');
+            formData.append('content', currentMarkdown);
+
+            const btnSave = document.getElementById('btn-save');
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan...';
+
+            fetch('admin-kalender.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.text())
+            .then(text => {
+                btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
+                btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
+                btnSave.classList.replace('text-emerald-700', 'text-gray-500');
+                btnSave.disabled = true;
+                document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700";
+                document.getElementById('badge-status').textContent = "Tersimpan";
+            })
+            .catch(err => alert("Gagal menyimpan hasil: " + err));
         }
     </script>
 </body>
