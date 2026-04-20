@@ -78,9 +78,13 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
                         <p class="text-sm text-gray-500">Membaca <?= count($leads_data) ?> data prospek untuk menemukan ide konten paling relevan.</p>
                     </div>
                 </div>
-                <button id="btn-generate" onclick="jalankanGenerator()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center group whitespace-nowrap">
-                    <i class="fas fa-magic mr-2 group-hover:rotate-12 transition transform"></i> Buat Kalender Sekarang
-                </button>
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <span class="text-sm text-gray-500 font-medium hidden md:block">Mulai:</span>
+                    <input type="date" id="tgl-kalender" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500 flex-1 md:w-auto">
+                    <button id="btn-generate" onclick="jalankanGenerator()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center group whitespace-nowrap">
+                        <i class="fas fa-magic mr-2 group-hover:rotate-12 transition transform"></i> Buat Kalender
+                    </button>
+                </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[500px] flex flex-col overflow-hidden">
@@ -134,9 +138,18 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
                 btnSave.disabled = true;
                 document.getElementById('btn-save-as').classList.remove('hidden');
             }
+
+            // Set tanggal hari ini sebagai default
+            const tglInput = document.getElementById('tgl-kalender');
+            if(tglInput) tglInput.valueAsDate = new Date();
         });
 
         function jalankanGenerator() {
+            const dateInput = document.getElementById('tgl-kalender').value;
+            if (!dateInput) {
+                alert("Silakan pilih tanggal mulai kalender terlebih dahulu!");
+                return;
+            }
             if (rawLeadsData.length === 0) {
                 alert("Belum ada data prospek di Pipeline untuk dijadikan acuan!");
                 return;
@@ -162,11 +175,19 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
             }
             btnSave.disabled = false;
 
+            // INJEKSI PROMPT KETAT KE DALAM PAYLOAD (Teknik Prompt Injection agar AI patuh membuat tabel)
+            const payloadLeads = JSON.parse(JSON.stringify(rawLeadsData));
+            payloadLeads.unshift({
+                jenis_lead: "SYSTEM_COMMAND",
+                sumber_info: `PENTING: WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: ${dateInput}. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat |. DILARANG memberikan teks pendahuluan yang panjang, LANGSUNG TAMPILKAN TABEL MARKDOWN!`,
+                status: "URGENT"
+            });
+
             // Tembak data ke GAS, ditambahkan TYPE = 'kalender'
             fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ leads: rawLeadsData, type: 'kalender' })
+                body: JSON.stringify({ leads: payloadLeads, type: 'kalender', date: dateInput })
             })
             .then(response => response.json())
             .then(data => {
