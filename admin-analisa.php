@@ -1,4 +1,5 @@
 <?php
+require_once 'auth.php';
 require_once 'koneksi.php';
 
 // Ambil data perilaku Leads dari Pipeline untuk dianalisa (Maksimal 200 data terbaru agar tidak membebani token)

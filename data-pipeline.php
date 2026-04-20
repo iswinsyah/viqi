@@ -1,4 +1,5 @@
 <?php
+require_once 'auth.php';
 require_once 'koneksi.php';
 
 // Otomatis tambahkan kolom status & jenis_lead jika belum ada di tabel leads

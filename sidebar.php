@@ -89,7 +89,7 @@
     </div>
     
     <div class="p-4 border-t border-gray-800">
-        <a href="index.html" class="flex items-center w-full px-4 py-2 text-sm text-gray-400 hover:text-white transition">
+        <a href="logout.php" class="flex items-center w-full px-4 py-2 text-sm text-gray-400 hover:text-white transition">
             <i class="fas fa-sign-out-alt w-5"></i> Keluar
         </a>
     </div>

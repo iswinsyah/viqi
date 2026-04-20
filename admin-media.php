@@ -1,4 +1,5 @@
 <?php
+require_once 'auth.php';
 require_once 'koneksi.php';
 
 // Buat folder uploads jika belum ada
