@@ -98,7 +98,8 @@ $active_menu = 'analisa';
                         <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                             <h3 class="font-bold text-gray-800"><i class="fas fa-chart-pie mr-2"></i> Laporan Analisa</h3>
                             <div class="flex items-center space-x-2">
-                                <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan Hasil</button>
+                                <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan</button>
+                                <button id="btn-save-as" onclick="simpanSebagai()" class="hidden bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-indigo-200"><i class="fas fa-file-download mr-1"></i> Save As</button>
                                 <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full <?= !empty($saved_persona) ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600' ?>"><?= !empty($saved_persona) ? 'Tersimpan' : 'Menunggu Perintah' ?></span>
                             </div>
                         </div>
@@ -148,6 +149,7 @@ $active_menu = 'analisa';
                 btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
                 btnSave.classList.replace('text-emerald-700', 'text-gray-500');
                 btnSave.disabled = true;
+                document.getElementById('btn-save-as').classList.remove('hidden');
             }
         });
 
@@ -174,7 +176,8 @@ $active_menu = 'analisa';
             // Reset tombol save
             const btnSave = document.getElementById('btn-save');
             btnSave.classList.add('hidden');
-            btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan Hasil';
+            btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan';
+            document.getElementById('btn-save-as').classList.add('hidden');
             if(btnSave.classList.contains('bg-gray-100')) {
                 btnSave.classList.replace('bg-gray-100', 'bg-emerald-100');
                 btnSave.classList.replace('text-gray-500', 'text-emerald-700');
@@ -196,6 +199,7 @@ $active_menu = 'analisa';
                     currentMarkdown = data.result;
                     document.getElementById('state-result').innerHTML = marked.parse(currentMarkdown);
                     document.getElementById('btn-save').classList.remove('hidden');
+                    document.getElementById('btn-save-as').classList.remove('hidden');
                     
                     document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
                     document.getElementById('badge-status').textContent = "Selesai";
@@ -244,6 +248,20 @@ $active_menu = 'analisa';
                 document.getElementById('badge-status').textContent = "Tersimpan";
             })
             .catch(err => alert("Gagal menyimpan hasil: " + err));
+        }
+
+        function simpanSebagai() {
+            if (!currentMarkdown) return;
+            const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const tgl = new Date().toISOString().slice(0,10);
+            a.download = `Buyer_Persona_${tgl}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>

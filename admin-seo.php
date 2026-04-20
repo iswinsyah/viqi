@@ -84,7 +84,8 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                     <h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2"></i> Hasil Draft Artikel</h3>
                     <div class="flex items-center space-x-2">
-                        <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan Hasil</button>
+                        <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan</button>
+                        <button id="btn-save-as" onclick="simpanSebagai()" class="hidden bg-teal-100 text-teal-700 hover:bg-teal-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-teal-200"><i class="fas fa-file-download mr-1"></i> Save As</button>
                         <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full <?= !empty($saved_seo) ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600' ?>"><?= !empty($saved_seo) ? 'Tersimpan' : 'Menunggu Perintah' ?></span>
                     </div>
                 </div>
@@ -123,6 +124,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
                 btnSave.classList.replace('text-emerald-700', 'text-gray-500');
                 btnSave.disabled = true;
+                document.getElementById('btn-save-as').classList.remove('hidden');
             }
         });
 
@@ -151,7 +153,8 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
             // Reset tombol save
             const btnSave = document.getElementById('btn-save');
             btnSave.classList.add('hidden');
-            btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan Hasil';
+            btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan';
+            document.getElementById('btn-save-as').classList.add('hidden');
             if(btnSave.classList.contains('bg-gray-100')) {
                 btnSave.classList.replace('bg-gray-100', 'bg-emerald-100');
                 btnSave.classList.replace('text-gray-500', 'text-emerald-700');
@@ -170,6 +173,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                     currentMarkdown = data.result;
                     document.getElementById('state-result').innerHTML = marked.parse(currentMarkdown);
                     document.getElementById('btn-save').classList.remove('hidden');
+                document.getElementById('btn-save-as').classList.remove('hidden');
                     document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
                     document.getElementById('badge-status').textContent = "Selesai";
                 } else {
@@ -214,6 +218,20 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 document.getElementById('badge-status').textContent = "Tersimpan";
             })
             .catch(err => alert("Gagal menyimpan hasil: " + err));
+        }
+
+        function simpanSebagai() {
+            if (!currentMarkdown) return;
+            const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const tgl = document.getElementById('tgl-seo').value || new Date().toISOString().slice(0,10);
+            a.download = `Artikel_SEO_${tgl}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
         }
     </script>
 </body>
