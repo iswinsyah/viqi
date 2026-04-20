@@ -89,7 +89,10 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[500px] flex flex-col overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-800"><i class="fas fa-table mr-2"></i> Tabel Jadwal Konten</h3>
+                    <div>
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-table mr-2"></i> Tabel Jadwal Konten</h3>
+                        <p class="text-xs text-sky-600 mt-1 animate-pulse"><i class="fas fa-arrows-alt-h mr-1"></i> Geser (scroll) area tabel ke kanan untuk melihat kolom SEO</p>
+                    </div>
                     <div class="flex items-center space-x-2">
                         <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan</button>
                         <button id="btn-save-as" onclick="simpanSebagai()" class="hidden bg-sky-100 text-sky-700 hover:bg-sky-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-sky-200"><i class="fas fa-file-download mr-1"></i> Save As</button>
