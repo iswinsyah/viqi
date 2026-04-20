@@ -46,6 +46,14 @@
                 <i class="fas fa-calendar-alt w-6 text-center text-sky-400"></i>
                 <span class="ml-3 font-medium">Kalender Konten AI</span>
             </a>
+            <a href="admin-seo.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                <i class="fas fa-pen-nib w-6 text-center text-teal-400"></i>
+                <span class="ml-3 font-medium">Generator Artikel SEO</span>
+            </a>
+            <a href="admin-sosmed.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+                <i class="fas fa-mobile-alt w-6 text-center text-pink-400"></i>
+                <span class="ml-3 font-medium">Generator Konten Sosmed</span>
+            </a>
 
             <div class="pt-4 pb-2">
                 <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Konten Web</p>
