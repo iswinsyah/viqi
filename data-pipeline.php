@@ -4,6 +4,7 @@ require_once 'koneksi.php';
 // Otomatis tambahkan kolom status & jenis_lead jika belum ada di tabel leads
 $conn->query("ALTER TABLE leads ADD COLUMN status VARCHAR(50) DEFAULT 'Level 1' AFTER whatsapp");
 $conn->query("ALTER TABLE leads ADD COLUMN jenis_lead VARCHAR(50) DEFAULT 'brosur' AFTER status");
+$conn->query("ALTER TABLE leads ADD COLUMN sumber_info VARCHAR(100) DEFAULT '' AFTER jenis_lead");
 
 // Ambil semua data leads
 $sql = "SELECT * FROM leads ORDER BY id DESC";
@@ -229,8 +230,8 @@ $columns = [
                     <!-- Isi Kartu (Scrollable Vertical) -->
                     <div class="p-3 overflow-y-auto flex-1 space-y-3 kanban-cards" data-level="<?= $level ?>" style="scrollbar-width: none;">
                         <?php foreach($items as $lead) { 
-                            $badge_color = ($lead['jenis_lead'] == 'acara_dan_ebook') ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
-                            $badge_text = ($lead['jenis_lead'] == 'acara_dan_ebook') ? 'Acara & Ebook' : (($lead['jenis_lead'] == 'hanya_ebook') ? 'Hanya Ebook' : 'Brosur');
+                            $badge_color = ($lead['jenis_lead'] == 'acara_dan_ebook') ? 'bg-purple-100 text-purple-700' : (($lead['jenis_lead'] == 'biaya') ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700');
+                            $badge_text = ($lead['jenis_lead'] == 'acara_dan_ebook') ? 'Acara & Ebook' : (($lead['jenis_lead'] == 'hanya_ebook') ? 'Hanya Ebook' : (($lead['jenis_lead'] == 'biaya') ? 'Cek Biaya' : 'Brosur'));
                         ?>
                         <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-emerald-400 cursor-grab active:cursor-grabbing hover:shadow-md transition group" data-id="<?= $lead['id'] ?>">
                             <div class="flex justify-between items-start mb-2">
@@ -251,7 +252,9 @@ $columns = [
                             </div>
                             
                             <div class="flex justify-between items-center text-[10px] text-gray-400 border-t border-gray-100 pt-2">
-                                <span title="Kode Agen"><i class="fas fa-link mr-1"></i> <?= htmlspecialchars($lead['kode_ref']) ?></span>
+                                <span title="Kode Agen"><i class="fas fa-link mr-1"></i> <?= htmlspecialchars($lead['kode_ref']) ?>
+                                    <?php if(!empty($lead['sumber_info'])) { echo " | <i class='fas fa-info-circle ml-1 text-emerald-500'></i> " . htmlspecialchars($lead['sumber_info']); } ?>
+                                </span>
                                 <span title="Tanggal Masuk"><?= date('d M', strtotime($lead['created_at'])) ?></span>
                             </div>
                             
