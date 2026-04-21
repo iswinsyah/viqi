@@ -57,16 +57,17 @@
     </header>
 
     <!-- 1. ATTENTION: HERO SECTION -->
-    <section class="bg-teal-600 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center">
-            <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+    <section id="hero-section" class="bg-teal-600 text-white relative bg-cover bg-center" style="background-blend-mode: multiply;">
+        <div id="hero-overlay" class="absolute inset-0 bg-teal-900/80 z-0 hidden"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center text-center relative z-10">
+            <h1 id="hero-judul" class="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
                 Mencetak Hafidz Bersanad,<br class="hidden md:block"> di Lingkungan Nyaman ala Villa
             </h1>
-            <p class="mt-4 text-xl md:text-2xl text-teal-100 max-w-3xl mb-10">
+            <p id="hero-desc" class="mt-4 text-xl md:text-2xl text-teal-100 max-w-3xl mb-10">
                 Sekolah tahfidz berasrama dengan metode terstruktur, pendampingan adab, dan nutrisi optimal untuk kebahagiaan putra-putri Anda dalam menghafal Al-Quran.
             </p>
             <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <a href="#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl">Informasi Pendaftaran</a>
+                <a id="hero-cta" href="#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl">Informasi Pendaftaran</a>
                 <a href="virtual-tour.html" class="bg-white hover:bg-gray-100 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl flex items-center justify-center">
                     <i class="fas fa-play-circle mr-2 text-xl"></i> Virtual Tour Villa
                 </a>
@@ -80,31 +81,31 @@
             <!-- Card 1: Lingkungan Villa -->
             <div class="bg-white rounded-xl shadow-lg p-6 flex items-center border-t-4 border-emerald-500 transform transition hover:-translate-y-1">
                 <div class="bg-emerald-100 p-4 rounded-full mr-4 text-emerald-600 text-2xl w-14 h-14 flex items-center justify-center">
-                    <i class="fas fa-leaf"></i>
+                    <i id="usp1-ikon" class="fas fa-leaf"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-lg text-gray-900">Lingkungan ala Villa</h3>
-                    <p class="text-gray-500 text-sm">Asri, bersih, dan anti-stres</p>
+                    <h3 id="usp1-judul" class="font-bold text-lg text-gray-900">Lingkungan ala Villa</h3>
+                    <p id="usp1-desc" class="text-gray-500 text-sm">Asri, bersih, dan anti-stres</p>
                 </div>
             </div>
             <!-- Card 2: Tahfidz Bersanad -->
             <div class="bg-white rounded-xl shadow-lg p-6 flex items-center border-t-4 border-amber-500 transform transition hover:-translate-y-1">
                 <div class="bg-amber-100 p-4 rounded-full mr-4 text-amber-600 text-2xl w-14 h-14 flex items-center justify-center">
-                    <i class="fas fa-book-open"></i>
+                    <i id="usp2-ikon" class="fas fa-book-open"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-lg text-gray-900">Tahfidz Bersanad</h3>
-                    <p class="text-gray-500 text-sm">Target mutqin dibimbing ahlinya</p>
+                    <h3 id="usp2-judul" class="font-bold text-lg text-gray-900">Tahfidz Bersanad</h3>
+                    <p id="usp2-desc" class="text-gray-500 text-sm">Target mutqin dibimbing ahlinya</p>
                 </div>
             </div>
             <!-- Card 3: Gizi & Brain Food -->
             <div class="bg-white rounded-xl shadow-lg p-6 flex items-center border-t-4 border-blue-500 transform transition hover:-translate-y-1">
                 <div class="bg-blue-100 p-4 rounded-full mr-4 text-blue-600 text-2xl w-14 h-14 flex items-center justify-center">
-                    <i class="fas fa-apple-alt"></i>
+                    <i id="usp3-ikon" class="fas fa-apple-alt"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-lg text-gray-900">Gizi & Brain Food</h3>
-                    <p class="text-gray-500 text-sm">Nutrisi khusus kecerdasan otak</p>
+                    <h3 id="usp3-judul" class="font-bold text-lg text-gray-900">Gizi & Brain Food</h3>
+                    <p id="usp3-desc" class="text-gray-500 text-sm">Nutrisi khusus kecerdasan otak</p>
                 </div>
             </div>
         </div>
@@ -661,6 +662,26 @@
                         `;
                     });
                 }).catch(err => console.error('Gagal memuat artikel:', err));
+
+            // 7. Auto Fetch Pengaturan Hero & USP
+            fetch('api-hero.php?_=' + new Date().getTime())
+                .then(res => res.json())
+                .then(data => {
+                    if(!data.error) {
+                        if(data.hero_bg_url && data.hero_bg_url.trim() !== '') {
+                            document.getElementById('hero-section').style.backgroundImage = `url('${data.hero_bg_url}')`;
+                            document.getElementById('hero-overlay').classList.remove('hidden');
+                        }
+                        document.getElementById('hero-judul').innerHTML = data.hero_judul;
+                        document.getElementById('hero-desc').innerHTML = data.hero_deskripsi;
+                        document.getElementById('hero-cta').textContent = data.hero_cta_teks;
+                        document.getElementById('hero-cta').href = data.hero_cta_url;
+
+                        document.getElementById('usp1-ikon').className = data.usp1_ikon; document.getElementById('usp1-judul').textContent = data.usp1_judul; document.getElementById('usp1-desc').textContent = data.usp1_deskripsi;
+                        document.getElementById('usp2-ikon').className = data.usp2_ikon; document.getElementById('usp2-judul').textContent = data.usp2_judul; document.getElementById('usp2-desc').textContent = data.usp2_deskripsi;
+                        document.getElementById('usp3-ikon').className = data.usp3_ikon; document.getElementById('usp3-judul').textContent = data.usp3_judul; document.getElementById('usp3-desc').textContent = data.usp3_deskripsi;
+                    }
+                }).catch(err => console.error('Gagal memuat data Hero:', err));
         });
 
         // Fungsi Menangani Form Prospek Brosur

@@ -81,6 +81,10 @@
                 <i class="fas fa-bullhorn w-6 text-center"></i>
                 <span class="ml-3 font-medium">Pengaturan Pop-up</span>
             </a>
+            <a href="admin-hero.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= $active_menu == 'hero' ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-home w-6 text-center text-amber-400"></i>
+                <span class="ml-3 font-medium">Pengaturan Hero & USP</span>
+            </a>
             <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
                 <i class="fas fa-cog w-6 text-center"></i>
                 <span class="ml-3 font-medium">Pengaturan Web</span>
