@@ -17,6 +17,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS artikel (
 
 // Update otomatis struktur tabel jika belum ada kolom published_at
 $conn->query("ALTER TABLE artikel ADD COLUMN published_at DATETIME NULL AFTER status");
+$conn->query("ALTER TABLE artikel ADD COLUMN meta_title VARCHAR(255) AFTER published_at");
+$conn->query("ALTER TABLE artikel ADD COLUMN meta_description TEXT AFTER meta_title");
+$conn->query("ALTER TABLE artikel ADD COLUMN meta_keywords VARCHAR(255) AFTER meta_description");
 
 // Proses Hapus Data
 if (isset($_GET['hapus_id'])) {
@@ -43,6 +46,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $konten = $conn->real_escape_string($_POST['konten']);
     $status = $conn->real_escape_string($_POST['status']);
     $gambar_cover = $conn->real_escape_string($_POST['gambar_cover'] ?? '');
+    $meta_title = $conn->real_escape_string($_POST['meta_title'] ?? '');
+    $meta_description = $conn->real_escape_string($_POST['meta_description'] ?? '');
+    $meta_keywords = $conn->real_escape_string($_POST['meta_keywords'] ?? '');
     // Generate URL Slug dari Judul
     $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $judul)));
 
@@ -51,10 +57,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if (!empty($_POST['id'])) {
         $id_update = (int)$_POST['id'];
-        $sql = "UPDATE artikel SET judul='$judul', slug='$slug', kategori='$kategori', konten='$konten', status='$status', published_at=$published_at, gambar_cover='$gambar_cover' WHERE id=$id_update";
+        $sql = "UPDATE artikel SET judul='$judul', slug='$slug', kategori='$kategori', konten='$konten', status='$status', published_at=$published_at, gambar_cover='$gambar_cover', meta_title='$meta_title', meta_description='$meta_description', meta_keywords='$meta_keywords' WHERE id=$id_update";
         $pesan = "Artikel berhasil diperbarui!";
     } else {
-        $sql = "INSERT INTO artikel (judul, slug, kategori, konten, status, published_at, gambar_cover) VALUES ('$judul', '$slug', '$kategori', '$konten', '$status', $published_at, '$gambar_cover')";
+        $sql = "INSERT INTO artikel (judul, slug, kategori, konten, status, published_at, gambar_cover, meta_title, meta_description, meta_keywords) VALUES ('$judul', '$slug', '$kategori', '$konten', '$status', $published_at, '$gambar_cover', '$meta_title', '$meta_description', '$meta_keywords')";
         $pesan = "Artikel baru berhasil dipublikasikan!";
     }
     
@@ -119,6 +125,25 @@ $active_menu = 'artikel';
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Isi Konten Artikel <span class="text-red-500">*</span></label>
                                     <textarea id="konten-editor" name="konten" rows="15" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Salin (paste) hasil artikel ke sini..."><?= $edit_mode ? htmlspecialchars($data_edit['konten']) : '' ?></textarea>
+                                </div>
+                                
+                                <!-- PENGATURAN SEO ALA YOAST -->
+                                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 mt-6 shadow-sm">
+                                    <h3 class="font-bold text-gray-800 mb-4 border-b border-gray-200 pb-2"><i class="fas fa-search mr-2 text-blue-500"></i>Pengaturan SEO Meta</h3>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">SEO Title (Judul Meta)</label>
+                                            <input type="text" name="meta_title" value="<?= $edit_mode ? htmlspecialchars($data_edit['meta_title'] ?? '') : '' ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Kosongkan jika sama dengan Judul Artikel">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Meta Description (150-160 karakter)</label>
+                                            <textarea name="meta_description" rows="2" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Rangkuman artikel yang menarik untuk mengundang klik di Google..."><?= $edit_mode ? htmlspecialchars($data_edit['meta_description'] ?? '') : '' ?></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Focus Keyword (Kata Kunci Utama)</label>
+                                            <input type="text" name="meta_keywords" value="<?= $edit_mode ? htmlspecialchars($data_edit['meta_keywords'] ?? '') : '' ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: sekolah tahfidz, asrama nyaman, biaya pesantren">
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="space-y-4">

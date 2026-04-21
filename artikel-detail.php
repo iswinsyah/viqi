@@ -10,13 +10,21 @@ if (!$result || $result->num_rows == 0) {
 $art = $result->fetch_assoc();
 $imgUrl = !empty($art['gambar_cover']) ? $art['gambar_cover'] : 'https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
 $tgl_rilis = !empty($art['published_at']) ? $art['published_at'] : $art['created_at'];
+
+// SETUP SEO METADATA
+$seo_title = !empty($art['meta_title']) ? $art['meta_title'] : $art['judul'] . " | Villa Quran";
+$seo_desc = !empty($art['meta_description']) ? $art['meta_description'] : mb_strimwidth(strip_tags($art['konten']), 0, 155, '...');
+$seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah tahfidz, pesantren tahfidz, villa quran";
 ?>
 <!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($art['judul']) ?> | Villa Quran</title>
+    <title><?= htmlspecialchars($seo_title) ?></title>
+    <meta name="description" content="<?= htmlspecialchars($seo_desc) ?>">
+    <meta name="keywords" content="<?= htmlspecialchars($seo_keywords) ?>">
+    <meta name="author" content="Villa Quran Indonesia">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
