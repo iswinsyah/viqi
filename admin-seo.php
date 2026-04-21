@@ -13,6 +13,24 @@ if ($result && $result->num_rows > 0) {
 }
 $leads_json = json_encode($leads_data);
 
+// Proses Terbitkan Langsung ke Blog
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'publish_blog') {
+    $judul = $conn->real_escape_string($_POST['judul'] ?? 'Artikel Baru');
+    $meta_title = $conn->real_escape_string($_POST['meta_title'] ?? '');
+    $meta_description = $conn->real_escape_string($_POST['meta_description'] ?? '');
+    $meta_keywords = $conn->real_escape_string($_POST['meta_keywords'] ?? '');
+    $konten = $conn->real_escape_string($_POST['konten'] ?? '');
+    
+    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $judul)));
+    
+    $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords) 
+            VALUES ('$judul', '$slug', '$konten', 'publish', '$meta_title', '$meta_description', '$meta_keywords')";
+            
+    if ($conn->query($sql) === TRUE) echo "Sukses";
+    else echo "Error: " . $conn->error;
+    exit;
+}
+
 // Proses Simpan Hasil Analisa ke file lokal
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_seo') {
     $content = $_POST['content'] ?? '';
@@ -85,6 +103,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                     <h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2"></i> Hasil Draft Artikel</h3>
                     <div class="flex items-center space-x-2">
+                        <button id="btn-publish" onclick="terbitkanKeBlog()" class="hidden bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-amber-200"><i class="fas fa-paper-plane mr-1"></i> Terbitkan Langsung</button>
                         <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan</button>
                         <button id="btn-save-as" onclick="simpanSebagai()" class="hidden bg-teal-100 text-teal-700 hover:bg-teal-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-teal-200"><i class="fas fa-file-download mr-1"></i> Save As</button>
                         <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full <?= !empty($saved_seo) ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600' ?>"><?= !empty($saved_seo) ? 'Tersimpan' : 'Menunggu Perintah' ?></span>
@@ -121,6 +140,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 document.getElementById('state-result').innerHTML = marked.parse(savedSeoMarkdown);
                 const btnSave = document.getElementById('btn-save');
                 btnSave.classList.remove('hidden');
+                document.getElementById('btn-publish').classList.remove('hidden');
                 btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
                 btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
                 btnSave.classList.replace('text-emerald-700', 'text-gray-500');
@@ -154,6 +174,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
             // Reset tombol save
             const btnSave = document.getElementById('btn-save');
             btnSave.classList.add('hidden');
+            document.getElementById('btn-publish').classList.add('hidden');
             btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan';
             document.getElementById('btn-save-as').classList.add('hidden');
             if(btnSave.classList.contains('bg-gray-100')) {
@@ -166,7 +187,17 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
             const payloadLeads = JSON.parse(JSON.stringify(rawLeadsData));
             payloadLeads.unshift({
                 jenis_lead: "SYSTEM_COMMAND",
-                sumber_info: `ATURAN WAJIB: 1. LANGSUNG MULAI DARI JUDUL ARTIKEL. 2. DILARANG KERAS menuliskan teks basa-basi/sapaan AI seperti "Tentu, berikut adalah artikelnya...". 3. DILARANG menggunakan simbol Markdown seperti bintang (*) atau pagar (#). Tulis menggunakan format paragraf teks biasa yang rapi agar siap disalin-tempel (copy-paste) ke blog!`,
+                sumber_info: `ATURAN WAJIB & SANGAT KETAT:
+1. DILARANG KERAS menulis teks basa-basi/sapaan AI.
+2. DILARANG menggunakan simbol Markdown (* atau #).
+3. WAJIB memulai respons dengan blok komentar HTML persis seperti ini (isi dengan data yang sesuai tanpa tanda kurung siku):
+<!--
+JUDUL: [Judul Artikel Menarik]
+META_TITLE: [SEO Title]
+META_DESC: [Meta description max 150 karakter]
+META_KEY: [keyword1, keyword2, keyword3]
+-->
+4. Setelah blok komentar di atas, tuliskan isi artikel lengkap dengan format paragraf teks biasa (boleh pakai tag HTML seperti <p> atau <b>).`,
                 status: "URGENT"
             });
 
@@ -183,6 +214,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                     document.getElementById('state-result').innerHTML = marked.parse(currentMarkdown);
                     document.getElementById('btn-save').classList.remove('hidden');
                 document.getElementById('btn-save-as').classList.remove('hidden');
+                    document.getElementById('btn-publish').classList.remove('hidden');
                     document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
                     document.getElementById('badge-status').textContent = "Selesai";
                 } else {
@@ -201,6 +233,56 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 document.getElementById('btn-generate').disabled = false;
                 document.getElementById('btn-generate').classList.remove('opacity-50', 'cursor-not-allowed');
             });
+        }
+
+        function terbitkanKeBlog() {
+            if (!currentMarkdown) return;
+            
+            let judul = "Artikel SEO Baru";
+            let meta_title = "";
+            let meta_desc = "";
+            let meta_key = "";
+            let konten = currentMarkdown;
+            
+            // Ekstrak meta data dari komentar HTML menggunakan Regex
+            const regex = /<!--\s*JUDUL:\s*(.*?)\s*META_TITLE:\s*(.*?)\s*META_DESC:\s*(.*?)\s*META_KEY:\s*(.*?)\s*-->/is;
+            const match = currentMarkdown.match(regex);
+            
+            if (match) {
+                judul = match[1].trim();
+                meta_title = match[2].trim();
+                meta_desc = match[3].trim();
+                meta_key = match[4].trim();
+                // Hapus blok komentar dari isi konten yang akan di-publish
+                konten = currentMarkdown.replace(match[0], '').trim();
+            }
+            
+            const formData = new FormData();
+            formData.append('action', 'publish_blog');
+            formData.append('judul', judul);
+            formData.append('meta_title', meta_title);
+            formData.append('meta_description', meta_desc);
+            formData.append('meta_keywords', meta_key);
+            formData.append('konten', konten);
+
+            const btnPub = document.getElementById('btn-publish');
+            const oldText = btnPub.innerHTML;
+            btnPub.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menerbitkan...';
+            btnPub.disabled = true;
+
+            fetch('admin-seo.php', { method: 'POST', body: formData })
+            .then(res => res.text())
+            .then(text => {
+                if (text === "Sukses") {
+                    alert("Alhamdulillah! Artikel dan seluruh Meta SEO otomatis telah berhasil diterbitkan ke website.");
+                    window.location.href = "admin-artikel.php"; // Redirect ke halaman Artikel
+                } else {
+                    alert("Gagal menerbitkan: " + text);
+                    btnPub.innerHTML = oldText;
+                    btnPub.disabled = false;
+                }
+            })
+            .catch(err => { alert("Kesalahan jaringan: " + err); btnPub.innerHTML = oldText; btnPub.disabled = false; });
         }
 
         function simpanHasil() {
