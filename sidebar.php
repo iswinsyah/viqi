@@ -65,8 +65,8 @@
                 <i class="fas fa-info-circle w-6 text-center text-blue-400"></i>
                 <span class="ml-3 font-medium">Tentang Kami</span>
             </a>
-            <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-chalkboard-teacher w-6 text-center"></i>
+            <a href="admin-pengajar.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'pengajar') ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-chalkboard-teacher w-6 text-center text-purple-400"></i>
                 <span class="ml-3 font-medium">Profil Pengajar</span>
             </a>
             <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">

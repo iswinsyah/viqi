@@ -139,34 +139,12 @@
                 <h2 class="text-3xl font-extrabold text-gray-900">Asatidz & Pembimbing Profesional</h2>
                 <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Santri dibimbing langsung oleh para pakar di bidangnya, memastikan kualitas hafalan, adab, serta kesehatan terjaga dengan baik.</p>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                <!-- Pengajar 1 -->
-                <div class="bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
-                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Ustadz 1" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
-                    <h3 class="font-bold text-lg text-gray-900">Ust. Abdullah, Lc.</h3>
-                    <p class="text-teal-600 text-sm font-semibold mb-2">Kepala Tahfidz</p>
-                    <p class="text-gray-500 text-sm"><i class="fas fa-certificate text-amber-500 mr-1"></i> Hafidz 30 Juz Bersanad</p>
+            <div class="relative w-full">
+                <div id="pengajar-container" class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 pt-4 -mx-4 px-4 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:hidden" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <div class="w-full text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat profil asatidz...</div>
                 </div>
-                <!-- Pengajar 2 -->
-                <div class="bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
-                    <img src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Ustadz 2" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
-                    <h3 class="font-bold text-lg text-gray-900">Ust. Abdurrahman, M.Pd.</h3>
-                    <p class="text-teal-600 text-sm font-semibold mb-2">Musyrif Asrama</p>
-                    <p class="text-gray-500 text-sm"><i class="fas fa-book-reader text-amber-500 mr-1"></i> Pakar Adab & Karakter</p>
-                </div>
-                <!-- Pengajar 3 -->
-                <div class="bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
-                    <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Pengajar 3" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
-                    <h3 class="font-bold text-lg text-gray-900">Bpk. Fulan, S.Kom.</h3>
-                    <p class="text-teal-600 text-sm font-semibold mb-2">Guru Digitalpreneur</p>
-                    <p class="text-gray-500 text-sm"><i class="fas fa-laptop-code text-amber-500 mr-1"></i> AI & Programming</p>
-                </div>
-                <!-- Pengajar 4 -->
-                <div class="bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
-                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80" alt="Ahli Gizi" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
-                    <h3 class="font-bold text-lg text-gray-900">Dr. Zaid, Sp.GK.</h3>
-                    <p class="text-teal-600 text-sm font-semibold mb-2">Konsultan Gizi</p>
-                    <p class="text-gray-500 text-sm"><i class="fas fa-apple-alt text-amber-500 mr-1"></i> Brain Food Expert</p>
+                <div id="pengajar-nav" class="text-center mt-2 text-sm text-emerald-600 font-medium animate-pulse hidden">
+                    <i class="fas fa-arrows-alt-h mr-2"></i>Geser untuk melihat pengajar lainnya
                 </div>
             </div>
         </div>
@@ -697,6 +675,29 @@
                         }
                     }
                 }).catch(err => console.error('Gagal memuat data Tentang Kami:', err));
+
+            // 9. Auto Fetch Profil Pengajar & Carousel
+            fetch('api-pengajar.php?_=' + new Date().getTime())
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('pengajar-container');
+                    if(data && data.length > 0) {
+                        container.innerHTML = '';
+                        data.forEach(p => {
+                            container.innerHTML += `
+                            <div class="snap-start shrink-0 w-[85vw] sm:w-[calc(50%-0.75rem)] lg:w-[calc(25%-1.125rem)] bg-teal-50 rounded-xl shadow-sm p-6 text-center border border-teal-100 hover:shadow-md transition duration-300 hover:-translate-y-1">
+                                <img src="${p.gambar_url || 'https://via.placeholder.com/300'}" alt="${p.nama}" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-white shadow-md">
+                                <h3 class="font-bold text-lg text-gray-900">${p.nama}</h3>
+                                <p class="text-teal-600 text-sm font-semibold mb-2">${p.jabatan}</p>
+                                <p class="text-gray-500 text-sm"><i class="${p.ikon_badge} text-amber-500 mr-1"></i> ${p.teks_badge}</p>
+                            </div>`;
+                        });
+                        // Jika lebih dari 4, hidupkan instruksi geser
+                        if(data.length > 4) document.getElementById('pengajar-nav').classList.remove('hidden');
+                    } else {
+                        container.innerHTML = '<div class="w-full text-center text-gray-500 py-8 italic">Belum ada data pengajar.</div>';
+                    }
+                }).catch(err => console.error('Gagal memuat pengajar:', err));
         });
 
         // Fungsi Menangani Form Prospek Brosur
