@@ -8,6 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Menggunakan Font Awesome untuk Ikon -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Styling khusus untuk editor HTML Tentang Kami */
+        #tentang-konten p { margin-bottom: 1rem; }
+        #tentang-konten ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        #tentang-konten li { margin-bottom: 0.5rem; }
+    </style>
 </head>
 <body class="font-sans antialiased text-gray-800 bg-white">
 
@@ -116,15 +122,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
-                    <h2 class="text-3xl font-extrabold text-gray-900 mb-4">Tentang Villa Quran Indonesia</h2>
-                    <p class="text-lg text-gray-600 mb-6 leading-relaxed">Berawal dari cita-cita mulia untuk menghadirkan lingkungan tahfidz yang jauh dari kesan kumuh dan menekan, Villa Quran Indonesia hadir dengan konsep pendidikan modern. Kami memadukan kurikulum Islam, adab, dan keterampilan abad 21 di lingkungan yang membahagiakan layaknya sebuah villa.</p>
-                    <ul class="space-y-3 mb-8">
-                        <li class="flex items-center text-gray-700"><i class="fas fa-check-circle text-emerald-500 mr-3"></i> Terakreditasi & Berizin Resmi Kementerian</li>
-                        <li class="flex items-center text-gray-700"><i class="fas fa-check-circle text-emerald-500 mr-3"></i> Didukung Asatidz Bersanad & Profesional IT</li>
-                    </ul>
+                    <h2 id="tentang-judul" class="text-3xl font-extrabold text-gray-900 mb-4">Tentang Villa Quran Indonesia</h2>
+                    <div id="tentang-konten" class="text-lg text-gray-600 mb-6 leading-relaxed text-justify"><span class="text-gray-400 italic text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat profil...</span></div>
                 </div>
                 <div class="relative">
-                    <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Gedung Villa Quran" class="rounded-2xl shadow-xl w-full h-80 object-cover">
+                    <img id="tentang-gambar" src="https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Tentang Villa Quran" class="rounded-2xl shadow-xl w-full h-80 object-cover">
                 </div>
             </div>
         </div>
@@ -682,6 +684,19 @@
                         document.getElementById('usp3-ikon').className = data.usp3_ikon; document.getElementById('usp3-judul').textContent = data.usp3_judul; document.getElementById('usp3-desc').textContent = data.usp3_deskripsi;
                     }
                 }).catch(err => console.error('Gagal memuat data Hero:', err));
+
+            // 8. Auto Fetch Tentang Kami
+            fetch('api-tentang.php?_=' + new Date().getTime())
+                .then(res => res.json())
+                .then(data => {
+                    if(!data.error) {
+                        document.getElementById('tentang-judul').textContent = data.judul;
+                        document.getElementById('tentang-konten').innerHTML = data.konten;
+                        if(data.gambar_url && data.gambar_url.trim() !== '') {
+                            document.getElementById('tentang-gambar').src = data.gambar_url;
+                        }
+                    }
+                }).catch(err => console.error('Gagal memuat data Tentang Kami:', err));
         });
 
         // Fungsi Menangani Form Prospek Brosur

@@ -61,6 +61,10 @@
                 <i class="fas fa-file-alt w-6 text-center"></i>
                 <span class="ml-3 font-medium">Artikel & Berita</span>
             </a>
+            <a href="admin-tentang.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= $active_menu == 'tentang' ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-info-circle w-6 text-center text-blue-400"></i>
+                <span class="ml-3 font-medium">Tentang Kami</span>
+            </a>
             <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
                 <i class="fas fa-chalkboard-teacher w-6 text-center"></i>
                 <span class="ml-3 font-medium">Profil Pengajar</span>
