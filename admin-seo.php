@@ -23,10 +23,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     
     $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $judul)));
     
+    // Simpan sebagai DRAFT agar tidak langsung tampil di web
     $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords) 
-            VALUES ('$judul', '$slug', '$konten', 'publish', '$meta_title', '$meta_description', '$meta_keywords')";
+            VALUES ('$judul', '$slug', '$konten', 'draft', '$meta_title', '$meta_description', '$meta_keywords')";
             
-    if ($conn->query($sql) === TRUE) echo "Sukses";
+    if ($conn->query($sql) === TRUE) {
+        echo "Sukses|" . $conn->insert_id; // Kembalikan ID artikel yang baru dibuat
+    }
     else echo "Error: " . $conn->error;
     exit;
 }
@@ -103,7 +106,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                     <h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2"></i> Hasil Draft Artikel</h3>
                     <div class="flex items-center space-x-2">
-                        <button id="btn-publish" onclick="terbitkanKeBlog()" class="hidden bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-amber-200"><i class="fas fa-paper-plane mr-1"></i> Terbitkan Langsung</button>
+                        <button id="btn-publish" onclick="terbitkanKeBlog()" class="hidden bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-amber-200"><i class="fas fa-edit mr-1"></i> Edit di Artikel & Berita</button>
                         <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan</button>
                         <button id="btn-save-as" onclick="simpanSebagai()" class="hidden bg-teal-100 text-teal-700 hover:bg-teal-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-teal-200"><i class="fas fa-file-download mr-1"></i> Save As</button>
                         <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full <?= !empty($saved_seo) ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600' ?>"><?= !empty($saved_seo) ? 'Tersimpan' : 'Menunggu Perintah' ?></span>
@@ -296,17 +299,18 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
 
             const btnPub = document.getElementById('btn-publish');
             const oldText = btnPub.innerHTML;
-            btnPub.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menerbitkan...';
+            btnPub.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memindahkan ke Editor...';
             btnPub.disabled = true;
 
             fetch('admin-seo.php', { method: 'POST', body: formData })
             .then(res => res.text())
             .then(text => {
-                if (text === "Sukses") {
-                    alert("Alhamdulillah! Artikel dan seluruh Meta SEO otomatis telah berhasil diterbitkan ke website.");
-                    window.location.href = "admin-artikel.php"; // Redirect ke halaman Artikel
+                if (text.startsWith("Sukses|")) {
+                    const newId = text.split("|")[1]; // Ambil ID Artikel
+                    alert("Draft artikel berhasil disiapkan! Anda akan dialihkan ke Editor untuk melengkapi gambar, menambahkan link, dan mempublikasikannya.");
+                    window.location.href = "admin-artikel.php?edit_id=" + newId; // Arahkan ke mode Edit
                 } else {
-                    alert("Gagal menerbitkan: " + text);
+                    alert("Gagal memindahkan ke editor: " + text);
                     btnPub.innerHTML = oldText;
                     btnPub.disabled = false;
                 }
