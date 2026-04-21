@@ -1,14 +1,15 @@
 <?php
 require_once 'koneksi.php';
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$sql = "SELECT * FROM artikel WHERE id = $id AND status = 'publish'";
+$sql = "SELECT * FROM artikel WHERE id = $id AND (status = 'publish' OR (status = 'jadwalkan' AND published_at <= NOW()))";
 $result = $conn->query($sql);
 
 if (!$result || $result->num_rows == 0) {
     die("<h2 style='text-align:center; padding: 50px; font-family:sans-serif;'>Artikel tidak ditemukan atau telah dihapus. <br><a href='artikel.php'>Kembali ke Blog</a></h2>");
 }
 $art = $result->fetch_assoc();
-$imgUrl = !empty($art['gambar_cover']) ? 'uploads/artikel/'.$art['gambar_cover'] : 'https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+$imgUrl = !empty($art['gambar_cover']) ? $art['gambar_cover'] : 'https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+$tgl_rilis = !empty($art['published_at']) ? $art['published_at'] : $art['created_at'];
 ?>
 <!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
@@ -45,16 +46,16 @@ $imgUrl = !empty($art['gambar_cover']) ? 'uploads/artikel/'.$art['gambar_cover']
                 <!-- Meta Data -->
                 <div class="flex items-center space-x-4 mb-6">
                     <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide"><?= htmlspecialchars($art['kategori']) ?></span>
-                    <span class="text-sm text-gray-500"><i class="far fa-calendar-alt mr-1"></i> <?= date('d M Y', strtotime($art['created_at'])) ?></span>
+                    <span class="text-sm text-gray-500"><i class="far fa-calendar-alt mr-1"></i> <?= date('d M Y', strtotime($tgl_rilis)) ?></span>
                     <span class="text-sm text-gray-500"><i class="far fa-user mr-1"></i> <?= htmlspecialchars($art['penulis']) ?></span>
                 </div>
 
                 <!-- Judul -->
                 <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 leading-tight"><?= htmlspecialchars($art['judul']) ?></h1>
                 
-                <!-- Konten (Menggunakan nl2br agar enter (paragraf) dari textarea tetap berfungsi) -->
+                <!-- Konten Murni HTML dari TinyMCE -->
                 <div class="artikel-konten">
-                    <?= nl2br(htmlspecialchars($art['konten'], ENT_NOQUOTES)) ?>
+                    <?= $art['konten'] ?>
                 </div>
                 
                 <div class="mt-12 pt-8 border-t border-gray-100 text-center">

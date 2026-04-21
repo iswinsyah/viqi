@@ -1,6 +1,6 @@
 <?php
 require_once 'koneksi.php';
-$sql = "SELECT * FROM artikel WHERE status = 'publish' ORDER BY id DESC";
+$sql = "SELECT * FROM artikel WHERE status = 'publish' OR (status = 'jadwalkan' AND published_at <= NOW()) ORDER BY COALESCE(published_at, created_at) DESC";
 $result = $conn->query($sql);
 $articles = [];
 if ($result && $result->num_rows > 0) {
@@ -46,8 +46,9 @@ if ($result && $result->num_rows > 0) {
     <main class="flex-grow max-w-7xl mx-auto px-4 py-12">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <?php if(count($articles) > 0): foreach($articles as $art): 
-                $imgUrl = !empty($art['gambar_cover']) ? 'uploads/artikel/'.$art['gambar_cover'] : 'https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+                $imgUrl = !empty($art['gambar_cover']) ? $art['gambar_cover'] : 'https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
                 $cuplikan = mb_strimwidth(strip_tags($art['konten']), 0, 120, '...');
+                $tgl_rilis = !empty($art['published_at']) ? $art['published_at'] : $art['created_at'];
             ?>
             <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition duration-300 border border-gray-100 flex flex-col">
                 <img src="<?= $imgUrl ?>" alt="<?= htmlspecialchars($art['judul']) ?>" class="w-full h-48 object-cover">
@@ -55,7 +56,7 @@ if ($result && $result->num_rows > 0) {
                     <div class="flex items-center text-sm text-gray-500 mb-3">
                         <span class="text-emerald-600 font-semibold"><?= htmlspecialchars($art['kategori']) ?></span>
                         <span class="mx-2">&bull;</span>
-                        <span><?= date('d M Y', strtotime($art['created_at'])) ?></span>
+                        <span><?= date('d M Y', strtotime($tgl_rilis)) ?></span>
                     </div>
                     <h3 class="font-bold text-xl text-gray-900 mb-2 hover:text-emerald-600 transition"><a href="artikel-detail.php?id=<?= $art['id'] ?>"><?= htmlspecialchars($art['judul']) ?></a></h3>
                     <p class="text-gray-600 text-sm mb-4 flex-grow"><?= $cuplikan ?></p>

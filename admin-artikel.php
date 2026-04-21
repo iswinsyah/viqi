@@ -11,8 +11,12 @@ $conn->query("CREATE TABLE IF NOT EXISTS artikel (
     gambar_cover VARCHAR(255),
     konten TEXT,
     status VARCHAR(50) DEFAULT 'publish',
+    published_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
+
+// Update otomatis struktur tabel jika belum ada kolom published_at
+$conn->query("ALTER TABLE artikel ADD COLUMN published_at DATETIME NULL AFTER status");
 
 // Proses Hapus Data
 if (isset($_GET['hapus_id'])) {
@@ -38,29 +42,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $kategori = $conn->real_escape_string($_POST['kategori']);
     $konten = $conn->real_escape_string($_POST['konten']);
     $status = $conn->real_escape_string($_POST['status']);
+    $gambar_cover = $conn->real_escape_string($_POST['gambar_cover'] ?? '');
     // Generate URL Slug dari Judul
     $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $judul)));
 
-    // Penanganan Upload Cover (Opsional)
-    $gambar_cover = $_POST['gambar_lama'] ?? '';
-    if (isset($_FILES['gambar_cover']) && $_FILES['gambar_cover']['error'] == 0) {
-        $upload_dir = 'uploads/artikel/';
-        if (!file_exists($upload_dir)) mkdir($upload_dir, 0777, true);
-        $ext = strtolower(pathinfo($_FILES['gambar_cover']['name'], PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
-            $newName = uniqid('art_') . '.' . $ext;
-            if (move_uploaded_file($_FILES['gambar_cover']['tmp_name'], $upload_dir . $newName)) {
-                $gambar_cover = $newName;
-            }
-        }
-    }
+    // Penanganan Tanggal Jadwal Terbit
+    $published_at = !empty($_POST['published_at']) ? "'" . $conn->real_escape_string($_POST['published_at']) . "'" : "NULL";
 
     if (!empty($_POST['id'])) {
         $id_update = (int)$_POST['id'];
-        $sql = "UPDATE artikel SET judul='$judul', slug='$slug', kategori='$kategori', konten='$konten', status='$status', gambar_cover='$gambar_cover' WHERE id=$id_update";
+        $sql = "UPDATE artikel SET judul='$judul', slug='$slug', kategori='$kategori', konten='$konten', status='$status', published_at=$published_at, gambar_cover='$gambar_cover' WHERE id=$id_update";
         $pesan = "Artikel berhasil diperbarui!";
     } else {
-        $sql = "INSERT INTO artikel (judul, slug, kategori, konten, status, gambar_cover) VALUES ('$judul', '$slug', '$kategori', '$konten', '$status', '$gambar_cover')";
+        $sql = "INSERT INTO artikel (judul, slug, kategori, konten, status, published_at, gambar_cover) VALUES ('$judul', '$slug', '$kategori', '$konten', '$status', $published_at, '$gambar_cover')";
         $pesan = "Artikel baru berhasil dipublikasikan!";
     }
     
@@ -82,6 +76,8 @@ $active_menu = 'artikel';
     <title>Manajemen Artikel | Admin Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- TinyMCE Rich Text Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
@@ -111,9 +107,8 @@ $active_menu = 'artikel';
                     <h2 class="font-bold text-emerald-800"><i class="fas <?= $edit_mode ? 'fa-edit' : 'fa-pen' ?> mr-2"></i><?= $edit_mode ? 'Edit Artikel' : 'Tulis Artikel Baru' ?></h2>
                 </div>
                 <div class="p-6">
-                    <form action="" method="POST" enctype="multipart/form-data">
+                    <form action="" method="POST">
                         <input type="hidden" name="id" value="<?= $edit_mode ? $data_edit['id'] : '' ?>">
-                        <input type="hidden" name="gambar_lama" value="<?= $edit_mode ? $data_edit['gambar_cover'] : '' ?>">
                         
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div class="lg:col-span-2 space-y-4">
@@ -123,8 +118,7 @@ $active_menu = 'artikel';
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Isi Konten Artikel <span class="text-red-500">*</span></label>
-                                    <textarea name="konten" required rows="15" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Salin (paste) hasil artikel dari Generator AI ke sini..."><?= $edit_mode ? htmlspecialchars($data_edit['konten']) : '' ?></textarea>
-                                    <p class="text-xs text-gray-500 mt-1">Anda bisa menggunakan tag HTML dasar seperti &lt;b&gt;tebal&lt;/b&gt; jika diperlukan. Paragraf baru akan otomatis terdeteksi.</p>
+                                    <textarea id="konten-editor" name="konten" rows="15" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Salin (paste) hasil artikel ke sini..."><?= $edit_mode ? htmlspecialchars($data_edit['konten']) : '' ?></textarea>
                                 </div>
                             </div>
                             <div class="space-y-4">
@@ -136,15 +130,20 @@ $active_menu = 'artikel';
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-1">Status Publikasi</label>
-                                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
-                                        <option value="publish" <?= ($edit_mode && $data_edit['status'] == 'publish') ? 'selected' : '' ?>>Publikasikan (Live)</option>
+                                    <select name="status" id="status-select" onchange="toggleJadwal()" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                        <option value="publish" <?= ($edit_mode && $data_edit['status'] == 'publish') ? 'selected' : '' ?>>Publikasikan Sekarang</option>
+                                        <option value="jadwalkan" <?= ($edit_mode && $data_edit['status'] == 'jadwalkan') ? 'selected' : '' ?>>Jadwalkan (Otomatis)</option>
                                         <option value="draft" <?= ($edit_mode && $data_edit['status'] == 'draft') ? 'selected' : '' ?>>Simpan Sbg Draft</option>
                                     </select>
                                 </div>
+                                <div id="wrap-jadwal" class="<?= ($edit_mode && $data_edit['status'] == 'jadwalkan') ? '' : 'hidden' ?>">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal & Waktu Terbit</label>
+                                    <input type="datetime-local" name="published_at" value="<?= ($edit_mode && !empty($data_edit['published_at'])) ? date('Y-m-d\TH:i', strtotime($data_edit['published_at'])) : '' ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Gambar Cover (Opsional)</label>
-                                    <?php if($edit_mode && !empty($data_edit['gambar_cover'])) { echo "<img src='uploads/artikel/".$data_edit['gambar_cover']."' class='w-full h-32 object-cover rounded-lg mb-2'>"; } ?>
-                                    <input type="file" name="gambar_cover" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">URL Gambar Cover</label>
+                                    <?php if($edit_mode && !empty($data_edit['gambar_cover'])) { echo "<img src='".$data_edit['gambar_cover']."' onerror=\"this.style.display='none'\" class='w-full h-32 object-cover rounded-lg mb-2 border border-gray-200'>"; } ?>
+                                    <input type="text" name="gambar_cover" value="<?= $edit_mode ? htmlspecialchars($data_edit['gambar_cover']) : '' ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="https://... (Copas dari Media)">
                                 </div>
                                 
                                 <div class="pt-4 border-t border-gray-100 flex gap-2">
@@ -174,16 +173,22 @@ $active_menu = 'artikel';
                             <?php
                             $res = $conn->query("SELECT * FROM artikel ORDER BY id DESC");
                             if ($res && $res->num_rows > 0) {
-                                while($row = $res->fetch_assoc()) { ?>
+                                while($row = $res->fetch_assoc()) { 
+                                    $badge_class = 'bg-gray-100 text-gray-800';
+                                    if ($row['status'] == 'publish') $badge_class = 'bg-green-100 text-green-800';
+                                    if ($row['status'] == 'jadwalkan') $badge_class = 'bg-amber-100 text-amber-800';
+                                    $tgl_tampil = date('d M Y', strtotime($row['created_at']));
+                                    if ($row['status'] == 'jadwalkan' && !empty($row['published_at'])) $tgl_tampil = "<span class='text-amber-600' title='Akan Terbit'><i class='fas fa-clock mr-1'></i>" . date('d M Y H:i', strtotime($row['published_at'])) . "</span>";
+                                ?>
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4">
                                         <div class="font-bold text-gray-900"><?= htmlspecialchars($row['judul']) ?></div>
                                         <div class="text-xs text-emerald-600 font-semibold"><?= htmlspecialchars($row['kategori']) ?></div>
                                     </td>
                                     <td class="px-6 py-4 text-center">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?= $row['status']=='publish' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' ?>"><?= $row['status'] ?></span>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?= $badge_class ?>"><?= $row['status'] ?></span>
                                     </td>
-                                    <td class="px-6 py-4 text-center text-sm text-gray-500"><?= date('d M Y', strtotime($row['created_at'])) ?></td>
+                                    <td class="px-6 py-4 text-center text-sm text-gray-500"><?= $tgl_tampil ?></td>
                                     <td class="px-6 py-4 text-center text-sm font-medium">
                                         <a href="artikel-detail.php?id=<?= $row['id'] ?>" target="_blank" class="text-indigo-600 hover:text-indigo-900 mr-2" title="Lihat Web"><i class="fas fa-eye"></i></a>
                                         <a href="?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-2" title="Edit"><i class="fas fa-edit"></i></a>
@@ -199,6 +204,30 @@ $active_menu = 'artikel';
     </div>
     <script>
         document.getElementById('open-sidebar').addEventListener('click', () => { document.getElementById('sidebar').classList.toggle('hidden'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); });
+        
+        function toggleJadwal() {
+            const status = document.getElementById('status-select').value;
+            const wrap = document.getElementById('wrap-jadwal');
+            if (status === 'jadwalkan') {
+                wrap.classList.remove('hidden');
+            } else {
+                wrap.classList.add('hidden');
+            }
+        }
+
+        // Inisialisasi TinyMCE Editor
+        tinymce.init({
+            selector: '#konten-editor',
+            plugins: 'lists link',
+            toolbar: 'undo redo | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist | link',
+            menubar: false,
+            height: 400,
+            setup: function (editor) {
+                editor.on('change', function () {
+                    tinymce.triggerSave();
+                });
+            }
+        });
     </script>
 </body>
 </html>

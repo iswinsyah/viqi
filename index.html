@@ -641,7 +641,7 @@
                     }
                     container.innerHTML = '';
                     data.forEach(art => {
-                        const imgUrl = art.gambar_cover ? 'uploads/artikel/' + art.gambar_cover : 'https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
+                        const imgUrl = art.gambar_cover ? art.gambar_cover : 'https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80';
                         const dateObj = new Date(art.created_at);
                         const dateStr = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                         container.innerHTML += `
