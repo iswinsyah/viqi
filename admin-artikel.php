@@ -1,0 +1,204 @@
+<?php
+require_once 'auth.php';
+require_once 'koneksi.php';
+
+// Otomatis buat tabel jika belum ada
+$conn->query("CREATE TABLE IF NOT EXISTS artikel (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    judul VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) NOT NULL,
+    kategori VARCHAR(100) DEFAULT 'Berita',
+    gambar_cover VARCHAR(255),
+    konten TEXT,
+    status VARCHAR(50) DEFAULT 'publish',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
+// Proses Hapus Data
+if (isset($_GET['hapus_id'])) {
+    $hapus_id = (int)$_GET['hapus_id'];
+    $conn->query("DELETE FROM artikel WHERE id = $hapus_id");
+    header("Location: admin-artikel.php");
+    exit;
+}
+
+// Ambil Data untuk Form Edit
+$edit_mode = false;
+$data_edit = null;
+if (isset($_GET['edit_id'])) {
+    $edit_mode = true;
+    $edit_id = (int)$_GET['edit_id'];
+    $res = $conn->query("SELECT * FROM artikel WHERE id = $edit_id");
+    if ($res && $res->num_rows > 0) $data_edit = $res->fetch_assoc();
+}
+
+// Proses Simpan/Update Artikel
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $judul = $conn->real_escape_string($_POST['judul']);
+    $kategori = $conn->real_escape_string($_POST['kategori']);
+    $konten = $conn->real_escape_string($_POST['konten']);
+    $status = $conn->real_escape_string($_POST['status']);
+    // Generate URL Slug dari Judul
+    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $judul)));
+
+    // Penanganan Upload Cover (Opsional)
+    $gambar_cover = $_POST['gambar_lama'] ?? '';
+    if (isset($_FILES['gambar_cover']) && $_FILES['gambar_cover']['error'] == 0) {
+        $upload_dir = 'uploads/artikel/';
+        if (!file_exists($upload_dir)) mkdir($upload_dir, 0777, true);
+        $ext = strtolower(pathinfo($_FILES['gambar_cover']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+            $newName = uniqid('art_') . '.' . $ext;
+            if (move_uploaded_file($_FILES['gambar_cover']['tmp_name'], $upload_dir . $newName)) {
+                $gambar_cover = $newName;
+            }
+        }
+    }
+
+    if (!empty($_POST['id'])) {
+        $id_update = (int)$_POST['id'];
+        $sql = "UPDATE artikel SET judul='$judul', slug='$slug', kategori='$kategori', konten='$konten', status='$status', gambar_cover='$gambar_cover' WHERE id=$id_update";
+        $pesan = "Artikel berhasil diperbarui!";
+    } else {
+        $sql = "INSERT INTO artikel (judul, slug, kategori, konten, status, gambar_cover) VALUES ('$judul', '$slug', '$kategori', '$konten', '$status', '$gambar_cover')";
+        $pesan = "Artikel baru berhasil dipublikasikan!";
+    }
+    
+    if ($conn->query($sql) === TRUE) {
+        $pesan_sukses = $pesan;
+        $edit_mode = false; $data_edit = null; // Reset form
+    } else {
+        $pesan_error = "Gagal menyimpan artikel: " . $conn->error;
+    }
+}
+
+$active_menu = 'artikel';
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Artikel | Admin Villa Quran</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
+
+    <?php include 'sidebar.php'; ?>
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+            <div class="flex items-center">
+                <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2>
+            </div>
+            <a href="artikel.php" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium flex items-center"><i class="fas fa-external-link-alt mr-2"></i> Lihat Blog Web</a>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+            <div class="mb-6">
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-file-alt text-emerald-600 mr-2"></i>Manajemen Artikel & Berita</h1>
+                <p class="text-gray-500 text-sm mt-1">Tulis dan terbitkan artikel SEO Anda di sini agar muncul di halaman depan website.</p>
+            </div>
+
+            <?php if(isset($pesan_sukses)) echo "<div class='bg-green-100 text-green-700 px-4 py-3 rounded-lg mb-6 shadow-sm'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
+            <?php if(isset($pesan_error)) echo "<div class='bg-red-100 text-red-700 px-4 py-3 rounded-lg mb-6 shadow-sm'><i class='fas fa-exclamation-circle mr-2'></i> $pesan_error</div>"; ?>
+
+            <!-- FORM EDITOR ARTIKEL -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+                <div class="px-6 py-4 border-b border-gray-100 bg-emerald-50">
+                    <h2 class="font-bold text-emerald-800"><i class="fas <?= $edit_mode ? 'fa-edit' : 'fa-pen' ?> mr-2"></i><?= $edit_mode ? 'Edit Artikel' : 'Tulis Artikel Baru' ?></h2>
+                </div>
+                <div class="p-6">
+                    <form action="" method="POST" enctype="multipart/form-data">
+                        <input type="hidden" name="id" value="<?= $edit_mode ? $data_edit['id'] : '' ?>">
+                        <input type="hidden" name="gambar_lama" value="<?= $edit_mode ? $data_edit['gambar_cover'] : '' ?>">
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-2 space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Judul Artikel <span class="text-red-500">*</span></label>
+                                    <input type="text" name="judul" value="<?= $edit_mode ? htmlspecialchars($data_edit['judul']) : '' ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: 5 Cara Menghafal Al-Quran Tanpa Stres">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Isi Konten Artikel <span class="text-red-500">*</span></label>
+                                    <textarea name="konten" required rows="15" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Salin (paste) hasil artikel dari Generator AI ke sini..."><?= $edit_mode ? htmlspecialchars($data_edit['konten']) : '' ?></textarea>
+                                    <p class="text-xs text-gray-500 mt-1">Anda bisa menggunakan tag HTML dasar seperti &lt;b&gt;tebal&lt;/b&gt; jika diperlukan. Paragraf baru akan otomatis terdeteksi.</p>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                                    <select name="kategori" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                        <?php $cats = ['Berita', 'Tips Tahfidz', 'Edukasi', 'Kesehatan', 'Pengumuman']; foreach($cats as $c) { $sel = ($edit_mode && $data_edit['kategori'] == $c) ? 'selected' : ''; echo "<option value='$c' $sel>$c</option>"; } ?>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Status Publikasi</label>
+                                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                        <option value="publish" <?= ($edit_mode && $data_edit['status'] == 'publish') ? 'selected' : '' ?>>Publikasikan (Live)</option>
+                                        <option value="draft" <?= ($edit_mode && $data_edit['status'] == 'draft') ? 'selected' : '' ?>>Simpan Sbg Draft</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Gambar Cover (Opsional)</label>
+                                    <?php if($edit_mode && !empty($data_edit['gambar_cover'])) { echo "<img src='uploads/artikel/".$data_edit['gambar_cover']."' class='w-full h-32 object-cover rounded-lg mb-2'>"; } ?>
+                                    <input type="file" name="gambar_cover" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                </div>
+                                
+                                <div class="pt-4 border-t border-gray-100 flex gap-2">
+                                    <?php if($edit_mode) echo '<a href="admin-artikel.php" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-bold">Batal</a>'; ?>
+                                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg shadow-md transition"><i class="fas fa-paper-plane mr-1"></i> <?= $edit_mode ? 'Update' : 'Terbitkan' ?></button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TABEL ARTIKEL -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Daftar Artikel</h2></div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-white">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Judul & Kategori</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Tanggal</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <?php
+                            $res = $conn->query("SELECT * FROM artikel ORDER BY id DESC");
+                            if ($res && $res->num_rows > 0) {
+                                while($row = $res->fetch_assoc()) { ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4">
+                                        <div class="font-bold text-gray-900"><?= htmlspecialchars($row['judul']) ?></div>
+                                        <div class="text-xs text-emerald-600 font-semibold"><?= htmlspecialchars($row['kategori']) ?></div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?= $row['status']=='publish' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' ?>"><?= $row['status'] ?></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center text-sm text-gray-500"><?= date('d M Y', strtotime($row['created_at'])) ?></td>
+                                    <td class="px-6 py-4 text-center text-sm font-medium">
+                                        <a href="artikel-detail.php?id=<?= $row['id'] ?>" target="_blank" class="text-indigo-600 hover:text-indigo-900 mr-2" title="Lihat Web"><i class="fas fa-eye"></i></a>
+                                        <a href="?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-2" title="Edit"><i class="fas fa-edit"></i></a>
+                                        <a href="?hapus_id=<?= $row['id'] ?>" onclick="return confirm('Yakin hapus?')" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
+                                    </td>
+                                </tr>
+                            <?php } } else { echo "<tr><td colspan='4' class='text-center py-8 text-gray-500'>Belum ada artikel.</td></tr>"; } ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.getElementById('open-sidebar').addEventListener('click', () => { document.getElementById('sidebar').classList.toggle('hidden'); document.getElementById('sidebar-overlay').classList.toggle('hidden'); });
+    </script>
+</body>
+</html>
