@@ -137,7 +137,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
         // Render data tersimpan saat halaman dimuat
         document.addEventListener("DOMContentLoaded", () => {
             if (savedSeoMarkdown) {
-                document.getElementById('state-result').innerHTML = marked.parse(savedSeoMarkdown);
+                document.getElementById('state-result').innerHTML = renderPreview(savedSeoMarkdown);
                 const btnSave = document.getElementById('btn-save');
                 btnSave.classList.remove('hidden');
                 document.getElementById('btn-publish').classList.remove('hidden');
@@ -188,16 +188,16 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
             payloadLeads.unshift({
                 jenis_lead: "SYSTEM_COMMAND",
                 sumber_info: `ATURAN WAJIB & SANGAT KETAT:
-1. DILARANG KERAS menulis teks basa-basi/sapaan AI.
-2. DILARANG menggunakan simbol Markdown (* atau #).
-3. WAJIB memulai respons dengan blok komentar HTML persis seperti ini (isi dengan data yang sesuai tanpa tanda kurung siku):
-<!--
-JUDUL: [Judul Artikel Menarik]
-META_TITLE: [SEO Title]
-META_DESC: [Meta description max 150 karakter]
-META_KEY: [keyword1, keyword2, keyword3]
--->
-4. Setelah blok komentar di atas, tuliskan isi artikel lengkap dengan format paragraf teks biasa (boleh pakai tag HTML seperti <p> atau <b>).`,
+1. KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON YANG VALID.
+2. DILARANG ADA TEKS LAIN DI LUAR JSON (jangan ada sapaan AI).
+3. Gunakan struktur JSON persis seperti berikut:
+{
+  "judul": "Judul Artikel Menarik",
+  "meta_title": "SEO Title yang Menarik",
+  "meta_description": "Meta description maksimal 150 karakter",
+  "meta_keywords": "keyword1, keyword2, keyword3",
+  "konten": "Isi artikel lengkap dengan tag HTML dasar seperti <p>, <h2>, <ul>, <li>, <strong>. JANGAN gunakan format markdown (* atau #) di dalam konten."
+}`,
                 status: "URGENT"
             });
 
@@ -211,7 +211,7 @@ META_KEY: [keyword1, keyword2, keyword3]
             .then(data => {
                 if(data.status === "success") {
                     currentMarkdown = data.result;
-                    document.getElementById('state-result').innerHTML = marked.parse(currentMarkdown);
+                    document.getElementById('state-result').innerHTML = renderPreview(currentMarkdown);
                     document.getElementById('btn-save').classList.remove('hidden');
                 document.getElementById('btn-save-as').classList.remove('hidden');
                     document.getElementById('btn-publish').classList.remove('hidden');
@@ -235,6 +235,27 @@ META_KEY: [keyword1, keyword2, keyword3]
             });
         }
 
+        function renderPreview(rawText) {
+            try {
+                let cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                let obj = JSON.parse(cleanJson);
+                return `
+                    <div class="bg-teal-50 p-5 rounded-xl mb-8 border border-teal-100 text-sm shadow-sm text-left">
+                        <h4 class="font-bold text-teal-800 mb-3 border-b border-teal-200 pb-2"><i class="fas fa-search mr-2"></i>Data Meta SEO (Otomatis)</h4>
+                        <div class="space-y-2 text-gray-700">
+                            <div><span class="font-semibold text-teal-900 inline-block w-32">Judul Artikel</span>: ${obj.judul}</div>
+                            <div><span class="font-semibold text-teal-900 inline-block w-32">Meta Title</span>: ${obj.meta_title}</div>
+                            <div><span class="font-semibold text-teal-900 inline-block w-32">Meta Desc</span>: ${obj.meta_description}</div>
+                            <div><span class="font-semibold text-teal-900 inline-block w-32">Focus Keyword</span>: ${obj.meta_keywords}</div>
+                        </div>
+                    </div>
+                    <div class="text-left text-gray-800">${obj.konten}</div>
+                `;
+            } catch (e) {
+                return marked.parse(rawText);
+            }
+        }
+
         function terbitkanKeBlog() {
             if (!currentMarkdown) return;
             
@@ -244,17 +265,25 @@ META_KEY: [keyword1, keyword2, keyword3]
             let meta_key = "";
             let konten = currentMarkdown;
             
-            // Ekstrak meta data dari komentar HTML menggunakan Regex
-            const regex = /<!--\s*JUDUL:\s*(.*?)\s*META_TITLE:\s*(.*?)\s*META_DESC:\s*(.*?)\s*META_KEY:\s*(.*?)\s*-->/is;
-            const match = currentMarkdown.match(regex);
-            
-            if (match) {
-                judul = match[1].trim();
-                meta_title = match[2].trim();
-                meta_desc = match[3].trim();
-                meta_key = match[4].trim();
-                // Hapus blok komentar dari isi konten yang akan di-publish
-                konten = currentMarkdown.replace(match[0], '').trim();
+            try {
+                let cleanJson = currentMarkdown.replace(/```json/gi, '').replace(/```/g, '').trim();
+                let obj = JSON.parse(cleanJson);
+                judul = obj.judul || judul;
+                meta_title = obj.meta_title || "";
+                meta_desc = obj.meta_description || "";
+                meta_key = obj.meta_keywords || "";
+                konten = obj.konten || currentMarkdown;
+            } catch (e) {
+                // Fallback jika AI gagal mengirim format JSON murni
+                const regex = /<!--\s*JUDUL:\s*(.*?)\s*META_TITLE:\s*(.*?)\s*META_DESC:\s*(.*?)\s*META_KEY:\s*(.*?)\s*-->/is;
+                const match = currentMarkdown.match(regex);
+                if (match) {
+                    judul = match[1].trim();
+                    meta_title = match[2].trim();
+                    meta_desc = match[3].trim();
+                    meta_key = match[4].trim();
+                    konten = currentMarkdown.replace(match[0], '').trim();
+                }
             }
             
             const formData = new FormData();
@@ -313,12 +342,18 @@ META_KEY: [keyword1, keyword2, keyword3]
 
         function simpanSebagai() {
             if (!currentMarkdown) return;
-            const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
+            let isJson = false;
+            try {
+                JSON.parse(currentMarkdown.replace(/```json/gi, '').replace(/```/g, '').trim());
+                isJson = true;
+            } catch(e) {}
+            
+            const blob = new Blob([currentMarkdown], { type: isJson ? 'application/json' : 'text/markdown' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             const tgl = document.getElementById('tgl-seo').value || new Date().toISOString().slice(0,10);
-            a.download = `Artikel_SEO_${tgl}.md`;
+            a.download = `Artikel_SEO_${tgl}.${isJson ? 'json' : 'md'}`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
