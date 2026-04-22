@@ -42,20 +42,43 @@ if ($range == '1year' || $range == '3years') {
 }
 if($q_trend) { while($r = $q_trend->fetch_assoc()) { $trend_labels[] = date($format_trend, strtotime($r['raw_date'])); $trend_data[] = $r['jumlah']; } }
 
+// Beri data default (kosong) agar grafik tetap tergambar meski database belum ada isinya
+if (empty($trend_labels)) {
+    for ($i = 6; $i >= 0; $i--) {
+        $trend_labels[] = date($format_trend, strtotime("-$i days"));
+        $trend_data[] = 0;
+    }
+}
+
 // 2. Sumber Traffic
 $source_labels = []; $source_data = [];
 $q_source = $conn->query("SELECT source, COUNT(id) as jumlah FROM visitor_footprints $where_visitor GROUP BY source ORDER BY jumlah DESC LIMIT 5");
 if($q_source) { while($r = $q_source->fetch_assoc()) { $source_labels[] = $r['source']; $source_data[] = $r['jumlah']; } }
+
+if (empty($source_labels)) {
+    $source_labels = ['Belum ada data'];
+    $source_data = [0];
+}
 
 // 3. Device
 $device_labels = []; $device_data = [];
 $q_device = $conn->query("SELECT device, COUNT(id) as jumlah FROM visitor_footprints $where_visitor GROUP BY device");
 if($q_device) { while($r = $q_device->fetch_assoc()) { $device_labels[] = $r['device']; $device_data[] = $r['jumlah']; } }
 
+if (empty($device_labels)) {
+    $device_labels = ['Belum ada data'];
+    $device_data = [0];
+}
+
 // 4. Status Pipeline Funnel
 $status_labels = []; $status_data = [];
 $q_status = $conn->query("SELECT status, COUNT(id) as jumlah FROM leads $where_visitor GROUP BY status ORDER BY status ASC");
 if($q_status) { while($r = $q_status->fetch_assoc()) { $status_labels[] = $r['status']; $status_data[] = $r['jumlah']; } }
+
+if (empty($status_labels)) {
+    $status_labels = ['Belum ada data'];
+    $status_data = [0];
+}
 
 // --- AMBIL DATA TABEL PENDAFTAR TERBARU ---
 $pendaftar_terbaru = [];
