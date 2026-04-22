@@ -69,8 +69,8 @@
                 <i class="fas fa-chalkboard-teacher w-6 text-center text-purple-400"></i>
                 <span class="ml-3 font-medium">Profil Pengajar</span>
             </a>
-            <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-images w-6 text-center"></i>
+            <a href="admin-galeri.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'galeri') ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-images w-6 text-center text-amber-500"></i>
                 <span class="ml-3 font-medium">Galeri Kegiatan</span>
             </a>
             <a href="admin-media.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">

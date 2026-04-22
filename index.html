@@ -150,57 +150,16 @@
         </div>
     </section>
 
-    <!-- 2. INTEREST: GALERI KEGIATAN (Carousel) -->
-    <section class="py-16 bg-white overflow-hidden" id="asrama">
+    <!-- 2. INTEREST: GALERI KEGIATAN (Grid 3x2) -->
+    <section class="py-16 bg-white overflow-hidden" id="galeri">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl font-extrabold text-gray-900">Galeri Kegiatan Santri</h2>
                 <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Potret kebahagiaan dan semangat santri dalam menuntut ilmu, beribadah, dan beraktivitas di lingkungan asrama yang asri.</p>
             </div>
             
-            <!-- CSS Scroll Snap Carousel Container -->
-            <div class="relative w-full">
-                <div class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 pt-4 -mx-4 px-4 sm:mx-0 sm:px-0" style="scrollbar-width: none; -ms-overflow-style: none;">
-                    <!-- Item 1 -->
-                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
-                        <img src="https://images.unsplash.com/photo-1609802422036-7c152a5a5460?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Membaca Quran" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
-                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
-                            <h4 class="text-white font-bold text-xl">Halaqah Tahfidz</h4>
-                        </div>
-                    </div>
-                    <!-- Item 2 -->
-                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
-                        <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Kegiatan Belajar" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
-                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
-                            <h4 class="text-white font-bold text-xl">KBM di Kelas</h4>
-                        </div>
-                    </div>
-                    <!-- Item 3 -->
-                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
-                        <img src="https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Suasana Masjid" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
-                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
-                            <h4 class="text-white font-bold text-xl">Ibadah Bersama</h4>
-                        </div>
-                    </div>
-                    <!-- Item 4 -->
-                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
-                        <img src="https://images.unsplash.com/photo-1511649475669-e288648b2339?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Olahraga" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
-                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
-                            <h4 class="text-white font-bold text-xl">Olahraga Sunnah</h4>
-                        </div>
-                    </div>
-                    <!-- Item 5 -->
-                    <div class="snap-center shrink-0 w-[85vw] sm:w-80 md:w-96 rounded-2xl overflow-hidden shadow-lg relative group">
-                        <img src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Kenyamanan Asrama" class="w-full h-64 object-cover transform group-hover:scale-110 transition duration-500">
-                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-6 pt-16">
-                            <h4 class="text-white font-bold text-xl">Kenyamanan Asrama</h4>
-                        </div>
-                    </div>
-                </div>
-                <!-- Instruksi Geser (Mobile/Desktop) -->
-                <div class="text-center mt-2 text-sm text-emerald-600 font-medium animate-pulse">
-                    <i class="fas fa-arrows-alt-h mr-2"></i>Geser foto untuk melihat lainnya
-                </div>
+            <div id="galeri-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                <div class="col-span-full text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat galeri...</div>
             </div>
         </div>
     </section>
@@ -741,6 +700,29 @@
                         container.innerHTML = '<div class="w-full text-center text-gray-500 py-8 italic">Belum ada data pengajar.</div>';
                     }
                 }).catch(err => console.error('Gagal memuat pengajar:', err));
+
+            // 10. Auto Fetch Galeri Kegiatan Santri (Grid)
+            fetch('api-galeri.php?_=' + new Date().getTime())
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('galeri-container');
+                    if(data && data.length > 0) {
+                        container.innerHTML = '';
+                        data.forEach(g => {
+                            container.innerHTML += `
+                                <div class="rounded-2xl overflow-hidden shadow-lg relative group h-64 cursor-pointer bg-teal-50 border border-teal-100">
+                                    <img src="${g.gambar_url || 'https://via.placeholder.com/600'}" alt="${g.judul}" class="w-full h-full object-cover transform group-hover:scale-110 transition duration-500">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                                        <h4 class="text-white font-bold text-xl mb-1 transform translate-y-2 group-hover:translate-y-0 transition duration-300">${g.judul}</h4>
+                                        <p class="text-teal-100 text-sm opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition duration-300 delay-100">${g.caption || ''}</p>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8 italic">Belum ada foto kegiatan.</div>';
+                    }
+                }).catch(err => console.error('Gagal memuat galeri:', err));
         });
 
         // Fungsi Menangani Form Prospek Brosur
