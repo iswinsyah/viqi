@@ -43,6 +43,7 @@
                     <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
                     <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Program</a>
                     <a href="asrama.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Asrama</a>
+                    <a href="fasilitas.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Fasilitas</a>
                     <a href="artikel.php" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Artikel</a>
                     <a href="admin.php" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Admin</a>
                 </nav>
@@ -65,6 +66,7 @@
                 <a href="profil-pengajar.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Profil Pengajar</a>
                 <a href="program.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Program</a>
                 <a href="asrama.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Asrama</a>
+                <a href="fasilitas.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Fasilitas</a>
                 <a href="artikel.php" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Artikel</a>
                 <a href="admin.php" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Admin</a>
                 <div class="pt-4 pb-2 border-t border-gray-100">
@@ -86,8 +88,8 @@
             </p>
             <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <a id="hero-cta" href="#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl">Informasi Pendaftaran</a>
-                <a href="virtual-tour.html" class="bg-white hover:bg-gray-100 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl flex items-center justify-center">
-                    <i class="fas fa-play-circle mr-2 text-xl"></i> Virtual Tour Villa
+                <a href="biaya.html" class="bg-white hover:bg-gray-100 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl flex items-center justify-center">
+                    <i class="fas fa-search-dollar mr-2 text-xl"></i> Informasi Biaya
                 </a>
             </div>
         </div>
@@ -259,6 +261,24 @@
         </div>
     </section>
 
+    <!-- FASILITAS SEKOLAH SECTION -->
+    <section class="py-16 bg-teal-50 border-t border-teal-100" id="fasilitas-section">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-extrabold text-gray-900">Fasilitas Sekolah & Asrama</h2>
+                <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Sarana prasarana modern dan asri yang menunjang kenyamanan belajar, menghafal, dan beribadah para santri.</p>
+            </div>
+            <div id="fasilitas-snippet-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div class="col-span-full text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat fasilitas...</div>
+            </div>
+            <div class="text-center">
+                <a href="fasilitas.html" class="inline-flex items-center justify-center px-6 py-3 border-2 border-emerald-600 text-emerald-600 font-bold rounded-full hover:bg-emerald-50 transition duration-300">
+                    Lihat Semua Fasilitas <i class="fas fa-arrow-right ml-2"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- TARGET LULUSAN SECTION (BARU) -->
     <section class="py-16 bg-white border-t border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -321,21 +341,6 @@
                     Lihat Semua Artikel <i class="fas fa-arrow-right ml-2"></i>
                 </a>
             </div>
-        </div>
-    </section>
-
-    <!-- BANNER CEK BIAYA (LEAD MAGNET) -->
-    <section class="py-14 bg-amber-400 relative overflow-hidden">
-        <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none opacity-10">
-            <i class="fas fa-coins text-9xl absolute -top-10 -right-10 transform rotate-12"></i>
-            <i class="fas fa-wallet text-8xl absolute bottom-10 left-10 transform -rotate-12"></i>
-        </div>
-        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-teal-950 mb-4">Penasaran dengan Rincian Biaya Pendidikan?</h2>
-            <p class="text-lg text-teal-900 mb-8 max-w-2xl mx-auto font-medium">Kami berkomitmen memberikan kualitas pendidikan terbaik dengan biaya yang transparan dan terjangkau.</p>
-            <a href="biaya.html" class="bg-teal-900 hover:bg-teal-800 text-white px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-2xl inline-flex items-center justify-center transform hover:-translate-y-1">
-                <i class="fas fa-search-dollar mr-2"></i> Buka Informasi Biaya
-            </a>
         </div>
     </section>
 
@@ -730,6 +735,27 @@
                         container.innerHTML = '<div class="w-full text-center text-gray-500 py-8 italic">Belum ada data kurikulum.</div>';
                     }
                 }).catch(err => console.error('Gagal memuat kurikulum:', err));
+
+            // Auto Fetch Fasilitas Snippet
+            fetch('api-fasilitas.php?_=' + new Date().getTime())
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('fasilitas-snippet-container');
+                    if(data && data.length > 0) {
+                        container.innerHTML = '';
+                        // Ambil maksimal 4 fasilitas untuk ditampilkan di Beranda
+                        data.slice(0, 4).forEach(f => {
+                            container.innerHTML += `
+                                <div class="bg-white rounded-xl shadow-sm hover:shadow-lg transition duration-300 border border-gray-100 overflow-hidden group flex flex-col">
+                                    <div class="h-48 overflow-hidden"><img src="${f.gambar_url || 'https://via.placeholder.com/400'}" alt="${f.judul}" class="w-full h-full object-cover transform group-hover:scale-110 transition duration-500"></div>
+                                    <div class="p-5 text-center flex-1 flex flex-col justify-center"><h3 class="font-bold text-lg text-gray-900 mb-2">${f.judul}</h3><p class="text-sm text-gray-500 line-clamp-2">${f.deskripsi}</p></div>
+                                </div>
+                            `;
+                        });
+                    } else {
+                        container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8 italic">Belum ada data fasilitas.</div>';
+                    }
+                }).catch(err => console.error('Gagal memuat fasilitas:', err));
 
             // 12. Auto Fetch Testimoni (Social Proof)
             fetch('api-testimoni.php?_=' + new Date().getTime())

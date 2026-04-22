@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fasilitas Sekolah | Villa Quran Indonesia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-M2F9GKZG');</script>
+</head>
+<body class="font-sans antialiased text-gray-800 bg-gray-50 flex flex-col min-h-screen">
+
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M2F9GKZG" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="index.html" class="font-extrabold text-2xl text-emerald-800 hover:text-emerald-600 transition">
+                        <i class="fas fa-leaf mr-2 text-emerald-500"></i>Villa Quran
+                    </a>
+                </div>
+                <nav class="hidden md:flex space-x-6 lg:space-x-8">
+                    <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
+                    <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
+                    <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Program</a>
+                    <a href="asrama.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Asrama</a>
+                    <a href="fasilitas.html" class="text-emerald-700 font-bold transition border-b-2 border-emerald-600">Fasilitas</a>
+                    <a href="admin.php" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Admin</a>
+                </nav>
+                <div class="hidden md:flex">
+                    <a href="daftar-spmb.html" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
+                </div>
+                <div class="flex items-center md:hidden">
+                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-md p-2"><i class="fas fa-bars text-2xl"></i></button>
+                </div>
+            </div>
+        </div>
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-xl absolute w-full left-0 top-20">
+            <div class="px-4 pt-2 pb-6 space-y-2">
+                <a href="index.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Beranda</a>
+                <a href="profil-pengajar.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Profil Pengajar</a>
+                <a href="program.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Program</a>
+                <a href="asrama.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Asrama</a>
+                <a href="fasilitas.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Fasilitas</a>
+                <a href="admin.php" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Admin</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="bg-teal-700 text-white py-16 text-center px-4">
+        <h1 class="text-3xl md:text-5xl font-extrabold mb-4">Fasilitas Sekolah & Asrama</h1>
+        <p class="text-lg text-teal-100 max-w-2xl mx-auto">Kami menyediakan sarana prasarana modern yang mendukung kenyamanan ibadah, optimalisasi belajar, dan ruang kreasi para santri.</p>
+    </section>
+
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-16 w-full">
+        <div id="fasilitas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div class="col-span-full text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin text-3xl mb-2"></i><p>Memuat data fasilitas...</p></div>
+        </div>
+    </main>
+
+    <footer class="bg-gray-900 text-gray-400 py-10 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-white text-xl font-bold mb-4">Ingin Menjadi Bagian Dari Kami?</h2>
+            <a href="daftar-spmb.html" class="bg-amber-500 hover:bg-amber-600 text-teal-950 px-6 py-2 rounded-full font-bold text-sm transition shadow-md inline-block mb-6">Daftar SPMB Sekarang</a>
+            <p class="text-xs">&copy; 2026 Villa Quran Indonesia. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile Menu Toggle
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+        const icon = btn.querySelector('i');
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        });
+
+        // Fetch Fasilitas
+        fetch('api-fasilitas.php?_=' + new Date().getTime())
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('fasilitas-container');
+                if(data && data.length > 0) {
+                    container.innerHTML = '';
+                    data.forEach(f => {
+                        container.innerHTML += `
+                            <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden hover:shadow-xl transition duration-300 group flex flex-col">
+                                <div class="h-64 overflow-hidden relative">
+                                    <img src="${f.gambar_url || 'https://via.placeholder.com/600'}" alt="${f.judul}" class="w-full h-full object-cover transform group-hover:scale-110 transition duration-500">
+                                </div>
+                                <div class="p-6 flex flex-col flex-grow">
+                                    <h3 class="text-xl font-bold text-gray-900 mb-3">${f.judul}</h3>
+                                    <p class="text-gray-600 text-sm leading-relaxed">${f.deskripsi}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-10 italic">Belum ada data fasilitas yang ditambahkan.</div>';
+                }
+            }).catch(err => console.error('Gagal memuat:', err));
+    </script>
+    <script src="tracker.js"></script>
+</body>
+</html>

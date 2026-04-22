@@ -61,6 +61,10 @@
                 <i class="fas fa-money-bill-wave w-6 text-center text-green-400"></i>
                 <span class="ml-3 font-medium">Pengaturan Biaya</span>
             </a>
+            <a href="admin-fasilitas.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'fasilitas') ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-building w-6 text-center text-blue-400"></i>
+                <span class="ml-3 font-medium">Fasilitas Sekolah</span>
+            </a>
             <a href="admin-artikel.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= $active_menu == 'artikel' ? 'bg-gray-800 text-white' : '' ?>">
                 <i class="fas fa-file-alt w-6 text-center"></i>
                 <span class="ml-3 font-medium">Artikel & Berita</span>
