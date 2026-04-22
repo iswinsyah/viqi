@@ -28,7 +28,7 @@ if ($result && $result->num_rows > 0) {
                 <nav class="hidden md:flex space-x-6 lg:space-x-8">
                     <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
                     <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
-                    <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Program</a>
+                    <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Kurikulum</a>
                     <a href="asrama.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Fasilitas</a>
                     <a href="artikel.php" class="text-emerald-700 font-bold transition border-b-2 border-emerald-600">Artikel</a>
                 </nav>

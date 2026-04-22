@@ -65,7 +65,7 @@ $active_menu = 'kurikulum';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kurikulum & Program | Admin Villa Quran</title>
+    <title>Kurikulum Terpadu | Admin Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -126,7 +126,7 @@ $active_menu = 'kurikulum';
 
             <!-- TABEL LIST KURIKULUM -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100"><h2 class="font-bold text-gray-800">Daftar Kurikulum & Program</h2></div>
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100"><h2 class="font-bold text-gray-800">Daftar Kurikulum Terpadu</h2></div>
                 <div class="overflow-x-auto p-4">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-white">
