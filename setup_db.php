@@ -73,6 +73,29 @@ if ($conn->query($sql_popup) === TRUE) {
     VALUES (1, 1, 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80', 'E-Book Spesial:', '\"Rahasia Mendidik Generasi Alpha Menjadi Hafidz Quran Berkarakter\"', 'Akses Parenting School <span class=\"text-amber-500\">& E-Book Gratis!</span>', 'Masukkan data Anda untuk mendapatkan tautan unduhan E-Book dan jadwal kelas langsung ke WhatsApp Anda.', 'ebook-parenting.pdf')");
 }
 
+// 5. Membuat Tabel Tracker / Jejak Pengunjung (Mata AI)
+$sql_tracker = "CREATE TABLE IF NOT EXISTS visitor_footprints (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    device VARCHAR(50),
+    os_browser TEXT,
+    language VARCHAR(50),
+    source VARCHAR(255),
+    campaign VARCHAR(100),
+    traffic_type VARCHAR(50),
+    location VARCHAR(100),
+    isp VARCHAR(100),
+    visit_time VARCHAR(100),
+    timezone VARCHAR(50),
+    page_viewed VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+
+if ($conn->query($sql_tracker) === TRUE) {
+    echo "✅ Tabel <b>'visitor_footprints'</b> berhasil dibuat.<br>";
+} else {
+    echo "❌ Error membuat tabel visitor_footprints: " . $conn->error . "<br>";
+}
+
 echo "<br><b>Selesai!</b> Database Anda sudah siap digunakan.";
 
 $conn->close();
