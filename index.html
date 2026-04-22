@@ -430,7 +430,7 @@
                 <ul class="space-y-3 text-sm">
                     <li class="flex items-start"><i class="fas fa-map-marker-alt mt-1 mr-3 text-emerald-500"></i> Jl. Sejuk Asri No. 1, Kota Quran</li>
                     <li class="flex items-center"><i class="fas fa-phone mr-3 text-emerald-500"></i> (021) 1234-5678</li>
-                    <li class="flex items-center"><i class="fab fa-whatsapp mr-3 text-green-500 text-lg"></i> <a href="https://wa.me/6281234567890" target="_blank" class="hover:text-white transition">+62 812-3456-7890</a></li>
+                    <li class="flex items-center"><i class="fab fa-whatsapp mr-3 text-green-500 text-lg"></i> <a href="https://wa.me/628XXXXXXXXXX" target="_blank" class="hover:text-white transition">+62 812-XXXX-XXXX</a></li>
                 </ul>
             </div>
             <div>
@@ -449,7 +449,7 @@
     </footer>
 
     <!-- Floating WhatsApp Action -->
-    <a id="floating-wa" href="https://wa.me/6281234567890" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl shadow-2xl hover:bg-green-600 transition-colors z-50 animate-bounce">
+    <a id="floating-wa" href="https://wa.me/628XXXXXXXXXX" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white rounded-full w-16 h-16 flex items-center justify-center text-3xl shadow-2xl hover:bg-green-600 transition-colors z-50 animate-bounce">
         <i class="fab fa-whatsapp"></i>
     </a>
 
@@ -571,17 +571,28 @@
                 if(refInput) refInput.value = savedRef;
             }
 
-            // 4. Modifikasi Teks WhatsApp Otomatis berdasarkan Agen
-            const waBtn = document.getElementById('floating-wa');
-            if (waBtn) {
-                let waText = "Assalamu'alaikum Admin Villa Quran, saya ingin bertanya seputar pendaftaran santri baru.";
-                
-                // Jika ada data agen, ubah teksnya!
-                if (savedRef && savedRef !== 'organik') {
-                    waText = `Assalamu'alaikum Admin Villa Quran, saya mendapat rekomendasi dari Agen/WA: *${savedRef}*. Saya ingin bertanya seputar pendaftaran.`;
-                }
-                waBtn.href = `https://wa.me/6281234567890?text=${encodeURIComponent(waText)}`;
-            }
+            // 4. Modifikasi Nomor & Teks WhatsApp Otomatis dari Database
+            fetch('api-pengaturan.php?_=' + new Date().getTime())
+                .then(res => res.json())
+                .then(setting => {
+                    const waNumber = setting.nomor_wa || '6281234567890';
+                    let waText = setting.pesan_default || "Assalamu'alaikum Admin Villa Quran, saya ingin bertanya seputar pendaftaran santri baru.";
+                    
+                    if (savedRef && savedRef !== 'organik') {
+                        waText = `Assalamu'alaikum Admin Villa Quran, saya mendapat rekomendasi dari Agen/WA: *${savedRef}*. Saya ingin bertanya seputar pendaftaran.`;
+                    }
+                    
+                    const waBtn = document.getElementById('floating-wa');
+                    if (waBtn) waBtn.href = `https://wa.me/${waNumber}?text=${encodeURIComponent(waText)}`;
+
+                    // Ubah SEMUA tautan WA di halaman ini (seperti di Footer)
+                    document.querySelectorAll('a[href^="https://wa.me/62"]').forEach(a => {
+                        if(a.id !== 'floating-wa') a.href = `https://wa.me/${waNumber}`;
+                        if(a.innerText.includes('+62') || a.innerText.includes('08')) {
+                            a.innerText = '+' + waNumber.substring(0,2) + ' ' + waNumber.substring(2,5) + '-' + waNumber.substring(5,9) + '-' + waNumber.substring(9);
+                        }
+                    });
+                }).catch(err => console.error('Gagal memuat pengaturan WA:', err));
             
             // 5. Script Auto Pop-up Dinamis dari Database (Anti-Cache)
             fetch('api-popup.php?_=' + new Date().getTime())

@@ -65,7 +65,7 @@
                 <ul class="space-y-3 text-sm">
                     <li class="flex items-start"><i class="fas fa-map-marker-alt mt-1 mr-3 text-emerald-500"></i> Jl. Sejuk Asri No. 1, Kota Quran</li>
                     <li class="flex items-center"><i class="fas fa-phone mr-3 text-emerald-500"></i> (021) 1234-5678</li>
-                    <li class="flex items-center"><i class="fab fa-whatsapp mr-3 text-green-500 text-lg"></i> <a href="https://wa.me/6281234567890" target="_blank" class="hover:text-white transition">+62 812-3456-7890</a></li>
+                    <li class="flex items-center"><i class="fab fa-whatsapp mr-3 text-green-500 text-lg"></i> <a href="https://wa.me/628XXXXXXXXXX" target="_blank" class="hover:text-white transition">+62 812-XXXX-XXXX</a></li>
                 </ul>
             </div>
             <div>
@@ -90,6 +90,20 @@
         if (refCode) {
             localStorage.setItem('agen_ref', refCode);
         }
+
+        // Auto Update Link WhatsApp dari Pengaturan Admin
+        fetch('api-pengaturan.php?_=' + new Date().getTime())
+            .then(res => res.json())
+            .then(data => {
+                if(data && data.nomor_wa) {
+                    document.querySelectorAll('a[href^="https://wa.me/62"]').forEach(a => {
+                        a.href = `https://wa.me/${data.nomor_wa}`;
+                        if(a.innerText.includes('+62') || a.innerText.includes('08')) {
+                            a.innerText = '+' + data.nomor_wa.substring(0,2) + ' ' + data.nomor_wa.substring(2,5) + '-' + data.nomor_wa.substring(5,9) + '-' + data.nomor_wa.substring(9);
+                        }
+                    });
+                }
+            });
 
         // Fetch Profil Pengajar
         fetch('api-pengajar.php?_=' + new Date().getTime())
