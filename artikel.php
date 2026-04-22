@@ -29,7 +29,7 @@ if ($result && $result->num_rows > 0) {
                     <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
                     <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
                     <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Program</a>
-                    <a href="asrama.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Asrama</a>
+                    <a href="asrama.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Fasilitas</a>
                     <a href="artikel.php" class="text-emerald-700 font-bold transition border-b-2 border-emerald-600">Artikel</a>
                 </nav>
                 <div class="hidden md:flex"><a href="index.html#spmb" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-bold transition shadow-md">Daftar SPMB</a></div>
