@@ -26,10 +26,17 @@ if ($range === '1month') {
 }
 
 // --- AMBIL DATA STATISTIK UNTUK WIDGET ---
-$total_spmb = $conn->query("SELECT COUNT(id) AS tot FROM pendaftar_spmb $where_visitor")->fetch_assoc()['tot'] ?? 0;
-$total_leads = $conn->query("SELECT COUNT(id) AS tot FROM leads $where_visitor")->fetch_assoc()['tot'] ?? 0;
-$total_artikel = $conn->query("SELECT COUNT(id) AS tot FROM artikel")->fetch_assoc()['tot'] ?? 0;
-$total_visitor = $conn->query("SELECT COUNT(id) AS tot FROM visitor_footprints $where_visitor")->fetch_assoc()['tot'] ?? 0;
+$q_spmb = $conn->query("SELECT COUNT(id) AS tot FROM pendaftar_spmb $where_visitor");
+$total_spmb = $q_spmb ? ($q_spmb->fetch_assoc()['tot'] ?? 0) : 0;
+
+$q_leads = $conn->query("SELECT COUNT(id) AS tot FROM leads $where_visitor");
+$total_leads = $q_leads ? ($q_leads->fetch_assoc()['tot'] ?? 0) : 0;
+
+$q_artikel = $conn->query("SELECT COUNT(id) AS tot FROM artikel");
+$total_artikel = $q_artikel ? ($q_artikel->fetch_assoc()['tot'] ?? 0) : 0;
+
+$q_visitor = $conn->query("SELECT COUNT(id) AS tot FROM visitor_footprints $where_visitor");
+$total_visitor = $q_visitor ? ($q_visitor->fetch_assoc()['tot'] ?? 0) : 0;
 
 // --- AMBIL DATA UNTUK GRAFIK VISUAL ---
 // 1. Pengunjung
