@@ -14,8 +14,20 @@
         #tentang-konten ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
         #tentang-konten li { margin-bottom: 0.5rem; }
     </style>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-XXXXXXX');</script>
+    <!-- End Google Tag Manager -->
 </head>
 <body class="font-sans antialiased text-gray-800 bg-white">
+
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-XXXXXXX"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
 
     <!-- HEADER / NAVIGASI -->
     <header class="bg-white shadow-md sticky top-0 z-50">
@@ -798,6 +810,13 @@
                 const downloadUrl = window.popupFileUrl || 'ebook-parenting.pdf';
                 window.open(downloadUrl, '_blank');
                 
+                // Push Event ke GTM DataLayer untuk Laporan Konversi
+                window.dataLayer = window.dataLayer || [];
+                window.dataLayer.push({
+                    'event': 'generate_lead',
+                    'lead_type': pilihan
+                });
+
                 alert(`Terima kasih ${nama}. File E-Book sedang disiapkan. Admin kami juga akan mengirimkan info lebih lanjut ke WhatsApp Anda.`);
                 
                 e.target.reset(); // Kosongkan form setelah sukses
