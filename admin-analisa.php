@@ -14,6 +14,17 @@ if ($result && $result->num_rows > 0) {
 }
 $leads_json = json_encode($leads_data);
 
+// Ambil data jejak pengunjung (Mata AI) untuk dianalisa
+$footprints_data = [];
+$sql_fp = "SELECT device, location, source, campaign FROM visitor_footprints ORDER BY id DESC LIMIT 200";
+$result_fp = $conn->query($sql_fp);
+if ($result_fp && $result_fp->num_rows > 0) {
+    while($row = $result_fp->fetch_assoc()) {
+        $footprints_data[] = $row;
+    }
+}
+$footprints_json = json_encode($footprints_data);
+
 // Proses Simpan Hasil Analisa ke file lokal
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_persona') {
     $content = $_POST['content'] ?? '';
@@ -78,7 +89,7 @@ $active_menu = 'analisa';
                         <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">Status Data Tersedia</h3>
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-gray-600">Total Sampel Data:</span>
-                            <span class="font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full"><?= count($leads_data) ?> Prospek</span>
+                            <span class="font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full"><?= count($leads_data) ?> Leads & <?= count($footprints_data) ?> Jejak</span>
                         </div>
                         <p class="text-xs text-gray-500 mb-6 italic">Data yang dikirim ke AI dienkripsi secara anonim (Nama dan Nomor WA disembunyikan demi privasi).</p>
                         
@@ -137,6 +148,7 @@ $active_menu = 'analisa';
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec"; 
         
         const rawLeadsData = <?= $leads_json ?>;
+        const rawFootprintsData = <?= $footprints_json ?>;
         const savedPersonaMarkdown = <?= json_encode($saved_persona) ?>;
         let currentMarkdown = savedPersonaMarkdown;
 
@@ -185,13 +197,23 @@ $active_menu = 'analisa';
             }
             btnSave.disabled = false;
 
+            // Gabungkan data Leads dengan data Footprint Mata AI agar Gemini bisa menganalisa keduanya
+            const payloadLeads = JSON.parse(JSON.stringify(rawLeadsData));
+            if (rawFootprintsData.length > 0) {
+                payloadLeads.unshift({
+                    jenis_lead: "DATA_JEJAK_PENGUNJUNG_MATA_AI",
+                    sumber_info: JSON.stringify(rawFootprintsData),
+                    status: "TOLONG_ANALISA_JUGA_LOKASI_DAN_DEVICE_MEREKA"
+                });
+            }
+
             // Tembak data ke Google Apps Script (GAS) menggunakan POST
             fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'text/plain;charset=utf-8' // GAS Web App lebih stabil menerima plain text
                 },
-                body: JSON.stringify({ leads: rawLeadsData, type: 'persona' })
+                body: JSON.stringify({ leads: payloadLeads, type: 'persona' })
             })
             .then(response => response.json())
             .then(data => {
