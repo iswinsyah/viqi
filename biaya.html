@@ -125,15 +125,8 @@
                                     <th class="px-6 py-3 border-b border-gray-200 text-right text-sm font-bold text-gray-700">Nominal</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Formulir & Administrasi SPMB</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">Rp 350.000</td>
-                                </tr>
-                                <tr class="bg-emerald-50 font-bold">
-                                    <td class="px-6 py-4 text-sm text-emerald-900">Total Biaya Pendaftaran</td>
-                                    <td class="px-6 py-4 text-sm text-emerald-900 text-right">Rp 350.000</td>
-                                </tr>
+                            <tbody id="body-pendaftaran" class="divide-y divide-gray-200">
+                                <tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -150,27 +143,8 @@
                                     <th class="px-6 py-3 border-b border-gray-200 text-right text-sm font-bold text-gray-700">Nominal</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Uang Pembangunan (Gedung & Fasilitas)</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">Rp 8.000.000</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Ranjang, Kasur, Lemari, dll (Hak Pakai)</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">Rp 2.500.000</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Seragam (4 Stel) & Modul Tahun Pertama</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">Rp 3.000.000</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Kegiatan Tahunan (Outbound dll)</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">Rp 1.500.000</td>
-                                </tr>
-                                <tr class="bg-amber-50 font-bold">
-                                    <td class="px-6 py-4 text-sm text-amber-900">Total Uang Pangkal</td>
-                                    <td class="px-6 py-4 text-sm text-amber-900 text-right">Rp 15.000.000</td>
-                                </tr>
+                            <tbody id="body-pangkal" class="divide-y divide-gray-200">
+                                <tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -188,23 +162,8 @@
                                     <th class="px-6 py-3 border-b border-gray-200 text-right text-sm font-bold text-gray-700">Nominal</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Makan 3x Sehari (Termasuk Suplemen/Brain Food)</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">Rp 800.000</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Pendidikan, Asrama, & Ekstrakurikuler</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">Rp 600.000</td>
-                                </tr>
-                                <tr>
-                                    <td class="px-6 py-4 text-sm text-gray-600">Laundry Pakaian (Standar)</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">Rp 100.000</td>
-                                </tr>
-                                <tr class="bg-blue-50 font-bold">
-                                    <td class="px-6 py-4 text-sm text-blue-900">Total SPP Per Bulan</td>
-                                    <td class="px-6 py-4 text-sm text-blue-900 text-right">Rp 1.500.000</td>
-                                </tr>
+                            <tbody id="body-spp" class="divide-y divide-gray-200">
+                                <tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat data...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -220,6 +179,40 @@
     </main>
 
     <script>
+        // Auto Fetch & Hitung Biaya
+        fetch('api-biaya.php?_=' + new Date().getTime())
+            .then(res => res.json())
+            .then(data => {
+                const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
+                
+                const renderTable = (categoryId, rows, bgTotal, textTotal, labelTotal) => {
+                    const tbody = document.getElementById('body-' + categoryId);
+                    if (!tbody) return;
+                    if (!rows || rows.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500 italic">Belum ada data komponen biaya.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = '';
+                    let total = 0;
+                    rows.forEach(r => {
+                        total += parseInt(r.nominal);
+                        tbody.innerHTML += `<tr>
+                            <td class="px-6 py-4 text-sm text-gray-600">${r.nama_komponen}</td>
+                            <td class="px-6 py-4 text-sm text-gray-900 font-medium text-right">${formatRp(r.nominal)}</td>
+                        </tr>`;
+                    });
+                    tbody.innerHTML += `<tr class="${bgTotal} font-bold">
+                        <td class="px-6 py-4 text-sm ${textTotal}">${labelTotal}</td>
+                        <td class="px-6 py-4 text-sm ${textTotal} text-right">${formatRp(total)}</td>
+                    </tr>`;
+                };
+
+                renderTable('pendaftaran', data.pendaftaran, 'bg-emerald-50', 'text-emerald-900', 'Total Biaya Pendaftaran');
+                renderTable('pangkal', data.pangkal, 'bg-amber-50', 'text-amber-900', 'Total Uang Pangkal');
+                renderTable('spp', data.spp, 'bg-blue-50', 'text-blue-900', 'Total SPP Per Bulan');
+            })
+            .catch(err => console.error('Gagal memuat data biaya:', err));
+
         document.addEventListener('DOMContentLoaded', function() {
             // Cek apakah pengguna sudah pernah unlock sebelumnya di browser ini
             if (localStorage.getItem('unlocked_biaya') === 'true') {
