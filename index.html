@@ -703,8 +703,35 @@
                                 <p class="text-gray-500 text-sm"><i class="${p.ikon_badge} text-amber-500 mr-1"></i> ${p.teks_badge}</p>
                             </div>`;
                         });
-                        // Jika lebih dari 4, hidupkan instruksi geser
-                        if(data.length > 4) document.getElementById('pengajar-nav').classList.remove('hidden');
+                        
+                        // Jika lebih dari 4, hidupkan instruksi geser & Auto-Scroll (Antrian Pesawat)
+                        if(data.length > 4) {
+                            document.getElementById('pengajar-nav').classList.remove('hidden');
+                            
+                            let scrollInterval;
+                            const startScroll = () => {
+                                scrollInterval = setInterval(() => {
+                                    const firstItem = container.querySelector('div');
+                                    if(!firstItem) return;
+                                    const scrollAmount = firstItem.offsetWidth + 24; // Jarak geser = lebar 1 elemen + gap 24px
+                                    
+                                    // Jika sudah mentok ujung kanan, kembali ke awal
+                                    if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
+                                        container.scrollTo({ left: 0, behavior: 'smooth' });
+                                    } else {
+                                        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                                    }
+                                }, 3000); // Geser setiap 3 detik (waktu antrian)
+                            };
+                            
+                            startScroll(); // Mulai jalankan antrian
+                            
+                            // Hentikan antrian sementara jika disentuh/ditahan mouse agar pengunjung bisa membaca
+                            container.addEventListener('mouseenter', () => clearInterval(scrollInterval));
+                            container.addEventListener('mouseleave', startScroll);
+                            container.addEventListener('touchstart', () => clearInterval(scrollInterval));
+                            container.addEventListener('touchend', startScroll);
+                        }
                     } else {
                         container.innerHTML = '<div class="w-full text-center text-gray-500 py-8 italic">Belum ada data pengajar.</div>';
                     }
