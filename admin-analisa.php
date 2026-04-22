@@ -207,6 +207,13 @@ $active_menu = 'analisa';
                 });
             }
 
+            // INJEKSI PROMPT: Paksa AI membagi analisa menjadi TOFU, MOFU, BOFU
+            payloadLeads.unshift({
+                jenis_lead: "SYSTEM_COMMAND",
+                sumber_info: "PENTING: Lakukan analisa mendalam dari data yang diberikan. Buat laporan analisa Buyer Persona yang terstruktur tegas berdasarkan 3 level Funnel Marketing:\n\n1. **TOFU (Top of Funnel - Awareness)**: Siapa profil demografi mereka? Apa masalah/keresahan utama mereka terkait pendidikan anak? Konten organik/ads seperti apa yang cocok untuk memancing mereka?\n2. **MOFU (Middle of Funnel - Consideration)**: Apa yang menjadi pertimbangan utama mereka dalam memilih pesantren? Fasilitas atau program apa yang paling mereka soroti dari data tersebut?\n3. **BOFU (Bottom of Funnel - Decision)**: Apa pemicu (trigger) utama yang membuat mereka akhirnya mendaftar/membayar? Apa hambatan (objection) terakhir mereka dan bagaimana cara CS mengatasinya?\n\nGunakan format Markdown yang rapi dengan Heading, Bullet Points, dan bahasa yang profesional namun mudah dipahami.",
+                status: "URGENT"
+            });
+
             // Tembak data ke Google Apps Script (GAS) menggunakan POST
             fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
