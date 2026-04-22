@@ -69,8 +69,10 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                 <div class="mt-12 pt-8 border-t border-gray-100 text-center">
                     <p class="text-gray-600 font-medium mb-4">Bagikan artikel ini jika bermanfaat:</p>
                     <div class="flex justify-center space-x-3">
-                        <a href="https://wa.me/?text=<?= urlencode($art['judul'] . ' - Baca di: http://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']) ?>" target="_blank" class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition"><i class="fab fa-whatsapp"></i></a>
-                        <a href="https://www.facebook.com/sharer/sharer.php?u=<?= urlencode('http://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']) ?>" target="_blank" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition"><i class="fab fa-facebook-f"></i></a>
+                        <a id="share-wa" href="#" target="_blank" class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition shadow-sm" title="Bagikan ke WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                        <a id="share-fb" href="#" target="_blank" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition shadow-sm" title="Bagikan ke Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a id="share-tw" href="#" target="_blank" class="w-10 h-10 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 transition shadow-sm" title="Bagikan ke X/Twitter"><i class="fab fa-twitter"></i></a>
+                        <button id="copy-link" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center hover:bg-gray-300 transition shadow-sm" title="Salin Link"><i class="fas fa-link"></i></button>
                     </div>
                 </div>
             </div>
@@ -84,5 +86,41 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             <p class="text-xs">&copy; 2026 Villa Quran Indonesia.</p>
         </div>
     </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. Simpan/Ambil Kode Agen
+            const urlParams = new URLSearchParams(window.location.search);
+            const refCode = urlParams.get('ref');
+            if (refCode) {
+                localStorage.setItem('agen_ref', refCode);
+            }
+            const savedRef = localStorage.getItem('agen_ref');
+
+            // 2. Siapkan URL Artikel + Parameter Agen (jika ada)
+            let currentUrl = window.location.origin + window.location.pathname + '?id=<?= $art['id'] ?>';
+            if (savedRef && savedRef !== 'organik') {
+                currentUrl += '&ref=' + savedRef;
+            }
+            
+            const articleTitle = <?= json_encode($art['judul']) ?>;
+            
+            // 3. Pasang URL ke Tombol Share
+            const waText = encodeURIComponent("Assalamu'alaikum, ada artikel bagus nih dari Villa Quran:\\n\\n*" + articleTitle + "*\\n\\nBaca selengkapnya di: " + currentUrl);
+            document.getElementById('share-wa').href = 'https://wa.me/?text=' + waText;
+            document.getElementById('share-fb').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(currentUrl);
+            document.getElementById('share-tw').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(articleTitle) + '&url=' + encodeURIComponent(currentUrl);
+            
+            // 4. Tombol Copy Link
+            document.getElementById('copy-link').addEventListener('click', function() {
+                navigator.clipboard.writeText(currentUrl).then(() => {
+                    const notif = savedRef && savedRef !== 'organik' ? '\\n\\n(Link sudah otomatis menyertakan kode referal agen Anda: ' + savedRef + ')' : '';
+                    alert('Link berhasil disalin!' + notif);
+                }).catch(err => {
+                    console.error('Gagal menyalin link: ', err);
+                });
+            });
+        });
+    </script>
 </body>
 </html>

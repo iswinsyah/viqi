@@ -241,8 +241,8 @@
                 <h2 class="text-3xl font-extrabold text-gray-900">Kurikulum Komprehensif</h2>
                 <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Perpaduan ilmu syar'i, akademik formal, dan keterampilan abad 21 yang adaptif terhadap perkembangan zaman.</p>
             </div>
-            <div id="kurikulum-container" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                <div class="col-span-full text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat program...</div>
+            <div id="kurikulum-container" class="flex flex-wrap justify-center gap-6">
+                <div class="w-full text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat program...</div>
             </div>
         </div>
     </section>
@@ -283,19 +283,12 @@
     <section class="py-20 bg-teal-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl font-extrabold text-emerald-900 mb-10">Kepercayaan Orang Tua Adalah Prioritas Kami</h2>
-            <div class="bg-white rounded-3xl shadow-xl p-8 md:p-12 max-w-4xl mx-auto relative mt-8">
-                <i class="fas fa-quote-left text-5xl text-teal-100 absolute top-8 left-8"></i>
-                <p class="text-xl md:text-2xl text-gray-700 font-medium italic relative z-10 mb-8 leading-relaxed">
-                    "Awalnya kami khawatir anak akan stres dipaksa menghafal. Ternyata di Villa Quran, anak saya sangat bahagia. Suasana asramanya bersih, makanannya bergizi penuh suplemen madu, dan alhamdulillah hafalannya sekarang sudah mutqin 10 Juz."
-                </p>
-                <div class="flex items-center justify-center">
-                    <div class="w-14 h-14 rounded-full bg-teal-800 flex items-center justify-center text-xl text-white font-bold mr-4 shadow-md">
-                        AF
-                    </div>
-                    <div class="text-left">
-                        <p class="font-bold text-gray-900 text-lg">Bpk. Ahmad Fauzi</p>
-                        <p class="text-sm text-gray-500 font-medium">Orang tua santri Tahun Ke-2</p>
-                    </div>
+            <div class="relative w-full mt-8">
+                <div id="testimoni-container" class="flex overflow-x-auto snap-x snap-mandatory gap-6 pb-8 pt-4 px-4 sm:px-0 [&::-webkit-scrollbar]:hidden" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    <div class="w-full text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat testimoni...</div>
+                </div>
+                <div id="testimoni-nav" class="text-center mt-2 text-sm text-emerald-600 font-medium animate-pulse hidden">
+                    <i class="fas fa-arrows-alt-h mr-2"></i>Geser untuk melihat testimoni lainnya
                 </div>
             </div>
         </div>
@@ -714,7 +707,7 @@
                         data.forEach((k, index) => {
                             const color = colors[index % colors.length]; // Putar warna berulang
                             container.innerHTML += `
-                                <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1 group">
+                                <div class="w-[calc(50%-0.75rem)] md:w-[calc(33.333%-1rem)] lg:w-[calc(25%-1.125rem)] flex-shrink-0 bg-white rounded-xl shadow-sm hover:shadow-md transition duration-300 p-6 border border-gray-100 flex flex-col items-center text-center hover:-translate-y-1 group">
                                     <div class="w-14 h-14 ${color.bg} ${color.text} rounded-full flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition duration-300"><i class="${k.ikon}"></i></div>
                                     <h3 class="font-bold text-gray-900 mb-2 leading-tight">${k.judul}</h3>
                                     <p class="text-xs text-gray-500">${k.deskripsi}</p>
@@ -722,9 +715,59 @@
                             `;
                         });
                     } else {
-                        container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8 italic">Belum ada data kurikulum.</div>';
+                        container.innerHTML = '<div class="w-full text-center text-gray-500 py-8 italic">Belum ada data kurikulum.</div>';
                     }
                 }).catch(err => console.error('Gagal memuat kurikulum:', err));
+
+            // 12. Auto Fetch Testimoni (Social Proof)
+            fetch('api-testimoni.php?_=' + new Date().getTime())
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('testimoni-container');
+                    if(data && data.length > 0) {
+                        container.innerHTML = '';
+                        data.forEach(t => {
+                            // Cerdaskan AI: Bikin inisial (Misal "Bpk. Ahmad Fauzi" -> "AF")
+                            let inisial = "VQ";
+                            if(t.nama) {
+                                let kata = t.nama.replace(/Bpk\.|Ibu|Ust\.|Dr\.|H\.|Hj\./gi, '').trim().split(' ');
+                                inisial = kata.length > 1 ? kata[0].charAt(0) + kata[1].charAt(0) : kata[0].substring(0,2);
+                            }
+                            
+                            // Render Avatar (Gambar atau Inisial)
+                            let avatar = (t.gambar_url && t.gambar_url.trim() !== '') 
+                                ? `<img src="${t.gambar_url}" alt="${t.nama}" class="w-14 h-14 rounded-full object-cover mr-4 shadow-md border-2 border-white">`
+                                : `<div class="w-14 h-14 rounded-full bg-teal-800 flex items-center justify-center text-xl text-white font-bold mr-4 shadow-md border-2 border-white">${inisial.toUpperCase()}</div>`;
+
+                            container.innerHTML += `
+                                <div class="snap-center shrink-0 w-[85vw] sm:w-[600px] bg-white rounded-3xl shadow-xl p-8 md:p-10 relative flex flex-col h-full border border-teal-100 mx-auto">
+                                    <i class="fas fa-quote-left text-5xl text-teal-50 absolute top-6 left-6"></i>
+                                    <p class="text-lg md:text-xl text-gray-700 font-medium italic relative z-10 mb-8 flex-grow text-left leading-relaxed">"${t.isi_testimoni}"</p>
+                                    <div class="flex items-center mt-auto border-t border-gray-100 pt-6">
+                                        ${avatar}
+                                        <div class="text-left"><p class="font-bold text-gray-900 text-lg">${t.nama}</p><p class="text-sm text-gray-500 font-medium">${t.jabatan}</p></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        // Jika testimoni > 1, hidupkan Carousel Infinite Loop
+                        if(data.length > 1) {
+                            document.getElementById('testimoni-nav').classList.remove('hidden');
+                            let scrollInterval;
+                            const startScroll = () => { scrollInterval = setInterval(() => {
+                                const firstItem = container.firstElementChild; if(!firstItem) return;
+                                const scrollAmount = firstItem.offsetWidth + 24;
+                                container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                                setTimeout(() => { container.style.scrollSnapType = 'none'; container.appendChild(firstItem); container.scrollLeft -= scrollAmount; setTimeout(() => { container.style.scrollSnapType = 'x mandatory'; }, 50); }, 600);
+                            }, 5000); }; // Tampil tiap 5 detik agar sempat terbaca
+                            startScroll();
+                            container.addEventListener('mouseenter', () => clearInterval(scrollInterval)); container.addEventListener('mouseleave', startScroll); container.addEventListener('touchstart', () => clearInterval(scrollInterval)); container.addEventListener('touchend', startScroll);
+                        } else { container.classList.add('justify-center'); }
+                    } else {
+                        container.innerHTML = '<div class="w-full text-center text-gray-500 py-8 italic">Belum ada data testimoni.</div>';
+                    }
+                }).catch(err => console.error('Gagal memuat testimoni:', err));
         });
 
         // Fungsi Menangani Form Prospek Brosur
@@ -763,6 +806,10 @@
                 console.error('Error:', error);
                 alert('Terjadi kesalahan jaringan saat menyimpan data. Silakan coba lagi.');
             });
+        }
+    </script>
+</body>
+</html>     });
         }
     </script>
 </body>
