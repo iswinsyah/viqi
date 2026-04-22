@@ -711,16 +711,21 @@
                             let scrollInterval;
                             const startScroll = () => {
                                 scrollInterval = setInterval(() => {
-                                    const firstItem = container.querySelector('div');
+                                    const firstItem = container.firstElementChild;
                                     if(!firstItem) return;
                                     const scrollAmount = firstItem.offsetWidth + 24; // Jarak geser = lebar 1 elemen + gap 24px
                                     
-                                    // Jika sudah mentok ujung kanan, kembali ke awal
-                                    if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 5) {
-                                        container.scrollTo({ left: 0, behavior: 'smooth' });
-                                    } else {
-                                        container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                                    }
+                                    // Animasi geser ke arah kiri (elemen muncul dari kanan ke kiri)
+                                    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                                    
+                                    // Trik Infinite Loop: Pindahkan elemen yang terlewati ke antrian paling belakang (kanan)
+                                    setTimeout(() => {
+                                        container.style.scrollSnapType = 'none'; // Matikan magnet sementara agar tidak loncat
+                                        container.appendChild(firstItem); // Pindah elemen ke ujung kanan
+                                        container.scrollLeft -= scrollAmount; // Koreksi koordinat scroll secara tak kasat mata
+                                        
+                                        setTimeout(() => { container.style.scrollSnapType = 'x mandatory'; }, 50); // Hidupkan magnet lagi
+                                    }, 600); // Tunggu animasi scroll selesai (sekitar 600ms)
                                 }, 3000); // Geser setiap 3 detik (waktu antrian)
                             };
                             
