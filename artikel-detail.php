@@ -122,5 +122,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             });
         });
     </script>
+    <!-- Mata AI Tracker -->
+    <script src="tracker.js"></script>
 </body>
 </html>
