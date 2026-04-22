@@ -7,6 +7,7 @@ $result = $conn->query("SELECT * FROM biaya ORDER BY id ASC");
 $data = [
     'pendaftaran' => [],
     'pangkal' => [],
+    'tahunan' => [],
     'spp' => []
 ];
 

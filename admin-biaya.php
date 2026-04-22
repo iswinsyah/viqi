@@ -18,7 +18,8 @@ if ($cek && $cek->fetch_assoc()['tot'] == 0) {
     ('pangkal', 'Uang Pembangunan (Gedung & Fasilitas)', 8000000),
     ('pangkal', 'Ranjang, Kasur, Lemari, dll (Hak Pakai)', 2500000),
     ('pangkal', 'Seragam (4 Stel) & Modul Tahun Pertama', 3000000),
-    ('pangkal', 'Kegiatan Tahunan (Outbound dll)', 1500000),
+    ('tahunan', 'Biaya Sewa Asrama Tahunan', 2000000),
+    ('tahunan', 'Biaya Kegiatan Tahunan', 1500000),
     ('spp', 'Makan 3x Sehari (Termasuk Suplemen/Brain Food)', 800000),
     ('spp', 'Pendidikan, Asrama, & Ekstrakurikuler', 600000),
     ('spp', 'Laundry Pakaian (Standar)', 100000)");
@@ -93,7 +94,8 @@ $active_menu = 'biaya';
                             <select name="kategori" required class="w-full px-4 py-2 border rounded-lg focus:ring-green-500 focus:border-green-500">
                                 <option value="pendaftaran" <?= ($edit_mode && $data_edit['kategori'] == 'pendaftaran') ? 'selected' : '' ?>>1. Biaya Pendaftaran</option>
                                 <option value="pangkal" <?= ($edit_mode && $data_edit['kategori'] == 'pangkal') ? 'selected' : '' ?>>2. Uang Pangkal</option>
-                                <option value="spp" <?= ($edit_mode && $data_edit['kategori'] == 'spp') ? 'selected' : '' ?>>3. SPP Bulanan</option>
+                                <option value="tahunan" <?= ($edit_mode && $data_edit['kategori'] == 'tahunan') ? 'selected' : '' ?>>3. Biaya Tahunan</option>
+                                <option value="spp" <?= ($edit_mode && $data_edit['kategori'] == 'spp') ? 'selected' : '' ?>>4. SPP Bulanan</option>
                             </select>
                         </div>
                         <div>
@@ -127,7 +129,7 @@ $active_menu = 'biaya';
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php
-                            $res = $conn->query("SELECT * FROM biaya ORDER BY FIELD(kategori, 'pendaftaran', 'pangkal', 'spp'), id ASC");
+                            $res = $conn->query("SELECT * FROM biaya ORDER BY FIELD(kategori, 'pendaftaran', 'pangkal', 'tahunan', 'spp'), id ASC");
                             if ($res && $res->num_rows > 0) {
                                 while($row = $res->fetch_assoc()) { ?>
                                 <tr class="hover:bg-gray-50">
