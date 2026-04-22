@@ -352,6 +352,33 @@
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h2 class="text-3xl md:text-4xl font-extrabold text-white mb-6">Penerimaan Santri Baru 2026/2027 Telah Dibuka</h2>
             <p class="text-xl text-teal-100 mb-10 max-w-3xl mx-auto">Kuota asrama sangat terbatas demi menjaga kualitas hafalan dan kenyamanan santri. Amankan kursi putra-putri Anda sekarang.</p>
+            
+            <!-- COUNTDOWN TIMER OTOMATIS -->
+            <div class="mb-10">
+                <p id="cd-text" class="text-amber-400 font-bold text-lg mb-4 tracking-wider">⏳ Menghitung Sisa Waktu Pendaftaran...</p>
+                <div class="flex justify-center space-x-3 sm:space-x-6">
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-teal-900 font-extrabold text-3xl sm:text-4xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-2xl shadow-[0_8px_0_0_rgba(20,184,166,1)] border-2 border-teal-100" id="cd-hari">00</div>
+                        <span class="text-teal-100 text-sm mt-4 font-bold uppercase tracking-widest">Hari</span>
+                    </div>
+                    <div class="text-white font-bold text-3xl sm:text-4xl mt-3 sm:mt-4">:</div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-teal-900 font-extrabold text-3xl sm:text-4xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-2xl shadow-[0_8px_0_0_rgba(20,184,166,1)] border-2 border-teal-100" id="cd-jam">00</div>
+                        <span class="text-teal-100 text-sm mt-4 font-bold uppercase tracking-widest">Jam</span>
+                    </div>
+                    <div class="text-white font-bold text-3xl sm:text-4xl mt-3 sm:mt-4">:</div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-teal-900 font-extrabold text-3xl sm:text-4xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-2xl shadow-[0_8px_0_0_rgba(20,184,166,1)] border-2 border-teal-100" id="cd-menit">00</div>
+                        <span class="text-teal-100 text-sm mt-4 font-bold uppercase tracking-widest">Menit</span>
+                    </div>
+                    <div class="text-white font-bold text-3xl sm:text-4xl mt-3 sm:mt-4">:</div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-rose-500 font-extrabold text-3xl sm:text-4xl w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center rounded-2xl shadow-[0_8px_0_0_rgba(225,29,72,1)] border-2 border-rose-100" id="cd-detik">00</div>
+                        <span class="text-teal-100 text-sm mt-4 font-bold uppercase tracking-widest">Detik</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
                 <a href="daftar-spmb.html" class="bg-amber-500 hover:bg-amber-600 text-teal-900 px-8 py-4 rounded-full font-bold text-lg transition duration-300 shadow-xl inline-flex items-center justify-center">
                     <i class="fas fa-edit mr-2"></i> Mulai Pendaftaran
@@ -738,6 +765,45 @@
                         container.innerHTML = '<div class="w-full text-center text-gray-500 py-8 italic">Belum ada data kurikulum.</div>';
                     }
                 }).catch(err => console.error('Gagal memuat kurikulum:', err));
+
+            // 13. Auto Countdown SPMB (Otomatis Mendeteksi Gelombang)
+            function initCountdown() {
+                function updateCD() {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = now.getMonth() + 1; // 1 - 12
+                    let endDate, wave;
+
+                    // Logika Penentuan Gelombang Tahunan
+                    if (month >= 7 && month <= 12) {
+                        endDate = new Date(year, 11, 31, 23, 59, 59); // 31 Desember
+                        wave = "Gelombang 1";
+                    } else if (month >= 1 && month <= 3) {
+                        endDate = new Date(year, 2, 31, 23, 59, 59); // 31 Maret
+                        wave = "Gelombang 2";
+                    } else {
+                        endDate = new Date(year, 5, 30, 23, 59, 59); // 30 Juni
+                        wave = "Gelombang 3";
+                    }
+
+                    const diff = endDate.getTime() - now.getTime();
+                    if (diff > 0) {
+                        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                        if(document.getElementById('cd-hari')) document.getElementById('cd-hari').innerText = d.toString().padStart(2, '0');
+                        if(document.getElementById('cd-jam')) document.getElementById('cd-jam').innerText = h.toString().padStart(2, '0');
+                        if(document.getElementById('cd-menit')) document.getElementById('cd-menit').innerText = m.toString().padStart(2, '0');
+                        if(document.getElementById('cd-detik')) document.getElementById('cd-detik').innerText = s.toString().padStart(2, '0');
+                        if(document.getElementById('cd-text')) document.getElementById('cd-text').innerText = `⏳ Sisa Waktu Pendaftaran ${wave} Berakhir:`;
+                    }
+                }
+                updateCD();
+                setInterval(updateCD, 1000);
+            }
+            initCountdown();
 
             // Auto Fetch Fasilitas Snippet
             fetch('api-fasilitas.php?_=' + new Date().getTime())

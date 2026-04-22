@@ -62,6 +62,32 @@
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <h1 class="text-3xl md:text-4xl font-extrabold mb-4">Formulir Pendaftaran Santri Baru</h1>
             <p class="text-lg text-teal-100">Silakan lengkapi data di bawah ini dengan benar sesuai dokumen resmi (KK/Akta/Ijazah).</p>
+            
+            <!-- COUNTDOWN TIMER (MINI) -->
+            <div class="mt-8 mb-2">
+                <p id="cd-text" class="text-amber-400 font-bold text-sm mb-3">⏳ Menghitung Sisa Waktu...</p>
+                <div class="flex justify-center space-x-2 sm:space-x-4">
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-teal-900 font-bold text-2xl w-12 h-12 flex items-center justify-center rounded-lg shadow-md" id="cd-hari">00</div>
+                        <span class="text-teal-100 text-xs mt-1 font-medium">Hari</span>
+                    </div>
+                    <div class="text-white font-bold text-2xl mt-1">:</div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-teal-900 font-bold text-2xl w-12 h-12 flex items-center justify-center rounded-lg shadow-md" id="cd-jam">00</div>
+                        <span class="text-teal-100 text-xs mt-1 font-medium">Jam</span>
+                    </div>
+                    <div class="text-white font-bold text-2xl mt-1">:</div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-teal-900 font-bold text-2xl w-12 h-12 flex items-center justify-center rounded-lg shadow-md" id="cd-menit">00</div>
+                        <span class="text-teal-100 text-xs mt-1 font-medium">Menit</span>
+                    </div>
+                    <div class="text-white font-bold text-2xl mt-1">:</div>
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-rose-500 font-bold text-2xl w-12 h-12 flex items-center justify-center rounded-lg shadow-md" id="cd-detik">00</div>
+                        <span class="text-teal-100 text-xs mt-1 font-medium">Detik</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -438,6 +464,42 @@
                 const refInput = document.getElementById('spmb-ref');
                 if(refInput) refInput.value = savedRef;
             }
+
+            // SCRIPT OTOMATIS COUNTDOWN TAHUNAN
+            function initCountdown() {
+                function updateCD() {
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = now.getMonth() + 1;
+                    let endDate, wave;
+
+                    if (month >= 7 && month <= 12) {
+                        endDate = new Date(year, 11, 31, 23, 59, 59);
+                        wave = "Gelombang 1";
+                    } else if (month >= 1 && month <= 3) {
+                        endDate = new Date(year, 2, 31, 23, 59, 59);
+                        wave = "Gelombang 2";
+                    } else {
+                        endDate = new Date(year, 5, 30, 23, 59, 59);
+                        wave = "Gelombang 3";
+                    }
+
+                    const diff = endDate.getTime() - now.getTime();
+                    if (diff > 0) {
+                        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        const s = Math.floor((diff % (1000 * 60)) / 1000);
+                        if(document.getElementById('cd-hari')) document.getElementById('cd-hari').innerText = d.toString().padStart(2, '0');
+                        if(document.getElementById('cd-jam')) document.getElementById('cd-jam').innerText = h.toString().padStart(2, '0');
+                        if(document.getElementById('cd-menit')) document.getElementById('cd-menit').innerText = m.toString().padStart(2, '0');
+                        if(document.getElementById('cd-detik')) document.getElementById('cd-detik').innerText = s.toString().padStart(2, '0');
+                        if(document.getElementById('cd-text')) document.getElementById('cd-text').innerText = `⏳ Waktu Pendaftaran ${wave} Tersisa:`;
+                    }
+                }
+                updateCD(); setInterval(updateCD, 1000);
+            }
+            initCountdown();
 
             // TANGANI SUBMIT FORM KE DATABASE
             const form = document.getElementById('spmb-form');
