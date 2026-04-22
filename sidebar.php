@@ -73,6 +73,10 @@
                 <i class="fas fa-images w-6 text-center text-amber-500"></i>
                 <span class="ml-3 font-medium">Galeri Kegiatan</span>
             </a>
+            <a href="admin-kurikulum.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'kurikulum') ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-book w-6 text-center text-rose-400"></i>
+                <span class="ml-3 font-medium">Kurikulum & Program</span>
+            </a>
             <a href="admin-media.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
                 <i class="fas fa-folder-open w-6 text-center text-indigo-400"></i>
                 <span class="ml-3 font-medium">Penyimpanan Media</span>
