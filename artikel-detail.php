@@ -34,8 +34,20 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
         .artikel-konten h2 { font-size: 1.5rem; }
         .artikel-konten ul, .artikel-konten ol { margin-left: 1.5em; margin-bottom: 1.5em; list-style-type: disc; line-height: 1.8; color: #374151; }
     </style>
+    <!-- Google Tag Manager -->
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-M2F9GKZG');</script>
+    <!-- End Google Tag Manager -->
 </head>
 <body class="font-sans antialiased text-gray-800 bg-gray-50 flex flex-col min-h-screen">
+
+    <!-- Google Tag Manager (noscript) -->
+    <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-M2F9GKZG"
+    height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+    <!-- End Google Tag Manager (noscript) -->
 
     <header class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
         <div class="max-w-4xl mx-auto px-4">
