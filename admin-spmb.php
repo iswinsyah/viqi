@@ -62,6 +62,11 @@ $active_menu = 'spmb';
                     <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-graduate text-emerald-600 mr-2"></i>Data Pendaftar SPMB</h1>
                     <p class="text-sm text-gray-500 mt-1">Kelola data calon santri baru yang mengisi formulir secara online.</p>
                 </div>
+                <div>
+                    <a href="export-spmb.php" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-lg transition shadow-md flex items-center">
+                        <i class="fas fa-file-excel mr-2"></i> Export ke Excel
+                    </a>
+                </div>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
