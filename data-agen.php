@@ -37,13 +37,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $bank = isset($_POST['bank']) ? $conn->real_escape_string($_POST['bank']) : '';
     $rekening = isset($_POST['rekening']) ? $conn->real_escape_string($_POST['rekening']) : '';
     
-    // Generate Kode Referral jika kolom tidak diisi
-    if (!empty($_POST['kode_ref'])) {
-        $kode_ref = $conn->real_escape_string($_POST['kode_ref']);
-    } else {
-        // Format otomatis: nama huruf kecil tanpa spasi + angka random
-        $kode_ref = strtolower(str_replace(' ', '', $nama)) . rand(10,99);
-    }
+    // Set kode referral selalu menggunakan nomor WhatsApp
+    $kode_ref = $whatsapp;
 
     // Cek apakah ini mode Update atau Insert baru
     if (isset($_POST['id']) && !empty($_POST['id'])) {
@@ -160,12 +155,6 @@ $active_menu = 'agen';
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nomor Rekening <span class="text-red-500">*</span></label>
                                 <input type="number" name="rekening" value="<?= $edit_mode ? htmlspecialchars($data_edit['rekening']) : '' ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nomor Rekening Tujuan Komisi">
-                            </div>
-                            <!-- Kode Referral Kustom -->
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Kode Referral (Opsional)</label>
-                                <input type="text" name="kode_ref" value="<?= $edit_mode ? htmlspecialchars($data_edit['kode_ref']) : '' ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50" placeholder="Biarkan kosong untuk generate otomatis, atau ketik: ustadzbudi">
-                                <p class="text-xs text-gray-500 mt-1">Kode ini akan digunakan di link: <code>villaquranindonesia.com/?ref=kode</code></p>
                             </div>
                         </div>
                         <div class="mt-6 flex justify-end space-x-3">
