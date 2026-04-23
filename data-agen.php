@@ -183,6 +183,7 @@ $active_menu = 'agen';
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Info Agen</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rekening Bank</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Link Referral</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Kirim Link</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leads</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
@@ -195,6 +196,20 @@ $active_menu = 'agen';
 
                             if ($result && $result->num_rows > 0) {
                                 while($row = $result->fetch_assoc()) {
+                                    
+                                    // Siapkan URL WhatsApp untuk mengirim link referral ke agen
+                                    $nama_agen = htmlspecialchars($row['nama']);
+                                    $nomor_wa_raw = $row['whatsapp'];
+                                    $nomor_wa_clean = $nomor_wa_raw;
+                                    if(substr($nomor_wa_clean, 0, 1) == '0') {
+                                        $nomor_wa_clean = '62' . substr($nomor_wa_clean, 1);
+                                    }
+
+                                    $link_referral = "https://villaquranindonesia.com/?ref=" . htmlspecialchars($row['whatsapp']);
+
+                                    $pesan_wa = "Mitra " . $nama_agen . " yang kami hormati silahkan Buka Web Replika khusus njenengan dengan klik link berikut : " . $link_referral . " kemudian simpan link ini di bookmark. SIlahkan masuk web dengan selalu menggunkan link ini kemudian silahkan share artikel yang ada di web ke sosmed atau grup-grup whatsapp atau ke kontakan yang dikenal, agar kami tahu pegunjung yang datang ke web adalah hasil kerja njenengan.";
+
+                                    $url_kirim_wa = "https://wa.me/" . $nomor_wa_clean . "?text=" . urlencode($pesan_wa);
                             ?>
                                 <tr class="hover:bg-gray-50 transition">
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -208,6 +223,11 @@ $active_menu = 'agen';
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-xs border border-gray-200">?ref=<?= htmlspecialchars($row['whatsapp']) ?></span>
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <a href="<?= $url_kirim_wa ?>" target="_blank" class="bg-green-100 text-green-700 hover:bg-green-200 px-3 py-1.5 rounded-full text-xs font-bold transition shadow-sm border border-green-200 flex items-center justify-center">
+                                            <i class="fab fa-whatsapp mr-2"></i> Kirim
+                                        </a>
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold"><?= $row['total_leads'] ?> Orang</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <a href="data-agen.php?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
@@ -219,7 +239,7 @@ $active_menu = 'agen';
                             } else {
                             ?>
                                 <tr>
-                                    <td colspan="5" class="px-6 py-8 text-center text-gray-500 italic">Belum ada data agen yang terdaftar. Silakan input di atas.</td>
+                                    <td colspan="6" class="px-6 py-8 text-center text-gray-500 italic">Belum ada data agen yang terdaftar. Silakan input di atas.</td>
                                 </tr>
                             <?php } ?>
                         </tbody>
