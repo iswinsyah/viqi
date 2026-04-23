@@ -124,12 +124,16 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             let currentUrl = window.location.origin + window.location.pathname + '?id=<?= $art['id'] ?>';
             if (savedRef && savedRef !== 'organik') {
                 currentUrl += '&ref=' + savedRef;
+                
+                // Otomatis update Address Bar agar selalu tampil nomor referalnya
+                const newBrowserUrl = window.location.pathname + '?id=<?= $art['id'] ?>&ref=' + savedRef;
+                window.history.replaceState(null, '', newBrowserUrl);
             }
             
             const articleTitle = <?= json_encode($art['judul']) ?>;
             
             // 3. Pasang URL ke Tombol Share
-            const waText = encodeURIComponent("Assalamu'alaikum, ada artikel bagus nih dari Villa Quran:\\n\\n*" + articleTitle + "*\\n\\nBaca selengkapnya di: " + currentUrl);
+            const waText = encodeURIComponent("Assalamu'alaikum, ada artikel bagus nih dari Villa Quran:\n\n*" + articleTitle + "*\n\nBaca selengkapnya di: " + currentUrl);
             document.getElementById('share-wa').href = 'https://wa.me/?text=' + waText;
             document.getElementById('share-fb').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(currentUrl);
             document.getElementById('share-tw').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(articleTitle) + '&url=' + encodeURIComponent(currentUrl);
@@ -137,7 +141,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             // 4. Tombol Copy Link
             document.getElementById('copy-link').addEventListener('click', function() {
                 navigator.clipboard.writeText(currentUrl).then(() => {
-                    const notif = savedRef && savedRef !== 'organik' ? '\\n\\n(Link sudah otomatis menyertakan kode referal agen Anda: ' + savedRef + ')' : '';
+                    const notif = savedRef && savedRef !== 'organik' ? '\n\n(Link sudah otomatis menyertakan nomor referal Anda: ' + savedRef + ')' : '';
                     alert('Link berhasil disalin!' + notif);
                 }).catch(err => {
                     console.error('Gagal menyalin link: ', err);

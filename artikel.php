@@ -87,4 +87,14 @@ fetch('api-pengaturan.php?_=' + new Date().getTime()).then(res => res.json()).th
         });
     }
 }).catch(e => console.log('Setting error'));
+
+// Ambil data agen dari memori dan tempelkan ke semua link artikel
+const savedRef = localStorage.getItem('agen_ref');
+if (savedRef && savedRef !== 'organik') {
+    document.querySelectorAll('a[href^="artikel-detail.php"]').forEach(a => {
+        if (!a.href.includes('ref=')) {
+            a.href += '&ref=' + savedRef;
+        }
+    });
+}
 </script>
