@@ -73,7 +73,13 @@ if ($result && $result->num_rows > 0) {
     </main>
 
     <footer class="bg-gray-900 text-gray-400 py-12 text-center mt-auto">
-        <div class="max-w-7xl mx-auto px-4"><p class="text-sm">&copy; 2026 Villa Quran Indonesia. All rights reserved.</p></div>
+        <div class="max-w-7xl mx-auto px-4"><p class="text-sm">&copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Indonesia</span>. All rights reserved.</p></div>
     </footer>
 </body>
 </html>
+<script>
+fetch('api-pengaturan.php?_=' + new Date().getTime()).then(res => res.json()).then(data => {
+    if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
+    if (data.nama_sekolah && document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
+}).catch(e => console.log('Setting error'));
+</script>

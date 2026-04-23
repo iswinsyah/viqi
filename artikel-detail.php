@@ -95,7 +95,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
         <div class="max-w-4xl mx-auto px-4 text-center">
             <h2 class="text-white text-xl font-bold mb-4">Tertarik bergabung dengan Villa Quran?</h2>
             <a href="index.html#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-950 px-6 py-2 rounded-full font-bold text-sm transition shadow-md inline-block mb-6">Informasi Pendaftaran</a>
-            <p class="text-xs">&copy; 2026 Villa Quran Indonesia.</p>
+                <p class="text-xs">&copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Indonesia</span>.</p>
         </div>
     </footer>
 
@@ -108,6 +108,12 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                 localStorage.setItem('agen_ref', refCode);
             }
             const savedRef = localStorage.getItem('agen_ref');
+
+            // 1.5 Auto Sinkronisasi Nama Sekolah & Tahun Copyright
+            fetch('api-pengaturan.php?_=' + new Date().getTime()).then(res => res.json()).then(data => {
+                if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
+                if (data.nama_sekolah && document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
+            }).catch(e => console.log('Setting error'));
 
             // 2. Siapkan URL Artikel + Parameter Agen (jika ada)
             let currentUrl = window.location.origin + window.location.pathname + '?id=<?= $art['id'] ?>';

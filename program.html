@@ -72,7 +72,7 @@
             <a href="index.html#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-950 px-8 py-3 rounded-full font-bold text-lg transition duration-300 shadow-md inline-block mb-8">Daftar SPMB Sekarang</a>
             
             <div class="mt-8 pt-8 border-t border-gray-800 text-sm">
-                &copy; 2026 Villa Quran Indonesia. All rights reserved.
+                &copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Indonesia</span>. All rights reserved.
             </div>
         </div>
     </footer>
@@ -84,6 +84,12 @@
         if (refCode) {
             localStorage.setItem('agen_ref', refCode);
         }
+
+        // Auto Sinkronisasi Footer
+        fetch('api-pengaturan.php?_=' + new Date().getTime()).then(res => res.json()).then(data => {
+            if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
+            if (data.nama_sekolah && document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
+        }).catch(e => console.log('Setting error'));
 
         // Auto Fetch Kurikulum Dinamis dari Admin
         fetch('api-kurikulum.php?_=' + new Date().getTime())

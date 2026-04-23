@@ -69,14 +69,14 @@
     <footer class="bg-gray-900 text-gray-400 py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-                <span class="font-bold text-2xl text-white block mb-4">Villa Quran Indonesia</span>
-                <p class="text-sm leading-relaxed pr-4">Mencetak generasi Hafidz Quran bersanad yang beradab mulia, cerdas, dan mandiri di lingkungan berasrama yang nyaman ala villa.</p>
+                    <span id="footer-nama" class="font-bold text-2xl text-white block mb-4">Villa Quran Indonesia</span>
+                    <p id="footer-desk" class="text-sm leading-relaxed pr-4">Mencetak generasi Hafidz Quran bersanad yang beradab mulia, cerdas, dan mandiri di lingkungan berasrama yang nyaman ala villa.</p>
             </div>
             <div>
                 <h4 class="text-white font-bold mb-4 text-lg">Hubungi Admin Kami</h4>
                 <ul class="space-y-3 text-sm">
-                    <li class="flex items-start"><i class="fas fa-map-marker-alt mt-1 mr-3 text-emerald-500"></i> Jl. Sejuk Asri No. 1, Kota Quran</li>
-                    <li class="flex items-center"><i class="fas fa-phone mr-3 text-emerald-500"></i> (021) 1234-5678</li>
+                        <li class="flex items-start"><i class="fas fa-map-marker-alt mt-1 mr-3 text-emerald-500"></i> <span id="footer-alamat">Jl. Sejuk Asri No. 1, Kota Quran</span></li>
+                        <li class="flex items-center"><i class="fas fa-phone mr-3 text-emerald-500"></i> <span id="footer-telepon">(021) 1234-5678</span></li>
                     <li class="flex items-center"><i class="fab fa-whatsapp mr-3 text-green-500 text-lg"></i> <a href="https://wa.me/628XXXXXXXXXX" target="_blank" class="hover:text-white transition">+62 812-XXXX-XXXX</a></li>
                 </ul>
             </div>
@@ -91,7 +91,7 @@
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-sm text-center">
-            &copy; 2026 Villa Quran Indonesia. All rights reserved.
+                &copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Indonesia</span>. All rights reserved.
         </div>
     </footer>
     
@@ -107,6 +107,16 @@
         fetch('api-pengaturan.php?_=' + new Date().getTime())
             .then(res => res.json())
             .then(data => {
+                    if(data) {
+                        if (data.nama_sekolah) {
+                            if(document.getElementById('footer-nama')) document.getElementById('footer-nama').textContent = data.nama_sekolah;
+                            if(document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
+                        }
+                        if (data.deskripsi_footer) document.getElementById('footer-desk').textContent = data.deskripsi_footer;
+                        if (data.alamat) document.getElementById('footer-alamat').textContent = data.alamat;
+                        if (data.telepon) document.getElementById('footer-telepon').textContent = data.telepon;
+                        if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
+
                 if(data && data.nomor_wa) {
                     document.querySelectorAll('a[href^="https://wa.me/62"]').forEach(a => {
                         a.href = `https://wa.me/${data.nomor_wa}`;

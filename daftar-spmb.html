@@ -348,7 +348,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <p class="text-sm">Jika mengalami kendala saat pendaftaran, silakan hubungi <a href="https://wa.me/6281234567890" class="text-emerald-500 font-bold hover:text-white transition">Admin Pendaftaran (WhatsApp)</a>.</p>
             <div class="mt-4 pt-4 border-t border-gray-800 text-xs">
-                &copy; 2026 Villa Quran Indonesia. All rights reserved.
+                    &copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Indonesia</span>. All rights reserved.
             </div>
         </div>
     </footer>
@@ -464,6 +464,12 @@
                 const refInput = document.getElementById('spmb-ref');
                 if(refInput) refInput.value = savedRef;
             }
+
+            // Auto Sinkronisasi Footer
+            fetch('api-pengaturan.php?_=' + new Date().getTime()).then(res => res.json()).then(data => {
+                if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
+                if (data.nama_sekolah && document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
+            }).catch(e => console.log('Setting error'));
 
             // SCRIPT OTOMATIS COUNTDOWN TAHUNAN
             function initCountdown() {
