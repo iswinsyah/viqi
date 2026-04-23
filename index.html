@@ -408,8 +408,8 @@
             <div>
                 <h4 class="text-white font-bold mb-4 text-lg">Akses Cepat</h4>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="https://sadigs.villaquranbaronmalang.com" target="_blank" class="hover:text-blue-400 transition">Portal Orang Tua <i class="fas fa-external-link-alt text-[10px] ml-1"></i></a></li>
-                    <li><a href="https://sadigs.villaquranbaronmalang.com" target="_blank" class="hover:text-blue-400 transition">Laporan Mutaba'ah <i class="fas fa-external-link-alt text-[10px] ml-1"></i></a></li>
+                    <li><a id="link-portal" href="https://sadigs.villaquranbaronmalang.com" target="_blank" class="hover:text-blue-400 transition">Portal Orang Tua <i class="fas fa-external-link-alt text-[10px] ml-1"></i></a></li>
+                    <li><a id="link-mutabaah" href="https://sadigs.villaquranbaronmalang.com" target="_blank" class="hover:text-blue-400 transition">Laporan Mutaba'ah <i class="fas fa-external-link-alt text-[10px] ml-1"></i></a></li>
                     <li><a href="biaya.html" class="hover:text-blue-400 transition">Biaya Asrama</a></li>
                     <li><a href="faq.html" class="hover:text-blue-400 transition">FAQ (Tanya Jawab)</a></li>
                 </ul>
@@ -556,6 +556,8 @@
                         if (setting.telepon) document.getElementById('footer-telepon').textContent = setting.telepon;
                         
                         if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
+                        if (setting.link_portal && document.getElementById('link-portal')) document.getElementById('link-portal').href = setting.link_portal;
+                        if (setting.link_mutabaah && document.getElementById('link-mutabaah')) document.getElementById('link-mutabaah').href = setting.link_mutabaah;
 
                     const waNumber = setting.nomor_wa || '6281234567890';
                     let waText = setting.pesan_default || "Assalamu'alaikum Admin Villa Quran, saya ingin bertanya seputar pendaftaran santri baru.";

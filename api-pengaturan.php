@@ -3,7 +3,7 @@ require_once 'koneksi.php';
 header('Content-Type: application/json');
 
 // Ambil data pengaturan utama web (ID = 1)
-$result = $conn->query("SELECT nomor_wa, pesan_default FROM pengaturan_web WHERE id = 1");
+$result = $conn->query("SELECT * FROM pengaturan_web WHERE id = 1");
 
 if ($result && $result->num_rows > 0) {
     $data = $result->fetch_assoc();
