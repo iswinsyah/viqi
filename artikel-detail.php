@@ -52,7 +52,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
     <header class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
         <div class="max-w-4xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
-                <a href="index.html" class="font-bold text-xl text-emerald-800 hover:text-emerald-600 transition"><i class="fas fa-leaf mr-2 text-emerald-500"></i>Villa Quran</a>
+            <div class="flex-shrink-0 flex items-center"><a href="index.html" class="font-bold text-xl text-emerald-800 hover:text-emerald-600 transition"><i class="fas fa-leaf mr-2 text-emerald-500"></i>Villa Quran</a></div>
                 <a href="artikel.php" class="text-gray-500 hover:text-emerald-600 text-sm font-medium"><i class="fas fa-arrow-left mr-1"></i> Kembali ke Blog</a>
             </div>
         </div>
@@ -113,6 +113,11 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             fetch('api-pengaturan.php?_=' + new Date().getTime()).then(res => res.json()).then(data => {
                 if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
                 if (data.nama_sekolah && document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
+            if (data.logo_url) {
+                document.querySelectorAll('.flex-shrink-0 a').forEach(a => {
+                    a.innerHTML = `<img src="${data.logo_url}" alt="Logo" class="h-10 w-auto inline-block mr-2"><span class="hidden sm:inline-block">${data.nama_sekolah || 'Villa Quran'}</span>`;
+                });
+            }
             }).catch(e => console.log('Setting error'));
 
             // 2. Siapkan URL Artikel + Parameter Agen (jika ada)

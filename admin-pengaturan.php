@@ -20,11 +20,13 @@ $conn->query("ALTER TABLE pengaturan_web ADD COLUMN alamat TEXT AFTER deskripsi_
 $conn->query("ALTER TABLE pengaturan_web ADD COLUMN telepon VARCHAR(50) AFTER alamat");
 $conn->query("ALTER TABLE pengaturan_web ADD COLUMN link_portal VARCHAR(255)");
 $conn->query("ALTER TABLE pengaturan_web ADD COLUMN link_mutabaah VARCHAR(255)");
+$conn->query("ALTER TABLE pengaturan_web ADD COLUMN logo_url VARCHAR(255) AFTER nama_sekolah");
 
 // 2. Proses Simpan
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $wa = $conn->real_escape_string($_POST['nomor_wa']);
     $nama = $conn->real_escape_string($_POST['nama_sekolah'] ?? 'Villa Quran Indonesia');
+    $logo = $conn->real_escape_string($_POST['logo_url'] ?? '');
     $desc = $conn->real_escape_string($_POST['deskripsi_footer'] ?? '');
     $alamat = $conn->real_escape_string($_POST['alamat'] ?? '');
     $telepon = $conn->real_escape_string($_POST['telepon'] ?? '');
@@ -38,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if(substr($wa, 0, 3) == '+62') $wa = '62' . substr($wa, 3); // Ganti awalan +62 ke 62
     
     $sql = "UPDATE pengaturan_web SET 
-            nama_sekolah='$nama', deskripsi_footer='$desc', alamat='$alamat', telepon='$telepon',
+            nama_sekolah='$nama', logo_url='$logo', deskripsi_footer='$desc', alamat='$alamat', telepon='$telepon',
             link_portal='$portal', link_mutabaah='$mutabaah',
             nomor_wa='$wa', pesan_default='$pesan' WHERE id=1";
             
@@ -95,6 +97,10 @@ $active_menu = 'pengaturan';
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Nama Sekolah / Lembaga</label>
                                     <input type="text" name="nama_sekolah" value="<?= htmlspecialchars($data['nama_sekolah'] ?? 'Villa Quran Indonesia') ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                 </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-1">URL Logo Sekolah</label>
+                                <input type="text" name="logo_url" value="<?= htmlspecialchars($data['logo_url'] ?? '') ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="https://contoh.com/logo.png">
+                            </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi Singkat Footer</label>
                                     <textarea name="deskripsi_footer" rows="3" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500"><?= htmlspecialchars($data['deskripsi_footer'] ?? '') ?></textarea>

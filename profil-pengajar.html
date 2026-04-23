@@ -85,6 +85,8 @@
                 <ul class="space-y-2 text-sm">
                     <li><a href="https://sadigs.villaquranbaronmalang.com" target="_blank" class="hover:text-blue-400 transition">Portal Orang Tua <i class="fas fa-external-link-alt text-[10px] ml-1"></i></a></li>
                     <li><a href="https://sadigs.villaquranbaronmalang.com" target="_blank" class="hover:text-blue-400 transition">Laporan Mutaba'ah <i class="fas fa-external-link-alt text-[10px] ml-1"></i></a></li>
+                    <li><a id="link-portal" href="https://sadigs.villaquranbaronmalang.com" target="_blank" class="hover:text-blue-400 transition">Portal Orang Tua <i class="fas fa-external-link-alt text-[10px] ml-1"></i></a></li>
+                    <li><a id="link-mutabaah" href="https://sadigs.villaquranbaronmalang.com" target="_blank" class="hover:text-blue-400 transition">Laporan Mutaba'ah <i class="fas fa-external-link-alt text-[10px] ml-1"></i></a></li>
                     <li><a href="biaya.html" class="hover:text-blue-400 transition">Biaya Asrama</a></li>
                     <li><a href="faq.html" class="hover:text-blue-400 transition">FAQ (Tanya Jawab)</a></li>
                 </ul>
@@ -112,10 +114,17 @@
                             if(document.getElementById('footer-nama')) document.getElementById('footer-nama').textContent = data.nama_sekolah;
                             if(document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
                         }
+                    if (data.logo_url) {
+                        document.querySelectorAll('.flex-shrink-0 a').forEach(a => {
+                            a.innerHTML = `<img src="${data.logo_url}" alt="Logo" class="h-10 w-auto inline-block mr-2"><span class="hidden sm:inline-block">${data.nama_sekolah || 'Villa Quran'}</span>`;
+                        });
+                    }
                         if (data.deskripsi_footer) document.getElementById('footer-desk').textContent = data.deskripsi_footer;
                         if (data.alamat) document.getElementById('footer-alamat').textContent = data.alamat;
                         if (data.telepon) document.getElementById('footer-telepon').textContent = data.telepon;
                         if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
+                        if (data.link_portal && document.getElementById('link-portal')) document.getElementById('link-portal').href = data.link_portal;
+                        if (data.link_mutabaah && document.getElementById('link-mutabaah')) document.getElementById('link-mutabaah').href = data.link_mutabaah;
 
                 if(data && data.nomor_wa) {
                     document.querySelectorAll('a[href^="https://wa.me/62"]').forEach(a => {

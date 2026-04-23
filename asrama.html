@@ -132,6 +132,11 @@
         fetch('api-pengaturan.php?_=' + new Date().getTime()).then(res => res.json()).then(data => {
             if (document.getElementById('footer-tahun')) document.getElementById('footer-tahun').textContent = new Date().getFullYear();
             if (data.nama_sekolah && document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
+        if (data.logo_url) {
+            document.querySelectorAll('.flex-shrink-0 a').forEach(a => {
+                a.innerHTML = `<img src="${data.logo_url}" alt="Logo" class="h-10 w-auto inline-block mr-2"><span class="hidden sm:inline-block">${data.nama_sekolah || 'Villa Quran'}</span>`;
+            });
+        }
         }).catch(e => console.log('Setting error'));
 
         // Auto Fetch Fasilitas Dinamis dari Admin
