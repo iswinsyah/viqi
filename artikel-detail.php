@@ -77,18 +77,18 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                 <div class="artikel-konten">
                     <?= $art['konten'] ?>
                 </div>
-                
-                <div class="mt-12 pt-8 border-t border-gray-100 text-center">
-                    <p class="text-gray-600 font-medium mb-4">Bagikan artikel ini jika bermanfaat:</p>
-                    <div class="flex justify-center space-x-3">
-                        <a id="share-wa" href="#" target="_blank" class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition shadow-sm" title="Bagikan ke WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                        <a id="share-fb" href="#" target="_blank" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition shadow-sm" title="Bagikan ke Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a id="share-tw" href="#" target="_blank" class="w-10 h-10 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 transition shadow-sm" title="Bagikan ke X/Twitter"><i class="fab fa-twitter"></i></a>
-                        <button id="copy-link" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center hover:bg-gray-300 transition shadow-sm" title="Salin Link"><i class="fas fa-link"></i></button>
-                    </div>
-                </div>
             </div>
         </article>
+
+        <!-- TOMBOL SHARE MELAYANG (FLOATING) -->
+        <div class="fixed z-50 bottom-6 left-1/2 transform -translate-x-1/2 xl:top-1/2 xl:bottom-auto xl:left-8 xl:-translate-x-0 xl:-translate-y-1/2 bg-white/90 backdrop-blur shadow-2xl border border-gray-200 rounded-full px-4 py-3 xl:px-3 xl:py-4 flex flex-row xl:flex-col gap-3 items-center transition-all">
+            <span class="text-[10px] font-bold text-gray-400 xl:mb-2 hidden xl:block tracking-widest" style="writing-mode: vertical-rl; transform: rotate(180deg);">BAGIKAN</span>
+            <span class="text-[10px] font-bold text-gray-400 mr-1 xl:hidden">SHARE</span>
+            <a id="share-wa" href="#" target="_blank" class="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition shadow-md hover:scale-110" title="Bagikan ke WhatsApp"><i class="fab fa-whatsapp text-lg"></i></a>
+            <a id="share-fb" href="#" target="_blank" class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 transition shadow-md hover:scale-110" title="Bagikan ke Facebook"><i class="fab fa-facebook-f text-lg"></i></a>
+            <a id="share-tw" href="#" target="_blank" class="w-10 h-10 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 transition shadow-md hover:scale-110" title="Bagikan ke X/Twitter"><i class="fab fa-twitter text-lg"></i></a>
+            <button id="copy-link" class="w-10 h-10 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center hover:bg-gray-300 transition shadow-md hover:scale-110 focus:outline-none" title="Salin Link"><i class="fas fa-link text-lg"></i></button>
+        </div>
     </main>
 
     <footer class="bg-gray-900 text-gray-400 py-10 mt-auto">
