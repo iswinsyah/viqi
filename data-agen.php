@@ -184,6 +184,7 @@ $active_menu = 'agen';
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rekening Bank</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Link Referral</th>
                                 <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Kirim Link</th>
+                                <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Traffic (Klik)</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leads</th>
                                 <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Aksi</th>
                             </tr>
@@ -191,7 +192,7 @@ $active_menu = 'agen';
                         <tbody class="bg-white divide-y divide-gray-200">
                             <!-- SCRIPT PHP UNTUK MENAMPILKAN DATA ASLI -->
                             <?php
-                            $sql_tampil = "SELECT a.*, (SELECT COUNT(id) FROM leads l WHERE l.kode_ref = a.kode_ref OR l.kode_ref = a.whatsapp) AS total_leads FROM agen a ORDER BY a.id DESC";
+                            $sql_tampil = "SELECT a.*, (SELECT COUNT(id) FROM leads l WHERE l.kode_ref = a.kode_ref OR l.kode_ref = a.whatsapp) AS total_leads, (SELECT COUNT(id) FROM visitor_footprints v WHERE v.campaign = a.kode_ref OR v.campaign = a.whatsapp) AS total_traffic FROM agen a ORDER BY a.id DESC";
                             $result = $conn->query($sql_tampil);
 
                             if ($result && $result->num_rows > 0) {
@@ -228,6 +229,7 @@ $active_menu = 'agen';
                                             <i class="fab fa-whatsapp mr-2"></i> Kirim
                                         </a>
                                     </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-sky-600 font-bold"><?= $row['total_traffic'] ?> Klik</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold"><?= $row['total_leads'] ?> Orang</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <a href="data-agen.php?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
@@ -239,7 +241,7 @@ $active_menu = 'agen';
                             } else {
                             ?>
                                 <tr>
-                                    <td colspan="6" class="px-6 py-8 text-center text-gray-500 italic">Belum ada data agen yang terdaftar. Silakan input di atas.</td>
+                                    <td colspan="7" class="px-6 py-8 text-center text-gray-500 italic">Belum ada data agen yang terdaftar. Silakan input di atas.</td>
                                 </tr>
                             <?php } ?>
                         </tbody>
