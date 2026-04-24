@@ -84,18 +84,31 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row justify-between items-center p-6 gap-4">
-                <div class="flex items-center">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
+                <div class="flex items-center mb-4">
                     <div class="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xl mr-4">
                         <i class="fas fa-google"></i>
                     </div>
                     <div>
                         <h3 class="font-bold text-gray-900">SEO Content Writer</h3>
-                        <p class="text-sm text-gray-500">Pilih tanggal untuk menyesuaikan dengan tema dari Kalender.</p>
+                        <p class="text-sm text-gray-500">Masukkan Topik, Judul, dan Keyword acuan (Bisa copy-paste dari Kalender Konten AI).</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 w-full md:w-auto">
-                    <input type="date" id="tgl-seo" class="px-4 py-3 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500 flex-1 md:w-auto">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Topik / Ide Artikel <span class="text-red-500">*</span></label>
+                        <input type="text" id="topik-artikel" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="Contoh: Manfaat menghafal Al-Quran">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Judul Artikel <span class="text-red-500">*</span></label>
+                        <input type="text" id="judul-artikel" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="Contoh: 5 Manfaat Menghafal Al-Quran...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Keyword Target <span class="text-red-500">*</span></label>
+                        <input type="text" id="keyword-artikel" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="Contoh: tahfidz quran, asrama nyaman">
+                    </div>
+                </div>
+                <div class="flex justify-end">
                     <button id="btn-generate" onclick="jalankanGenerator()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center group whitespace-nowrap">
                         <i class="fas fa-magic mr-2 group-hover:rotate-12 transition transform"></i> Buat Artikel
                     </button>
@@ -116,7 +129,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 <div id="result-container" class="p-6 flex-1 overflow-y-auto relative">
                     <div id="state-idle" class="<?= !empty($saved_seo) ? 'hidden' : 'flex flex-col items-center justify-center h-full text-gray-400 py-16 text-center' ?>">
                         <i class="fas fa-keyboard text-6xl mb-4 opacity-50"></i>
-                        <p>Pilih tanggal dan klik "Buat Artikel" untuk mulai.</p>
+                        <p>Lengkapi Topik, Judul, dan Keyword lalu klik "Buat Artikel" untuk mulai.</p>
                     </div>
                     
                     <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-teal-600 py-16 text-center">
@@ -152,13 +165,13 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
             }
         });
 
-        // Otomatis set tanggal hari ini di input
-        document.getElementById('tgl-seo').valueAsDate = new Date();
-
         function jalankanGenerator() {
-            const dateInput = document.getElementById('tgl-seo').value;
-            if (!dateInput) {
-                alert("Silakan pilih tanggal rilis artikel terlebih dahulu!");
+            const topik = document.getElementById('topik-artikel').value.trim();
+            const judul = document.getElementById('judul-artikel').value.trim();
+            const keyword = document.getElementById('keyword-artikel').value.trim();
+
+            if (!topik || !judul || !keyword) {
+                    alert("Mohon lengkapi Topik, Judul, dan Keyword terlebih dahulu!");
                 return;
             }
             if (rawLeadsData.length === 0) {
@@ -193,13 +206,17 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 sumber_info: `ATURAN WAJIB & SANGAT KETAT:
 1. KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON YANG VALID.
 2. DILARANG ADA TEKS LAIN DI LUAR JSON (jangan ada sapaan AI).
-3. Gunakan struktur JSON persis seperti berikut:
+3. PEMBAHASAN ARTIKEL HARUS MENGACU PADA:
+   - TOPIK/IDE: ${topik}
+   - JUDUL: ${judul}
+   - KEYWORD: ${keyword}
+4. Gunakan struktur JSON persis seperti berikut:
 {
-  "judul": "Judul Artikel Menarik",
+  "judul": "${judul}",
   "meta_title": "SEO Title yang Menarik",
   "meta_description": "Meta description maksimal 150 karakter",
-  "meta_keywords": "keyword1, keyword2, keyword3",
-  "konten": "Isi artikel lengkap dengan tag HTML dasar seperti <p>, <h2>, <ul>, <li>, <strong>. JANGAN gunakan format markdown (* atau #) di dalam konten."
+  "meta_keywords": "${keyword}",
+  "konten": "Isi artikel lengkap dengan tag HTML dasar seperti <p>, <h2>, <ul>, <li>, <strong>. JANGAN gunakan format markdown (* atau #) di dalam konten. Bahas sesuai topik dan keyword."
 }`,
                 status: "URGENT"
             });
@@ -208,7 +225,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
             fetch(GAS_WEB_APP_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ leads: payloadLeads, type: 'seo', date: dateInput })
+                body: JSON.stringify({ leads: payloadLeads, type: 'seo', topik: topik, judul: judul, keyword: keyword })
             })
             .then(response => response.json())
             .then(data => {
@@ -356,7 +373,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const tgl = document.getElementById('tgl-seo').value || new Date().toISOString().slice(0,10);
+            const tgl = new Date().toISOString().slice(0,10);
             a.download = `Artikel_SEO_${tgl}.${isJson ? 'json' : 'md'}`;
             document.body.appendChild(a);
             a.click();
