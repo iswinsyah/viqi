@@ -91,8 +91,14 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                     </div>
                     <div>
                         <h3 class="font-bold text-gray-900">SEO Content Writer</h3>
-                        <p class="text-sm text-gray-500">Masukkan Topik, Judul, dan Keyword acuan (Bisa copy-paste dari Kalender Konten AI).</p>
+                        <p class="text-sm text-gray-500">Data form tersimpan otomatis. Anda tidak akan kehilangan ketikan meski pindah menu.</p>
                     </div>
+                </div>
+
+                <!-- Info Smart Paste -->
+                <div class="mb-4 bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-lg text-sm flex items-start">
+                    <i class="fas fa-lightbulb mt-1 mr-3 text-amber-500 text-lg"></i>
+                    <p><strong>Tips Cepat (Smart Paste):</strong> Sorot (blok) satu baris data dari tabel Kalender Konten AI, klik <i>Copy</i> (Ctrl+C), lalu <i>Paste</i> (Ctrl+V) di kolom <b>Topik</b> di bawah. Sistem akan otomatis membagi isinya ke 3 kolom secara instan!</p>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
