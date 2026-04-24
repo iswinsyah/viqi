@@ -98,7 +98,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 <!-- Info Smart Paste -->
                 <div class="mb-4 bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-lg text-sm flex items-start">
                     <i class="fas fa-lightbulb mt-1 mr-3 text-amber-500 text-lg"></i>
-                    <p><strong>Tips Cepat (Smart Paste):</strong> Sorot (blok) satu baris data dari tabel Kalender Konten AI, klik <i>Copy</i> (Ctrl+C), lalu <i>Paste</i> (Ctrl+V) di kolom <b>Topik</b> di bawah. Sistem akan otomatis membagi isinya ke 3 kolom secara instan!</p>
+                    <p><strong>Tips Cepat (Smart Paste):</strong> Klik tombol <b>"Copy SEO"</b> pada tabel di menu Kalender Konten AI, lalu <i>Paste</i> (Ctrl+V) di kolom <b>Topik</b> di bawah. Sistem akan otomatis membagi isinya ke 3 kolom secara instan!</p>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
@@ -169,7 +169,44 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 btnSave.disabled = true;
                 document.getElementById('btn-save-as').classList.remove('hidden');
             }
+
+            // Pulihkan input dari localStorage jika ada
+            if (localStorage.getItem('seo_topik')) document.getElementById('topik-artikel').value = localStorage.getItem('seo_topik');
+            if (localStorage.getItem('seo_judul')) document.getElementById('judul-artikel').value = localStorage.getItem('seo_judul');
+            if (localStorage.getItem('seo_keyword')) document.getElementById('keyword-artikel').value = localStorage.getItem('seo_keyword');
+
+            // Handle paste JSON dari tombol "Copy SEO" di Kalender
+            const topikInput = document.getElementById('topik-artikel');
+            if (topikInput) {
+                topikInput.addEventListener('paste', function(e) {
+                    let pasteData = (e.clipboardData || window.clipboardData).getData('text');
+                    try {
+                        let json = JSON.parse(pasteData);
+                        if (json.topik && json.judul && json.keyword) {
+                            e.preventDefault(); // Cegah paste default
+                            document.getElementById('topik-artikel').value = json.topik;
+                            document.getElementById('judul-artikel').value = json.judul;
+                            document.getElementById('keyword-artikel').value = json.keyword;
+                            simpanInputSementara(); // Langsung simpan ke memori sementara browser
+                        }
+                    } catch (err) {
+                        // Jika bukan copy-an dari tombol Copy SEO, biarkan paste default berjalan normal
+                    }
+                });
+            }
+
+            // Auto save input ke local storage saat admin mengetik
+            ['topik-artikel', 'judul-artikel', 'keyword-artikel'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.addEventListener('input', simpanInputSementara);
+            });
         });
+
+        function simpanInputSementara() {
+            localStorage.setItem('seo_topik', document.getElementById('topik-artikel').value);
+            localStorage.setItem('seo_judul', document.getElementById('judul-artikel').value);
+            localStorage.setItem('seo_keyword', document.getElementById('keyword-artikel').value);
+        }
 
         function jalankanGenerator() {
             const topik = document.getElementById('topik-artikel').value.trim();

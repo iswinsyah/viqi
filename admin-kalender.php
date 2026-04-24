@@ -133,6 +133,7 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
         document.addEventListener("DOMContentLoaded", () => {
             if (savedKalenderMarkdown) {
                 document.getElementById('state-result').innerHTML = marked.parse(savedKalenderMarkdown);
+                tambahkanTombolCopySEO();
                 const btnSave = document.getElementById('btn-save');
                 btnSave.classList.remove('hidden');
                 btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
@@ -197,6 +198,7 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
                 if(data.status === "success") {
                     currentMarkdown = data.result;
                     document.getElementById('state-result').innerHTML = marked.parse(currentMarkdown);
+                    tambahkanTombolCopySEO();
                     document.getElementById('btn-save').classList.remove('hidden');
                 document.getElementById('btn-save-as').classList.remove('hidden');
                     document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
@@ -257,6 +259,56 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        // Fungsi untuk menambahkan tombol "Copy SEO" di setiap baris tabel hasil AI
+        function tambahkanTombolCopySEO() {
+            const tables = document.querySelectorAll('#state-result table');
+            tables.forEach(table => {
+                // Tambah header "Aksi" jika belum ada
+                const theadTr = table.querySelector('thead tr');
+                if(theadTr && !theadTr.querySelector('.col-aksi')) {
+                    const th = document.createElement('th');
+                    th.className = 'col-aksi text-center';
+                    th.textContent = "Aksi";
+                    theadTr.appendChild(th);
+                }
+                
+                // Tambah tombol copy ke setiap baris data
+                const tbodyTrs = table.querySelectorAll('tbody tr');
+                tbodyTrs.forEach(tr => {
+                    const tds = tr.querySelectorAll('td');
+                    // Memastikan tabel memiliki minimal 7 kolom (format kalender)
+                    if(tds.length >= 7 && !tr.querySelector('.col-aksi')) {
+                        const topik = tds[3].innerText.trim();
+                        const judul = tds[5].innerText.trim();
+                        const keyword = tds[6].innerText.trim();
+                        
+                        const tdAksi = document.createElement('td');
+                        tdAksi.className = 'col-aksi text-center align-middle';
+                        
+                        const btn = document.createElement('button');
+                        btn.innerHTML = '<i class="fas fa-copy"></i> Copy SEO';
+                        btn.className = 'bg-teal-100 text-teal-700 hover:bg-teal-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm whitespace-nowrap cursor-pointer';
+                        btn.onclick = function() {
+                            const dataToCopy = JSON.stringify({ topik: topik, judul: judul, keyword: keyword });
+                            navigator.clipboard.writeText(dataToCopy).then(() => {
+                                const originalHtml = btn.innerHTML;
+                                btn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
+                                btn.classList.replace('bg-teal-100', 'bg-emerald-500');
+                                btn.classList.replace('text-teal-700', 'text-white');
+                                setTimeout(() => { 
+                                    btn.innerHTML = originalHtml; 
+                                    btn.classList.replace('bg-emerald-500', 'bg-teal-100');
+                                    btn.classList.replace('text-white', 'text-teal-700');
+                                }, 2000);
+                            });
+                        };
+                        tdAksi.appendChild(btn);
+                        tr.appendChild(tdAksi);
+                    }
+                });
+            });
         }
     </script>
 </body>
