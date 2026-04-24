@@ -7,8 +7,8 @@ $conn->query("ALTER TABLE leads ADD COLUMN status VARCHAR(50) DEFAULT 'Level 1' 
 $conn->query("ALTER TABLE leads ADD COLUMN jenis_lead VARCHAR(50) DEFAULT 'brosur' AFTER status");
 $conn->query("ALTER TABLE leads ADD COLUMN sumber_info VARCHAR(100) DEFAULT '' AFTER jenis_lead");
 
-// Ambil semua data leads
-$sql = "SELECT * FROM leads ORDER BY id DESC";
+// Ambil semua data leads beserta nama agen (jika ada) dari relasi kode referal
+$sql = "SELECT l.*, a.nama AS nama_agen FROM leads l LEFT JOIN agen a ON l.kode_ref = a.kode_ref ORDER BY l.id DESC";
 $result = $conn->query($sql);
 $leads = [];
 if ($result && $result->num_rows > 0) {
@@ -39,9 +39,9 @@ foreach ($leads as $lead) {
 
 // Tambahkan dummy data hanya untuk pratinjau jika tabel masih kosong
 if (empty($leads)) {
-    $board['Level 1'][] = ['id'=>1, 'nama' => 'Bpk. Fulan (Dummy)', 'whatsapp' => '081234567890', 'jenis_lead' => 'acara_dan_ebook', 'kode_ref' => '081299998888', 'created_at' => '2026-04-19 10:00:00'];
-    $board['Level 2'][] = ['id'=>2, 'nama' => 'Ibu Aisyah (Dummy)', 'whatsapp' => '085678901234', 'jenis_lead' => 'hanya_ebook', 'kode_ref' => 'organik', 'created_at' => '2026-04-18 14:30:00'];
-    $board['Level 3'][] = ['id'=>3, 'nama' => 'Bpk. Budi (Dummy)', 'whatsapp' => '082133334444', 'jenis_lead' => 'acara_dan_ebook', 'kode_ref' => 'organik', 'created_at' => '2026-04-15 09:15:00'];
+    $board['Level 1'][] = ['id'=>1, 'nama' => 'Bpk. Fulan (Dummy)', 'whatsapp' => '081234567890', 'jenis_lead' => 'acara_dan_ebook', 'kode_ref' => '081299998888', 'nama_agen' => 'Ustadz Budi', 'created_at' => '2026-04-19 10:00:00'];
+    $board['Level 2'][] = ['id'=>2, 'nama' => 'Ibu Aisyah (Dummy)', 'whatsapp' => '085678901234', 'jenis_lead' => 'hanya_ebook', 'kode_ref' => 'organik', 'nama_agen' => null, 'created_at' => '2026-04-18 14:30:00'];
+    $board['Level 3'][] = ['id'=>3, 'nama' => 'Bpk. Budi (Dummy)', 'whatsapp' => '082133334444', 'jenis_lead' => 'acara_dan_ebook', 'kode_ref' => 'organik', 'nama_agen' => null, 'created_at' => '2026-04-15 09:15:00'];
 }
 
 // Konfigurasi Tampilan Kolom Kanban
@@ -180,10 +180,18 @@ $active_menu = 'pipeline';
                             </div>
                             
                             <div class="flex justify-between items-center text-[10px] text-gray-400 border-t border-gray-100 pt-2">
-                                <span title="Kode Agen"><i class="fas fa-link mr-1"></i> <?= htmlspecialchars($lead['kode_ref']) ?>
+                                <?php
+                                    $nama_agen_tampil = 'Organik';
+                                    if (!empty($lead['nama_agen'])) {
+                                        $nama_agen_tampil = $lead['nama_agen'];
+                                    } elseif ($lead['kode_ref'] !== 'organik' && !empty($lead['kode_ref'])) {
+                                        $nama_agen_tampil = 'Agen: ' . $lead['kode_ref'];
+                                    }
+                                ?>
+                                <span title="Sumber Referral" class="truncate mr-2"><i class="fas fa-user-tie mr-1"></i> <?= htmlspecialchars($nama_agen_tampil) ?>
                                     <?php if(!empty($lead['sumber_info'])) { echo " | <i class='fas fa-info-circle ml-1 text-emerald-500'></i> " . htmlspecialchars($lead['sumber_info']); } ?>
                                 </span>
-                                <span title="Tanggal Masuk"><?= date('d M', strtotime($lead['created_at'])) ?></span>
+                                <span title="Tanggal Masuk" class="whitespace-nowrap flex-shrink-0"><?= date('d M', strtotime($lead['created_at'])) ?></span>
                             </div>
                             
                         </div>
