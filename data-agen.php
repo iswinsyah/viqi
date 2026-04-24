@@ -173,8 +173,19 @@ $active_menu = 'agen';
 
             <!-- TABEL DATA AGEN -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
                     <h2 class="font-bold text-gray-800">Daftar Agen Aktif</h2>
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+                    <div class="relative w-full sm:w-64">
+                        <input type="text" id="searchInput" onkeyup="searchTable()" placeholder="Cari nama atau no WA..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500 shadow-sm">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                    <button onclick="exportExcel()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center justify-center whitespace-nowrap">
+                        <i class="fas fa-file-excel mr-2"></i> Export
+                    </button>
+                </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -275,6 +286,36 @@ $active_menu = 'agen';
             closeBtn.addEventListener('click', toggleSidebar);
             overlay.addEventListener('click', toggleSidebar);
         });
+
+        function searchTable() {
+            const input = document.getElementById("searchInput");
+            const filter = input.value.toLowerCase();
+            const table = document.querySelector("table tbody");
+            const trs = table.getElementsByTagName("tr");
+
+            for (let i = 0; i < trs.length; i++) {
+                if (trs[i].getElementsByTagName("td").length === 1) continue; 
+                
+                const tdInfo = trs[i].getElementsByTagName("td")[0]; 
+                if (tdInfo) {
+                    const textValue = tdInfo.textContent || tdInfo.innerText;
+                    trs[i].style.display = textValue.toLowerCase().indexOf(filter) > -1 ? "" : "none";
+                }
+            }
+        }
+
+        function exportExcel() {
+            let table = document.querySelector("table");
+            let html = table.outerHTML;
+            let url = 'data:application/vnd.ms-excel;charset=utf-8,' + encodeURIComponent(html);
+            let downloadLink = document.createElement("a");
+            document.body.appendChild(downloadLink);
+            downloadLink.href = url;
+            let tgl = new Date().toISOString().slice(0,10);
+            downloadLink.download = 'Data_Agen_VQ_' + tgl + '.xls';
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
     </script>
 </body>
 </html>
