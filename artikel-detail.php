@@ -25,6 +25,12 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
     <meta name="description" content="<?= htmlspecialchars($seo_desc) ?>">
     <meta name="keywords" content="<?= htmlspecialchars($seo_keywords) ?>">
     <meta name="author" content="Villa Quran Indonesia">
+    <!-- Open Graph Tags untuk memunculkan Thumbnail di WhatsApp & Facebook -->
+    <meta property="og:title" content="<?= htmlspecialchars($seo_title) ?>">
+    <meta property="og:description" content="<?= htmlspecialchars($seo_desc) ?>">
+    <meta property="og:image" content="<?= htmlspecialchars($imgUrl) ?>">
+    <meta property="og:url" content="https://<?= $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
+    <meta property="og:type" content="article">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -131,9 +137,10 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             }
             
             const articleTitle = <?= json_encode($art['judul']) ?>;
+            const articleDesc = <?= json_encode($seo_desc) ?>;
             
             // 3. Pasang URL ke Tombol Share
-            const waText = encodeURIComponent("Assalamu'alaikum, ada artikel bagus nih dari Villa Quran:\n\n*" + articleTitle + "*\n\nBaca selengkapnya di: " + currentUrl);
+            const waText = encodeURIComponent("*" + articleTitle + "*\n\n" + articleDesc + "\n\n" + currentUrl);
             document.getElementById('share-wa').href = 'https://wa.me/?text=' + waText;
             document.getElementById('share-fb').href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(currentUrl);
             document.getElementById('share-tw').href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(articleTitle) + '&url=' + encodeURIComponent(currentUrl);
