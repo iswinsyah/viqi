@@ -192,12 +192,19 @@ $active_menu = 'agen';
                         <tbody class="bg-white divide-y divide-gray-200">
                             <!-- SCRIPT PHP UNTUK MENAMPILKAN DATA ASLI -->
                             <?php
-                            $sql_tampil = "SELECT a.*, (SELECT COUNT(id) FROM leads l WHERE l.kode_ref = a.kode_ref OR l.kode_ref = a.whatsapp) AS total_leads, (SELECT COUNT(id) FROM visitor_footprints v WHERE v.campaign = a.kode_ref OR v.campaign = a.whatsapp) AS total_traffic FROM agen a ORDER BY a.id DESC";
+                            $sql_tampil = "SELECT a.*, (SELECT COUNT(id) FROM leads l WHERE l.kode_ref = a.kode_ref OR l.kode_ref = a.whatsapp) AS total_leads FROM agen a ORDER BY a.id DESC";
                             $result = $conn->query($sql_tampil);
 
                             if ($result && $result->num_rows > 0) {
                                 while($row = $result->fetch_assoc()) {
                                     
+                                    // Hitung traffic secara terpisah agar data utama tidak hilang jika tabel tracker belum ada
+                                    $total_traffic = 0;
+                                    $q_traffic = $conn->query("SELECT COUNT(id) AS tot FROM visitor_footprints WHERE campaign = '" . $conn->real_escape_string($row['kode_ref']) . "' OR campaign = '" . $conn->real_escape_string($row['whatsapp']) . "'");
+                                    if ($q_traffic) {
+                                        $total_traffic = $q_traffic->fetch_assoc()['tot'];
+                                    }
+
                                     // Siapkan URL WhatsApp untuk mengirim link referral ke agen
                                     $nama_agen = htmlspecialchars($row['nama']);
                                     $nomor_wa_raw = $row['whatsapp'];
@@ -229,7 +236,7 @@ $active_menu = 'agen';
                                             <i class="fab fa-whatsapp mr-2"></i> Kirim
                                         </a>
                                     </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-sky-600 font-bold"><?= $row['total_traffic'] ?> Klik</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-sky-600 font-bold"><?= $total_traffic ?> Klik</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold"><?= $row['total_leads'] ?> Orang</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <a href="data-agen.php?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
