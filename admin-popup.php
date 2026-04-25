@@ -12,15 +12,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $kanan_desc = $conn->real_escape_string($_POST['kanan_desc']);
     $file_url = $conn->real_escape_string($_POST['file_url']);
 
-    $sql = "UPDATE pengaturan_popup SET 
-            is_active = $is_active,
-            img_src = '$img_src',
-            kiri_judul = '$kiri_judul',
-            kiri_sub = '$kiri_sub',
-            kanan_judul = '$kanan_judul',
-            kanan_desc = '$kanan_desc',
-            file_url = '$file_url'
-            WHERE id = 1";
+    // Gunakan INSERT ... ON DUPLICATE KEY UPDATE agar anti-gagal meskipun data kosong
+    $sql = "INSERT INTO pengaturan_popup (id, is_active, img_src, kiri_judul, kiri_sub, kanan_judul, kanan_desc, file_url) 
+            VALUES (1, $is_active, '$img_src', '$kiri_judul', '$kiri_sub', '$kanan_judul', '$kanan_desc', '$file_url')
+            ON DUPLICATE KEY UPDATE 
+            is_active = VALUES(is_active), img_src = VALUES(img_src), kiri_judul = VALUES(kiri_judul), 
+            kiri_sub = VALUES(kiri_sub), kanan_judul = VALUES(kanan_judul), kanan_desc = VALUES(kanan_desc), 
+            file_url = VALUES(file_url)";
     
     if ($conn->query($sql) === TRUE) {
         $pesan_sukses = "Pengaturan Pop-up Lead Magnet berhasil diperbarui!";
