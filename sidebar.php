@@ -21,7 +21,7 @@
                 <i class="fas fa-user-graduate w-6 text-center"></i>
                 <span class="ml-3 font-medium">Data Pendaftar SPMB</span>
             </a>
-            <a href="#" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
+            <a href="admin-santri.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'santri') ? 'bg-gray-800 text-white' : '' ?>">
                 <i class="fas fa-users w-6 text-center"></i>
                 <span class="ml-3 font-medium">Data Santri</span>
             </a>
