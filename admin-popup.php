@@ -73,8 +73,12 @@ $active_menu = 'popup';
             <?php } ?>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-4xl">
-                <div class="px-6 py-4 border-b border-gray-100 bg-emerald-50">
-                    <h2 class="font-bold text-emerald-800"><i class="fas fa-edit mr-2"></i> Form Edit Konten Pop-up</h2>
+            <div class="px-6 py-4 border-b border-gray-100 bg-emerald-50 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <h2 class="font-bold text-emerald-800 flex-shrink-0"><i class="fas fa-edit mr-2"></i> Form Edit Konten Pop-up</h2>
+                <div class="flex space-x-2">
+                    <button type="button" onclick="setTemplateEbook()" class="text-xs bg-white text-emerald-700 border border-emerald-200 px-3 py-1.5 rounded hover:bg-emerald-100 transition shadow-sm font-medium"><i class="fas fa-book mr-1"></i> Template E-Book</button>
+                    <button type="button" onclick="setTemplateOpenHouse()" class="text-xs bg-white text-amber-700 border border-amber-200 px-3 py-1.5 rounded hover:bg-amber-50 transition shadow-sm font-medium"><i class="fas fa-home mr-1"></i> Template Open House</button>
+                </div>
                 </div>
                 <div class="p-6">
                     <form action="" method="POST">
@@ -94,18 +98,18 @@ $active_menu = 'popup';
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- Sisi Kiri Pop-up -->
                             <div class="bg-teal-50 p-4 rounded-lg border border-teal-100">
-                                <h3 class="font-bold text-teal-800 mb-4 border-b border-teal-200 pb-2">Bagian Kiri (Visual/Buku)</h3>
+                            <h3 class="font-bold text-teal-800 mb-4 border-b border-teal-200 pb-2">Bagian Kiri (Visual/Buku/Acara)</h3>
                                 <div class="mb-4">
                                     <label class="block text-sm font-bold text-gray-700 mb-1">URL Gambar Cover</label>
-                                    <input type="text" name="img_src" value="<?= htmlspecialchars($data['img_src'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="https://...">
+                                <input type="text" id="img_src" name="img_src" value="<?= htmlspecialchars($data['img_src'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="https://...">
                                 </div>
                                 <div class="mb-4">
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Teks Judul Kecil</label>
-                                    <input type="text" name="kiri_judul" value="<?= htmlspecialchars($data['kiri_judul'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Contoh: E-Book Spesial:">
+                                <input type="text" id="kiri_judul" name="kiri_judul" value="<?= htmlspecialchars($data['kiri_judul'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Contoh: E-Book Spesial: atau Undangan Open House:">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-1">Teks Sub-Judul (Nama Buku)</label>
-                                    <input type="text" name="kiri_sub" value="<?= htmlspecialchars($data['kiri_sub'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Judul Buku...">
+                                <label class="block text-sm font-bold text-gray-700 mb-1">Teks Sub-Judul (Nama Buku / Acara)</label>
+                                <input type="text" id="kiri_sub" name="kiri_sub" value="<?= htmlspecialchars($data['kiri_sub'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Judul Buku atau Nama Acara...">
                                 </div>
                             </div>
 
@@ -114,20 +118,20 @@ $active_menu = 'popup';
                                 <h3 class="font-bold text-amber-800 mb-4 border-b border-amber-200 pb-2">Bagian Kanan (Form Penawaran)</h3>
                                 <div class="mb-4">
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Headline Penawaran Utama</label>
-                                    <input type="text" name="kanan_judul" value="<?= htmlspecialchars($data['kanan_judul'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Teks Headline Utama">
+                                <input type="text" id="kanan_judul" name="kanan_judul" value="<?= htmlspecialchars($data['kanan_judul'] ?? '') ?>" class="w-full px-3 py-2 border rounded-lg text-sm" placeholder="Teks Headline Utama">
                                     <p class="text-[10px] mt-1 text-gray-500">Mendukung tag HTML, contoh: <code>&lt;span class="text-amber-500"&gt;Gratis!&lt;/span&gt;</code></p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi / Ajakan Mengisi Form</label>
-                                    <textarea name="kanan_desc" rows="3" class="w-full px-3 py-2 border rounded-lg text-sm"><?= htmlspecialchars($data['kanan_desc'] ?? '') ?></textarea>
+                                <textarea id="kanan_desc" name="kanan_desc" rows="3" class="w-full px-3 py-2 border rounded-lg text-sm"><?= htmlspecialchars($data['kanan_desc'] ?? '') ?></textarea>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Target File Unduhan -->
+                    <!-- Target File/Link Undangan -->
                         <div class="mt-6 border-t border-gray-200 pt-6">
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Target File Unduhan (Nama File PDF / Link GDrive)</label>
-                            <input type="text" name="file_url" value="<?= htmlspecialchars($data['file_url'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Contoh: ebook-parenting.pdf atau https://drive.google.com/...">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Target Action (Nama File PDF / Link GDrive / Link Grup WA Open House)</label>
+                        <input type="text" id="file_url" name="file_url" value="<?= htmlspecialchars($data['file_url'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Contoh: ebook.pdf atau https://chat.whatsapp.com/...">
                         </div>
 
                         <div class="mt-8 flex justify-end">
@@ -140,5 +144,22 @@ $active_menu = 'popup';
             </div>
         </main>
     </div>
+<script>
+    function setTemplateOpenHouse() {
+        document.getElementById('kiri_judul').value = 'Undangan Eksklusif:';
+        document.getElementById('kiri_sub').value = 'Open House Villa Quran';
+        document.getElementById('kanan_judul').value = '<span class="text-amber-500">Gratis!</span> Hadiri Open House Kami';
+        document.getElementById('kanan_desc').value = 'Daftarkan diri Anda untuk melihat langsung fasilitas dan metode tahfidz di Villa Quran. Dapatkan berbagai insight menarik. Tempat terbatas!';
+        document.getElementById('file_url').placeholder = 'https://chat.whatsapp.com/... (Contoh: Link Grup WA Open House)';
+    }
+
+    function setTemplateEbook() {
+        document.getElementById('kiri_judul').value = 'E-Book Spesial:';
+        document.getElementById('kiri_sub').value = 'Panduan Orang Tua';
+        document.getElementById('kanan_judul').value = '<span class="text-amber-500">Gratis!</span> Download E-Book';
+        document.getElementById('kanan_desc').value = 'Tinggalkan nomor WA Anda dan kami akan mengirimkan link download E-Book langsung ke WhatsApp Anda sekarang juga.';
+        document.getElementById('file_url').placeholder = 'Contoh: ebook-parenting.pdf atau link Google Drive';
+    }
+</script>
 </body>
 </html>
