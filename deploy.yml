@@ -1,0 +1,31 @@
+name: Auto Deploy to Hostinger
+
+# Trigger deploy otomatis setiap ada push ke branch 'main'
+on:
+  push:
+    branches:
+      - main 
+      # Jika branch utama Anda bernama 'master', ganti 'main' di atas menjadi 'master'
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+    
+    - name: 📂 Sync files to Hostinger
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        # Pastikan nama secrets di bawah ini persis sama dengan yang Anda buat di Settings > Secrets GitHub
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        
+        # Jika Anda ingin mengecualikan folder/file tertentu agar tidak ikut ter-upload, 
+        # aktifkan (hapus tanda pagar) dan sesuaikan baris di bawah ini:
+        # exclude: |
+        #   **/.git*
+        #   **/.git*/**
+        #   **/README.md
