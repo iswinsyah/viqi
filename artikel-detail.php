@@ -31,6 +31,12 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
     <meta property="og:image" content="<?= htmlspecialchars($imgUrl) ?>">
     <meta property="og:url" content="https://<?= $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] ?>">
     <meta property="og:type" content="article">
+    
+    <!-- Twitter Card & Meta Tambahan agar Thumbnail Link menjadi BESAR saat dishare -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= htmlspecialchars($seo_title) ?>">
+    <meta name="twitter:description" content="<?= htmlspecialchars($seo_desc) ?>">
+    <meta name="twitter:image" content="<?= htmlspecialchars($imgUrl) ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
