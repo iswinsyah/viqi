@@ -2,6 +2,9 @@
 require_once 'auth.php';
 require_once 'koneksi.php';
 
+// Tambahkan kolom tanggal_acara otomatis jika belum ada (Bypass error jika sudah ada)
+$conn->query("ALTER TABLE pengaturan_popup ADD COLUMN tanggal_acara DATETIME NULL AFTER file_url");
+
 // 1. Proses Update Data Jika Form Disubmit
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $is_active = isset($_POST['is_active']) ? 1 : 0;
@@ -11,14 +14,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $kanan_judul = $conn->real_escape_string($_POST['kanan_judul']); // Membolehkan tag HTML span
     $kanan_desc = $conn->real_escape_string($_POST['kanan_desc']);
     $file_url = $conn->real_escape_string($_POST['file_url']);
+    $tanggal_acara = !empty($_POST['tanggal_acara']) ? "'" . date('Y-m-d H:i:s', strtotime($_POST['tanggal_acara'])) . "'" : "NULL";
 
     // Gunakan INSERT ... ON DUPLICATE KEY UPDATE agar anti-gagal meskipun data kosong
-    $sql = "INSERT INTO pengaturan_popup (id, is_active, img_src, kiri_judul, kiri_sub, kanan_judul, kanan_desc, file_url) 
-            VALUES (1, $is_active, '$img_src', '$kiri_judul', '$kiri_sub', '$kanan_judul', '$kanan_desc', '$file_url')
+    $sql = "INSERT INTO pengaturan_popup (id, is_active, img_src, kiri_judul, kiri_sub, kanan_judul, kanan_desc, file_url, tanggal_acara) 
+            VALUES (1, $is_active, '$img_src', '$kiri_judul', '$kiri_sub', '$kanan_judul', '$kanan_desc', '$file_url', $tanggal_acara)
             ON DUPLICATE KEY UPDATE 
             is_active = VALUES(is_active), img_src = VALUES(img_src), kiri_judul = VALUES(kiri_judul), 
             kiri_sub = VALUES(kiri_sub), kanan_judul = VALUES(kanan_judul), kanan_desc = VALUES(kanan_desc), 
-            file_url = VALUES(file_url)";
+            file_url = VALUES(file_url), tanggal_acara = VALUES(tanggal_acara)";
     
     if ($conn->query($sql) === TRUE) {
         $pesan_sukses = "Pengaturan Pop-up Lead Magnet berhasil diperbarui!";
@@ -128,10 +132,18 @@ $active_menu = 'popup';
                             </div>
                         </div>
 
-                    <!-- Target File/Link Undangan -->
+                    <!-- Tanggal Acara & Target Action -->
                         <div class="mt-6 border-t border-gray-200 pt-6">
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Target Action (Nama File PDF / Link GDrive / Link Grup WA Open House)</label>
-                        <input type="text" id="file_url" name="file_url" value="<?= htmlspecialchars($data['file_url'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Contoh: ebook.pdf atau https://chat.whatsapp.com/...">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Tanggal & Jam Acara (Opsional)</label>
+                                    <input type="datetime-local" id="tanggal_acara" name="tanggal_acara" value="<?= !empty($data['tanggal_acara']) ? date('Y-m-d\TH:i', strtotime($data['tanggal_acara'])) : '' ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold text-gray-700 mb-1">Target Action (Nama File PDF / Link Grup WA)</label>
+                                    <input type="text" id="file_url" name="file_url" value="<?= htmlspecialchars($data['file_url'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Contoh: ebook.pdf atau https://chat.whatsapp.com/...">
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mt-8 flex justify-end space-x-4">
@@ -154,6 +166,7 @@ $active_menu = 'popup';
         document.getElementById('kanan_judul').value = '<span class="text-amber-500">Gratis!</span> Hadiri Open House Kami';
         document.getElementById('kanan_desc').value = 'Daftarkan diri Anda untuk melihat langsung fasilitas dan metode tahfidz di Villa Quran. Dapatkan berbagai insight menarik. Tempat terbatas!';
         document.getElementById('file_url').placeholder = 'https://chat.whatsapp.com/... (Contoh: Link Grup WA Open House)';
+        document.getElementById('tanggal_acara').focus();
     }
 
     function setTemplateEbook() {
@@ -162,6 +175,7 @@ $active_menu = 'popup';
         document.getElementById('kanan_judul').value = '<span class="text-amber-500">Gratis!</span> Download E-Book';
         document.getElementById('kanan_desc').value = 'Tinggalkan nomor WA Anda dan kami akan mengirimkan link download E-Book langsung ke WhatsApp Anda sekarang juga.';
         document.getElementById('file_url').placeholder = 'Contoh: ebook-parenting.pdf atau link Google Drive';
+        document.getElementById('tanggal_acara').value = '';
     }
 </script>
 </body>
