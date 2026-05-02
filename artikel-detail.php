@@ -39,6 +39,16 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
         .artikel-konten h2, .artikel-konten h3 { font-weight: bold; color: #111827; margin-top: 2em; margin-bottom: 1em; }
         .artikel-konten h2 { font-size: 1.5rem; }
         .artikel-konten ul, .artikel-konten ol { margin-left: 1.5em; margin-bottom: 1.5em; list-style-type: disc; line-height: 1.8; color: #374151; }
+        
+        /* Styling agar gambar di dalam artikel otomatis ke tengah, besar, dan elegan */
+        .artikel-konten img { 
+            display: block !important; 
+            margin: 2.5em auto !important; 
+            max-width: 100%; 
+            height: auto; 
+            border-radius: 0.75rem; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); 
+        }
     </style>
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
