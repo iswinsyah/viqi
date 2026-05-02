@@ -607,7 +607,12 @@
                         const lastShown = localStorage.getItem('ebook_popup_time');
                         const sessionDuration = 30 * 60 * 1000; // 30 menit (standar 1 sesi web)
                         
-                        if (!lastShown || (now - parseInt(lastShown)) > sessionDuration) {
+                        // Mode preview dari admin untuk bypass delay 10 detik
+                        const isPreview = urlParams.get('preview_popup') === 'true';
+                        
+                        if (isPreview) {
+                            document.getElementById('brosur-modal').classList.remove('hidden');
+                        } else if (!lastShown || (now - parseInt(lastShown)) > sessionDuration) {
                             setTimeout(() => {
                                 document.getElementById('brosur-modal').classList.remove('hidden');
                                 localStorage.setItem('ebook_popup_time', now.toString()); // Simpan waktu muncul

@@ -134,7 +134,10 @@ $active_menu = 'popup';
                         <input type="text" id="file_url" name="file_url" value="<?= htmlspecialchars($data['file_url'] ?? '') ?>" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Contoh: ebook.pdf atau https://chat.whatsapp.com/...">
                         </div>
 
-                        <div class="mt-8 flex justify-end">
+                        <div class="mt-8 flex justify-end space-x-4">
+                            <a href="index.html?preview_popup=true" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center">
+                                <i class="fas fa-eye mr-2"></i> Lihat Hasil Pop-up
+                            </a>
                             <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg transition shadow-md flex items-center">
                                 <i class="fas fa-save mr-2"></i> Update Pop-up
                             </button>
