@@ -134,6 +134,22 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                 // Otomatis update Address Bar agar selalu tampil nomor referalnya
                 const newBrowserUrl = window.location.pathname + '?id=<?= $art['id'] ?>&ref=' + savedRef;
                 window.history.replaceState(null, '', newBrowserUrl);
+                
+                // TAMBAHAN: Otomatis tambahkan parameter referal ke semua link yang mengarah ke web kita
+                document.querySelectorAll('.artikel-konten a, header a, footer a').forEach(link => {
+                    let href = link.getAttribute('href');
+                    // Abaikan link telepon, email, atau anchor ke id tertentu
+                    if (href && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('tel:')) {
+                        try {
+                            let urlObj = new URL(link.href); // Gunakan link.href yang sudah dibaca absolut oleh browser
+                            // Jika link tersebut mengarah ke domain web kita sendiri dan belum ada parameter ref
+                            if (urlObj.hostname === window.location.hostname && !urlObj.searchParams.has('ref')) {
+                                urlObj.searchParams.set('ref', savedRef);
+                                link.href = urlObj.toString();
+                            }
+                        } catch(e) {}
+                    }
+                });
             }
             
             const articleTitle = <?= json_encode($art['judul']) ?>;
