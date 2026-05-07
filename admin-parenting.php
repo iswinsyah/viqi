@@ -13,9 +13,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_parenting (
     status ENUM('Selesai', 'Akan Datang') DEFAULT 'Akan Datang'
 )");
 
-$conn->query("ALTER TABLE jadwal_parenting ADD COLUMN gambar_url VARCHAR(255) AFTER lokasi");
-$conn->query("ALTER TABLE jadwal_parenting MODIFY COLUMN pemateri TEXT NOT NULL");
-
 // Proses Hapus Jadwal
 if (isset($_GET['hapus_id'])) {
     $hapus_id = (int)$_GET['hapus_id'];
