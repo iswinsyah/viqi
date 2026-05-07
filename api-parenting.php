@@ -2,20 +2,6 @@
 require_once 'koneksi.php';
 header('Content-Type: application/json');
 
-// Buat tabel jika belum ada secara otomatis
-$conn->query("CREATE TABLE IF NOT EXISTS jadwal_parenting (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    tanggal DATETIME NOT NULL,
-    tema VARCHAR(255) NOT NULL,
-    pemateri TEXT NOT NULL,
-    lokasi VARCHAR(100) DEFAULT 'Online (Zoom)',
-    gambar_url VARCHAR(255),
-    status ENUM('Selesai', 'Akan Datang') DEFAULT 'Akan Datang'
-)");
-
-$conn->query("ALTER TABLE jadwal_parenting ADD COLUMN gambar_url VARCHAR(255) AFTER lokasi");
-$conn->query("ALTER TABLE jadwal_parenting MODIFY COLUMN pemateri TEXT NOT NULL");
-
 // Ambil seluruh jadwal dengan urutan tanggal
 $result = $conn->query("SELECT * FROM jadwal_parenting ORDER BY tanggal ASC");
 $data = [];
