@@ -937,7 +937,7 @@
                             
                             container.innerHTML += `
                                 <div class="p-6 transition hover:bg-teal-50 ${isPast ? 'opacity-60' : ''} flex flex-col sm:flex-row gap-5">
-                                    ${j.gambar_url ? \`<img src="\${j.gambar_url}" alt="Cover" class="w-full sm:w-28 sm:h-28 object-cover rounded-xl shadow-sm flex-shrink-0" loading="lazy">\` : ''}
+                                    ${j.gambar_url ? `<img src="${j.gambar_url}" alt="Cover" class="w-full sm:w-28 sm:h-28 object-cover rounded-xl shadow-sm flex-shrink-0" loading="lazy">` : ''}
                                     <div class="flex-1">
                                         <div class="flex items-center justify-between mb-2">
                                             <span class="text-sm font-bold ${isPast ? 'text-gray-500' : 'text-teal-600'}"><i class="far fa-clock mr-1"></i> ${tglStr} WIB</span>
