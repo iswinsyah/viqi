@@ -151,6 +151,9 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                         <option value="1year" <?= $range == '1year' ? 'selected' : '' ?>>1 Tahun Terakhir</option>
                         <option value="3years" <?= $range == '3years' ? 'selected' : '' ?>>3 Tahun Terakhir</option>
                     </select>
+                    <a href="admin-parenting.php" class="bg-amber-500 hover:bg-amber-600 text-teal-900 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm flex items-center justify-center whitespace-nowrap">
+                        <i class="fas fa-calendar-check mr-2"></i> Parenting School
+                    </a>
                     <a href="export-spmb.php" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center justify-center whitespace-nowrap">
                         <i class="fas fa-file-excel mr-2"></i> Export
                     </a>

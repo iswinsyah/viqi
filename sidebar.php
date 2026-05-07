@@ -85,6 +85,10 @@
                 <i class="fas fa-book w-6 text-center text-rose-400"></i>
                 <span class="ml-3 font-medium">Kurikulum Terpadu</span>
             </a>
+            <a href="admin-parenting.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'parenting') ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-calendar-check w-6 text-center text-amber-500"></i>
+                <span class="ml-3 font-medium">Jadwal Parenting</span>
+            </a>
             <a href="admin-testimoni.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'testimoni') ? 'bg-gray-800 text-white' : '' ?>">
                 <i class="fas fa-comments w-6 text-center text-yellow-400"></i>
                 <span class="ml-3 font-medium">Testimoni</span>
