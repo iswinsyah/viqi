@@ -7,10 +7,14 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_parenting (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tanggal DATETIME NOT NULL,
     tema VARCHAR(255) NOT NULL,
-    pemateri VARCHAR(150) NOT NULL,
+    pemateri TEXT NOT NULL,
     lokasi VARCHAR(100) DEFAULT 'Online (Zoom)',
+    gambar_url VARCHAR(255),
     status ENUM('Selesai', 'Akan Datang') DEFAULT 'Akan Datang'
 )");
+
+$conn->query("ALTER TABLE jadwal_parenting ADD COLUMN gambar_url VARCHAR(255) AFTER lokasi");
+$conn->query("ALTER TABLE jadwal_parenting MODIFY COLUMN pemateri TEXT NOT NULL");
 
 // Proses Hapus Jadwal
 if (isset($_GET['hapus_id'])) {
@@ -26,12 +30,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $pemateri = $conn->real_escape_string($_POST['pemateri']);
     $lokasi = $conn->real_escape_string($_POST['lokasi']);
     $status = $conn->real_escape_string($_POST['status']);
+    $gambar_url = isset($_POST['gambar_url']) ? $conn->real_escape_string($_POST['gambar_url']) : '';
     
     if (isset($_POST['id']) && !empty($_POST['id'])) {
         $id = (int)$_POST['id'];
-        $sql = "UPDATE jadwal_parenting SET tanggal='$tanggal', tema='$tema', pemateri='$pemateri', lokasi='$lokasi', status='$status' WHERE id=$id";
+        $sql = "UPDATE jadwal_parenting SET tanggal='$tanggal', tema='$tema', pemateri='$pemateri', lokasi='$lokasi', status='$status', gambar_url='$gambar_url' WHERE id=$id";
     } else {
-        $sql = "INSERT INTO jadwal_parenting (tanggal, tema, pemateri, lokasi, status) VALUES ('$tanggal', '$tema', '$pemateri', '$lokasi', '$status')";
+        $sql = "INSERT INTO jadwal_parenting (tanggal, tema, pemateri, lokasi, status, gambar_url) VALUES ('$tanggal', '$tema', '$pemateri', '$lokasi', '$status', '$gambar_url')";
     }
     
     if ($conn->query($sql) === TRUE) {
@@ -101,9 +106,13 @@ $active_menu = 'parenting';
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tema / Materi</label>
                             <input type="text" name="tema" value="<?= $edit_mode ? htmlspecialchars($data_edit['tema']) : '' ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500" placeholder="Cth: Seni Mendidik Generasi Z">
                         </div>
-                        <div>
+                        <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Pemateri</label>
-                            <input type="text" name="pemateri" value="<?= $edit_mode ? htmlspecialchars($data_edit['pemateri']) : '' ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500" placeholder="Cth: Ustadz Budi Hafidzahullah">
+                            <textarea name="pemateri" rows="3" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500" placeholder="Cth: Ustadz Budi Hafidzahullah&#10;Ustadz Fulan (Pisahkan dengan baris baru)"><?= $edit_mode ? htmlspecialchars($data_edit['pemateri']) : '' ?></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">URL Gambar (Opsional)</label>
+                            <input type="text" name="gambar_url" value="<?= $edit_mode ? htmlspecialchars($data_edit['gambar_url'] ?? '') : '' ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500" placeholder="https://...">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Lokasi / Platform</label>
@@ -147,8 +156,13 @@ $active_menu = 'parenting';
                                 while($row = $res->fetch_assoc()) {
                             ?>
                             <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900"><?= date('d M Y H:i', strtotime($row['tanggal'])) ?></td>
-                                <td class="px-6 py-4"><div class="text-sm font-bold text-gray-900"><?= htmlspecialchars($row['tema']) ?></div><div class="text-xs text-gray-500"><?= htmlspecialchars($row['pemateri']) ?></div></td>
+                                <td class="px-6 py-4 text-sm whitespace-nowrap text-gray-900">
+                                    <?= date('d M Y H:i', strtotime($row['tanggal'])) ?>
+                                    <?php if(!empty($row['gambar_url'])): ?>
+                                        <div class="mt-2"><img src="<?= htmlspecialchars($row['gambar_url']) ?>" class="w-16 h-12 object-cover rounded shadow-sm"></div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-6 py-4"><div class="text-sm font-bold text-gray-900"><?= htmlspecialchars($row['tema']) ?></div><div class="text-xs text-gray-500 whitespace-pre-line mt-1"><?= htmlspecialchars($row['pemateri']) ?></div></td>
                                 <td class="px-6 py-4 text-sm text-gray-600"><?= htmlspecialchars($row['lokasi']) ?></td>
                                 <td class="px-6 py-4 text-sm"><?= ($row['status'] == 'Selesai') ? '<span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">Selesai</span>' : '<span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-700">Akan Datang</span>' ?></td>
                                 <td class="px-6 py-4 text-sm whitespace-nowrap"><a href="?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></a><a href="?hapus_id=<?= $row['id'] ?>" onclick="return confirm('Hapus jadwal ini?')" class="text-red-600 hover:text-red-800"><i class="fas fa-trash"></i></a></td>
