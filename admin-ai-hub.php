@@ -26,6 +26,13 @@ if ($result_agen && $result_agen->num_rows > 0) {
     while($row = $result_agen->fetch_assoc()) $agen_data[] = $row;
 }
 
+// Cek waktu terakhir Agent 1 (Persona) berjalan (Mingguan)
+$last_persona_time = file_exists('saved_persona.txt') ? filemtime('saved_persona.txt') : 0;
+$days_since_persona = floor((time() - $last_persona_time) / (60 * 60 * 24));
+$is_time_for_weekly = ($days_since_persona >= 7 || $last_persona_time == 0) ? true : false;
+
+$saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_kalender.txt') : '';
+
 $active_menu = 'ai-hub';
 ?>
 <!DOCTYPE html>
@@ -60,21 +67,34 @@ $active_menu = 'ai-hub';
                 </button>
             </div>
 
-            <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-end gap-4">
-                <label for="auto-publish-checkbox" class="text-sm font-medium text-gray-700">Opsi Tambahan:</label>
-                <div class="flex items-center">
-                    <input id="auto-publish-checkbox" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                    <label for="auto-publish-checkbox" class="ml-2 block text-sm text-gray-600">Langsung terbitkan artikel tanpa review (tidak disarankan)</label>
+            <!-- PENGATURAN WORKFLOW (TOGGLE AGENT) -->
+            <div class="mb-6 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fas fa-sliders-h mr-2"></i> Pengaturan Otomatisasi Hari Ini</h3>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="run-agent-1" class="form-checkbox h-5 w-5 text-indigo-600 rounded" <?= $is_time_for_weekly ? 'checked' : '' ?>>
+                        <span class="text-sm font-bold text-gray-700">1. Analis (Mingguan)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="run-agent-2" class="form-checkbox h-5 w-5 text-indigo-600 rounded" <?= $is_time_for_weekly ? 'checked' : '' ?>>
+                        <span class="text-sm font-bold text-gray-700">2. Perencana (Mingguan)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="run-agent-3" class="form-checkbox h-5 w-5 text-emerald-600 rounded" checked>
+                        <span class="text-sm font-bold text-gray-700">3. Penulis (Harian)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer opacity-60">
+                        <input type="checkbox" id="run-agent-4" class="form-checkbox h-5 w-5 text-pink-600 rounded">
+                        <span class="text-sm font-bold text-gray-500">4. Sosmed (Off)</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="run-agent-5" class="form-checkbox h-5 w-5 text-green-600 rounded" checked>
+                        <span class="text-sm font-bold text-gray-700">5. WA Kurir (Harian)</span>
+                    </label>
                 </div>
-                <span class="text-gray-300 mx-2">|</span>
                 <div class="flex items-center">
-                    <input id="webhook-sosmed-checkbox" type="checkbox" class="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded">
-                    <label for="webhook-sosmed-checkbox" class="ml-2 block text-sm text-gray-600">Kirim hasil Sosmed ke Make.com (Auto-Post)</label>
-                </div>
-                <span class="text-gray-300 hidden md:block">|</span>
-                <div class="flex items-center">
-                    <input id="wa-broadcast-checkbox" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" checked>
-                    <label for="wa-broadcast-checkbox" class="ml-2 block text-sm text-gray-600 font-bold text-green-700">Kirim Notif WA ke Agen (Anti-Spam)</label>
+                    <input id="auto-publish-checkbox" type="checkbox" class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded" checked>
+                    <label for="auto-publish-checkbox" class="ml-2 block text-sm text-gray-600">Langsung terbitkan tulisan tanpa perlu di-review (Auto-Publish)</label>
                 </div>
             </div>
 
@@ -156,6 +176,7 @@ $active_menu = 'ai-hub';
         const rawLeadsData = <?= json_encode($leads_data) ?>;
         const rawFootprintsData = <?= json_encode($footprints_data) ?>;
         const rawAgenData = <?= json_encode($agen_data) ?>;
+        let dataKalenderResult = <?= json_encode($saved_kalender) ?>;
 
         function addLog(message, isError = false) {
             const logContainer = document.getElementById('console-log');
@@ -205,158 +226,177 @@ $active_menu = 'ai-hub';
             document.getElementById('console-log').innerHTML = ''; // Clear log
             addLog("Mulai mengeksekusi Workflow Berantai...");
 
+            const runAgent1 = document.getElementById('run-agent-1').checked;
+            const runAgent2 = document.getElementById('run-agent-2').checked;
+            const runAgent3 = document.getElementById('run-agent-3').checked;
+            const runAgent4 = document.getElementById('run-agent-4').checked;
+            const runAgent5 = document.getElementById('run-agent-5').checked;
+
             try {
                 if(rawLeadsData.length === 0) throw new Error("Data prospek kosong, AI butuh data untuk belajar.");
 
                 // ----------------------------------------------------
                 // TAHAP 1: AGENT PERSONA
                 // ----------------------------------------------------
-                setAgentStatus(1, 'loading');
-                addLog("Agent 1 menganalisa sumber trafik & perilaku leads...");
-                
-                let payloadPersona = JSON.parse(JSON.stringify(rawLeadsData));
-                if (rawFootprintsData.length > 0) {
-                    payloadPersona.unshift({ jenis_lead: "DATA_JEJAK", sumber_info: JSON.stringify(rawFootprintsData), status: "ANALISA_LOKASI" });
-                }
-                payloadPersona.unshift({
-                    jenis_lead: "SYSTEM_COMMAND",
-                    sumber_info: "PENTING: Lakukan analisa mendalam dari data yang diberikan. Buat laporan analisa Buyer Persona yang terstruktur tegas berdasarkan 3 level Funnel Marketing: TOFU, MOFU, BOFU.",
-                    status: "URGENT"
-                });
+                if (runAgent1) {
+                    setAgentStatus(1, 'loading');
+                    addLog("Agent 1 menganalisa sumber trafik & perilaku leads...");
+                    
+                    let payloadPersona = JSON.parse(JSON.stringify(rawLeadsData));
+                    if (rawFootprintsData.length > 0) {
+                        payloadPersona.unshift({ jenis_lead: "DATA_JEJAK", sumber_info: JSON.stringify(rawFootprintsData), status: "ANALISA_LOKASI" });
+                    }
+                    payloadPersona.unshift({
+                        jenis_lead: "SYSTEM_COMMAND",
+                        sumber_info: "PENTING: Lakukan analisa mendalam dari data yang diberikan. Buat laporan analisa Buyer Persona yang terstruktur tegas berdasarkan 3 level Funnel Marketing: TOFU, MOFU, BOFU.",
+                        status: "URGENT"
+                    });
 
-                let resPersona = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadPersona, type: 'persona' }) });
-                let dataPersona = await resPersona.json();
-                if(dataPersona.status !== 'success') throw new Error(dataPersona.message);
-                
-                // Simpan ke file lokal via PHP
-                let fdPersona = new FormData(); fdPersona.append('action', 'save_persona'); fdPersona.append('content', dataPersona.result);
-                await fetch('admin-analisa.php', { method: 'POST', body: fdPersona });
-                
-                addLog("Agent 1 Selesai. Persona berhasil disimpan.");
-                setAgentStatus(1, 'success');
+                    let resPersona = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadPersona, type: 'persona' }) });
+                    let dataPersona = await resPersona.json();
+                    if(dataPersona.status !== 'success') throw new Error(dataPersona.message);
+                    
+                    // Simpan ke file lokal via PHP
+                    let fdPersona = new FormData(); fdPersona.append('action', 'save_persona'); fdPersona.append('content', dataPersona.result);
+                    await fetch('admin-analisa.php', { method: 'POST', body: fdPersona });
+                    
+                    addLog("Agent 1 Selesai. Persona berhasil disimpan.");
+                    setAgentStatus(1, 'success');
+                } else {
+                    setAgentStatus(1, 'success');
+                    addLog("Agent 1 dilewati (Sudah ada data persona minggu ini).");
+                }
 
                 // ----------------------------------------------------
                 // TAHAP 2: AGENT KALENDER KONTEN
                 // ----------------------------------------------------
-                setAgentStatus(2, 'loading');
-                addLog("Agent 2 mulai menyusun kalender konten 30 hari...");
-                
                 const today = new Date().toISOString().slice(0,10);
-                let payloadKalender = JSON.parse(JSON.stringify(rawLeadsData));
-                payloadKalender.unshift({
-                    jenis_lead: "SYSTEM_COMMAND",
-                    sumber_info: `PENTING: WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: ${today}. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan!`,
-                    status: "URGENT"
-                });
+                if (runAgent2) {
+                    setAgentStatus(2, 'loading');
+                    addLog("Agent 2 mulai menyusun kalender konten 30 hari...");
+                    
+                    let payloadKalender = JSON.parse(JSON.stringify(rawLeadsData));
+                    payloadKalender.unshift({
+                        jenis_lead: "SYSTEM_COMMAND",
+                        sumber_info: `PENTING: WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: ${today}. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan!`,
+                        status: "URGENT"
+                    });
 
-                let resKalender = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadKalender, type: 'kalender', date: today }) });
-                let dataKalender = await resKalender.json();
-                if(dataKalender.status !== 'success') throw new Error(dataKalender.message);
-                
-                let fdKalender = new FormData(); fdKalender.append('action', 'save_kalender'); fdKalender.append('content', dataKalender.result);
-                await fetch('admin-kalender.php', { method: 'POST', body: fdKalender });
-                
-                addLog("Agent 2 Selesai. Kalender Konten siap.");
-                setAgentStatus(2, 'success');
+                    let resKalender = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadKalender, type: 'kalender', date: today }) });
+                    let dataKalender = await resKalender.json();
+                    if(dataKalender.status !== 'success') throw new Error(dataKalender.message);
+                    
+                    let fdKalender = new FormData(); fdKalender.append('action', 'save_kalender'); fdKalender.append('content', dataKalender.result);
+                    await fetch('admin-kalender.php', { method: 'POST', body: fdKalender });
+                    
+                    dataKalenderResult = dataKalender.result;
+                    addLog("Agent 2 Selesai. Kalender Konten siap.");
+                    setAgentStatus(2, 'success');
+                } else {
+                    setAgentStatus(2, 'success');
+                    addLog("Agent 2 dilewati (Menggunakan kalender yang sudah ada).");
+                }
 
                 // ----------------------------------------------------
                 // Ekstrak Topik & Judul Hari Ini dari Kalender (Trik Otomatisasi)
                 // ----------------------------------------------------
-                let tableRows = dataKalender.result.split('\n').filter(l => l.trim().startsWith('|'));
                 let topic = "Manfaat Menghafal Al-Quran di Lingkungan Asri";
                 let judul = "Manfaat Menghafal Al-Quran bagi Anak";
                 let keyword = "tahfidz anak, pesantren asri";
                 
-                // Ambil baris ke-3 (Header, Pemisah, Data Hari 1)
-                if (tableRows.length >= 3) {
-                    let cols = tableRows[2].split('|').map(s => s.trim());
-                    if (cols.length >= 8) {
-                        topic = cols[4]; judul = cols[6]; keyword = cols[7];
+                if (dataKalenderResult) {
+                    let tableRows = dataKalenderResult.split('\n').filter(l => l.trim().startsWith('|'));
+                    // Ambil baris ke-3 (Header, Pemisah, Data Hari 1)
+                    if (tableRows.length >= 3) {
+                        let foundRow = tableRows.find(row => row.includes(today));
+                        
+                        if (!foundRow) {
+                            let randomIdx = Math.floor(Math.random() * (tableRows.length - 2)) + 2;
+                            foundRow = tableRows[randomIdx];
+                        }
+                        
+                        if (foundRow) {
+                            let cols = foundRow.split('|').map(s => s.trim());
+                            if (cols.length >= 8) {
+                                topic = cols[4]; judul = cols[6]; keyword = cols[7];
+                            }
+                        }
                     }
                 }
                 addLog(`Info: Topik hari ini yang didapat otomatis -> "${topic}"`);
 
+                let newArticleId = '';
                 // ----------------------------------------------------
                 // TAHAP 3: AGENT ARTIKEL SEO (Menggunakan topik ekstrak)
                 // ----------------------------------------------------
-                setAgentStatus(3, 'loading');
-                addLog("Agent 3 menulis artikel SEO berdasarkan topik hari ini...");
-                
-                let payloadSEO = JSON.parse(JSON.stringify(rawLeadsData));
-                payloadSEO.unshift({
-                    jenis_lead: "SYSTEM_COMMAND",
-                    sumber_info: `ATURAN WAJIB:\n1. KEMBALIKAN OUTPUT FORMAT JSON.\n- TOPIK: ${topic}\n- JUDUL: ${judul}\n- KEYWORD: ${keyword}\nGunakan format: {"judul":"","meta_title":"","meta_description":"","meta_keywords":"","konten":""}`,
-                    status: "URGENT"
-                });
+                if (runAgent3) {
+                    setAgentStatus(3, 'loading');
+                    addLog("Agent 3 menulis tulisan berdasarkan topik hari ini...");
+                    
+                    let payloadSEO = JSON.parse(JSON.stringify(rawLeadsData));
+                    payloadSEO.unshift({
+                        jenis_lead: "SYSTEM_COMMAND",
+                        sumber_info: `ATURAN WAJIB:\n1. KEMBALIKAN OUTPUT FORMAT JSON.\n- TOPIK: ${topic}\n- JUDUL: ${judul}\n- KEYWORD: ${keyword}\nGunakan format: {"judul":"","meta_title":"","meta_description":"","meta_keywords":"","konten":""}`,
+                        status: "URGENT"
+                    });
 
-                let resSEO = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadSEO, type: 'seo', topik: topic, judul: judul, keyword: keyword }) });
-                let dataSEO = await resSEO.json();
-                if(dataSEO.status !== 'success') throw new Error(dataSEO.message);
-                
-                // Parsing JSON Artikel dan Simpan sebagai Draft di Database
-                let cleanJson = dataSEO.result.replace(/```json/gi, '').replace(/```/g, '').trim();
-                let objSEO = JSON.parse(cleanJson);
+                    let resSEO = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadSEO, type: 'seo', topik: topic, judul: judul, keyword: keyword }) });
+                    let dataSEO = await resSEO.json();
+                    if(dataSEO.status !== 'success') throw new Error(dataSEO.message);
+                    
+                    // Parsing JSON Artikel dan Simpan sebagai Draft di Database
+                    let cleanJson = dataSEO.result.replace(/```json/gi, '').replace(/```/g, '').trim();
+                    let objSEO = JSON.parse(cleanJson);
 
-                let fdSEO = new FormData();
-                fdSEO.append('action', 'publish_blog');
-                fdSEO.append('judul', objSEO.judul || judul);
-                fdSEO.append('meta_title', objSEO.meta_title || judul);
-                fdSEO.append('meta_description', objSEO.meta_description || '');
-                fdSEO.append('meta_keywords', objSEO.meta_keywords || keyword);
-                fdSEO.append('konten', objSEO.konten || dataSEO.result);
-                fdSEO.append('auto_cover', 'true'); // Perintahkan sistem memilih gambar acak
+                    let fdSEO = new FormData();
+                    fdSEO.append('action', 'publish_blog');
+                    fdSEO.append('judul', objSEO.judul || judul);
+                    fdSEO.append('meta_title', objSEO.meta_title || judul);
+                    fdSEO.append('meta_description', objSEO.meta_description || '');
+                    fdSEO.append('meta_keywords', objSEO.meta_keywords || keyword);
+                    fdSEO.append('konten', objSEO.konten || dataSEO.result);
+                    fdSEO.append('auto_cover', 'true'); // Perintahkan sistem memilih gambar acak
 
-                const autoPublish = document.getElementById('auto-publish-checkbox').checked;
-                if (autoPublish) {
-                    fdSEO.append('auto_publish', 'true');
+                    const autoPublish = document.getElementById('auto-publish-checkbox').checked;
+                    if (autoPublish) {
+                        fdSEO.append('auto_publish', 'true');
+                    }
+                    let resSaveSeo = await fetch('admin-seo.php', { method: 'POST', body: fdSEO });
+                    let textSaveSeo = await resSaveSeo.text();
+                    newArticleId = textSaveSeo.split('|')[1] || ''; // Mengambil ID artikel baru
+                    
+                    addLog("Agent 3 Selesai. Tulisan telah diterbitkan.");
+                    setAgentStatus(3, 'success');
+                } else {
+                    setAgentStatus(3, 'success');
+                    addLog("Agent 3 dilewati.");
                 }
-                let resSaveSeo = await fetch('admin-seo.php', { method: 'POST', body: fdSEO });
-                let textSaveSeo = await resSaveSeo.text();
-                let newArticleId = textSaveSeo.split('|')[1] || ''; // Mengambil ID artikel baru
-                
-                addLog("Agent 3 Selesai. Artikel telah disimpan sebagai Draft di menu Artikel.");
-                setAgentStatus(3, 'success');
 
                 // ----------------------------------------------------
                 // TAHAP 4: AGENT SOSIAL MEDIA
                 // ----------------------------------------------------
-                setAgentStatus(4, 'loading');
-                addLog("Agent 4 menyiapkan skrip konten sosmed untuk hari ini...");
-                
-                let resSosmed = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: rawLeadsData, type: 'sosmed', date: today }) });
-                let dataSosmed = await resSosmed.json();
-                if(dataSosmed.status !== 'success') throw new Error(dataSosmed.message);
-                
-                let fdSosmed = new FormData(); fdSosmed.append('action', 'save_sosmed'); fdSosmed.append('content', dataSosmed.result);
-                await fetch('admin-sosmed.php', { method: 'POST', body: fdSosmed });
-                
-                // --- JEMBATAN OTOMATISASI KE MAKE.COM / ZAPIER ---
-                const useWebhook = document.getElementById('webhook-sosmed-checkbox').checked;
-                if (useWebhook) {
-                    addLog("Mengirim data konten ke Make.com untuk diproses menjadi Audio/Video & Auto-Post...");
-                    try {
-                        await fetch(MAKE_WEBHOOK_URL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                caption: dataSosmed.result, 
-                                timestamp: new Date().toISOString() 
-                            })
-                        });
-                        addLog("Berhasil mengirim trigger (pelatuk) ke webhook Make.com!");
-                    } catch (e) {
-                        addLog("Gagal mengirim ke webhook Make.com. Pastikan URL sudah benar.", true);
-                    }
+                if (runAgent4) {
+                    setAgentStatus(4, 'loading');
+                    addLog("Agent 4 menyiapkan skrip konten sosmed untuk hari ini...");
+                    
+                    let resSosmed = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: rawLeadsData, type: 'sosmed', date: today }) });
+                    let dataSosmed = await resSosmed.json();
+                    if(dataSosmed.status !== 'success') throw new Error(dataSosmed.message);
+                    
+                    let fdSosmed = new FormData(); fdSosmed.append('action', 'save_sosmed'); fdSosmed.append('content', dataSosmed.result);
+                    await fetch('admin-sosmed.php', { method: 'POST', body: fdSosmed });
+                    
+                    addLog("Agent 4 Selesai. Konten sosmed hari ini berhasil dibuat.");
+                    setAgentStatus(4, 'success');
+                } else {
+                    setAgentStatus(4, 'success');
+                    addLog("Agent 4 dilewati (Dinonaktifkan sementara).");
                 }
-
-                addLog("Agent 4 Selesai. Konten sosmed hari ini berhasil dibuat.");
-                setAgentStatus(4, 'success');
 
                 // ----------------------------------------------------
                 // TAHAP 5: AGENT WHATSAPP BROADCASTER
                 // ----------------------------------------------------
-                const sendWa = document.getElementById('wa-broadcast-checkbox').checked;
-                if (sendWa && rawAgenData.length > 0 && newArticleId !== '') {
+                if (runAgent5 && rawAgenData.length > 0 && newArticleId !== '') {
                     setAgentStatus(5, 'loading');
                     addLog("Agent 5 menyusun teks WA natural & mengirim ke " + rawAgenData.length + " agen...");
 
@@ -411,6 +451,12 @@ $active_menu = 'ai-hub';
 
                     addLog("Agent 5 Selesai. Semua agen telah dihubungi.");
                     setAgentStatus(5, 'success');
+                } else if (runAgent5 && newArticleId === '') {
+                    setAgentStatus(5, 'success');
+                    addLog("Agent 5 dilewati karena tidak ada artikel baru yang diterbitkan.");
+                } else {
+                    setAgentStatus(5, 'success');
+                    addLog("Agent 5 dilewati.");
                 }
 
                 addLog("🎉 SEMUA WORKFLOW SELESAI DENGAN SUKSES!");
