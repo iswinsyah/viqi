@@ -467,8 +467,16 @@ $active_menu = 'ai-hub';
 
                         // === EKSEKUSI KIRIM WA VIA FONNTE ===
                         if(WA_GATEWAY_TOKEN !== 'TOKEN_API_FONNTE_ANDA') {
-                            let waFd = new FormData(); waFd.append('target', agen.whatsapp); waFd.append('message', pesan);
-                            fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': WA_GATEWAY_TOKEN }, body: waFd });
+                            try {
+                                let waFd = new FormData(); waFd.append('target', agen.whatsapp); waFd.append('message', pesan);
+                                let resFonnte = await fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': WA_GATEWAY_TOKEN }, body: waFd });
+                                let jsonFonnte = await resFonnte.json();
+                                
+                                if(jsonFonnte.status) addLog(`  ✅ Berhasil dilesatkan ke jaringan WA!`);
+                                else addLog(`  ❌ Gagal dikirim: ${jsonFonnte.reason || 'Sistem WA Gateway menolak'}`, true);
+                            } catch(e) {
+                                addLog(`  ❌ Terjadi kesalahan jaringan saat menghubungi Fonnte`, true);
+                            }
                         }
                         
                         // Tunggu Jeda Alami (8 sampai 15 detik) untuk mencegah blokir WA
