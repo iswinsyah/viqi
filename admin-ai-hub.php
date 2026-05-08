@@ -151,7 +151,7 @@ $active_menu = 'ai-hub';
         // URL Webhook dari Make.com atau Zapier untuk Auto-Publish Sosmed
         const MAKE_WEBHOOK_URL = "https://hook.us1.make.com/xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // Nanti ganti dengan URL Make.com Anda
         // URL WA Gateway (Contoh Fonnte)
-        const WA_GATEWAY_TOKEN = "TOKEN_API_FONNTE_ANDA"; 
+        const WA_GATEWAY_TOKEN = "Dtw72oRiQr8FympzpMHL"; 
         
         const rawLeadsData = <?= json_encode($leads_data) ?>;
         const rawFootprintsData = <?= json_encode($footprints_data) ?>;
