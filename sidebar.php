@@ -29,6 +29,10 @@
             <div class="pt-4 pb-2">
                 <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Marketing & Leads</p>
             </div>
+            <a href="admin-ai-hub.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'ai-hub') ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-robot w-6 text-center text-indigo-400"></i>
+                <span class="ml-3 font-medium">Pusat Kendali AI</span>
+            </a>
             <a href="data-pipeline.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
                 <i class="fas fa-columns w-6 text-center"></i>
                 <span class="ml-3 font-medium">Pipeline Prospek</span>
