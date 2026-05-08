@@ -336,7 +336,7 @@ $active_menu = 'ai-hub';
                     let payloadSEO = JSON.parse(JSON.stringify(rawLeadsData));
                     payloadSEO.unshift({
                         jenis_lead: "SYSTEM_COMMAND",
-                        sumber_info: `ATURAN WAJIB:\n1. KEMBALIKAN OUTPUT FORMAT JSON.\n- TOPIK: ${topic}\n- JUDUL: ${judul}\n- KEYWORD: ${keyword}\nGunakan format: {"judul":"","meta_title":"","meta_description":"","meta_keywords":"","konten":""}`,
+                        sumber_info: `ATURAN WAJIB & KETAT:\n1. KEMBALIKAN OUTPUT DENGAN FORMAT TAG PEMISAH (BUKAN JSON). Ini untuk mencegah error sistem.\n\nGunakan format persis seperti ini:\n\n[JUDUL]\n${judul}\n[/JUDUL]\n\n[META_TITLE]\n...isi meta title yang menarik...\n[/META_TITLE]\n\n[META_DESC]\n...isi meta deskripsi maksimal 150 karakter...\n[/META_DESC]\n\n[META_KEY]\n${keyword}\n[/META_KEY]\n\n[KONTEN]\n...Isi artikel lengkap dengan tag HTML dasar (<p>, <h2>, <ul>, <strong>). DILARANG menggunakan markdown (* atau #) di dalam sini. Bahas tuntas mengenai topik di bawah ini...\n[/KONTEN]\n\n- TOPIK: ${topic}`,
                         status: "URGENT"
                     });
 
@@ -344,9 +344,39 @@ $active_menu = 'ai-hub';
                     let dataSEO = await resSEO.json();
                     if(dataSEO.status !== 'success') throw new Error(dataSEO.message);
                     
-                    // Parsing JSON Artikel dan Simpan sebagai Draft di Database
-                    let cleanJson = dataSEO.result.replace(/```json/gi, '').replace(/```/g, '').trim();
-                    let objSEO = JSON.parse(cleanJson);
+                    // Parsing Format Custom Tag
+                    let rawText = dataSEO.result;
+                    let objSEO = {
+                        judul: judul,
+                        meta_title: judul,
+                        meta_description: '',
+                        meta_keywords: keyword,
+                        konten: rawText
+                    };
+                    
+                    const extractTag = (tag, text) => {
+                        const regex = new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`, 'i');
+                        const match = text.match(regex);
+                        return match ? match[1].trim() : null;
+                    };
+
+                    let extKonten = extractTag('KONTEN', rawText);
+                    if (extKonten) {
+                        objSEO.judul = extractTag('JUDUL', rawText) || objSEO.judul;
+                        objSEO.meta_title = extractTag('META_TITLE', rawText) || objSEO.meta_title;
+                        objSEO.meta_description = extractTag('META_DESC', rawText) || objSEO.meta_description;
+                        objSEO.meta_keywords = extractTag('META_KEY', rawText) || objSEO.meta_keywords;
+                        objSEO.konten = extKonten;
+                    } else {
+                        // Fallback jika AI masih ngeyel kirim JSON
+                        try {
+                            let cleanJson = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+                            let parsed = JSON.parse(cleanJson);
+                            objSEO = Object.assign(objSEO, parsed);
+                        } catch(e) {
+                            addLog("Peringatan: Gagal mem-parsing format struktur AI. Menggunakan teks raw.", true);
+                        }
+                    }
 
                     let fdSEO = new FormData();
                     fdSEO.append('action', 'publish_blog');
