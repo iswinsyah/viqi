@@ -52,6 +52,14 @@ $active_menu = 'ai-hub';
                 </button>
             </div>
 
+            <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-end space-x-3">
+                <label for="auto-publish-checkbox" class="text-sm font-medium text-gray-700">Opsi Tambahan:</label>
+                <div class="flex items-center">
+                    <input id="auto-publish-checkbox" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                    <label for="auto-publish-checkbox" class="ml-2 block text-sm text-gray-600">Langsung terbitkan artikel tanpa review (tidak disarankan)</label>
+                </div>
+            </div>
+
             <!-- WORKFLOW PIPELINE UI -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
                 
@@ -263,6 +271,12 @@ $active_menu = 'ai-hub';
                 fdSEO.append('meta_description', objSEO.meta_description || '');
                 fdSEO.append('meta_keywords', objSEO.meta_keywords || keyword);
                 fdSEO.append('konten', objSEO.konten || dataSEO.result);
+                fdSEO.append('auto_cover', 'true'); // Perintahkan sistem memilih gambar acak
+
+                const autoPublish = document.getElementById('auto-publish-checkbox').checked;
+                if (autoPublish) {
+                    fdSEO.append('auto_publish', 'true');
+                }
                 await fetch('admin-seo.php', { method: 'POST', body: fdSEO });
                 
                 addLog("Agent 3 Selesai. Artikel telah disimpan sebagai Draft di menu Artikel.");

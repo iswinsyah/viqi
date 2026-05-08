@@ -21,11 +21,33 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $meta_keywords = $conn->real_escape_string($_POST['meta_keywords'] ?? '');
     $konten = $conn->real_escape_string($_POST['konten'] ?? '');
     
+    // Pilih gambar cover acak dari folder Penyimpanan Media jika diminta AI
+    $gambar_cover = '';
+    if (isset($_POST['auto_cover']) && $_POST['auto_cover'] === 'true') {
+        $upload_dir = 'uploads/';
+        if (file_exists($upload_dir)) {
+            $files = scandir($upload_dir);
+            $images = [];
+            foreach ($files as $file) {
+                $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                    $images[] = $upload_dir . $file;
+                }
+            }
+            if (!empty($images)) {
+                $gambar_cover = $images[array_rand($images)];
+            }
+        }
+    }
+    $gambar_cover = $conn->real_escape_string($gambar_cover);
+
     $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $judul)));
     
-    // Simpan sebagai DRAFT agar tidak langsung tampil di web
-    $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords) 
-            VALUES ('$judul', '$slug', '$konten', 'draft', '$meta_title', '$meta_description', '$meta_keywords')";
+    // Cek apakah ada perintah untuk auto-publish dari AI Hub
+    $status_artikel = (isset($_POST['auto_publish']) && $_POST['auto_publish'] === 'true') ? 'publish' : 'draft';
+
+    $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords, gambar_cover) 
+            VALUES ('$judul', '$slug', '$konten', '$status_artikel', '$meta_title', '$meta_description', '$meta_keywords', '$gambar_cover')";
             
     if ($conn->query($sql) === TRUE) {
         echo "Sukses|" . $conn->insert_id; // Kembalikan ID artikel yang baru dibuat
