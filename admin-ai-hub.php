@@ -18,6 +18,14 @@ if ($result_fp && $result_fp->num_rows > 0) {
     while($row = $result_fp->fetch_assoc()) $footprints_data[] = $row;
 }
 
+// Ambil data Agen untuk Broadcast WA
+$agen_data = [];
+$sql_agen = "SELECT nama, whatsapp, kode_ref FROM agen ORDER BY id ASC";
+$result_agen = $conn->query($sql_agen);
+if ($result_agen && $result_agen->num_rows > 0) {
+    while($row = $result_agen->fetch_assoc()) $agen_data[] = $row;
+}
+
 $active_menu = 'ai-hub';
 ?>
 <!DOCTYPE html>
@@ -52,16 +60,26 @@ $active_menu = 'ai-hub';
                 </button>
             </div>
 
-            <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-end space-x-3">
+            <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-end gap-4">
                 <label for="auto-publish-checkbox" class="text-sm font-medium text-gray-700">Opsi Tambahan:</label>
                 <div class="flex items-center">
                     <input id="auto-publish-checkbox" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
                     <label for="auto-publish-checkbox" class="ml-2 block text-sm text-gray-600">Langsung terbitkan artikel tanpa review (tidak disarankan)</label>
                 </div>
+                <span class="text-gray-300 mx-2">|</span>
+                <div class="flex items-center">
+                    <input id="webhook-sosmed-checkbox" type="checkbox" class="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded">
+                    <label for="webhook-sosmed-checkbox" class="ml-2 block text-sm text-gray-600">Kirim hasil Sosmed ke Make.com (Auto-Post)</label>
+                </div>
+                <span class="text-gray-300 hidden md:block">|</span>
+                <div class="flex items-center">
+                    <input id="wa-broadcast-checkbox" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" checked>
+                    <label for="wa-broadcast-checkbox" class="ml-2 block text-sm text-gray-600 font-bold text-green-700">Kirim Notif WA ke Agen (Anti-Spam)</label>
+                </div>
             </div>
 
             <!-- WORKFLOW PIPELINE UI -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 relative">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
                 
                 <!-- Garis Penghubung (Hanya hiasan UI) -->
                 <div class="hidden md:block absolute top-1/2 left-0 w-full h-1 bg-gray-200 -z-10 transform -translate-y-1/2"></div>
@@ -105,6 +123,16 @@ $active_menu = 'ai-hub';
                     <p class="text-xs text-center text-gray-500 mt-2">Meringkas artikel menjadi caption sosmed & hashtag.</p>
                     <div class="mt-4 text-center status-text text-sm font-semibold text-gray-400">Menunggu...</div>
                 </div>
+
+                <!-- AGENT 5: WA BROADCASTER -->
+                <div id="agent-5" class="bg-white rounded-xl shadow border-2 border-transparent p-6 relative transition-all duration-300">
+                    <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xl mx-auto mb-4 border-4 border-white status-icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <h3 class="font-bold text-center text-gray-800">5. Agen Kurir (WA)</h3>
+                    <p class="text-xs text-center text-gray-500 mt-2">Membagikan link artikel baru secara personal ke tim agen.</p>
+                    <div class="mt-4 text-center status-text text-sm font-semibold text-gray-400">Menunggu...</div>
+                </div>
             </div>
 
             <!-- LOG HASIL KERJA (TERMINAL) -->
@@ -120,9 +148,14 @@ $active_menu = 'ai-hub';
     <script>
         // URL GAS Utama Anda yang digunakan di semua menu
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
+        // URL Webhook dari Make.com atau Zapier untuk Auto-Publish Sosmed
+        const MAKE_WEBHOOK_URL = "https://hook.us1.make.com/xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"; // Nanti ganti dengan URL Make.com Anda
+        // URL WA Gateway (Contoh Fonnte)
+        const WA_GATEWAY_TOKEN = "TOKEN_API_FONNTE_ANDA"; 
         
         const rawLeadsData = <?= json_encode($leads_data) ?>;
         const rawFootprintsData = <?= json_encode($footprints_data) ?>;
+        const rawAgenData = <?= json_encode($agen_data) ?>;
 
         function addLog(message, isError = false) {
             const logContainer = document.getElementById('console-log');
@@ -277,7 +310,9 @@ $active_menu = 'ai-hub';
                 if (autoPublish) {
                     fdSEO.append('auto_publish', 'true');
                 }
-                await fetch('admin-seo.php', { method: 'POST', body: fdSEO });
+                let resSaveSeo = await fetch('admin-seo.php', { method: 'POST', body: fdSEO });
+                let textSaveSeo = await resSaveSeo.text();
+                let newArticleId = textSaveSeo.split('|')[1] || ''; // Mengambil ID artikel baru
                 
                 addLog("Agent 3 Selesai. Artikel telah disimpan sebagai Draft di menu Artikel.");
                 setAgentStatus(3, 'success');
@@ -295,8 +330,88 @@ $active_menu = 'ai-hub';
                 let fdSosmed = new FormData(); fdSosmed.append('action', 'save_sosmed'); fdSosmed.append('content', dataSosmed.result);
                 await fetch('admin-sosmed.php', { method: 'POST', body: fdSosmed });
                 
+                // --- JEMBATAN OTOMATISASI KE MAKE.COM / ZAPIER ---
+                const useWebhook = document.getElementById('webhook-sosmed-checkbox').checked;
+                if (useWebhook) {
+                    addLog("Mengirim data konten ke Make.com untuk diproses menjadi Audio/Video & Auto-Post...");
+                    try {
+                        await fetch(MAKE_WEBHOOK_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                caption: dataSosmed.result, 
+                                timestamp: new Date().toISOString() 
+                            })
+                        });
+                        addLog("Berhasil mengirim trigger (pelatuk) ke webhook Make.com!");
+                    } catch (e) {
+                        addLog("Gagal mengirim ke webhook Make.com. Pastikan URL sudah benar.", true);
+                    }
+                }
+
                 addLog("Agent 4 Selesai. Konten sosmed hari ini berhasil dibuat.");
                 setAgentStatus(4, 'success');
+
+                // ----------------------------------------------------
+                // TAHAP 5: AGENT WHATSAPP BROADCASTER
+                // ----------------------------------------------------
+                const sendWa = document.getElementById('wa-broadcast-checkbox').checked;
+                if (sendWa && rawAgenData.length > 0 && newArticleId !== '') {
+                    setAgentStatus(5, 'loading');
+                    addLog("Agent 5 menyusun teks WA natural & mengirim ke " + rawAgenData.length + " agen...");
+
+                    // Variasi Pesan Fallback (Jika API AI ngadat)
+                    let variations = [
+                        "Assalamu'alaikum [NAMA_AGEN], kita ada artikel baru nih. Minta tolong di-share ke grup atau story WA ya biar tambah ramai: [LINK_ARTIKEL] Terima kasih banyak!",
+                        "Halo [NAMA_AGEN], artikel terbaru Villa Quran udah rilis hari ini: [LINK_ARTIKEL] Jangan lupa di-share pake link ini ya, biar leadnya masuk ke sampeyan.",
+                        "Baru aja tayang nih artikelnya: [LINK_ARTIKEL] Monggo di-share [NAMA_AGEN], semoga jadi jalan pahala buat kita semua."
+                    ];
+
+                    // Minta AI membuat variasi pesan santai
+                    let payloadWa = JSON.parse(JSON.stringify(rawLeadsData));
+                    payloadWa.unshift({
+                        jenis_lead: "SYSTEM_COMMAND",
+                        sumber_info: `Tugas: Buat 3 variasi pesan WhatsApp natural/santai untuk agen promosi. Beritahu mereka ada artikel baru: "${judul}". Minta mereka share. WAJIB sisipkan placeholder [NAMA_AGEN] dan [LINK_ARTIKEL]. Kembalikan HANYA format JSON Array of strings: ["pesan1","pesan2","pesan3"]`,
+                        status: "URGENT"
+                    });
+
+                    try {
+                        let resWa = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadWa, type: 'wa_variasi' }) });
+                        let dataWa = await resWa.json();
+                        if (dataWa.status === 'success') {
+                            let parsed = JSON.parse(dataWa.result.replace(/```json/gi, '').replace(/```/g, '').trim());
+                            if (Array.isArray(parsed) && parsed.length > 0) variations = parsed;
+                        }
+                    } catch(e) { addLog("AI Gagal meracik WA, menggunakan template default.", true); }
+
+                    // Loop Kirim ke Agen dengan JEDA ACAK (Random Delay)
+                    const appUrl = window.location.origin + window.location.pathname.replace('/admin-ai-hub.php', '');
+                    
+                    for (let i = 0; i < rawAgenData.length; i++) {
+                        let agen = rawAgenData[i];
+                        let pesan = variations[Math.floor(Math.random() * variations.length)];
+                        let link = appUrl + "/artikel-detail.php?id=" + newArticleId + "&ref=" + agen.kode_ref;
+                        pesan = pesan.replace('[NAMA_AGEN]', agen.nama).replace('[LINK_ARTIKEL]', link);
+
+                        addLog(`> Mengirim pesan ke ${agen.nama} (${agen.whatsapp})...`);
+
+                        // === EKSEKUSI KIRIM WA VIA FONNTE ===
+                        if(WA_GATEWAY_TOKEN !== 'TOKEN_API_FONNTE_ANDA') {
+                            let waFd = new FormData(); waFd.append('target', agen.whatsapp); waFd.append('message', pesan);
+                            fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': WA_GATEWAY_TOKEN }, body: waFd });
+                        }
+                        
+                        // Tunggu Jeda Alami (8 sampai 15 detik) untuk mencegah blokir WA
+                        if (i < rawAgenData.length - 1) {
+                            let delay = Math.floor(Math.random() * (15000 - 8000 + 1)) + 8000;
+                            addLog(`(Menunggu ${Math.round(delay/1000)} detik jeda alami anti-banned...)`);
+                            await new Promise(r => setTimeout(r, delay));
+                        }
+                    }
+
+                    addLog("Agent 5 Selesai. Semua agen telah dihubungi.");
+                    setAgentStatus(5, 'success');
+                }
 
                 addLog("🎉 SEMUA WORKFLOW SELESAI DENGAN SUKSES!");
                 btn.disabled = false;
