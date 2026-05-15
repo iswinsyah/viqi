@@ -142,21 +142,33 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
             
             <!-- SHORTCUTS AI AGENTS -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <a href="admin-ai-hub.php" class="bg-white hover:bg-blue-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition">
-                    <i class="fas fa-robot text-blue-500 text-2xl mb-2"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-2">Mode Dewa (AI Hub)</span>
+                <a href="admin-ai-hub.php" class="bg-white hover:bg-indigo-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-robot text-indigo-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Pusat Kendali AI</span>
                 </a>
-                <a href="admin-analisa.php" class="bg-white hover:bg-purple-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition">
-                    <i class="fas fa-brain text-purple-500 text-2xl mb-2"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-2">AI Analisa Persona</span>
+                <a href="data-pipeline.php" class="bg-white hover:bg-blue-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-columns text-blue-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Pipeline Prospek</span>
                 </a>
-                <a href="admin-seo.php" class="bg-white hover:bg-teal-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition">
-                    <i class="fas fa-pen-nib text-teal-500 text-2xl mb-2"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-2">AI Penulis SEO</span>
+                <a href="data-agen.php" class="bg-white hover:bg-emerald-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-handshake text-emerald-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Data Agen</span>
                 </a>
-                <a href="data-agen.php" class="bg-white hover:bg-emerald-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition">
-                    <i class="fas fa-users text-emerald-500 text-2xl mb-2"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-2">Sistem Referral</span>
+                <a href="admin-analisa.php" class="bg-white hover:bg-purple-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-brain text-purple-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Analisa Persona</span>
+                </a>
+                <a href="admin-kalender.php" class="bg-white hover:bg-sky-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-calendar-alt text-sky-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Kalender Konten AI</span>
+                </a>
+                <a href="admin-seo.php" class="bg-white hover:bg-teal-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-pen-nib text-teal-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Generator Artikel SEO</span>
+                </a>
+                <a href="admin-sosmed.php" class="bg-white hover:bg-pink-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-mobile-alt text-pink-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Generator Sosmed</span>
                 </a>
             </div>
 

@@ -29,33 +29,9 @@
             <div class="pt-4 pb-2">
                 <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Marketing & Leads</p>
             </div>
-            <a href="admin-ai-hub.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'ai-hub') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-robot w-6 text-center text-indigo-400"></i>
-                <span class="ml-3 font-medium">Pusat Kendali AI</span>
-            </a>
-            <a href="data-pipeline.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-columns w-6 text-center"></i>
-                <span class="ml-3 font-medium">Pipeline Prospek</span>
-            </a>
-            <a href="data-agen.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-handshake w-6 text-center"></i>
-                <span class="ml-3 font-medium">Data Agen</span>
-            </a>
-            <a href="admin-analisa.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-brain w-6 text-center text-purple-400"></i>
-                <span class="ml-3 font-medium">Analisa Buyer Persona</span>
-            </a>
-            <a href="admin-kalender.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-calendar-alt w-6 text-center text-sky-400"></i>
-                <span class="ml-3 font-medium">Kalender Konten AI</span>
-            </a>
-            <a href="admin-seo.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-pen-nib w-6 text-center text-teal-400"></i>
-                <span class="ml-3 font-medium">Generator Artikel SEO</span>
-            </a>
-            <a href="admin-sosmed.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-mobile-alt w-6 text-center text-pink-400"></i>
-                <span class="ml-3 font-medium">Generator Konten Sosmed</span>
+            <a href="dashboard-marketing.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'dashboard_marketing') ? 'bg-gray-800 text-white' : '' ?>">
+                <i class="fas fa-bullhorn w-6 text-center text-blue-400"></i>
+                <span class="ml-3 font-medium">Dashboard Marketing</span>
             </a>
 
             <div class="pt-4 pb-2">
