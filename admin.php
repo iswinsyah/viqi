@@ -29,73 +29,10 @@ if ($range === '1month') {
 $q_spmb = $conn->query("SELECT COUNT(id) AS tot FROM pendaftar_spmb $where_visitor");
 $total_spmb = $q_spmb ? ($q_spmb->fetch_assoc()['tot'] ?? 0) : 0;
 
-$q_leads = $conn->query("SELECT COUNT(id) AS tot FROM leads $where_visitor");
-$total_leads = $q_leads ? ($q_leads->fetch_assoc()['tot'] ?? 0) : 0;
-
-$q_artikel = $conn->query("SELECT COUNT(id) AS tot FROM artikel");
-$total_artikel = $q_artikel ? ($q_artikel->fetch_assoc()['tot'] ?? 0) : 0;
-
-$q_visitor = $conn->query("SELECT COUNT(id) AS tot FROM visitor_footprints $where_visitor");
-$total_visitor = $q_visitor ? ($q_visitor->fetch_assoc()['tot'] ?? 0) : 0;
-
-// --- AMBIL DATA UNTUK GRAFIK VISUAL ---
-// 1. Pengunjung
-$trend_labels = []; $trend_data = [];
-if ($range == '1year' || $range == '3years') {
-    // Jika tahunan, kelompokkan per bulan agar grafik tidak terlalu padat
-    $q_trend = $conn->query("SELECT MIN(created_at) as raw_date, COUNT(id) as jumlah FROM visitor_footprints $where_visitor GROUP BY YEAR(created_at), MONTH(created_at) ORDER BY YEAR(created_at) ASC, MONTH(created_at) ASC");
-} else {
-    $q_trend = $conn->query("SELECT DATE(created_at) as raw_date, COUNT(id) as jumlah FROM visitor_footprints $where_visitor GROUP BY DATE(created_at) ORDER BY raw_date ASC");
-}
-if($q_trend) { while($r = $q_trend->fetch_assoc()) { $trend_labels[] = date($format_trend, strtotime($r['raw_date'])); $trend_data[] = $r['jumlah']; } }
-
-// Beri data default (kosong) agar grafik tetap tergambar meski database belum ada isinya
-if (empty($trend_labels)) {
-    for ($i = 6; $i >= 0; $i--) {
-        $trend_labels[] = date($format_trend, strtotime("-$i days"));
-        $trend_data[] = 0;
-    }
-}
-
-// 2. Sumber Traffic
-$source_labels = []; $source_data = [];
-$q_source = $conn->query("SELECT source, COUNT(id) as jumlah FROM visitor_footprints $where_visitor GROUP BY source ORDER BY jumlah DESC LIMIT 5");
-if($q_source) { while($r = $q_source->fetch_assoc()) { $source_labels[] = $r['source']; $source_data[] = $r['jumlah']; } }
-
-if (empty($source_labels)) {
-    $source_labels = ['Belum ada data'];
-    $source_data = [0];
-}
-
-// 3. Device
-$device_labels = []; $device_data = [];
-$q_device = $conn->query("SELECT device, COUNT(id) as jumlah FROM visitor_footprints $where_visitor GROUP BY device");
-if($q_device) { while($r = $q_device->fetch_assoc()) { $device_labels[] = $r['device']; $device_data[] = $r['jumlah']; } }
-
-if (empty($device_labels)) {
-    $device_labels = ['Belum ada data'];
-    $device_data = [0];
-}
-
-// 4. Status Pipeline Funnel
-$status_labels = []; $status_data = [];
-$q_status = $conn->query("SELECT status, COUNT(id) as jumlah FROM leads $where_visitor GROUP BY status ORDER BY status ASC");
-if($q_status) { while($r = $q_status->fetch_assoc()) { $status_labels[] = $r['status']; $status_data[] = $r['jumlah']; } }
-
-if (empty($status_labels)) {
-    $status_labels = ['Belum ada data'];
-    $status_data = [0];
-}
-
 // --- AMBIL DATA TABEL PENDAFTAR TERBARU ---
 $pendaftar_terbaru = [];
 $q_pendaftar = $conn->query("SELECT * FROM pendaftar_spmb ORDER BY id DESC LIMIT 5");
 if($q_pendaftar) { while($r = $q_pendaftar->fetch_assoc()) { $pendaftar_terbaru[] = $r; } }
-
-// --- AMBIL DATA TABEL AGEN (TOP 5) ---
-$agen_top = [];
-$q_agen = $conn->query("SELECT a.*, (SELECT COUNT(id) FROM leads l WHERE l.kode_ref = a.kode_ref OR l.kode_ref = a.whatsapp) AS total_leads FROM agen a ORDER BY total_leads DESC LIMIT 5");
-if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -161,7 +98,7 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
             </div>
 
             <!-- WIDGET STATISTIK (Grid) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 <!-- Widget 1 -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
                     <div class="p-3 rounded-full bg-emerald-100 text-emerald-600 mr-4">
@@ -172,58 +109,15 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                         <p class="text-2xl font-bold text-gray-900"><?= $total_spmb ?></p>
                     </div>
                 </div>
-                <!-- Widget 2 -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
-                    <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
-                        <i class="fas fa-address-book text-2xl"></i>
-                    </div>
+                
+                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-sm border border-blue-600 p-6 flex items-center justify-between col-span-1 sm:col-span-2 text-white">
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Total Prospek (Leads)</p>
-                        <p class="text-2xl font-bold text-gray-900"><?= $total_leads ?></p>
+                        <h3 class="font-bold text-lg mb-1">Beralih ke Dashboard Marketing</h3>
+                        <p class="text-blue-100 text-sm">Lihat data Leads, Pipeline, Analisa AI, dan metrik pengunjung.</p>
                     </div>
-                </div>
-                <!-- Widget 3 -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
-                    <div class="p-3 rounded-full bg-amber-100 text-amber-600 mr-4">
-                        <i class="fas fa-eye text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-gray-500">Jejak Pengunjung</p>
-                        <p class="text-2xl font-bold text-gray-900"><?= $total_visitor ?></p>
-                    </div>
-                </div>
-                <!-- Widget 4 -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
-                    <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
-                        <i class="fas fa-file-alt text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-medium text-gray-500">Artikel Dipublish</p>
-                        <p class="text-2xl font-bold text-gray-900"><?= $total_artikel ?></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- GRAFIK STATISTIK (MATA AI & PIPELINE) -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 class="font-bold text-gray-800 mb-4"><i class="fas fa-chart-line text-emerald-500 mr-2"></i>Tren Pengunjung (<?= $trend_title ?>)</h2>
-                    <canvas id="trendChart" height="100"></canvas>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 class="font-bold text-gray-800 mb-4"><i class="fas fa-filter text-amber-500 mr-2"></i>Status Prospek (Pipeline)</h2>
-                    <canvas id="pipelineChart" height="200"></canvas>
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 class="font-bold text-gray-800 mb-4"><i class="fas fa-mobile-alt text-purple-500 mr-2"></i>Perangkat (Device)</h2>
-                    <canvas id="deviceChart" height="200"></canvas>
-                </div>
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h2 class="font-bold text-gray-800 mb-4"><i class="fas fa-bullhorn text-blue-500 mr-2"></i>Sumber Traffic Teratas (Mata AI)</h2>
-                    <canvas id="sourceChart" height="100"></canvas>
+                    <a href="dashboard-marketing.php" class="bg-white text-blue-600 hover:bg-gray-50 px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition whitespace-nowrap">
+                        Buka Marketing <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
                 </div>
             </div>
 
@@ -267,42 +161,6 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                 </div>
             </div>
 
-            <!-- TABEL DATA AGEN (REFERRAL) -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mt-8 mb-8">
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h2 class="font-bold text-gray-800">Top 5 Performa Agen</h2>
-                    <a href="data-agen.php" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded text-sm font-medium transition shadow-sm">
-                        <i class="fas fa-arrow-right mr-1"></i> Ke Data Agen
-                    </a>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-white">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nama Agen</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Kode Referral</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leads (Brosur)</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Konversi Daftar</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <?php if (count($agen_top) > 0): ?>
-                                <?php foreach($agen_top as $a): ?>
-                                <tr class="hover:bg-gray-50 transition">
-                                    <td class="px-6 py-4 whitespace-nowrap"><div class="font-medium text-gray-900"><?= htmlspecialchars($a['nama']) ?></div><div class="text-sm text-gray-500"><?= htmlspecialchars($a['whatsapp']) ?></div></td>
-                                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-sm border border-gray-200"><?= htmlspecialchars($a['kode_ref']) ?></span></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold"><?= $a['total_leads'] ?> Orang</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-emerald-600 font-bold"> <a href="data-agen.php" class="text-blue-500 hover:underline">Lihat Detail</a> </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500 text-sm">Belum ada data agen.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </main>
     </div>
 
@@ -324,60 +182,6 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
             if(openBtn) openBtn.addEventListener('click', toggleSidebar);
             if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
             if(overlay) overlay.addEventListener('click', toggleSidebar);
-
-            // --- INISIALISASI CHART.JS ---
-            
-            // 1. Grafik Trend Pengunjung (Line Chart)
-            const ctxTrend = document.getElementById('trendChart').getContext('2d');
-            new Chart(ctxTrend, {
-                type: 'line',
-                data: {
-                    labels: <?= json_encode($trend_labels) ?>,
-                    datasets: [{
-                        label: 'Jumlah Pengunjung',
-                        data: <?= json_encode($trend_data) ?>,
-                        borderColor: '#10b981',
-                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
-
-            // 2. Grafik Sebaran Pipeline (Doughnut Chart)
-            const ctxPipeline = document.getElementById('pipelineChart').getContext('2d');
-            new Chart(ctxPipeline, {
-                type: 'doughnut',
-                data: {
-                    labels: <?= json_encode($status_labels) ?>,
-                    datasets: [{ data: <?= json_encode($status_data) ?>, backgroundColor: ['#f1f5f9', '#bfdbfe', '#c7d2fe', '#fef3c7', '#ffedd5', '#d1fae5'] }]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-            });
-
-            // 3. Grafik Perangkat (Pie Chart)
-            const ctxDevice = document.getElementById('deviceChart').getContext('2d');
-            new Chart(ctxDevice, {
-                type: 'pie',
-                data: {
-                    labels: <?= json_encode($device_labels) ?>,
-                    datasets: [{ data: <?= json_encode($device_data) ?>, backgroundColor: ['#8b5cf6', '#ec4899', '#f43f5e'] }]
-                },
-                options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-            });
-
-            // 4. Grafik Sumber Traffic (Bar Chart)
-            const ctxSource = document.getElementById('sourceChart').getContext('2d');
-            new Chart(ctxSource, {
-                type: 'bar',
-                data: {
-                    labels: <?= json_encode($source_labels) ?>,
-                    datasets: [{ label: 'Jumlah Leads dari Sumber Ini', data: <?= json_encode($source_data) ?>, backgroundColor: '#3b82f6', borderRadius: 4 }]
-                },
-                options: { responsive: true, plugins: { legend: { display: false } } }
-            });
         });
     </script>
 </body>

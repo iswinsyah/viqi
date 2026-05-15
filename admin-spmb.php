@@ -69,6 +69,25 @@ $active_menu = 'spmb';
                 </div>
             </div>
 
+            <!-- FITUR PENCARIAN & FILTER -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div class="relative w-full sm:w-1/2 md:w-1/3">
+                    <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Cari nama santri atau asal sekolah..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-emerald-500 focus:border-emerald-500 shadow-sm">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                </div>
+                <div class="w-full sm:w-auto flex items-center gap-3">
+                    <label class="text-sm font-bold text-gray-700 whitespace-nowrap"><i class="fas fa-filter mr-1"></i> Filter Status:</label>
+                    <select id="statusFilter" onchange="filterTable()" class="bg-gray-50 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-sm w-full sm:w-auto cursor-pointer">
+                        <option value="semua">Semua Pendaftar</option>
+                        <option value="Menunggu Tes">Menunggu Tes</option>
+                        <option value="Lulus Seleksi">Lulus Seleksi</option>
+                        <option value="Ditolak">Ditolak</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                     <h2 class="font-bold text-gray-800">Tabel Antrean Pendaftar</h2>
@@ -141,6 +160,27 @@ $active_menu = 'spmb';
             document.getElementById('sidebar').classList.toggle('hidden');
             document.getElementById('sidebar-overlay').classList.toggle('hidden');
         });
+
+        // FUNGSI PENCARIAN & FILTER TABEL
+        function filterTable() {
+            const searchInput = document.getElementById("searchInput").value.toLowerCase();
+            const statusFilter = document.getElementById("statusFilter").value;
+            const table = document.querySelector("table tbody");
+            const trs = table.getElementsByTagName("tr");
+
+            for (let i = 0; i < trs.length; i++) {
+                if (trs[i].getElementsByTagName("td").length === 1) continue; // Skip baris kosong
+                
+                const tdNama = trs[i].getElementsByTagName("td")[0].textContent.toLowerCase();
+                const tdSekolah = trs[i].getElementsByTagName("td")[1].textContent.toLowerCase();
+                const tdStatus = trs[i].getElementsByTagName("td")[3].textContent.trim();
+                
+                const matchSearch = tdNama.includes(searchInput) || tdSekolah.includes(searchInput);
+                const matchStatus = (statusFilter === "semua") || (tdStatus === statusFilter);
+                
+                trs[i].style.display = (matchSearch && matchStatus) ? "" : "none";
+            }
+        }
     </script>
 </body>
 </html>

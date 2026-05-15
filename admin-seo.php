@@ -45,9 +45,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     
     // Cek apakah ada perintah untuk auto-publish dari AI Hub
     $status_artikel = (isset($_POST['auto_publish']) && $_POST['auto_publish'] === 'true') ? 'publish' : 'draft';
+    // Jika ada perintah penjadwalan dari Mode Borongan
+    if (isset($_POST['status']) && $_POST['status'] === 'jadwalkan') {
+        $status_artikel = 'jadwalkan';
+    }
+    $published_at = !empty($_POST['published_at']) ? "'" . $conn->real_escape_string($_POST['published_at']) . "'" : "NULL";
 
-    $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords, gambar_cover) 
-            VALUES ('$judul', '$slug', '$konten', '$status_artikel', '$meta_title', '$meta_description', '$meta_keywords', '$gambar_cover')";
+    $sql = "INSERT INTO artikel (judul, slug, konten, status, published_at, meta_title, meta_description, meta_keywords, gambar_cover) 
+            VALUES ('$judul', '$slug', '$konten', '$status_artikel', $published_at, '$meta_title', '$meta_description', '$meta_keywords', '$gambar_cover')";
             
     if ($conn->query($sql) === TRUE) {
         echo "Sukses|" . $conn->insert_id; // Kembalikan ID artikel yang baru dibuat

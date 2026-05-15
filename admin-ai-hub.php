@@ -62,9 +62,14 @@ $active_menu = 'ai-hub';
                     <h1 class="text-3xl font-bold mb-2">Automated Marketing AI</h1>
                     <p class="text-indigo-200">Biarkan AI bekerja dari riset audiens hingga pembuatan postingan sosmed secara otomatis.</p>
                 </div>
-                <button id="btn-start-workflow" onclick="startWorkflow()" class="bg-amber-400 hover:bg-amber-500 text-indigo-900 font-bold py-4 px-8 rounded-full shadow-xl transition-all flex items-center transform hover:scale-105">
-                    <i class="fas fa-play-circle text-2xl mr-3"></i> Jalankan Semua Agent
-                </button>
+                <div class="flex flex-col space-y-3">
+                    <button id="btn-start-workflow" onclick="startWorkflow()" class="bg-amber-400 hover:bg-amber-500 text-indigo-900 font-bold py-3 px-6 rounded-full shadow-xl transition-all flex items-center justify-center transform hover:scale-105">
+                        <i class="fas fa-play-circle text-xl mr-2"></i> Mode Harian (Sekarang)
+                    </button>
+                    <button id="btn-batch-workflow" onclick="startBatchWorkflow()" class="bg-indigo-900 hover:bg-indigo-800 text-amber-400 border border-amber-400 font-bold py-3 px-6 rounded-full shadow-xl transition-all flex items-center justify-center transform hover:scale-105" title="Generate konten untuk 1 Bulan penuh">
+                        <i class="fas fa-calendar-check text-xl mr-2"></i> Mode Borongan (1 Bulan)
+                    </button>
+                </div>
             </div>
 
             <!-- PENGATURAN WORKFLOW (TOGGLE AGENT) -->
@@ -460,7 +465,7 @@ $active_menu = 'ai-hub';
                     for (let i = 0; i < rawAgenData.length; i++) {
                         let agen = rawAgenData[i];
                         let pesan = variations[Math.floor(Math.random() * variations.length)];
-                        let link = appUrl + "/artikel-detail.php?id=" + newArticleId + "&ref=" + agen.kode_ref;
+                        let link = appUrl + "/artikel-detail.php?id=" + newArticleId + "&ref=" + agen.whatsapp;
                         pesan = pesan.replace('[NAMA_AGEN]', agen.nama).replace('[LINK_ARTIKEL]', link);
 
                         addLog(`> Mengirim pesan ke ${agen.nama} (${agen.whatsapp})...`);
@@ -479,10 +484,24 @@ $active_menu = 'ai-hub';
                             }
                         }
                         
-                        // Tunggu Jeda Alami (8 sampai 15 detik) untuk mencegah blokir WA
+                        // Tunggu Jeda Alami yang disebar dalam rentang 10 jam (07:00 - 17:00)
                         if (i < rawAgenData.length - 1) {
-                            let delay = Math.floor(Math.random() * (15000 - 8000 + 1)) + 8000;
-                            addLog(`(Menunggu ${Math.round(delay/1000)} detik jeda alami anti-banned...)`);
+                            // Total waktu tersedia: 10 jam = 36.000.000 ms
+                            let totalWaktuMs = 10 * 60 * 60 * 1000;
+                            // Rata-rata jeda per agen
+                            let avgDelay = totalWaktuMs / rawAgenData.length;
+                            
+                            // Acak jeda antara 50% sampai 150% dari rata-rata agar natural
+                            let minDelay = Math.floor(avgDelay * 0.5);
+                            let maxDelay = Math.floor(avgDelay * 1.5);
+                            
+                            // Pastikan minimal jeda tidak kurang dari 1 menit demi keamanan
+                            if (minDelay < 60000) minDelay = 60000;
+                            if (maxDelay < 120000) maxDelay = 120000;
+
+                            let delay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+                            let delayInMinutes = Math.round(delay / 60000);
+                            addLog(`(Menunggu ${delayInMinutes} menit jeda aman sebelum pesan berikutnya ke agen lain...)`);
                             await new Promise(r => setTimeout(r, delay));
                         }
                     }
@@ -505,6 +524,151 @@ $active_menu = 'ai-hub';
                 addLog("Terjadi Kesalahan di tengah jalan: " + error.message, true);
                 btn.disabled = false;
                 btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // ==========================================
+        // OTAK KEDUA: AI WORKFLOW BORONGAN (1 BULAN)
+        // ==========================================
+        async function startBatchWorkflow() {
+            const btnBatch = document.getElementById('btn-batch-workflow');
+            const btnHarian = document.getElementById('btn-start-workflow');
+            
+            if(!confirm("ANDA AKAN MASUK KE MODE DEWA (Borongan 1 Bulan).\nAI akan menulis 30 Artikel dan menjadwalkan ratusan WA ke Fonnte untuk 30 hari ke depan secara otomatis.\n\nEstimasi Waktu: 15 Menit.\n⚠️ Komputer dan halaman ini TIDAK BOLEH DITUTUP selama proses loading berjalan (sampai ada notifikasi selesai).\n\nLanjutkan?")) return;
+
+            btnBatch.disabled = true; btnHarian.disabled = true;
+            btnBatch.classList.add('opacity-50', 'cursor-not-allowed');
+            btnHarian.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            document.getElementById('console-log').innerHTML = ''; 
+            addLog("🚀 MEMULAI MODE BORONGAN (BATCH) UNTUK 30 HARI KE DEPAN!");
+            
+            try {
+                if(rawLeadsData.length === 0) throw new Error("Data prospek kosong.");
+
+                // 1. KALENDER 30 HARI
+                setAgentStatus(2, 'loading');
+                addLog("Agent 2: Menyusun Kalender 30 Hari mulai besok...");
+                
+                let tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+                let tomorrowStr = tomorrow.toISOString().slice(0,10);
+                
+                let payloadKalender = JSON.parse(JSON.stringify(rawLeadsData));
+                payloadKalender.unshift({
+                    jenis_lead: "SYSTEM_COMMAND",
+                    sumber_info: `WAJIB BUAT TABEL MARKDOWN. TANGGAL MULAI: ${tomorrowStr}. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik | Copywriting | Judul SEO | Keyword |. DILARANG memberikan teks pendahuluan!`,
+                    status: "URGENT"
+                });
+                
+                let resKalender = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadKalender, type: 'kalender', date: tomorrowStr }) });
+                let dataKalender = await resKalender.json();
+                if(dataKalender.status !== 'success') throw new Error("Gagal membuat kalender");
+                
+                let tableRows = dataKalender.result.split('\n').filter(l => l.trim().startsWith('|'));
+                let dataRows = tableRows.slice(2); 
+                let maxDays = Math.min(30, dataRows.length);
+                
+                setAgentStatus(2, 'success');
+                addLog(`💡 Ditemukan ${maxDays} ide konten. Memulai produksi massal...\n`);
+
+                // 2. LOOPING EKSEKUSI HARIAN (30x PUTARAN)
+                for (let d = 0; d < maxDays; d++) {
+                    let cols = dataRows[d].split('|').map(s => s.trim());
+                    if (cols.length < 8) continue;
+                    
+                    let targetDate = new Date(); targetDate.setDate(targetDate.getDate() + d + 1); 
+                    let dateStr = targetDate.toISOString().slice(0,10);
+                    let topic = cols[4]; let judul = cols[6]; let keyword = cols[7];
+                    
+                    addLog(`\n--- MENGKERJAKAN HARI KE-${d+1} (${dateStr}) ---`);
+                    await new Promise(r => setTimeout(r, 6000)); // Delay cegah Limit API Google (429 Error)
+
+                    // ARTIKEL SEO (Jadwal Terbit)
+                    setAgentStatus(3, 'loading');
+                    addLog(`Agent 3: Menulis "${judul}"...`);
+                    let payloadSEO = JSON.parse(JSON.stringify(rawLeadsData.slice(0, 5)));
+                    payloadSEO.unshift({
+                        jenis_lead: "SYSTEM_COMMAND",
+                        sumber_info: `KEMBALIKAN DGN TAG PEMISAH (BUKAN JSON): [JUDUL]${judul}[/JUDUL] [META_TITLE]..[/META_TITLE] [META_DESC]..[/META_DESC] [META_KEY]${keyword}[/META_KEY] [KONTEN]...isi HTML...[/KONTEN]. TOPIK: ${topic}`,
+                        status: "URGENT"
+                    });
+                    let resSEO = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadSEO, type: 'seo', topik: topic, judul: judul, keyword: keyword }) });
+                    let dataSEO = await resSEO.json();
+                    
+                    const extractTag = (tag, text) => { const match = text.match(new RegExp(`\\[${tag}\\]([\\s\\S]*?)\\[\\/${tag}\\]`, 'i')); return match ? match[1].trim() : null; };
+                    let kontenHtml = extractTag('KONTEN', dataSEO.result) || dataSEO.result;
+
+                    let fdSEO = new FormData();
+                    fdSEO.append('action', 'publish_blog');
+                    fdSEO.append('judul', extractTag('JUDUL', dataSEO.result) || judul);
+                    fdSEO.append('meta_title', extractTag('META_TITLE', dataSEO.result) || judul);
+                    fdSEO.append('meta_description', extractTag('META_DESC', dataSEO.result) || '');
+                    fdSEO.append('meta_keywords', extractTag('META_KEY', dataSEO.result) || keyword);
+                    fdSEO.append('konten', kontenHtml);
+                    fdSEO.append('auto_cover', 'true');
+                    fdSEO.append('status', 'jadwalkan');
+                    fdSEO.append('published_at', `${dateStr} 07:00:00`); 
+
+                    let resSaveSeo = await fetch('admin-seo.php', { method: 'POST', body: fdSEO });
+                    let newArticleId = (await resSaveSeo.text()).split('|')[1] || ''; 
+                    setAgentStatus(3, 'success');
+                    
+                    await new Promise(r => setTimeout(r, 6000)); // Delay
+
+                    // WA FONNTE (Titip Jadwal)
+                    if (rawAgenData.length > 0 && newArticleId !== '') {
+                        setAgentStatus(5, 'loading');
+                        let payloadWa = JSON.parse(JSON.stringify(rawLeadsData.slice(0,2)));
+                        payloadWa.unshift({ jenis_lead: "SYSTEM_COMMAND", sumber_info: `Buat 2 variasi pesan WA santai untuk agen membagikan artikel: "${judul}". Sisipkan [NAMA_AGEN] dan [LINK_ARTIKEL]. Kembalikan HANYA Array JSON ["a","b"]`, status: "URGENT" });
+
+                        let variations = ["Assalamu'alaikum [NAMA_AGEN], artikel baru rilis nih: [LINK_ARTIKEL] Minta tolong dishare ya!"];
+                        try {
+                            let resWa = await fetch(GAS_URL, { method: 'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ leads: payloadWa, type: 'wa_variasi' }) });
+                            let dataWa = await resWa.json();
+                            let parsed = JSON.parse(dataWa.result.replace(/```json/gi, '').replace(/```/g, '').trim());
+                            if (Array.isArray(parsed) && parsed.length > 0) variations = parsed;
+                        } catch(e) {}
+
+                        const appUrl = window.location.origin + window.location.pathname.replace('/admin-ai-hub.php', '');
+                        
+                        for (let i = 0; i < rawAgenData.length; i++) {
+                            let agen = rawAgenData[i];
+                            let pesan = variations[Math.floor(Math.random() * variations.length)];
+                            let link = appUrl + "/artikel-detail.php?id=" + newArticleId + "&ref=" + agen.whatsapp;
+                            pesan = pesan.replace('[NAMA_AGEN]', agen.nama).replace('[LINK_ARTIKEL]', link);
+
+                            // Mengacak jam 07:00 sd 17:00 PADA TANGGAL TERBIT ARTIKEL
+                            let hour = Math.floor(Math.random() * (17 - 7 + 1)) + 7;
+                            let minute = Math.floor(Math.random() * 60);
+                            let scheduleStr = `${dateStr} ${hour.toString().padStart(2,'0')}:${minute.toString().padStart(2,'0')}:00`;
+
+                            addLog(`   > Menitipkan jadwal WA untuk ${agen.nama} pada ${scheduleStr}`);
+
+                            if(WA_GATEWAY_TOKEN !== 'TOKEN_API_FONNTE_ANDA') {
+                                try {
+                                    let waFd = new FormData(); 
+                                    waFd.append('target', agen.whatsapp); 
+                                    waFd.append('message', pesan);
+                                    waFd.append('schedule', scheduleStr); // FITUR AJAIB FONNTE
+                                    await fetch('https://api.fonnte.com/send', { method: 'POST', headers: { 'Authorization': WA_GATEWAY_TOKEN }, body: waFd });
+                                } catch(e) {}
+                            }
+                            await new Promise(r => setTimeout(r, 400)); 
+                        }
+                        setAgentStatus(5, 'success');
+                    }
+                }
+
+                addLog("\n🎉 ALHAMDULILLAH! 1 BULAN SELESAI! Bos bisa menutup laptop sekarang dan pergi liburan.");
+                btnBatch.disabled = false; btnHarian.disabled = false;
+                btnBatch.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnHarian.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            } catch (error) {
+                addLog("\n❌ Terjadi Kesalahan: " + error.message, true);
+                btnBatch.disabled = false; btnHarian.disabled = false;
+                btnBatch.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnHarian.classList.remove('opacity-50', 'cursor-not-allowed');
             }
         }
     </script>
