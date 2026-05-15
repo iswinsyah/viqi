@@ -26,13 +26,12 @@
                 <span class="ml-3 font-medium">Data Santri</span>
             </a>
             
-            <div class="pt-4 pb-2">
-                <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Marketing & Leads</p>
+            <!-- TOMBOL PINTU MASUK KE MARKETING -->
+            <div class="px-4 my-4">
+                <a href="ass="fas fa-rocket text-amber-400 mr-2 group-hover:-translate-y-1 transition-transform"></i>
+                    <span>Portal Marketing</span>
+                </a>
             </div>
-            <a href="dashboard-marketing.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'dashboard_marketing') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-bullhorn w-6 text-center text-blue-400"></i>
-                <span class="ml-3 font-medium">Dashboard Marketing</span>
-            </a>
 
             <div class="pt-4 pb-2">
                 <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Konten Web</p>

@@ -112,10 +112,10 @@ if($q_pendaftar) { while($r = $q_pendaftar->fetch_assoc()) { $pendaftar_terbaru[
                 
                 <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-sm border border-blue-600 p-6 flex items-center justify-between col-span-1 sm:col-span-2 text-white">
                     <div>
-                        <h3 class="font-bold text-lg mb-1">Beralih ke Dashboard Marketing</h3>
-                        <p class="text-blue-100 text-sm">Lihat data Leads, Pipeline, Analisa AI, dan metrik pengunjung.</p>
+                        <h3 class="font-bold text-lg mb-1">Beralih ke Halaman Marketing</h3>
+                        <p class="text-blue-100 text-sm">Masuk ke pusat kendali aktivitas marketing dan AI.</p>
                     </div>
-                    <a href="dashboard-marketing.php" class="bg-white text-blue-600 hover:bg-gray-50 px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition whitespace-nowrap">
+                    <a href="halaman-marketing.php" class="bg-white text-blue-600 hover:bg-gray-50 px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition whitespace-nowrap">
                         Buka Marketing <i class="fas fa-arrow-right ml-1"></i>
                     </a>
                 </div>
