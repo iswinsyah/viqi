@@ -56,6 +56,20 @@ if ($conn->query($sql4) === TRUE) {
     echo "❌ Error membuat tabel kpi_skor_ustadz: " . $conn->error . "<br>";
 }
 
+// 5. Buat tabel untuk log kehadiran rapat
+$sql5 = "CREATE TABLE IF NOT EXISTS log_kehadiran_rapat (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    tanggal_rapat DATE NOT NULL,
+    keterangan VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)";
+if ($conn->query($sql5) === TRUE) {
+    echo "✅ Tabel 'log_kehadiran_rapat' berhasil dibuat.<br>";
+} else {
+    echo "❌ Error membuat tabel log_kehadiran_rapat: " . $conn->error . "<br>";
+}
+
 echo "<br><b>Selesai!</b> Database Anda sudah siap untuk fitur KPI.";
 
 $conn->close();

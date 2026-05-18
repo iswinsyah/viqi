@@ -13,7 +13,8 @@ $user_id = $_SESSION['user_id'] ?? 1;
 // 1. Administrasi & Disiplin (Bobot 20%)
 $skor_jurnal = 85; // Placeholder. Logic: Hitung persentase jurnal yg diisi tepat waktu dari tabel jurnal_mengajar
 $skor_kehadiran = 98; // Placeholder. Logic: Hitung dari log QR Code
-$skor_administrasi = (($skor_jurnal * 0.5) + ($skor_kehadiran * 0.5));
+$skor_kehadiran_rapat = 100; // Placeholder. Logic: Cek apakah ada record di log_kehadiran_rapat bulan ini.
+$skor_administrasi = (($skor_jurnal * 0.4) + ($skor_kehadiran * 0.4) + ($skor_kehadiran_rapat * 0.2));
 
 // 2. Kualitas Pengajaran (Bobot 40%)
 $skor_penggunaan_ai = 70; // Placeholder. Logic: Hitung jumlah penggunaan AI dari tabel log_aktivitas_ai
@@ -138,6 +139,7 @@ $gaji_total = $gaji_pokok + $bonus_kinerja;
                     <ul class="text-xs space-y-2 text-gray-600">
                         <li class="flex justify-between"><span>Ketepatan Jurnal</span> <span class="font-bold"><?= $skor_jurnal ?></span></li>
                         <li class="flex justify-between"><span>Kehadiran (QR)</span> <span class="font-bold"><?= $skor_kehadiran ?></span></li>
+                        <li class="flex justify-between"><span>Kehadiran Rapat</span> <span class="font-bold"><?= $skor_kehadiran_rapat ?></span></li>
                     </ul>
                 </div>
                 <!-- Pilar 2 -->
