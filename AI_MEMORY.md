@@ -40,12 +40,7 @@ Sistem orkestrasi berantai (Daisy Chaining) yang berjalan otomatis dengan 2 mode
 ---
 
 ## 🎯 NEXT PROJECT (Rencana Selanjutnya)
-**Proyek 2: Web Penggalangan Dana (Crowdfunding) Pembangunan Pondok Pesantren Tahfidz + AI Agent.**
-
-*Ide AI Agent untuk Crowdfunding:*
-1. **Agen Copywriter:** Menulis landing page/artikel kisah kampanye donasi yang menyentuh (*emotional appeal*).
-2. **Agen CS / Follow-up:** Mengingatkan donatur yang belum transfer (pending) atau mengirim ucapan terima kasih otomatis dan doa.
-3. **Agen Reporter:** Mengirim *update* progres pembangunan pesantren (teks & foto) via WA secara berkala ke donatur lama agar berdonasi kembali (Retensi).
+*(Belum ada proyek baru yang ditetapkan. Menunggu arahan selanjutnya dari bos...)*
 
 ---
 *Catatan untuk AI Assistant: Jika pengguna meminta untuk "melanjutkan proyek", jadikan file ini sebagai titik acuan pemahaman konteks (context baseline).*
