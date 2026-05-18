@@ -40,7 +40,7 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-magic text-cyan-600 mr-2"></i>AI Generator RPP</h1><p class="text-sm text-gray-500">Asisten pembuat Rencana Pelaksanaan Pembelajaran dalam hitungan detik.</p></div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
                         <input type="text" id="rpp-mapel" list="daftar-mapel" onchange="pilihSilabus(this)" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Pilih dari daftar atau ketik baru...">
@@ -60,6 +60,15 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Topik Utama</label>
                         <input type="text" id="rpp-topik" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Contoh: Peristiwa Hijrah Nabi / Bilangan Cacah">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Metode Pembelajaran</label>
+                        <select id="rpp-metode" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">
+                            <option value="Interaktif (Diskusi & Tanya Jawab)">Interaktif</option>
+                            <option value="Berbasis Siswa (Student-Centered)">Berbasis Siswa</option>
+                            <option value="Praktek / Demonstrasi">Praktek</option>
+                            <option value="Konvensional (Ceramah)">Konvensional</option>
+                        </select>
                     </div>
                 </div>
                 <div class="flex justify-end">
@@ -109,8 +118,9 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
             const mapel = mapelInput.value;
             const kelas = document.getElementById('rpp-kelas').value;
             const topik = document.getElementById('rpp-topik').value;
+            const metode = document.getElementById('rpp-metode').value;
 
-            if(!mapel || !kelas || !topik) { alert("Lengkapi semua isian form!"); return; }
+            if(!mapel || !kelas || !topik || !metode) { alert("Lengkapi semua isian form!"); return; }
 
             let prompt;
             let selectedOption = null;
@@ -140,8 +150,9 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
 - **Deskripsi Umum Mapel:** ${deskripsiMapel}
 - **Capaian Pembelajaran (CP):**\n${cpFormatted}
 - **Topik / Materi Pokok:** ${topik}
+- **Metode Pembelajaran:** ${metode}
 
-Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila / Santri, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran** (Spesifik diturunkan dari Elemen CP dan Topik). - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan (Ice breaking dll), Inti (Eksplorasi Materi & Metode Interaktif/Games), Penutup (Refleksi). 3. **Asesmen / Evaluasi** (Bentuk penilaian singkat untuk mengukur ketercapaian tujuan).`;
+Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila / Santri, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran** (Spesifik diturunkan dari Elemen CP dan Topik). - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan (Ice breaking dll), Inti (Eksplorasi Materi dengan metode ${metode}), Penutup (Refleksi). 3. **Asesmen / Evaluasi** (Bentuk penilaian singkat untuk mengukur ketercapaian tujuan).`;
 
             } else {
                 // --- MODE UMUM (TANPA SILABUS) ---
@@ -149,8 +160,9 @@ Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum**
 - **Mata Pelajaran:** ${mapel}
 - **Fase / Kelas:** ${kelas}
 - **Topik / Materi Pokok:** ${topik}
+- **Metode Pembelajaran:** ${metode}
 
-Gunakan pengetahuan umum Anda tentang Kurikulum Merdeka untuk menyusunnya. Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran**. - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan, Inti, Penutup. 3. **Asesmen / Evaluasi**.`;
+Gunakan pengetahuan umum Anda tentang Kurikulum Merdeka untuk menyusunnya. Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran**. - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan, Inti (Gunakan metode ${metode}), Penutup. 3. **Asesmen / Evaluasi**.`;
             }
 
             document.getElementById('state-idle').classList.add('hidden');
