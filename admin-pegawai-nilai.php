@@ -83,7 +83,29 @@ $active_menu = 'bank_nilai';
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
-                            <input type="text" name="kelas" value="<?= $edit_mode ? htmlspecialchars($data_edit['kelas']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="7A">
+                            <select name="kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">
+                                <option value="">-- Pilih Kelas --</option>
+                                <?php
+                                $daftar_kelas = [
+                                    'Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12',
+                                    'Kelas A', 'Kelas B', 'Kelas C',
+                                    'Kelas Rijal', 'Kelas Nisa'
+                                ];
+                                $kelas_tersimpan = $edit_mode ? $data_edit['kelas'] : '';
+                                $ada_di_list = false;
+
+                                foreach ($daftar_kelas as $nama_kelas) {
+                                    $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
+                                    if ($sel) $ada_di_list = true;
+                                    echo "<option value=\"$nama_kelas\" $sel>$nama_kelas</option>";
+                                }
+                                
+                                // Jaga-jaga jika data lama diketik manual dan tidak ada di daftar kombinasi baru
+                                if ($edit_mode && !$ada_di_list && !empty($kelas_tersimpan)) {
+                                    echo "<option value=\"".htmlspecialchars($kelas_tersimpan)."\" selected>".htmlspecialchars($kelas_tersimpan)." (Data Lama)</option>";
+                                }
+                                ?>
+                            </select>
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
