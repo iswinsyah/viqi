@@ -59,6 +59,8 @@ $active_menu = 'jurnal_mengajar';
     <title>Jurnal Mengajar | Portal Ustadz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Tambahkan Library HTML5 QR Code Scanner -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
     <?php include 'sidebar-hr.php'; ?>
@@ -83,7 +85,8 @@ $active_menu = 'jurnal_mengajar';
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Kelas / Rombel</label>
-                            <select name="kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">
+                            <div class="flex gap-2">
+                                <select name="kelas" id="input-kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">
                                 <option value="">-- Pilih Kelas --</option>
                                 <?php
                                 $daftar_kelas = [
@@ -106,6 +109,10 @@ $active_menu = 'jurnal_mengajar';
                                 }
                                 ?>
                             </select>
+                                <button type="button" onclick="bukaScanner()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg font-bold transition shadow-sm border border-emerald-200 flex items-center justify-center" title="Scan QR Kelas">
+                                    <i class="fas fa-qrcode text-lg"></i>
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
@@ -168,6 +175,58 @@ $active_menu = 'jurnal_mengajar';
             </div>
         </main>
     </div>
-    <script>document.getElementById('open-sidebar-hr').addEventListener('click', () => { document.getElementById('sidebar-hr').classList.toggle('hidden'); document.getElementById('sidebar-overlay-hr').classList.toggle('hidden'); });</script>
+
+    <!-- MODAL SCANNER QR -->
+    <div id="qr-modal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden">
+            <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-800"><i class="fas fa-qrcode mr-2 text-emerald-600"></i> Scan QR Ruang Kelas</h3>
+                <button type="button" onclick="tutupScanner()" class="text-gray-400 hover:text-red-500 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-sm text-gray-500 mb-4">Arahkan kamera HP Anda ke stiker QR Code yang tertempel di dinding kelas.</p>
+                <div id="reader" class="w-full bg-black rounded-lg overflow-hidden min-h-[300px]"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('open-sidebar-hr').addEventListener('click', () => { document.getElementById('sidebar-hr').classList.toggle('hidden'); document.getElementById('sidebar-overlay-hr').classList.toggle('hidden'); });
+
+        // ==========================================
+        // FUNGSI SCANNER QR CODE (HTML5)
+        // ==========================================
+        let html5QrcodeScanner = null;
+
+        function bukaScanner() {
+            document.getElementById('qr-modal').classList.remove('hidden');
+            html5QrcodeScanner = new Html5QrcodeScanner(
+                "reader", { fps: 10, qrbox: {width: 250, height: 250} }, false
+            );
+            html5QrcodeScanner.render(onScanSuccess);
+        }
+
+        function tutupScanner() {
+            document.getElementById('qr-modal').classList.add('hidden');
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => console.error("Gagal mematikan scanner.", error));
+            }
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            const selectKelas = document.getElementById('input-kelas');
+            let found = false;
+            
+            for (let i = 0; i < selectKelas.options.length; i++) {
+                if (selectKelas.options[i].value === decodedText) {
+                    selectKelas.selectedIndex = i;
+                    found = true; break;
+                }
+            }
+            tutupScanner();
+            if (found) alert("Berhasil! Kamera mendeteksi Anda berada di " + decodedText);
+            else alert("QR Code (" + decodedText + ") tidak dikenali oleh sistem. Pastikan Anda men-scan QR yang benar.");
+        }
+    </script>
 </body>
 </html>
