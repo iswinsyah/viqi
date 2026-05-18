@@ -1,8 +1,6 @@
 <?php
 session_start();
-
-// Cek apakah sesi login admin sudah aktif
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+if (!isset($_SESSION['yayasan_logged_in']) || $_SESSION['yayasan_logged_in'] !== true) {
     header("Location: login.php");
     exit;
 }

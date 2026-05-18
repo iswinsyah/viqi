@@ -1,7 +1,6 @@
 <?php
 session_start();
-session_destroy(); // Hancurkan semua data sesi
-
+unset($_SESSION['yayasan_logged_in']);
 header("Location: login.php");
 exit;
 ?>

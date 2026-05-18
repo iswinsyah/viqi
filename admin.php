@@ -118,15 +118,6 @@ if($q_pendaftar) { while($r = $q_pendaftar->fetch_assoc()) { $pendaftar_terbaru[
                         Buka Marketing <i class="fas fa-arrow-right ml-2"></i>
                     </a>
                 </div>
-
-                <!-- Widget Portal Pegawai -->
-                <div class="bg-gradient-to-r from-slate-600 to-slate-800 rounded-xl shadow-sm border border-slate-700 p-6 flex flex-col justify-center text-white">
-                    <h3 class="font-bold text-lg mb-1"><i class="fas fa-users-cog mr-2"></i> Ruang Asatidz</h3>
-                    <p class="text-slate-200 text-sm mb-4 line-clamp-2">Masuk ke manajemen asatidz & AI Agent HRD.</p>
-                    <a href="admin-ustadz.php" class="inline-flex items-center justify-center w-full bg-cyan-400 text-slate-900 hover:bg-cyan-500 px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
-                        Buka Ruang Asatidz <i class="fas fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
             </div>
 
             <!-- TABEL PENDAFTAR TERBARU -->

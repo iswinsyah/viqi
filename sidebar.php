@@ -1,104 +1,28 @@
-<!-- Overlay Sidebar untuk Mobile -->
-<div id="sidebar-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-40 hidden md:hidden"></div>
-
-<aside id="sidebar" class="bg-gray-900 text-white w-64 flex-shrink-0 hidden md:flex flex-col transition-all duration-300 z-50 h-full absolute md:relative">
-    <div class="h-16 flex items-center justify-center border-b border-gray-800 px-4">
-        <span class="text-xl font-bold text-emerald-400">
-            <i class="fas fa-leaf mr-2"></i>VQ Admin
-        </span>
-        <button id="close-sidebar" class="md:hidden ml-auto text-gray-400 hover:text-white">
+<!-- SIDEBAR YAYASAN -->
+<div id="sidebar-overlay-yayasan" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden md:hidden transition-opacity"></div>
+<aside id="sidebar-yayasan" class="bg-gray-900 text-white w-64 flex-shrink-0 hidden md:flex flex-col z-30 transition-all duration-300 absolute md:relative h-full shadow-2xl border-r border-gray-800">
+    <div class="h-16 flex items-center justify-between px-6 border-b border-gray-800 bg-black/20">
+        <h1 class="font-extrabold text-lg tracking-wider flex items-center text-amber-400">
+            <i class="fas fa-building mr-2"></i> YAYASAN
+        </h1>
+        <button id="close-sidebar-yayasan" class="md:hidden text-gray-400 hover:text-white focus:outline-none">
             <i class="fas fa-times text-xl"></i>
         </button>
     </div>
-    
-    <div class="flex-1 overflow-y-auto py-4">
-        <nav class="space-y-1 px-2">
-            <a href="admin.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-tachometer-alt w-6 text-center"></i>
-                <span class="ml-3 font-medium">Dashboard</span>
-            </a>
-            <a href="admin-santri.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'santri') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-users w-6 text-center"></i>
-                <span class="ml-3 font-medium">Data Santri</span>
-            </a>
-            
-            <!-- TOMBOL PINTU MASUK KE MARKETING -->
-            <div class="px-4 my-4">
-                <a href="dashboard-marketing.php" class="flex items-center justify-center w-full px-4 py-2 text-sm font-bold text-indigo-900 bg-amber-400 hover:bg-amber-500 rounded-lg shadow-sm transition group">
-                    <i class="fas fa-rocket mr-2 group-hover:-translate-y-1 transition-transform"></i>
-                    <span>Portal Marketing</span>
-                </a>
-                <a href="admin-ustadz.php" class="flex items-center justify-center w-full px-4 py-2 text-sm font-bold text-slate-900 bg-cyan-400 hover:bg-cyan-500 rounded-lg shadow-sm transition group mt-2">
-                    <i class="fas fa-users-cog mr-2 group-hover:-translate-y-1 transition-transform"></i>
-                    <span>Ruang Asatidz</span>
-                </a>
-            </div>
 
-            <div class="pt-4 pb-2">
-                <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Konten Web</p>
-            </div>
-            <a href="admin-biaya.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'biaya') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-money-bill-wave w-6 text-center text-green-400"></i>
-                <span class="ml-3 font-medium">Pengaturan Biaya</span>
+    <div class="flex-1 overflow-y-auto py-4">
+        <nav class="px-4 space-y-1">
+            <p class="px-2 text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 mt-2">Menu Pengurus</p>
+            <a href="index.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-tachometer-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard') ? 'text-indigo-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Dashboard
             </a>
-            <a href="admin-fasilitas.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'fasilitas') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-building w-6 text-center text-blue-400"></i>
-                <span class="ml-3 font-medium">Fasilitas Sekolah</span>
-            </a>
-            <a href="admin-artikel.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= $active_menu == 'artikel' ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-file-alt w-6 text-center"></i>
-                <span class="ml-3 font-medium">Artikel & Berita</span>
-            </a>
-            <a href="admin-tentang.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= $active_menu == 'tentang' ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-info-circle w-6 text-center text-blue-400"></i>
-                <span class="ml-3 font-medium">Tentang Kami</span>
-            </a>
-            <a href="admin-pengajar.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'pengajar') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-chalkboard-teacher w-6 text-center text-purple-400"></i>
-                <span class="ml-3 font-medium">Profil Pengajar</span>
-            </a>
-            <a href="admin-galeri.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'galeri') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-images w-6 text-center text-amber-500"></i>
-                <span class="ml-3 font-medium">Galeri Kegiatan</span>
-            </a>
-            <a href="admin-kurikulum.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'kurikulum') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-book w-6 text-center text-rose-400"></i>
-                <span class="ml-3 font-medium">Kurikulum Terpadu</span>
-            </a>
-            <a href="admin-parenting.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'parenting') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-calendar-check w-6 text-center text-amber-500"></i>
-                <span class="ml-3 font-medium">Jadwal Parenting</span>
-            </a>
-            <a href="admin-testimoni.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'testimoni') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-comments w-6 text-center text-yellow-400"></i>
-                <span class="ml-3 font-medium">Testimoni</span>
-            </a>
-            <a href="admin-media.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-folder-open w-6 text-center text-indigo-400"></i>
-                <span class="ml-3 font-medium">Penyimpanan Media</span>
-            </a>
-            
-            <div class="pt-4 pb-2">
-                <p class="px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Sistem</p>
-            </div>
-            <a href="admin-popup.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-bullhorn w-6 text-center"></i>
-                <span class="ml-3 font-medium">Pengaturan Pop-up</span>
-            </a>
-            <a href="admin-hero.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= $active_menu == 'hero' ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-home w-6 text-center text-amber-400"></i>
-                <span class="ml-3 font-medium">Pengaturan Hero & USP</span>
-            </a>
-            <a href="admin-pengaturan.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'pengaturan') ? 'bg-gray-800 text-white' : '' ?>">
-                <i class="fas fa-cog w-6 text-center"></i>
-                <span class="ml-3 font-medium">Pengaturan Web</span>
+            <a href="asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'asatidz') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
+                <i class="fas fa-users-cog w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'asatidz') ? 'text-indigo-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Daftar Asatidz
             </a>
         </nav>
     </div>
-    
+
     <div class="p-4 border-t border-gray-800">
-        <a href="logout.php" class="flex items-center w-full px-4 py-2 text-sm text-gray-400 hover:text-white transition">
-            <i class="fas fa-sign-out-alt w-5"></i> Keluar
-        </a>
+        <a href="logout.php" class="flex items-center justify-center text-sm font-bold text-white transition-all bg-rose-600 hover:bg-rose-700 px-4 py-2.5 rounded-lg shadow-sm"><i class="fas fa-sign-out-alt mr-2"></i> Kunci Ruangan</a>
     </div>
 </aside>
