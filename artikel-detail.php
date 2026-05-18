@@ -211,98 +211,124 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             const ttsControls = document.getElementById('tts-controls');
             const articleContentEl = document.querySelector('.artikel-konten');
 
+            // Cek dukungan browser
             if ('speechSynthesis' in window && articleContentEl && ttsControls) {
-                ttsControls.style.display = 'flex'; // Tampilkan kontrol jika browser mendukung
+                ttsControls.style.display = 'flex';
 
                 let utterance = null;
-                let voices = [];
+                let bugFixInterval = null;
 
-                // Ambil daftar suara yang tersedia di browser (Google Chrome me-load ini secara asinkron)
-                const populateVoices = () => { voices = speechSynthesis.getVoices(); };
-                if (speechSynthesis.onvoiceschanged !== undefined) {
-                    speechSynthesis.onvoiceschanged = populateVoices;
-                }
-                populateVoices(); // Panggil sekali untuk browser non-Chrome
-
+                // Fungsi untuk memulai atau melanjutkan pembacaan
                 function playText() {
+                    // Jika sedang dijeda, lanjutkan saja
                     if (speechSynthesis.paused && utterance) {
                         speechSynthesis.resume();
-                    } else if (!speechSynthesis.speaking) {
-                        // Reset engine terlebih dahulu agar tidak nyangkut (BUG FIX)
-                        speechSynthesis.cancel();
+                        updateButtons('playing');
+                        return;
+                    }
+                    // Jika sudah berbicara, jangan lakukan apa-apa
+                    if (speechSynthesis.speaking) {
+                        return;
+                    }
 
-                        // Ambil teks bersih dari konten artikel
+                    // Fungsi inti untuk berbicara, dipanggil setelah suara siap
+                    const speakNow = () => {
                         const textToSpeak = articleContentEl.textContent.trim().replace(/\s+/g, ' ');
-                        utterance = new SpeechSynthesisUtterance(textToSpeak);
-                        utterance.lang = 'id-ID'; // Set bahasa ke Indonesia
-                        utterance.rate = 0.9;     // Sedikit lebih lambat agar jelas
-                        utterance.pitch = 1.1;    // Tinggikan pitch sedikit agar lebih feminin
-
-                        // Cari suara wanita Indonesia ("Gadis" di Windows, "Google" di Chrome/Android)
-                        if (voices.length > 0) {
-                            const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
-                            if (idVoices.length > 0) {
-                                const femaleVoice = idVoices.find(v => v.name.includes('Gadis') || v.name.includes('Google') || v.name.includes('Female'));
-                                utterance.voice = femaleVoice ? femaleVoice : idVoices[0];
-                            }
+                        if (!textToSpeak) {
+                            console.error("Tidak ada teks untuk dibacakan.");
+                            return;
                         }
 
-                        utterance.onend = function() {
-                            // Reset tombol saat audio selesai
-                            ttsPlayBtn.classList.remove('hidden');
-                            ttsPauseBtn.classList.add('hidden');
-                            ttsStopBtn.classList.add('hidden');
+                        utterance = new SpeechSynthesisUtterance(textToSpeak);
+                        utterance.lang = 'id-ID';
+                        utterance.rate = 0.95;
+                        utterance.pitch = 1.1;
+
+                        // Pilih suara wanita (jika tersedia)
+                        const voices = speechSynthesis.getVoices();
+                        const idVoice = voices.find(v => v.lang === 'id-ID' && (v.name.includes('Gadis') || v.name.includes('Google')));
+                        if (idVoice) {
+                            utterance.voice = idVoice;
+                        }
+
+                        // Event handler saat selesai atau error
+                        utterance.onend = () => {
                             utterance = null;
+                            clearInterval(bugFixInterval);
+                            updateButtons('stopped');
+                        };
+                        utterance.onerror = (e) => {
+                            console.error("TTS Error:", e);
+                            utterance = null;
+                            clearInterval(bugFixInterval);
+                            updateButtons('stopped');
                         };
 
-                        utterance.onerror = function(e) {
-                            console.error("TTS Error: ", e);
-                            ttsPlayBtn.classList.remove('hidden');
-                            ttsPauseBtn.classList.add('hidden');
-                            ttsStopBtn.classList.add('hidden');
-                        };
-                        
                         speechSynthesis.speak(utterance);
+                        updateButtons('playing');
 
-                        // Workaround untuk BUG Chrome dimana suara mati sendiri setelah 15 detik
-                        let r = setInterval(() => {
-                            if (!speechSynthesis.speaking) {
-                                clearInterval(r);
-                            } else {
+                        // Workaround untuk bug Chrome 15 detik
+                        clearInterval(bugFixInterval);
+                        bugFixInterval = setInterval(() => {
+                            if (speechSynthesis.speaking) {
                                 speechSynthesis.pause();
                                 speechSynthesis.resume();
+                            } else {
+                                clearInterval(bugFixInterval);
                             }
                         }, 14000);
+                    };
+
+                    // Cek apakah daftar suara sudah dimuat oleh browser
+                    if (speechSynthesis.getVoices().length === 0) {
+                        // Jika belum, tunggu event 'onvoiceschanged' lalu mulai bicara
+                        speechSynthesis.onvoiceschanged = speakNow;
+                    } else {
+                        // Jika sudah siap, langsung bicara
+                        speakNow();
                     }
-                    
-                    // Update tampilan tombol
-                    ttsPlayBtn.classList.add('hidden');
-                    ttsPauseBtn.classList.remove('hidden');
-                    ttsStopBtn.classList.remove('hidden');
                 }
 
+                // Fungsi untuk menjeda
                 function pauseText() {
                     if (speechSynthesis.speaking) {
                         speechSynthesis.pause();
-                        ttsPlayBtn.classList.remove('hidden');
-                        ttsPauseBtn.classList.add('hidden');
+                        updateButtons('paused');
                     }
                 }
 
+                // Fungsi untuk menghentikan
                 function stopText() {
                     speechSynthesis.cancel();
                     utterance = null;
-                    ttsPlayBtn.classList.remove('hidden');
-                    ttsPauseBtn.classList.add('hidden');
-                    ttsStopBtn.classList.add('hidden');
+                    clearInterval(bugFixInterval);
+                    updateButtons('stopped');
+                }
+                
+                // Fungsi untuk update tampilan tombol
+                function updateButtons(state) {
+                    if (state === 'playing') {
+                        ttsPlayBtn.classList.add('hidden');
+                        ttsPauseBtn.classList.remove('hidden');
+                        ttsStopBtn.classList.remove('hidden');
+                    } else if (state === 'paused') {
+                        ttsPlayBtn.classList.remove('hidden');
+                        ttsPauseBtn.classList.add('hidden');
+                        ttsStopBtn.classList.remove('hidden');
+                    } else { // stopped or initial
+                        ttsPlayBtn.classList.remove('hidden');
+                        ttsPauseBtn.classList.add('hidden');
+                        ttsStopBtn.classList.add('hidden');
+                    }
                 }
 
+                // Pasang event listener ke tombol
                 ttsPlayBtn.addEventListener('click', playText);
                 ttsPauseBtn.addEventListener('click', pauseText);
                 ttsStopBtn.addEventListener('click', stopText);
 
                 // Pastikan audio berhenti jika pengguna pindah halaman
-                window.addEventListener('beforeunload', () => speechSynthesis.cancel());
+                window.addEventListener('beforeunload', stopText);
 
             }
         });
