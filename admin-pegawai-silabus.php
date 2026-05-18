@@ -26,7 +26,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mata_pelajaran = $conn->real_escape_string($_POST['mata_pelajaran']);
     $kelas = $conn->real_escape_string($_POST['kelas']);
     $deskripsi_mapel = $conn->real_escape_string($_POST['deskripsi_mapel']);
-    $capaian_pembelajaran = $conn->real_escape_string($_POST['capaian_pembelajaran']);
+
+    $elemen = $_POST['elemen'] ?? [];
+    $cp_elemen = $_POST['cp_elemen'] ?? [];
+    $cp_array = [];
+    for($i=0; $i<count($elemen); $i++) {
+        if(!empty($elemen[$i]) || !empty($cp_elemen[$i])) {
+            $cp_array[] = ['elemen' => $elemen[$i], 'cp' => $cp_elemen[$i]];
+        }
+    }
+    
+    // Simpan array sebagai JSON agar terstruktur. Fallback jika kosong tetap simpan raw string
+    $capaian_pembelajaran = !empty($cp_array) ? $conn->real_escape_string(json_encode($cp_array, JSON_UNESCAPED_UNICODE)) : $conn->real_escape_string($_POST['capaian_pembelajaran'] ?? '');
 
     if ($id > 0) {
         $sql = "UPDATE master_silabus SET mata_pelajaran='$mata_pelajaran', kelas='$kelas', deskripsi_mapel='$deskripsi_mapel', capaian_pembelajaran='$capaian_pembelajaran' WHERE id=$id";
@@ -89,8 +100,37 @@ $active_menu = 'master_silabus';
                         <textarea name="deskripsi_mapel" rows="2" class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500" placeholder="Jelaskan tujuan utama dari mata pelajaran ini..."><?= $edit_mode ? htmlspecialchars($data_edit['deskripsi_mapel']) : '' ?></textarea>
                     </div>
                     <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Capaian Pembelajaran (CP)</label>
-                        <textarea name="capaian_pembelajaran" rows="4" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500" placeholder="Tuliskan poin-poin target pembelajaran. Pisahkan per semester jika perlu."><?= $edit_mode ? htmlspecialchars($data_edit['capaian_pembelajaran']) : '' ?></textarea>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Capaian Pembelajaran (CP) per Elemen <span class="text-xs text-gray-500 font-normal">(Format Kurikulum Merdeka)</span></label>
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase w-1/3">Elemen</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Deskripsi Capaian Pembelajaran</th>
+                                        <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase w-16">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cp-container" class="bg-white divide-y divide-gray-200">
+                                    <?php
+                                    $cp_data = [];
+                                    if ($edit_mode) {
+                                        $cp_decoded = json_decode($data_edit['capaian_pembelajaran'], true);
+                                        if (is_array($cp_decoded)) $cp_data = $cp_decoded;
+                                        else $cp_data = [['elemen' => 'Umum', 'cp' => $data_edit['capaian_pembelajaran']]];
+                                    } else { $cp_data = [['elemen' => '', 'cp' => '']]; }
+                                    foreach($cp_data as $index => $item): ?>
+                                    <tr class="cp-row">
+                                        <td class="p-2 align-top"><input type="text" name="elemen[]" value="<?= htmlspecialchars($item['elemen']) ?>" class="w-full px-3 py-2 border rounded focus:ring-purple-500 text-sm font-semibold" placeholder="Cth: Menyimak / Fiqih" required></td>
+                                        <td class="p-2 align-top"><textarea name="cp_elemen[]" rows="3" class="w-full px-3 py-2 border rounded focus:ring-purple-500 text-sm" placeholder="Peserta didik mampu..." required><?= htmlspecialchars($item['cp']) ?></textarea></td>
+                                        <td class="p-2 align-top text-center"><button type="button" onclick="hapusBarisCP(this)" class="mt-1 text-red-500 hover:text-red-700 p-2"><i class="fas fa-trash"></i></button></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                            <div class="p-3 bg-gray-50 border-t border-gray-200">
+                                <button type="button" onclick="tambahBarisCP()" class="text-sm font-bold text-purple-600 hover:text-purple-800"><i class="fas fa-plus-circle mr-1"></i> Tambah Elemen CP</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="text-right">
                         <?php if($edit_mode) echo '<a href="admin-pegawai-silabus.php" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold mr-2">Batal</a>'; ?>
@@ -122,7 +162,19 @@ $active_menu = 'master_silabus';
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-600">
                                         <div class="font-medium text-gray-800"><?= htmlspecialchars($row['deskripsi_mapel']) ?></div>
-                                        <div class="text-xs text-gray-500 mt-1 whitespace-pre-line"><b>CP:</b> <?= htmlspecialchars($row['capaian_pembelajaran']) ?></div>
+                                        <div class="text-xs text-gray-500 mt-2">
+                                            <b>Capaian Pembelajaran:</b>
+                                            <?php
+                                            $cp_json = json_decode($row['capaian_pembelajaran'], true);
+                                            if(is_array($cp_json)) {
+                                                echo '<table class="min-w-full mt-1 border border-gray-200"><thead class="bg-gray-100"><tr><th class="border border-gray-200 px-2 py-1 text-left">Elemen</th><th class="border border-gray-200 px-2 py-1 text-left">Deskripsi</th></tr></thead><tbody>';
+                                                foreach($cp_json as $item) { echo '<tr><td class="border border-gray-200 px-2 py-1 font-semibold align-top w-1/3">'.htmlspecialchars($item['elemen']).'</td><td class="border border-gray-200 px-2 py-1">'.htmlspecialchars($item['cp']).'</td></tr>'; }
+                                                echo '</tbody></table>';
+                                            } else {
+                                                echo '<div class="mt-1 whitespace-pre-line">'.htmlspecialchars($row['capaian_pembelajaran']).'</div>';
+                                            }
+                                            ?>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3 text-center align-top">
                                         <a href="?edit_id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700 mr-2" title="Edit"><i class="fas fa-edit"></i></a>
@@ -137,5 +189,22 @@ $active_menu = 'master_silabus';
         </main>
     </div>
     <script>document.getElementById('open-sidebar-hr').addEventListener('click', () => { document.getElementById('sidebar-hr').classList.toggle('hidden'); document.getElementById('sidebar-overlay-hr').classList.toggle('hidden'); });</script>
+    <script>
+        function tambahBarisCP() {
+            const tbody = document.getElementById('cp-container');
+            const tr = document.createElement('tr');
+            tr.className = 'cp-row';
+            tr.innerHTML = `
+                <td class="p-2 align-top"><input type="text" name="elemen[]" class="w-full px-3 py-2 border rounded focus:ring-purple-500 text-sm font-semibold" placeholder="Cth: Menulis / Akhlak" required></td>
+                <td class="p-2 align-top"><textarea name="cp_elemen[]" rows="3" class="w-full px-3 py-2 border rounded focus:ring-purple-500 text-sm" placeholder="Peserta didik mampu..." required></textarea></td>
+                <td class="p-2 align-top text-center"><button type="button" onclick="hapusBarisCP(this)" class="mt-1 text-red-500 hover:text-red-700 p-2" title="Hapus Baris"><i class="fas fa-trash"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+        }
+        function hapusBarisCP(btn) {
+            const row = btn.closest('tr');
+            if (document.querySelectorAll('.cp-row').length > 1) { row.remove(); } else { alert('Minimal harus ada 1 elemen Capaian Pembelajaran.'); }
+        }
+    </script>
 </body>
 </html>

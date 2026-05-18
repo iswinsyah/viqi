@@ -70,7 +70,13 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 min-h-[400px] flex flex-col overflow-hidden">
-                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100"><h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2"></i> Hasil Draft RPP</h3></div>
+                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                    <h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2"></i> Hasil Modul Ajar (RPP)</h3>
+                    <div class="flex gap-2">
+                        <button id="btn-copy" onclick="copyRPP()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-copy mr-1"></i> Copy Teks</button>
+                        <button id="btn-print" onclick="cetakRPP()" class="hidden bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-indigo-200"><i class="fas fa-print mr-1"></i> Cetak PDF / Print</button>
+                    </div>
+                </div>
                 <div id="result-container" class="p-6 flex-1 overflow-y-auto relative">
                     <div id="state-idle" class="flex flex-col items-center justify-center h-full text-gray-400 py-16 text-center"><i class="fas fa-file-signature text-6xl mb-4 opacity-30"></i><p>Isi form di atas lalu klik tombol untuk menyusun RPP otomatis.</p></div>
                     <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-cyan-600 py-16 text-center"><i class="fas fa-spinner fa-spin text-5xl mb-4"></i><p class="font-bold">Menganalisa silabus dan merancang kegiatan kelas...</p></div>
@@ -105,19 +111,36 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
             const deskripsiMapel = selectedOption.getAttribute('data-deskripsi');
             const capaianPembelajaran = selectedOption.getAttribute('data-cp');
 
+            // Format ulang jika formatnya JSON tabel (Kurikulum Merdeka)
+            let cpFormatted = capaianPembelajaran;
+            try {
+                const parsedCP = JSON.parse(capaianPembelajaran);
+                if (Array.isArray(parsedCP)) {
+                    cpFormatted = parsedCP.map(item => `- **Elemen ${item.elemen}:** ${item.cp}`).join('\n');
+                }
+            } catch (e) {
+                // Fallback ke raw string jika gagal (bukan format json)
+            }
+
             document.getElementById('state-idle').classList.add('hidden');
             document.getElementById('state-result').classList.add('hidden');
             document.getElementById('state-loading').classList.remove('hidden');
             document.getElementById('btn-generate').disabled = true;
 
-            const prompt = `Anda adalah asisten ahli kurikulum untuk Pesantren Villa Quran. Buat Rencana Pelaksanaan Pembelajaran (RPP) 1 lembar yang menarik dan modern berdasarkan konteks berikut:
+            const prompt = `Anda adalah asisten ahli kurikulum untuk Pesantren Villa Quran. Buatlah Rencana Pelaksanaan Pembelajaran (RPP) / Modul Ajar berformat Kurikulum Merdeka yang menarik dan modern berdasarkan konteks berikut:
 - **Mata Pelajaran:** ${mapel}
-- **Kelas:** ${kelas}
+- **Fase / Kelas:** ${kelas}
 - **Deskripsi Umum Mapel:** ${deskripsiMapel}
-- **Capaian Pembelajaran (CP) Utama:** ${capaianPembelajaran}
-- **Fokus Pertemuan Hari Ini (Topik):** ${topik}
+- **Capaian Pembelajaran (CP):**\n${cpFormatted}
+- **Topik / Materi Pokok:** ${topik}
 
-Struktur RPP wajib dalam format Markdown: 1. Tujuan Pembelajaran (turunkan dari CP & Topik), 2. Kegiatan Pendahuluan (buat ice breaking yang relevan), 3. Kegiatan Inti (jelaskan materi dan metode interaktif/games yang sesuai), 4. Kegiatan Penutup & Evaluasi (buat evaluasi singkat yang mengukur ketercapaian tujuan).`;
+Struktur Modul Ajar wajib dalam format Markdown yang rapi: 
+1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila / Santri, Sarana & Prasarana).
+2. **Komponen Inti**: 
+   - **Tujuan Pembelajaran** (Spesifik diturunkan dari Elemen CP dan Topik).
+   - **Pemahaman Bermakna** & **Pertanyaan Pemantik**.
+   - **Kegiatan Pembelajaran**: Pendahuluan (Ice breaking dll), Inti (Eksplorasi Materi & Metode Interaktif/Games), Penutup (Refleksi).
+3. **Asesmen / Evaluasi** (Bentuk penilaian singkat untuk mengukur ketercapaian tujuan).`;
 
             fetch(GAS_URL, {
                 method: 'POST',
@@ -130,10 +153,52 @@ Struktur RPP wajib dalam format Markdown: 1. Tujuan Pembelajaran (turunkan dari 
                     document.getElementById('state-result').innerHTML = marked.parse(data.result);
                     document.getElementById('state-loading').classList.add('hidden');
                     document.getElementById('state-result').classList.remove('hidden');
+                    document.getElementById('btn-print').classList.remove('hidden');
+                    document.getElementById('btn-copy').classList.remove('hidden');
                 } else throw new Error(data.message);
             })
             .catch(err => { alert("Error AI: " + err.message); document.getElementById('state-loading').classList.add('hidden'); document.getElementById('state-idle').classList.remove('hidden'); })
             .finally(() => document.getElementById('btn-generate').disabled = false);
+        }
+
+        function copyRPP() {
+            const text = document.getElementById('state-result').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('btn-copy');
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check mr-1"></i> Tersalin!';
+                setTimeout(() => btn.innerHTML = original, 2000);
+            });
+        }
+
+        function cetakRPP() {
+            const content = document.getElementById('state-result').innerHTML;
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Cetak Modul Ajar (RPP)</title>
+                    <style>
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; color: #333; line-height: 1.6; }
+                        h1, h2, h3 { color: #0f172a; margin-top: 20px; margin-bottom: 10px; }
+                        h1 { font-size: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; text-align: center; }
+                        h2 { font-size: 20px; color: #0891b2; }
+                        h3 { font-size: 16px; color: #0e7490; }
+                        p { margin-bottom: 10px; }
+                        ul, ol { margin-bottom: 15px; padding-left: 20px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 20px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
+                        th { background-color: #f8fafc; font-weight: bold; }
+                    </style>
+                </head>
+                <body>${content}</body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            // Jeda 0.5 detik agar browser merender HTML sebelum membuka jendela Print
+            setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
         }
     </script>
 </body>
