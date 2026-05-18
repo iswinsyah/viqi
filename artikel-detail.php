@@ -215,25 +215,64 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                 ttsControls.style.display = 'flex'; // Tampilkan kontrol jika browser mendukung
 
                 let utterance = null;
+                let voices = [];
+
+                // Ambil daftar suara yang tersedia di browser (Google Chrome me-load ini secara asinkron)
+                const populateVoices = () => { voices = speechSynthesis.getVoices(); };
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = populateVoices;
+                }
+                populateVoices(); // Panggil sekali untuk browser non-Chrome
 
                 function playText() {
                     if (speechSynthesis.paused && utterance) {
                         speechSynthesis.resume();
                     } else if (!speechSynthesis.speaking) {
+                        // Reset engine terlebih dahulu agar tidak nyangkut (BUG FIX)
+                        speechSynthesis.cancel();
+
                         // Ambil teks bersih dari konten artikel
                         const textToSpeak = articleContentEl.textContent.trim().replace(/\s+/g, ' ');
                         utterance = new SpeechSynthesisUtterance(textToSpeak);
                         utterance.lang = 'id-ID'; // Set bahasa ke Indonesia
                         utterance.rate = 0.9;     // Sedikit lebih lambat agar jelas
+                        utterance.pitch = 1.1;    // Tinggikan pitch sedikit agar lebih feminin
+
+                        // Cari suara wanita Indonesia ("Gadis" di Windows, "Google" di Chrome/Android)
+                        if (voices.length > 0) {
+                            const idVoices = voices.filter(v => v.lang.includes('id') || v.lang.includes('ID'));
+                            if (idVoices.length > 0) {
+                                const femaleVoice = idVoices.find(v => v.name.includes('Gadis') || v.name.includes('Google') || v.name.includes('Female'));
+                                utterance.voice = femaleVoice ? femaleVoice : idVoices[0];
+                            }
+                        }
 
                         utterance.onend = function() {
                             // Reset tombol saat audio selesai
                             ttsPlayBtn.classList.remove('hidden');
                             ttsPauseBtn.classList.add('hidden');
                             ttsStopBtn.classList.add('hidden');
+                            utterance = null;
+                        };
+
+                        utterance.onerror = function(e) {
+                            console.error("TTS Error: ", e);
+                            ttsPlayBtn.classList.remove('hidden');
+                            ttsPauseBtn.classList.add('hidden');
+                            ttsStopBtn.classList.add('hidden');
                         };
                         
                         speechSynthesis.speak(utterance);
+
+                        // Workaround untuk BUG Chrome dimana suara mati sendiri setelah 15 detik
+                        let r = setInterval(() => {
+                            if (!speechSynthesis.speaking) {
+                                clearInterval(r);
+                            } else {
+                                speechSynthesis.pause();
+                                speechSynthesis.resume();
+                            }
+                        }, 14000);
                     }
                     
                     // Update tampilan tombol
@@ -252,6 +291,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
 
                 function stopText() {
                     speechSynthesis.cancel();
+                    utterance = null;
                     ttsPlayBtn.classList.remove('hidden');
                     ttsPauseBtn.classList.add('hidden');
                     ttsStopBtn.classList.add('hidden');
