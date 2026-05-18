@@ -152,7 +152,15 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
 - **Topik / Materi Pokok:** ${topik}
 - **Metode Pembelajaran:** ${metode}
 
-Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila / Santri, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran** (Spesifik diturunkan dari Elemen CP dan Topik). - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan (Ice breaking dll), Inti (Eksplorasi Materi dengan metode ${metode}), Penutup (Refleksi). 3. **Asesmen / Evaluasi** (Bentuk penilaian singkat untuk mengukur ketercapaian tujuan).`;
+Struktur Modul Ajar wajib dalam format Markdown yang rapi: 
+1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila / Santri, Sarana & Prasarana). 
+2. **Komponen Inti**: 
+   - **Tujuan Pembelajaran** (Spesifik diturunkan dari Elemen CP dan Topik). 
+   - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. 
+   - **Kegiatan Pembelajaran**: Pendahuluan (Ice breaking dll), Inti (Eksplorasi Materi dengan metode ${metode}), Penutup (Refleksi). 
+3. **Asesmen / Evaluasi** (Bentuk penilaian singkat untuk mengukur ketercapaian tujuan).
+4. **Lampiran: Lembar Kerja Siswa (LKS)** (Buat LKS sederhana dan interaktif terkait topik).
+5. **Lampiran: Soal Ulangan** (Buat 5 soal pilihan ganda beserta kunci jawabannya terkait topik).`;
 
             } else {
                 // --- MODE UMUM (TANPA SILABUS) ---
@@ -162,7 +170,7 @@ Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum**
 - **Topik / Materi Pokok:** ${topik}
 - **Metode Pembelajaran:** ${metode}
 
-Gunakan pengetahuan umum Anda tentang Kurikulum Merdeka untuk menyusunnya. Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran**. - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan, Inti (Gunakan metode ${metode}), Penutup. 3. **Asesmen / Evaluasi**.`;
+Gunakan pengetahuan umum Anda tentang Kurikulum Merdeka untuk menyusunnya. Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran**. - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan, Inti (Gunakan metode ${metode}), Penutup. 3. **Asesmen / Evaluasi**. 4. **Lampiran: Lembar Kerja Siswa (LKS)** (Buat LKS sederhana dan interaktif terkait topik). 5. **Lampiran: Soal Ulangan** (Buat 5 soal pilihan ganda beserta kunci jawabannya terkait topik).`;
             }
 
             document.getElementById('state-idle').classList.add('hidden');
