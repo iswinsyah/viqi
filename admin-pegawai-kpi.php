@@ -7,6 +7,30 @@ $active_menu = 'dashboard_kpi';
 // Asumsi kita punya ID user yang login, untuk sementara kita hardcode ID = 1
 $user_id = $_SESSION['user_id'] ?? 1; 
 
+// --- SETUP & AMBIL PENGATURAN GAJI ---
+$conn->query("CREATE TABLE IF NOT EXISTS pengaturan_gaji (
+    id INT PRIMARY KEY DEFAULT 1,
+    tarif_dasar INT,
+    bonus_grade_b INT,
+    bonus_grade_a INT
+)");
+$conn->query("INSERT IGNORE INTO pengaturan_gaji (id, tarif_dasar, bonus_grade_b, bonus_grade_a) VALUES (1, 25000, 10, 20)");
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_gaji'])) {
+    $tarif = (int)$_POST['tarif_dasar'];
+    $bonus_b = (int)$_POST['bonus_grade_b'];
+    $bonus_a = (int)$_POST['bonus_grade_a'];
+    $conn->query("UPDATE pengaturan_gaji SET tarif_dasar=$tarif, bonus_grade_b=$bonus_b, bonus_grade_a=$bonus_a WHERE id=1");
+    $pesan_sukses = "Pengaturan Gaji & Persentase Bonus berhasil diperbarui!";
+}
+
+$res_gaji = $conn->query("SELECT * FROM pengaturan_gaji WHERE id=1");
+$data_gaji = $res_gaji->fetch_assoc();
+
+$tarif_dasar_per_pertemuan = $data_gaji['tarif_dasar'] ?? 25000;
+$persentase_bonus_grade_b = $data_gaji['bonus_grade_b'] ?? 10;
+$persentase_bonus_grade_a = $data_gaji['bonus_grade_a'] ?? 20;
+
 // --- LOGIC PERHITUNGAN KPI (CONTOH SEDERHANA) ---
 // Di aplikasi nyata, ini akan jadi fungsi yang kompleks dan mungkin dijalankan oleh CRON JOB bulanan
 
@@ -32,14 +56,6 @@ $skor_pengembangan_diri = $skor_kontribusi_silabus;
 
 // Total Skor KPI
 $total_skor_kpi = ($skor_administrasi * 0.20) + ($skor_kualitas_pengajaran * 0.40) + ($skor_capaian_santri * 0.30) + ($skor_pengembangan_diri * 0.10);
-
-// --- LOGIC PENGGAJIAN BERBASIS KEHADIRAN & KPI (SISTEM BONUS) ---
-
-// --- KONFIGURASI BONUS (Bisa diubah sesuai kebijakan) ---
-$tarif_dasar_per_pertemuan = 25000;
-$persentase_bonus_grade_b = 10; // Bonus 10% untuk Grade B
-$persentase_bonus_grade_a = 20; // Bonus 20% untuk Grade A
-// ---------------------------------------------------------
 
 $jumlah_pertemuan = 24; // Dummy: Nanti dihitung otomatis dari tabel jurnal_mengajar
 
@@ -84,6 +100,31 @@ $gaji_total = $gaji_pokok + $bonus_kinerja;
                     <option>Periode: Mei 2026</option>
                     <option>Periode: April 2026</option>
                 </select>
+            </div>
+
+            <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
+
+            <!-- FORM PENGATURAN GAJI & BONUS -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+                <h2 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fas fa-cog text-gray-500 mr-2"></i>Template Setting Gaji & Bonus</h2>
+                <form action="" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                    <input type="hidden" name="update_gaji" value="1">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Gaji Pokok / Pertemuan (Rp)</label>
+                        <input type="number" name="tarif_dasar" value="<?= $tarif_dasar_per_pertemuan ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Bonus Grade B (%)</label>
+                        <input type="number" name="bonus_grade_b" value="<?= $persentase_bonus_grade_b ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Bonus Grade A (%)</label>
+                        <input type="number" name="bonus_grade_a" value="<?= $persentase_bonus_grade_a ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" required>
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 px-4 rounded-lg transition shadow-sm flex justify-center items-center"><i class="fas fa-save mr-2"></i> Simpan Setting</button>
+                    </div>
+                </form>
             </div>
 
             <!-- WIDGET UTAMA SKOR & INSENTIF -->
