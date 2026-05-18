@@ -110,13 +110,21 @@ if($q_pendaftar) { while($r = $q_pendaftar->fetch_assoc()) { $pendaftar_terbaru[
                     </div>
                 </div>
                 
-                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-sm border border-blue-600 p-6 flex items-center justify-between col-span-1 sm:col-span-2 text-white">
-                    <div>
-                        <h3 class="font-bold text-lg mb-1">Beralih ke Halaman Marketing</h3>
-                        <p class="text-blue-100 text-sm">Masuk ke pusat kendali aktivitas marketing dan AI.</p>
-                    </div>
-                    <a href="halaman-marketing.php" class="bg-white text-blue-600 hover:bg-gray-50 px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition whitespace-nowrap">
-                        Buka Marketing <i class="fas fa-arrow-right ml-1"></i>
+                <!-- Widget Portal Marketing -->
+                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl shadow-sm border border-blue-600 p-6 flex flex-col justify-center text-white">
+                    <h3 class="font-bold text-lg mb-1"><i class="fas fa-rocket mr-2"></i> Portal Marketing</h3>
+                    <p class="text-blue-100 text-sm mb-4 line-clamp-2">Masuk ke pusat kendali aktivitas marketing dan AI.</p>
+                    <a href="dashboard-marketing.php" class="inline-flex items-center justify-center w-full bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
+                        Buka Marketing <i class="fas fa-arrow-right ml-2"></i>
+                    </a>
+                </div>
+
+                <!-- Widget Portal Pegawai -->
+                <div class="bg-gradient-to-r from-slate-600 to-slate-800 rounded-xl shadow-sm border border-slate-700 p-6 flex flex-col justify-center text-white">
+                    <h3 class="font-bold text-lg mb-1"><i class="fas fa-users-cog mr-2"></i> Portal Pegawai</h3>
+                    <p class="text-slate-200 text-sm mb-4 line-clamp-2">Masuk ke manajemen kepegawaian & AI Agent HRD.</p>
+                    <a href="admin-pegawai.php" class="inline-flex items-center justify-center w-full bg-cyan-400 text-slate-900 hover:bg-cyan-500 px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition">
+                        Buka Pegawai <i class="fas fa-arrow-right ml-2"></i>
                     </a>
                 </div>
             </div>
