@@ -28,6 +28,10 @@
                     <i class="fas fa-rocket mr-2 group-hover:-translate-y-1 transition-transform"></i>
                     <span>Portal Marketing</span>
                 </a>
+                <a href="admin-pegawai.php" class="flex items-center justify-center w-full px-4 py-2 text-sm font-bold text-slate-900 bg-cyan-400 hover:bg-cyan-500 rounded-lg shadow-sm transition group mt-2">
+                    <i class="fas fa-users-cog mr-2 group-hover:-translate-y-1 transition-transform"></i>
+                    <span>Portal Pegawai</span>
+                </a>
             </div>
 
             <div class="pt-4 pb-2">
