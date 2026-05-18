@@ -95,6 +95,23 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                 <!-- Judul -->
                 <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 leading-tight"><?= htmlspecialchars($art['judul']) ?></h1>
                 
+                <!-- KONTROL TEXT-TO-SPEECH (TTS) -->
+                <div id="tts-controls" class="my-8 p-4 bg-gray-100 rounded-xl flex items-center gap-4 border border-gray-200" style="display: none;">
+                    <button id="tts-play" class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition shadow-md focus:outline-none" title="Putar Audio">
+                        <i class="fas fa-play text-lg"></i>
+                    </button>
+                    <button id="tts-pause" class="hidden flex items-center justify-center w-12 h-12 rounded-full bg-amber-500 text-white hover:bg-amber-600 transition shadow-md focus:outline-none" title="Jeda">
+                        <i class="fas fa-pause text-lg"></i>
+                    </button>
+                    <button id="tts-stop" class="hidden flex items-center justify-center w-12 h-12 rounded-full bg-red-500 text-white hover:bg-red-600 transition shadow-md focus:outline-none" title="Hentikan">
+                        <i class="fas fa-stop text-lg"></i>
+                    </button>
+                    <div>
+                        <h4 class="font-bold text-gray-800">Dengarkan Artikel</h4>
+                        <p class="text-sm text-gray-500">Biarkan browser membacakan untuk Anda.</p>
+                    </div>
+                </div>
+
                 <!-- Konten Murni HTML dari TinyMCE -->
                 <div class="artikel-konten">
                     <?= $art['konten'] ?>
@@ -186,6 +203,68 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                     console.error('Gagal menyalin link: ', err);
                 });
             });
+
+            // --- FITUR TEXT-TO-SPEECH (TTS) ---
+            const ttsPlayBtn = document.getElementById('tts-play');
+            const ttsPauseBtn = document.getElementById('tts-pause');
+            const ttsStopBtn = document.getElementById('tts-stop');
+            const ttsControls = document.getElementById('tts-controls');
+            const articleContentEl = document.querySelector('.artikel-konten');
+
+            if ('speechSynthesis' in window && articleContentEl && ttsControls) {
+                ttsControls.style.display = 'flex'; // Tampilkan kontrol jika browser mendukung
+
+                let utterance = null;
+
+                function playText() {
+                    if (speechSynthesis.paused && utterance) {
+                        speechSynthesis.resume();
+                    } else if (!speechSynthesis.speaking) {
+                        // Ambil teks bersih dari konten artikel
+                        const textToSpeak = articleContentEl.textContent.trim().replace(/\s+/g, ' ');
+                        utterance = new SpeechSynthesisUtterance(textToSpeak);
+                        utterance.lang = 'id-ID'; // Set bahasa ke Indonesia
+                        utterance.rate = 0.9;     // Sedikit lebih lambat agar jelas
+
+                        utterance.onend = function() {
+                            // Reset tombol saat audio selesai
+                            ttsPlayBtn.classList.remove('hidden');
+                            ttsPauseBtn.classList.add('hidden');
+                            ttsStopBtn.classList.add('hidden');
+                        };
+                        
+                        speechSynthesis.speak(utterance);
+                    }
+                    
+                    // Update tampilan tombol
+                    ttsPlayBtn.classList.add('hidden');
+                    ttsPauseBtn.classList.remove('hidden');
+                    ttsStopBtn.classList.remove('hidden');
+                }
+
+                function pauseText() {
+                    if (speechSynthesis.speaking) {
+                        speechSynthesis.pause();
+                        ttsPlayBtn.classList.remove('hidden');
+                        ttsPauseBtn.classList.add('hidden');
+                    }
+                }
+
+                function stopText() {
+                    speechSynthesis.cancel();
+                    ttsPlayBtn.classList.remove('hidden');
+                    ttsPauseBtn.classList.add('hidden');
+                    ttsStopBtn.classList.add('hidden');
+                }
+
+                ttsPlayBtn.addEventListener('click', playText);
+                ttsPauseBtn.addEventListener('click', pauseText);
+                ttsStopBtn.addEventListener('click', stopText);
+
+                // Pastikan audio berhenti jika pengguna pindah halaman
+                window.addEventListener('beforeunload', () => speechSynthesis.cancel());
+
+            }
         });
     </script>
     <!-- Mata AI Tracker -->
