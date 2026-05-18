@@ -2,6 +2,14 @@
 require_once 'auth.php';
 require_once 'koneksi.php';
 
+// --- SAKLAR OTORITAS AGENT OTONOM ---
+if (isset($_POST['toggle_autopilot'])) {
+    $status = $_POST['toggle_autopilot'] === 'ON' ? 'ON' : 'OFF';
+    file_put_contents('autopilot_status.txt', $status);
+    echo "OK";
+    exit;
+}
+
 // Ambil data Leads untuk bahan bakar AI
 $leads_data = [];
 $sql = "SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 100";
@@ -31,6 +39,7 @@ $last_persona_time = file_exists('saved_persona.txt') ? filemtime('saved_persona
 $days_since_persona = floor((time() - $last_persona_time) / (60 * 60 * 24));
 $is_time_for_weekly = ($days_since_persona >= 7 || $last_persona_time == 0) ? true : false;
 
+$autopilot = file_exists('autopilot_status.txt') ? file_get_contents('autopilot_status.txt') : 'OFF';
 $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_kalender.txt') : '';
 
 $active_menu = 'ai-hub';
@@ -57,6 +66,30 @@ $active_menu = 'ai-hub';
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+            
+            <!-- PANEL SAKLAR AI AGENT OTONOM -->
+            <div class="mb-6 bg-gray-900 rounded-xl shadow-lg border border-gray-800 p-6 flex flex-col md:flex-row justify-between items-center relative overflow-hidden">
+                <!-- Background Ornamen -->
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-32 h-32 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+                <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
+                
+                <div class="relative z-10 mb-4 md:mb-0">
+                    <h2 class="text-2xl font-extrabold text-white flex items-center">
+                        <i class="fas fa-satellite-dish text-emerald-400 mr-3 animate-pulse"></i> Mode Agen Otonom (Auto-Pilot)
+                    </h2>
+                    <p class="text-gray-400 text-sm mt-1 max-w-xl">Saat aktif, AI Agent akan bekerja sendiri (otonom) di server setiap pagi tanpa perlu Anda klik apapun. Layaknya karyawan digital yang mandiri.</p>
+                    <p class="text-xs text-gray-500 mt-2"><i class="fas fa-info-circle text-blue-400 mr-1"></i> <b>Cara Kerja:</b> Daftarkan URL <code>https://<?= $_SERVER['HTTP_HOST'] ?? 'domain.com' ?>/cron-agent.php</code> ke fitur <b>Cron Jobs</b> di Hostinger untuk dipanggil setiap jam 07:00 pagi.</p>
+                </div>
+                <div class="relative z-10 flex items-center bg-gray-800 p-3 rounded-xl border border-gray-700">
+                    <span class="text-xs font-bold text-gray-400 mr-3 px-2">IZIN KERJA AGENT:</span>
+                    <label class="inline-flex relative items-center cursor-pointer">
+                        <input type="checkbox" id="autopilot-toggle" class="sr-only peer" <?= $autopilot == 'ON' ? 'checked' : '' ?>>
+                        <div class="w-14 h-7 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500 shadow-inner"></div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- PANEL AUTOMATION KLASIK -->
             <div class="mb-8 bg-indigo-700 text-white rounded-xl p-8 shadow-lg flex justify-between items-center">
                 <div>
                     <h1 class="text-3xl font-bold mb-2">Automated Marketing AI</h1>
@@ -178,6 +211,7 @@ $active_menu = 'ai-hub';
         // URL WA Gateway (Contoh Fonnte)
         const WA_GATEWAY_TOKEN = "Dtw72oRiQr8FympzpMHL"; 
         
+        // Data
         const rawLeadsData = <?= json_encode($leads_data) ?>;
         const rawFootprintsData = <?= json_encode($footprints_data) ?>;
         const rawAgenData = <?= json_encode($agen_data) ?>;
@@ -219,6 +253,24 @@ $active_menu = 'ai-hub';
                 text.className = "mt-4 text-center status-text text-sm font-bold text-red-600";
                 text.innerText = "Gagal!";
             }
+        }
+
+        // ==========================================
+        // TOGGLE AGENT OTONOM
+        // ==========================================
+        const autopilotToggle = document.getElementById('autopilot-toggle');
+        if (autopilotToggle) {
+            autopilotToggle.addEventListener('change', function(e) {
+                const status = e.target.checked ? 'ON' : 'OFF';
+                const formData = new FormData();
+                formData.append('toggle_autopilot', status);
+                fetch('admin-ai-hub.php', { method: 'POST', body: formData })
+                .then(res => res.text()).then(text => {
+                    if(text.trim() === 'OK') {
+                        addLog("⚙️ Status Otoritas AI Agent Otonom berhasil diubah menjadi: " + status);
+                    }
+                });
+            });
         }
 
         // ==========================================
