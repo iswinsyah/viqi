@@ -37,9 +37,6 @@
             <a href="admin-pegawai-rpp.php" class="<?= (isset($active_menu) && $active_menu == 'ai_rpp') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-magic w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ai_rpp') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> AI Generator RPP
             </a>
-            <a href="admin-pegawai-rapor.php" class="<?= (isset($active_menu) && $active_menu == 'ai_rapor') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-comment-dots w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ai_rapor') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> AI Narasi Rapor
-            </a>
 
         </nav>
     </div>
