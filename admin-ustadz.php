@@ -10,7 +10,7 @@ $active_menu = 'dashboard_pegawai';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manajemen Kepegawaian | Admin Villa Quran</title>
+    <title>Ruang Asatidz | Admin Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -45,8 +45,8 @@ $active_menu = 'dashboard_pegawai';
         <!-- MAIN DASHBOARD CONTENT -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-users-cog text-cyan-600 mr-2"></i>Dashboard Kepegawaian</h1>
-                <p class="text-gray-500 mt-1">Halaman ini akan menjadi pusat kendali untuk manajemen dan AI Agent pengontrol pegawai.</p>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-users-cog text-cyan-600 mr-2"></i>Dashboard Asatidz</h1>
+                <p class="text-gray-500 mt-1">Halaman ini akan menjadi pusat kendali untuk manajemen dan AI asisten asatidz.</p>
             </div>
 
             <!-- AREA KOSONG UNTUK KONTEN -->
