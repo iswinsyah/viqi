@@ -19,10 +19,20 @@
                 <i class="fas fa-tachometer-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_pegawai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Dashboard Pegawai
             </a>
             
-            <!-- Nanti menu AI Agent pegawai di sini -->
-            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">AI Agent HRD</p>
-             <a href="#" class="text-slate-100 opacity-50 group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all cursor-not-allowed">
-                <i class="fas fa-robot w-6 text-center mr-2 text-slate-300"></i> Kontrol Agent (Segera)
+            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">Portal Ustadz (Guru)</p>
+            <a href="admin-pegawai-jurnal.php" class="<?= (isset($active_menu) && $active_menu == 'jurnal_mengajar') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-book-open w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'jurnal_mengajar') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Jurnal Mengajar
+            </a>
+            <a href="admin-pegawai-nilai.php" class="<?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-star-half-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Bank Nilai Akademik
+            </a>
+
+            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">AI Asisten Akademik</p>
+            <a href="admin-pegawai-rpp.php" class="<?= (isset($active_menu) && $active_menu == 'ai_rpp') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-magic w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ai_rpp') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> AI Generator RPP
+            </a>
+            <a href="admin-pegawai-rapor.php" class="<?= (isset($active_menu) && $active_menu == 'ai_rapor') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-comment-dots w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ai_rapor') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> AI Narasi Rapor
             </a>
 
         </nav>
