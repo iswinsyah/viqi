@@ -191,6 +191,15 @@ Gunakan pengetahuan umum Anda tentang Kurikulum Merdeka untuk menyusunnya. Struk
                     document.getElementById('state-result').classList.remove('hidden');
                     document.getElementById('btn-print').classList.remove('hidden');
                     document.getElementById('btn-copy').classList.remove('hidden');
+
+                    // Kirim log aktivitas ke server
+                    const logData = new FormData();
+                    logData.append('action', 'log_ai_activity');
+                    logData.append('fitur', 'AI Generator RPP');
+                    logData.append('detail', `Mapel: ${mapel}, Topik: ${topik}`);
+                    fetch('ajax-handler.php', { method: 'POST', body: logData })
+                        .catch(err => console.error('Gagal mengirim log AI', err));
+
                 } else throw new Error(data.message);
             })
             .catch(err => { alert("Error AI: " + err.message); document.getElementById('state-loading').classList.add('hidden'); document.getElementById('state-idle').classList.remove('hidden'); })
