@@ -24,6 +24,9 @@
             <a href="data-agen.php" class="<?= (isset($active_menu) && $active_menu == 'agen') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-users w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'agen') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Data Agen
             </a>
+            <a href="admin-spmb.php" class="<?= (isset($active_menu) && $active_menu == 'spmb') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-user-graduate w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'spmb') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Data Pendaftar SPMB
+            </a>
 
             <p class="px-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-2 mt-6">Kecerdasan Buatan (AI)</p>
             <a href="admin-ai-hub.php" class="<?= (isset($active_menu) && $active_menu == 'ai-hub') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">

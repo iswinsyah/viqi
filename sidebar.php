@@ -17,10 +17,6 @@
                 <i class="fas fa-tachometer-alt w-6 text-center"></i>
                 <span class="ml-3 font-medium">Dashboard</span>
             </a>
-            <a href="admin-spmb.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group">
-                <i class="fas fa-user-graduate w-6 text-center"></i>
-                <span class="ml-3 font-medium">Data Pendaftar SPMB</span>
-            </a>
             <a href="admin-santri.php" class="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition group <?= (isset($active_menu) && $active_menu == 'santri') ? 'bg-gray-800 text-white' : '' ?>">
                 <i class="fas fa-users w-6 text-center"></i>
                 <span class="ml-3 font-medium">Data Santri</span>
@@ -28,7 +24,8 @@
             
             <!-- TOMBOL PINTU MASUK KE MARKETING -->
             <div class="px-4 my-4">
-                <a href="ass="fas fa-rocket text-amber-400 mr-2 group-hover:-translate-y-1 transition-transform"></i>
+                <a href="dashboard-marketing.php" class="flex items-center justify-center w-full px-4 py-2 text-sm font-bold text-indigo-900 bg-amber-400 hover:bg-amber-500 rounded-lg shadow-sm transition group">
+                    <i class="fas fa-rocket mr-2 group-hover:-translate-y-1 transition-transform"></i>
                     <span>Portal Marketing</span>
                 </a>
             </div>

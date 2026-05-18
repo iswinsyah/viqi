@@ -41,8 +41,8 @@ $active_menu = 'spmb';
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-    <!-- INCLUDE SIDEBAR -->
-    <?php include 'sidebar.php'; ?>
+    <!-- INCLUDE SIDEBAR MARKETING -->
+    <?php include 'sidebar-marketing.php'; ?>
 
     <!-- MAIN CONTENT -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
