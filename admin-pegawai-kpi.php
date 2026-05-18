@@ -32,9 +32,31 @@ $skor_pengembangan_diri = $skor_kontribusi_silabus;
 // Total Skor KPI
 $total_skor_kpi = ($skor_administrasi * 0.20) + ($skor_kualitas_pengajaran * 0.40) + ($skor_capaian_santri * 0.30) + ($skor_pengembangan_diri * 0.10);
 
-// Tunjangan Kinerja (Contoh)
-$tunjangan_maksimal = 1000000;
-$insentif_diterima = ($total_skor_kpi / 100) * $tunjangan_maksimal;
+// --- LOGIC PENGGAJIAN BERBASIS KEHADIRAN & KPI (SISTEM BONUS) ---
+
+// --- KONFIGURASI BONUS (Bisa diubah sesuai kebijakan) ---
+$tarif_dasar_per_pertemuan = 25000;
+$persentase_bonus_grade_b = 10; // Bonus 10% untuk Grade B
+$persentase_bonus_grade_a = 20; // Bonus 20% untuk Grade A
+// ---------------------------------------------------------
+
+$jumlah_pertemuan = 24; // Dummy: Nanti dihitung otomatis dari tabel jurnal_mengajar
+
+$gaji_pokok = $jumlah_pertemuan * $tarif_dasar_per_pertemuan;
+$bonus_kinerja = 0;
+
+if ($total_skor_kpi >= 85) { // Grade A
+    $bonus_kinerja = $gaji_pokok * ($persentase_bonus_grade_a / 100);
+    $predikat = "Sangat Baik (Grade A)";
+} elseif ($total_skor_kpi >= 70) { // Grade B
+    $bonus_kinerja = $gaji_pokok * ($persentase_bonus_grade_b / 100);
+    $predikat = "Baik (Grade B)";
+} else { // Grade C
+    $bonus_kinerja = 0;
+    $predikat = "Cukup (Grade C)";
+}
+
+$gaji_total = $gaji_pokok + $bonus_kinerja;
 
 ?>
 <!DOCTYPE html>
@@ -64,16 +86,46 @@ $insentif_diterima = ($total_skor_kpi / 100) * $tunjangan_maksimal;
             </div>
 
             <!-- WIDGET UTAMA SKOR & INSENTIF -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="md:col-span-1 bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-xl shadow-lg p-6 flex flex-col justify-center items-center text-center">
                     <h3 class="font-semibold opacity-80">Total Skor Kinerja Anda</h3>
                     <p class="text-6xl font-bold my-2"><?= number_format($total_skor_kpi, 2) ?></p>
-                    <div class="w-24 h-1 bg-white/30 rounded-full"></div>
+                    <span class="bg-white/20 px-3 py-1 rounded-full text-sm font-medium border border-white/30 mb-3"><?= $predikat ?></span>
+                    <div class="w-full h-1 bg-white/30 rounded-full mt-2"><div class="h-1 bg-white rounded-full" style="width: <?= $total_skor_kpi ?>%;"></div></div>
                 </div>
-                <div class="md:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="font-bold text-gray-800 mb-2">Perkiraan Insentif Kinerja Bulan Ini</h3>
-                    <p class="text-4xl font-bold text-emerald-600">Rp <?= number_format($insentif_diterima, 0, ',', '.') ?></p>
-                    <p class="text-sm text-gray-500 mt-2">Perhitungan: (<span class="font-bold"><?= number_format($total_skor_kpi, 2) ?></span> / 100) x Tunjangan Maksimal (Rp <?= number_format($tunjangan_maksimal, 0, ',', '.') ?>). Angka ini akan ditambahkan di luar gaji pokok kehadiran Anda.</p>
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center">
+                    <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">Simulasi Gaji & Bonus Kinerja</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-4">
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <p class="text-xs text-gray-500 mb-1">Gaji Pokok</p>
+                            <p class="text-lg font-bold text-gray-800">Rp <?= number_format($gaji_pokok, 0, ',', '.') ?></p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <p class="text-xs text-gray-500 mb-1">Predikat Kinerja</p>
+                            <p class="text-lg font-bold text-gray-800"><?= $predikat ?></p>
+                        </div>
+                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <p class="text-xs text-blue-600 mb-1">Persentase Bonus</p>
+                            <p class="text-lg font-bold text-blue-700">
+                                <?php 
+                                    if ($total_skor_kpi >= 85) echo $persentase_bonus_grade_a . '%';
+                                    elseif ($total_skor_kpi >= 70) echo $persentase_bonus_grade_b . '%';
+                                    else echo '0%';
+                                ?>
+                            </p>
+                        </div>
+                        <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                            <p class="text-xs text-emerald-600 mb-1">Bonus Kinerja</p>
+                            <p class="text-lg font-bold text-emerald-700">+ Rp <?= number_format($bonus_kinerja, 0, ',', '.') ?></p>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center bg-gray-900 text-white p-4 rounded-lg">
+                        <div>
+                            <p class="text-sm text-gray-300">Total Gaji Bulan Ini</p>
+                            <p class="text-xs text-gray-400 mt-1">Gaji Pokok + Bonus</p>
+                        </div>
+                        <p class="text-3xl font-bold text-amber-400">Rp <?= number_format($gaji_total, 0, ',', '.') ?></p>
+                    </div>
                 </div>
             </div>
 
