@@ -214,81 +214,72 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             // Cek dukungan browser
             if ('speechSynthesis' in window && articleContentEl && ttsControls) {
                 ttsControls.style.display = 'flex';
-
-                let utterance = null;
-                let bugFixInterval = null;
-
+    
+                let chunks = [];
+                let currentChunkIndex = 0;
+                let isStopped = true;
+    
                 // Fungsi untuk memulai atau melanjutkan pembacaan
                 function playText() {
                     // Jika sedang dijeda, lanjutkan saja
-                    if (speechSynthesis.paused && utterance) {
+                    if (speechSynthesis.paused) {
                         speechSynthesis.resume();
                         updateButtons('playing');
                         return;
                     }
+                    
                     // Jika sudah berbicara, jangan lakukan apa-apa
                     if (speechSynthesis.speaking) {
                         return;
                     }
-
-                    // Fungsi inti untuk berbicara, dipanggil setelah suara siap
-                    const speakNow = () => {
-                        const textToSpeak = articleContentEl.textContent.trim().replace(/\s+/g, ' ');
-                        if (!textToSpeak) {
-                            console.error("Tidak ada teks untuk dibacakan.");
-                            return;
-                        }
-
-                        utterance = new SpeechSynthesisUtterance(textToSpeak);
-                        utterance.lang = 'id-ID';
-                        utterance.rate = 0.95;
-                        utterance.pitch = 1.1;
-
-                        // Pilih suara wanita (jika tersedia)
-                        const voices = speechSynthesis.getVoices();
-                        const idVoice = voices.find(v => v.lang === 'id-ID' && (v.name.includes('Gadis') || v.name.includes('Google')));
-                        if (idVoice) {
-                            utterance.voice = idVoice;
-                        }
-
-                        // Event handler saat selesai atau error
-                        utterance.onend = () => {
-                            utterance = null;
-                            clearInterval(bugFixInterval);
-                            updateButtons('stopped');
-                        };
-                        utterance.onerror = (e) => {
-                            console.error("TTS Error:", e);
-                            utterance = null;
-                            clearInterval(bugFixInterval);
-                            updateButtons('stopped');
-                        };
-
-                        speechSynthesis.speak(utterance);
-                        updateButtons('playing');
-
-                        // Workaround untuk bug Chrome 15 detik
-                        clearInterval(bugFixInterval);
-                        bugFixInterval = setInterval(() => {
-                            if (speechSynthesis.speaking) {
-                                speechSynthesis.pause();
-                                speechSynthesis.resume();
-                            } else {
-                                clearInterval(bugFixInterval);
-                            }
-                        }, 14000);
-                    };
-
-                    // Cek apakah daftar suara sudah dimuat oleh browser
-                    if (speechSynthesis.getVoices().length === 0) {
-                        // Jika belum, tunggu event 'onvoiceschanged' lalu mulai bicara
-                        speechSynthesis.onvoiceschanged = speakNow;
-                    } else {
-                        // Jika sudah siap, langsung bicara
-                        speakNow();
+    
+                    // Jika ini adalah pemutaran baru, siapkan potongan teks (paragraf, judul, list)
+                    if (isStopped) {
+                        const elements = articleContentEl.querySelectorAll('h2, h3, h4, p, li');
+                        chunks = Array.from(elements).map(el => el.textContent.trim()).filter(text => text.length > 0);
+                        currentChunkIndex = 0;
                     }
+                    
+                    isStopped = false;
+                    speakChunk();
                 }
-
+    
+                function speakChunk() {
+                    if (isStopped || currentChunkIndex >= chunks.length) {
+                        stopText(); // Selesai atau dihentikan manual
+                        return;
+                    }
+    
+                    const text = chunks[currentChunkIndex];
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'id-ID';
+                    utterance.rate = 0.95;
+                    utterance.pitch = 1.1;
+    
+                    // Pilih suara wanita (jika tersedia)
+                    const voices = speechSynthesis.getVoices();
+                    if (voices.length > 0) {
+                        const idVoice = voices.find(v => v.lang === 'id-ID' && (v.name.includes('Gadis') || v.name.includes('Google')));
+                        if (idVoice) utterance.voice = idVoice;
+                    }
+    
+                    // Saat satu potongan selesai, otomatis lanjut ke potongan berikutnya
+                    utterance.onend = () => {
+                        if (!isStopped) {
+                            currentChunkIndex++;
+                            speakChunk(); // Panggil diri sendiri untuk paragraf selanjutnya
+                        }
+                    };
+    
+                    utterance.onerror = (e) => {
+                        console.error("TTS Error:", e);
+                        stopText();
+                    };
+    
+                    speechSynthesis.speak(utterance);
+                    updateButtons('playing');
+                }
+    
                 // Fungsi untuk menjeda
                 function pauseText() {
                     if (speechSynthesis.speaking) {
@@ -296,12 +287,12 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                         updateButtons('paused');
                     }
                 }
-
+    
                 // Fungsi untuk menghentikan
                 function stopText() {
+                    isStopped = true;
+                    currentChunkIndex = 0;
                     speechSynthesis.cancel();
-                    utterance = null;
-                    clearInterval(bugFixInterval);
                     updateButtons('stopped');
                 }
                 
@@ -321,15 +312,20 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                         ttsStopBtn.classList.add('hidden');
                     }
                 }
-
+    
                 // Pasang event listener ke tombol
                 ttsPlayBtn.addEventListener('click', playText);
                 ttsPauseBtn.addEventListener('click', pauseText);
                 ttsStopBtn.addEventListener('click', stopText);
-
+    
                 // Pastikan audio berhenti jika pengguna pindah halaman
                 window.addEventListener('beforeunload', stopText);
-
+    
+                // Panggil getVoices sekali di awal untuk memuatnya di beberapa browser
+                speechSynthesis.getVoices();
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices();
+                }
             }
         });
     </script>
