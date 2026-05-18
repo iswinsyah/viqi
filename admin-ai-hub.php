@@ -46,8 +46,8 @@ $active_menu = 'ai-hub';
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-    <!-- INCLUDE SIDEBAR -->
-    <?php include 'sidebar.php'; ?>
+    <!-- INCLUDE SIDEBAR MARKETING -->
+    <?php include 'sidebar-marketing.php'; ?>
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">

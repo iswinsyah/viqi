@@ -16,8 +16,8 @@ $active_menu = 'halaman_marketing';
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-    <!-- INCLUDE SIDEBAR SEBELAH KIRI -->
-    <?php include 'sidebar.php'; ?>
+    <!-- INCLUDE SIDEBAR MARKETING -->
+    <?php include 'sidebar-marketing.php'; ?>
 
     <!-- AREA KONTEN UTAMA -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
