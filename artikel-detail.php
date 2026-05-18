@@ -96,7 +96,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                 <h1 class="text-3xl md:text-4xl font-extrabold text-gray-900 mb-8 leading-tight"><?= htmlspecialchars($art['judul']) ?></h1>
                 
                 <!-- KONTROL TEXT-TO-SPEECH (TTS) -->
-                <div id="tts-controls" class="my-8 p-4 bg-gray-100 rounded-xl flex items-center gap-4 border border-gray-200" style="display: none;">
+                <div id="tts-controls" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-40 bg-white/90 backdrop-blur-sm shadow-2xl border border-gray-200 rounded-full p-2 flex items-center gap-2 md:static md:transform-none md:left-auto md:bottom-auto md:my-8 md:p-4 md:bg-gray-100 md:rounded-xl md:shadow-sm md:border md:gap-4" style="display: none;">
                     <button id="tts-play" class="flex items-center justify-center w-12 h-12 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition shadow-md focus:outline-none" title="Putar Audio">
                         <i class="fas fa-play text-lg"></i>
                     </button>
@@ -106,7 +106,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
                     <button id="tts-stop" class="hidden flex items-center justify-center w-12 h-12 rounded-full bg-red-500 text-white hover:bg-red-600 transition shadow-md focus:outline-none" title="Hentikan">
                         <i class="fas fa-stop text-lg"></i>
                     </button>
-                    <div>
+                    <div class="hidden md:block">
                         <h4 class="font-bold text-gray-800">Dengarkan Artikel</h4>
                         <p class="text-sm text-gray-500">Biarkan browser membacakan untuk Anda.</p>
                     </div>
