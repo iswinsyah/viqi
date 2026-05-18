@@ -26,6 +26,9 @@
             <a href="admin-pegawai-nilai.php" class="<?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-star-half-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Bank Nilai Akademik
             </a>
+            <a href="admin-pegawai-silabus.php" class="<?= (isset($active_menu) && $active_menu == 'master_silabus') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-book-reader w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'master_silabus') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Master Silabus & CP
+            </a>
 
             <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">AI Asisten Akademik</p>
             <a href="admin-pegawai-rpp.php" class="<?= (isset($active_menu) && $active_menu == 'ai_rpp') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">

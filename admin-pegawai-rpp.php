@@ -2,6 +2,12 @@
 require_once 'auth.php';
 require_once 'koneksi.php';
 $active_menu = 'ai_rpp';
+
+// Ambil data silabus untuk dropdown
+$daftar_silabus = [];
+$res_silabus = $conn->query("SELECT * FROM master_silabus ORDER BY mata_pelajaran ASC");
+if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r;
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -36,8 +42,16 @@ $active_menu = 'ai_rpp';
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
-                        <input type="text" id="rpp-mapel" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Contoh: Sejarah Kebudayaan Islam">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran (dari Master Silabus)</label>
+                        <select id="rpp-mapel" onchange="pilihSilabus(this)" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">
+                            <option value="">-- Pilih Mapel --</option>
+                            <?php foreach($daftar_silabus as $s): ?>
+                                <option value="<?= htmlspecialchars($s['mata_pelajaran']) ?>" 
+                                        data-kelas="<?= htmlspecialchars($s['kelas']) ?>"
+                                        data-deskripsi="<?= htmlspecialchars($s['deskripsi_mapel']) ?>"
+                                        data-cp="<?= htmlspecialchars($s['capaian_pembelajaran']) ?>"><?= htmlspecialchars($s['mata_pelajaran']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Kelas / Jenjang</label>
@@ -71,19 +85,39 @@ $active_menu = 'ai_rpp';
         
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
 
+        function pilihSilabus(select) {
+            const selectedOption = select.options[select.selectedIndex];
+            if (selectedOption.value) {
+                document.getElementById('rpp-kelas').value = selectedOption.getAttribute('data-kelas');
+            }
+        }
+
         function generateRPP() {
-            const mapel = document.getElementById('rpp-mapel').value;
+            const mapelSelect = document.getElementById('rpp-mapel');
+            const selectedOption = mapelSelect.options[mapelSelect.selectedIndex];
+            const mapel = selectedOption.value;
             const kelas = document.getElementById('rpp-kelas').value;
             const topik = document.getElementById('rpp-topik').value;
 
             if(!mapel || !kelas || !topik) { alert("Lengkapi semua isian form!"); return; }
+
+            // Ambil data silabus dari atribut data-*
+            const deskripsiMapel = selectedOption.getAttribute('data-deskripsi');
+            const capaianPembelajaran = selectedOption.getAttribute('data-cp');
 
             document.getElementById('state-idle').classList.add('hidden');
             document.getElementById('state-result').classList.add('hidden');
             document.getElementById('state-loading').classList.remove('hidden');
             document.getElementById('btn-generate').disabled = true;
 
-            const prompt = `Buat Rencana Pelaksanaan Pembelajaran (RPP) 1 lembar yang menarik, modern, dan tidak membosankan untuk Mata Pelajaran: ${mapel}, Kelas: ${kelas}, Topik: ${topik}. Buat dalam format Markdown. Struktur wajib: 1. Tujuan Pembelajaran, 2. Kegiatan Pendahuluan (Ice breaking), 3. Kegiatan Inti (Materi & Metode Interaktif/Games), 4. Kegiatan Penutup & Evaluasi.`;
+            const prompt = `Anda adalah asisten ahli kurikulum untuk Pesantren Villa Quran. Buat Rencana Pelaksanaan Pembelajaran (RPP) 1 lembar yang menarik dan modern berdasarkan konteks berikut:
+- **Mata Pelajaran:** ${mapel}
+- **Kelas:** ${kelas}
+- **Deskripsi Umum Mapel:** ${deskripsiMapel}
+- **Capaian Pembelajaran (CP) Utama:** ${capaianPembelajaran}
+- **Fokus Pertemuan Hari Ini (Topik):** ${topik}
+
+Struktur RPP wajib dalam format Markdown: 1. Tujuan Pembelajaran (turunkan dari CP & Topik), 2. Kegiatan Pendahuluan (buat ice breaking yang relevan), 3. Kegiatan Inti (jelaskan materi dan metode interaktif/games yang sesuai), 4. Kegiatan Penutup & Evaluasi (buat evaluasi singkat yang mengukur ketercapaian tujuan).`;
 
             fetch(GAS_URL, {
                 method: 'POST',
