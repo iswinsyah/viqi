@@ -86,21 +86,18 @@ $active_menu = 'jurnal_mengajar';
                             <select name="kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">
                                 <option value="">-- Pilih Kelas --</option>
                                 <?php
-                                $tingkat = [7, 8, 9, 10, 11, 12];
-                                $abjad = ['A', 'B', 'C'];
-                                $gender = ['Rijal', 'Nisa'];
+                                $daftar_kelas = [
+                                    'Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12',
+                                    'Kelas A', 'Kelas B', 'Kelas C',
+                                    'Kelas Rijal', 'Kelas Nisa'
+                                ];
                                 $kelas_tersimpan = $edit_mode ? $data_edit['kelas'] : '';
                                 $ada_di_list = false;
 
-                                foreach ($tingkat as $t) {
-                                    foreach ($abjad as $a) {
-                                        foreach ($gender as $g) {
-                                            $nama_kelas = "$t$a $g";
-                                            $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
-                                            if ($sel) $ada_di_list = true;
-                                            echo "<option value=\"$nama_kelas\" $sel>$nama_kelas</option>";
-                                        }
-                                    }
+                                foreach ($daftar_kelas as $nama_kelas) {
+                                    $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
+                                    if ($sel) $ada_di_list = true;
+                                    echo "<option value=\"$nama_kelas\" $sel>$nama_kelas</option>";
                                 }
                                 
                                 // Jaga-jaga jika data lama diketik manual dan tidak ada di daftar kombinasi baru
