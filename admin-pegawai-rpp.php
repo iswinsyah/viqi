@@ -42,24 +42,24 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran (dari Master Silabus)</label>
-                        <select id="rpp-mapel" onchange="pilihSilabus(this)" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">
-                            <option value="">-- Pilih Mapel --</option>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
+                        <input type="text" id="rpp-mapel" list="daftar-mapel" onchange="pilihSilabus(this)" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Pilih dari daftar atau ketik baru...">
+                        <datalist id="daftar-mapel">
                             <?php foreach($daftar_silabus as $s): ?>
                                 <option value="<?= htmlspecialchars($s['mata_pelajaran']) ?>" 
                                         data-kelas="<?= htmlspecialchars($s['kelas']) ?>"
                                         data-deskripsi="<?= htmlspecialchars($s['deskripsi_mapel']) ?>"
-                                        data-cp="<?= htmlspecialchars($s['capaian_pembelajaran']) ?>"><?= htmlspecialchars($s['mata_pelajaran']) ?></option>
+                                        data-cp="<?= htmlspecialchars($s['capaian_pembelajaran']) ?>">
                             <?php endforeach; ?>
-                        </select>
+                        </datalist>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Kelas / Jenjang</label>
-                        <input type="text" id="rpp-kelas" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Contoh: Kelas 7 SMP">
+                        <input type="text" id="rpp-kelas" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Otomatis terisi jika memilih mapel">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Topik Utama</label>
-                        <input type="text" id="rpp-topik" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Contoh: Peristiwa Hijrah Nabi">
+                        <input type="text" id="rpp-topik" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Contoh: Peristiwa Hijrah Nabi / Bilangan Cacah">
                     </div>
                 </div>
                 <div class="flex justify-end">
@@ -91,56 +91,72 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
         
         const GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
 
-        function pilihSilabus(select) {
-            const selectedOption = select.options[select.selectedIndex];
-            if (selectedOption.value) {
-                document.getElementById('rpp-kelas').value = selectedOption.getAttribute('data-kelas');
+        function pilihSilabus(input) {
+            const val = input.value;
+            const opts = document.getElementById('daftar-mapel').options;
+            for (let i = 0; i < opts.length; i++) {
+                if (opts[i].value === val) {
+                    document.getElementById('rpp-kelas').value = opts[i].getAttribute('data-kelas');
+                    return;
+                }
             }
+            // Jika tidak ada di daftar, kosongkan kelas
+            document.getElementById('rpp-kelas').value = '';
         }
 
         function generateRPP() {
-            const mapelSelect = document.getElementById('rpp-mapel');
-            const selectedOption = mapelSelect.options[mapelSelect.selectedIndex];
-            const mapel = selectedOption.value;
+            const mapelInput = document.getElementById('rpp-mapel');
+            const mapel = mapelInput.value;
             const kelas = document.getElementById('rpp-kelas').value;
             const topik = document.getElementById('rpp-topik').value;
 
             if(!mapel || !kelas || !topik) { alert("Lengkapi semua isian form!"); return; }
 
-            // Ambil data silabus dari atribut data-*
-            const deskripsiMapel = selectedOption.getAttribute('data-deskripsi');
-            const capaianPembelajaran = selectedOption.getAttribute('data-cp');
-
-            // Format ulang jika formatnya JSON tabel (Kurikulum Merdeka)
-            let cpFormatted = capaianPembelajaran;
-            try {
-                const parsedCP = JSON.parse(capaianPembelajaran);
-                if (Array.isArray(parsedCP)) {
-                    cpFormatted = parsedCP.map(item => `- **Elemen ${item.elemen}:** ${item.cp}`).join('\n');
+            let prompt;
+            let selectedOption = null;
+            const opts = document.getElementById('daftar-mapel').options;
+            for (let i = 0; i < opts.length; i++) {
+                if (opts[i].value === mapel) {
+                    selectedOption = opts[i];
+                    break;
                 }
-            } catch (e) {
-                // Fallback ke raw string jika gagal (bukan format json)
             }
 
-            document.getElementById('state-idle').classList.add('hidden');
-            document.getElementById('state-result').classList.add('hidden');
-            document.getElementById('state-loading').classList.remove('hidden');
-            document.getElementById('btn-generate').disabled = true;
+            if (selectedOption) {
+                // --- MODE SILABUS (LEBIH AKURAT) ---
+                const deskripsiMapel = selectedOption.getAttribute('data-deskripsi');
+                const capaianPembelajaran = selectedOption.getAttribute('data-cp');
+                let cpFormatted = capaianPembelajaran;
+                try {
+                    const parsedCP = JSON.parse(capaianPembelajaran);
+                    if (Array.isArray(parsedCP)) {
+                        cpFormatted = parsedCP.map(item => `- **Elemen ${item.elemen}:** ${item.cp}`).join('\n');
+                    }
+                } catch (e) { /* Biarkan raw string */ }
 
-            const prompt = `Anda adalah asisten ahli kurikulum untuk Pesantren Villa Quran. Buatlah Rencana Pelaksanaan Pembelajaran (RPP) / Modul Ajar berformat Kurikulum Merdeka yang menarik dan modern berdasarkan konteks berikut:
+                prompt = `Anda adalah asisten ahli kurikulum untuk Pesantren Villa Quran. Buatlah Modul Ajar berformat Kurikulum Merdeka yang menarik dan modern berdasarkan konteks berikut:
 - **Mata Pelajaran:** ${mapel}
 - **Fase / Kelas:** ${kelas}
 - **Deskripsi Umum Mapel:** ${deskripsiMapel}
 - **Capaian Pembelajaran (CP):**\n${cpFormatted}
 - **Topik / Materi Pokok:** ${topik}
 
-Struktur Modul Ajar wajib dalam format Markdown yang rapi: 
-1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila / Santri, Sarana & Prasarana).
-2. **Komponen Inti**: 
-   - **Tujuan Pembelajaran** (Spesifik diturunkan dari Elemen CP dan Topik).
-   - **Pemahaman Bermakna** & **Pertanyaan Pemantik**.
-   - **Kegiatan Pembelajaran**: Pendahuluan (Ice breaking dll), Inti (Eksplorasi Materi & Metode Interaktif/Games), Penutup (Refleksi).
-3. **Asesmen / Evaluasi** (Bentuk penilaian singkat untuk mengukur ketercapaian tujuan).`;
+Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila / Santri, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran** (Spesifik diturunkan dari Elemen CP dan Topik). - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan (Ice breaking dll), Inti (Eksplorasi Materi & Metode Interaktif/Games), Penutup (Refleksi). 3. **Asesmen / Evaluasi** (Bentuk penilaian singkat untuk mengukur ketercapaian tujuan).`;
+
+            } else {
+                // --- MODE UMUM (TANPA SILABUS) ---
+                prompt = `Anda adalah asisten ahli kurikulum. Buatlah Modul Ajar berformat Kurikulum Merdeka yang menarik dan modern untuk:
+- **Mata Pelajaran:** ${mapel}
+- **Fase / Kelas:** ${kelas}
+- **Topik / Materi Pokok:** ${topik}
+
+Gunakan pengetahuan umum Anda tentang Kurikulum Merdeka untuk menyusunnya. Struktur Modul Ajar wajib dalam format Markdown yang rapi: 1. **Informasi Umum** (Identitas, Kompetensi Awal, Profil Pelajar Pancasila, Sarana & Prasarana). 2. **Komponen Inti**: - **Tujuan Pembelajaran**. - **Pemahaman Bermakna** & **Pertanyaan Pemantik**. - **Kegiatan Pembelajaran**: Pendahuluan, Inti, Penutup. 3. **Asesmen / Evaluasi**.`;
+            }
+
+            document.getElementById('state-idle').classList.add('hidden');
+            document.getElementById('state-result').classList.add('hidden');
+            document.getElementById('state-loading').classList.remove('hidden');
+            document.getElementById('btn-generate').disabled = true;
 
             fetch(GAS_URL, {
                 method: 'POST',
