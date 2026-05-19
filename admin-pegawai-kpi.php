@@ -1,11 +1,11 @@
 <?php
-require_once 'auth.php';
+require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
 $active_menu = 'dashboard_kpi';
 
-// Asumsi kita punya ID user yang login, untuk sementara kita hardcode ID = 1
-$user_id = $_SESSION['user_id'] ?? 1; 
+// Mengambil ID Ustadz yang sedang login
+$user_id = $_SESSION['ustadz_id'] ?? 1; 
 
 // --- SETUP & AMBIL PENGATURAN GAJI ---
 $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_gaji (

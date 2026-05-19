@@ -40,8 +40,8 @@
     </div>
 
     <div class="p-4 border-t border-slate-700">
-        <a href="admin.php" class="flex items-center justify-center text-sm font-bold text-slate-900 hover:text-slate-900 transition-all bg-cyan-400 hover:bg-cyan-500 px-4 py-2.5 rounded-lg shadow-sm">
-            <i class="fas fa-arrow-left mr-2"></i> Kembali ke SIM
+        <a href="logout-ustadz.php" class="flex items-center justify-center text-sm font-bold text-white hover:text-white transition-all bg-rose-500 hover:bg-rose-600 px-4 py-2.5 rounded-lg shadow-sm">
+            <i class="fas fa-sign-out-alt mr-2"></i> Keluar
         </a>
     </div>
 </aside>
