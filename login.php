@@ -13,7 +13,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
 
-    if ($username === 'viqi' && $password === 'Bismillah99!') {
+    if (($username === 'viqi' || $username === 'admin') && $password === 'Bismillah99!') {
         $_SESSION['admin_logged_in'] = true;
         header("Location: admin.php");
         exit;
