@@ -37,7 +37,7 @@ if ($result && $result->num_rows > 0) {
                             Member Area <i class="fas fa-chevron-down ml-1 text-xs"></i>
                         </button>
                         <div class="absolute top-14 left-0 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-gray-100 overflow-hidden">
-                            <a href="admin.php" class="block px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 font-medium border-b border-gray-50"><i class="fas fa-user-shield w-5 text-center mr-1 text-emerald-500"></i> Admin (SIM)</a>
+                            <a href="login.php" class="block px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 font-medium border-b border-gray-50"><i class="fas fa-user-shield w-5 text-center mr-1 text-emerald-500"></i> Admin (SIM)</a>
                             <a href="login-ustadz.php" class="block px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 font-medium border-b border-gray-50"><i class="fas fa-chalkboard-teacher w-5 text-center mr-1 text-blue-500"></i> Ruang Asatidz</a>
                             <a href="dashboard-marketing.php" class="block px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 font-medium"><i class="fas fa-bullhorn w-5 text-center mr-1 text-rose-500"></i> Marketing</a>
                         </div>

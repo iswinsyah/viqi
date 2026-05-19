@@ -1,23 +1,24 @@
 <?php
 session_start();
 
-if (isset($_SESSION['yayasan_logged_in']) && $_SESSION['yayasan_logged_in'] === true) {
-    header("Location: index.php");
+// Jika sudah login, langsung arahkan ke admin.php
+if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+    header("Location: admin.php");
     exit;
 }
 
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $pin = $_POST['pin'] ?? '';
+    $username = $_POST['username'] ?? '';
+    $password = $_POST['password'] ?? '';
 
-    // PIN khusus Pengurus Yayasan (Bisa diubah sesuai kebijakan)
-    if ($pin === 'BismillahYayasan') {
-        $_SESSION['yayasan_logged_in'] = true;
-        header("Location: index.php");
+    if ($username === 'viqi' && $password === 'Bismillah99!') {
+        $_SESSION['admin_logged_in'] = true;
+        header("Location: admin.php");
         exit;
     } else {
-        $error = 'PIN akses tidak valid!';
+        $error = 'Username atau Password salah!';
     }
 }
 ?>
@@ -26,27 +27,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akses Yayasan | Villa Quran</title>
+    <title>Login Admin SIM | Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-900 flex items-center justify-center min-h-screen relative overflow-hidden">
-    <div class="bg-gray-800 p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-700 relative z-10">
+<body class="bg-gray-50 flex items-center justify-center min-h-screen relative overflow-hidden">
+    <!-- Background Accents -->
+    <div class="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-emerald-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+    <div class="absolute bottom-0 left-0 -mb-20 -ml-20 w-80 h-80 bg-teal-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
+
+    <div class="bg-white p-8 md:p-10 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 relative z-10">
         <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-indigo-900 text-indigo-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 border border-indigo-700"><i class="fas fa-building"></i></div>
-            <h1 class="text-2xl font-bold text-white">Ruang Yayasan</h1>
-            <p class="text-sm text-gray-400 mt-1">Area Khusus Pengurus</p>
+            <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-user-shield"></i></div>
+            <h1 class="text-2xl font-bold text-gray-900">Admin SIM</h1>
+            <p class="text-sm text-gray-500 mt-1">Sistem Informasi Manajemen Terpadu</p>
         </div>
 
-        <?php if($error): ?><div class="bg-red-900/50 text-red-400 border border-red-800 text-sm px-4 py-3 rounded-lg mb-6 flex items-center"><i class="fas fa-exclamation-triangle mr-2"></i> <?= $error ?></div><?php endif; ?>
+        <?php if($error): ?><div class="bg-red-50 text-red-600 border border-red-200 text-sm px-4 py-3 rounded-lg mb-6 flex items-center"><i class="fas fa-exclamation-triangle mr-2"></i> <?= $error ?></div><?php endif; ?>
 
         <form action="" method="POST" class="space-y-6">
             <div>
-                <label class="block text-sm font-medium text-gray-300 mb-1">PIN Rahasia</label>
-                <div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-key text-gray-500"></i></div><input type="password" name="pin" required autofocus class="w-full pl-10 pr-4 py-2.5 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="••••••••"></div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                <div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-user text-gray-400"></i></div><input type="text" name="username" required autofocus class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="Masukkan username"></div>
             </div>
-            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition shadow-md">Buka Brankas</button>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <div class="relative"><div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-lock text-gray-400"></i></div><input type="password" id="password" name="password" required class="w-full pl-10 pr-12 py-2.5 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500" placeholder="••••••••"><button type="button" id="togglePassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-emerald-600 focus:outline-none"><i class="fas fa-eye" id="eyeIcon"></i></button></div>
+            </div>
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition shadow-md">Login Sistem</button>
         </form>
+        <div class="mt-6 text-center"><a href="index.html" class="text-sm text-gray-500 hover:text-emerald-600"><i class="fas fa-arrow-left mr-1"></i> Kembali ke Beranda</a></div>
     </div>
+
+    <script>const togglePassword = document.getElementById('togglePassword'); const password = document.getElementById('password'); const eyeIcon = document.getElementById('eyeIcon'); togglePassword.addEventListener('click', function () { const type = password.getAttribute('type') === 'password' ? 'text' : 'password'; password.setAttribute('type', type); eyeIcon.classList.toggle('fa-eye'); eyeIcon.classList.toggle('fa-eye-slash'); });</script>
 </body>
 </html>
