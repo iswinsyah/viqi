@@ -55,6 +55,22 @@ if (isset($_GET['edit_id'])) {
     if ($res) $data_edit = $res->fetch_assoc();
 }
 
+// --- FITUR PENCARIAN & FILTER ---
+$search_nama = $_GET['search'] ?? '';
+$filter_kelas = $_GET['filter_kelas'] ?? '';
+
+$where_clauses = [];
+if (!empty($search_nama)) {
+    $where_clauses[] = "nama_santri LIKE '%" . $conn->real_escape_string($search_nama) . "%'";
+}
+if (!empty($filter_kelas)) {
+    $where_clauses[] = "kelas = '" . $conn->real_escape_string($filter_kelas) . "'";
+}
+
+$where_sql = count($where_clauses) > 0 ? "WHERE " . implode(" AND ", $where_clauses) : "";
+
+$daftar_kelas_opsi = ['Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12', 'Kelas Rijal', 'Kelas Nisa'];
+
 $active_menu = 'mutabaah';
 ?>
 <!DOCTYPE html>
@@ -99,9 +115,8 @@ $active_menu = 'mutabaah';
                             <select name="kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500">
                                 <option value="">-- Pilih Kelas --</option>
                                 <?php
-                                $daftar_kelas = ['Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12', 'Kelas Rijal', 'Kelas Nisa'];
                                 $kelas_tersimpan = $edit_mode ? $data_edit['kelas'] : '';
-                                foreach ($daftar_kelas as $nama_kelas) {
+                                foreach ($daftar_kelas_opsi as $nama_kelas) {
                                     $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
                                     echo "<option value=\"$nama_kelas\" $sel>$nama_kelas</option>";
                                 }
@@ -144,6 +159,25 @@ $active_menu = 'mutabaah';
                 </form>
             </div>
 
+            <!-- FILTER & PENCARIAN -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
+                <form action="admin-pegawai-mutabaah.php" method="GET" class="flex flex-col sm:flex-row gap-4 items-end">
+                    <div class="flex-1 w-full">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Cari Nama Santri</label>
+                        <input type="text" name="search" value="<?= htmlspecialchars($search_nama) ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500" placeholder="Ketik nama...">
+                    </div>
+                    <div class="w-full sm:w-1/3">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Filter Kelas</label>
+                        <select name="filter_kelas" class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500">
+                            <option value="">Semua Kelas</option>
+                            <?php foreach ($daftar_kelas_opsi as $k) { $sel = ($filter_kelas == $k) ? 'selected' : ''; echo "<option value=\"$k\" $sel>$k</option>"; } ?>
+                        </select>
+                    </div>
+                    <button type="submit" class="bg-gray-800 hover:bg-black text-white font-bold py-2.5 px-6 rounded-lg transition shadow-sm w-full sm:w-auto"><i class="fas fa-search mr-2"></i> Cari</button>
+                    <?php if(!empty($search_nama) || !empty($filter_kelas)): ?><a href="admin-pegawai-mutabaah.php" class="bg-rose-100 text-rose-700 hover:bg-rose-200 py-2.5 px-4 rounded-lg font-bold transition text-center w-full sm:w-auto" title="Reset Filter"><i class="fas fa-times"></i></a><?php endif; ?>
+                </form>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Riwayat Mutaba'ah Terbaru</h2></div>
                 <div class="overflow-x-auto p-4">
@@ -160,7 +194,7 @@ $active_menu = 'mutabaah';
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php
-                            $res = $conn->query("SELECT * FROM buku_mutabaah ORDER BY tanggal DESC, id DESC LIMIT 50");
+                            $res = $conn->query("SELECT * FROM buku_mutabaah $where_sql ORDER BY tanggal DESC, id DESC LIMIT 50");
                             if ($res && $res->num_rows > 0) {
                                 while($row = $res->fetch_assoc()) { 
                                 ?>

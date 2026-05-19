@@ -1,4 +1,5 @@
 <?php
+// Pastikan bersih dari form gaji
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
@@ -11,9 +12,10 @@ $user_id = $_SESSION['ustadz_id'] ?? 1;
 $res_gaji = $conn->query("SELECT * FROM pengaturan_gaji WHERE id=1");
 $data_gaji = $res_gaji ? $res_gaji->fetch_assoc() : null;
 
-$tarif_dasar_per_pertemuan = $data_gaji['tarif_dasar'] ?? 25000;
-$persentase_bonus_grade_b = $data_gaji['bonus_grade_b'] ?? 10;
-$persentase_bonus_grade_a = $data_gaji['bonus_grade_a'] ?? 20;
+// Ambil settingan gaji per pertemuan berdasarkan Grade yang sudah dipindah ke Yayasan
+$tarif_grade_c = $data_gaji['gaji_grade_c'] ?? 20000;
+$tarif_grade_b = $data_gaji['gaji_grade_b'] ?? 22500;
+$tarif_grade_a = $data_gaji['gaji_grade_a'] ?? 25000;
 
 // --- LOGIC PERHITUNGAN KPI (CONTOH SEDERHANA) ---
 // Di aplikasi nyata, ini akan jadi fungsi yang kompleks dan mungkin dijalankan oleh CRON JOB bulanan
@@ -43,27 +45,27 @@ $total_skor_kpi = ($skor_administrasi * 0.20) + ($skor_kualitas_pengajaran * 0.4
 
 $jumlah_pertemuan = 24; // Dummy: Nanti dihitung otomatis dari tabel jurnal_mengajar
 
-$gaji_pokok = $jumlah_pertemuan * $tarif_dasar_per_pertemuan;
-$bonus_kinerja = 0;
+// Variabel Penampung Gaji Final
+$gaji_per_pertemuan = 0;
 
 if ($total_skor_kpi >= 85) { // Grade A
-    $bonus_kinerja = $gaji_pokok * ($persentase_bonus_grade_a / 100);
+    $gaji_per_pertemuan = $tarif_grade_a;
     $predikat = "Sangat Baik (Grade A)";
     $pesan_evaluasi = "Alhamdulillah, jazakumullah khairan atas dedikasi Antum! Performa bulan ini sangat luar biasa. Pertahankan kedisiplinan administrasi dan inovasi mengajar Antum.";
     $ikon_evaluasi = "fa-star text-amber-400";
 } elseif ($total_skor_kpi >= 70) { // Grade B
-    $bonus_kinerja = $gaji_pokok * ($persentase_bonus_grade_b / 100);
+    $gaji_per_pertemuan = $tarif_grade_b;
     $predikat = "Baik (Grade B)";
     $pesan_evaluasi = "Performa Antum sudah baik, namun masih ada ruang untuk ditingkatkan. Mari fokus pada perbaikan kualitas pengajaran dan pendampingan santri di bulan depan.";
     $ikon_evaluasi = "fa-thumbs-up text-blue-500";
 } else { // Grade C
-    $bonus_kinerja = 0;
+    $gaji_per_pertemuan = $tarif_grade_c;
     $predikat = "Cukup (Grade C)";
     $pesan_evaluasi = "Performa Antum bulan ini berada di bawah target yang diharapkan. Kami mohon kerjasamanya untuk lebih disiplin dalam mengisi jurnal dan mengawal target hafalan santri.";
     $ikon_evaluasi = "fa-exclamation-triangle text-rose-500";
 }
 
-$gaji_total = $gaji_pokok + $bonus_kinerja;
+$gaji_total = $gaji_per_pertemuan * $jumlah_pertemuan;
 
 ?>
 <!DOCTYPE html>
@@ -105,34 +107,24 @@ $gaji_total = $gaji_pokok + $bonus_kinerja;
                 </div>
                 <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-center">
                     <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">Simulasi Gaji & Bonus Kinerja</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center mb-4">
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
-                            <p class="text-xs text-gray-500 mb-1">Gaji Pokok</p>
-                            <p class="text-lg font-bold text-gray-800">Rp <?= number_format($gaji_pokok, 0, ',', '.') ?></p>
+                            <p class="text-xs text-gray-500 mb-1">Total Jam/Pertemuan</p>
+                            <p class="text-lg font-bold text-gray-800"><?= $jumlah_pertemuan ?> Kali</p>
                         </div>
                         <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
                             <p class="text-xs text-gray-500 mb-1">Predikat Kinerja</p>
                             <p class="text-lg font-bold text-gray-800"><?= $predikat ?></p>
                         </div>
                         <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                            <p class="text-xs text-blue-600 mb-1">Persentase Bonus</p>
-                            <p class="text-lg font-bold text-blue-700">
-                                <?php 
-                                    if ($total_skor_kpi >= 85) echo $persentase_bonus_grade_a . '%';
-                                    elseif ($total_skor_kpi >= 70) echo $persentase_bonus_grade_b . '%';
-                                    else echo '0%';
-                                ?>
-                            </p>
-                        </div>
-                        <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-                            <p class="text-xs text-emerald-600 mb-1">Bonus Kinerja</p>
-                            <p class="text-lg font-bold text-emerald-700">+ Rp <?= number_format($bonus_kinerja, 0, ',', '.') ?></p>
+                            <p class="text-xs text-blue-600 mb-1">Tarif Gaji (<?= $predikat ?>)</p>
+                            <p class="text-lg font-bold text-blue-700">Rp <?= number_format($gaji_per_pertemuan, 0, ',', '.') ?> / Pertemuan</p>
                         </div>
                     </div>
                     <div class="flex justify-between items-center bg-gray-900 text-white p-4 rounded-lg">
                         <div>
-                            <p class="text-sm text-gray-300">Total Gaji Bulan Ini</p>
-                            <p class="text-xs text-gray-400 mt-1">Gaji Pokok + Bonus</p>
+                            <p class="text-sm text-gray-300">Take Home Pay (Bulan Ini)</p>
+                            <p class="text-xs text-gray-400 mt-1"><?= $jumlah_pertemuan ?> Pertemuan x Tarif Gaji <?= $predikat ?></p>
                         </div>
                         <p class="text-3xl font-bold text-amber-400">Rp <?= number_format($gaji_total, 0, ',', '.') ?></p>
                     </div>

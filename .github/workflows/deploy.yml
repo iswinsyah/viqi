@@ -7,6 +7,9 @@ on:
       - main 
       # Jika branch utama Anda bernama 'master', ganti 'main' di atas menjadi 'master'
 
+  # Mengizinkan deploy dijalankan secara manual (tombol 'Run workflow' di GitHub)
+  workflow_dispatch:
+
 jobs:
   web-deploy:
     name: 🎉 Deploy
