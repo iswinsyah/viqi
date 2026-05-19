@@ -1,5 +1,5 @@
 <?php
-require_once 'auth-ustadz.php';
+require_once 'auth.php';
 require_once 'koneksi.php';
 $active_menu = 'ai_rpp';
 

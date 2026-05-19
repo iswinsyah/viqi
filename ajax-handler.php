@@ -1,8 +1,8 @@
 <?php
-require_once 'auth-ustadz.php';
+require_once 'auth.php';
 require_once 'koneksi.php';
 
-$user_id = $_SESSION['ustadz_id'] ?? 1; 
+$user_id = $_SESSION['user_id'] ?? 1; // Asumsi ada user_id di session
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
     
