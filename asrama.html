@@ -36,7 +36,17 @@
                     <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Kurikulum</a>
                     <a href="asrama.html" class="text-emerald-700 font-bold transition border-b-2 border-emerald-600">Fasilitas</a>
                     <a href="index.html#artikel" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Artikel</a>
-                    <a href="admin.php" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Member Area</a>
+                    <!-- Dropdown Member Area -->
+                    <div class="relative group h-full flex items-center">
+                        <button class="text-gray-600 hover:text-emerald-700 font-semibold transition flex items-center h-full">
+                            Member Area <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </button>
+                        <div class="absolute top-14 left-0 w-48 bg-white rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 border border-gray-100 overflow-hidden">
+                            <a href="admin.php" class="block px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 font-medium border-b border-gray-50"><i class="fas fa-user-shield w-5 text-center mr-1 text-emerald-500"></i> Admin (SIM)</a>
+                            <a href="login-ustadz.php" class="block px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 font-medium border-b border-gray-50"><i class="fas fa-chalkboard-teacher w-5 text-center mr-1 text-blue-500"></i> Ruang Asatidz</a>
+                            <a href="dashboard-marketing.php" class="block px-4 py-3 text-sm text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 font-medium"><i class="fas fa-bullhorn w-5 text-center mr-1 text-rose-500"></i> Marketing</a>
+                        </div>
+                    </div>
                 </nav>
                 <div class="hidden md:flex">
                     <a href="index.html#spmb" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
@@ -57,7 +67,12 @@
                 <a href="program.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Kurikulum</a>
                 <a href="asrama.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Fasilitas</a>
                 <a href="index.html#artikel" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Artikel</a>
-                <a href="admin.php" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Member Area</a>
+                <div class="pt-2 pb-1 border-t border-gray-100 mt-2">
+                    <p class="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Member Area</p>
+                    <a href="admin.php" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md"><i class="fas fa-user-shield w-5 text-center mr-2 text-emerald-500"></i> Admin (SIM)</a>
+                    <a href="login-ustadz.php" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md"><i class="fas fa-chalkboard-teacher w-5 text-center mr-2 text-blue-500"></i> Ruang Asatidz</a>
+                    <a href="dashboard-marketing.php" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md"><i class="fas fa-bullhorn w-5 text-center mr-2 text-rose-500"></i> Marketing</a>
+                </div>
                 <div class="pt-4 pb-2 border-t border-gray-100">
                     <a href="index.html#spmb" class="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
                 </div>
