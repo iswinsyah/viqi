@@ -6,6 +6,7 @@ $active_menu = 'dashboard_kpi';
 
 // Mengambil ID Ustadz yang sedang login
 $user_id = $_SESSION['ustadz_id'] ?? 1; 
+$is_super_admin = ($user_id == 9999); // Cek apakah yang login adalah Bos
 
 // --- SETUP & AMBIL PENGATURAN GAJI ---
 $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_gaji (
@@ -16,7 +17,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_gaji (
 )");
 $conn->query("INSERT IGNORE INTO pengaturan_gaji (id, tarif_dasar, bonus_grade_b, bonus_grade_a) VALUES (1, 25000, 10, 20)");
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_gaji'])) {
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_gaji']) && $is_super_admin) {
     $tarif = (int)$_POST['tarif_dasar'];
     $bonus_b = (int)$_POST['bonus_grade_b'];
     $bonus_a = (int)$_POST['bonus_grade_a'];
@@ -65,12 +66,18 @@ $bonus_kinerja = 0;
 if ($total_skor_kpi >= 85) { // Grade A
     $bonus_kinerja = $gaji_pokok * ($persentase_bonus_grade_a / 100);
     $predikat = "Sangat Baik (Grade A)";
+    $pesan_evaluasi = "Alhamdulillah, jazakumullah khairan atas dedikasi Antum! Performa bulan ini sangat luar biasa. Pertahankan kedisiplinan administrasi dan inovasi mengajar Antum.";
+    $ikon_evaluasi = "fa-star text-amber-400";
 } elseif ($total_skor_kpi >= 70) { // Grade B
     $bonus_kinerja = $gaji_pokok * ($persentase_bonus_grade_b / 100);
     $predikat = "Baik (Grade B)";
+    $pesan_evaluasi = "Performa Antum sudah baik, namun masih ada ruang untuk ditingkatkan. Mari fokus pada perbaikan kualitas pengajaran dan pendampingan santri di bulan depan.";
+    $ikon_evaluasi = "fa-thumbs-up text-blue-500";
 } else { // Grade C
     $bonus_kinerja = 0;
     $predikat = "Cukup (Grade C)";
+    $pesan_evaluasi = "Performa Antum bulan ini berada di bawah target yang diharapkan. Kami mohon kerjasamanya untuk lebih disiplin dalam mengisi jurnal dan mengawal target hafalan santri.";
+    $ikon_evaluasi = "fa-exclamation-triangle text-rose-500";
 }
 
 $gaji_total = $gaji_pokok + $bonus_kinerja;
@@ -104,6 +111,7 @@ $gaji_total = $gaji_pokok + $bonus_kinerja;
 
             <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
 
+            <?php if($is_super_admin): ?>
             <!-- FORM PENGATURAN GAJI & BONUS -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
                 <h2 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fas fa-cog text-gray-500 mr-2"></i>Template Setting Gaji & Bonus</h2>
@@ -126,6 +134,7 @@ $gaji_total = $gaji_pokok + $bonus_kinerja;
                     </div>
                 </form>
             </div>
+            <?php endif; ?>
 
             <!-- WIDGET UTAMA SKOR & INSENTIF -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -168,6 +177,17 @@ $gaji_total = $gaji_pokok + $bonus_kinerja;
                         </div>
                         <p class="text-3xl font-bold text-amber-400">Rp <?= number_format($gaji_total, 0, ',', '.') ?></p>
                     </div>
+                </div>
+            </div>
+
+            <!-- KOTAK EVALUASI DIRI -->
+            <div class="bg-indigo-50 rounded-xl shadow-sm border border-indigo-100 p-6 mb-6 flex items-start">
+                <div class="bg-white p-3 rounded-full shadow-sm mr-4 flex-shrink-0">
+                    <i class="fas <?= $ikon_evaluasi ?> text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-indigo-900 mb-1">Catatan Evaluasi Kinerja (Auto-Generated)</h3>
+                    <p class="text-sm text-indigo-800 leading-relaxed"><?= $pesan_evaluasi ?></p>
                 </div>
             </div>
 
