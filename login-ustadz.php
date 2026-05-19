@@ -1,4 +1,5 @@
 <?php
+// Paksa sinkronisasi file ke server Hostinger
 session_start();
 require_once 'koneksi.php';
 

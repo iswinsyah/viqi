@@ -1,4 +1,5 @@
 <?php
+// Paksa sinkronisasi file ke server Hostinger
 session_start();
 // Hapus semua session ustadz
 unset($_SESSION['ustadz_logged_in']);
