@@ -32,6 +32,12 @@
             <a href="admin-pegawai-nilai.php" class="<?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-star-half-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Bank Nilai Akademik
             </a>
+            <a href="admin-pegawai-mutabaah.php" class="<?= (isset($active_menu) && $active_menu == 'mutabaah') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-clipboard-list w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'mutabaah') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Buku Mutaba'ah Santri
+            </a>
+            <a href="admin-pegawai-rapor.php" class="<?= (isset($active_menu) && $active_menu == 'ai_rapor') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-comment-dots w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ai_rapor') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> AI Narasi Rapor
+            </a>
             <a href="admin-pegawai-kpi.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_kpi') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-chart-bar w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_kpi') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Dashboard KPI
             </a>

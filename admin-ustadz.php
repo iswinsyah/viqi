@@ -4,6 +4,20 @@ require_once 'koneksi.php';
 
 // Penanda menu aktif
 $active_menu = 'dashboard_pegawai';
+
+$ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Ustadz';
+
+// --- AMBIL DATA STATISTIK UNTUK WIDGET ---
+$q_jurnal = $conn->query("SELECT COUNT(id) AS tot FROM jurnal_mengajar");
+$total_jurnal = $q_jurnal ? ($q_jurnal->fetch_assoc()['tot'] ?? 0) : 0;
+
+$q_nilai = $conn->query("SELECT COUNT(id) AS tot FROM bank_nilai");
+$total_nilai = $q_nilai ? ($q_nilai->fetch_assoc()['tot'] ?? 0) : 0;
+
+// Ambil jurnal terbaru
+$jurnal_terbaru = [];
+$res_jurnal = $conn->query("SELECT * FROM jurnal_mengajar ORDER BY id DESC LIMIT 5");
+if ($res_jurnal) { while($r = $res_jurnal->fetch_assoc()) { $jurnal_terbaru[] = $r; } }
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -37,7 +51,7 @@ $active_menu = 'dashboard_pegawai';
                     <i class="fas fa-external-link-alt mr-2"></i> Lihat Website
                 </a>
                 <div class="h-8 w-8 rounded-full bg-cyan-500 flex items-center justify-center text-white font-bold shadow-sm">
-                    P
+                    <?= strtoupper(substr($ustadz_nama, 0, 1)) ?>
                 </div>
             </div>
         </header>
@@ -45,18 +59,79 @@ $active_menu = 'dashboard_pegawai';
         <!-- MAIN DASHBOARD CONTENT -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-users-cog text-cyan-600 mr-2"></i>Dashboard Asatidz</h1>
-                <p class="text-gray-500 mt-1">Halaman ini akan menjadi pusat kendali untuk manajemen dan AI asisten asatidz.</p>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-users-cog text-cyan-600 mr-2"></i>Ahlan Wa Sahlan, <?= htmlspecialchars($ustadz_nama) ?>!</h1>
+                <p class="text-gray-500 mt-1">Selamat datang di Ruang Asatidz. Gunakan menu-menu di bawah ini untuk mengelola kegiatan akademik.</p>
             </div>
 
-            <!-- AREA KOSONG UNTUK KONTEN -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 min-h-[400px]">
-                <div class="flex flex-col items-center justify-center h-full text-gray-400 py-20">
-                    <i class="fas fa-hard-hat text-6xl mb-4 opacity-30"></i>
-                    <p class="text-lg font-medium">Area Konten Sedang Dibangun</p>
-                    <p class="text-sm mt-2">Menu-menu AI Agent untuk kepegawaian akan segera hadir di sini.</p>
+            <!-- WIDGET SHORTCUT -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <a href="admin-pegawai-jurnal.php" class="bg-white hover:bg-cyan-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-book-open text-cyan-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Isi Jurnal</span>
+                </a>
+                <a href="admin-pegawai-mutabaah.php" class="bg-white hover:bg-emerald-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-clipboard-list text-emerald-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Buku Mutaba'ah</span>
+                </a>
+                <a href="admin-pegawai-rpp.php" class="bg-white hover:bg-blue-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-magic text-blue-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI RPP</span>
+                </a>
+                <a href="admin-pegawai-rapor.php" class="bg-white hover:bg-purple-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-comment-dots text-purple-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI Narasi Rapor</span>
+                </a>
+            </div>
+
+            <!-- WIDGET STATISTIK -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                    <div class="p-4 rounded-full bg-cyan-100 text-cyan-600 mr-4"><i class="fas fa-book-open text-2xl"></i></div>
+                    <div><p class="text-sm font-medium text-gray-500">Total Jurnal Anda</p><p class="text-2xl font-bold text-gray-900"><?= $total_jurnal ?></p></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                    <div class="p-4 rounded-full bg-amber-100 text-amber-600 mr-4"><i class="fas fa-star-half-alt text-2xl"></i></div>
+                    <div><p class="text-sm font-medium text-gray-500">Total Nilai Diinput</p><p class="text-2xl font-bold text-gray-900"><?= $total_nilai ?></p></div>
                 </div>
             </div>
+
+            <!-- TABEL JURNAL TERBARU -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                    <h2 class="font-bold text-gray-800">Jurnal Mengajar Terakhir</h2>
+                    <a href="admin-pegawai-jurnal.php" class="text-sm text-cyan-600 hover:text-cyan-800 font-medium">Lihat Semua</a>
+                </div>
+                <div class="overflow-x-auto p-4">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-white">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Tanggal</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Kelas & Mapel</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Materi Pokok</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <?php if (count($jurnal_terbaru) > 0): ?>
+                                <?php foreach($jurnal_terbaru as $row): ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 text-sm text-gray-700 font-medium whitespace-nowrap"><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
+                                    <td class="px-4 py-3">
+                                        <div class="font-bold text-cyan-700"><?= htmlspecialchars($row['kelas']) ?></div>
+                                        <div class="text-sm text-gray-600"><?= htmlspecialchars($row['mata_pelajaran']) ?></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-600">
+                                        <div class="font-medium"><?= htmlspecialchars($row['materi']) ?></div>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr><td colspan='3' class='text-center py-6 text-gray-500 italic'>Belum ada catatan jurnal mengajar.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </main>
     </div>
 
