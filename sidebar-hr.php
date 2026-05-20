@@ -24,7 +24,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 <i class="fas fa-tachometer-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_pegawai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Dashboard Pegawai
             </a>
             
-            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">Portal Ustadz (Guru)</p>
+            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">ASATIDZ</p>
             <a href="admin-pegawai-jurnal.php" class="<?= (isset($active_menu) && $active_menu == 'jurnal_mengajar') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-book-open w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'jurnal_mengajar') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Jurnal Mengajar
             </a>
@@ -37,9 +37,13 @@ if (session_status() === PHP_SESSION_NONE) {
             <a href="admin-pegawai-nilai.php" class="<?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-star-half-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Bank Nilai Akademik
             </a>
+
+            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">MUSYRIF</p>
             <a href="admin-pegawai-mutabaah.php" class="<?= (isset($active_menu) && $active_menu == 'mutabaah') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-clipboard-list w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'mutabaah') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Buku Mutaba'ah Santri
             </a>
+
+            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">KINERJA & AKUN</p>
             <a href="admin-pegawai-kpi.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_kpi') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-chart-bar w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_kpi') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Dashboard KPI
             </a>
