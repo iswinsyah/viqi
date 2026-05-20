@@ -3,7 +3,7 @@
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
-$active_menu = 'dashboard_kpi';
+$active_menu = 'kpi_ustadz';
 
 // Mengambil ID Ustadz yang sedang login
 $user_id = $_SESSION['ustadz_id'] ?? 1; 
@@ -73,7 +73,7 @@ $gaji_total = $gaji_per_pertemuan * $jumlah_pertemuan;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard KPI | Portal Ustadz</title>
+    <title>KPI Ustadz | Ruang Asatidz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -87,7 +87,7 @@ $gaji_total = $gaji_per_pertemuan * $jumlah_pertemuan;
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chart-bar text-cyan-600 mr-2"></i>Dashboard Key Performance Indicator (KPI)</h1>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chalkboard-teacher text-cyan-600 mr-2"></i>Key Performance Indicator (KPI) Ustadz</h1>
                 <select class="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium">
                     <option>Periode: Mei 2026</option>
                     <option>Periode: April 2026</option>
