@@ -4,6 +4,17 @@ ini_set('display_errors', 1);
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
+// Pastikan tabel akun_orangtua ada sebelum menambahkan foreign key
+$conn->query("CREATE TABLE IF NOT EXISTS akun_orangtua (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_orangtua VARCHAR(150) NOT NULL,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    no_whatsapp VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)");
+
 
 // 1. Buat Tabel Otomatis
 $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
