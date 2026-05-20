@@ -50,7 +50,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 // Tambahkan foreign key jika belum ada
-@$conn->query("ALTER TABLE buku_induk_santri ADD CONSTRAINT fk_id_orangtua FOREIGN KEY (id_orangtua) REFERENCES akun_orangtua(id) ON DELETE SET NULL ON UPDATE CASCADE");
+$conn->query("ALTER TABLE buku_induk_santri ADD CONSTRAINT fk_id_orangtua FOREIGN KEY (id_orangtua) REFERENCES akun_orangtua(id) ON DELETE SET NULL ON UPDATE CASCADE");
 // 2. Hapus Data
 if (isset($_GET['hapus_id'])) {
     $id = (int)$_GET['hapus_id'];
