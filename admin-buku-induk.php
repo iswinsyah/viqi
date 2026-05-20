@@ -121,6 +121,16 @@ if (isset($_GET['edit_id'])) {
     if ($res) $data_edit = $res->fetch_assoc();
 }
 
+// Ambil data akun orang tua untuk dropdown
+$akun_orangtua = [];
+$res_ortu = $conn->query("SELECT id, nama_orangtua, username FROM akun_orangtua ORDER BY nama_orangtua ASC");
+if ($res_ortu) {
+    while($row_ortu = $res_ortu->fetch_assoc()) {
+        $akun_orangtua[] = $row_ortu;
+    }
+}
+
+
 $active_menu = 'buku_induk';
 ?>
 <!DOCTYPE html>
@@ -173,7 +183,7 @@ $active_menu = 'buku_induk';
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div><label class="text-sm font-medium">Tanggal Masuk</label><input type="date" name="tanggal_masuk" value="<?= $edit_mode ? $data_edit['tanggal_masuk'] : date('Y-m-d') ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Asal Sekolah</label><input type="text" name="asal_sekolah" value="<?= $edit_mode ? htmlspecialchars($data_edit['asal_sekolah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
-                            <div><label class="text-sm font-medium">Status Santri</label><select name="status_santri" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><?php $opts = ['Aktif', 'Lulus', 'Pindah', 'Dikeluarkan']; foreach($opts as $o) { $sel = ($edit_mode && $data_edit['status_santri'] == $o) ? 'selected' : ''; echo "<option value='$o' $sel>$o</option>"; } ?></select></div>
+                            <div><label class="text-sm font-medium">Status Santri</label><select name="status_santri" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><?php $opts = ['Aktif', 'Lulus', 'Pindah', 'Dikeluarkan', 'Mengundurkan Diri']; foreach($opts as $o) { $sel = ($edit_mode && $data_edit['status_santri'] == $o) ? 'selected' : ''; echo "<option value='$o' $sel>$o</option>"; } ?></select></div>
                             <div><label class="text-sm font-medium">Kelas Sekarang</label><input type="text" name="kelas_sekarang" value="<?= $edit_mode ? htmlspecialchars($data_edit['kelas_sekarang']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Kamar Asrama</label><input type="text" name="kamar_asrama" value="<?= $edit_mode ? htmlspecialchars($data_edit['kamar_asrama']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">URL Foto Santri</label><input type="text" name="foto_santri" value="<?= $edit_mode ? htmlspecialchars($data_edit['foto_santri']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="https://..."></div>
@@ -183,7 +193,19 @@ $active_menu = 'buku_induk';
                     <!-- DATA ORTU -->
                     <div class="mb-6 border border-gray-200 rounded-lg p-5 bg-gray-50/50">
                         <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">III. Data Orang Tua / Wali</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="mb-4 bg-blue-50 border border-blue-200 p-3 rounded-lg">
+                            <label class="text-sm font-medium text-blue-800">Hubungkan ke Akun Orang Tua</label>
+                            <select name="id_orangtua" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-cyan-500">
+                                <option value="">-- Tidak Dihubungkan --</option>
+                                <?php foreach($akun_orangtua as $ortu): ?>
+                                    <option value="<?= $ortu['id'] ?>" <?= ($edit_mode && isset($data_edit['id_orangtua']) && $data_edit['id_orangtua'] == $ortu['id']) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($ortu['nama_orangtua']) ?> (<?= htmlspecialchars($ortu['username']) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Pilih akun orang tua yang sudah dibuat di menu "Akun Orang Tua". Ini akan menghubungkan santri ini ke Ruang Orang Tua.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
                             <div><label class="text-sm font-medium">Nama Ayah</label><input type="text" name="nama_ayah" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama_ayah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Pekerjaan Ayah</label><input type="text" name="pekerjaan_ayah" value="<?= $edit_mode ? htmlspecialchars($data_edit['pekerjaan_ayah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">No. WhatsApp Ayah</label><input type="text" name="no_whatsapp_ayah" value="<?= $edit_mode ? htmlspecialchars($data_edit['no_whatsapp_ayah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
@@ -224,16 +246,21 @@ $active_menu = 'buku_induk';
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php
-                            $res = $conn->query("SELECT id, nama_lengkap, nis, nisn, kelas_sekarang, kamar_asrama, status_santri, foto_santri FROM buku_induk_santri ORDER BY nama_lengkap ASC");
+                            $res = $conn->query("SELECT b.*, o.nama_orangtua FROM buku_induk_santri b LEFT JOIN akun_orangtua o ON b.id_orangtua = o.id ORDER BY b.nama_lengkap ASC");
                             if ($res && $res->num_rows > 0) {
                                 while($row = $res->fetch_assoc()) { 
                                     $badge_color = 'bg-green-100 text-green-800';
                                     if ($row['status_santri'] !== 'Aktif') $badge_color = 'bg-gray-200 text-gray-700';
                                 ?>
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 flex items-center">
-                                        <img src="<?= !empty($row['foto_santri']) ? htmlspecialchars($row['foto_santri']) : 'https://via.placeholder.com/100' ?>" class="w-10 h-10 rounded-full object-cover mr-3 shadow-sm" alt="Foto">
-                                        <span class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_lengkap']) ?></span>
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center">
+                                            <img src="<?= !empty($row['foto_santri']) ? htmlspecialchars($row['foto_santri']) : 'https://via.placeholder.com/100' ?>" class="w-10 h-10 rounded-full object-cover mr-3 shadow-sm flex-shrink-0" alt="Foto">
+                                            <div>
+                                                <span class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_lengkap']) ?></span>
+                                                <?php if(!empty($row['nama_orangtua'])): ?><div class="text-xs text-gray-500 mt-1"><i class="fas fa-user-shield text-cyan-600 mr-1"></i> Wali: <?= htmlspecialchars($row['nama_orangtua']) ?></div><?php endif; ?>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-600 font-mono">
                                         <div>NIS: <?= htmlspecialchars($row['nis']) ?></div>
