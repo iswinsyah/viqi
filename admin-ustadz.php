@@ -24,7 +24,7 @@ if ($res_jurnal) { while($r = $res_jurnal->fetch_assoc()) { $jurnal_terbaru[] = 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruang Staf | Admin Villa Quran</title>
+    <title>Ruang Asatidz | Admin Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -59,8 +59,8 @@ if ($res_jurnal) { while($r = $res_jurnal->fetch_assoc()) { $jurnal_terbaru[] = 
         <!-- MAIN DASHBOARD CONTENT -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-users-cog text-cyan-600 mr-2"></i>Ahlan Wa Sahlan, <?= htmlspecialchars($ustadz_nama) ?>!</h1>
-                <p class="text-gray-500 mt-1">Selamat datang di Ruang Staf. Gunakan menu di samping untuk mengelola tugas Anda.</p>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chalkboard-teacher text-cyan-600 mr-2"></i>Ahlan Wa Sahlan, <?= htmlspecialchars($ustadz_nama) ?>!</h1>
+                <p class="text-gray-500 mt-1">Selamat datang di Ruang Asatidz. Gunakan menu-menu di bawah ini untuk mengelola kegiatan akademik.</p>
             </div>
 
             <!-- WIDGET SHORTCUT -->
