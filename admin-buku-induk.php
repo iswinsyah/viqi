@@ -2,6 +2,7 @@
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
+
 // 1. Buat Tabel Otomatis
 $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -9,6 +10,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
     nis VARCHAR(50) UNIQUE,
     nisn VARCHAR(50) UNIQUE,
     username VARCHAR(50) UNIQUE,
+    id_orangtua INT NULL, -- Foreign key ke akun_orangtua
     password VARCHAR(255),
     nik VARCHAR(50),
     tempat_lahir VARCHAR(100),
@@ -36,6 +38,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
+// Tambahkan foreign key jika belum ada
+@$conn->query("ALTER TABLE buku_induk_santri ADD CONSTRAINT fk_id_orangtua FOREIGN KEY (id_orangtua) REFERENCES akun_orangtua(id) ON DELETE SET NULL ON UPDATE CASCADE");
+
 
 // 2. Hapus Data
 if (isset($_GET['hapus_id'])) {
@@ -52,6 +57,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $fields = [
         'nama_lengkap', 'nis', 'nisn', 'nik', 'tempat_lahir', 'tanggal_lahir', 
         'username', 'password', 'jenis_kelamin', 'alamat_lengkap', 'foto_santri', 'tanggal_masuk', 
+        'id_orangtua', // Tambahkan id_orangtua ke daftar field
         'asal_sekolah', 'status_santri', 'kelas_sekarang', 'kamar_asrama', 
         'nama_ayah', 'pekerjaan_ayah', 'nama_ibu', 'pekerjaan_ibu', 
         'no_whatsapp_ayah', 'alamat_ayah', 'no_whatsapp_ibu', 'alamat_ibu',
