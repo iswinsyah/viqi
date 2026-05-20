@@ -8,6 +8,8 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
     nama_lengkap VARCHAR(150) NOT NULL,
     nis VARCHAR(50) UNIQUE,
     nisn VARCHAR(50) UNIQUE,
+    username VARCHAR(50) UNIQUE,
+    password VARCHAR(255),
     nik VARCHAR(50),
     tempat_lahir VARCHAR(100),
     tanggal_lahir DATE,
@@ -15,16 +17,22 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
     alamat_lengkap TEXT,
     foto_santri VARCHAR(255),
     tanggal_masuk DATE,
-    asal_sekolah VARCHAR(150),
-    status_santri ENUM('Aktif', 'Lulus', 'Pindah', 'Dikeluarkan') DEFAULT 'Aktif',
+    asal_sekolah VARCHAR(150), 
+    status_santri ENUM('Aktif', 'Lulus', 'Pindah', 'Dikeluarkan', 'Mengundurkan Diri') DEFAULT 'Aktif',
     kelas_sekarang VARCHAR(50),
     kamar_asrama VARCHAR(50),
     nama_ayah VARCHAR(150),
     pekerjaan_ayah VARCHAR(100),
+    no_whatsapp_ayah VARCHAR(20),
+    alamat_ayah TEXT,
     nama_ibu VARCHAR(150),
     pekerjaan_ibu VARCHAR(100),
+    no_whatsapp_ibu VARCHAR(20),
+    alamat_ibu TEXT,
     nama_wali VARCHAR(150),
-    no_hp_ortu VARCHAR(20),
+    pekerjaan_wali VARCHAR(100),
+    alamat_wali TEXT,
+    no_whatsapp_wali VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
@@ -43,19 +51,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
     $fields = [
         'nama_lengkap', 'nis', 'nisn', 'nik', 'tempat_lahir', 'tanggal_lahir', 
-        'jenis_kelamin', 'alamat_lengkap', 'foto_santri', 'tanggal_masuk', 
+        'username', 'password', 'jenis_kelamin', 'alamat_lengkap', 'foto_santri', 'tanggal_masuk', 
         'asal_sekolah', 'status_santri', 'kelas_sekarang', 'kamar_asrama', 
         'nama_ayah', 'pekerjaan_ayah', 'nama_ibu', 'pekerjaan_ibu', 
-        'nama_wali', 'no_hp_ortu'
+        'no_whatsapp_ayah', 'alamat_ayah', 'no_whatsapp_ibu', 'alamat_ibu',
+        'nama_wali', 'pekerjaan_wali', 'alamat_wali', 'no_whatsapp_wali'
     ];
     
     $set_clause = [];
+    $pesan_error = ''; // Reset error message
     foreach ($fields as $field) {
         $value = $_POST[$field] ?? '';
         if (in_array($field, ['tanggal_lahir', 'tanggal_masuk']) && empty($value)) {
             $set_clause[] = "$field = NULL";
         } else {
             $set_clause[] = "$field = '" . $conn->real_escape_string($value) . "'";
+        }
+    }
+
+    // Cek duplikasi username jika ada
+    if (!empty($_POST['username'])) {
+        $check_username = $conn->query("SELECT id FROM buku_induk_santri WHERE username = '" . $conn->real_escape_string($_POST['username']) . "' AND id != $id");
+        if ($check_username && $check_username->num_rows > 0) {
+            $pesan_error = "Username '" . htmlspecialchars($_POST['username']) . "' sudah terpakai!";
         }
     }
 
@@ -66,7 +84,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sql = "INSERT INTO buku_induk_santri SET " . implode(', ', $set_clause);
         $pesan_sukses = "Data santri baru berhasil ditambahkan!";
     }
-    
+
+    // Hanya jalankan query jika tidak ada error
+    if (empty($pesan_error)) {
     if (!$conn->query($sql)) {
         $pesan_error = "Gagal menyimpan data: " . $conn->error;
     }
@@ -118,6 +138,8 @@ $active_menu = 'buku_induk';
                             <div><label class="text-sm font-medium">NIS</label><input type="text" name="nis" value="<?= $edit_mode ? htmlspecialchars($data_edit['nis']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">NISN</label><input type="text" name="nisn" value="<?= $edit_mode ? htmlspecialchars($data_edit['nisn']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">NIK</label><input type="text" name="nik" value="<?= $edit_mode ? htmlspecialchars($data_edit['nik']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div><label class="text-sm font-medium">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Untuk login santri"></div>
+                            <div><label class="text-sm font-medium">Password Login</label><input type="text" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Password login santri"></div>
                             <div><label class="text-sm font-medium">Tempat Lahir</label><input type="text" name="tempat_lahir" value="<?= $edit_mode ? htmlspecialchars($data_edit['tempat_lahir']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Tanggal Lahir</label><input type="date" name="tanggal_lahir" value="<?= $edit_mode ? $data_edit['tanggal_lahir'] : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Jenis Kelamin</label><select name="jenis_kelamin" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><option value="Laki-laki" <?= ($edit_mode && $data_edit['jenis_kelamin'] == 'Laki-laki') ? 'selected' : '' ?>>Laki-laki</option><option value="Perempuan" <?= ($edit_mode && $data_edit['jenis_kelamin'] == 'Perempuan') ? 'selected' : '' ?>>Perempuan</option></select></div>
@@ -129,7 +151,7 @@ $active_menu = 'buku_induk';
                     <div class="mb-6 border border-gray-200 rounded-lg p-5 bg-gray-50/50">
                         <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">II. Data Akademik & Status</h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div><label class="text-sm font-medium">Tanggal Masuk</label><input type="date" name="tanggal_masuk" value="<?= $edit_mode ? $data_edit['tanggal_masuk'] : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div><label class="text-sm font-medium">Tanggal Masuk</label><input type="date" name="tanggal_masuk" value="<?= $edit_mode ? $data_edit['tanggal_masuk'] : date('Y-m-d') ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Asal Sekolah</label><input type="text" name="asal_sekolah" value="<?= $edit_mode ? htmlspecialchars($data_edit['asal_sekolah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Status Santri</label><select name="status_santri" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><?php $opts = ['Aktif', 'Lulus', 'Pindah', 'Dikeluarkan']; foreach($opts as $o) { $sel = ($edit_mode && $data_edit['status_santri'] == $o) ? 'selected' : ''; echo "<option value='$o' $sel>$o</option>"; } ?></select></div>
                             <div><label class="text-sm font-medium">Kelas Sekarang</label><input type="text" name="kelas_sekarang" value="<?= $edit_mode ? htmlspecialchars($data_edit['kelas_sekarang']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
@@ -141,13 +163,19 @@ $active_menu = 'buku_induk';
                     <!-- DATA ORTU -->
                     <div class="mb-6 border border-gray-200 rounded-lg p-5 bg-gray-50/50">
                         <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">III. Data Orang Tua / Wali</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div><label class="text-sm font-medium">Nama Ayah</label><input type="text" name="nama_ayah" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama_ayah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Pekerjaan Ayah</label><input type="text" name="pekerjaan_ayah" value="<?= $edit_mode ? htmlspecialchars($data_edit['pekerjaan_ayah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div><label class="text-sm font-medium">No. WhatsApp Ayah</label><input type="text" name="no_whatsapp_ayah" value="<?= $edit_mode ? htmlspecialchars($data_edit['no_whatsapp_ayah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div class="md:col-span-3"><label class="text-sm font-medium">Alamat Ayah</label><input type="text" name="alamat_ayah" value="<?= $edit_mode ? htmlspecialchars($data_edit['alamat_ayah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Nama Ibu</label><input type="text" name="nama_ibu" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama_ibu']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Pekerjaan Ibu</label><input type="text" name="pekerjaan_ibu" value="<?= $edit_mode ? htmlspecialchars($data_edit['pekerjaan_ibu']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div><label class="text-sm font-medium">No. WhatsApp Ibu</label><input type="text" name="no_whatsapp_ibu" value="<?= $edit_mode ? htmlspecialchars($data_edit['no_whatsapp_ibu']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div class="md:col-span-3"><label class="text-sm font-medium">Alamat Ibu</label><input type="text" name="alamat_ibu" value="<?= $edit_mode ? htmlspecialchars($data_edit['alamat_ibu']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Nama Wali (Jika ada)</label><input type="text" name="nama_wali" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama_wali']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
-                            <div><label class="text-sm font-medium">No. HP Ortu/Wali</label><input type="text" name="no_hp_ortu" value="<?= $edit_mode ? htmlspecialchars($data_edit['no_hp_ortu']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div><label class="text-sm font-medium">Pekerjaan Wali</label><input type="text" name="pekerjaan_wali" value="<?= $edit_mode ? htmlspecialchars($data_edit['pekerjaan_wali']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div><label class="text-sm font-medium">No. WhatsApp Wali</label><input type="text" name="no_whatsapp_wali" value="<?= $edit_mode ? htmlspecialchars($data_edit['no_whatsapp_wali']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                            <div class="md:col-span-3"><label class="text-sm font-medium">Alamat Wali</label><input type="text" name="alamat_wali" value="<?= $edit_mode ? htmlspecialchars($data_edit['alamat_wali']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                         </div>
                     </div>
 
