@@ -24,7 +24,7 @@ if ($res_jurnal) { while($r = $res_jurnal->fetch_assoc()) { $jurnal_terbaru[] = 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ruang Asatidz | Admin Villa Quran</title>
+    <title>Ruang Staf | Admin Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -60,7 +60,7 @@ if ($res_jurnal) { while($r = $res_jurnal->fetch_assoc()) { $jurnal_terbaru[] = 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-users-cog text-cyan-600 mr-2"></i>Ahlan Wa Sahlan, <?= htmlspecialchars($ustadz_nama) ?>!</h1>
-                <p class="text-gray-500 mt-1">Selamat datang di Ruang Asatidz. Gunakan menu-menu di bawah ini untuk mengelola kegiatan akademik.</p>
+                <p class="text-gray-500 mt-1">Selamat datang di Ruang Staf. Gunakan menu di samping untuk mengelola tugas Anda.</p>
             </div>
 
             <!-- WIDGET SHORTCUT -->
@@ -76,10 +76,6 @@ if ($res_jurnal) { while($r = $res_jurnal->fetch_assoc()) { $jurnal_terbaru[] = 
                 <a href="admin-pegawai-rpp.php" class="bg-white hover:bg-blue-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
                     <i class="fas fa-magic text-blue-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
                     <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI RPP</span>
-                </a>
-                <a href="admin-pegawai-rapor.php" class="bg-white hover:bg-purple-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-comment-dots text-purple-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI Narasi Rapor</span>
                 </a>
             </div>
 
