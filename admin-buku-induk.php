@@ -1,7 +1,6 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
@@ -15,8 +14,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS akun_orangtua (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
-
-
 // 1. Buat Tabel Otomatis
 $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -54,8 +51,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
 )");
 // Tambahkan foreign key jika belum ada
 @$conn->query("ALTER TABLE buku_induk_santri ADD CONSTRAINT fk_id_orangtua FOREIGN KEY (id_orangtua) REFERENCES akun_orangtua(id) ON DELETE SET NULL ON UPDATE CASCADE");
-
-
 // 2. Hapus Data
 if (isset($_GET['hapus_id'])) {
     $id = (int)$_GET['hapus_id'];
@@ -63,7 +58,6 @@ if (isset($_GET['hapus_id'])) {
     header("Location: admin-buku-induk.php");
     exit;
 }
-
 // 3. Simpan / Update Data
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
@@ -88,7 +82,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $set_clause[] = "$field = '" . $conn->real_escape_string($value) . "'";
         }
     }
-
     // Cek duplikasi username jika ada
     if (!empty($_POST['username'])) {
         $check_username = $conn->query("SELECT id FROM buku_induk_santri WHERE username = '" . $conn->real_escape_string($_POST['username']) . "' AND id != $id");
@@ -96,7 +89,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $pesan_error = "Username '" . htmlspecialchars($_POST['username']) . "' sudah terpakai!";
         }
     }
-
     if ($id > 0) {
         $sql = "UPDATE buku_induk_santri SET " . implode(', ', $set_clause) . " WHERE id=$id";
         $pesan_sukses = "Data santri berhasil diupdate!";
@@ -104,14 +96,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $sql = "INSERT INTO buku_induk_santri SET " . implode(', ', $set_clause);
         $pesan_sukses = "Data santri baru berhasil ditambahkan!";
     }
-
     // Hanya jalankan query jika tidak ada error
     if (empty($pesan_error)) {
     if (!$conn->query($sql)) {
         $pesan_error = "Gagal menyimpan data: " . $conn->error;
     }
 }
-
 $edit_mode = false;
 $data_edit = null;
 if (isset($_GET['edit_id'])) {
@@ -120,7 +110,6 @@ if (isset($_GET['edit_id'])) {
     $res = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $id");
     if ($res) $data_edit = $res->fetch_assoc();
 }
-
 // Ambil data akun orang tua untuk dropdown
 $akun_orangtua = [];
 $res_ortu = $conn->query("SELECT id, nama_orangtua, username FROM akun_orangtua ORDER BY nama_orangtua ASC");
@@ -129,8 +118,6 @@ if ($res_ortu) {
         $akun_orangtua[] = $row_ortu;
     }
 }
-
-
 $active_menu = 'buku_induk';
 ?>
 <!DOCTYPE html>
@@ -148,13 +135,11 @@ $active_menu = 'buku_induk';
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
             <div class="flex items-center"><button id="open-sidebar-hr" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2></div>
         </header>
-
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-book-user text-cyan-600 mr-2"></i>Buku Induk Santri</h1></div>
             
             <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
             <?php if(isset($pesan_error)) echo "<div class='bg-rose-100 text-rose-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-exclamation-circle mr-2'></i> $pesan_error</div>"; ?>
-
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
                 <div class="px-6 py-4 bg-slate-50 border-b border-gray-100"><h2 class="font-bold text-slate-800"><i class="fas <?= $edit_mode ? 'fa-user-edit' : 'fa-user-plus' ?> mr-2"></i><?= $edit_mode ? 'Edit Data Santri' : 'Input Santri Baru' ?></h2></div>
                 <form action="admin-buku-induk.php" method="POST" class="p-6">
@@ -176,7 +161,6 @@ $active_menu = 'buku_induk';
                             <div class="md:col-span-2"><label class="text-sm font-medium">Alamat Lengkap</label><input type="text" name="alamat_lengkap" value="<?= $edit_mode ? htmlspecialchars($data_edit['alamat_lengkap']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                         </div>
                     </div>
-
                     <!-- DATA AKADEMIK -->
                     <div class="mb-6 border border-gray-200 rounded-lg p-5 bg-gray-50/50">
                         <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">II. Data Akademik & Status</h3>
@@ -189,7 +173,6 @@ $active_menu = 'buku_induk';
                             <div><label class="text-sm font-medium">URL Foto Santri</label><input type="text" name="foto_santri" value="<?= $edit_mode ? htmlspecialchars($data_edit['foto_santri']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="https://..."></div>
                         </div>
                     </div>
-
                     <!-- DATA ORTU -->
                     <div class="mb-6 border border-gray-200 rounded-lg p-5 bg-gray-50/50">
                         <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">III. Data Orang Tua / Wali</h3>
@@ -220,14 +203,12 @@ $active_menu = 'buku_induk';
                             <div class="md:col-span-3"><label class="text-sm font-medium">Alamat Wali</label><input type="text" name="alamat_wali" value="<?= $edit_mode ? htmlspecialchars($data_edit['alamat_wali']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                         </div>
                     </div>
-
                     <div class="text-right">
                         <?php if($edit_mode) echo '<a href="admin-buku-induk.php" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold mr-2">Batal</a>'; ?>
                         <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition"><i class="fas fa-save mr-2"></i> <?= $edit_mode ? 'Update Data' : 'Simpan Data' ?></button>
                     </div>
                 </form>
             </div>
-
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Daftar Santri Aktif</h2></div>
                 <div class="p-4">
