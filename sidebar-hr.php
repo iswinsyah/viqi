@@ -31,6 +31,9 @@ if (session_status() === PHP_SESSION_NONE) {
             <a href="admin-akun-orangtua.php" class="<?= (isset($active_menu) && $active_menu == 'akun_orangtua') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-users w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'akun_orangtua') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Akun Orang Tua
             </a>
+            <a href="admin-akun-orangtua.php" class="<?= (isset($active_menu) && $active_menu == 'akun_orangtua') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-users w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'akun_orangtua') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Akun Orang Tua
+            </a>
             
             <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">ASATIDZ</p>
             <a href="admin-pegawai-jurnal.php" class="<?= (isset($active_menu) && $active_menu == 'jurnal_mengajar') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
