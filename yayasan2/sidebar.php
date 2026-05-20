@@ -18,9 +18,6 @@
             <a href="asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'asatidz') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
                 <i class="fas fa-users-cog w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'asatidz') ? 'text-amber-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Daftar Asatidz
             </a>
-            <a href="kpi.php" class="<?= (isset($active_menu) && $active_menu == 'kpi') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
-                <i class="fas fa-chart-bar w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kpi') ? 'text-amber-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Dashboard KPI
-            </a>
             <a href="gaji.php" class="<?= (isset($active_menu) && $active_menu == 'gaji') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
                 <i class="fas fa-money-bill-wave w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji') ? 'text-emerald-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Seting Gaji
             </a>
