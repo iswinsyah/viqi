@@ -18,8 +18,17 @@
             <a href="asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'asatidz') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
                 <i class="fas fa-users-cog w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'asatidz') ? 'text-amber-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Daftar Asatidz
             </a>
-            <a href="gaji.php" class="<?= (isset($active_menu) && $active_menu == 'gaji') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
-                <i class="fas fa-money-bill-wave w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji') ? 'text-emerald-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Seting Gaji
+            <a href="gaji-asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
+                <i class="fas fa-chalkboard-teacher w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-emerald-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Setting Gaji Asatidz
+            </a>
+            <a href="gaji-musyrif.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_musyrif') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
+                <i class="fas fa-user-shield w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_musyrif') ? 'text-emerald-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Setting Gaji Musyrif
+            </a>
+            <a href="gaji-pegawai.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_pegawai') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
+                <i class="fas fa-user-tie w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_pegawai') ? 'text-emerald-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Setting Gaji Pegawai
+            </a>
+            <a href="tunjangan.php" class="<?= (isset($active_menu) && $active_menu == 'tunjangan') ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all mt-1">
+                <i class="fas fa-award w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'tunjangan') ? 'text-emerald-400' : 'text-gray-500 group-hover:text-white' ?>"></i> Setting Tunjangan
             </a>
         </nav>
     </div>
