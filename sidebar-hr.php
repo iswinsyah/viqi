@@ -23,7 +23,10 @@ if (session_status() === PHP_SESSION_NONE) {
             <a href="admin-ustadz.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_pegawai') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-tachometer-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_pegawai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Dashboard Pegawai
             </a>
-
+            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">ADMINISTRASI</p>
+            <a href="admin-buku-induk.php" class="<?= (isset($active_menu) && $active_menu == 'buku_induk') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-book-user w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'buku_induk') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Buku Induk Santri
+            </a>
             <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">ADMINISTRASI</p>
             <a href="admin-buku-induk.php" class="<?= (isset($active_menu) && $active_menu == 'buku_induk') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-book-user w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'buku_induk') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Buku Induk Santri
