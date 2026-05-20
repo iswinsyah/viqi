@@ -1,8 +1,4 @@
 <?php
-// AKTIFKAN ERROR REPORTING SECARA PAKSA UNTUK DEBUGGING
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
 require_once 'auth.php';
 require_once '../koneksi.php';
 
