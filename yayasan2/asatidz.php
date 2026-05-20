@@ -3,7 +3,7 @@ require_once 'auth.php';
 require_once '../koneksi.php';
 
 // Pastikan kolom 'role' ada di tabel akun_ustadz (sudah ditambahkan via login-ustadz.php, tapi jaga-jaga)
-@$conn->query("ALTER TABLE akun_ustadz ADD COLUMN role VARCHAR(50) DEFAULT 'ustadz' AFTER password");
+@$conn->query("ALTER TABLE akun_ustadz MODIFY COLUMN role VARCHAR(255)");
 
 $conn->query("CREATE TABLE IF NOT EXISTS akun_ustadz (id INT AUTO_INCREMENT PRIMARY KEY, nama VARCHAR(150), username VARCHAR(50) UNIQUE, password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 
@@ -19,7 +19,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $nama = $conn->real_escape_string($_POST['nama']);
     $username = $conn->real_escape_string($_POST['username']);
     $password = $conn->real_escape_string($_POST['password']); // Password disimpan plain text sesuai struktur saat ini
-    $role = $conn->real_escape_string($_POST['role']);
+    $roles_array = $_POST['roles'] ?? [];
+    $role = implode(',', $roles_array);
 
     $cek = $conn->query("SELECT id FROM akun_ustadz WHERE username = '$username' AND id != $id");
     if ($cek && $cek->num_rows > 0) {
@@ -69,20 +70,25 @@ $active_menu = 'asatidz';
                 <form action="asatidz.php" method="POST" class="p-6">
                     <input type="hidden" name="id" value="<?= $edit_mode ? $data_edit['id'] : '' ?>">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label><input type="text" name="nama" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: Ust. Ahmad"></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: ahmad123"></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="text" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Kata sandi..."></div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Peran (Role)</label>
-                            <select name="role" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500">
+                        <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label><input type="text" name="nama" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: Ust. Ahmad"></div>
+                        <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: ahmad123"></div>
+                        <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="text" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Kata sandi..."></div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Peran (Bisa pilih lebih dari satu)</label>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 border p-4 rounded-lg bg-gray-50">
                                 <?php
-                                $roles = ['ustadz' => 'Ustadz (Pengajar)', 'musyrif' => 'Musyrif (Pembimbing Asrama)', 'ustadz_musyrif' => 'Ustadz & Musyrif'];
-                                $selected_role = $edit_mode ? $data_edit['role'] : 'ustadz';
-                                foreach ($roles as $value => $label) {
-                                    echo "<option value=\"$value\" " . ($selected_role == $value ? 'selected' : '') . ">$label</option>";
+                                $all_roles = [
+                                    'kepala_sekolah' => 'Kepala Sekolah', 'sekretaris_sekolah' => 'Sekretaris Sekolah',
+                                    'bendahara_sekolah' => 'Bendahara Sekolah', 'admin_sekolah' => 'Admin Sekolah',
+                                    'kepala_asrama' => 'Kepala Asrama', 'musyrif' => 'Musyrif', 'ustadz' => 'Ustadz'
+                                ];
+                                $user_roles = $edit_mode && !empty($data_edit['role']) ? explode(',', $data_edit['role']) : [];
+                                foreach ($all_roles as $value => $label) {
+                                    $checked = in_array($value, $user_roles) ? 'checked' : '';
+                                    echo "<label class='flex items-center space-x-2 cursor-pointer'><input type='checkbox' name='roles[]' value='$value' $checked class='w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500'><span>$label</span></label>";
                                 }
                                 ?>
-                            </select>
+                            </div>
                         </div>
                     </div>
                     <div class="text-right">
@@ -95,9 +101,28 @@ $active_menu = 'asatidz';
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Daftar Akun Terdaftar</h2></div>
                 <div class="overflow-x-auto p-4">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-white"><tr><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Nama Ustadz</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Username</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Password</th><th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th></tr></thead>
+                        <thead class="bg-white"><tr><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nama Ustadz</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Password</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Peran</th><th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Aksi</th></tr></thead>
                         <tbody class="divide-y divide-gray-100">
-                            <?php $res = $conn->query("SELECT * FROM akun_ustadz ORDER BY nama ASC"); if ($res && $res->num_rows > 0) { while($row = $res->fetch_assoc()) { echo "<tr class='hover:bg-gray-50'><td class='px-4 py-3 font-bold text-gray-900'>{$row['nama']}</td><td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded text-sm font-mono text-gray-700'>{$row['username']}</span></td><td class='px-4 py-3'><span class='text-sm text-gray-500 italic'>{$row['password']}</span></td><td class='px-4 py-3 text-center'><a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-3'><i class='fas fa-edit'></i></a><a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700'><i class='fas fa-trash'></i></a></td></tr>"; } } else { echo "<tr><td colspan='4' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; } ?>
+                            <?php 
+                            $res = $conn->query("SELECT * FROM akun_ustadz ORDER BY nama ASC"); 
+                            if ($res && $res->num_rows > 0) { 
+                                while($row = $res->fetch_assoc()) { 
+                                    $roles_display_html = '';
+                                    if (!empty($row['role'])) {
+                                        $role_list = explode(',', $row['role']);
+                                        foreach ($role_list as $r) {
+                                            $label = ucwords(str_replace('_', ' ', $r));
+                                            $roles_display_html .= "<span class='inline-block bg-amber-100 text-amber-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 mb-1'>$label</span>";
+                                        }
+                                    } else {
+                                        $roles_display_html = "<span class='text-gray-400 italic'>Belum diatur</span>";
+                                    }
+                                    echo "<tr class='hover:bg-gray-50'><td class='px-4 py-3 font-bold text-gray-900'>".htmlspecialchars($row['nama'])."</td><td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded text-sm font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td><td class='px-4 py-3'><span class='text-sm text-gray-500 italic'>".htmlspecialchars($row['password'])."</span></td><td class='px-4 py-3'>$roles_display_html</td><td class='px-4 py-3 text-center'><a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-3'><i class='fas fa-edit'></i></a><a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700'><i class='fas fa-trash'></i></a></td></tr>"; 
+                                } 
+                            } else { 
+                                echo "<tr><td colspan='5' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
+                            } 
+                            ?>
                         </tbody>
                     </table>
                 </div>
