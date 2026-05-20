@@ -42,6 +42,9 @@ if (session_status() === PHP_SESSION_NONE) {
             <a href="admin-pegawai-mutabaah.php" class="<?= (isset($active_menu) && $active_menu == 'mutabaah') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-clipboard-list w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'mutabaah') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Buku Mutaba'ah Santri
             </a>
+            <a href="admin-pegawai-jurnal-musyrif.php" class="<?= (isset($active_menu) && $active_menu == 'jurnal_musyrif') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-user-shield w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'jurnal_musyrif') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Jurnal Kegiatan Musyrif
+            </a>
 
             <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">KINERJA & AKUN</p>
             <a href="admin-pegawai-kpi.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_kpi') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
