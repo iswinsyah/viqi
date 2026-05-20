@@ -1,4 +1,8 @@
 <?php
+// AKTIFKAN ERROR REPORTING UNTUK DEBUGGING
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Kredensial Database Hostinger
 $host     = "localhost";
 $username = "u829486010_viqi";
