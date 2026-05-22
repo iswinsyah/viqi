@@ -22,6 +22,9 @@ $defined_menus = [
         'mutabaah' => 'Buku Mutaba\'ah Santri',
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'manajemen_halaqoh' => 'Manajemen Halaqoh',
+    ],
+    'Santri' => [
+        'ibadah_harian' => 'Ibadah Harian Santri',
         'laporan_adab' => 'Laporan Kedisiplinan',
     ],
     'Kinerja & Akun' => [
