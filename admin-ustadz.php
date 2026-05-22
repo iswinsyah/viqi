@@ -58,6 +58,53 @@ if ($view === 'dashboard_asrama') {
     if ($active_grup_id > 0) { $res_a = $conn->query("SELECT santri_id FROM halaqoh_anggota WHERE grup_id = $active_grup_id"); if($res_a) while($r = $res_a->fetch_assoc()) $anggota_sekarang_ids[] = $r['santri_id']; }
     $res_s = $conn->query("SELECT id, nama_lengkap, kelas_sekarang FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC"); if($res_s) while($r = $res_s->fetch_assoc()) $santri_tersedia[] = $r;
 
+} elseif ($view === 'setor_hafalan') {
+    $active_menu = 'setor_hafalan';
+    $ustadz_id = $_SESSION['ustadz_id'];
+    $conn->query("CREATE TABLE IF NOT EXISTS setoran_hafalan ( id INT AUTO_INCREMENT PRIMARY KEY, ustadz_id INT NOT NULL, nama_santri VARCHAR(150) NOT NULL, tanggal DATE NOT NULL, jenis_setoran ENUM('Ziyadah', 'Murajaah') NOT NULL, surat_id INT NOT NULL, ayat_dari INT NOT NULL, ayat_sampai INT NOT NULL, penilaian ENUM('Lancar', 'Kurang Lancar', 'Perlu Diulang') NOT NULL, catatan TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP )");
+    if (isset($_GET['hapus_id'])) {
+        $id = (int)$_GET['hapus_id'];
+        $conn->query("DELETE FROM setoran_hafalan WHERE id = $id AND ustadz_id = $ustadz_id");
+        header("Location: admin-ustadz.php?view=setor_hafalan"); exit;
+    }
+    if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_setoran'])) {
+        $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
+        $nama_santri = $conn->real_escape_string($_POST['nama_santri']);
+        $tanggal = $conn->real_escape_string($_POST['tanggal']);
+        $jenis_setoran = $conn->real_escape_string($_POST['jenis_setoran']);
+        $surat_id = (int)$_POST['surat_id'];
+        $ayat_dari = (int)$_POST['ayat_dari'];
+        $ayat_sampai = (int)$_POST['ayat_sampai'];
+        $penilaian = $conn->real_escape_string($_POST['penilaian']);
+        $catatan = $conn->real_escape_string($_POST['catatan']);
+        if ($id > 0) {
+            $sql = "UPDATE setoran_hafalan SET nama_santri='$nama_santri', tanggal='$tanggal', jenis_setoran='$jenis_setoran', surat_id=$surat_id, ayat_dari=$ayat_dari, ayat_sampai=$ayat_sampai, penilaian='$penilaian', catatan='$catatan' WHERE id=$id AND ustadz_id = $ustadz_id";
+            $pesan_sukses_setoran = "Data setoran hafalan berhasil diupdate!";
+        } else {
+            $sql = "INSERT INTO setoran_hafalan (ustadz_id, nama_santri, tanggal, jenis_setoran, surat_id, ayat_dari, ayat_sampai, penilaian, catatan) VALUES ($ustadz_id, '$nama_santri', '$tanggal', '$jenis_setoran', $surat_id, $ayat_dari, $ayat_sampai, '$penilaian', '$catatan')";
+            $pesan_sukses_setoran = "Setoran hafalan baru berhasil dicatat!";
+        }
+        $conn->query($sql);
+    }
+    $edit_mode_setoran = false;
+    $data_edit_setoran = null;
+    if (isset($_GET['edit_id'])) {
+        $edit_mode_setoran = true;
+        $id = (int)$_GET['edit_id'];
+        $res = $conn->query("SELECT * FROM setoran_hafalan WHERE id = $id AND ustadz_id = $ustadz_id");
+        if ($res) $data_edit_setoran = $res->fetch_assoc();
+    }
+    $surah_list = [
+        1 => "Al-Fatihah", 2 => "Al-Baqarah", 3 => "Ali 'Imran", 4 => "An-Nisa'", 5 => "Al-Ma'idah", 6 => "Al-An'am", 7 => "Al-A'raf", 8 => "Al-Anfal", 9 => "At-Taubah", 10 => "Yunus", 11 => "Hud", 12 => "Yusuf", 13 => "Ar-Ra'd", 14 => "Ibrahim", 15 => "Al-Hijr",
+        16 => "An-Nahl", 17 => "Al-Isra'", 18 => "Al-Kahf", 19 => "Maryam", 20 => "Taha", 21 => "Al-Anbiya'", 22 => "Al-Hajj", 23 => "Al-Mu'minun", 24 => "An-Nur", 25 => "Al-Furqan", 26 => "Asy-Syu'ara'", 27 => "An-Naml", 28 => "Al-Qasas", 29 => "Al-'Ankabut", 30 => "Ar-Rum",
+        31 => "Luqman", 32 => "As-Sajdah", 33 => "Al-Ahzab", 34 => "Saba'", 35 => "Fatir", 36 => "Ya-Sin", 37 => "As-Saffat", 38 => "Sad", 39 => "Az-Zumar", 40 => "Ghafir", 41 => "Fussilat", 42 => "Asy-Syura", 43 => "Az-Zukhruf", 44 => "Ad-Dukhan", 45 => "Al-Jathiyah",
+        46 => "Al-Ahqaf", 47 => "Muhammad", 48 => "Al-Fath", 49 => "Al-Hujurat", 50 => "Qaf", 51 => "Az-Zariyat", 52 => "At-Tur", 53 => "An-Najm", 54 => "Al-Qamar", 55 => "Ar-Rahman", 56 => "Al-Waqi'ah", 57 => "Al-Hadid", 58 => "Al-Mujadilah", 59 => "Al-Hasyr", 60 => "Al-Mumtahanah",
+        61 => "As-Saff", 62 => "Al-Jumu'ah", 63 => "Al-Munafiqun", 64 => "At-Taghabun", 65 => "At-Talaq", 66 => "At-Tahrim", 67 => "Al-Mulk", 68 => "Al-Qalam", 69 => "Al-Haqqah", 70 => "Al-Ma'arij", 71 => "Nuh", 72 => "Al-Jinn", 73 => "Al-Muzzammil", 74 => "Al-Muddaththir", 75 => "Al-Qiyamah",
+        76 => "Al-Insan", 77 => "Al-Mursalat", 78 => "An-Naba'", 79 => "An-Nazi'at", 80 => "'Abasa", 81 => "At-Takwir", 82 => "Al-Infitar", 83 => "Al-Mutaffifin", 84 => "Al-Insyiqaq", 85 => "Al-Buruj", 86 => "At-Tariq", 87 => "Al-A'la", 88 => "Al-Ghasyiyah", 89 => "Al-Fajr", 90 => "Al-Balad",
+        91 => "Asy-Syams", 92 => "Al-Layl", 93 => "Ad-Duha", 94 => "Al-Insyirah", 95 => "At-Tin", 96 => "Al-'Alaq", 97 => "Al-Qadr", 98 => "Al-Bayyinah", 99 => "Az-Zalzalah", 100 => "Al-'Adiyat", 101 => "Al-Qari'ah", 102 => "At-Takasur", 103 => "Al-'Asr", 104 => "Al-Humazah", 105 => "Al-Fil",
+        106 => "Quraisy", 107 => "Al-Ma'un", 108 => "Al-Kausar", 109 => "Al-Kafirun", 110 => "An-Nasr", 111 => "Al-Masad", 112 => "Al-Ikhlas", 113 => "Al-Falaq", 114 => "An-Nas"
+    ];
+
 } else { // default view
     $active_menu = 'dashboard_pegawai';
     // --- LOGIC UNTUK DASHBOARD PEGAWAI ---
@@ -206,6 +253,70 @@ if ($view === 'dashboard_asrama') {
                         <p>Silakan pilih grup di sebelah kiri untuk mulai mengelola anggotanya, atau buat grup baru.</p>
                     </div>
                     <?php endif; ?>
+                </div>
+            </div>
+
+            <?php elseif ($view === 'setor_hafalan'): ?>
+            <!-- ================================================== -->
+            <!-- TAMPILAN SETORAN HAFALAN                          -->
+            <!-- ================================================== -->
+            <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-quran text-emerald-600 mr-2"></i>Pencatatan Setoran Hafalan</h1></div>
+            <?php if(isset($pesan_sukses_setoran)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses_setoran</div>"; ?>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
+                <div class="px-6 py-4 bg-slate-50 border-b border-gray-100"><h2 class="font-bold text-slate-800"><i class="fas <?= $edit_mode_setoran ? 'fa-edit' : 'fa-plus' ?> mr-2"></i><?= $edit_mode_setoran ? 'Edit Catatan Setoran' : 'Input Setoran Baru' ?></h2></div>
+                <form action="admin-ustadz.php?view=setor_hafalan" method="POST" class="p-6">
+                    <input type="hidden" name="id" value="<?= $edit_mode_setoran ? $data_edit_setoran['id'] : '' ?>">
+                    <input type="hidden" name="simpan_setoran" value="1">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Nama Santri</label><input type="text" name="nama_santri" value="<?= $edit_mode_setoran ? htmlspecialchars($data_edit_setoran['nama_santri']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500" placeholder="Nama lengkap santri"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Setoran</label><input type="date" name="tanggal" value="<?= $edit_mode_setoran ? $data_edit_setoran['tanggal'] : date('Y-m-d') ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Jenis Setoran</label><select name="jenis_setoran" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"><option value="Ziyadah" <?= ($edit_mode_setoran && $data_edit_setoran['jenis_setoran'] == 'Ziyadah') ? 'selected' : '' ?>>Ziyadah (Hafalan Baru)</option><option value="Murajaah" <?= ($edit_mode_setoran && $data_edit_setoran['jenis_setoran'] == 'Murajaah') ? 'selected' : '' ?>>Muraja'ah (Mengulang)</option></select></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Surat</label><select name="surat_id" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"><?php foreach($surah_list as $id => $name) { $sel = ($edit_mode_setoran && $data_edit_setoran['surat_id'] == $id) ? 'selected' : ''; echo "<option value='$id' $sel>$id. $name</option>"; } ?></select></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Dari Ayat</label><input type="number" name="ayat_dari" value="<?= $edit_mode_setoran ? $data_edit_setoran['ayat_dari'] : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Sampai Ayat</label><input type="number" name="ayat_sampai" value="<?= $edit_mode_setoran ? $data_edit_setoran['ayat_sampai'] : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Penilaian</label><select name="penilaian" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"><?php $penilaian_opsi = ['Lancar', 'Kurang Lancar', 'Perlu Diulang']; foreach($penilaian_opsi as $p) { $sel = ($edit_mode_setoran && $data_edit_setoran['penilaian'] == $p) ? 'selected' : ''; echo "<option value='$p' $sel>$p</option>"; } ?></select></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Catatan (Opsional)</label><input type="text" name="catatan" value="<?= $edit_mode_setoran ? htmlspecialchars($data_edit_setoran['catatan']) : '' ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500" placeholder="Contoh: Makhraj huruf 'ain perlu dilatih"></div>
+                    </div>
+                    <div class="text-right">
+                        <?php if($edit_mode_setoran) echo '<a href="admin-ustadz.php?view=setor_hafalan" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold mr-2">Batal</a>'; ?>
+                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition"><i class="fas fa-save mr-2"></i> <?= $edit_mode_setoran ? 'Update Catatan' : 'Simpan Setoran' ?></button>
+                    </div>
+                </form>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Riwayat Setoran Hafalan (Milik Anda)</h2></div>
+                <div class="overflow-x-auto p-4">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-white">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Santri & Tanggal</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Setoran</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Penilaian & Catatan</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <?php
+                            $res_setoran = $conn->query("SELECT * FROM setoran_hafalan WHERE ustadz_id = $ustadz_id ORDER BY tanggal DESC, id DESC");
+                            if ($res_setoran && $res_setoran->num_rows > 0) {
+                                while($row = $res_setoran->fetch_assoc()) { 
+                                    $badge_color = 'bg-gray-100 text-gray-700';
+                                    if ($row['penilaian'] == 'Lancar') $badge_color = 'bg-emerald-100 text-emerald-800';
+                                    if ($row['penilaian'] == 'Perlu Diulang') $badge_color = 'bg-red-100 text-red-800';
+                                ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 align-top"><div class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_santri']) ?></div><div class="text-xs text-gray-500 mt-1"><?= date('d M Y', strtotime($row['tanggal'])) ?></div></td>
+                                    <td class="px-4 py-3 align-top"><div class="font-semibold text-gray-800"><?= htmlspecialchars($row['jenis_setoran']) ?>: <span class="text-emerald-700">QS. <?= $surah_list[$row['surat_id']] ?> [<?= $row['surat_id'] ?>]: <?= $row['ayat_dari'] ?>-<?= $row['ayat_sampai'] ?></span></div></td>
+                                    <td class="px-4 py-3 align-top"><span class="px-2 py-1 text-xs font-bold rounded-full <?= $badge_color ?>"><?= htmlspecialchars($row['penilaian']) ?></span><?php if(!empty($row['catatan'])): ?><p class="text-xs text-gray-500 mt-2 italic">"<?= htmlspecialchars($row['catatan']) ?>"</p><?php endif; ?></td>
+                                    <td class="px-4 py-3 text-center align-top"><a href="?view=setor_hafalan&edit_id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700 mr-2" title="Edit"><i class="fas fa-edit"></i></a><a href="?view=setor_hafalan&hapus_id=<?= $row['id'] ?>" onclick="return confirm('Hapus catatan setoran ini?')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></a></td>
+                                </tr>
+                            <?php } } else { echo "<tr><td colspan='4' class='text-center py-6 text-gray-500 italic'>Belum ada catatan setoran hafalan.</td></tr>"; } ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
