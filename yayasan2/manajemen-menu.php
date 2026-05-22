@@ -21,6 +21,7 @@ $defined_menus = [
         'dashboard_asrama' => 'Dashboard Asrama',
         'mutabaah' => 'Buku Mutaba\'ah Santri',
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
+        'manajemen_halaqoh' => 'Manajemen Halaqoh',
         'laporan_adab' => 'Laporan Kedisiplinan',
     ],
     'Kinerja & Akun' => [

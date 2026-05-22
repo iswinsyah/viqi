@@ -52,8 +52,9 @@ $menu_structure = [
         'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt', 'title' => 'Bank Nilai Akademik'],
     ],
     'Musyrif' => [
-        'dashboard_asrama' => ['href' => 'admin-dashboard-asrama.php', 'icon' => 'fa-home-user', 'title' => 'Dashboard Asrama'],
+        'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user', 'title' => 'Dashboard Asrama'],
         'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'title' => 'Buku Mutaba\'ah Santri'],
+        'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group', 'title' => 'Manajemen Halaqoh'],
         'jurnal_musyrif' => ['href' => 'admin-pegawai-jurnal-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'Jurnal Kegiatan Musyrif'],
         'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'title' => 'Laporan Kedisiplinan'],
     ],
