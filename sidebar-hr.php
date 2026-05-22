@@ -2,6 +2,68 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Pastikan koneksi DB tersedia. Diasumsikan file yang meng-include sidebar ini sudah memanggil koneksi.php
+global $conn;
+
+// Ambil role user dari session
+$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+
+// Super Admin dapat melihat semua menu
+$is_super_admin = in_array('super_admin', $user_roles);
+
+// Ambil semua hak akses menu dari database
+$menu_permissions = [];
+if ($conn) {
+    $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
+    if ($res_perms) {
+        while ($row = $res_perms->fetch_assoc()) {
+            $menu_permissions[$row['menu_key']] = !empty($row['allowed_roles']) ? explode(',', $row['allowed_roles']) : [];
+        }
+    }
+}
+
+// Fungsi helper untuk mengecek hak akses
+function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) {
+    if ($is_super_admin) return true;
+    if (!isset($menu_permissions[$menu_key])) return false; // Default: sembunyikan jika belum diatur
+
+    foreach ($user_roles as $role) {
+        if (in_array(trim($role), $menu_permissions[$menu_key])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Definisikan struktur menu untuk iterasi
+$menu_structure = [
+    'Menu Utama' => [
+        'dashboard_pegawai' => ['href' => 'admin-ustadz.php', 'icon' => 'fa-tachometer-alt', 'title' => 'Dashboard Pegawai'],
+    ],
+    'Administrasi' => [
+        'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user', 'title' => 'Buku Induk Santri'],
+        'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users', 'title' => 'Akun Orang Tua'],
+    ],
+    'Asatidz' => [
+        'jurnal_mengajar' => ['href' => 'admin-pegawai-jurnal.php', 'icon' => 'fa-book-open', 'title' => 'Jurnal Mengajar'],
+        'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader', 'title' => 'Master Silabus & CP'],
+        'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic', 'title' => 'AI Generator RPP'],
+        'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt', 'title' => 'Bank Nilai Akademik'],
+    ],
+    'Musyrif' => [
+        'dashboard_asrama' => ['href' => 'admin-dashboard-asrama.php', 'icon' => 'fa-home-user', 'title' => 'Dashboard Asrama'],
+        'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'title' => 'Buku Mutaba\'ah Santri'],
+        'jurnal_musyrif' => ['href' => 'admin-pegawai-jurnal-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'Jurnal Kegiatan Musyrif'],
+        'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'title' => 'Laporan Kedisiplinan'],
+    ],
+    'Kinerja & Akun' => [
+        'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher', 'title' => 'KPI Ustadz'],
+        'kpi_musyrif' => ['href' => 'admin-pegawai-kpi-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'KPI Musyrif'],
+        'ganti_password' => ['href' => 'ganti-password-ustadz.php', 'icon' => 'fa-key', 'title' => 'Ganti Password'],
+    ]
+];
+
 ?>
 <!-- SIDEBAR OVERLAY -->
 <div id="sidebar-overlay-hr" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden md:hidden transition-opacity"></div>
@@ -19,54 +81,33 @@ if (session_status() === PHP_SESSION_NONE) {
 
     <div class="flex-1 overflow-y-auto py-4">
         <nav class="px-4 space-y-1">
-            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-2">Menu Utama</p>
-            <a href="admin-ustadz.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_pegawai') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-tachometer-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_pegawai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Dashboard Pegawai
-            </a>
-            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">ADMINISTRASI</p>
-            <a href="admin-buku-induk.php" class="<?= (isset($active_menu) && $active_menu == 'buku_induk') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-book-user w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'buku_induk') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Buku Induk Santri
-            </a>
-            <a href="admin-akun-orangtua.php" class="<?= (isset($active_menu) && $active_menu == 'akun_orangtua') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-users w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'akun_orangtua') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Akun Orang Tua
-            </a>
-            
-            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">ASATIDZ</p>
-            <a href="admin-pegawai-jurnal.php" class="<?= (isset($active_menu) && $active_menu == 'jurnal_mengajar') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-book-open w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'jurnal_mengajar') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Jurnal Mengajar
-            </a>
-            <a href="admin-pegawai-silabus.php" class="<?= (isset($active_menu) && $active_menu == 'master_silabus') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-book-reader w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'master_silabus') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Master Silabus & CP
-            </a>
-            <a href="admin-pegawai-rpp.php" class="<?= (isset($active_menu) && $active_menu == 'ai_rpp') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-magic w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ai_rpp') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> AI Generator RPP
-            </a>
-            <a href="admin-pegawai-nilai.php" class="<?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-star-half-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'bank_nilai') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Bank Nilai Akademik
-            </a>
-
-            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">MUSYRIF</p>
-            <a href="admin-pegawai-mutabaah.php" class="<?= (isset($active_menu) && $active_menu == 'mutabaah') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-clipboard-list w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'mutabaah') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Buku Mutaba'ah Santri
-            </a>
-            <a href="admin-pegawai-jurnal-musyrif.php" class="<?= (isset($active_menu) && $active_menu == 'jurnal_musyrif') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-user-shield w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'jurnal_musyrif') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Jurnal Kegiatan Musyrif
-            </a>
-            <a href="admin-pegawai-laporan-adab.php" class="<?= (isset($active_menu) && $active_menu == 'laporan_adab') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-balance-scale w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'laporan_adab') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Laporan Kedisiplinan
-            </a>
-
-            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6">KINERJA & AKUN</p>
-            <a href="admin-pegawai-kpi.php" class="<?= (isset($active_menu) && $active_menu == 'kpi_ustadz') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-chalkboard-teacher w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kpi_ustadz') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> KPI Ustadz
-            </a>
-            <a href="admin-pegawai-kpi-musyrif.php" class="<?= (isset($active_menu) && $active_menu == 'kpi_musyrif') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-user-shield w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kpi_musyrif') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> KPI Musyrif
-            </a>
-            <a href="ganti-password-ustadz.php" class="<?= (isset($active_menu) && $active_menu == 'ganti_password') ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-key w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ganti_password') ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white' ?>"></i> Ganti Password
-            </a>
-
+            <?php foreach ($menu_structure as $group_title => $menus): ?>
+                <?php
+                    // Cek apakah ada setidaknya satu menu dalam grup ini yang bisa diakses
+                    $is_group_visible = false;
+                    foreach ($menus as $key => $menu) {
+                        if (has_access($key, $user_roles, $menu_permissions, $is_super_admin)) {
+                            $is_group_visible = true;
+                            break;
+                        }
+                    }
+                ?>
+                <?php if ($is_group_visible): ?>
+                    <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6"><?= $group_title ?></p>
+                    <?php foreach ($menus as $key => $menu): ?>
+                        <?php if (has_access($key, $user_roles, $menu_permissions, $is_super_admin)): ?>
+                            <?php
+                                $is_active = (isset($active_menu) && $active_menu == $key);
+                                $class_a = $is_active ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white';
+                                $class_i = $is_active ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white';
+                            ?>
+                            <a href="<?= $menu['href'] ?>" class="<?= $class_a ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                                <i class="fas <?= $menu['icon'] ?> w-6 text-center mr-2 <?= $class_i ?>"></i> <?= $menu['title'] ?>
+                            </a>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            <?php endforeach; ?>
         </nav>
     </div>
 
@@ -76,3 +117,20 @@ if (session_status() === PHP_SESSION_NONE) {
         </a>
     </div>
 </aside>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar-hr');
+    const openBtn = document.getElementById('open-sidebar-hr');
+    const closeBtn = document.getElementById('close-sidebar-hr');
+    const overlay = document.getElementById('sidebar-overlay-hr');
+
+    function toggleSidebar() {
+        if(sidebar && overlay) { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); }
+    }
+
+    if(openBtn) openBtn.addEventListener('click', toggleSidebar);
+    if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
+    if(overlay) overlay.addEventListener('click', toggleSidebar);
+});
+</script>
