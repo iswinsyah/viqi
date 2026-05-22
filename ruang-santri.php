@@ -27,40 +27,15 @@ $conn->query("CREATE TABLE IF NOT EXISTS ibadah_harian_santri (
     sholat_bakdiyah_isya TINYINT(1) DEFAULT 0,
     puasa_senin TINYINT(1) DEFAULT 0,
     puasa_kamis TINYINT(1) DEFAULT 0,
-    setor_surat_id INT NULL,
-    setor_ayat_dari INT NULL,
-    setor_ayat_sampai INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY (santri_id, tanggal)
 )");
 
-// --- SURAH LIST (HARDCODED FOR NOW) ---
-$surah_list = [
-    1 => "Al-Fatihah", 2 => "Al-Baqarah", 3 => "Ali 'Imran", 4 => "An-Nisa'", 5 => "Al-Ma'idah",
-    6 => "Al-An'am", 7 => "Al-A'raf", 8 => "Al-Anfal", 9 => "At-Taubah", 10 => "Yunus",
-    11 => "Hud", 12 => "Yusuf", 13 => "Ar-Ra'd", 14 => "Ibrahim", 15 => "Al-Hijr",
-    16 => "An-Nahl", 17 => "Al-Isra'", 18 => "Al-Kahf", 19 => "Maryam", 20 => "Taha",
-    21 => "Al-Anbiya'", 22 => "Al-Hajj", 23 => "Al-Mu'minun", 24 => "An-Nur", 25 => "Al-Furqan",
-    26 => "Asy-Syu'ara'", 27 => "An-Naml", 28 => "Al-Qasas", 29 => "Al-'Ankabut", 30 => "Ar-Rum",
-    31 => "Luqman", 32 => "As-Sajdah", 33 => "Al-Ahzab", 34 => "Saba'", 35 => "Fatir",
-    36 => "Ya-Sin", 37 => "As-Saffat", 38 => "Sad", 39 => "Az-Zumar", 40 => "Ghafir",
-    41 => "Fussilat", 42 => "Asy-Syura", 43 => "Az-Zukhruf", 44 => "Ad-Dukhan", 45 => "Al-Jathiyah",
-    46 => "Al-Ahqaf", 47 => "Muhammad", 48 => "Al-Fath", 49 => "Al-Hujurat", 50 => "Qaf",
-    51 => "Az-Zariyat", 52 => "At-Tur", 53 => "An-Najm", 54 => "Al-Qamar", 55 => "Ar-Rahman",
-    56 => "Al-Waqi'ah", 57 => "Al-Hadid", 58 => "Al-Mujadilah", 59 => "Al-Hasyr", 60 => "Al-Mumtahanah",
-    61 => "As-Saff", 62 => "Al-Jumu'ah", 63 => "Al-Munafiqun", 64 => "At-Taghabun", 65 => "At-Talaq",
-    66 => "At-Tahrim", 67 => "Al-Mulk", 68 => "Al-Qalam", 69 => "Al-Haqqah", 70 => "Al-Ma'arij",
-    71 => "Nuh", 72 => "Al-Jinn", 73 => "Al-Muzzammil", 74 => "Al-Muddaththir", 75 => "Al-Qiyamah",
-    76 => "Al-Insan", 77 => "Al-Mursalat", 78 => "An-Naba'", 79 => "An-Nazi'at", 80 => "'Abasa",
-    81 => "At-Takwir", 82 => "Al-Infitar", 83 => "Al-Mutaffifin", 84 => "Al-Insyiqaq", 85 => "Al-Buruj",
-    86 => "At-Tariq", 87 => "Al-A'la", 88 => "Al-Ghasyiyah", 89 => "Al-Fajr", 90 => "Al-Balad",
-    91 => "Asy-Syams", 92 => "Al-Layl", 93 => "Ad-Duha", 94 => "Al-Insyirah", 95 => "At-Tin",
-    96 => "Al-'Alaq", 97 => "Al-Qadr", 98 => "Al-Bayyinah", 99 => "Az-Zalzalah", 100 => "Al-'Adiyat",
-    101 => "Al-Qari'ah", 102 => "At-Takasur", 103 => "Al-'Asr", 104 => "Al-Humazah", 105 => "Al-Fil",
-    106 => "Quraisy", 107 => "Al-Ma'un", 108 => "Al-Kausar", 109 => "Al-Kafirun", 110 => "An-Nasr",
-    111 => "Al-Masad", 112 => "Al-Ikhlas", 113 => "Al-Falaq", 114 => "An-Nas"
-];
+// Hapus kolom setor hafalan jika masih ada (untuk maintenance)
+@$conn->query("ALTER TABLE ibadah_harian_santri DROP COLUMN setor_surat_id");
+@$conn->query("ALTER TABLE ibadah_harian_santri DROP COLUMN setor_ayat_dari");
+@$conn->query("ALTER TABLE ibadah_harian_santri DROP COLUMN setor_ayat_sampai");
 
 // --- LOGIC FOR IBADAH HARIAN VIEW ---
 if ($view === 'ibadah_harian') {
@@ -91,10 +66,6 @@ if ($view === 'ibadah_harian') {
         $puasa_senin = isset($_POST['puasa_senin']) ? 1 : 0;
         $puasa_kamis = isset($_POST['puasa_kamis']) ? 1 : 0;
 
-        $setor_surat_id = !empty($_POST['setor_surat_id']) ? (int)$_POST['setor_surat_id'] : 'NULL';
-        $setor_ayat_dari = !empty($_POST['setor_ayat_dari']) ? (int)$_POST['setor_ayat_dari'] : 'NULL';
-        $setor_ayat_sampai = !empty($_POST['setor_ayat_sampai']) ? (int)$_POST['setor_ayat_sampai'] : 'NULL';
-
         // Check if entry for this date already exists
         $check_sql = "SELECT id FROM ibadah_harian_santri WHERE santri_id = $santri_id AND tanggal = '$tanggal'";
         $check_res = $conn->query($check_sql);
@@ -105,17 +76,16 @@ if ($view === 'ibadah_harian') {
                     sholat_subuh='$sholat_subuh', sholat_dhuhur='$sholat_dhuhur', sholat_ashar='$sholat_ashar', sholat_maghrib='$sholat_maghrib', sholat_isya='$sholat_isya',
                     sholat_tahajud=$sholat_tahajud, sholat_witir=$sholat_witir, sholat_qobliyah_subuh=$sholat_qobliyah_subuh, sholat_dhuha=$sholat_dhuha, sholat_qobli_dhuhur=$sholat_qobli_dhuhur,
                     sholat_bakdiyah_dhuhur=$sholat_bakdiyah_dhuhur, sholat_qobliyah_ashar=$sholat_qobliyah_ashar, sholat_bakdiyah_maghrib=$sholat_bakdiyah_maghrib, sholat_qobliyah_isya=$sholat_qobliyah_isya, sholat_bakdiyah_isya=$sholat_bakdiyah_isya,
-                    puasa_senin=$puasa_senin, puasa_kamis=$puasa_kamis,
-                    setor_surat_id=$setor_surat_id, setor_ayat_dari=$setor_ayat_dari, setor_ayat_sampai=$setor_ayat_sampai
+                    puasa_senin=$puasa_senin, puasa_kamis=$puasa_kamis
                     WHERE id = $existing_id";
             $pesan_sukses = "Laporan ibadah harian tanggal $tanggal berhasil diperbarui!";
         } else {
             $sql = "INSERT INTO ibadah_harian_santri (santri_id, tanggal, sholat_subuh, sholat_dhuhur, sholat_ashar, sholat_maghrib, sholat_isya,
                     sholat_tahajud, sholat_witir, sholat_qobliyah_subuh, sholat_dhuha, sholat_qobli_dhuhur, sholat_bakdiyah_dhuhur, sholat_qobliyah_ashar, sholat_bakdiyah_maghrib, sholat_qobliyah_isya, sholat_bakdiyah_isya,
-                    puasa_senin, puasa_kamis, setor_surat_id, setor_ayat_dari, setor_ayat_sampai) VALUES (
+                    puasa_senin, puasa_kamis) VALUES (
                     $santri_id, '$tanggal', '$sholat_subuh', '$sholat_dhuhur', '$sholat_ashar', '$sholat_maghrib', '$sholat_isya',
                     $sholat_tahajud, $sholat_witir, $sholat_qobliyah_subuh, $sholat_dhuha, $sholat_qobli_dhuhur, $sholat_bakdiyah_dhuhur, $sholat_qobliyah_ashar, $sholat_bakdiyah_maghrib, $sholat_qobliyah_isya, $sholat_bakdiyah_isya,
-                    $puasa_senin, $puasa_kamis, $setor_surat_id, $setor_ayat_dari, $setor_ayat_sampai)";
+                    $puasa_senin, $puasa_kamis)";
             $pesan_sukses = "Laporan ibadah harian tanggal $tanggal berhasil disimpan!";
         }
 
@@ -243,30 +213,6 @@ if ($view === 'ibadah_harian') {
                         </div>
                     </div>
 
-                    <!-- Setor Hafalan -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Setor Hafalan</label>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Surat</label>
-                                <select name="setor_surat_id" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-indigo-500">
-                                    <option value="">-- Pilih Surat --</option>
-                                    <?php foreach($surah_list as $id => $name): ?>
-                                        <option value="<?= $id ?>" <?= ($current_report && $current_report['setor_surat_id'] == $id) ? 'selected' : '' ?>><?= $id ?>. <?= $name ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Ayat Dari</label>
-                                <input type="number" name="setor_ayat_dari" value="<?= $current_report['setor_ayat_dari'] ?? '' ?>" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-indigo-500" placeholder="Contoh: 1">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Sampai Ayat</label>
-                                <input type="number" name="setor_ayat_sampai" value="<?= $current_report['setor_ayat_sampai'] ?? '' ?>" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-indigo-500" placeholder="Contoh: 10">
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="text-right pt-4 border-t border-gray-100">
                         <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition">
                             <i class="fas fa-save mr-2"></i> Simpan Laporan
@@ -287,7 +233,6 @@ if ($view === 'ibadah_harian') {
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Sholat Wajib</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Sholat Sunnah</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Puasa</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Hafalan</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
@@ -326,18 +271,10 @@ if ($view === 'ibadah_harian') {
                                             <?php if(!$report['puasa_senin'] && !$report['puasa_kamis']) echo '<li>-</li>'; ?>
                                         </ul>
                                     </td>
-                                    <td class="px-4 py-3 text-xs text-gray-600">
-                                        <?php if($report['setor_surat_id'] && $report['setor_ayat_dari'] && $report['setor_ayat_sampai']): ?>
-                                            Surat: <?= $surah_list[$report['setor_surat_id']] ?><br>
-                                            Ayat: <?= $report['setor_ayat_dari'] ?> - <?= $report['setor_ayat_sampai'] ?>
-                                        <?php else: ?>
-                                            -
-                                        <?php endif; ?>
-                                    </td>
                                 </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan='5' class='text-center py-6 text-gray-500 italic'>Belum ada laporan ibadah harian.</td></tr>
+                                <tr><td colspan='4' class='text-center py-6 text-gray-500 italic'>Belum ada laporan ibadah harian.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
