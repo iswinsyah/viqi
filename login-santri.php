@@ -8,6 +8,42 @@ if (isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === tr
     exit;
 }
 
+// Pastikan tabel buku_induk_santri ada sebelum digunakan untuk login
+$conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nama_lengkap VARCHAR(150) NOT NULL,
+    nis VARCHAR(50) UNIQUE,
+    nisn VARCHAR(50) UNIQUE,
+    username VARCHAR(50) UNIQUE,
+    id_orangtua INT NULL,
+    password VARCHAR(255),
+    nik VARCHAR(50),
+    tempat_lahir VARCHAR(100),
+    tanggal_lahir DATE,
+    jenis_kelamin ENUM('Laki-laki', 'Perempuan'),
+    alamat_lengkap TEXT,
+    foto_santri VARCHAR(255),
+    tanggal_masuk DATE,
+    asal_sekolah VARCHAR(150),
+    status_santri ENUM('Aktif', 'Lulus', 'Pindah', 'Dikeluarkan', 'Mengundurkan Diri') DEFAULT 'Aktif',
+    kelas_sekarang VARCHAR(50),
+    kamar_asrama VARCHAR(50),
+    nama_ayah VARCHAR(150),
+    pekerjaan_ayah VARCHAR(100),
+    no_whatsapp_ayah VARCHAR(20),
+    alamat_ayah TEXT,
+    nama_ibu VARCHAR(150),
+    pekerjaan_ibu VARCHAR(100),
+    no_whatsapp_ibu VARCHAR(20),
+    alamat_ibu TEXT,
+    nama_wali VARCHAR(150),
+    pekerjaan_wali VARCHAR(100),
+    alamat_wali TEXT,
+    no_whatsapp_wali VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)");
+
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
