@@ -164,7 +164,11 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                 </a>
                 <a href="admin-seo.php" class="bg-white hover:bg-teal-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
                     <i class="fas fa-pen-nib text-teal-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Generator Artikel SEO</span>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Penulis Artikel SEO</span>
+                </a>
+                <a href="admin-publisher.php" class="bg-white hover:bg-emerald-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-paper-plane text-emerald-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI Publisher</span>
                 </a>
             </div>
 

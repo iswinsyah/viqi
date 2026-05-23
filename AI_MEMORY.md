@@ -23,11 +23,12 @@ Sistem orkestrasi berantai (Daisy Chaining) yang berjalan otomatis dengan 2 mode
 - **Agent "Penulis Artikel SEO":** Menulis artikel panjang standar EEAT Google setiap hari sesuai jadwal dari Kalender Konten, lalu mempublikasikannya secara otomatis ke website.
 - **Agent "Publisher" (d/h Kurir WA):** Setelah artikel terbit, agent ini langsung mendistribusikan link artikel baru ke semua agen marketing melalui WhatsApp, lengkap dengan link afiliasi unik.
 
-### 4. Admin & Content Management System (CMS)
+### 4. Admin, CMS & Monitoring
 - **CRUD Master Data:** Pengajar, Fasilitas, Kurikulum, Testimoni, Biaya, Galeri, Jadwal Parenting.
 - **Generator Artikel SEO:** Tersambung dengan Gemini, bisa input draft ke editor TinyMCE, atur meta SEO (Title, Keyword, Desc), publish/jadwalkan.
 - **Data Santri Baru:** Tabel filter pendaftar SPMB yang lulus seleksi, fitur toggle Daftar Ulang, dan Export to Excel.
 - **Penyimpanan Media:** Upload & hapus gambar/video lokal ke folder `/uploads/`.
+- **AI Publisher Monitor:** Halaman untuk memantau status pengiriman pesan WA dari Agent Publisher ke semua agen.
 
 ---
 
