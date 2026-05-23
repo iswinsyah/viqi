@@ -85,19 +85,40 @@ if (!empty($filters['kelas']) && !empty($filters['tahun_ajaran']) && !empty($fil
     <title>Leger Nilai | Portal Ustadz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+    @media print {
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        #sidebar-hr, header, form, .no-print, #open-sidebar-hr {
+            display: none !important;
+        }
+        main {
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+        }
+        .overflow-x-auto {
+            overflow: visible !important;
+        }
+        table { font-size: 10px; }
+        th, td { padding: 4px 6px !important; }
+    }
+    </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
     <?php include 'sidebar-hr.php'; ?>
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0 no-print">
             <div class="flex items-center"><button id="open-sidebar-hr" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2></div>
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-            <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-book-reader text-purple-600 mr-2"></i>Leger Nilai Digital</h1></div>
+            <div class="mb-6 no-print"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-book-reader text-purple-600 mr-2"></i>Leger Nilai Digital</h1></div>
 
             <!-- FORM FILTER -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden no-print">
                 <div class="px-6 py-4 bg-slate-50 border-b border-gray-100"><h2 class="font-bold text-slate-800"><i class="fas fa-filter mr-2"></i>Filter Tampilan Leger</h2></div>
                 <form action="admin-leger.php" method="GET" class="p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -115,7 +136,7 @@ if (!empty($filters['kelas']) && !empty($filters['tahun_ajaran']) && !empty($fil
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                     <h2 class="font-bold text-gray-800">Hasil Leger: Kelas <?= htmlspecialchars($filters['kelas']) ?> - <?= htmlspecialchars($filters['semester']) ?> <?= htmlspecialchars($filters['tahun_ajaran']) ?></h2>
-                    <button onclick="window.print()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center">
+                    <button onclick="window.print()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center no-print">
                         <i class="fas fa-print mr-2"></i> Cetak
                     </button>
                 </div>
@@ -160,7 +181,7 @@ if (!empty($filters['kelas']) && !empty($filters['tahun_ajaran']) && !empty($fil
                 </div>
             </div>
             <?php else: ?>
-                <div class="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border">
+                <div class="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border no-print">
                     <i class="fas fa-filter text-4xl mb-4 text-gray-300"></i>
                     <p class="font-medium">Silakan pilih filter di atas untuk menampilkan data leger.</p>
                 </div>
@@ -175,32 +196,6 @@ if (!empty($filters['kelas']) && !empty($filters['tahun_ajaran']) && !empty($fil
     </script>
 </body>
 </html>
-
-<style>
-@media print {
-    body {
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-    }
-    #sidebar-hr, header, form, .no-print {
-        display: none !important;
-    }
-    main {
-        padding: 0 !important;
-        margin: 0 !important;
-        overflow: visible !important;
-    }
-    .overflow-x-auto {
-        overflow: visible !important;
-    }
-    table {
-        font-size: 10px;
-    }
-    th, td {
-        padding: 4px 6px !important;
-    }
-}
-</style>
 
 ```
 
