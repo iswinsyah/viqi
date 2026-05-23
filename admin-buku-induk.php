@@ -67,29 +67,24 @@ if (isset($_GET['hapus_id'])) {
 // Simpan / Update Data
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
-    
     $fields = [
-        'nama_lengkap', 'nis', 'nisn', 'nik', 'tempat_lahir', 'tanggal_lahir', 
-        'username', 'password', 'jenis_kelamin', 'alamat_lengkap', 'foto_santri', 'tanggal_masuk', 
-        'id_orangtua',
-        'asal_sekolah', 'status_santri', 'kelas_sekarang', 'kamar_asrama', 
-        'nama_ayah', 'pekerjaan_ayah', 'nama_ibu', 'pekerjaan_ibu', 
-        'no_whatsapp_ayah', 'alamat_ayah', 'no_whatsapp_ibu', 'alamat_ibu',
-        'nama_wali', 'pekerjaan_wali', 'alamat_wali', 'no_whatsapp_wali'
-    ];
-    
-    $set_clause = [];
+            'nama_lengkap', 'nis', 'nisn', 'nik', 'tempat_lahir', 'tanggal_lahir', 
+            'username', 'password', 'jenis_kelamin', 'alamat_lengkap', 'foto_santri', 'tanggal_masuk', 
+            'id_orangtua',
+            'asal_sekolah', 'status_santri', 'kelas_sekarang', 'kamar_asrama', 
+            'nama_ayah', 'pekerjaan_ayah', 'nama_ibu', 'pekerjaan_ibu', 
+            'no_whatsapp_ayah', 'alamat_ayah', 'no_whatsapp_ibu', 'alamat_ibu',
+            'nama_wali', 'pekerjaan_wali', 'alamat_wali', 'no_whatsapp_wali'
+        ];
     $pesan_error = '';
-    foreach ($fields as $field) {
-        $value = $_POST[$field] ?? '';
-        if (in_array($field, ['tanggal_lahir', 'tanggal_masuk', 'id_orangtua']) && empty($value)) {
-            $set_clause[] = "$field = NULL";
-        } else {
-            $set_clause[] = "$field = '" . $conn->real_escape_string($value) . "'";
-        }
+
+    // VALIDASI WAJIB DIISI (Hanya untuk 3 kolom utama)
+    if (empty($_POST['nama_lengkap']) || empty($_POST['username']) || ($id == 0 && empty($_POST['password']))) {
+        $pesan_error = "Untuk input cepat, minimal Nama Lengkap, Username, dan Password wajib diisi!";
     }
 
-    if (!empty($_POST['username'])) {
+    // VALIDASI USERNAME DUPLIKAT
+    if (empty($pesan_error) && !empty($_POST['username'])) {
         $check_username = $conn->query("SELECT id FROM buku_induk_santri WHERE username = '" . $conn->real_escape_string($_POST['username']) . "' AND id != $id");
         if ($check_username && $check_username->num_rows > 0) {
             $pesan_error = "Username santri '" . htmlspecialchars($_POST['username']) . "' sudah terpakai!";
@@ -97,6 +92,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     if (empty($pesan_error)) {
+        $set_clause = [];
+        foreach ($fields as $field) {
+            $value = $_POST[$field] ?? '';
+            
+            // Jangan update password jika kosong saat edit
+            if ($id > 0 && $field === 'password' && empty($value)) {
+                continue;
+            }
+
+            if (in_array($field, ['tanggal_lahir', 'tanggal_masuk', 'id_orangtua']) && empty($value)) {
+                $set_clause[] = "$field = NULL";
+            } else {
+                $set_clause[] = "$field = '" . $conn->real_escape_string($value) . "'";
+            }
+        }
+
         if ($id > 0) {
             $sql = "UPDATE buku_induk_santri SET " . implode(', ', $set_clause) . " WHERE id=$id";
             $pesan_sukses = "Data santri berhasil diupdate!";
@@ -166,8 +177,8 @@ $active_menu = 'buku_induk';
                             <div><label class="text-sm font-medium">NIS</label><input type="text" name="nis" value="<?= $edit_mode ? htmlspecialchars($data_edit['nis']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">NISN</label><input type="text" name="nisn" value="<?= $edit_mode ? htmlspecialchars($data_edit['nisn']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">NIK</label><input type="text" name="nik" value="<?= $edit_mode ? htmlspecialchars($data_edit['nik']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
-                            <div><label class="text-sm font-medium">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Untuk login santri"></div>
-                            <div><label class="text-sm font-medium">Password Login</label><input type="text" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Password login santri"></div>
+                            <div><label class="text-sm font-medium">Username Login <span class="text-red-500">*</span></label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" required class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Untuk login santri"></div>
+                            <div><label class="text-sm font-medium">Password Login <span class="text-red-500">*</span></label><input type="text" name="password" value="" <?= !$edit_mode ? 'required' : '' ?> class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="<?= $edit_mode ? 'Isi untuk ganti password' : 'Wajib diisi saat buat baru' ?>"></div>
                             <div><label class="text-sm font-medium">Tempat Lahir</label><input type="text" name="tempat_lahir" value="<?= $edit_mode ? htmlspecialchars($data_edit['tempat_lahir']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Tanggal Lahir</label><input type="date" name="tanggal_lahir" value="<?= $edit_mode ? $data_edit['tanggal_lahir'] : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Jenis Kelamin</label><select name="jenis_kelamin" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><option value="Laki-laki" <?= ($edit_mode && $data_edit['jenis_kelamin'] == 'Laki-laki') ? 'selected' : '' ?>>Laki-laki</option><option value="Perempuan" <?= ($edit_mode && $data_edit['jenis_kelamin'] == 'Perempuan') ? 'selected' : '' ?>>Perempuan</option></select></div>
