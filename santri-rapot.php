@@ -12,6 +12,12 @@ $stmt_santri = $conn->prepare("SELECT * FROM buku_induk_santri WHERE id = ?");
 $stmt_santri->bind_param("i", $santri_id);
 $stmt_santri->execute();
 $data_santri = $stmt_santri->get_result()->fetch_assoc();
+
+if (!$data_santri) {
+    // Handle case where santri data is not found, e.g., for Super Admin view or invalid session.
+    die("Error: Data santri dengan ID sesi " . htmlspecialchars($santri_id) . " tidak ditemukan di database. Halaman rapor tidak dapat dimuat. Silakan coba login sebagai santri biasa untuk melihat halaman ini.");
+}
+
 $kelas_santri = $data_santri['kelas_sekarang'];
 
 // Ambil opsi filter dari database berdasarkan data santri
