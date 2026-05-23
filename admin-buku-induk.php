@@ -55,6 +55,11 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
 // 3. Tambahkan foreign key (gunakan @ untuk silent error jika sudah ada)
 @$conn->query("ALTER TABLE buku_induk_santri ADD CONSTRAINT fk_id_orangtua FOREIGN KEY (id_orangtua) REFERENCES akun_orangtua(id) ON DELETE SET NULL ON UPDATE CASCADE");
 
+// 4. Pastikan kolom-kolom penting untuk login ada (self-healing)
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN username VARCHAR(50) UNIQUE AFTER nisn");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN password VARCHAR(255) AFTER username");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN id_orangtua INT NULL AFTER password");
+
 // CRUD LOGIC
 // Hapus Data
 if (isset($_GET['hapus_id'])) {
