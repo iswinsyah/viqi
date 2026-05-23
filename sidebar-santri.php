@@ -24,7 +24,15 @@
             <a href="santri-rapot.php" class="<?= (isset($active_menu) && $active_menu == 'rapot_santri') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-book-reader w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rapot_santri') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Rapor Digital
             </a>
-            <!-- Menu-menu santri lainnya akan ditambahkan di sini -->
+
+            <p class="px-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-2 mt-6">Pengaturan Akun</p>
+            <a href="santri-ganti-password.php" class="<?= (isset($active_menu) && $active_menu == 'ganti_password_santri') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-key w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ganti_password_santri') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Ganti Password
+            </a>
+            <a href="santri-profil.php" class="<?= (isset($active_menu) && $active_menu == 'edit_profil_santri') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-user-edit w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'edit_profil_santri') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Edit Profil
+            </a>
+
         </nav>
     </div>
 
