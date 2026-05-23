@@ -133,20 +133,27 @@ if ($current_hour >= '07' && !$daily_done) {
     logAgent("======= MEMULAI TUGAS HARIAN ($today) =======");
     
     // 2A. Cari topik hari ini di Kalender
-    $topic = "Keistimewaan Menghafal Al-Quran";
-    $judul = "Keutamaan Menjadi Hafidz Quran di Usia Belia";
-    $keyword = "pesantren tahfidz, hafal quran";
+    $topic = "Keistimewaan Menghafal Al-Quran"; // Fallback topic
+    $judul = "Keutamaan Menjadi Hafidz Quran di Usia Belia"; // Fallback judul
+    $keyword = "pesantren tahfidz, hafal quran"; // Fallback keyword
     
     if (file_exists('saved_kalender.txt')) {
         $kalender = file_get_contents('saved_kalender.txt');
         $lines = explode("\n", $kalender);
         foreach($lines as $line) {
             if (strpos($line, $today) !== false) {
-                $cols = array_map('trim', explode('|', $line));
-                if(count($cols) >= 8) { $topic = $cols; $judul = $cols; $keyword = $cols; break; }
+                $cols = array_map('trim', explode('|', $line)); // Pecah baris menjadi kolom-kolom
+                if(count($cols) >= 8) { // Pastikan kolomnya lengkap
+                    $topic = $cols[4]; // Kolom ke-4: Topik/Ide Konten
+                    $judul = $cols[6]; // Kolom ke-6: Judul Artikel SEO
+                    $keyword = $cols[7]; // Kolom ke-7: Keyword yang Disasar
+                    logAgent("Agent Penulis: Menemukan topik hari ini dari kalender -> Judul: '$judul', Keyword: '$keyword'");
+                    break; 
+                }
             }
         }
-        logAgent("Agent Penulis: Menemukan topik hari ini dari kalender -> $topic");
+    } else {
+        logAgent("Agent Penulis: Kalender tidak ditemukan, menggunakan topik fallback.");
     }
 
     // 2B. MIKIR ARTIKEL SEO
@@ -192,27 +199,30 @@ if ($current_hour >= '07' && !$daily_done) {
     // 2C. BROADCAST KURIR KE AGEN (Jika artikel berhasil terbit)
     if ($newArticleId != '') {
         logAgent("Agent Kurir: Bersiap menyebarkan link artikel ke para Agen via WA...");
-        $agen_data = [];
-        $resA = $conn->query("SELECT nama, whatsapp FROM agen");
+        $agen_data = []; // Ambil juga kode_ref untuk link afiliasi
+        $resA = $conn->query("SELECT nama, whatsapp, kode_ref FROM agen");
         if($resA) while($r = $resA->fetch_assoc()) $agen_data[] = $r;
 
         if (count($agen_data) > 0 && $FONNTE_TOKEN !== "TOKEN_API_FONNTE_ANDA") {
             foreach ($agen_data as $agen) {
-                $link = $APP_URL . "/artikel-detail.php?id=" . $newArticleId . "&ref=" . $agen['whatsapp'];
-                $pesan = "Assalamu'alaikum {$agen['nama']}, artikel terbaru Villa Quran udah rilis pagi ini. \n\nMonggo di-share pake link ini ya, biar leadnya kecatat masuk ke njenengan: \n$link \n\nSemoga hari ini closing banyak, Aamiin!";
+                // Gunakan kode_ref untuk link afiliasi, bukan nomor WA
+                $link = $APP_URL . "/artikel-detail.php?id=" . $newArticleId . "&ref=" . $agen['kode_ref'];
+                $pesan = "Assalamu'alaikum Kak {$agen['nama']}, artikel terbaru Villa Quran udah rilis pagi ini lho. \n\nJudul: *{$obj['judul']}* \n\nMonggo di-share pake link afiliasi khusus Kakak di bawah ini ya, biar komisinya kecatat otomatis: \n{$link} \n\nSemoga hari ini closing banyak, Aamiin!";
                 
                 $waFd = array('target' => $agen['whatsapp'], 'message' => $pesan);
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, "https://api.fonnte.com/send");
                 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, $waFd);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($waFd));
                 curl_setopt($ch, CURLOPT_HTTPHEADER, array("Authorization: $FONNTE_TOKEN"));
+                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
                 curl_exec($ch);
                 curl_close($ch);
                 
-                logAgent("-> Pesan WA dilesatkan ke: " . $agen['nama']);
-                sleep(1); // Jeda anti blokir ringan
+                $jeda = rand(60, 300); // Jeda acak 1-5 menit sesuai permintaan
+                logAgent("-> Pesan WA dilesatkan ke: {$agen['nama']}. Jeda {$jeda} detik sebelum pesan berikutnya...");
+                sleep($jeda);
             }
         }
     }
