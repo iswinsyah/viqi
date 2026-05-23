@@ -176,30 +176,49 @@ function getDeskripsiCapaian($nilai) {
                 <?php endif; ?>
             </div>
 
+            <?php if (!$is_data_available_for_filter && !$show_rapot): ?>
+                <div class="bg-amber-100 text-amber-800 p-4 rounded-lg mb-6 text-sm no-print">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Mode Pratinjau:</strong> Data nilai belum tersedia. Tampilan rapor di bawah ini menggunakan data contoh untuk menunjukkan format.
+                </div>
+            <?php endif; ?>
+
             <!-- HASIL RAPOT -->
-            <?php if ($show_rapot): ?>
-                <?php if (!empty($nilai_kelompok)): ?>
+            <?php // Logic is changed to always show the report structure for preview purposes. ?>
+            <?php if ($show_rapot || !$is_data_available_for_filter): ?>
                 <div class="rapot-container bg-white rounded-xl shadow-lg border border-gray-200 p-8 max-w-4xl mx-auto">
                     <div class="text-right mb-6 no-print"><button onclick="window.print()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center ml-auto"><i class="fas fa-print mr-2"></i> Cetak Rapor</button></div>
                     <div class="text-center border-b-4 border-black pb-2 mb-4"><h2 class="text-xl font-bold">LAPORAN HASIL BELAJAR SANTRI</h2><h3 class="text-2xl font-extrabold">VILLA QURAN INDONESIA</h3><p class="text-xs">Jl. Sejuk Asri No. 1, Kota Quran | Telp: (021) 1234-5678</p></div>
                     <table class="text-sm mb-6 w-full">
-                        <tr><td class="font-bold w-1/4">Nama Santri</td><td class="w-1/2">: <?= htmlspecialchars($data_santri['nama_lengkap']) ?></td><td class="font-bold w-1/4">Kelas</td><td>: <?= htmlspecialchars($data_santri['kelas_sekarang']) ?></td></tr>
-                        <tr><td class="font-bold">NIS / NISN</td><td>: <?= htmlspecialchars($data_santri['nis']) ?> / <?= htmlspecialchars($data_santri['nisn']) ?></td><td class="font-bold">Semester</td><td>: <?= htmlspecialchars($filters['semester']) ?></td></tr>
-                        <tr><td class="font-bold">Nama Sekolah</td><td>: Villa Quran Indonesia</td><td class="font-bold">Tahun Ajaran</td><td>: <?= htmlspecialchars($filters['tahun_ajaran']) ?></td></tr>
+                        <tr><td class="font-bold w-1/4">Nama Santri</td><td class="w-1/2">: <?= htmlspecialchars($data_santri['nama_lengkap']) ?></td><td class="font-bold w-1/4">Kelas</td><td>: <?= htmlspecialchars($data_santri['kelas_sekarang'] ?? 'Contoh Kelas') ?></td></tr>
+                        <tr><td class="font-bold">NIS / NISN</td><td>: <?= htmlspecialchars($data_santri['nis'] ?? '12345') ?> / <?= htmlspecialchars($data_santri['nisn'] ?? '0012345') ?></td><td class="font-bold">Semester</td><td>: <?= htmlspecialchars($filters['semester'] ?: 'Ganjil') ?></td></tr>
+                        <tr><td class="font-bold">Nama Sekolah</td><td>: Villa Quran Indonesia</td><td class="font-bold">Tahun Ajaran</td><td>: <?= htmlspecialchars($filters['tahun_ajaran'] ?: date('Y').'/'.(date('Y')+1)) ?></td></tr>
                     </table>
                     <h4 class="font-bold text-sm mb-2">A. Sikap</h4><table class="table-rapot mb-6"><thead><tr><th>Predikat</th><th>Deskripsi</th></tr></thead><tbody><tr><td class="text-center">Sangat Baik</td><td>Ananda menunjukkan sikap spiritual dan sosial yang sangat baik, konsisten dalam menjalankan ibadah, serta memiliki kepedulian tinggi terhadap sesama.</td></tr></tbody></table>
                     <h4 class="font-bold text-sm mb-2">B. Pengetahuan dan Keterampilan</h4>
                     <table class="table-rapot mb-6">
                         <thead><tr><th class="w-8">No.</th><th>Mata Pelajaran</th><th class="w-20">Nilai Akhir</th><th>Capaian Kompetensi</th></tr></thead>
                         <tbody>
-                            <?php $kategori_mapel_order = ['Umum', 'Diniyah', 'Keterampilan']; $no_urut = 1; foreach($kategori_mapel_order as $kategori): if(isset($nilai_kelompok[$kategori])): ?>
-                            <tr><td colspan="4" class="font-bold bg-gray-100"><?= htmlspecialchars($kategori) ?></td></tr>
-                            <?php foreach($nilai_kelompok[$kategori] as $item): ?>
-                            <tr><td class="text-center"><?= $no_urut++ ?></td><td><?= htmlspecialchars($item['mapel']) ?></td><td class="text-center font-bold"><?= $item['nilai'] ?></td><td class="text-xs"><?= getDeskripsiCapaian($item['nilai']) ?></td></tr>
-                            <?php endforeach; endif; endforeach; ?>
-                            <tr><td colspan="2" class="text-right font-bold">Jumlah Nilai</td><td class="text-center font-bold"><?= $summary['jumlah_nilai'] ?></td><td></td></tr>
-                            <tr><td colspan="2" class="text-right font-bold">Rata-Rata Nilai</td><td class="text-center font-bold"><?= $summary['rata_rata'] ?></td><td></td></tr>
-                            <tr><td colspan="2" class="text-right font-bold">Peringkat Kelas</td><td class="text-center font-bold"><?= $summary['peringkat'] ?> dari <?= $summary['total_siswa'] ?> siswa</td><td></td></tr>
+                            <?php if (!empty($nilai_kelompok)): ?>
+                                <?php $kategori_mapel_order = ['Umum', 'Diniyah', 'Keterampilan']; $no_urut = 1; foreach($kategori_mapel_order as $kategori): if(isset($nilai_kelompok[$kategori])): ?>
+                                <tr><td colspan="4" class="font-bold bg-gray-100"><?= htmlspecialchars($kategori) ?></td></tr>
+                                <?php foreach($nilai_kelompok[$kategori] as $item): ?>
+                                <tr><td class="text-center"><?= $no_urut++ ?></td><td><?= htmlspecialchars($item['mapel']) ?></td><td class="text-center font-bold"><?= $item['nilai'] ?></td><td class="text-xs"><?= getDeskripsiCapaian($item['nilai']) ?></td></tr>
+                                <?php endforeach; endif; endforeach; ?>
+                                <tr><td colspan="2" class="text-right font-bold">Jumlah Nilai</td><td class="text-center font-bold"><?= $summary['jumlah_nilai'] ?></td><td></td></tr>
+                                <tr><td colspan="2" class="text-right font-bold">Rata-Rata Nilai</td><td class="text-center font-bold"><?= $summary['rata_rata'] ?></td><td></td></tr>
+                                <tr><td colspan="2" class="text-right font-bold">Peringkat Kelas</td><td class="text-center font-bold"><?= $summary['peringkat'] ?> dari <?= $summary['total_siswa'] ?> siswa</td><td></td></tr>
+                            <?php else: // JIKA DATA KOSONG, TAMPILKAN CONTOH FORMAT ?>
+                                <tr><td colspan="4" class="font-bold bg-gray-100">Umum</td></tr>
+                                <tr><td class="text-center">1</td><td>Matematika</td><td class="text-center font-bold">85</td><td class="text-xs">Ananda menunjukkan penguasaan yang baik pada seluruh kompetensi.</td></tr>
+                                <tr><td class="text-center">2</td><td>Bahasa Indonesia</td><td class="text-center font-bold">92</td><td class="text-xs">Ananda menunjukkan penguasaan yang sangat baik pada seluruh kompetensi.</td></tr>
+                                <tr><td colspan="4" class="font-bold bg-gray-100">Diniyah</td></tr>
+                                <tr><td class="text-center">3</td><td>Fiqih Ibadah</td><td class="text-center font-bold">88</td><td class="text-xs">Ananda menunjukkan penguasaan yang baik pada seluruh kompetensi.</td></tr>
+                                <tr><td class="text-center">4</td><td>Aqidah Akhlak</td><td class="text-center font-bold">90</td><td class="text-xs">Ananda menunjukkan penguasaan yang sangat baik pada seluruh kompetensi.</td></tr>
+                                <tr><td colspan="2" class="text-right font-bold">Jumlah Nilai</td><td class="text-center font-bold">355</td><td></td></tr>
+                                <tr><td colspan="2" class="text-right font-bold">Rata-Rata Nilai</td><td class="text-center font-bold">88.75</td><td></td></tr>
+                                <tr><td colspan="2" class="text-right font-bold">Peringkat Kelas</td><td class="text-center font-bold">2 dari 25 siswa</td><td></td></tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                     <h4 class="font-bold text-sm mb-2">C. Ekstrakurikuler</h4><table class="table-rapot mb-6"><thead><tr><th class="w-8">No.</th><th>Kegiatan Ekstrakurikuler</th><th>Keterangan</th></tr></thead><tbody><tr><td class="text-center">1</td><td>Panahan</td><td class="text-xs">Mengikuti kegiatan dengan sangat baik dan menunjukkan bakat yang menonjol.</td></tr><tr><td class="text-center">2</td><td>Pramuka</td><td class="text-xs">Aktif dalam setiap kegiatan kepramukaan.</td></tr></tbody></table>
@@ -208,9 +227,6 @@ function getDeskripsiCapaian($nilai) {
                     <div class="flex justify-between mt-16 text-sm text-center"><div class="signature-box"><p>Mengetahui,</p><p>Orang Tua/Wali</p><br><br><br><p class="border-t border-black pt-1">(..............................)</p></div><div class="signature-box"><p>Kota Quran, <?= date('d F Y') ?></p><p>Wali Kelas</p><br><br><br><p class="border-t border-black pt-1"><b>Ust. Fulan, S.Pd.</b></p></div></div>
                     <div class="flex justify-center mt-8 text-sm text-center"><div class="signature-box"><p>Mengetahui,</p><p>Kepala Sekolah</p><br><br><br><p class="border-t border-black pt-1"><b>Ust. Abdullah, Lc.</b></p></div></div>
                 </div>
-                <?php else: ?>
-                    <div class="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border"><i class="fas fa-folder-open text-4xl mb-4 text-gray-300"></i><p class="font-medium">Data Rapor Tidak Ditemukan</p><p class="text-sm">Pastikan filter sudah dipilih atau data nilai UAS untuk semester tersebut sudah diinput oleh Ustadz.</p></div>
-                <?php endif; ?>
             <?php elseif ($is_data_available_for_filter): ?>
                 <div class="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border no-print"><i class="fas fa-filter text-4xl mb-4 text-gray-300"></i><p class="font-medium">Silakan pilih Tahun Ajaran dan Semester di atas untuk melihat rapor.</p></div>
             <?php endif; ?>
