@@ -130,7 +130,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             // Handle kolom unik (seperti NIS/NISN) dan kolom tanggal/foreign key yang boleh kosong
-            if (in_array($field, ['nis', 'nisn', 'tanggal_lahir', 'tanggal_masuk', 'id_orangtua']) && trim($value) === '') {
+            if (in_array($field, ['nis', 'nisn', 'nik', 'tanggal_lahir', 'tanggal_masuk', 'id_orangtua']) && trim($value) === '') {
                 $set_clause[] = "$field = NULL";
             } else {
                 $set_clause[] = "$field = '" . $conn->real_escape_string($value) . "'";
