@@ -10,13 +10,13 @@ $defined_menus = [
     'Administrasi' => [
         'buku_induk' => 'Buku Induk Santri',
         'akun_orangtua' => 'Akun Orang Tua',
+        'leger_nilai' => 'Leger Nilai Digital',
     ],
     'Asatidz' => [
         'jurnal_mengajar' => 'Jurnal Mengajar',
         'master_silabus' => 'Master Silabus & CP',
         'ai_rpp' => 'AI Generator RPP',
         'bank_nilai' => 'Bank Nilai Akademik',
-        'leger_nilai' => 'Leger Nilai Digital',
     ],
     'Musyrif' => [
         'dashboard_asrama' => 'Dashboard Asrama',
