@@ -21,6 +21,9 @@
             <a href="ruang-santri.php?view=ibadah_harian" class="<?= (isset($active_menu) && $active_menu == 'ibadah_harian') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-mosque w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ibadah_harian') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Ibadah Harian
             </a>
+            <a href="santri-rapot.php" class="<?= (isset($active_menu) && $active_menu == 'rapot_santri') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-book-reader w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rapot_santri') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Rapor Digital
+            </a>
             <!-- Menu-menu santri lainnya akan ditambahkan di sini -->
         </nav>
     </div>
