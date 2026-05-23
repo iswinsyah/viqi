@@ -16,15 +16,14 @@ $defined_menus = [
         'master_silabus' => 'Master Silabus & CP',
         'ai_rpp' => 'AI Generator RPP',
         'bank_nilai' => 'Bank Nilai Akademik',
+        'leger_nilai' => 'Leger Nilai Digital',
     ],
     'Musyrif' => [
         'dashboard_asrama' => 'Dashboard Asrama',
         'mutabaah' => 'Buku Mutaba\'ah Santri',
-        'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
+        'setor_hafalan' => 'Setoran Hafalan',
         'manajemen_halaqoh' => 'Manajemen Halaqoh',
-    ],
-    'Santri' => [
-        'ibadah_harian' => 'Ibadah Harian Santri',
+        'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'laporan_adab' => 'Laporan Kedisiplinan',
     ],
     'Kinerja & Akun' => [
