@@ -13,12 +13,7 @@ $stmt_santri->bind_param("i", $santri_id);
 $stmt_santri->execute();
 $data_santri = $stmt_santri->get_result()->fetch_assoc();
 
-if (!$data_santri) {
-    // Handle case where santri data is not found, e.g., for Super Admin view or invalid session.
-    die("Error: Data santri dengan ID sesi " . htmlspecialchars($santri_id) . " tidak ditemukan di database. Halaman rapor tidak dapat dimuat. Silakan coba login sebagai santri biasa untuk melihat halaman ini.");
-}
-
-$kelas_santri = $data_santri['kelas_sekarang'];
+$kelas_santri = $data_santri['kelas_sekarang'] ?? null;
 
 // Ambil opsi filter dari database berdasarkan data santri
 $filters = [
@@ -26,10 +21,13 @@ $filters = [
     'semester' => $_GET['semester'] ?? ''
 ];
 
-$stmt_opsi = $conn->prepare("SELECT DISTINCT tahun_ajaran, semester FROM leger_nilai WHERE santri_id = ? ORDER BY tahun_ajaran DESC, semester DESC");
-$stmt_opsi->bind_param("i", $santri_id);
-$stmt_opsi->execute();
-$opsi_filter = $stmt_opsi->get_result()->fetch_all(MYSQLI_ASSOC);
+$opsi_filter = [];
+if ($data_santri) {
+    $stmt_opsi = $conn->prepare("SELECT DISTINCT tahun_ajaran, semester FROM leger_nilai WHERE santri_id = ? ORDER BY tahun_ajaran DESC, semester DESC");
+    $stmt_opsi->bind_param("i", $santri_id);
+    $stmt_opsi->execute();
+    $opsi_filter = $stmt_opsi->get_result()->fetch_all(MYSQLI_ASSOC);
+}
 
 $opsi_ta = array_unique(array_column($opsi_filter, 'tahun_ajaran'));
 $opsi_semester = array_unique(array_column($opsi_filter, 'semester'));
@@ -44,7 +42,7 @@ $summary = [
 ];
 $show_rapot = false;
 
-if (!empty($filters['tahun_ajaran']) && !empty($filters['semester'])) {
+if ($data_santri && !empty($filters['tahun_ajaran']) && !empty($filters['semester'])) {
     $show_rapot = true;
 
     // 1. Ambil semua nilai UAS di kelas & semester yang sama untuk perhitungan peringkat
@@ -151,6 +149,14 @@ function getDeskripsiCapaian($nilai) {
                 <p class="text-gray-500 mt-1">Lihat rekapitulasi hasil belajarmu di sini.</p>
             </div>
 
+            <?php if (!$data_santri): ?>
+                <div class="bg-rose-100 text-rose-800 p-6 rounded-xl shadow-sm border border-rose-200">
+                    <h3 class="font-bold text-lg"><i class="fas fa-exclamation-triangle mr-2"></i> Kesalahan Data Santri</h3>
+                    <p class="mt-2">Data santri dengan ID sesi <strong><?= htmlspecialchars($_SESSION['santri_id']) ?></strong> tidak ditemukan di database. Halaman rapor tidak dapat dimuat.</p>
+                    <p class="mt-1 text-sm">Ini biasanya terjadi jika Anda login sebagai Super Admin. Silakan coba login sebagai akun santri biasa untuk melihat halaman ini dengan benar.</p>
+                </div>
+            <?php else: ?>
+
             <!-- FORM FILTER -->
             <div id="form-filter" class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 p-6 no-print">
                 <form action="santri-rapot.php" method="GET" class="flex flex-col sm:flex-row gap-4 items-end">
@@ -198,6 +204,8 @@ function getDeskripsiCapaian($nilai) {
             <?php else: ?>
                 <div class="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border no-print"><i class="fas fa-filter text-4xl mb-4 text-gray-300"></i><p class="font-medium">Silakan pilih Tahun Ajaran dan Semester di atas untuk melihat rapor.</p></div>
             <?php endif; ?>
+
+            <?php endif; // End of check if $data_santri exists ?>
         </main>
     </div>
     <script>
