@@ -44,6 +44,12 @@
             <a href="admin-publisher.php" class="<?= (isset($active_menu) && $active_menu == 'publisher') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-paper-plane w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'publisher') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> AI Publisher
             </a>
+            <a href="admin-trend-scout.php" class="<?= (isset($active_menu) && $active_menu == 'trend_scout') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-chart-line w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'trend_scout') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> AI Trend Scout
+            </a>
+            <a href="admin-community-scout.php" class="<?= (isset($active_menu) && $active_menu == 'community_scout') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-search-location w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'community_scout') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> AI Community Scout
+            </a>
         </nav>
     </div>
 

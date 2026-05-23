@@ -21,10 +21,12 @@ $APP_URL = "https://" . ($_SERVER['HTTP_HOST'] ?? 'villaquranindonesia.com') . d
 $log_file = 'agent_cron_log.txt';
 $monthly_log_file = 'agent_monthly_log.txt';
 $daily_log_file = 'agent_daily_log.txt';
+$weekly_log_file = 'agent_weekly_log.txt';
 
 // Waktu saat ini bagi Sang Agent
 $today = date('Y-m-d');
 $current_month = date('Y-m');
+$current_week_of_year = date('Y-W');
 $current_day = date('d');
 $current_hour = date('H');
 
@@ -59,14 +61,14 @@ function mikirKeGemini($payload) {
 }
 
 // =========================================================================================
-// TUGAS BULANAN (Tiap Tanggal 1, Jam 06:00) : PERSONA & KALENDER 30 HARI
+// TUGAS BULANAN (Tiap Tanggal 1, Jam 05:00) : PERSONA, TREND MAKRO & KALENDER 30 HARI
 // =========================================================================================
 $monthly_done = false;
 if (file_exists($monthly_log_file)) {
     if (strpos(file_get_contents($monthly_log_file), "SUCCESS_$current_month") !== false) $monthly_done = true;
 }
 
-if ($current_day == '01' && $current_hour >= '06' && !$monthly_done) {
+if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
     logAgent("======= MEMULAI TUGAS BULANAN ($current_month) =======");
     
     // Kumpulkan Data (Maks 100 terbaru)
@@ -98,12 +100,32 @@ if ($current_day == '01' && $current_hour >= '06' && !$monthly_done) {
 
     sleep(5); // Jeda nafas API
 
-    // 1B. MIKIR KALENDER
+    // 1B. MIKIR TREND MAKRO (BULANAN)
+    logAgent("Agent Trend Scout: Menganalisa tren besar (Makro) untuk bulan ini...");
+    $payloadTrendMakro = [
+        [
+            "jenis_lead" => "SYSTEM_COMMAND",
+            "sumber_info" => "Anda adalah seorang SEO & Market Trend Analyst. Berdasarkan data persona yang tersimpan, tentukan 1 TEMA BESAR untuk konten marketing bulan ini. Lalu, buat laporan singkat dalam format Markdown yang berisi: 1. Tema Besar Bulan Ini. 2. Tiga Pilar Konten turunan dari tema tersebut. 3. Rekomendasi 5 long-tail keywords utama yang relevan dengan tema besar.",
+            "status" => "URGENT"
+        ]
+    ];
+    $dataTrendMakro = mikirKeGemini(['leads' => $payloadTrendMakro, 'type' => 'trend_macro']);
+    if (isset($dataTrendMakro['status']) && $dataTrendMakro['status'] === 'success') {
+        file_put_contents('saved_trends_macro.txt', $dataTrendMakro['result']);
+        logAgent("✅ Laporan Tren Makro bulanan berhasil dibuat.");
+    } else {
+        logAgent("❌ Gagal membuat laporan Tren Makro.");
+    }
+    
+    sleep(5);
+
+    // 1C. MIKIR KALENDER
     logAgent("Agent Perencana: Menyusun Kalender Konten 30 Hari ke depan...");
     $payloadKalender = $leads;
+    $trend_makro_report = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : 'Tidak ada laporan tren.';
     array_unshift($payloadKalender, [
         "jenis_lead" => "SYSTEM_COMMAND",
-        "sumber_info" => "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: $today. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan!",
+        "sumber_info" => "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: $today. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n$trend_makro_report",
         "status" => "URGENT"
     ]);
 
@@ -119,6 +141,64 @@ if ($current_day == '01' && $current_hour >= '06' && !$monthly_done) {
     
     // Keluar agar tugas harian (jika kebetulan jam 07:00 juga) diproses di eksekusi Cron berikutnya (Mencegah PHP timeout)
     exit; 
+}
+
+// =========================================================================================
+// TUGAS MINGGUAN (Tiap Senin, Jam 04:00) : TREND MIKRO & COMMUNITY SCOUT
+// =========================================================================================
+$current_day_of_week = date('N'); // 1 (for Monday) through 7 (for Sunday)
+$weekly_done = false;
+if (file_exists($weekly_log_file)) {
+    if (strpos(file_get_contents($weekly_log_file), "SUCCESS_$current_week_of_year") !== false) $weekly_done = true;
+}
+
+if ($current_day_of_week == '1' && $current_hour >= '04' && !$weekly_done) {
+    logAgent("======= MEMULAI TUGAS MINGGUAN ($current_week_of_year) =======");
+
+    // 1. MIKIR TREND MIKRO (MINGGUAN)
+    logAgent("Agent Trend Scout: Menganalisa tren kecil (Mikro) untuk minggu ini...");
+    $tema_bulanan = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : 'Pendidikan Anak Islami';
+    $payloadTrendMikro = [
+        [
+            "jenis_lead" => "SYSTEM_COMMAND",
+            "sumber_info" => "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n$tema_bulanan\n\n Tugas Anda adalah mencari 3 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 7 hari terakhir terkait tema tersebut. Untuk setiap angle, berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.",
+            "status" => "URGENT"
+        ]
+    ];
+    $dataTrendMikro = mikirKeGemini(['leads' => $payloadTrendMikro, 'type' => 'trend_micro']);
+    if (isset($dataTrendMikro['status']) && $dataTrendMikro['status'] === 'success') {
+        file_put_contents('saved_trends_micro.txt', $dataTrendMikro['result']);
+        logAgent("✅ Laporan Tren Mikro mingguan berhasil dibuat.");
+    } else {
+        logAgent("❌ Gagal membuat laporan Tren Mikro.");
+    }
+
+    sleep(5);
+
+    // 2. MIKIR COMMUNITY SCOUT
+    logAgent("Agent Community Scout: Mencari grup komunitas potensial...");
+    $persona = file_exists('saved_persona.txt') ? file_get_contents('saved_persona.txt') : 'Orang tua yang mencari pesantren untuk anak.';
+    $payloadCommunity = [
+        [
+            "jenis_lead" => "SYSTEM_COMMAND",
+            "sumber_info" => "Anda adalah seorang Digital Community Specialist. Target audiens kita adalah: \n\n$persona\n\n Tugas Anda adalah mencari link grup WhatsApp, Telegram, dan Facebook yang relevan dengan target audiens tersebut. Buat laporan dalam bentuk TABEL MARKDOWN dengan kolom: | Nama Grup | Platform | Link Gabung | Analisa Relevansi | Skor Kualitas (1-10) | Saran Pembuka Diskusi |. Cari minimal 5 grup.",
+            "status" => "URGENT"
+        ]
+    ];
+    $dataCommunity = mikirKeGemini(['leads' => $payloadCommunity, 'type' => 'community_scout']);
+    if (isset($dataCommunity['status']) && $dataCommunity['status'] === 'success') {
+        file_put_contents('saved_communities.txt', $dataCommunity['result']);
+        logAgent("✅ Laporan pencarian komunitas berhasil dibuat.");
+    } else {
+        logAgent("❌ Gagal membuat laporan pencarian komunitas.");
+    }
+
+    // TANDAI SELESAI
+    file_put_contents($weekly_log_file, "SUCCESS_$current_week_of_year\n", FILE_APPEND);
+    logAgent("🎉 Tugas Mingguan Tuntas! Agent kembali tidur.\n");
+
+    // Keluar agar tugas harian tidak ikut tereksekusi di jam yang sama
+    exit;
 }
 
 // =========================================================================================
