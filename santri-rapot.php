@@ -32,6 +32,8 @@ if ($data_santri) {
 $opsi_ta = array_unique(array_column($opsi_filter, 'tahun_ajaran'));
 $opsi_semester = array_unique(array_column($opsi_filter, 'semester'));
 
+$is_data_available_for_filter = !empty($opsi_ta);
+
 // --- PROSES PENGAMBILAN DATA RAPOT ---
 $nilai_kelompok = [];
 $summary = [
@@ -159,11 +161,19 @@ function getDeskripsiCapaian($nilai) {
 
             <!-- FORM FILTER -->
             <div id="form-filter" class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 p-6 no-print">
-                <form action="santri-rapot.php" method="GET" class="flex flex-col sm:flex-row gap-4 items-end">
-                    <div class="flex-1 w-full"><label class="text-sm font-medium">Tahun Ajaran</label><select name="tahun_ajaran" required class="w-full mt-1 px-3 py-2 border rounded-lg bg-white"><?php foreach($opsi_ta as $o) echo "<option value='$o' ".($filters['tahun_ajaran']==$o?'selected':'').">".htmlspecialchars($o)."</option>"; ?></select></div>
-                    <div class="flex-1 w-full"><label class="text-sm font-medium">Semester</label><select name="semester" required class="w-full mt-1 px-3 py-2 border rounded-lg bg-white"><?php foreach($opsi_semester as $o) echo "<option value='$o' ".($filters['semester']==$o?'selected':'').">".htmlspecialchars($o)."</option>"; ?></select></div>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition w-full sm:w-auto"><i class="fas fa-eye mr-2"></i> Tampilkan Rapor</button>
-                </form>
+                <?php if ($is_data_available_for_filter): ?>
+                    <form action="santri-rapot.php" method="GET" class="flex flex-col sm:flex-row gap-4 items-end">
+                        <div class="flex-1 w-full"><label class="text-sm font-medium">Tahun Ajaran</label><select name="tahun_ajaran" required class="w-full mt-1 px-3 py-2 border rounded-lg bg-white"><?php foreach($opsi_ta as $o) echo "<option value='$o' ".($filters['tahun_ajaran']==$o?'selected':'').">".htmlspecialchars($o)."</option>"; ?></select></div>
+                        <div class="flex-1 w-full"><label class="text-sm font-medium">Semester</label><select name="semester" required class="w-full mt-1 px-3 py-2 border rounded-lg bg-white"><?php foreach($opsi_semester as $o) echo "<option value='$o' ".($filters['semester']==$o?'selected':'').">".htmlspecialchars($o)."</option>"; ?></select></div>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition w-full sm:w-auto"><i class="fas fa-eye mr-2"></i> Tampilkan Rapor</button>
+                    </form>
+                <?php else: ?>
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-info-circle text-2xl mb-2 text-gray-400"></i>
+                        <p class="font-medium">Filter Rapor Belum Tersedia</p>
+                        <p class="text-sm">Belum ada data nilai yang tercatat untuk Anda. Rapor akan dapat dilihat setelah Ustadz menginput nilai semester.</p>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- HASIL RAPOT -->
@@ -201,7 +211,7 @@ function getDeskripsiCapaian($nilai) {
                 <?php else: ?>
                     <div class="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border"><i class="fas fa-folder-open text-4xl mb-4 text-gray-300"></i><p class="font-medium">Data Rapor Tidak Ditemukan</p><p class="text-sm">Pastikan filter sudah dipilih atau data nilai UAS untuk semester tersebut sudah diinput oleh Ustadz.</p></div>
                 <?php endif; ?>
-            <?php else: ?>
+            <?php elseif ($is_data_available_for_filter): ?>
                 <div class="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border no-print"><i class="fas fa-filter text-4xl mb-4 text-gray-300"></i><p class="font-medium">Silakan pilih Tahun Ajaran dan Semester di atas untuk melihat rapor.</p></div>
             <?php endif; ?>
 
