@@ -55,10 +55,33 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
 // 3. Tambahkan foreign key (gunakan @ untuk silent error jika sudah ada)
 @$conn->query("ALTER TABLE buku_induk_santri ADD CONSTRAINT fk_id_orangtua FOREIGN KEY (id_orangtua) REFERENCES akun_orangtua(id) ON DELETE SET NULL ON UPDATE CASCADE");
 
-// 4. Pastikan kolom-kolom penting untuk login ada (self-healing)
+// 4. Pastikan semua kolom ada (self-healing untuk update struktur tabel lama)
 @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN username VARCHAR(50) UNIQUE AFTER nisn");
 @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN password VARCHAR(255) AFTER username");
 @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN id_orangtua INT NULL AFTER password");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nik VARCHAR(50) AFTER id_orangtua");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN tempat_lahir VARCHAR(100) AFTER nik");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN tanggal_lahir DATE AFTER tempat_lahir");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN jenis_kelamin ENUM('Laki-laki', 'Perempuan') AFTER tanggal_lahir");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN alamat_lengkap TEXT AFTER jenis_kelamin");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN foto_santri VARCHAR(255) AFTER alamat_lengkap");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN tanggal_masuk DATE AFTER foto_santri");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN asal_sekolah VARCHAR(150) AFTER tanggal_masuk");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN status_santri ENUM('Aktif', 'Lulus', 'Pindah', 'Dikeluarkan', 'Mengundurkan Diri') DEFAULT 'Aktif' AFTER asal_sekolah");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN kelas_sekarang VARCHAR(50) AFTER status_santri");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN kamar_asrama VARCHAR(50) AFTER kelas_sekarang");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nama_ayah VARCHAR(150) AFTER kamar_asrama");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN pekerjaan_ayah VARCHAR(100) AFTER nama_ayah");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN no_whatsapp_ayah VARCHAR(20) AFTER pekerjaan_ayah");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN alamat_ayah TEXT AFTER no_whatsapp_ayah");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nama_ibu VARCHAR(150) AFTER alamat_ayah");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN pekerjaan_ibu VARCHAR(100) AFTER nama_ibu");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN no_whatsapp_ibu VARCHAR(20) AFTER pekerjaan_ibu");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN alamat_ibu TEXT AFTER no_whatsapp_ibu");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nama_wali VARCHAR(150) AFTER alamat_ibu");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN pekerjaan_wali VARCHAR(100) AFTER nama_wali");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN alamat_wali TEXT AFTER pekerjaan_wali");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN no_whatsapp_wali VARCHAR(20) AFTER alamat_wali");
 
 // CRUD LOGIC
 // Hapus Data
