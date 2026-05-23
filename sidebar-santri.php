@@ -21,8 +21,11 @@
             <a href="ruang-santri.php?view=ibadah_harian" class="<?= (isset($active_menu) && $active_menu == 'ibadah_harian') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-mosque w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ibadah_harian') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Ibadah Harian
             </a>
-            <a href="santri-rapot.php" class="<?= (isset($active_menu) && $active_menu == 'rapot_santri') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-book-reader w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rapot_santri') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Rapor Digital
+            <a href="santri-rapot.php" class="<?= (isset($active_menu) && $active_menu == 'rapot_akademik') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-graduation-cap w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rapot_akademik') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Rapor Akademik
+            </a>
+            <a href="santri-rapot-diniyah.php" class="<?= (isset($active_menu) && $active_menu == 'rapot_diniyah') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-book-quran w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rapot_diniyah') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Rapor Diniyah
             </a>
 
             <p class="px-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-2 mt-6">Pengaturan Akun</p>

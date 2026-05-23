@@ -4,7 +4,7 @@ require_once 'koneksi.php';
 
 $santri_id = $_SESSION['santri_id'];
 $santri_nama = $_SESSION['santri_nama'];
-$active_menu = 'rapot_santri';
+$active_menu = 'rapot_akademik';
 
 // --- PERSIAPAN DATA ---
 // Ambil data santri yang login
@@ -199,8 +199,8 @@ function getDeskripsiCapaian($nilai) {
                     <table class="table-rapot mb-6">
                         <thead><tr><th class="w-8">No.</th><th>Mata Pelajaran</th><th class="w-20">Nilai Akhir</th><th>Capaian Kompetensi</th></tr></thead>
                         <tbody>
-                            <?php if (!empty($nilai_kelompok)): ?>
-                                <?php $kategori_mapel_order = ['Umum', 'Diniyah', 'Keterampilan']; $no_urut = 1; foreach($kategori_mapel_order as $kategori): if(isset($nilai_kelompok[$kategori])): ?>
+                            <?php if (!empty($nilai_kelompok)):
+                                $kategori_mapel_order = ['Umum', 'Keterampilan']; $no_urut = 1; foreach($kategori_mapel_order as $kategori): if(isset($nilai_kelompok[$kategori])): ?>
                                 <tr><td colspan="4" class="font-bold bg-gray-100"><?= htmlspecialchars($kategori) ?></td></tr>
                                 <?php foreach($nilai_kelompok[$kategori] as $item): ?>
                                 <tr><td class="text-center"><?= $no_urut++ ?></td><td><?= htmlspecialchars($item['mapel']) ?></td><td class="text-center font-bold"><?= $item['nilai'] ?></td><td class="text-xs"><?= getDeskripsiCapaian($item['nilai']) ?></td></tr>
@@ -212,11 +212,8 @@ function getDeskripsiCapaian($nilai) {
                                 <tr><td colspan="4" class="font-bold bg-gray-100">Umum</td></tr>
                                 <tr><td class="text-center">1</td><td>Matematika</td><td class="text-center font-bold">85</td><td class="text-xs">Ananda menunjukkan penguasaan yang baik pada seluruh kompetensi.</td></tr>
                                 <tr><td class="text-center">2</td><td>Bahasa Indonesia</td><td class="text-center font-bold">92</td><td class="text-xs">Ananda menunjukkan penguasaan yang sangat baik pada seluruh kompetensi.</td></tr>
-                                <tr><td colspan="4" class="font-bold bg-gray-100">Diniyah</td></tr>
-                                <tr><td class="text-center">3</td><td>Fiqih Ibadah</td><td class="text-center font-bold">88</td><td class="text-xs">Ananda menunjukkan penguasaan yang baik pada seluruh kompetensi.</td></tr>
-                                <tr><td class="text-center">4</td><td>Aqidah Akhlak</td><td class="text-center font-bold">90</td><td class="text-xs">Ananda menunjukkan penguasaan yang sangat baik pada seluruh kompetensi.</td></tr>
-                                <tr><td colspan="2" class="text-right font-bold">Jumlah Nilai</td><td class="text-center font-bold">355</td><td></td></tr>
-                                <tr><td colspan="2" class="text-right font-bold">Rata-Rata Nilai</td><td class="text-center font-bold">88.75</td><td></td></tr>
+                                <tr><td colspan="2" class="text-right font-bold">Jumlah Nilai</td><td class="text-center font-bold">177</td><td></td></tr>
+                                <tr><td colspan="2" class="text-right font-bold">Rata-Rata Nilai</td><td class="text-center font-bold">88.50</td><td></td></tr>
                                 <tr><td colspan="2" class="text-right font-bold">Peringkat Kelas</td><td class="text-center font-bold">2 dari 25 siswa</td><td></td></tr>
                             <?php endif; ?>
                         </tbody>

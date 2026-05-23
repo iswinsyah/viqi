@@ -25,6 +25,7 @@ $defined_menus = [
         'manajemen_halaqoh' => 'Manajemen Halaqoh',
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'laporan_adab' => 'Laporan Kedisiplinan',
+        'penilaian_adab' => 'Penilaian Adab (Rapor)',
     ],
     'Kinerja & Akun' => [
         'kpi_ustadz' => 'KPI Ustadz',
