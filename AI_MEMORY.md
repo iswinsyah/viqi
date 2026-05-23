@@ -18,11 +18,9 @@
 
 ### 3. Mode Dewa: Pusat Kendali AI Agent (admin-ai-hub.php)
 Sistem orkestrasi berantai (Daisy Chaining) yang berjalan otomatis dengan 2 mode (Harian & Borongan 1 Bulan).
-- **Agent 1 (Analis):** Membuat Buyer Persona (TOFU, MOFU, BOFU) dari data Leads + Tracker.
-- **Agent 2 (Perencana):** Meracik tabel Kalender Konten 30 Hari.
-- **Agent 3 (Penulis SEO):** Menulis artikel panjang standar EEAT Google dan mempublikasikannya (atau menjadwalkannya).
-- **Agent 4 (Sosmed):** Menulis prompt DALL-E/Kling, Script Voice Over, dan Caption sosmed.
-- **Agent 5 (WA Broadcaster):** Membuat pesan WA natural dan mengirimkannya massal ke Agen via Fonnte API dengan jeda delay anti-banned (rentang 10 jam).
+- **Agent "Analisa Persona":** Menganalisa data leads dan jejak pengunjung untuk membuat Buyer Persona (TOFU, MOFU, BOFU).
+- **Agent "Kalender Konten":** Meracik tabel Kalender Konten editorial untuk 30 hari berdasarkan persona yang sudah dibuat.
+- **Agent "Penulis Artikel SEO":** Menulis artikel panjang standar EEAT Google setiap hari, mempublikasikannya, lalu secara otomatis menyebarkan link artikel baru tersebut ke semua agen via WhatsApp (sebagai **Kurir WA**).
 
 ### 4. Admin & Content Management System (CMS)
 - **CRUD Master Data:** Pengajar, Fasilitas, Kurikulum, Testimoni, Biaya, Galeri, Jadwal Parenting.

@@ -166,10 +166,6 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                     <i class="fas fa-pen-nib text-teal-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
                     <span class="text-sm font-bold text-gray-700 mt-1 text-center">Generator Artikel SEO</span>
                 </a>
-                <a href="admin-sosmed.php" class="bg-white hover:bg-pink-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-mobile-alt text-pink-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Generator Sosmed</span>
-                </a>
             </div>
 
             <!-- WIDGET STATISTIK (Grid) -->
