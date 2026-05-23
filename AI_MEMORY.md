@@ -20,7 +20,8 @@
 Sistem orkestrasi berantai (Daisy Chaining) yang berjalan otomatis dengan 2 mode (Harian & Borongan 1 Bulan).
 - **Agent "Analisa Persona":** Menganalisa data leads dan jejak pengunjung untuk membuat Buyer Persona (TOFU, MOFU, BOFU).
 - **Agent "Kalender Konten":** Meracik tabel Kalender Konten editorial untuk 30 hari berdasarkan persona yang sudah dibuat.
-- **Agent "Penulis Artikel SEO":** Menulis artikel panjang standar EEAT Google setiap hari, mempublikasikannya, lalu secara otomatis menyebarkan link artikel baru tersebut ke semua agen via WhatsApp (sebagai **Kurir WA**).
+- **Agent "Penulis Artikel SEO":** Menulis artikel panjang standar EEAT Google setiap hari sesuai jadwal dari Kalender Konten, lalu mempublikasikannya secara otomatis ke website.
+- **Agent "Publisher" (d/h Kurir WA):** Setelah artikel terbit, agent ini langsung mendistribusikan link artikel baru ke semua agen marketing melalui WhatsApp, lengkap dengan link afiliasi unik.
 
 ### 4. Admin & Content Management System (CMS)
 - **CRUD Master Data:** Pengajar, Fasilitas, Kurikulum, Testimoni, Biaya, Galeri, Jadwal Parenting.

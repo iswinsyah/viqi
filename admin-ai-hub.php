@@ -97,13 +97,13 @@ $last_log = $log_lines[count($log_lines)-1];
                 <p class="text-gray-500 mt-1">Beginilah cara para agent bekerja sama secara berantai.</p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
                 <!-- Agent 1 -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center arrow">
                     <div class="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-brain"></i></div>
                     <h3 class="font-bold text-lg text-gray-800">Analisa Persona</h3>
                     <p class="text-sm text-gray-500 mt-2">Menganalisa data leads dan jejak pengunjung untuk membuat profil target audiens (TOFU, MOFU, BOFU).</p>
-                    <span class="absolute -top-2 -right-2 text-xs font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Bulanan</span>
+                    <span class="absolute top-2 right-2 text-xs font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Bulanan</span>
                 </div>
 
                 <!-- Agent 2 -->
@@ -111,15 +111,23 @@ $last_log = $log_lines[count($log_lines)-1];
                     <div class="w-16 h-16 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-calendar-alt"></i></div>
                     <h3 class="font-bold text-lg text-gray-800">Kalender Konten</h3>
                     <p class="text-sm text-gray-500 mt-2">Menyusun jadwal dan ide konten editorial untuk 30 hari ke depan berdasarkan hasil analisa persona.</p>
-                    <span class="absolute -top-2 -right-2 text-xs font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Bulanan</span>
+                    <span class="absolute top-2 right-2 text-xs font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Bulanan</span>
                 </div>
 
                 <!-- Agent 3 -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center arrow">
                     <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-pen-nib"></i></div>
                     <h3 class="font-bold text-lg text-gray-800">Penulis Artikel SEO</h3>
-                    <p class="text-sm text-gray-500 mt-2">Menulis artikel SEO setiap hari sesuai kalender, lalu otomatis menyebarkannya ke semua agen via WhatsApp.</p>
-                    <span class="absolute -top-2 -right-2 text-xs font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Harian</span>
+                    <p class="text-sm text-gray-500 mt-2">Menulis artikel SEO setiap hari sesuai jadwal, lalu mempublikasikannya secara otomatis ke website.</p>
+                    <span class="absolute top-2 right-2 text-xs font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Harian</span>
+                </div>
+
+                <!-- Agent 4 -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-paper-plane"></i></div>
+                    <h3 class="font-bold text-lg text-gray-800">Publisher</h3>
+                    <p class="text-sm text-gray-500 mt-2">Mendistribusikan artikel baru ke semua agen via WhatsApp, lengkap dengan link afiliasi unik mereka.</p>
+                    <span class="absolute top-2 right-2 text-xs font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Harian</span>
                 </div>
             </div>
 
