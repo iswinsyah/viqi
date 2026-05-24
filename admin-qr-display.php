@@ -7,17 +7,17 @@ $locations = [
     'kantor_utama' => [
         'nama' => 'Gedung B (Kantor Villa Quran)',
         'coords' => ['latitude' => -6.595038, 'longitude' => 106.800247],
-        'allowed_ips' => ['111.111.111.1', '127.0.0.1', '::1'] // <-- GANTI IP
+        'allowed_ips' => ['182.253.50.69', '127.0.0.1', '::1'], // IP Kantor
     ],
     'asrama_rijal' => [
         'nama' => 'Gedung A (Asrama Rijal)',
         'coords' => ['latitude' => -6.597638, 'longitude' => 106.79955],
-        'allowed_ips' => ['222.222.222.2', '127.0.0.1', '::1'] // <-- GANTI IP
+        'allowed_ips' => ['182.253.50.103', '127.0.0.1', '::1'], // IP Asrama Rijal
     ],
     'asrama_nisa' => [
         'nama' => 'Gedung C (Asrama Nisa)',
         'coords' => ['latitude' => -6.598333, 'longitude' => 106.801111],
-        'allowed_ips' => ['333.333.333.3', '127.0.0.1', '::1'] // <-- GANTI IP
+        'allowed_ips' => ['182.253.50.119', '127.0.0.1', '::1'], // IP Asrama Nisa
     ],
 ];
 
@@ -40,7 +40,7 @@ $current_location = $locations[$location_key];
 $visitor_ip = $_SERVER['REMOTE_ADDR'];
 if (!in_array($visitor_ip, $current_location['allowed_ips'])) {
     header("HTTP/1.1 403 Forbidden");
-    die("<div style='font-family:sans-serif;text-align:center;padding:50px;'><h1>Akses Ditolak</h1><p>Halaman QR untuk <b>{$current_location['nama']}</b> hanya bisa diakses dari jaringan internet resmi lokasi tersebut.</p><p>IP Anda: $visitor_ip</p></div>");
+    die("<div style='font-family:sans-serif;text-align:center;padding:50px;'><h1>Akses Ditolak</h1><p>Halaman QR untuk <b>".htmlspecialchars($current_location['nama'])."</b> hanya bisa diakses dari jaringan internet resmi lokasi tersebut.</p><p>IP Anda: $visitor_ip</p></div>");
 }
 
 // --- PEMBUATAN DATA QR CODE DINAMIS ---
