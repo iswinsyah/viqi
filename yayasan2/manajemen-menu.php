@@ -26,6 +26,7 @@ $defined_menus = [
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'laporan_adab' => 'Laporan Kedisiplinan',
         'penilaian_adab' => 'Penilaian Adab (Rapor)',
+        'absensi_pegawai' => 'Absensi Kehadiran',
     ],
     'Kinerja & Akun' => [
         'kpi_ustadz' => 'KPI Ustadz',
