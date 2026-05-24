@@ -7,8 +7,25 @@ header('Content-Type: application/json');
 // --- PENGATURAN ---
 define('ENCRYPTION_KEY', 'kunci-rahasia-absensi-viqi-2026');
 define('ENCRYPTION_IV', '1234567890123456');
-define('MAX_DISTANCE_METERS', 50); // Jarak toleransi maksimal dari titik QR (dalam meter)
 define('MAX_QR_AGE_SECONDS', 120); // Umur maksimal QR Code (2 menit)
+define('MAX_DISTANCE_METERS', 50); // Jarak toleransi dari titik QR (dalam meter)
+
+// PENGATURAN KOORDINAT MULTI-LOKASI
+// TODO: Pastikan koordinat di sini SAMA PERSIS dengan di admin-qr-display.php
+$locations = [
+    'kantor_utama' => [
+        'nama' => 'Gedung B (Kantor Villa Quran)',
+        'coords' => ['latitude' => -6.595038, 'longitude' => 106.800247],
+    ],
+    'asrama_rijal' => [
+        'nama' => 'Gedung A (Asrama Rijal)',
+        'coords' => ['latitude' => -6.597638, 'longitude' => 106.79955],
+    ],
+    'asrama_nisa' => [
+        'nama' => 'Gedung C (Asrama Nisa)',
+        'coords' => ['latitude' => -6.598333, 'longitude' => 106.801111],
+    ],
+];
 
 // --- BUAT TABEL OTOMATIS ---
 $conn->query("CREATE TABLE IF NOT EXISTS absensi_pegawai (
@@ -60,13 +77,22 @@ $encrypted_data = base64_decode($qr_data_base64);
 $decrypted_json = openssl_decrypt($encrypted_data, 'aes-256-cbc', ENCRYPTION_KEY, 0, ENCRYPTION_IV);
 $qr_content = json_decode($decrypted_json, true);
 
-if (!$qr_content || !isset($qr_content['lat'], $qr_content['lon'], $qr_content['time'])) {
-    json_response('error', 'QR Code tidak valid atau rusak.');
+if (!$qr_content || !isset($qr_content['lokasi'], $qr_content['time'])) {
+    json_response('error', 'QR Code tidak valid atau format salah.');
 }
 
-$qr_lat = $qr_content['lat'];
-$qr_lon = $qr_content['lon'];
+$qr_location_key = $qr_content['lokasi'];
 $qr_time = $qr_content['time'];
+
+// Cek apakah lokasi dari QR ada di konfigurasi kita
+if (!isset($locations[$qr_location_key])) {
+    json_response('error', 'Lokasi absensi dari QR Code tidak dikenali oleh sistem.');
+}
+
+// Ambil koordinat yang benar berdasarkan data dari QR
+$qr_coords = $locations[$qr_location_key]['coords'];
+$qr_lat = $qr_coords['latitude'];
+$qr_lon = $qr_coords['longitude'];
 
 // 3. Validasi Umur QR Code
 $current_time = time();

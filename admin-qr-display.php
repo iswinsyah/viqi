@@ -1,39 +1,52 @@
 <?php
 // --- PENGATURAN KEAMANAN & LOKASI ---
 
-// 1. DAFTAR ALAMAT IP YANG DIIZINKAN
-// TODO: Ganti dengan Alamat IP Publik dari jaringan internet sekolah Anda.
-// Anda bisa menambahkan lebih dari satu jika setiap gedung punya IP berbeda.
-$allowed_ips = [
-    '127.0.0.1',       // IP untuk development di localhost
-    '::1',             // IP untuk development di localhost (IPv6)
-    '103.152.45.XX',   // <-- GANTI DENGAN IP PUBLIK SEKOLAH ANDA
-    '114.122.8.XX'     // <-- GANTI DENGAN IP PUBLIK GEDUNG LAIN (JIKA BEDA)
+// 1. PENGATURAN MULTI-LOKASI
+// TODO: Ganti koordinat dan IP Address sesuai data masing-masing gedung.
+$locations = [
+    'kantor_utama' => [
+        'nama' => 'Gedung B (Kantor Villa Quran)',
+        'coords' => ['latitude' => -6.595038, 'longitude' => 106.800247],
+        'allowed_ips' => ['111.111.111.1', '127.0.0.1', '::1'] // <-- GANTI IP
+    ],
+    'asrama_rijal' => [
+        'nama' => 'Gedung A (Asrama Rijal)',
+        'coords' => ['latitude' => -6.597638, 'longitude' => 106.79955],
+        'allowed_ips' => ['222.222.222.2', '127.0.0.1', '::1'] // <-- GANTI IP
+    ],
+    'asrama_nisa' => [
+        'nama' => 'Gedung C (Asrama Nisa)',
+        'coords' => ['latitude' => -6.598333, 'longitude' => 106.801111],
+        'allowed_ips' => ['333.333.333.3', '127.0.0.1', '::1'] // <-- GANTI IP
+    ],
 ];
 
-// 2. KOORDINAT TITIK ABSENSI
-// TODO: Ganti dengan koordinat GPS dari lokasi komputer penampil QR.
-// Anda bisa mendapatkan koordinat ini dari Google Maps.
-$location_coords = [
-    'latitude' => -6.595038, // Contoh: Koordinat Bogor
-    'longitude' => 106.800247
-];
-
-// 3. KUNCI ENKRIPSI (JANGAN DIUBAH)
+// 2. KUNCI ENKRIPSI (JANGAN DIUBAH)
 define('ENCRYPTION_KEY', 'kunci-rahasia-absensi-viqi-2026');
 define('ENCRYPTION_IV', '1234567890123456'); // 16 bytes IV
 
-// --- VALIDASI AKSES BERDASARKAN ALAMAT IP ---
+// --- LOGIKA PEMILIHAN LOKASI ---
+$location_key = $_GET['lokasi'] ?? null;
+
+// Jika tidak ada ?lokasi=... di URL, tampilkan halaman pemilihan
+if (!$location_key || !isset($locations[$location_key])) {
+    include 'template-pemilihan-lokasi-qr.php';
+    exit;
+}
+
+$current_location = $locations[$location_key];
+
+// --- VALIDASI AKSES BERDASARKAN ALAMAT IP LOKASI TERPILIH ---
 $visitor_ip = $_SERVER['REMOTE_ADDR'];
-if (!in_array($visitor_ip, $allowed_ips)) {
+if (!in_array($visitor_ip, $current_location['allowed_ips'])) {
     header("HTTP/1.1 403 Forbidden");
-    die("<div style='font-family:sans-serif;text-align:center;padding:50px;'><h1>Akses Ditolak</h1><p>Halaman ini hanya bisa diakses dari jaringan internet resmi sekolah.</p><p>IP Anda: $visitor_ip</p></div>");
+    die("<div style='font-family:sans-serif;text-align:center;padding:50px;'><h1>Akses Ditolak</h1><p>Halaman QR untuk <b>{$current_location['nama']}</b> hanya bisa diakses dari jaringan internet resmi lokasi tersebut.</p><p>IP Anda: $visitor_ip</p></div>");
 }
 
 // --- PEMBUATAN DATA QR CODE DINAMIS ---
+// Data QR sekarang berisi 'lokasi' agar prosesor tahu harus validasi ke koordinat mana
 $data_to_encrypt = json_encode([
-    'lat' => $location_coords['latitude'],
-    'lon' => $location_coords['longitude'],
+    'lokasi' => $location_key,
     'time' => time() // Timestamp UNIX saat ini
 ]);
 
@@ -45,7 +58,7 @@ $encrypted_data = openssl_encrypt($data_to_encrypt, 'aes-256-cbc', ENCRYPTION_KE
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Kehadiran</title>
+    <title>QR Kehadiran - <?= htmlspecialchars($current_location['nama']) ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Library untuk generate QR Code di browser -->
@@ -59,7 +72,8 @@ $encrypted_data = openssl_encrypt($data_to_encrypt, 'aes-256-cbc', ENCRYPTION_KE
             <div id="qrcode"></div>
         </div>
         <h1 id="clock" class="text-6xl font-bold mt-6"></h1>
-        <p class="text-xl text-gray-400 mt-2">Silakan scan QR Code di atas untuk mencatat kehadiran.</p>
+        <p class="text-2xl font-semibold text-cyan-400 mt-4"><?= htmlspecialchars($current_location['nama']) ?></p>
+        <p class="text-lg text-gray-400 mt-1">Silakan scan QR Code di atas untuk mencatat kehadiran.</p>
         <p class="text-sm text-gray-500 mt-4"><i class="fas fa-sync-alt fa-spin mr-2"></i> QR Code ini akan diperbarui secara otomatis.</p>
     </div>
 
