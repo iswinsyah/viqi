@@ -83,11 +83,13 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
     // 1A. MIKIR PERSONA
     logAgent("Agent Analis: Merumuskan Buyer Persona dari jejak pengunjung...");
     $payloadPersona = $leads;
+    $prompt_persona_default = "Buat laporan analisa Buyer Persona terstruktur (TOFU, MOFU, BOFU) dalam format Markdown.";
+    $prompt_persona = file_exists('prompt_persona.txt') ? file_get_contents('prompt_persona.txt') : $prompt_persona_default;
     if (count($footprints) > 0) array_unshift($payloadPersona, ["jenis_lead" => "DATA_JEJAK_PENGUNJUNG_MATA_AI", "sumber_info" => json_encode($footprints), "status" => "TOLONG_ANALISA_JUGA"]);
     
     array_unshift($payloadPersona, [
         "jenis_lead" => "SYSTEM_COMMAND",
-        "sumber_info" => "Buat laporan analisa Buyer Persona terstruktur (TOFU, MOFU, BOFU) dalam format Markdown.",
+        "sumber_info" => $prompt_persona,
         "status" => "URGENT"
     ]);
 
@@ -103,10 +105,12 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
 
     // 1B. MIKIR TREND MAKRO (BULANAN)
     logAgent("Agent Trend Scout: Menganalisa tren besar (Makro) untuk bulan ini...");
+    $prompt_trend_macro_default = "Anda adalah seorang SEO & Market Trend Analyst. Berdasarkan data persona yang tersimpan, tentukan 1 TEMA BESAR untuk konten marketing bulan ini. Lalu, buat laporan singkat dalam format Markdown yang berisi: 1. Tema Besar Bulan Ini. 2. Tiga Pilar Konten turunan dari tema tersebut. 3. Rekomendasi 5 long-tail keywords utama yang relevan dengan tema besar.";
+    $prompt_trend_macro = file_exists('prompt_trend_macro.txt') ? file_get_contents('prompt_trend_macro.txt') : $prompt_trend_macro_default;
     $payloadTrendMakro = [
         [
             "jenis_lead" => "SYSTEM_COMMAND",
-            "sumber_info" => "Anda adalah seorang SEO & Market Trend Analyst. Berdasarkan data persona yang tersimpan, tentukan 1 TEMA BESAR untuk konten marketing bulan ini. Lalu, buat laporan singkat dalam format Markdown yang berisi: 1. Tema Besar Bulan Ini. 2. Tiga Pilar Konten turunan dari tema tersebut. 3. Rekomendasi 5 long-tail keywords utama yang relevan dengan tema besar.",
+            "sumber_info" => $prompt_trend_macro,
             "status" => "URGENT"
         ]
     ];
@@ -123,10 +127,12 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
     // 1C. MIKIR KALENDER
     logAgent("Agent Perencana: Menyusun Kalender Konten 30 Hari ke depan...");
     $payloadKalender = $leads;
+    $prompt_kalender_default = "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: $today. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n";
+    $prompt_kalender = file_exists('prompt_kalender.txt') ? file_get_contents('prompt_kalender.txt') : $prompt_kalender_default;
     $trend_makro_report = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : 'Tidak ada laporan tren.';
     array_unshift($payloadKalender, [
         "jenis_lead" => "SYSTEM_COMMAND",
-        "sumber_info" => "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: $today. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n$trend_makro_report",
+        "sumber_info" => str_replace('{{DATE}}', $today, $prompt_kalender) . $trend_makro_report,
         "status" => "URGENT"
     ]);
 
@@ -158,10 +164,13 @@ if ($current_hour >= '07' && !$daily_done) {
     // 1. MIKIR TREND MIKRO (SEKARANG HARIAN)
     logAgent("Agent Trend Scout: Menganalisa tren mikro untuk hari ini...");
     $tema_bulanan = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : 'Pendidikan Anak Islami';
+    $prompt_trend_micro_default = "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n{{THEME}}\n\n Tugas Anda adalah mencari 1 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 24 jam terakhir terkait tema tersebut. Berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.";
+    $prompt_trend_micro_raw = file_exists('prompt_trend_micro.txt') ? file_get_contents('prompt_trend_micro.txt') : $prompt_trend_micro_default;
+    $prompt_trend_micro = str_replace('{{THEME}}', $tema_bulanan, $prompt_trend_micro_raw);
     $payloadTrendMikro = [
         [
             "jenis_lead" => "SYSTEM_COMMAND",
-            "sumber_info" => "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n$tema_bulanan\n\n Tugas Anda adalah mencari 1 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 24 jam terakhir terkait tema tersebut. Berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.",
+            "sumber_info" => $prompt_trend_micro,
             "status" => "URGENT"
         ]
     ];
@@ -178,10 +187,13 @@ if ($current_hour >= '07' && !$daily_done) {
     // 2. MIKIR COMMUNITY SCOUT (SEKARANG HARIAN)
     logAgent("Agent Community Scout: Mencari grup komunitas potensial hari ini...");
     $persona = file_exists('saved_persona.txt') ? file_get_contents('saved_persona.txt') : 'Orang tua yang mencari pesantren untuk anak.';
+    $prompt_community_default = "Anda adalah seorang Digital Community Specialist. Target audiens kita adalah: \n\n{{PERSONA}}\n\n Tugas Anda adalah mencari link grup WhatsApp, Telegram, dan Facebook yang relevan dengan target audiens tersebut. Buat laporan dalam bentuk TABEL MARKDOWN dengan kolom: | Nama Grup | Platform | Link Gabung | Analisa Relevansi | Skor Kualitas (1-10) | Saran Pembuka Diskusi |. Cari minimal 5 grup.";
+    $prompt_community_raw = file_exists('prompt_community_scout.txt') ? file_get_contents('prompt_community_scout.txt') : $prompt_community_default;
+    $prompt_community = str_replace('{{PERSONA}}', $persona, $prompt_community_raw);
     $payloadCommunity = [
         [
             "jenis_lead" => "SYSTEM_COMMAND",
-            "sumber_info" => "Anda adalah seorang Digital Community Specialist. Target audiens kita adalah: \n\n$persona\n\n Tugas Anda adalah mencari link grup WhatsApp, Telegram, dan Facebook yang relevan dengan target audiens tersebut. Buat laporan dalam bentuk TABEL MARKDOWN dengan kolom: | Nama Grup | Platform | Link Gabung | Analisa Relevansi | Skor Kualitas (1-10) | Saran Pembuka Diskusi |. Cari minimal 5 grup.",
+            "sumber_info" => $prompt_community,
             "status" => "URGENT"
         ]
     ];
@@ -225,10 +237,15 @@ if ($current_hour >= '07' && !$daily_done) {
     if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
 
     $payloadSEO = $leads;
+    $prompt_seo_default = "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"{{JUDUL}}\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"{{KEYWORD}}\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: {{TOPIK}}. PERTIMBANGKAN JUGA insight dari laporan tren terbaru berikut: \n\n{{TREND_MIKRO}}";
+    $prompt_seo_raw = file_exists('prompt_seo.txt') ? file_get_contents('prompt_seo.txt') : $prompt_seo_default;
     $trend_mikro_report = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_trends_micro.txt') : 'Tidak ada laporan tren mikro.';
+    $replacements = ['{{JUDUL}}' => $judul, '{{KEYWORD}}' => $keyword, '{{TOPIK}}' => $topic, '{{TREND_MIKRO}}' => $trend_mikro_report];
+    $prompt_seo = str_replace(array_keys($replacements), array_values($replacements), $prompt_seo_raw);
+
     array_unshift($payloadSEO, [
         "jenis_lead" => "SYSTEM_COMMAND",
-        "sumber_info" => "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"$judul\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"$keyword\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: $topic. PERTIMBANGKAN JUGA insight dari laporan tren terbaru berikut: \n\n$trend_mikro_report",
+        "sumber_info" => $prompt_seo,
         "status" => "URGENT"
     ]);
 

@@ -25,6 +25,21 @@ if ($result_fp && $result_fp->num_rows > 0) {
 }
 $footprints_json = json_encode($footprints_data);
 
+// --- PROMPT MANAGEMENT ---
+$prompt_file = 'prompt_persona.txt';
+$default_prompt = "PENTING: Lakukan analisa mendalam dari data yang diberikan. Buat laporan analisa Buyer Persona yang terstruktur tegas berdasarkan 3 level Funnel Marketing:\n\n1. **TOFU (Top of Funnel - Awareness)**: Siapa profil demografi mereka? Apa masalah/keresahan utama mereka terkait pendidikan anak? Konten organik/ads seperti apa yang cocok untuk memancing mereka?\n2. **MOFU (Middle of Funnel - Consideration)**: Apa yang menjadi pertimbangan utama mereka dalam memilih pesantren? Fasilitas atau program apa yang paling mereka soroti dari data tersebut?\n3. **BOFU (Bottom of Funnel - Decision)**: Apa pemicu (trigger) utama yang membuat mereka akhirnya mendaftar/membayar? Apa hambatan (objection) terakhir mereka dan bagaimana cara CS mengatasinya?\n\nGunakan format Markdown yang rapi dengan Heading, Bullet Points, dan bahasa yang profesional namun mudah dipahami.";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
+    file_put_contents($prompt_file, $_POST['prompt_content']);
+    // Redirect to avoid form resubmission
+    header("Location: admin-analisa.php?prompt_saved=1");
+    exit;
+}
+
+$prompt_persona = file_exists($prompt_file) ? file_get_contents($prompt_file) : $default_prompt;
+$prompt_saved_notif = isset($_GET['prompt_saved']);
+
+
 // Proses Simpan Hasil Analisa ke file lokal
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_persona') {
     $content = $_POST['content'] ?? '';
@@ -82,6 +97,12 @@ $active_menu = 'analisa';
                 </div>
             </div>
 
+            <?php if($prompt_saved_notif): ?>
+            <div class="bg-emerald-100 text-emerald-800 p-4 rounded-lg mb-6 shadow-sm border border-emerald-200">
+                <i class="fas fa-check-circle mr-2"></i> Prompt berhasil diperbarui! Perubahan akan diterapkan pada analisa berikutnya.
+            </div>
+            <?php endif; ?>
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Panel Kiri: Kontrol & Status -->
                 <div class="lg:col-span-1 space-y-6">
@@ -137,6 +158,24 @@ $active_menu = 'analisa';
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Prompt Editor -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
+                <details>
+                    <summary class="px-6 py-4 font-bold text-gray-800 cursor-pointer flex justify-between items-center">
+                        <span><i class="fas fa-cogs mr-2"></i> Pengaturan Prompt AI</span>
+                        <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                    </summary>
+                    <div class="p-6 border-t border-gray-100">
+                        <form action="admin-analisa.php" method="POST">
+                            <input type="hidden" name="action" value="save_prompt">
+                            <label for="prompt_content" class="block text-sm font-medium text-gray-700 mb-2">Ini adalah "perintah" yang diberikan kepada AI untuk menganalisa data. Anda bisa mengubahnya jika diperlukan.</label>
+                            <textarea id="prompt_content" name="prompt_content" rows="10" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-purple-500 focus:border-purple-500"><?= htmlspecialchars($prompt_persona) ?></textarea>
+                            <button type="submit" class="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-lg transition shadow-sm"><i class="fas fa-save mr-2"></i> Simpan Prompt</button>
+                        </form>
+                    </div>
+                </details>
             </div>
         </main>
     </div>
@@ -207,10 +246,10 @@ $active_menu = 'analisa';
                 });
             }
 
-            // INJEKSI PROMPT: Paksa AI membagi analisa menjadi TOFU, MOFU, BOFU
+            // Injeksi prompt dari textarea
             payloadLeads.unshift({
                 jenis_lead: "SYSTEM_COMMAND",
-                sumber_info: "PENTING: Lakukan analisa mendalam dari data yang diberikan. Buat laporan analisa Buyer Persona yang terstruktur tegas berdasarkan 3 level Funnel Marketing:\n\n1. **TOFU (Top of Funnel - Awareness)**: Siapa profil demografi mereka? Apa masalah/keresahan utama mereka terkait pendidikan anak? Konten organik/ads seperti apa yang cocok untuk memancing mereka?\n2. **MOFU (Middle of Funnel - Consideration)**: Apa yang menjadi pertimbangan utama mereka dalam memilih pesantren? Fasilitas atau program apa yang paling mereka soroti dari data tersebut?\n3. **BOFU (Bottom of Funnel - Decision)**: Apa pemicu (trigger) utama yang membuat mereka akhirnya mendaftar/membayar? Apa hambatan (objection) terakhir mereka dan bagaimana cara CS mengatasinya?\n\nGunakan format Markdown yang rapi dengan Heading, Bullet Points, dan bahasa yang profesional namun mudah dipahami.",
+                sumber_info: document.getElementById('prompt_content').value,
                 status: "URGENT"
             });
 
