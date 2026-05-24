@@ -127,7 +127,7 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
     // 1C. MIKIR KALENDER
     logAgent("Agent Perencana: Menyusun Kalender Konten 30 Hari ke depan...");
     $payloadKalender = $leads;
-    $prompt_kalender_default = "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: $today. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n";
+    $prompt_kalender_default = "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: $today. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Topik | Judul Artikel SEO | Keyword yang Disasar | Copywriting Singkat (untuk WA/FB) |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n";
     $prompt_kalender = file_exists('prompt_kalender.txt') ? file_get_contents('prompt_kalender.txt') : $prompt_kalender_default;
     $trend_makro_report = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : 'Tidak ada laporan tren.';
     array_unshift($payloadKalender, [
@@ -217,11 +217,11 @@ if ($current_hour >= '07' && !$daily_done) {
         $lines = explode("\n", $kalender);
         foreach($lines as $line) {
             if (strpos($line, $today) !== false) {
-                $cols = array_map('trim', explode('|', $line)); // Pecah baris menjadi kolom-kolom
-                if(count($cols) >= 8) { // Pastikan kolomnya lengkap
-                    $topic = $cols[4]; // Kolom ke-4: Topik/Ide Konten
-                    $judul = $cols[6]; // Kolom ke-6: Judul Artikel SEO
-                    $keyword = $cols[7]; // Kolom ke-7: Keyword yang Disasar
+                $cols = array_map('trim', explode('|', $line));
+                if(count($cols) >= 6) { // Pastikan kolomnya lengkap (5 data + 2 empty dari | di awal & akhir)
+                    $topic = $cols[2]; // Kolom ke-2: Topik
+                    $judul = $cols[3]; // Kolom ke-3: Judul Artikel SEO
+                    $keyword = $cols[4]; // Kolom ke-4: Keyword yang Disasar
                     logAgent("Agent Penulis: Menemukan topik hari ini dari kalender -> Judul: '$judul', Keyword: '$keyword'");
                     break; 
                 }

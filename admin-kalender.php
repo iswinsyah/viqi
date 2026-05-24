@@ -25,7 +25,7 @@ $saved_kalender = file_exists('saved_kalender.txt') ? file_get_contents('saved_k
 
 // --- PROMPT MANAGEMENT ---
 $prompt_file = 'prompt_kalender.txt';
-$default_prompt = "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: {{DATE}}. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Platform | Format | Topik/Ide Konten | Copywriting Singkat | Judul Artikel SEO | Keyword yang Disasar |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n";
+$default_prompt = "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: {{DATE}}. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Topik | Judul Artikel SEO | Keyword yang Disasar | Copywriting Singkat (untuk WA/FB) |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
     file_put_contents($prompt_file, $_POST['prompt_content']);
@@ -319,11 +319,11 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                 const tbodyTrs = table.querySelectorAll('tbody tr');
                 tbodyTrs.forEach(tr => {
                     const tds = tr.querySelectorAll('td');
-                    // Memastikan tabel memiliki minimal 7 kolom (format kalender)
-                    if(tds.length >= 7 && !tr.querySelector('.col-aksi')) {
-                        const topik = tds[3].innerText.trim();
-                        const judul = tds[5].innerText.trim();
-                        const keyword = tds[6].innerText.trim();
+                    // Memastikan tabel memiliki minimal 5 kolom (format kalender baru)
+                    if(tds.length >= 5 && !tr.querySelector('.col-aksi')) {
+                        const topik = tds[1].innerText.trim();
+                        const judul = tds[2].innerText.trim();
+                        const keyword = tds[3].innerText.trim();
                         
                         const tdAksi = document.createElement('td');
                         tdAksi.className = 'col-aksi text-center align-middle';
