@@ -19,11 +19,11 @@
 ### 3. Mode Dewa: Pusat Kendali AI Agent (admin-ai-hub.php)
 Sistem orkestrasi berantai (Daisy Chaining) yang berjalan otomatis dengan 2 mode (Harian & Borongan 1 Bulan).
 - **Agent "Analisa Persona" (Bulanan):** Menganalisa data leads dan jejak pengunjung untuk membuat Buyer Persona (TOFU, MOFU, BOFU).
-- **Agent "Trend Scout" (Bulanan & Mingguan):** Menganalisa tren makro (bulanan) untuk menentukan tema besar, dan tren mikro (mingguan) untuk mencari angle viral & keyword spesifik.
+- **Agent "Trend Scout" (Bulanan & Harian):** Menganalisa tren makro (bulanan) untuk menentukan tema besar, dan tren mikro (harian) untuk mencari angle viral & keyword spesifik.
 - **Agent "Kalender Konten" (Bulanan):** Meracik tabel Kalender Konten editorial untuk 30 hari berdasarkan hasil analisa Persona dan Trend Scout.
 - **Agent "Penulis Artikel SEO" (Harian):** Menulis artikel panjang standar EEAT Google setiap hari sesuai jadwal, lalu mempublikasikannya secara otomatis ke website.
 - **Agent "Publisher" (Harian):** Setelah artikel terbit, agent ini langsung mendistribusikan link artikel baru ke semua agen marketing melalui WhatsApp, lengkap dengan link afiliasi unik.
-- **Agent "Community Scout" (Mingguan):** Mencari dan menganalisa grup komunitas (WA, Telegram, FB) yang potensial untuk dijangkau oleh tim marketing secara manual.
+- **Agent "Community Scout" (Harian):** Mencari dan menganalisa grup komunitas (WA, Telegram, FB) yang potensial untuk dijangkau oleh tim marketing secara manual.
 
 ### 4. Admin, CMS & Monitoring
 - **CRUD Master Data:** Pengajar, Fasilitas, Kurikulum, Testimoni, Biaya, Galeri, Jadwal Parenting.

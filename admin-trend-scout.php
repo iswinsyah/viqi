@@ -66,15 +66,15 @@ $saved_micro = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_
                 <!-- Laporan Mikro (Mingguan) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[400px] flex flex-col overflow-hidden">
                     <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
-                        <h3 class="font-bold text-gray-800"><i class="fas fa-calendar-week mr-2 text-emerald-500"></i>Laporan Tren Mikro (Mingguan)</h3>
-                        <p class="text-xs text-gray-500">Dijalankan otomatis setiap hari Senin untuk mencari angle viral.</p>
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-calendar-week mr-2 text-emerald-500"></i>Laporan Tren Mikro (Harian)</h3>
+                        <p class="text-xs text-gray-500">Dijalankan otomatis setiap hari jam 07:00 untuk mencari angle viral.</p>
                     </div>
                     <div class="p-6 flex-1 overflow-y-auto">
                         <?php if (empty($saved_micro)): ?>
                             <div class="flex flex-col items-center justify-center h-full text-gray-400 text-center">
                                 <i class="fas fa-hourglass-half text-5xl mb-4 opacity-50"></i>
-                                <p>Belum ada laporan tren mikro untuk minggu ini.</p>
-                                <p class="text-xs">Agent akan bekerja pada hari Senin setiap minggu.</p>
+                                <p>Belum ada laporan tren mikro untuk hari ini.</p>
+                                <p class="text-xs">Agent akan bekerja pada jam 07:00 setiap hari.</p>
                             </div>
                         <?php else: ?>
                             <div class="markdown-body micro-body" id="micro-result"></div>

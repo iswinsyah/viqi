@@ -24,12 +24,10 @@ $APP_URL = "https://" . ($_SERVER['HTTP_HOST'] ?? 'villaquranindonesia.com') . d
 $log_file = 'agent_cron_log.txt';
 $monthly_log_file = 'agent_monthly_log.txt';
 $daily_log_file = 'agent_daily_log.txt';
-$weekly_log_file = 'agent_weekly_log.txt';
 
 // Waktu saat ini bagi Sang Agent
 $today = date('Y-m-d');
 $current_month = date('Y-m');
-$current_week_of_year = date('Y-W');
 $current_day = date('d');
 $current_hour = date('H');
 
@@ -147,39 +145,38 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
 }
 
 // =========================================================================================
-// TUGAS MINGGUAN (Tiap Senin, Jam 04:00) : TREND MIKRO & COMMUNITY SCOUT
+// TUGAS HARIAN (Tiap Hari, Jam 07:00) : ARTIKEL SEO & BROADCAST KURIR
 // =========================================================================================
-$current_day_of_week = date('N'); // 1 (for Monday) through 7 (for Sunday)
-$weekly_done = false;
-if (file_exists($weekly_log_file)) {
-    if (strpos(file_get_contents($weekly_log_file), "SUCCESS_$current_week_of_year") !== false) $weekly_done = true;
+$daily_done = false;
+if (file_exists($daily_log_file)) {
+    if (strpos(file_get_contents($daily_log_file), "SUCCESS_$today") !== false) $daily_done = true;
 }
 
-if ($current_day_of_week == '1' && $current_hour >= '04' && !$weekly_done) {
-    logAgent("======= MEMULAI TUGAS MINGGUAN ($current_week_of_year) =======");
+if ($current_hour >= '07' && !$daily_done) {
+    logAgent("======= MEMULAI TUGAS HARIAN ($today) =======");
 
-    // 1. MIKIR TREND MIKRO (MINGGUAN)
-    logAgent("Agent Trend Scout: Menganalisa tren kecil (Mikro) untuk minggu ini...");
+    // 1. MIKIR TREND MIKRO (SEKARANG HARIAN)
+    logAgent("Agent Trend Scout: Menganalisa tren mikro untuk hari ini...");
     $tema_bulanan = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : 'Pendidikan Anak Islami';
     $payloadTrendMikro = [
         [
             "jenis_lead" => "SYSTEM_COMMAND",
-            "sumber_info" => "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n$tema_bulanan\n\n Tugas Anda adalah mencari 3 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 7 hari terakhir terkait tema tersebut. Untuk setiap angle, berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.",
+            "sumber_info" => "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n$tema_bulanan\n\n Tugas Anda adalah mencari 1 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 24 jam terakhir terkait tema tersebut. Berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.",
             "status" => "URGENT"
         ]
     ];
     $dataTrendMikro = mikirKeGemini(['leads' => $payloadTrendMikro, 'type' => 'trend_micro']);
     if (isset($dataTrendMikro['status']) && $dataTrendMikro['status'] === 'success') {
         file_put_contents('saved_trends_micro.txt', $dataTrendMikro['result']);
-        logAgent("✅ Laporan Tren Mikro mingguan berhasil dibuat.");
+        logAgent("✅ Laporan Tren Mikro harian berhasil dibuat.");
     } else {
         logAgent("❌ Gagal membuat laporan Tren Mikro.");
     }
 
     sleep(5);
 
-    // 2. MIKIR COMMUNITY SCOUT
-    logAgent("Agent Community Scout: Mencari grup komunitas potensial...");
+    // 2. MIKIR COMMUNITY SCOUT (SEKARANG HARIAN)
+    logAgent("Agent Community Scout: Mencari grup komunitas potensial hari ini...");
     $persona = file_exists('saved_persona.txt') ? file_get_contents('saved_persona.txt') : 'Orang tua yang mencari pesantren untuk anak.';
     $payloadCommunity = [
         [
@@ -196,26 +193,9 @@ if ($current_day_of_week == '1' && $current_hour >= '04' && !$weekly_done) {
         logAgent("❌ Gagal membuat laporan pencarian komunitas.");
     }
 
-    // TANDAI SELESAI
-    file_put_contents($weekly_log_file, "SUCCESS_$current_week_of_year\n", FILE_APPEND);
-    logAgent("🎉 Tugas Mingguan Tuntas! Agent kembali tidur.\n");
-
-    // Keluar agar tugas harian tidak ikut tereksekusi di jam yang sama
-    exit;
-}
-
-// =========================================================================================
-// TUGAS HARIAN (Tiap Hari, Jam 07:00) : ARTIKEL SEO & BROADCAST KURIR
-// =========================================================================================
-$daily_done = false;
-if (file_exists($daily_log_file)) {
-    if (strpos(file_get_contents($daily_log_file), "SUCCESS_$today") !== false) $daily_done = true;
-}
-
-if ($current_hour >= '07' && !$daily_done) {
-    logAgent("======= MEMULAI TUGAS HARIAN ($today) =======");
+    sleep(5);
     
-    // 2A. Cari topik hari ini di Kalender
+    // 3. Cari topik hari ini di Kalender
     $topic = "Keistimewaan Menghafal Al-Quran"; // Fallback topic
     $judul = "Keutamaan Menjadi Hafidz Quran di Usia Belia"; // Fallback judul
     $keyword = "pesantren tahfidz, hafal quran"; // Fallback keyword
@@ -239,15 +219,16 @@ if ($current_hour >= '07' && !$daily_done) {
         logAgent("Agent Penulis: Kalender tidak ditemukan, menggunakan topik fallback.");
     }
 
-    // 2B. MIKIR ARTIKEL SEO
+    // 4. MIKIR ARTIKEL SEO
     logAgent("Mulai menulis draf artikel: $judul...");
     $leads = []; $resL = $conn->query("SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 50");
     if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
 
     $payloadSEO = $leads;
+    $trend_mikro_report = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_trends_micro.txt') : 'Tidak ada laporan tren mikro.';
     array_unshift($payloadSEO, [
         "jenis_lead" => "SYSTEM_COMMAND",
-        "sumber_info" => "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"$judul\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"$keyword\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: $topic",
+        "sumber_info" => "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"$judul\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"$keyword\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: $topic. PERTIMBANGKAN JUGA insight dari laporan tren terbaru berikut: \n\n$trend_mikro_report",
         "status" => "URGENT"
     ]);
 
@@ -279,7 +260,7 @@ if ($current_hour >= '07' && !$daily_done) {
         }
     }
 
-    // 2C. BROADCAST KURIR KE AGEN (Jika artikel berhasil terbit)
+    // 5. BROADCAST PUBLISHER KE AGEN (Jika artikel berhasil terbit)
     if ($newArticleId != '') {
         logAgent("Agent Publisher: Bersiap menyebarkan link artikel ke para Agen via WA...");
         $agen_data = [];

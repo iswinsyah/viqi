@@ -33,7 +33,7 @@ $saved_communities = file_exists('saved_communities.txt') ? file_get_contents('s
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-search-location text-rose-600 mr-2"></i>AI Community Scout</h1>
-                <p class="text-gray-500 mt-1">Laporan mingguan berisi daftar grup komunitas potensial untuk dijangkau.</p>
+                <p class="text-gray-500 mt-1">Laporan harian berisi daftar grup komunitas potensial untuk dijangkau.</p>
             </div>
             <div class="bg-rose-50 rounded-xl shadow-sm border border-rose-100 p-6 mb-6 flex items-start">
                 <div class="bg-white p-3 rounded-full shadow-sm mr-4 flex-shrink-0">
@@ -47,14 +47,14 @@ $saved_communities = file_exists('saved_communities.txt') ? file_get_contents('s
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[500px] flex flex-col overflow-hidden">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
                     <h3 class="font-bold text-gray-800"><i class="fas fa-table mr-2"></i> Daftar Grup Komunitas Potensial</h3>
-                    <p class="text-xs text-gray-500">Dijalankan otomatis setiap hari Senin.</p>
+                    <p class="text-xs text-gray-500">Dijalankan otomatis setiap hari jam 07:00.</p>
                 </div>
                 <div class="p-6 flex-1 overflow-y-auto">
                     <?php if (empty($saved_communities)): ?>
                         <div class="flex flex-col items-center justify-center h-full text-gray-400 text-center">
                             <i class="fas fa-satellite-dish text-5xl mb-4 opacity-50"></i>
-                            <p>Belum ada laporan pencarian komunitas untuk minggu ini.</p>
-                            <p class="text-xs">Agent akan bekerja pada hari Senin setiap minggu.</p>
+                            <p>Belum ada laporan pencarian komunitas untuk hari ini.</p>
+                            <p class="text-xs">Agent akan bekerja pada jam 07:00 setiap hari.</p>
                         </div>
                     <?php else: ?>
                         <div class="markdown-body min-w-[800px]" id="community-result"></div>
