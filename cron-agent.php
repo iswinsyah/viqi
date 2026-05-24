@@ -16,6 +16,9 @@ date_default_timezone_set('Asia/Jakarta');
 
 require_once 'koneksi.php';
 
+// Self-healing: Pastikan kolom status_broadcast ada di tabel artikel
+@$conn->query("ALTER TABLE artikel ADD COLUMN status_broadcast ENUM('menunggu', 'terkirim') DEFAULT 'menunggu' AFTER status");
+
 // --- KONFIGURASI AGENT ---
 $GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
 $FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL"; 
@@ -277,42 +280,54 @@ if ($current_hour >= '07' && !$daily_done) {
         }
     }
 
-    // 5. BROADCAST PUBLISHER KE AGEN (Jika artikel berhasil terbit)
-    if ($newArticleId != '') {
-        logAgent("Agent Publisher: Bersiap menyebarkan link artikel ke para Agen via WA...");
+    // 5. BROADCAST PUBLISHER (SEKARANG LEBIH PINTAR)
+    logAgent("Agent Publisher: Mencari artikel yang belum disebar...");
+    $res_artikel_kirim = $conn->query("SELECT id, judul FROM artikel WHERE status = 'publish' AND status_broadcast = 'menunggu' ORDER BY COALESCE(published_at, created_at) ASC LIMIT 1");
+    
+    if ($res_artikel_kirim && $res_artikel_kirim->num_rows > 0) {
+        $artikel_kirim = $res_artikel_kirim->fetch_assoc();
+        $artikel_id_kirim = $artikel_kirim['id'];
+        $artikel_judul_kirim = $artikel_kirim['judul'];
+
+        logAgent("Menemukan artikel (ID: $artikel_id_kirim) '$artikel_judul_kirim'. Memulai proses broadcast...");
+
         $agen_data = [];
         $resA = $conn->query("SELECT nama, whatsapp, kode_ref FROM agen");
         if($resA) while($r = $resA->fetch_assoc()) $agen_data[] = $r;
 
         if (count($agen_data) > 0 && $FONNTE_TOKEN !== "TOKEN_API_FONNTE_ANDA") {
-            // Ambil template pesan dari file
             $prompt_publisher_default = "Assalamu'alaikum Kak {{NAMA_AGEN}}, artikel terbaru Villa Quran udah rilis pagi ini lho. \n\nJudul: *{{JUDUL_ARTIKEL}}* \n\nMonggo di-share pake link afiliasi khusus Kakak di bawah ini ya, biar komisinya kecatat otomatis: \n{{LINK_AFILIASI}} \n\nSemoga hari ini closing banyak, Aamiin!";
             $prompt_publisher_raw = file_exists('prompt_publisher.txt') ? file_get_contents('prompt_publisher.txt') : $prompt_publisher_default;
 
             foreach ($agen_data as $agen) {
-                // Gunakan kode_ref untuk link afiliasi, bukan nomor WA
-                $link = $APP_URL . "/artikel-detail.php?id=" . $newArticleId . "&ref=" . $agen['kode_ref'];
-                
-                // Ganti placeholder di template
-                $replacements_wa = ['{{NAMA_AGEN}}' => $agen['nama'], '{{JUDUL_ARTIKEL}}' => $obj['judul'], '{{LINK_AFILIASI}}' => $link];
+                $link = $APP_URL . "/artikel-detail.php?id=" . $artikel_id_kirim . "&ref=" . $agen['kode_ref'];
+                $replacements_wa = ['{{NAMA_AGEN}}' => $agen['nama'], '{{JUDUL_ARTIKEL}}' => $artikel_judul_kirim, '{{LINK_AFILIASI}}' => $link];
                 $pesan = str_replace(array_keys($replacements_wa), array_values($replacements_wa), $prompt_publisher_raw);
 
-                $waFd = array('target' => $agen['whatsapp'], 'message' => $pesan);
+                $waFd = ['target' => $agen['whatsapp'], 'message' => $pesan];
                 $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, "https://api.fonnte.com/send");
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_POST, true);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($waFd));
-                curl_setopt($ch, CURLOPT_HTTPHEADER, array("Authorization: $FONNTE_TOKEN"));
-                curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => "https://api.fonnte.com/send",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => http_build_query($waFd),
+                    CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                    CURLOPT_TIMEOUT => 30
+                ]);
                 curl_exec($ch);
                 curl_close($ch);
                 
-                $jeda = rand(60, 300); // Jeda acak 1-5 menit sesuai permintaan
-                logAgent("-> Pesan WA dilesatkan ke: {$agen['nama']}. Jeda {$jeda} detik sebelum pesan berikutnya...");
+                $jeda = rand(60, 180); // Jeda acak 1-3 menit
+                logAgent("-> Pesan WA (ID: $artikel_id_kirim) dilesatkan ke: {$agen['nama']}. Jeda {$jeda} detik...");
                 sleep($jeda);
             }
+
+            // Setelah selesai broadcast, update status artikel
+            $conn->query("UPDATE artikel SET status_broadcast = 'terkirim' WHERE id = $artikel_id_kirim");
+            logAgent("✅ Broadcast untuk artikel ID $artikel_id_kirim selesai. Status diupdate.");
         }
+    } else {
+        logAgent("Tidak ada artikel baru untuk disebar. Semua sudah terkirim.");
     }
 
     // TANDAI SELESAI

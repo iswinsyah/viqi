@@ -15,42 +15,23 @@ if ($res_agents) {
 
 // 2. Baca dan proses log untuk menemukan broadcast terakhir
 $sent_agents = [];
-$last_article_title = 'Belum ada artikel yang dibagikan hari ini.';
+$last_article_title = 'Belum ada artikel yang pernah dibagikan.';
 $log_file = 'agent_cron_log.txt';
 
+// Ambil judul artikel terakhir yang berhasil dikirim dari DB
+$res_last_article = $conn->query("SELECT judul FROM artikel WHERE status_broadcast = 'terkirim' ORDER BY updated_at DESC LIMIT 1");
+if ($res_last_article && $res_last_article->num_rows > 0) {
+    $last_article_title = $res_last_article->fetch_assoc()['judul'];
+}
+
+// Ambil daftar agen yang sudah dikirimi pesan dari log (untuk hari ini)
 if (file_exists($log_file)) {
     $log_lines = file($log_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    $log_lines = array_reverse($log_lines); // Baca dari bawah ke atas
-
-    $in_daily_task_block = false;
     foreach ($log_lines as $line) {
-        // Jika menemukan awal blok tugas harian, mulai rekam
-        if (strpos($line, '======= MEMULAI TUGAS HARIAN') !== false) {
-            $in_daily_task_block = true;
-        }
-
-        if ($in_daily_task_block) {
-            // Ekstrak nama agen yang sudah dikirimi pesan
-            if (strpos($line, '-> Pesan WA dilesatkan ke:') !== false) {
-                $parts = explode('ke:', $line);
-                if (isset($parts[1])) {
-                    $name_part = explode('.', $parts[1])[0];
-                    $sent_agents[] = trim($name_part);
-                }
-            }
-            
-            // Ekstrak judul artikel
-            if (strpos($line, 'Mulai menulis draf artikel:') !== false) {
-                 $parts = explode('artikel:', $line);
-                 if(isset($parts[1])) {
-                    $last_article_title = trim($parts[1]);
-                 }
-            }
-
-            // Jika menemukan blok tugas harian sebelumnya atau penanda selesai, hentikan pencarian
-            if (strpos($line, 'Tugas Harian Tuntas!') !== false || ($in_daily_task_block && strpos($line, '======= MEMULAI TUGAS HARIAN') !== false && count($sent_agents) > 0)) {
-                break;
-            }
+        // Hanya ambil log hari ini
+        if (strpos($line, date('Y-m-d')) !== false && strpos($line, '-> Pesan WA') !== false) {
+            preg_match('/dilesatkan ke: (.*?)\./', $line, $matches);
+            if (isset($matches[1])) $sent_agents[] = trim($matches[1]);
         }
     }
 }
