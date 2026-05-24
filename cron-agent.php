@@ -11,6 +11,9 @@ set_time_limit(600); // Beri waktu 10 menit karena tugas bulanan lumayan panjang
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Atur zona waktu ke Waktu Indonesia Barat (WIB) agar jadwal akurat
+date_default_timezone_set('Asia/Jakarta');
+
 require_once 'koneksi.php';
 
 // --- KONFIGURASI AGENT ---
