@@ -41,7 +41,7 @@ $saved_micro = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_
         </header>
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chart-line text-indigo-600 mr-2"></i>AI Trend & Keyword Scout</h1>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chart-line text-indigo-600 mr-2"></i>Trend & Keyword Scout</h1>
                 <p class="text-gray-500 mt-1">Laporan otomatis dari AI tentang tren pasar dan kata kunci potensial.</p>
             </div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -73,7 +73,7 @@ if (file_exists($log_file)) {
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10"><h2 class="font-bold text-gray-800">Sistem Informasi Manajemen (SIM)</h2><div class="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-sm">A</div></header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-            <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-paper-plane text-emerald-600 mr-2"></i>AI Agent Publisher</h1><p class="text-gray-500 mt-1">Monitor status pengiriman artikel terbaru ke semua agen via WhatsApp.</p></div>
+            <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-paper-plane text-emerald-600 mr-2"></i>Publisher</h1><p class="text-gray-500 mt-1">Monitor status pengiriman artikel terbaru ke semua agen via WhatsApp.</p></div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
                 <h3 class="font-bold text-gray-800 mb-2">Artikel Terakhir Disebarkan</h3>

@@ -32,7 +32,7 @@ $saved_communities = file_exists('saved_communities.txt') ? file_get_contents('s
         </header>
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-search-location text-rose-600 mr-2"></i>AI Community Scout</h1>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-search-location text-rose-600 mr-2"></i>Community Scout</h1>
                 <p class="text-gray-500 mt-1">Laporan harian berisi daftar grup komunitas potensial untuk dijangkau.</p>
             </div>
             <div class="bg-rose-50 rounded-xl shadow-sm border border-rose-100 p-6 mb-6 flex items-start">

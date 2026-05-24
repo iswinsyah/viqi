@@ -168,15 +168,15 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                 </a>
                 <a href="admin-publisher.php" class="bg-white hover:bg-emerald-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
                     <i class="fas fa-paper-plane text-emerald-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI Publisher</span>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Publisher</span>
                 </a>
                 <a href="admin-trend-scout.php" class="bg-white hover:bg-violet-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
                     <i class="fas fa-chart-line text-violet-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI Trend Scout</span>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Trend Scout</span>
                 </a>
                 <a href="admin-community-scout.php" class="bg-white hover:bg-rose-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
                     <i class="fas fa-search-location text-rose-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI Community Scout</span>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Community Scout</span>
                 </a>
             </div>
 

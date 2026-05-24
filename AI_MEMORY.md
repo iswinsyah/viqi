@@ -30,9 +30,9 @@ Sistem orkestrasi berantai (Daisy Chaining) yang berjalan otomatis dengan 2 mode
 - **Generator Artikel SEO:** Tersambung dengan Gemini, bisa input draft ke editor TinyMCE, atur meta SEO (Title, Keyword, Desc), publish/jadwalkan.
 - **Data Santri Baru:** Tabel filter pendaftar SPMB yang lulus seleksi, fitur toggle Daftar Ulang, dan Export to Excel.
 - **Penyimpanan Media:** Upload & hapus gambar/video lokal ke folder `/uploads/`.
-- **AI Publisher Monitor:** Halaman untuk memantau status pengiriman pesan WA dari Agent Publisher ke semua agen.
-- **AI Trend Scout Monitor:** Halaman untuk melihat laporan tren makro dan mikro dari AI.
-- **AI Community Scout Monitor:** Halaman untuk melihat daftar grup komunitas potensial hasil riset AI.
+- **Publisher Monitor:** Halaman untuk memantau status pengiriman pesan WA dari Agent Publisher ke semua agen.
+- **Trend Scout Monitor:** Halaman untuk melihat laporan tren makro dan mikro dari AI.
+- **Community Scout Monitor:** Halaman untuk melihat daftar grup komunitas potensial hasil riset AI.
 
 ---
 
