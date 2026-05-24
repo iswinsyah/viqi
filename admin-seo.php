@@ -70,6 +70,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 }
 
 $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') : '';
+
+// --- PROMPT MANAGEMENT ---
+$prompt_file = 'prompt_seo.txt';
+$default_prompt = "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"{{JUDUL}}\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"{{KEYWORD}}\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: {{TOPIK}}. PERTIMBANGKAN JUGA insight dari laporan tren terbaru berikut: \n\n{{TREND_MIKRO}}";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
+    file_put_contents($prompt_file, $_POST['prompt_content']);
+    header("Location: admin-seo.php?prompt_saved=1");
+    exit;
+}
+
+$prompt_seo = file_exists($prompt_file) ? file_get_contents($prompt_file) : $default_prompt;
+$prompt_saved_notif = isset($_GET['prompt_saved']);
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -111,6 +125,12 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 </div>
             </div>
 
+            <?php if($prompt_saved_notif): ?>
+            <div class="bg-emerald-100 text-emerald-800 p-4 rounded-lg mb-6 shadow-sm border border-emerald-200">
+                <i class="fas fa-check-circle mr-2"></i> Prompt berhasil diperbarui! Perubahan akan diterapkan pada pekerjaan AI berikutnya.
+            </div>
+            <?php endif; ?>
+
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
                 <div class="flex items-center mb-4">
                     <div class="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xl mr-4">
@@ -148,7 +168,7 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
                 </div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[500px] flex flex-col overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[500px] flex flex-col overflow-hidden mb-6">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                     <h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2"></i> Hasil Draft Artikel</h3>
                     <div class="flex items-center space-x-2">
@@ -173,6 +193,24 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
 
                     <div id="state-result" class="<?= !empty($saved_seo) ? 'markdown-body max-w-4xl mx-auto' : 'hidden markdown-body max-w-4xl mx-auto' ?>"></div>
                 </div>
+            </div>
+
+            <!-- Prompt Editor -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <details>
+                    <summary class="px-6 py-4 font-bold text-gray-800 cursor-pointer flex justify-between items-center">
+                        <span><i class="fas fa-cogs mr-2"></i> Pengaturan Prompt AI</span>
+                        <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                    </summary>
+                    <div class="p-6 border-t border-gray-100">
+                        <form action="admin-seo.php" method="POST">
+                            <input type="hidden" name="action" value="save_prompt">
+                            <label for="prompt_content" class="block text-sm font-medium text-gray-700 mb-2">Gunakan placeholder: <code>{{JUDUL}}</code>, <code>{{TOPIK}}</code>, <code>{{KEYWORD}}</code>, <code>{{TREND_MIKRO}}</code></label>
+                            <textarea id="prompt_content" name="prompt_content" rows="8" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-teal-500 focus:border-teal-500"><?= htmlspecialchars($prompt_seo) ?></textarea>
+                            <button type="submit" class="mt-4 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-5 rounded-lg transition shadow-sm"><i class="fas fa-save mr-2"></i> Simpan Prompt</button>
+                        </form>
+                    </div>
+                </details>
             </div>
         </main>
     </div>
@@ -271,23 +309,13 @@ $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') :
 
             // INJEKSI PROMPT KETAT KE DALAM PAYLOAD (Mencegah basa-basi AI dan simbol Markdown)
             const payloadLeads = JSON.parse(JSON.stringify(rawLeadsData));
+            const promptText = document.getElementById('prompt_content').value;
+            const replacements = {'{{JUDUL}}': judul, '{{TOPIK}}': topik, '{{KEYWORD}}': keyword, '{{TREND_MIKRO}}': 'Tidak ada tren mikro untuk mode manual.'};
+            const finalPrompt = Object.keys(replacements).reduce((acc, key) => acc.replace(new RegExp(key, 'g'), replacements[key]), promptText);
+
             payloadLeads.unshift({
                 jenis_lead: "SYSTEM_COMMAND",
-                sumber_info: `ATURAN WAJIB & SANGAT KETAT:
-1. KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON YANG VALID.
-2. DILARANG ADA TEKS LAIN DI LUAR JSON (jangan ada sapaan AI).
-3. PEMBAHASAN ARTIKEL HARUS MENGACU PADA:
-   - TOPIK/IDE: ${topik}
-   - JUDUL: ${judul}
-   - KEYWORD: ${keyword}
-4. Gunakan struktur JSON persis seperti berikut:
-{
-  "judul": "${judul}",
-  "meta_title": "SEO Title yang Menarik",
-  "meta_description": "Meta description maksimal 150 karakter",
-  "meta_keywords": "${keyword}",
-  "konten": "Isi artikel lengkap dengan tag HTML dasar seperti <p>, <h2>, <ul>, <li>, <strong>. JANGAN gunakan format markdown (* atau #) di dalam konten. Bahas sesuai topik dan keyword."
-}`,
+                sumber_info: finalPrompt,
                 status: "URGENT"
             });
 

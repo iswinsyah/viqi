@@ -55,6 +55,20 @@ if (file_exists($log_file)) {
     }
 }
 
+// --- PROMPT MANAGEMENT ---
+$prompt_file = 'prompt_publisher.txt';
+$default_prompt = "Assalamu'alaikum Kak {{NAMA_AGEN}}, artikel terbaru Villa Quran udah rilis pagi ini lho. \n\nJudul: *{{JUDUL_ARTIKEL}}* \n\nMonggo di-share pake link afiliasi khusus Kakak di bawah ini ya, biar komisinya kecatat otomatis: \n{{LINK_AFILIASI}} \n\nSemoga hari ini closing banyak, Aamiin!";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
+    file_put_contents($prompt_file, $_POST['prompt_content']);
+    header("Location: admin-publisher.php?prompt_saved=1");
+    exit;
+}
+
+$prompt_publisher = file_exists($prompt_file) ? file_get_contents($prompt_file) : $default_prompt;
+$prompt_saved_notif = isset($_GET['prompt_saved']);
+
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -75,12 +89,16 @@ if (file_exists($log_file)) {
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-paper-plane text-emerald-600 mr-2"></i>Publisher</h1><p class="text-gray-500 mt-1">Monitor status pengiriman artikel terbaru ke semua agen via WhatsApp.</p></div>
 
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
+            <?php if($prompt_saved_notif): ?>
+            <div class="bg-emerald-100 text-emerald-800 p-4 rounded-lg mb-6 shadow-sm border border-emerald-200"><i class="fas fa-check-circle mr-2"></i> Prompt berhasil diperbarui! Perubahan akan diterapkan pada pekerjaan AI berikutnya.</div>
+            <?php endif; ?>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 p-6">
                 <h3 class="font-bold text-gray-800 mb-2">Artikel Terakhir Disebarkan</h3>
                 <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg flex items-center"><i class="fas fa-file-alt text-2xl text-gray-400 mr-4"></i><div><p class="font-semibold text-gray-700"><?= htmlspecialchars($last_article_title) ?></p><p class="text-xs text-gray-500">Disebarkan sekitar pukul 07:15 WIB</p></div></div>
             </div>
 
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100"><h3 class="font-bold text-gray-800">Checklist Pengiriman Pesan WhatsApp</h3></div>
                 <div class="p-4"><ul class="space-y-3">
                     <?php if (empty($all_agents)): ?><li class="text-center text-gray-500 py-8">Belum ada data agen di sistem.</li>
@@ -92,6 +110,24 @@ if (file_exists($log_file)) {
                         </li>
                     <?php endforeach; endif; ?>
                 </ul></div>
+            </div>
+
+            <!-- Prompt Editor -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <details>
+                    <summary class="px-6 py-4 font-bold text-gray-800 cursor-pointer flex justify-between items-center">
+                        <span><i class="fas fa-cogs mr-2"></i> Pengaturan Prompt AI (Template Pesan WA)</span>
+                        <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                    </summary>
+                    <div class="p-6 border-t border-gray-100">
+                        <form action="admin-publisher.php" method="POST">
+                            <input type="hidden" name="action" value="save_prompt">
+                            <label for="prompt_content" class="block text-sm font-medium text-gray-700 mb-2">Gunakan placeholder: <code>{{NAMA_AGEN}}</code>, <code>{{JUDUL_ARTIKEL}}</code>, <code>{{LINK_AFILIASI}}</code></label>
+                            <textarea id="prompt_content" name="prompt_content" rows="8" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-emerald-500 focus:border-emerald-500"><?= htmlspecialchars($prompt_publisher) ?></textarea>
+                            <button type="submit" class="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-5 rounded-lg transition shadow-sm"><i class="fas fa-save mr-2"></i> Simpan Template</button>
+                        </form>
+                    </div>
+                </details>
             </div>
         </main>
     </div>

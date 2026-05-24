@@ -4,6 +4,27 @@ require_once 'koneksi.php';
 
 $active_menu = 'trend_scout';
 
+// --- PROMPT MANAGEMENT ---
+$prompt_file_macro = 'prompt_trend_macro.txt';
+$default_prompt_macro = "Anda adalah seorang SEO & Market Trend Analyst. Berdasarkan data persona yang tersimpan, tentukan 1 TEMA BESAR untuk konten marketing bulan ini. Lalu, buat laporan singkat dalam format Markdown yang berisi: 1. Tema Besar Bulan Ini. 2. Tiga Pilar Konten turunan dari tema tersebut. 3. Rekomendasi 5 long-tail keywords utama yang relevan dengan tema besar.";
+$prompt_file_micro = 'prompt_trend_micro.txt';
+$default_prompt_micro = "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n{{THEME}}\n\n Tugas Anda adalah mencari 1 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 24 jam terakhir terkait tema tersebut. Berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
+    if (isset($_POST['prompt_macro'])) {
+        file_put_contents($prompt_file_macro, $_POST['prompt_macro']);
+    }
+    if (isset($_POST['prompt_micro'])) {
+        file_put_contents($prompt_file_micro, $_POST['prompt_micro']);
+    }
+    header("Location: admin-trend-scout.php?prompt_saved=1");
+    exit;
+}
+
+$prompt_macro = file_exists($prompt_file_macro) ? file_get_contents($prompt_file_macro) : $default_prompt_macro;
+$prompt_micro = file_exists($prompt_file_micro) ? file_get_contents($prompt_file_micro) : $default_prompt_micro;
+$prompt_saved_notif = isset($_GET['prompt_saved']);
+
 $saved_macro = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : '';
 $saved_micro = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_trends_micro.txt') : '';
 ?>
@@ -44,7 +65,12 @@ $saved_micro = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chart-line text-indigo-600 mr-2"></i>Trend & Keyword Scout</h1>
                 <p class="text-gray-500 mt-1">Laporan otomatis dari AI tentang tren pasar dan kata kunci potensial.</p>
             </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <?php if($prompt_saved_notif): ?>
+            <div class="bg-emerald-100 text-emerald-800 p-4 rounded-lg mb-6 shadow-sm border border-emerald-200"><i class="fas fa-check-circle mr-2"></i> Prompt berhasil diperbarui! Perubahan akan diterapkan pada pekerjaan AI berikutnya.</div>
+            <?php endif; ?>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Laporan Makro (Bulanan) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[400px] flex flex-col overflow-hidden">
                     <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
@@ -81,6 +107,33 @@ $saved_micro = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_
                         <?php endif; ?>
                     </div>
                 </div>
+            </div>
+
+            <!-- Prompt Editor -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                <details>
+                    <summary class="px-6 py-4 font-bold text-gray-800 cursor-pointer flex justify-between items-center">
+                        <span><i class="fas fa-cogs mr-2"></i> Pengaturan Prompt AI</span>
+                        <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                    </summary>
+                    <div class="p-6 border-t border-gray-100">
+                        <form action="admin-trend-scout.php" method="POST">
+                            <input type="hidden" name="action" value="save_prompt">
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="prompt_macro" class="block text-sm font-medium text-gray-700 mb-2">Prompt Tren Makro (Bulanan)</label>
+                                    <textarea id="prompt_macro" name="prompt_macro" rows="10" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-indigo-500 focus:border-indigo-500"><?= htmlspecialchars($prompt_macro) ?></textarea>
+                                </div>
+                                <div>
+                                    <label for="prompt_micro" class="block text-sm font-medium text-gray-700 mb-2">Prompt Tren Mikro (Harian)</label>
+                                    <p class="text-xs text-gray-500 mb-2">Gunakan placeholder <code>{{THEME}}</code> untuk menyisipkan tema besar bulanan.</p>
+                                    <textarea id="prompt_micro" name="prompt_micro" rows="10" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-emerald-500 focus:border-emerald-500"><?= htmlspecialchars($prompt_micro) ?></textarea>
+                                </div>
+                            </div>
+                            <button type="submit" class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-lg transition shadow-sm"><i class="fas fa-save mr-2"></i> Simpan Semua Prompt</button>
+                        </form>
+                    </div>
+                </details>
             </div>
         </main>
     </div>

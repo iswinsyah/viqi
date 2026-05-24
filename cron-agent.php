@@ -285,11 +285,18 @@ if ($current_hour >= '07' && !$daily_done) {
         if($resA) while($r = $resA->fetch_assoc()) $agen_data[] = $r;
 
         if (count($agen_data) > 0 && $FONNTE_TOKEN !== "TOKEN_API_FONNTE_ANDA") {
+            // Ambil template pesan dari file
+            $prompt_publisher_default = "Assalamu'alaikum Kak {{NAMA_AGEN}}, artikel terbaru Villa Quran udah rilis pagi ini lho. \n\nJudul: *{{JUDUL_ARTIKEL}}* \n\nMonggo di-share pake link afiliasi khusus Kakak di bawah ini ya, biar komisinya kecatat otomatis: \n{{LINK_AFILIASI}} \n\nSemoga hari ini closing banyak, Aamiin!";
+            $prompt_publisher_raw = file_exists('prompt_publisher.txt') ? file_get_contents('prompt_publisher.txt') : $prompt_publisher_default;
+
             foreach ($agen_data as $agen) {
                 // Gunakan kode_ref untuk link afiliasi, bukan nomor WA
                 $link = $APP_URL . "/artikel-detail.php?id=" . $newArticleId . "&ref=" . $agen['kode_ref'];
-                $pesan = "Assalamu'alaikum Kak {$agen['nama']}, artikel terbaru Villa Quran udah rilis pagi ini lho. \n\nJudul: *{$obj['judul']}* \n\nMonggo di-share pake link afiliasi khusus Kakak di bawah ini ya, biar komisinya kecatat otomatis: \n{$link} \n\nSemoga hari ini closing banyak, Aamiin!";
                 
+                // Ganti placeholder di template
+                $replacements_wa = ['{{NAMA_AGEN}}' => $agen['nama'], '{{JUDUL_ARTIKEL}}' => $obj['judul'], '{{LINK_AFILIASI}}' => $link];
+                $pesan = str_replace(array_keys($replacements_wa), array_values($replacements_wa), $prompt_publisher_raw);
+
                 $waFd = array('target' => $agen['whatsapp'], 'message' => $pesan);
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, "https://api.fonnte.com/send");
