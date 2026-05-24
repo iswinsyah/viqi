@@ -281,8 +281,8 @@ if ($current_hour >= '07' && !$daily_done) {
 
     // 2C. BROADCAST KURIR KE AGEN (Jika artikel berhasil terbit)
     if ($newArticleId != '') {
-        logAgent("Agent Kurir: Bersiap menyebarkan link artikel ke para Agen via WA...");
-        $agen_data = []; // Ambil juga kode_ref untuk link afiliasi
+        logAgent("Agent Publisher: Bersiap menyebarkan link artikel ke para Agen via WA...");
+        $agen_data = [];
         $resA = $conn->query("SELECT nama, whatsapp, kode_ref FROM agen");
         if($resA) while($r = $resA->fetch_assoc()) $agen_data[] = $r;
 
