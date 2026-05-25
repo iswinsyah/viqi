@@ -1,5 +1,5 @@
 <?php
-require_once 'auth.php';
+require_once '../auth.php';
 require_once '../koneksi.php';
 
 // 1. Definisikan semua menu dan role yang ada di Ruang Asatidz
@@ -87,7 +87,7 @@ $active_menu = 'manajemen_menu';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
-    <?php include 'sidebar.php'; ?>
+    <?php include 'sidebar.php'; // Ini akan memanggil sidebar.php dari folder yayasan2 ?>
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
             <div class="flex items-center"><button id="open-sidebar-yayasan2" class="text-gray-500 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif Yayasan</h2></div>
