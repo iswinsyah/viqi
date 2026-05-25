@@ -1,5 +1,5 @@
 <?php
-require_once '../auth.php';
+require_once 'auth.php';
 require_once '../koneksi.php';
 
 // Pastikan kolom 'role' ada di tabel akun_ustadz (sudah ditambahkan via login-ustadz.php, tapi jaga-jaga)

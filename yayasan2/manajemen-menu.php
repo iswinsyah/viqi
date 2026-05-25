@@ -1,5 +1,5 @@
 <?php
-require_once '../auth.php';
+require_once 'auth.php';
 require_once '../koneksi.php';
 
 // 1. Definisikan semua menu dan role yang ada di Ruang Asatidz
