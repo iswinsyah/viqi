@@ -15,14 +15,30 @@
     <div class="flex-1 overflow-y-auto py-4">
         <nav class="px-4 space-y-1">
             <p class="px-2 text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-2 mt-2">Menu Utama</p>
-            <a href="dashboard.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_yayasan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+            <a href="index.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_yayasan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-tachometer-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_yayasan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Dashboard
             </a>
-            <a href="../admin-master-kelas.php" class="<?= (isset($active_menu) && $active_menu == 'master_kelas') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-school w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'master_kelas') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Master Kelas
+            <a href="asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'asatidz') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-users-cog w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Daftar Asatidz
             </a>
             <a href="manajemen-menu.php" class="<?= (isset($active_menu) && $active_menu == 'manajemen_menu') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-sitemap w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'manajemen_menu') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Manajemen Menu
+            </a>
+
+            <p class="px-2 text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-2 mt-6">Master Data</p>
+            <a href="../admin-master-kelas.php" class="<?= (isset($active_menu) && $active_menu == 'master_kelas') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-school w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'master_kelas') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Master Kelas
+            </a>
+
+            <p class="px-2 text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-2 mt-6">Keuangan & SDM</p>
+            <a href="gaji-asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-chalkboard-teacher w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Asatidz
+            </a>
+            <a href="gaji-musyrif.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_musyrif') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-user-shield w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_musyrif') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Musyrif
+            </a>
+            <a href="tunjangan.php" class="<?= (isset($active_menu) && $active_menu == 'tunjangan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-award w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'tunjangan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Tunjangan
             </a>
         </nav>
     </div>

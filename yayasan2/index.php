@@ -1,8 +1,8 @@
 <?php
-require_once 'auth.php';
+require_once '../auth.php';
 require_once '../koneksi.php';
 
-$active_menu = 'dashboard';
+$active_menu = 'dashboard_yayasan';
 
 $q_asatidz = $conn->query("SELECT COUNT(id) AS tot FROM akun_ustadz");
 $total_asatidz = $q_asatidz ? ($q_asatidz->fetch_assoc()['tot'] ?? 0) : 0;
