@@ -50,6 +50,7 @@ $menu_structure = [
     'Asatidz' => [
         'jurnal_mengajar' => ['href' => 'admin-pegawai-jurnal.php', 'icon' => 'fa-book-open', 'title' => 'Jurnal Mengajar'],
         'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader', 'title' => 'Master Silabus & CP'],
+        'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock', 'title' => 'Kesediaan Mengajar'],
         'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic', 'title' => 'AI Generator RPP'],
         'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt', 'title' => 'Bank Nilai (Input)'],
 

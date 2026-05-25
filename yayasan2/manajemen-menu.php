@@ -15,6 +15,7 @@ $defined_menus = [
     'Asatidz' => [
         'jurnal_mengajar' => 'Jurnal Mengajar',
         'master_silabus' => 'Master Silabus & CP',
+        'kesediaan_mengajar' => 'Kesediaan Mengajar',
         'ai_rpp' => 'AI Generator RPP',
         'bank_nilai' => 'Bank Nilai Akademik',
     ],
