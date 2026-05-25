@@ -18,6 +18,9 @@
             <a href="admin.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard') ? 'bg-emerald-800 text-white' : 'text-emerald-100 hover:bg-emerald-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-tachometer-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard') ? 'text-amber-400' : 'text-emerald-300 group-hover:text-white' ?>"></i> Dashboard
             </a>
+            <a href="admin-master-kelas.php" class="<?= (isset($active_menu) && $active_menu == 'master_kelas') ? 'bg-emerald-800 text-white' : 'text-emerald-100 hover:bg-emerald-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-school w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'master_kelas') ? 'text-amber-400' : 'text-emerald-300 group-hover:text-white' ?>"></i> Master Kelas
+            </a>
             <a href="admin-hero.php" class="<?= (isset($active_menu) && $active_menu == 'hero') ? 'bg-emerald-800 text-white' : 'text-emerald-100 hover:bg-emerald-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-home w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'hero') ? 'text-amber-400' : 'text-emerald-300 group-hover:text-white' ?>"></i> Pengaturan Hero
             </a>
