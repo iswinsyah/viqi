@@ -27,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Admin SIM | Villa Quran</title>
+    <title>Login Ruang Web | Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -39,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <div class="bg-white p-8 md:p-10 rounded-2xl shadow-xl w-full max-w-md border border-gray-100 relative z-10">
         <div class="text-center mb-8">
             <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-user-shield"></i></div>
-            <h1 class="text-2xl font-bold text-gray-900">Admin SIM</h1>
+            <h1 class="text-2xl font-bold text-gray-900">Ruang Web</h1>
             <p class="text-sm text-gray-500 mt-1">Sistem Informasi Manajemen Terpadu</p>
         </div>
 

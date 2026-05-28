@@ -5,7 +5,7 @@
 <aside id="sidebar" class="bg-emerald-900 text-white w-64 flex-shrink-0 hidden md:flex flex-col z-30 transition-all duration-300 absolute md:relative h-full shadow-2xl">
     <div class="h-16 flex items-center justify-between px-6 border-b border-emerald-800 bg-emerald-950">
         <h1 class="font-extrabold text-lg tracking-wider flex items-center text-amber-400">
-            <i class="fas fa-shield-alt mr-2"></i> ADMIN SIM
+            <i class="fas fa-shield-alt mr-2"></i> RUANG WEB
         </h1>
         <button id="close-sidebar" class="md:hidden text-emerald-200 hover:text-white focus:outline-none">
             <i class="fas fa-times text-xl"></i>
