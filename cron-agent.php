@@ -14,19 +14,24 @@ ini_set('display_errors', 1);
 // Atur zona waktu ke Waktu Indonesia Barat (WIB) agar jadwal akurat
 date_default_timezone_set('Asia/Jakarta');
 
-require_once 'koneksi.php';
+require_once __DIR__ . '/koneksi.php';
 
 // Self-healing: Pastikan kolom status_broadcast ada di tabel artikel
 @$conn->query("ALTER TABLE artikel ADD COLUMN status_broadcast ENUM('menunggu', 'terkirim') DEFAULT 'menunggu' AFTER status");
+// Self-healing untuk tabel leads & footprints agar query tidak crash
+@$conn->query("ALTER TABLE leads ADD COLUMN status VARCHAR(50) DEFAULT 'Level 1' AFTER whatsapp");
+@$conn->query("ALTER TABLE leads ADD COLUMN jenis_lead VARCHAR(50) DEFAULT 'brosur' AFTER status");
+@$conn->query("ALTER TABLE leads ADD COLUMN sumber_info VARCHAR(100) DEFAULT '' AFTER jenis_lead");
+@$conn->query("ALTER TABLE visitor_footprints ADD COLUMN campaign VARCHAR(100) AFTER source");
 
 // --- KONFIGURASI AGENT ---
 $GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
 $FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL"; 
-$APP_URL = "https://" . ($_SERVER['HTTP_HOST'] ?? 'villaquranindonesia.com') . dirname($_SERVER['PHP_SELF']); 
+$APP_URL = "https://villaquranindonesia.com"; // Gunakan URL absolut agar link broadcast tidak pecah saat dijalankan via Cron
 
-$log_file = 'agent_cron_log.txt';
-$monthly_log_file = 'agent_monthly_log.txt';
-$daily_log_file = 'agent_daily_log.txt';
+$log_file = __DIR__ . '/agent_cron_log.txt';
+$monthly_log_file = __DIR__ . '/agent_monthly_log.txt';
+$daily_log_file = __DIR__ . '/agent_daily_log.txt';
 
 // Waktu saat ini bagi Sang Agent
 $today = date('Y-m-d');
@@ -44,7 +49,7 @@ function logAgent($msg) {
 }
 
 // 1. CEK OTORITAS DARI PUSAT KENDALI
-$autopilot = file_exists('autopilot_status.txt') ? file_get_contents('autopilot_status.txt') : 'OFF';
+$autopilot = file_exists(__DIR__ . '/autopilot_status.txt') ? file_get_contents(__DIR__ . '/autopilot_status.txt') : 'OFF';
 if ($autopilot !== 'ON') {
     die("Agent sedang dinonaktifkan (OFF) dari Pusat Kendali. Menunggu izin Bos...");
 }
@@ -98,7 +103,7 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
 
     $dataPersona = mikirKeGemini(['leads' => $payloadPersona, 'type' => 'persona']);
     if (isset($dataPersona['status']) && $dataPersona['status'] === 'success') {
-        file_put_contents('saved_persona.txt', $dataPersona['result']);
+        file_put_contents(__DIR__ . '/saved_persona.txt', $dataPersona['result']);
         logAgent("✅ Persona bulan ini berhasil dirumuskan.");
     } else {
         logAgent("❌ Gagal merumuskan Persona.");
@@ -119,7 +124,7 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
     ];
     $dataTrendMakro = mikirKeGemini(['leads' => $payloadTrendMakro, 'type' => 'trend_macro']);
     if (isset($dataTrendMakro['status']) && $dataTrendMakro['status'] === 'success') {
-        file_put_contents('saved_trends_macro.txt', $dataTrendMakro['result']);
+        file_put_contents(__DIR__ . '/saved_trends_macro.txt', $dataTrendMakro['result']);
         logAgent("✅ Laporan Tren Makro bulanan berhasil dibuat.");
     } else {
         logAgent("❌ Gagal membuat laporan Tren Makro.");
@@ -131,8 +136,8 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
     logAgent("Agent Perencana: Menyusun Kalender Konten 30 Hari ke depan...");
     $payloadKalender = $leads;
     $prompt_kalender_default = "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: $today. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Topik | Judul Artikel SEO | Keyword yang Disasar | Copywriting Singkat (untuk WA/FB) |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n";
-    $prompt_kalender = file_exists('prompt_kalender.txt') ? file_get_contents('prompt_kalender.txt') : $prompt_kalender_default;
-    $trend_makro_report = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : 'Tidak ada laporan tren.';
+    $prompt_kalender = file_exists(__DIR__ . '/prompt_kalender.txt') ? file_get_contents(__DIR__ . '/prompt_kalender.txt') : $prompt_kalender_default;
+    $trend_makro_report = file_exists(__DIR__ . '/saved_trends_macro.txt') ? file_get_contents(__DIR__ . '/saved_trends_macro.txt') : 'Tidak ada laporan tren.';
     array_unshift($payloadKalender, [
         "jenis_lead" => "SYSTEM_COMMAND",
         "sumber_info" => str_replace('{{DATE}}', $today, $prompt_kalender) . $trend_makro_report,
@@ -141,7 +146,7 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
 
     $dataKalender = mikirKeGemini(['leads' => $payloadKalender, 'type' => 'kalender', 'date' => $today]);
     if (isset($dataKalender['status']) && $dataKalender['status'] === 'success') {
-        file_put_contents('saved_kalender.txt', $dataKalender['result']);
+        file_put_contents(__DIR__ . '/saved_kalender.txt', $dataKalender['result']);
         logAgent("✅ Kalender konten 30 hari berhasil disusun.");
         file_put_contents($monthly_log_file, "SUCCESS_$current_month\n", FILE_APPEND);
         logAgent("Tugas Bulanan Selesai dengan Sukses! Agent kembali istirahat.");
@@ -166,9 +171,9 @@ if ($current_hour >= '07' && !$daily_done) {
 
     // 1. MIKIR TREND MIKRO (SEKARANG HARIAN)
     logAgent("Agent Trend Scout: Menganalisa tren mikro untuk hari ini...");
-    $tema_bulanan = file_exists('saved_trends_macro.txt') ? file_get_contents('saved_trends_macro.txt') : 'Pendidikan Anak Islami';
+    $tema_bulanan = file_exists(__DIR__ . '/saved_trends_macro.txt') ? file_get_contents(__DIR__ . '/saved_trends_macro.txt') : 'Pendidikan Anak Islami';
     $prompt_trend_micro_default = "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n{{THEME}}\n\n Tugas Anda adalah mencari 1 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 24 jam terakhir terkait tema tersebut. Berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.";
-    $prompt_trend_micro_raw = file_exists('prompt_trend_micro.txt') ? file_get_contents('prompt_trend_micro.txt') : $prompt_trend_micro_default;
+    $prompt_trend_micro_raw = file_exists(__DIR__ . '/prompt_trend_micro.txt') ? file_get_contents(__DIR__ . '/prompt_trend_micro.txt') : $prompt_trend_micro_default;
     $prompt_trend_micro = str_replace('{{THEME}}', $tema_bulanan, $prompt_trend_micro_raw);
     $payloadTrendMikro = [
         [
@@ -179,7 +184,7 @@ if ($current_hour >= '07' && !$daily_done) {
     ];
     $dataTrendMikro = mikirKeGemini(['leads' => $payloadTrendMikro, 'type' => 'trend_micro']);
     if (isset($dataTrendMikro['status']) && $dataTrendMikro['status'] === 'success') {
-        file_put_contents('saved_trends_micro.txt', $dataTrendMikro['result']);
+        file_put_contents(__DIR__ . '/saved_trends_micro.txt', $dataTrendMikro['result']);
         logAgent("✅ Laporan Tren Mikro harian berhasil dibuat.");
     } else {
         logAgent("❌ Gagal membuat laporan Tren Mikro.");
@@ -189,9 +194,9 @@ if ($current_hour >= '07' && !$daily_done) {
 
     // 2. MIKIR COMMUNITY SCOUT (SEKARANG HARIAN)
     logAgent("Agent Community Scout: Mencari grup komunitas potensial hari ini...");
-    $persona = file_exists('saved_persona.txt') ? file_get_contents('saved_persona.txt') : 'Orang tua yang mencari pesantren untuk anak.';
+    $persona = file_exists(__DIR__ . '/saved_persona.txt') ? file_get_contents(__DIR__ . '/saved_persona.txt') : 'Orang tua yang mencari pesantren untuk anak.';
     $prompt_community_default = "Anda adalah seorang Digital Community Specialist. Target audiens kita adalah: \n\n{{PERSONA}}\n\n Tugas Anda adalah mencari link grup WhatsApp, Telegram, dan Facebook yang relevan dengan target audiens tersebut. Buat laporan dalam bentuk TABEL MARKDOWN dengan kolom: | Nama Grup | Platform | Link Gabung | Analisa Relevansi | Skor Kualitas (1-10) | Saran Pembuka Diskusi |. Cari minimal 5 grup.";
-    $prompt_community_raw = file_exists('prompt_community_scout.txt') ? file_get_contents('prompt_community_scout.txt') : $prompt_community_default;
+    $prompt_community_raw = file_exists(__DIR__ . '/prompt_community_scout.txt') ? file_get_contents(__DIR__ . '/prompt_community_scout.txt') : $prompt_community_default;
     $prompt_community = str_replace('{{PERSONA}}', $persona, $prompt_community_raw);
     $payloadCommunity = [
         [
@@ -202,7 +207,7 @@ if ($current_hour >= '07' && !$daily_done) {
     ];
     $dataCommunity = mikirKeGemini(['leads' => $payloadCommunity, 'type' => 'community_scout']);
     if (isset($dataCommunity['status']) && $dataCommunity['status'] === 'success') {
-        file_put_contents('saved_communities.txt', $dataCommunity['result']);
+        file_put_contents(__DIR__ . '/saved_communities.txt', $dataCommunity['result']);
         logAgent("✅ Laporan pencarian komunitas berhasil dibuat.");
     } else {
         logAgent("❌ Gagal membuat laporan pencarian komunitas.");
@@ -215,8 +220,8 @@ if ($current_hour >= '07' && !$daily_done) {
     $judul = "Keutamaan Menjadi Hafidz Quran di Usia Belia"; // Fallback judul
     $keyword = "pesantren tahfidz, hafal quran"; // Fallback keyword
     
-    if (file_exists('saved_kalender.txt')) {
-        $kalender = file_get_contents('saved_kalender.txt');
+    if (file_exists(__DIR__ . '/saved_kalender.txt')) {
+        $kalender = file_get_contents(__DIR__ . '/saved_kalender.txt');
         $lines = explode("\n", $kalender);
         foreach($lines as $line) {
             if (strpos($line, $today) !== false) {
@@ -241,8 +246,8 @@ if ($current_hour >= '07' && !$daily_done) {
 
     $payloadSEO = $leads;
     $prompt_seo_default = "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"{{JUDUL}}\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"{{KEYWORD}}\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: {{TOPIK}}. PERTIMBANGKAN JUGA insight dari laporan tren terbaru berikut: \n\n{{TREND_MIKRO}}";
-    $prompt_seo_raw = file_exists('prompt_seo.txt') ? file_get_contents('prompt_seo.txt') : $prompt_seo_default;
-    $trend_mikro_report = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_trends_micro.txt') : 'Tidak ada laporan tren mikro.';
+    $prompt_seo_raw = file_exists(__DIR__ . '/prompt_seo.txt') ? file_get_contents(__DIR__ . '/prompt_seo.txt') : $prompt_seo_default;
+    $trend_mikro_report = file_exists(__DIR__ . '/saved_trends_micro.txt') ? file_get_contents(__DIR__ . '/saved_trends_micro.txt') : 'Tidak ada laporan tren mikro.';
     $replacements = ['{{JUDUL}}' => $judul, '{{KEYWORD}}' => $keyword, '{{TOPIK}}' => $topic, '{{TREND_MIKRO}}' => $trend_mikro_report];
     $prompt_seo = str_replace(array_keys($replacements), array_values($replacements), $prompt_seo_raw);
 
@@ -297,7 +302,7 @@ if ($current_hour >= '07' && !$daily_done) {
 
         if (count($agen_data) > 0 && $FONNTE_TOKEN !== "TOKEN_API_FONNTE_ANDA") {
             $prompt_publisher_default = "Assalamu'alaikum Kak {{NAMA_AGEN}}, artikel terbaru Villa Quran udah rilis pagi ini lho. \n\nJudul: *{{JUDUL_ARTIKEL}}* \n\nMonggo di-share pake link afiliasi khusus Kakak di bawah ini ya, biar komisinya kecatat otomatis: \n{{LINK_AFILIASI}} \n\nSemoga hari ini closing banyak, Aamiin!";
-            $prompt_publisher_raw = file_exists('prompt_publisher.txt') ? file_get_contents('prompt_publisher.txt') : $prompt_publisher_default;
+            $prompt_publisher_raw = file_exists(__DIR__ . '/prompt_publisher.txt') ? file_get_contents(__DIR__ . '/prompt_publisher.txt') : $prompt_publisher_default;
 
             foreach ($agen_data as $agen) {
                 $link = $APP_URL . "/artikel-detail.php?id=" . $artikel_id_kirim . "&ref=" . $agen['kode_ref'];
