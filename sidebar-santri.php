@@ -24,6 +24,9 @@
             <a href="santri-rapot.php" class="<?= (isset($active_menu) && $active_menu == 'rapot_akademik') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-graduation-cap w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rapot_akademik') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Rapor Akademik
             </a>
+            <a href="ruang-santri-keuangan.php" class="<?= (isset($active_menu) && $active_menu == 'tabel_keuangan') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-money-check-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'tabel_keuangan') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Tabel Keuangan
+            </a>
             <a href="santri-rapot-diniyah.php" class="<?= (isset($active_menu) && $active_menu == 'rapot_diniyah') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-book-quran w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rapot_diniyah') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Rapor Diniyah
             </a>

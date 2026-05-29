@@ -31,6 +31,9 @@ $defined_menus = [
         'penilaian_adab' => 'Penilaian Adab (Rapor)',
         'absensi_pegawai' => 'Absensi Kehadiran',
     ],
+    'Keuangan Santri' => [
+        'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
+    ],
     'Kinerja & Akun' => [
         'kpi_ustadz' => 'KPI Ustadz',
         'kpi_musyrif' => 'KPI Musyrif',
