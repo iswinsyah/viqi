@@ -46,6 +46,7 @@ $menu_structure = [
         'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user', 'title' => 'Buku Induk Santri'],
         'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users', 'title' => 'Akun Orang Tua'],
         'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader', 'title' => 'Leger Nilai Digital'],
+        'rekap_spp' => ['href' => 'admin-rekap-spp.php', 'icon' => 'fa-file-invoice-dollar', 'title' => 'Rekap Pembayaran SPP'],
     ],
     'Asatidz' => [
         'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock', 'title' => 'Kesediaan Mengajar'],

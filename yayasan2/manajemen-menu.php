@@ -11,6 +11,7 @@ $defined_menus = [
         'buku_induk' => 'Buku Induk Santri',
         'akun_orangtua' => 'Akun Orang Tua',
         'leger_nilai' => 'Leger Nilai Digital',
+        'rekap_spp' => 'Rekap Pembayaran SPP',
     ],
     'Asatidz' => [
         'jurnal_mengajar' => 'Jurnal Mengajar',
