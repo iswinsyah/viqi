@@ -40,7 +40,7 @@
                 </div>
                 <nav class="hidden md:flex space-x-6 lg:space-x-8">
                     <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
-                    <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
+                    <a href="#profil-pengajar" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Profil Pengajar</a>
                     <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Kurikulum</a>
                     <a href="asrama.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Fasilitas</a>
                     <a href="#" id="nav-parenting-school" class="text-amber-500 hover:text-amber-600 font-bold transition">Parenting School</a>
@@ -75,7 +75,7 @@
         <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-xl absolute w-full left-0 top-20">
             <div class="px-4 pt-2 pb-6 space-y-2">
                 <a href="index.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Beranda</a>
-                <a href="profil-pengajar.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Profil Pengajar</a>
+                <a href="#profil-pengajar" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Profil Pengajar</a>
                 <a href="program.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Kurikulum</a>
                 <a href="asrama.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Fasilitas</a>
                 <a href="#" id="mobile-nav-parenting-school" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Parenting School</a>
@@ -166,7 +166,7 @@
     </section>
 
     <!-- PROFIL PENGAJAR SECTION -->
-    <section class="py-16 bg-white border-t border-gray-200">
+    <section id="profil-pengajar" class="py-16 bg-white border-t border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl font-extrabold text-gray-900">Asatidz & Pembimbing Profesional</h2>
@@ -798,6 +798,7 @@
                             
                             let scrollInterval;
                             const startScroll = () => {
+                                clearInterval(scrollInterval); // Perbaikan: Hapus interval lama agar tidak hang
                                 scrollInterval = setInterval(() => {
                                     const firstItem = container.firstElementChild;
                                     if(!firstItem) return;
@@ -1008,7 +1009,9 @@
                         if(data.length > 3) {
                             document.getElementById('testimoni-nav').classList.remove('hidden');
                             let scrollInterval;
-                            const startScroll = () => { scrollInterval = setInterval(() => {
+                            const startScroll = () => { 
+                                clearInterval(scrollInterval); // Perbaikan: Hapus interval lama agar tidak hang
+                                scrollInterval = setInterval(() => {
                                 const firstItem = container.firstElementChild; if(!firstItem) return;
                                 const scrollAmount = firstItem.offsetWidth + 24;
                                 container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
