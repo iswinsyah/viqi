@@ -1008,17 +1008,39 @@
                         // Jika testimoni > 3, hidupkan Carousel Infinite Loop
                         if(data.length > 3) {
                             document.getElementById('testimoni-nav').classList.remove('hidden');
-                            let scrollInterval;
-                            const startScroll = () => { 
-                                clearInterval(scrollInterval); // Perbaikan: Hapus interval lama agar tidak hang
+                            let scrollInterval, moveTimeout;
+                            const stopScroll = () => {
+                                clearInterval(scrollInterval);
+                                clearTimeout(moveTimeout);
+                            };
+                            const startScroll = () => {
+                                stopScroll();
                                 scrollInterval = setInterval(() => {
-                                const firstItem = container.firstElementChild; if(!firstItem) return;
+                                if (container.matches(':hover')) return;
+                                const firstItem = container.firstElementChild; if(!firstItem || firstItem.offsetWidth === 0) return;
                                 const scrollAmount = firstItem.offsetWidth + 24;
                                 container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                                setTimeout(() => { container.style.scrollSnapType = 'none'; container.appendChild(firstItem); container.scrollLeft -= scrollAmount; setTimeout(() => { container.style.scrollSnapType = 'x mandatory'; }, 50); }, 600);
-                            }, 5000); }; // Tampil tiap 5 detik agar sempat terbaca
+                                moveTimeout = setTimeout(() => { 
+                                    container.style.scrollSnapType = 'none'; 
+                                    container.appendChild(firstItem); 
+                                    container.scrollTo({ left: container.scrollLeft - scrollAmount, behavior: 'auto' }); 
+                                    setTimeout(() => { container.style.scrollSnapType = 'x mandatory'; }, 50); 
+                                }, 600);
+                            }, 5000); }; 
+
+                            const observer = new IntersectionObserver((entries) => {
+                                entries.forEach(entry => {
+                                    if(entry.isIntersecting) startScroll();
+                                    else stopScroll();
+                                });
+                            }, { threshold: 0.1 });
+                            observer.observe(container);
+
                             startScroll();
-                            container.addEventListener('mouseenter', () => clearInterval(scrollInterval)); container.addEventListener('mouseleave', startScroll); container.addEventListener('touchstart', () => clearInterval(scrollInterval)); container.addEventListener('touchend', startScroll);
+                            container.addEventListener('mouseenter', stopScroll); 
+                            container.addEventListener('mouseleave', startScroll); 
+                            container.addEventListener('touchstart', stopScroll, {passive: true}); 
+                            container.addEventListener('touchend', startScroll, {passive: true});
                         } else { container.classList.add('lg:justify-center'); }
                     } else {
                         container.innerHTML = '<div class="w-full text-center text-gray-500 py-8 italic">Belum ada data testimoni.</div>';
