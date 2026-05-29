@@ -3,6 +3,7 @@ require_once 'auth-orangtua.php';
 require_once 'koneksi.php';
 
 $orangtua_id = $_SESSION['orangtua_id'];
+$active_menu = 'dashboard_orangtua';
 
 // Ambil data santri yang terhubung
 $santri_list = [];
@@ -24,16 +25,24 @@ if ($res) while($r = $res->fetch_assoc()) $santri_list[] = $r;
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 font-sans">
-    <nav class="bg-white shadow-sm px-6 py-4 flex justify-between items-center">
-        <h1 class="font-bold text-xl text-purple-800"><i class="fas fa-leaf mr-2 text-emerald-500"></i>Ruang Orang Tua</h1>
-        <div class="flex items-center space-x-4">
-            <span class="text-sm text-gray-600 hidden md:block">Selamat Datang, <b><?= htmlspecialchars($_SESSION['orangtua_nama']) ?></b></span>
-            <a href="logout.php" class="text-red-500 font-bold text-sm"><i class="fas fa-sign-out-alt"></i> Keluar</a>
-        </div>
-    </nav>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
+    <?php include 'sidebar-orangtua.php'; ?>
+    
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
+            <div class="flex items-center">
+                <button id="open-sidebar-orangtua" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button>
+                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-600 hidden md:block">Selamat Datang, <b><?= htmlspecialchars($_SESSION['orangtua_nama']) ?></b></span>
+                <div class="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold shadow-sm">
+                    <?= strtoupper(substr($_SESSION['orangtua_nama'], 0, 1)) ?>
+                </div>
+            </div>
+        </header>
 
-    <main class="max-w-7xl mx-auto p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
         <div class="mb-8">
             <h2 class="text-2xl font-bold text-gray-800">Daftar Ananda</h2>
             <?php if($orangtua_id == 9999): ?>
@@ -75,5 +84,6 @@ if ($res) while($r = $res->fetch_assoc()) $santri_list[] = $r;
             </div>
         <?php endif; ?>
     </main>
+    </div>
 </body>
 </html>
