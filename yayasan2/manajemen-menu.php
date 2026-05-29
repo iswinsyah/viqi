@@ -12,6 +12,7 @@ $defined_menus = [
         'akun_orangtua' => 'Akun Orang Tua',
         'leger_nilai' => 'Leger Nilai Digital',
         'rekap_spp' => 'Rekap Pembayaran SPP',
+        'rekap_uang_saku' => 'Rekap Uang Saku',
     ],
     'Asatidz' => [
         'jurnal_mengajar' => 'Jurnal Mengajar',

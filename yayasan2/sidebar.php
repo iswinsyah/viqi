@@ -40,6 +40,9 @@
             <a href="rekap-spp.php" class="<?= (isset($active_menu) && $active_menu == 'rekap_spp') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-file-invoice-dollar w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rekap_spp') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Rekap Pembayaran SPP
             </a>
+            <a href="rekap-uang-saku.php" class="<?= (isset($active_menu) && $active_menu == 'rekap_uang_saku') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-wallet w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rekap_uang_saku') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Rekap Uang Saku
+            </a>
             <a href="tunjangan.php" class="<?= (isset($active_menu) && $active_menu == 'tunjangan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-award w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'tunjangan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Tunjangan
             </a>
