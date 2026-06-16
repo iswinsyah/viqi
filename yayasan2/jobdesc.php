@@ -315,6 +315,11 @@ $active_menu = 'jobdesc_yayasan';
                     </span>
                     
                     <div id="jd-actions" class="hidden flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button id="btn-save-header" onclick="manualSaveHeader()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Simpan ke Database">
+                            <i class="fas fa-save"></i>
+                            <span>Simpan</span>
+                        </button>
+
                         <button id="btn-copy" onclick="copyJdResult()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm" title="Salin ke Clipboard">
                             <i class="fas fa-copy"></i>
                             <span>Salin</span>
@@ -408,8 +413,12 @@ $active_menu = 'jobdesc_yayasan';
             if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
             if(overlay) overlay.addEventListener('click', toggleSidebar);
 
-            // Load initial history list
-            loadHistoryList();
+            // Load initial history list, restoring last selection if present in localStorage
+            const savedSwotId = localStorage.getItem('selected_swot_id');
+            loadHistoryList(savedSwotId);
+            if (savedSwotId) {
+                loadSwotPreview(savedSwotId);
+            }
         });
 
         let currentSwotId = null;
@@ -441,9 +450,11 @@ $active_menu = 'jobdesc_yayasan';
         function loadSwotPreview(id) {
             currentSwotId = id;
             if (!id) {
+                localStorage.removeItem('selected_swot_id');
                 resetAllViews();
                 return;
             }
+            localStorage.setItem('selected_swot_id', id);
 
             // Reset view state
             if (isEditMode) toggleEditJd();
@@ -626,6 +637,44 @@ Sajikan seluruh analisis ini dalam format Markdown yang indah, profesional, ters
             .catch(err => {
                 console.error("Error saving jobdesc:", err);
                 alert("Terjadi kesalahan menyimpan ke database.");
+            });
+        }
+
+        // Manual save triggered from header button
+        function manualSaveHeader() {
+            if (!currentSwotId || !rawJdText) {
+                alert("Tidak ada Job Description yang bisa disimpan.");
+                return;
+            }
+            const btnSave = document.getElementById('btn-save-header');
+            const originalContent = btnSave.innerHTML;
+            
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Menyimpan...';
+
+            const formData = new FormData();
+            formData.append('swot_id', currentSwotId);
+            formData.append('hasil_jobdesc', rawJdText);
+
+            fetch('jobdesc.php?action=save_jobdesc', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    triggerToast("Sukses!", "Job Description berhasil disimpan ke database.", "success");
+                } else {
+                    alert("Gagal menyimpan: " + data.message);
+                }
+            })
+            .catch(err => {
+                console.error("Error saving jobdesc:", err);
+                alert("Terjadi kesalahan koneksi.");
+            })
+            .finally(() => {
+                btnSave.disabled = false;
+                btnSave.innerHTML = originalContent;
             });
         }
 
