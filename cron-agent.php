@@ -24,10 +24,9 @@ require_once __DIR__ . '/koneksi.php';
 @$conn->query("ALTER TABLE leads ADD COLUMN sumber_info VARCHAR(100) DEFAULT '' AFTER jenis_lead");
 @$conn->query("ALTER TABLE visitor_footprints ADD COLUMN campaign VARCHAR(100) AFTER source");
 
-// --- KONFIGURASI AGENT ---
-$GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
-$FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL"; 
 $APP_URL = "https://villaquranindonesia.com"; // Gunakan URL absolut agar link broadcast tidak pecah saat dijalankan via Cron
+$GAS_URL = $APP_URL . "/api-gemini.php";
+$FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL";
 
 $log_file = __DIR__ . '/agent_cron_log.txt';
 $monthly_log_file = __DIR__ . '/agent_monthly_log.txt';

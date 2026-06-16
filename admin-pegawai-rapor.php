@@ -82,7 +82,7 @@ if($res) while($r = $res->fetch_assoc()) $santri[] = $r;
             }
         }
 
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
+        const GAS_URL = "api-gemini.php";
 
         function generateRapor() {
             const nama = document.getElementById('rapor-nama').value;

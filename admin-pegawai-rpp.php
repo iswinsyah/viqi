@@ -98,7 +98,7 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
     <script>
         document.getElementById('open-sidebar-hr').addEventListener('click', () => { document.getElementById('sidebar-hr').classList.toggle('hidden'); document.getElementById('sidebar-overlay-hr').classList.toggle('hidden'); });
         
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
+        const GAS_URL = "api-gemini.php";
 
         function pilihSilabus(input) {
             const val = input.value;

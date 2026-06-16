@@ -110,7 +110,7 @@ $saved_sosmed = file_exists('saved_sosmed.txt') ? file_get_contents('saved_sosme
     </div>
 
     <script>
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec"; 
+        const GAS_WEB_APP_URL = "api-gemini.php"; 
         const rawLeadsData = <?= $leads_json ?>;
         const savedSosmedMarkdown = <?= json_encode($saved_sosmed) ?>;
         let currentMarkdown = savedSosmedMarkdown;
