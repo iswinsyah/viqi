@@ -51,6 +51,9 @@
             <a href="analisis-swot.php" class="<?= (isset($active_menu) && $active_menu == 'analisis_swot') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-chart-line w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'analisis_swot') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Analisis SWOT
             </a>
+            <a href="struktur-jobdesc.php" class="<?= (isset($active_menu) && $active_menu == 'struktur_jobdesc') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-sitemap w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'struktur_jobdesc') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Struktur & Jobdesc
+            </a>
         </nav>
     </div>
 
