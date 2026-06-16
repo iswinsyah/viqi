@@ -54,6 +54,9 @@
             <a href="struktur-jobdesc.php" class="<?= (isset($active_menu) && $active_menu == 'struktur_jobdesc') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-sitemap w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'struktur_jobdesc') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Struktur
             </a>
+            <a href="jobdesc.php" class="<?= (isset($active_menu) && $active_menu == 'jobdesc_yayasan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-id-card w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'jobdesc_yayasan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Job Description
+            </a>
         </nav>
     </div>
 
