@@ -1,7 +1,11 @@
 <?php
-// api-gemini.php
-// Proxy untuk membelokkan request dari GAS langsung ke Gemini API di Hostinger
-require_once __DIR__ . '/config-key.php';
+// Matikan error display agar warnings/notices tidak merusak format JSON
+ini_set('display_errors', 0);
+error_reporting(0);
+
+if (file_exists(__DIR__ . '/config-key.php')) {
+    require_once __DIR__ . '/config-key.php';
+}
 
 // Atur CORS agar aman
 header("Access-Control-Allow-Origin: *");
@@ -46,7 +50,10 @@ if (empty($prompt)) {
 
 $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
 if (empty($apiKey)) {
-    echo json_encode(['status' => 'error', 'message' => 'API Key Gemini belum dikonfigurasi di server.']);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'API Key Gemini belum dikonfigurasi di server. Silakan buat file "config-key.php" di root direktori proyek Anda di Hostinger (sejajar dengan api-gemini.php, bukan di dalam folder yayasan2).'
+    ]);
     exit;
 }
 
