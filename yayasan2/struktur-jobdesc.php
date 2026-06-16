@@ -3,93 +3,79 @@ require_once 'auth.php'; // Menggunakan sistem keamanan Ruang Yayasan
 require_once '../koneksi.php';
 
 // 1. Inisialisasi Database (Self-Healing)
-$conn->query("CREATE TABLE IF NOT EXISTS struktur_jobdesc (
+$conn->query("CREATE TABLE IF NOT EXISTS struktur_sekolah (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nama_program VARCHAR(255) NOT NULL,
-    deskripsi TEXT NULL,
-    kategori VARCHAR(100) NULL,
-    jumlah_sdm INT DEFAULT 1,
-    catatan_tambahan TEXT NULL,
-    hasil_struktur TEXT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    nomor INT NOT NULL,
+    nama_jabatan VARCHAR(255) NOT NULL,
+    ada TINYINT(1) DEFAULT 0,
+    quota INT DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
-// Handling AJAX API Requests
-if (isset($_GET['action'])) {
-    header('Content-Type: application/json');
-    $action = $_GET['action'];
-
-    if ($action === 'get_history') {
-        $result = $conn->query("SELECT id, nama_program, created_at FROM struktur_jobdesc ORDER BY id DESC");
-        $history = [];
-        if ($result) {
-            while ($row = $result->fetch_assoc()) {
-                $history[] = [
-                    'id' => $row['id'],
-                    'nama_program' => $row['nama_program'],
-                    'tanggal' => date('d M Y H:i', strtotime($row['created_at']))
-                ];
-            }
-        }
-        echo json_encode($history);
-        exit;
-    }
-
-    if ($action === 'get_jobdesc') {
-        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-        $res = $conn->query("SELECT * FROM struktur_jobdesc WHERE id = $id");
-        if ($res && $res->num_rows > 0) {
-            echo json_encode($res->fetch_assoc());
-        } else {
-            echo json_encode(['error' => 'Data tidak ditemukan']);
-        }
-        exit;
+// Cek apakah tabel kosong, jika iya masukkan data bawaan
+$res_check = $conn->query("SELECT COUNT(*) as total FROM struktur_sekolah");
+$row_check = $res_check->fetch_assoc();
+if ($row_check['total'] == 0) {
+    $default_positions = [
+        [1, 'Kepala Sekolah'],
+        [2, 'Wakil Kepala Sekolah'],
+        [3, 'Sekretaris Sekolah'],
+        [4, 'Bendahara Sekolah'],
+        [5, 'Kepala Administrasi'],
+        [7, 'Staff Administrasi'],
+        [8, 'Kepala Keuangan'],
+        [9, 'Staff Keuangan'],
+        [10, 'Ustadz/ah'],
+        [11, 'Kepala Ma\'had'],
+        [12, 'Sekretaris Ma\'had'],
+        [13, 'Bendahara Ma\'had'],
+        [14, 'Kepala Asrama'],
+        [15, 'Musyrif/ah'],
+        [16, 'Kepala Dapur'],
+        [17, 'Staff Dapur']
+    ];
+    foreach ($default_positions as $pos) {
+        $nomor = $pos[0];
+        $nama = $conn->real_escape_string($pos[1]);
+        $conn->query("INSERT INTO struktur_sekolah (nomor, nama_jabatan, ada, quota) VALUES ($nomor, '$nama', 0, 0)");
     }
 }
 
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_GET['action'])) {
+// 2. Handling AJAX Save Request
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_GET['action']) && $_GET['action'] === 'save') {
     header('Content-Type: application/json');
-    $action = $_GET['action'];
+    $inputJSON = file_get_contents('php://input');
+    $input = json_decode($inputJSON, true);
+    $data = $input['data'] ?? [];
 
-    if ($action === 'save') {
-        $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
-        $nama_program = $conn->real_escape_string($_POST['nama_program'] ?? '');
-        $deskripsi = $conn->real_escape_string($_POST['deskripsi'] ?? '');
-        $kategori = $conn->real_escape_string($_POST['kategori'] ?? '');
-        $jumlah_sdm = isset($_POST['jumlah_sdm']) ? (int)$_POST['jumlah_sdm'] : 1;
-        $catatan_tambahan = $conn->real_escape_string($_POST['catatan_tambahan'] ?? '');
-
-        if ($id > 0) {
-            $sql = "UPDATE struktur_jobdesc SET nama_program='$nama_program', deskripsi='$deskripsi', kategori='$kategori', jumlah_sdm=$jumlah_sdm, catatan_tambahan='$catatan_tambahan' WHERE id=$id";
-        } else {
-            $sql = "INSERT INTO struktur_jobdesc (nama_program, deskripsi, kategori, jumlah_sdm, catatan_tambahan) VALUES ('$nama_program', '$deskripsi', '$kategori', $jumlah_sdm, '$catatan_tambahan')";
-        }
-
-        if ($conn->query($sql)) {
-            $saved_id = ($id > 0) ? $id : $conn->insert_id;
-            echo json_encode(['status' => 'success', 'id' => $saved_id]);
-        } else {
-            echo json_encode(['status' => 'error', 'message' => $conn->error]);
-        }
+    if (empty($data) || !is_array($data)) {
+        echo json_encode(['status' => 'error', 'message' => 'Data tidak valid']);
         exit;
     }
 
-    if ($action === 'save_recommendation') {
-        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-        $hasil_struktur = $conn->real_escape_string($_POST['hasil_struktur'] ?? '');
-
-        if ($id > 0) {
-            $sql = "UPDATE struktur_jobdesc SET hasil_struktur='$hasil_struktur' WHERE id=$id";
-            if ($conn->query($sql)) {
-                echo json_encode(['status' => 'success']);
-            } else {
-                echo json_encode(['status' => 'error', 'message' => $conn->error]);
-            }
-        } else {
-            echo json_encode(['status' => 'error', 'message' => 'ID tidak valid']);
+    $conn->begin_transaction();
+    try {
+        foreach ($data as $item) {
+            $id = (int)$item['id'];
+            $ada = (int)$item['ada'];
+            $quota = (int)$item['quota'];
+            $conn->query("UPDATE struktur_sekolah SET ada = $ada, quota = $quota WHERE id = $id");
         }
-        exit;
+        $conn->commit();
+        echo json_encode(['status' => 'success']);
+    } catch (Exception $e) {
+        $conn->rollback();
+        echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
+    }
+    exit;
+}
+
+// 3. Ambil data struktur dari database
+$result = $conn->query("SELECT * FROM struktur_sekolah ORDER BY nomor ASC");
+$struktur_list = [];
+if ($result) {
+    while ($row = $result->fetch_assoc()) {
+        $struktur_list[] = $row;
     }
 }
 
@@ -100,158 +86,168 @@ $active_menu = 'struktur_jobdesc';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generator Struktur & Jobdesc | Ruang Yayasan</title>
+    <title>Manajemen Struktur Sekolah | Ruang Yayasan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .markdown-body h1 { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.25rem; }
-        .markdown-body h2 { font-size: 1.25rem; font-weight: 700; color: #334155; margin-top: 1.25rem; margin-bottom: 0.5rem; }
-        .markdown-body h3 { font-size: 1.1rem; font-weight: 600; color: #475569; margin-top: 1rem; margin-bottom: 0.25rem; }
-        .markdown-body p { margin-bottom: 0.75rem; line-height: 1.625; color: #475569; }
-        .markdown-body ul, .markdown-body ol { margin-left: 1.5rem; margin-bottom: 0.75rem; }
-        .markdown-body ul { list-style-type: disc; }
-        .markdown-body ol { list-style-type: decimal; }
-        .markdown-body li { margin-bottom: 0.25rem; color: #475569; }
-        .markdown-body strong { color: #0f172a; font-weight: 700; }
-        .markdown-body blockquote { border-left: 4px solid #f59e0b; padding-left: 1rem; color: #64748b; font-style: italic; margin: 1rem 0; background: #fffbeb; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+        /* Glassmorphism effects */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+        /* Custom styled switch/checkbox wrapper */
+        .checkbox-custom:checked + .checkbox-label {
+            background-color: #f59e0b;
+            border-color: #d97706;
+        }
     </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
+<body class="bg-gray-50 antialiased text-gray-800 flex h-screen overflow-hidden">
     
+    <!-- INCLUDE SIDEBAR YAYASAN -->
     <?php include 'sidebar.php'; ?>
     
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <!-- HEADER -->
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0 border-b border-gray-100">
             <div class="flex items-center">
                 <button id="open-sidebar-yayasan2" class="text-gray-500 hover:text-gray-700 md:hidden mr-4">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
                 <h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif Yayasan</h2>
             </div>
-            <div class="flex items-center space-x-4">
-                <select id="history-list" onchange="loadJobdesc(this.value)" class="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <option value="">-- Pilih Riwayat Program --</option>
-                </select>
-                <button onclick="resetForm()" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm transition shadow-sm flex items-center">
-                    <i class="fas fa-plus mr-1.5"></i> Baru
-                </button>
+            <div class="flex items-center space-x-2">
+                <span class="text-xs bg-amber-100 text-amber-800 font-semibold px-3 py-1 rounded-full flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    Mode Manajemen Struktur
+                </span>
             </div>
         </header>
 
         <!-- MAIN LAYOUT -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 flex flex-col lg:flex-row gap-6">
-            
-            <!-- LEFT COLUMN: INPUTS & ACTIONS -->
-            <div class="flex-1 flex flex-col gap-6 lg:max-w-xl">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-sitemap text-amber-600 mr-2"></i>Rancangan Struktur & Jobdesc</h1>
-                    <p class="text-sm text-gray-500 mt-1">Buat struktur kepanitiaan/organisasi dan deskripsi tugas umum untuk staf sekolah menggunakan bantuan AI.</p>
-                </div>
-
-                <input type="hidden" id="program-id" value="">
-
-                <!-- FORM CARDS -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
-                    <!-- NAMA PROGRAM -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Nama Program / Kegiatan</label>
-                        <input type="text" id="program-nama" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none" placeholder="Contoh: Panitia SPMB 2026, Pesantren Kilat Ramadhan">
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- BIDANG KATEGORI -->
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Bidang / Kategori</label>
-                            <select id="program-kategori" class="w-full px-4 py-2.5 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-amber-400 focus:outline-none">
-                                <option value="Kurikulum / Akademik">Kurikulum / Akademik</option>
-                                <option value="Asrama / Kepengasuhan">Asrama / Kepengasuhan</option>
-                                <option value="Humas & Pemasaran">Humas & Pemasaran</option>
-                                <option value="Sarana & Prasarana">Sarana & Prasarana</option>
-                                <option value="Keuangan & Administrasi">Keuangan & Administrasi</option>
-                                <option value="Lainnya">Lainnya</option>
-                            </select>
-                        </div>
-
-                        <!-- ESTIMASI JUMLAH SDM -->
-                        <div>
-                            <label class="block text-sm font-bold text-gray-700 mb-1">Estimasi Jumlah Anggota Tim</label>
-                            <input type="number" id="program-sdm" min="1" max="100" value="5" class="w-full px-4 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none">
-                        </div>
-                    </div>
-
-                    <!-- DESKRIPSI & TUJUAN -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Deskripsi & Tujuan Program</label>
-                        <textarea id="program-deskripsi" rows="4" class="w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none" placeholder="Tuliskan tujuan dan apa saja yang ingin dicapai dari program ini..."></textarea>
-                    </div>
-
-                    <!-- CATATAN TAMBAHAN / KRITERIA SDM -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Kriteria Khusus / Kebutuhan Peran (Opsional)</label>
-                        <textarea id="program-catatan" rows="3" class="w-full p-3 border rounded-lg text-sm focus:ring-2 focus:ring-amber-400 focus:outline-none" placeholder="Contoh: Butuh penanggung jawab utama, sekretaris, dan tim lapangan yang bersertifikat."></textarea>
-                    </div>
-                </div>
-
-                <!-- ACTIONS BUTTONS -->
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <button onclick="saveJobdesc('draft').then(() => alert('Draft program berhasil disimpan!'))" class="flex-1 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 font-bold py-3 px-4 rounded-lg shadow-sm transition flex items-center justify-center">
-                        <i class="fas fa-save mr-2 text-gray-500"></i> Simpan Draf
-                    </button>
-                    <button id="btn-generate" onclick="generateJobdesc()" class="flex-[2] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-gray-900 font-black py-3 px-4 rounded-lg shadow-md transition flex items-center justify-center">
-                        <i class="fas fa-magic mr-2"></i> Simpan & Generate Struktur (AI)
-                    </button>
-                </div>
-            </div>
-
-            <!-- RIGHT COLUMN: AI RECOMMENDATION -->
-            <div class="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden min-h-[500px]">
-                <div class="px-6 py-4 bg-amber-50 border-b border-amber-100 flex justify-between items-center flex-shrink-0">
-                    <h3 class="font-bold text-amber-800 flex items-center">
-                        <i class="fas fa-sitemap mr-2"></i> Struktur Organisasi & Jobdesc (AI)
-                    </h3>
-                    <div class="flex items-center space-x-2">
-                        <button id="btn-edit-rec" onclick="toggleEditRec()" class="hidden text-xs bg-white text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 font-bold transition flex items-center">
-                            <i id="edit-icon" class="fas fa-edit mr-1.5"></i> <span id="edit-text">Edit Manual</span>
-                        </button>
-                        <button id="btn-copy" onclick="copyResult()" class="hidden text-xs bg-white text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 font-medium transition flex items-center">
-                            <i class="fas fa-copy mr-1.5"></i> Salin
-                        </button>
-                    </div>
-                </div>
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50/50 p-6">
+            <div class="max-w-4xl mx-auto space-y-6">
                 
-                <div id="result-container" class="p-6 flex-1 overflow-y-auto relative flex flex-col">
-                    <!-- IDLE STATE -->
-                    <div id="state-idle" class="flex flex-col items-center justify-center h-full text-gray-400 py-16 text-center my-auto">
-                        <i class="fas fa-users-cog text-6xl mb-4 opacity-20"></i>
-                        <p class="font-medium text-sm">Rancangan struktur kepanitiaan dan detail jobdesc tim akan ditampilkan di sini setelah Anda mengisi form dan melakukan generate.</p>
+                <!-- HEADER TITLE & INTRO -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-3xl font-extrabold tracking-tight text-gray-900 flex items-center">
+                            <i class="fas fa-sitemap text-amber-600 mr-3"></i>
+                            Struktur Organisasi Sekolah
+                        </h1>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Penyusunan jabatan aktif dan alokasi quota SDM pengelola pesantren/sekolah.
+                        </p>
                     </div>
+                </div>
 
-                    <!-- LOADING STATE -->
-                    <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-amber-600 py-16 text-center my-auto">
-                        <div class="relative w-16 h-16 mb-4 mx-auto">
-                            <div class="absolute inset-0 rounded-full border-4 border-amber-200"></div>
-                            <div class="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
+                <!-- STATS SUMMARY BOARD (DYNAMIC) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 transition hover:shadow-md">
+                        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fas fa-id-badge"></i>
                         </div>
-                        <p class="font-bold text-amber-900">AI sedang menganalisis kebutuhan program & menyusun struktur organisasi...</p>
-                        <p class="text-xs text-gray-500 mt-1">Ini memerlukan waktu sekitar 10-20 detik.</p>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Jabatan Aktif</p>
+                            <h3 id="stat-active-roles" class="text-2xl font-bold text-gray-800 mt-0.5">0</h3>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 transition hover:shadow-md">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Quota Personil</p>
+                            <h3 id="stat-total-quota" class="text-2xl font-bold text-gray-800 mt-0.5 font-mono">0 Orang</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAIN TABLE CARD -->
+                <div class="bg-white rounded-2xl shadow-md border border-gray-200/60 overflow-hidden">
+                    <div class="px-6 py-4 bg-gradient-to-r from-amber-50 to-orange-50/30 border-b border-gray-200/80 flex justify-between items-center">
+                        <span class="font-bold text-gray-800 flex items-center text-sm md:text-base">
+                            <i class="fas fa-list-ol text-amber-600 mr-2"></i>
+                            Daftar Jabatan & Alokasi Quota
+                        </span>
+                        <div id="save-status" class="hidden text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                            <i class="fas fa-check-circle animate-bounce"></i> Perubahan Tersimpan!
+                        </div>
+                    </div>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50/75 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    <th class="py-4 px-6 text-center w-16">No</th>
+                                    <th class="py-4 px-6">Nama Jabatan</th>
+                                    <th class="py-4 px-6 text-center w-36">Ada / Tidak</th>
+                                    <th class="py-4 px-6 text-center w-40">Quota Personil</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <?php foreach ($struktur_list as $row): ?>
+                                    <tr data-id="<?= $row['id'] ?>" class="table-row transition-all duration-200 hover:bg-gray-50/50">
+                                        <td class="py-4 px-6 text-center font-bold text-gray-400 font-mono text-sm"><?= $row['nomor'] ?></td>
+                                        <td class="py-4 px-6">
+                                            <span class="role-name font-semibold text-gray-700 text-sm md:text-base transition-colors"><?= htmlspecialchars($row['nama_jabatan']) ?></span>
+                                        </td>
+                                        <td class="py-4 px-6 text-center">
+                                            <label class="relative inline-flex items-center cursor-pointer select-none">
+                                                <input type="checkbox" class="sr-only peer checkbox-ada" onchange="handleRowState(this)" <?= $row['ada'] ? 'checked' : '' ?>>
+                                                <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-amber-300 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                                            </label>
+                                        </td>
+                                        <td class="py-4 px-6 text-center">
+                                            <div class="inline-flex items-center border border-gray-300 rounded-lg overflow-hidden shadow-sm bg-white transition hover:border-amber-400 focus-within:ring-2 focus-within:ring-amber-200">
+                                                <button type="button" onclick="adjustQuota(this, -1)" class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border-r border-gray-200 text-gray-500 hover:text-gray-700 transition">
+                                                    <i class="fas fa-minus text-xs"></i>
+                                                </button>
+                                                <input type="number" min="0" max="999" value="<?= $row['quota'] ?>" oninput="calculateStats()" class="input-quota w-16 text-center py-1.5 px-2 font-mono text-sm font-bold text-gray-800 bg-white focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" <?= $row['ada'] ? '' : 'disabled' ?>>
+                                                <button type="button" onclick="adjustQuota(this, 1)" class="px-2 py-1 bg-gray-50 hover:bg-gray-100 border-l border-gray-200 text-gray-500 hover:text-gray-700 transition">
+                                                    <i class="fas fa-plus text-xs"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
 
-                    <!-- RESULT STATE (PREVIEW MODE) -->
-                    <div id="state-result" class="hidden markdown-body text-sm flex-1"></div>
-
-                    <!-- EDIT STATE (EDIT MODE) -->
-                    <div id="state-edit" class="hidden h-full flex flex-col flex-1">
-                        <textarea id="rec-textarea" class="w-full flex-1 p-3 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono resize-y" style="min-height: 350px;" placeholder="Tuliskan rancangan struktur kepanitiaan dan jobdesc di sini..."></textarea>
-                        <button id="btn-save-rec" onclick="saveManualRec()" class="mt-3 bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2.5 px-4 rounded-lg text-sm shadow-sm transition flex items-center justify-center self-end">
-                            <i class="fas fa-save mr-1.5"></i> Simpan Perubahan
+                    <!-- FOOTER ACTIONS -->
+                    <div class="px-6 py-5 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <div class="text-xs text-gray-400 flex items-center gap-1.5">
+                            <i class="fas fa-info-circle text-amber-500 text-sm"></i>
+                            Nonaktifkan jabatan untuk mereset quota menjadi 0 otomatis.
+                        </div>
+                        <button id="btn-save" onclick="saveStrukturData()" class="w-full sm:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-gray-900 font-bold px-8 py-3 rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 group transform active:scale-95">
+                            <i class="fas fa-save group-hover:rotate-12 transition-transform"></i>
+                            Simpan Struktur
                         </button>
                     </div>
                 </div>
-            </div>
 
+            </div>
         </main>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-gray-900 text-white px-5 py-3.5 rounded-xl shadow-2xl flex items-center gap-3 border border-gray-800">
+            <span class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-sm shadow-inner">
+                <i class="fas fa-check-circle"></i>
+            </span>
+            <div>
+                <p class="font-bold text-sm text-white">Sukses!</p>
+                <p class="text-xs text-gray-400 mt-0.5">Struktur organisasi berhasil diperbarui.</p>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -269,323 +265,141 @@ $active_menu = 'struktur_jobdesc';
             if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
             if(overlay) overlay.addEventListener('click', toggleSidebar);
 
-            // Load initial history list
-            loadHistoryList();
-        });
-
-        // Current raw text of the recommendations for clipboard copying and editing
-        let rawRecommendationText = "";
-        let isEditMode = false;
-
-        // Load history list
-        function loadHistoryList(selectIdAfterLoad = null) {
-            fetch('struktur-jobdesc.php?action=get_history')
-                .then(res => res.json())
-                .then(data => {
-                    const historyList = document.getElementById('history-list');
-                    historyList.innerHTML = '<option value="">-- Pilih Riwayat Program --</option>';
-                    data.forEach(item => {
-                        const opt = document.createElement('option');
-                        opt.value = item.id;
-                        opt.textContent = `${item.nama_program} (${item.tanggal})`;
-                        if (selectIdAfterLoad && selectIdAfterLoad == item.id) {
-                            opt.selected = true;
-                        }
-                        historyList.appendChild(opt);
-                    });
-                })
-                .catch(err => console.error("Error loading history list:", err));
-        }
-
-        // Load specific SWOT details
-        function loadJobdesc(id) {
-            if (!id) {
-                resetForm();
-                return;
-            }
-            fetch(`struktur-jobdesc.php?action=get_jobdesc&id=${id}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-                    document.getElementById('program-id').value = data.id;
-                    document.getElementById('program-nama').value = data.nama_program || '';
-                    document.getElementById('program-deskripsi').value = data.deskripsi || '';
-                    document.getElementById('program-kategori').value = data.kategori || 'Kurikulum / Akademik';
-                    document.getElementById('program-sdm').value = data.jumlah_sdm || 5;
-                    document.getElementById('program-catatan').value = data.catatan_tambahan || '';
-                    
-                    // Render recommendation if exists
-                    const resultDiv = document.getElementById('state-result');
-                    const idleDiv = document.getElementById('state-idle');
-                    const recommendation = data.hasil_struktur;
-                    
-                    // Turn off edit mode if active when loading new program
-                    if (isEditMode) {
-                        toggleEditRec();
-                    }
-                    
-                    if (recommendation && recommendation.trim() !== '') {
-                        rawRecommendationText = recommendation;
-                        resultDiv.innerHTML = marked.parse(recommendation);
-                        resultDiv.classList.remove('hidden');
-                        idleDiv.classList.add('hidden');
-                        document.getElementById('btn-copy').classList.remove('hidden');
-                        document.getElementById('btn-edit-rec').classList.remove('hidden');
-                    } else {
-                        rawRecommendationText = "";
-                        resultDiv.classList.add('hidden');
-                        idleDiv.classList.remove('hidden');
-                        document.getElementById('btn-copy').classList.add('hidden');
-                        document.getElementById('btn-edit-rec').classList.add('hidden');
-                    }
-                })
-                .catch(err => console.error("Error loading jobdesc details:", err));
-        }
-
-        // Save SWOT
-        function saveJobdesc(actionType) {
-            const programId = document.getElementById('program-id').value;
-            const nama_program = document.getElementById('program-nama').value;
-            const deskripsi = document.getElementById('program-deskripsi').value;
-            const kategori = document.getElementById('program-kategori').value;
-            const jumlah_sdm = document.getElementById('program-sdm').value;
-            const catatan_tambahan = document.getElementById('program-catatan').value;
-
-            if (!nama_program) {
-                alert("Harap masukkan Nama Program / Kegiatan!");
-                return Promise.reject("Nama program kosong");
-            }
-
-            const formData = new FormData();
-            formData.append('id', programId);
-            formData.append('nama_program', nama_program);
-            formData.append('deskripsi', deskripsi);
-            formData.append('kategori', kategori);
-            formData.append('jumlah_sdm', jumlah_sdm);
-            formData.append('catatan_tambahan', catatan_tambahan);
-
-            return fetch('struktur-jobdesc.php?action=save', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('program-id').value = data.id;
-                    loadHistoryList(data.id);
-                    return data.id;
+            // Initial row state highlight and statistic calculations
+            document.querySelectorAll('.table-row').forEach(row => {
+                const checkbox = row.querySelector('.checkbox-ada');
+                if (checkbox.checked) {
+                    row.classList.add('bg-amber-50/45');
+                    row.querySelector('.role-name').classList.add('text-amber-800');
                 } else {
-                    throw new Error(data.message || "Gagal menyimpan data");
+                    row.classList.add('opacity-60');
                 }
             });
+
+            calculateStats();
+        });
+
+        // Function to adjust quota input value using helper buttons (+ / -)
+        function adjustQuota(btn, amount) {
+            const input = btn.parentElement.querySelector('.input-quota');
+            if (input.disabled) return;
+            
+            let currentVal = parseInt(input.value) || 0;
+            let newVal = currentVal + amount;
+            if (newVal < 0) newVal = 0;
+            if (newVal > 999) newVal = 999;
+            input.value = newVal;
+            calculateStats();
         }
 
-        // Generate recommendation using Gemini AI via GAS
-        function generateJobdesc() {
-            const btnGenerate = document.getElementById('btn-generate');
-            const stateIdle = document.getElementById('state-idle');
-            const stateLoading = document.getElementById('state-loading');
-            const stateResult = document.getElementById('state-result');
-            const btnCopy = document.getElementById('btn-copy');
-            const btnEditRec = document.getElementById('btn-edit-rec');
+        // Handle when checkbox state changes
+        function handleRowState(checkbox) {
+            const row = checkbox.closest('.table-row');
+            const input = row.querySelector('.input-quota');
+            const roleName = row.querySelector('.role-name');
 
-            // Turn off edit mode if active when generating
-            if (isEditMode) {
-                toggleEditRec();
-            }
-
-            // Save form first
-            btnGenerate.disabled = true;
-            stateIdle.classList.add('hidden');
-            stateResult.classList.add('hidden');
-            stateLoading.classList.remove('hidden');
-            btnCopy.classList.add('hidden');
-            btnEditRec.classList.add('hidden');
-
-            saveJobdesc('generate')
-                .then(programId => {
-                    const nama_program = document.getElementById('program-nama').value;
-                    const deskripsi = document.getElementById('program-deskripsi').value;
-                    const kategori = document.getElementById('program-kategori').value;
-                    const jumlah_sdm = document.getElementById('program-sdm').value;
-                    const catatan_tambahan = document.getElementById('program-catatan').value;
-
-                    const prompt = `<<< SYSTEM INSTRUCTION OVERRIDE: RESET PERSONA >>>
-Abaikan peran Anda sebagai pakar marketing, promosi, iklan, atau pencari leads. Anda dilarang keras merumuskan strategi pemasaran atau rekrutmen penjualan.
-Bertindaklah murni sebagai Konsultan Manajemen Organisasi & Tata Kelola Internal Sekolah/Pesantren Islam. Rancanglah Struktur Organisasi (kepanitiaan internal) beserta Deskripsi Pekerjaan (Job Description) yang optimal untuk program kerja operasional berikut:
-                    
-- Nama Program: ${nama_program}
-- Deskripsi & Tujuan: ${deskripsi || '(Tidak ada deskripsi)'}
-- Bidang/Kategori: ${kategori}
-- Estimasi Jumlah SDM: ${jumlah_sdm} Orang
-- Catatan Tambahan/Kriteria khusus: ${catatan_tambahan || '(Tidak ada catatan)'}
-
-Tugas Anda:
-1. Rancanglah struktur kepanitiaan/tim pelaksana internal yang paling efisien dan optimal sesuai dengan jumlah SDM yang tersedia. Tentukan posisi-posisi penting (misal: Ketua Pelaksana, Penanggung Jawab Operasional, Koordinator Lapangan, Divisi Perlengkapan, Sekretaris, dll. - BUKAN tim marketing).
-2. Buat deskripsi pekerjaan (Job Description) yang konkret, taktis, dan terukur untuk masing-masing posisi tersebut.
-3. Rancanglah KPI / indikator keberhasilan singkat untuk tiap posisi demi memastikan efisiensi kerja.
-
-Sajikan rancangan ini dalam format Markdown yang rapi, profesional, dan mudah dipahami oleh staf.`;
-
-                    const GAS_URL = "../api-gemini.php";
-
-                    return fetch(GAS_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({
-                            leads: [{
-                                jenis_lead: "SYSTEM_COMMAND",
-                                sumber_info: prompt,
-                                status: "URGENT"
-                            }],
-                            type: 'jobdesc'
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(aiData => {
-                        if (aiData.status === "success") {
-                            const resultText = aiData.result;
-                            rawRecommendationText = resultText;
-                            stateResult.innerHTML = marked.parse(resultText);
-                            stateLoading.classList.add('hidden');
-                            stateResult.classList.remove('hidden');
-                            btnCopy.classList.remove('hidden');
-                            btnEditRec.classList.remove('hidden');
-
-                            // Save recommendation to database
-                            const recFormData = new FormData();
-                            recFormData.append('id', programId);
-                            recFormData.append('hasil_struktur', resultText);
-                            
-                            return fetch('struktur-jobdesc.php?action=save_recommendation', {
-                                method: 'POST',
-                                body: recFormData
-                            });
-                        } else {
-                            throw new Error(aiData.message || "Gagal mendapatkan respons AI");
-                        }
-                    });
-                })
-                .catch(err => {
-                    console.error("Error generating Structure & Jobdesc:", err);
-                    alert("Terjadi kesalahan proses AI: " + err.message);
-                    stateLoading.classList.add('hidden');
-                    stateIdle.classList.remove('hidden');
-                })
-                .finally(() => {
-                    btnGenerate.disabled = false;
-                });
-        }
-
-        // Toggle manual edit mode for recommendation
-        function toggleEditRec() {
-            const stateResult = document.getElementById('state-result');
-            const stateEdit = document.getElementById('state-edit');
-            const recTextarea = document.getElementById('rec-textarea');
-            const editText = document.getElementById('edit-text');
-            const editIcon = document.getElementById('edit-icon');
-
-            if (!isEditMode) {
-                // Switch to Edit Mode
-                recTextarea.value = rawRecommendationText;
-                stateResult.classList.add('hidden');
-                stateEdit.classList.remove('hidden');
-                editText.textContent = "Batal Edit";
-                editIcon.className = "fas fa-times mr-1.5";
-                isEditMode = true;
+            if (checkbox.checked) {
+                row.classList.remove('opacity-60');
+                row.classList.add('bg-amber-50/45');
+                roleName.classList.add('text-amber-800');
+                input.disabled = false;
+                if (parseInt(input.value) === 0) {
+                    input.value = 1; // Default to 1 if checked
+                }
             } else {
-                // Switch to Preview Mode
-                stateEdit.classList.add('hidden');
-                stateResult.classList.remove('hidden');
-                editText.textContent = "Edit Manual";
-                editIcon.className = "fas fa-edit mr-1.5";
-                isEditMode = false;
+                row.classList.add('opacity-60');
+                row.classList.remove('bg-amber-50/45');
+                roleName.classList.remove('text-amber-800');
+                input.disabled = true;
+                input.value = 0; // Reset quota to 0 when disabled
             }
+            calculateStats();
         }
 
-        // Save manual edits to recommendation
-        function saveManualRec() {
-            const programId = document.getElementById('program-id').value;
-            const updatedText = document.getElementById('rec-textarea').value;
-            const btnSave = document.getElementById('btn-save-rec');
+        // Dynamically compute and display stats
+        function calculateStats() {
+            let activeRolesCount = 0;
+            let totalQuotaCount = 0;
 
-            if (!programId) {
-                alert("ID Program tidak ditemukan! Simpan program terlebih dahulu.");
-                return;
-            }
+            document.querySelectorAll('.table-row').forEach(row => {
+                const checked = row.querySelector('.checkbox-ada').checked;
+                const quotaVal = parseInt(row.querySelector('.input-quota').value) || 0;
 
+                if (checked) {
+                    activeRolesCount++;
+                    totalQuotaCount += quotaVal;
+                }
+            });
+
+            document.getElementById('stat-active-roles').textContent = activeRolesCount;
+            document.getElementById('stat-total-quota').textContent = totalQuotaCount + " Orang";
+        }
+
+        // AJAX Save to Database
+        function saveStrukturData() {
+            const btnSave = document.getElementById('btn-save');
+            const originalContent = btnSave.innerHTML;
+            
+            // Show loading state
             btnSave.disabled = true;
             btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Menyimpan...';
 
-            const recFormData = new FormData();
-            recFormData.append('id', programId);
-            recFormData.append('hasil_struktur', updatedText);
+            const payloadData = [];
+            document.querySelectorAll('.table-row').forEach(row => {
+                const id = row.getAttribute('data-id');
+                const ada = row.querySelector('.checkbox-ada').checked ? 1 : 0;
+                const quota = parseInt(row.querySelector('.input-quota').value) || 0;
+                
+                payloadData.push({
+                    id: id,
+                    ada: ada,
+                    quota: quota
+                });
+            });
 
-            fetch('struktur-jobdesc.php?action=save_recommendation', {
+            fetch('struktur-jobdesc.php?action=save', {
                 method: 'POST',
-                body: recFormData
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ data: payloadData })
             })
             .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    rawRecommendationText = updatedText;
-                    document.getElementById('state-result').innerHTML = marked.parse(updatedText);
-                    
-                    // Switch back to preview mode
-                    toggleEditRec();
-                    alert("Rancangan struktur berhasil disimpan!");
+            .then(res => {
+                if (res.status === 'success') {
+                    showToast();
                 } else {
-                    throw new Error(data.message || "Gagal menyimpan");
+                    alert('Gagal menyimpan data: ' + (res.message || 'Error tidak diketahui'));
                 }
             })
             .catch(err => {
-                alert("Error: " + err.message);
+                console.error(err);
+                alert('Terjadi kesalahan koneksi ke server.');
             })
             .finally(() => {
                 btnSave.disabled = false;
-                btnSave.innerHTML = '<i class="fas fa-save mr-1.5"></i> Simpan Perubahan';
+                btnSave.innerHTML = originalContent;
             });
         }
 
-        // Reset form for new program
-        function resetForm() {
-            document.getElementById('program-id').value = '';
-            document.getElementById('program-nama').value = '';
-            document.getElementById('program-deskripsi').value = '';
-            document.getElementById('program-kategori').value = 'Kurikulum / Akademik';
-            document.getElementById('program-sdm').value = 5;
-            document.getElementById('program-catatan').value = '';
-            document.getElementById('history-list').value = '';
-            rawRecommendationText = "";
+        // Show elegant sliding toast
+        function showToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
             
-            if (isEditMode) {
-                toggleEditRec(); // Turn off edit mode if active
-            }
-            
-            document.getElementById('state-result').classList.add('hidden');
-            document.getElementById('state-idle').classList.remove('hidden');
-            document.getElementById('btn-copy').classList.add('hidden');
-            document.getElementById('btn-edit-rec').classList.add('hidden');
-        }
-
-        // Copy recommendation result to clipboard
-        function copyResult() {
-            if (!rawRecommendationText) return;
-            navigator.clipboard.writeText(rawRecommendationText).then(() => {
-                const btnCopy = document.getElementById('btn-copy');
-                const originalText = btnCopy.innerHTML;
-                btnCopy.innerHTML = '<i class="fas fa-check mr-1.5"></i> Tersalin!';
-                btnCopy.disabled = true;
+            const saveStatusHeader = document.getElementById('save-status');
+            if (saveStatusHeader) {
+                saveStatusHeader.classList.remove('hidden');
                 setTimeout(() => {
-                    btnCopy.innerHTML = originalText;
-                    btnCopy.disabled = false;
-                }, 2000);
-            }).catch(err => {
-                console.error("Gagal menyalin teks: ", err);
-            });
+                    saveStatusHeader.classList.add('hidden');
+                }, 3000);
+            }
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
         }
     </script>
 </body>
