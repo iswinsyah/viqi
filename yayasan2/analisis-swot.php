@@ -94,6 +94,20 @@ if (isset($_GET['action'])) {
         }
         exit;
     }
+
+    if ($action === 'delete') {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        if ($id > 0) {
+            if ($conn->query("DELETE FROM swot_analysis WHERE id = $id")) {
+                echo json_encode(['status' => 'success']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => $conn->error]);
+            }
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'ID tidak valid']);
+        }
+        exit;
+    }
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_GET['action'])) {
@@ -177,10 +191,15 @@ $active_menu = 'analisis_swot';
                 </button>
                 <h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif Yayasan</h2>
             </div>
-            <div class="flex items-center space-x-4">
-                <select id="history-list" onchange="loadSwot(this.value)" class="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
-                    <option value="">-- Pilih Riwayat SWOT --</option>
-                </select>
+            <div class="flex items-center space-x-2 md:space-x-4">
+                <div class="flex items-center space-x-1">
+                    <select id="history-list" onchange="loadSwot(this.value)" class="bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="">-- Pilih Riwayat SWOT --</option>
+                    </select>
+                    <button id="btn-delete-history" onclick="deleteCurrentSwot()" class="hidden bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-bold p-2.5 rounded-lg text-sm transition shadow-sm flex items-center justify-center" title="Hapus Riwayat ini">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
                 <button onclick="resetForm()" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold px-4 py-2 rounded-lg text-sm transition shadow-sm flex items-center">
                     <i class="fas fa-plus mr-1.5"></i> Baru
                 </button>
@@ -348,6 +367,8 @@ $active_menu = 'analisis_swot';
                 resetForm();
                 return;
             }
+            const deleteBtn = document.getElementById('btn-delete-history');
+            if (deleteBtn) deleteBtn.classList.remove('hidden');
             fetch(`analisis-swot.php?action=get_swot&id=${id}`)
                 .then(res => res.json())
                 .then(data => {
@@ -417,6 +438,8 @@ $active_menu = 'analisis_swot';
             .then(data => {
                 if (data.status === 'success') {
                     document.getElementById('swot-id').value = data.id;
+                    const deleteBtn = document.getElementById('btn-delete-history');
+                    if (deleteBtn) deleteBtn.classList.remove('hidden');
                     loadHistoryList(data.id);
                     return data.id;
                 } else {
@@ -626,6 +649,9 @@ ${activeSdm}`;
             document.getElementById('state-idle').classList.remove('hidden');
             document.getElementById('btn-copy').classList.add('hidden');
             document.getElementById('btn-edit-rec').classList.add('hidden');
+
+            const deleteBtn = document.getElementById('btn-delete-history');
+            if (deleteBtn) deleteBtn.classList.add('hidden');
         }
 
         // Copy recommendation result to clipboard
@@ -643,6 +669,39 @@ ${activeSdm}`;
             }).catch(err => {
                 console.error("Gagal menyalin teks: ", err);
             });
+        }
+
+        // Hapus riwayat SWOT yang terpilih
+        function deleteCurrentSwot() {
+            const swotId = document.getElementById('swot-id').value;
+            if (!swotId) return;
+
+            if (confirm("Apakah Anda yakin ingin menghapus riwayat analisis SWOT ini secara permanen?")) {
+                const deleteBtn = document.getElementById('btn-delete-history');
+                const originalContent = deleteBtn.innerHTML;
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                fetch(`analisis-swot.php?action=delete&id=${swotId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            alert("Riwayat analisis SWOT berhasil dihapus.");
+                            resetForm();
+                            loadHistoryList();
+                        } else {
+                            alert("Gagal menghapus: " + (data.message || "Error tidak diketahui"));
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error deleting SWOT:", err);
+                        alert("Terjadi kesalahan koneksi ke server.");
+                    })
+                    .finally(() => {
+                        deleteBtn.disabled = false;
+                        deleteBtn.innerHTML = originalContent;
+                    });
+            }
         }
     </script>
 </body>
