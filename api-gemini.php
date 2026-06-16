@@ -1,4 +1,8 @@
 <?php
+// api-gemini.php
+// Proxy untuk membelokkan request dari GAS langsung ke Gemini API di Hostinger
+// Dilengkapi fitur fallback Tunneling via GAS apabila Hostinger memblokir port outbound ke Google API.
+
 // Matikan error display agar warnings/notices tidak merusak format JSON
 ini_set('display_errors', 0);
 error_reporting(0);
@@ -49,6 +53,42 @@ if (empty($prompt)) {
 }
 
 $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+$gasUrl = defined('GEMINI_GAS_URL') ? GEMINI_GAS_URL : '';
+
+// JIKA GAS_URL DITENTUKAN, GUNAKAN SEBAGAI TUNNEL (Mengatasi Blokir Firewall Outbound Hostinger)
+if (!empty($gasUrl)) {
+    $ch = curl_init($gasUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    
+    // Kirim payload asli + injeksi apiKey agar diproses oleh GAS
+    $payload = $input;
+    $payload['apiKey'] = $apiKey;
+    
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Content-Type: application/json"
+    ]);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Ikuti redirect dari Google Apps Script
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        echo json_encode(['status' => 'error', 'message' => 'cURL Tunneling Error via GAS: ' . $curlError]);
+        exit;
+    }
+    
+    // Teruskan output JSON secara langsung
+    echo $response;
+    exit;
+}
+
+// FALLBACK: KONEKSI LANGSUNG JIKA GAS URL KOSONG
 if (empty($apiKey)) {
     echo json_encode([
         'status' => 'error',
