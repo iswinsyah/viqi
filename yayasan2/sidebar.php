@@ -46,6 +46,11 @@
             <a href="tunjangan.php" class="<?= (isset($active_menu) && $active_menu == 'tunjangan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-award w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'tunjangan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Tunjangan
             </a>
+
+            <p class="px-2 text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-2 mt-6">Rencana & Strategi</p>
+            <a href="analisis-swot.php" class="<?= (isset($active_menu) && $active_menu == 'analisis_swot') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-chart-line w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'analisis_swot') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Analisis SWOT
+            </a>
         </nav>
     </div>
 
