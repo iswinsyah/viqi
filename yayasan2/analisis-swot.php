@@ -14,6 +14,56 @@ $conn->query("CREATE TABLE IF NOT EXISTS swot_analysis (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
+// Inisialisasi Database Struktur Sekolah (Self-Healing)
+$conn->query("CREATE TABLE IF NOT EXISTS struktur_sekolah (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nomor INT NOT NULL,
+    nama_jabatan VARCHAR(255) NOT NULL,
+    ada TINYINT(1) DEFAULT 0,
+    quota INT DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+)");
+
+// Cek apakah tabel kosong, jika iya masukkan data bawaan
+$res_check = $conn->query("SELECT COUNT(*) as total FROM struktur_sekolah");
+$row_check = $res_check->fetch_assoc();
+if ($row_check['total'] == 0) {
+    $default_positions = [
+        [1, 'Kepala Sekolah'],
+        [2, 'Wakil Kepala Sekolah'],
+        [3, 'Sekretaris Sekolah'],
+        [4, 'Bendahara Sekolah'],
+        [5, 'Kepala Administrasi'],
+        [7, 'Staff Administrasi'],
+        [8, 'Kepala Keuangan'],
+        [9, 'Staff Keuangan'],
+        [10, 'Ustadz/ah'],
+        [11, 'Kepala Ma\'had'],
+        [12, 'Sekretaris Ma\'had'],
+        [13, 'Bendahara Ma\'had'],
+        [14, 'Kepala Asrama'],
+        [15, 'Musyrif/ah'],
+        [16, 'Kepala Dapur'],
+        [17, 'Staff Dapur']
+    ];
+    foreach ($default_positions as $pos) {
+        $nomor = $pos[0];
+        $nama = $conn->real_escape_string($pos[1]);
+        $conn->query("INSERT INTO struktur_sekolah (nomor, nama_jabatan, ada, quota) VALUES ($nomor, '$nama', 0, 0)");
+    }
+}
+
+// Ambil daftar SDM/jabatan yang aktif (ada = 1) untuk disuntikkan ke prompt AI
+$res_sdm = $conn->query("SELECT nama_jabatan, quota FROM struktur_sekolah WHERE ada = 1 ORDER BY nomor ASC");
+$active_sdm = [];
+if ($res_sdm) {
+    while ($row = $res_sdm->fetch_assoc()) {
+        $active_sdm[] = $row['nama_jabatan'] . " (Quota: " . $row['quota'] . " orang)";
+    }
+}
+$active_sdm_string = !empty($active_sdm) ? implode(', ', $active_sdm) : 'Tidak ada jabatan aktif yang terdefinisi di menu Struktur. Mohon ingatkan pengguna untuk mengaktifkan jabatan terlebih dahulu di menu Struktur.';
+
+
 // Handling AJAX API Requests
 if (isset($_GET['action'])) {
     header('Content-Type: application/json');
@@ -270,6 +320,7 @@ $active_menu = 'analisis_swot';
         // Current raw text of the recommendations for clipboard copying and editing
         let rawRecommendationText = "";
         let isEditMode = false;
+        const activeSdm = <?= json_encode($active_sdm_string) ?>;
 
         // Load history list
         function loadHistoryList(selectIdAfterLoad = null) {
@@ -431,8 +482,11 @@ Buatlah rekomendasi program-program kerja internal sekolah/operasional yang konk
 Sajikan rekomendasi ini dalam format Markdown yang indah, profesional, dan mudah dibaca, lengkap dengan:
 - Nama Program Kerja Internal
 - Deskripsi Singkat & Tujuan Program
-- Target Pihak Penanggung Jawab (misal: Kepala Sekolah, Musyrif, Staf Administrasi, Kurikulum, dll. - BUKAN tim marketing)
-- Skala Prioritas (Tinggi/Sedang/Rendah)`;
+- Penanggung Jawab (Tentukan penanggung jawab program ini HANYA dengan memilih dari daftar SDM yang aktif di bawah!)
+- Skala Prioritas (Tinggi/Sedang/Rendah)
+
+Daftar SDM yang aktif dan tersedia di sekolah untuk ditunjuk sebagai Penanggung Jawab:
+${activeSdm}`;
 
                     const GAS_URL = "../api-gemini.php";
 
