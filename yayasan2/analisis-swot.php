@@ -205,21 +205,26 @@ $active_menu = 'analisis_swot';
                     <h3 class="font-bold text-amber-800 flex items-center">
                         <i class="fas fa-robot mr-2"></i> Rekomendasi Program Kerja (AI)
                     </h3>
-                    <button id="btn-copy" onclick="copyResult()" class="hidden text-xs bg-white text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 font-medium transition flex items-center">
-                        <i class="fas fa-copy mr-1.5"></i> Salin Rekomendasi
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-edit-rec" onclick="toggleEditRec()" class="hidden text-xs bg-white text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 font-bold transition flex items-center">
+                            <i id="edit-icon" class="fas fa-edit mr-1.5"></i> <span id="edit-text">Edit Manual</span>
+                        </button>
+                        <button id="btn-copy" onclick="copyResult()" class="hidden text-xs bg-white text-amber-900 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 font-medium transition flex items-center">
+                            <i class="fas fa-copy mr-1.5"></i> Salin
+                        </button>
+                    </div>
                 </div>
                 
-                <div id="result-container" class="p-6 flex-1 overflow-y-auto relative">
+                <div id="result-container" class="p-6 flex-1 overflow-y-auto relative flex flex-col">
                     <!-- IDLE STATE -->
-                    <div id="state-idle" class="flex flex-col items-center justify-center h-full text-gray-400 py-16 text-center">
+                    <div id="state-idle" class="flex flex-col items-center justify-center h-full text-gray-400 py-16 text-center my-auto">
                         <i class="fas fa-brain text-6xl mb-4 opacity-20"></i>
                         <p class="font-medium text-sm">Rekomendasi program kerja berdasarkan matriks SO, WO, ST, dan WT akan ditampilkan di sini setelah Anda melakukan generate.</p>
                     </div>
 
                     <!-- LOADING STATE -->
-                    <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-amber-600 py-16 text-center">
-                        <div class="relative w-16 h-16 mb-4">
+                    <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-amber-600 py-16 text-center my-auto">
+                        <div class="relative w-16 h-16 mb-4 mx-auto">
                             <div class="absolute inset-0 rounded-full border-4 border-amber-200"></div>
                             <div class="absolute inset-0 rounded-full border-4 border-amber-500 border-t-transparent animate-spin"></div>
                         </div>
@@ -227,8 +232,16 @@ $active_menu = 'analisis_swot';
                         <p class="text-xs text-gray-500 mt-1">Ini memerlukan waktu sekitar 10-20 detik.</p>
                     </div>
 
-                    <!-- RESULT STATE -->
-                    <div id="state-result" class="hidden markdown-body text-sm"></div>
+                    <!-- RESULT STATE (PREVIEW MODE) -->
+                    <div id="state-result" class="hidden markdown-body text-sm flex-1"></div>
+
+                    <!-- EDIT STATE (EDIT MODE) -->
+                    <div id="state-edit" class="hidden h-full flex flex-col flex-1">
+                        <textarea id="rec-textarea" class="w-full flex-1 p-3 border rounded-lg text-sm bg-gray-50 focus:ring-2 focus:ring-amber-500 focus:outline-none font-mono resize-y" style="min-height: 350px;" placeholder="Tuliskan rekomendasi program kerja di sini..."></textarea>
+                        <button id="btn-save-rec" onclick="saveManualRec()" class="mt-3 bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2.5 px-4 rounded-lg text-sm shadow-sm transition flex items-center justify-center self-end">
+                            <i class="fas fa-save mr-1.5"></i> Simpan Perubahan
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -254,8 +267,9 @@ $active_menu = 'analisis_swot';
             loadHistoryList();
         });
 
-        // Current raw text of the recommendations for clipboard copying
+        // Current raw text of the recommendations for clipboard copying and editing
         let rawRecommendationText = "";
+        let isEditMode = false;
 
         // Load history list
         function loadHistoryList(selectIdAfterLoad = null) {
@@ -301,17 +315,24 @@ $active_menu = 'analisis_swot';
                     const idleDiv = document.getElementById('state-idle');
                     const recommendation = data.program_rekomendasi;
                     
+                    // Turn off edit mode if active when loading new swot
+                    if (isEditMode) {
+                        toggleEditRec();
+                    }
+                    
                     if (recommendation && recommendation.trim() !== '') {
                         rawRecommendationText = recommendation;
                         resultDiv.innerHTML = marked.parse(recommendation);
                         resultDiv.classList.remove('hidden');
                         idleDiv.classList.add('hidden');
                         document.getElementById('btn-copy').classList.remove('hidden');
+                        document.getElementById('btn-edit-rec').classList.remove('hidden');
                     } else {
                         rawRecommendationText = "";
                         resultDiv.classList.add('hidden');
                         idleDiv.classList.remove('hidden');
                         document.getElementById('btn-copy').classList.add('hidden');
+                        document.getElementById('btn-edit-rec').classList.add('hidden');
                     }
                 })
                 .catch(err => console.error("Error loading SWOT details:", err));
@@ -360,6 +381,12 @@ $active_menu = 'analisis_swot';
             const stateLoading = document.getElementById('state-loading');
             const stateResult = document.getElementById('state-result');
             const btnCopy = document.getElementById('btn-copy');
+            const btnEditRec = document.getElementById('btn-edit-rec');
+
+            // Turn off edit mode if active when generating
+            if (isEditMode) {
+                toggleEditRec();
+            }
 
             // Save form first
             btnGenerate.disabled = true;
@@ -367,6 +394,7 @@ $active_menu = 'analisis_swot';
             stateResult.classList.add('hidden');
             stateLoading.classList.remove('hidden');
             btnCopy.classList.add('hidden');
+            btnEditRec.classList.add('hidden');
 
             saveSwot('generate')
                 .then(swotId => {
@@ -427,6 +455,7 @@ Sajikan rekomendasi ini dalam format Markdown yang indah, profesional, dan mudah
                             stateLoading.classList.add('hidden');
                             stateResult.classList.remove('hidden');
                             btnCopy.classList.remove('hidden');
+                            btnEditRec.classList.remove('hidden');
 
                             // Save recommendation to database
                             const recFormData = new FormData();
@@ -453,6 +482,76 @@ Sajikan rekomendasi ini dalam format Markdown yang indah, profesional, dan mudah
                 });
         }
 
+        // Toggle manual edit mode for recommendation
+        function toggleEditRec() {
+            const stateResult = document.getElementById('state-result');
+            const stateEdit = document.getElementById('state-edit');
+            const recTextarea = document.getElementById('rec-textarea');
+            const editText = document.getElementById('edit-text');
+            const editIcon = document.getElementById('edit-icon');
+
+            if (!isEditMode) {
+                // Switch to Edit Mode
+                recTextarea.value = rawRecommendationText;
+                stateResult.classList.add('hidden');
+                stateEdit.classList.remove('hidden');
+                editText.textContent = "Batal Edit";
+                editIcon.className = "fas fa-times mr-1.5";
+                isEditMode = true;
+            } else {
+                // Switch to Preview Mode
+                stateEdit.classList.add('hidden');
+                stateResult.classList.remove('hidden');
+                editText.textContent = "Edit Manual";
+                editIcon.className = "fas fa-edit mr-1.5";
+                isEditMode = false;
+            }
+        }
+
+        // Save manual edits to recommendation
+        function saveManualRec() {
+            const swotId = document.getElementById('swot-id').value;
+            const updatedText = document.getElementById('rec-textarea').value;
+            const btnSave = document.getElementById('btn-save-rec');
+
+            if (!swotId) {
+                alert("ID SWOT tidak ditemukan! Simpan SWOT terlebih dahulu.");
+                return;
+            }
+
+            btnSave.disabled = true;
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Menyimpan...';
+
+            const recFormData = new FormData();
+            recFormData.append('id', swotId);
+            recFormData.append('program_rekomendasi', updatedText);
+
+            fetch('analisis-swot.php?action=save_recommendation', {
+                method: 'POST',
+                body: recFormData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    rawRecommendationText = updatedText;
+                    document.getElementById('state-result').innerHTML = marked.parse(updatedText);
+                    
+                    // Switch back to preview mode
+                    toggleEditRec();
+                    alert("Rekomendasi manual berhasil disimpan!");
+                } else {
+                    throw new Error(data.message || "Gagal menyimpan");
+                }
+            })
+            .catch(err => {
+                alert("Error: " + err.message);
+            })
+            .finally(() => {
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i class="fas fa-save mr-1.5"></i> Simpan Perubahan';
+            });
+        }
+
         // Reset form for new SWOT
         function resetForm() {
             document.getElementById('swot-id').value = '';
@@ -463,9 +562,14 @@ Sajikan rekomendasi ini dalam format Markdown yang indah, profesional, dan mudah
             document.getElementById('history-list').value = '';
             rawRecommendationText = "";
             
+            if (isEditMode) {
+                toggleEditRec(); // Turn off edit mode if active
+            }
+            
             document.getElementById('state-result').classList.add('hidden');
             document.getElementById('state-idle').classList.remove('hidden');
             document.getElementById('btn-copy').classList.add('hidden');
+            document.getElementById('btn-edit-rec').classList.add('hidden');
         }
 
         // Copy recommendation result to clipboard
