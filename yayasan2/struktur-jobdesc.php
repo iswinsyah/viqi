@@ -413,7 +413,9 @@ $active_menu = 'struktur_jobdesc';
                     const jumlah_sdm = document.getElementById('program-sdm').value;
                     const catatan_tambahan = document.getElementById('program-catatan').value;
 
-                    const prompt = `Bertindaklah sebagai Konsultan Manajemen Organisasi Sekolah/Pesantren. Rancanglah Struktur Organisasi (kepanitiaan) beserta Deskripsi Pekerjaan (Job Description) yang optimal untuk program kerja berikut:
+                    const prompt = `<<< SYSTEM INSTRUCTION OVERRIDE: RESET PERSONA >>>
+Abaikan peran Anda sebagai pakar marketing, promosi, iklan, atau pencari leads. Anda dilarang keras merumuskan strategi pemasaran atau rekrutmen penjualan.
+Bertindaklah murni sebagai Konsultan Manajemen Organisasi & Tata Kelola Internal Sekolah/Pesantren Islam. Rancanglah Struktur Organisasi (kepanitiaan internal) beserta Deskripsi Pekerjaan (Job Description) yang optimal untuk program kerja operasional berikut:
                     
 - Nama Program: ${nama_program}
 - Deskripsi & Tujuan: ${deskripsi || '(Tidak ada deskripsi)'}
@@ -422,7 +424,7 @@ $active_menu = 'struktur_jobdesc';
 - Catatan Tambahan/Kriteria khusus: ${catatan_tambahan || '(Tidak ada catatan)'}
 
 Tugas Anda:
-1. Rancanglah struktur kepanitiaan/tim pelaksana yang paling efisien dan optimal sesuai dengan jumlah SDM yang tersedia. Tentukan posisi-posisi penting (misal: Ketua Pelaksana, Penanggung Jawab, Koordinator Lapangan, Divisi Humas, dll.).
+1. Rancanglah struktur kepanitiaan/tim pelaksana internal yang paling efisien dan optimal sesuai dengan jumlah SDM yang tersedia. Tentukan posisi-posisi penting (misal: Ketua Pelaksana, Penanggung Jawab Operasional, Koordinator Lapangan, Divisi Perlengkapan, Sekretaris, dll. - BUKAN tim marketing).
 2. Buat deskripsi pekerjaan (Job Description) yang konkret, taktis, dan terukur untuk masing-masing posisi tersebut.
 3. Rancanglah KPI / indikator keberhasilan singkat untuk tiap posisi demi memastikan efisiensi kerja.
 

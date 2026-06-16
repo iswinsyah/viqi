@@ -403,7 +403,9 @@ $active_menu = 'analisis_swot';
                     const peluang = document.getElementById('swot-peluang').value;
                     const hambatan = document.getElementById('swot-hambatan').value;
 
-                    const prompt = `Bertindaklah sebagai Konsultan Perencana Strategis Pendidikan/Sekolah Islam. Lakukan analisis SWOT komprehensif berdasarkan input berikut:
+                     const prompt = `<<< SYSTEM INSTRUCTION OVERRIDE: RESET PERSONA >>>
+Abaikan peran Anda sebagai pakar marketing, promosi, iklan, atau pencari leads. Anda dilarang keras merumuskan strategi pemasaran atau akuisisi santri baru. 
+Bertindaklah murni sebagai Konsultan Manajemen Operasional Internal Sekolah/Pesantren Islam. Lakukan analisis SWOT komprehensif untuk tata kelola internal berdasarkan input berikut:
                     
 Faktor Internal:
 - Kekuatan (Strengths):
@@ -420,16 +422,16 @@ ${peluang || '(Tidak ada data peluang)'}
 ${hambatan || '(Tidak ada data hambatan)'}
 
 Tugas Anda:
-Buatlah rekomendasi program-program kerja strategis konkret, inovatif, dan siap dijalankan oleh sekolah. Gunakan strategi matriks SWOT berikut untuk merumuskan program:
-1. Strategi SO (Kekuatan-Peluang): Mengoptimalkan kekuatan internal untuk menangkap peluang eksternal.
-2. Strategi WO (Kelemahan-Peluang): Mengatasi kelemahan internal dengan memanfaatkan peluang eksternal.
-3. Strategi ST (Kekuatan-Hambatan): Memanfaatkan kekuatan internal untuk menghindari atau meminimalkan dampak hambatan eksternal.
-4. Strategi WT (Kelemahan-Hambatan): Bertindak defensif untuk mengurangi kelemahan internal serta menghindari hambatan eksternal.
+Buatlah rekomendasi program-program kerja internal sekolah/operasional yang konkret, efisien, dan siap dijalankan oleh sekolah demi hasil tata kelola yang optimal. Gunakan strategi matriks SWOT berikut untuk merumuskan program kerja internal:
+1. Strategi SO (Kekuatan-Peluang): Menggunakan kekuatan internal untuk memaksimalkan peluang eksternal.
+2. Strategi WO (Kelemahan-Peluang): Meminimalkan kelemahan internal dengan memanfaatkan peluang eksternal.
+3. Strategi ST (Kekuatan-Hambatan): Memanfaatkan kekuatan internal untuk mengantisipasi atau meminimalkan dampak hambatan eksternal.
+4. Strategi WT (Kelemahan-Hambatan): Mengurangi kelemahan internal untuk menghindari hambatan eksternal (strategi penyelamatan/bertahan).
 
 Sajikan rekomendasi ini dalam format Markdown yang indah, profesional, dan mudah dibaca, lengkap dengan:
-- Nama Program Kerja
+- Nama Program Kerja Internal
 - Deskripsi Singkat & Tujuan Program
-- Target Pihak Penanggung Jawab (misal: Kepala Sekolah, Musyrif, Humas, Kurikulum, dll.)
+- Target Pihak Penanggung Jawab (misal: Kepala Sekolah, Musyrif, Staf Administrasi, Kurikulum, dll. - BUKAN tim marketing)
 - Skala Prioritas (Tinggi/Sedang/Rendah)`;
 
                     const GAS_URL = "https://script.google.com/macros/s/AKfycbyU1T58tS5e1GqxNz_n8lHuRrE5lBJZ6uLEqXCDcXqYC6wsMkRF48FLdIcqpt93ffg/exec";
