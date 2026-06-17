@@ -97,8 +97,8 @@ if (empty($apiKey)) {
     exit;
 }
 
-// Panggil Gemini API secara langsung (menggunakan model gemini-2.5-flash)
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+// Panggil Gemini API secara langsung (menggunakan model gemini-1.5-flash-latest)
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" . $apiKey;
 
 $payload = [
     "contents" => [
