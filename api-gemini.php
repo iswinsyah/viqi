@@ -67,7 +67,7 @@ if (!empty($gasUrl)) {
     
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 120);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         "Content-Type: application/json"
     ]);
@@ -115,7 +115,7 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
 curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+curl_setopt($ch, CURLOPT_TIMEOUT, 120);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
     "Content-Type: application/json"
 ]);
