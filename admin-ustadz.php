@@ -105,6 +105,24 @@ if ($view === 'dashboard_asrama') {
         106 => "Quraisy", 107 => "Al-Ma'un", 108 => "Al-Kausar", 109 => "Al-Kafirun", 110 => "An-Nasr", 111 => "Al-Masad", 112 => "Al-Ikhlas", 113 => "Al-Falaq", 114 => "An-Nas"
     ];
 
+} elseif ($view === 'amanah') {
+    $active_menu = 'amanah_asatidz';
+    
+    // Pastikan tabel job_descriptions ada (Self-Healing)
+    $conn->query("CREATE TABLE IF NOT EXISTS job_descriptions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        swot_id INT NOT NULL,
+        hasil_jobdesc TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        FOREIGN KEY (swot_id) REFERENCES swot_analysis(id) ON DELETE CASCADE
+    )");
+    
+    // Ambil data jobdesc terbaru
+    $res_jd = $conn->query("SELECT hasil_jobdesc FROM job_descriptions ORDER BY id DESC LIMIT 1");
+    $jobdesc_data = $res_jd ? $res_jd->fetch_assoc() : null;
+    $hasil_jobdesc = $jobdesc_data['hasil_jobdesc'] ?? '';
+
 } else { // default view
     $active_menu = 'dashboard_pegawai';
     // --- LOGIC UNTUK DASHBOARD PEGAWAI ---
@@ -125,8 +143,115 @@ if ($view === 'dashboard_asrama') {
     <title>Ruang Asatidz | Admin Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <?php if ($view === 'dashboard_asrama'): ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <?php endif; ?>
+    <?php if ($view === 'amanah'): ?>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .font-outfit {
+            font-family: 'Outfit', sans-serif;
+        }
+        /* Premium markdown body styling */
+        .markdown-body h1 { 
+            font-size: 1.5rem; 
+            font-weight: 800; 
+            color: #1e293b; 
+            margin-top: 1.75rem; 
+            margin-bottom: 0.75rem; 
+            border-bottom: 2px solid #f1f5f9; 
+            padding-bottom: 0.35rem; 
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .markdown-body h1::before {
+            content: "\f2c2";
+            font-family: "Font Awesome 6 Free";
+            font-weight: 900;
+            color: #0891b2; /* Cyan theme for Asatidz */
+            font-size: 1.25rem;
+        }
+        .markdown-body h2 { 
+            font-size: 1.2rem; 
+            font-weight: 700; 
+            color: #0891b2; 
+            margin-top: 1.25rem; 
+            margin-bottom: 0.5rem; 
+        }
+        .markdown-body h3 { 
+            font-size: 1.05rem; 
+            font-weight: 600; 
+            color: #475569; 
+            margin-top: 1rem; 
+            margin-bottom: 0.25rem; 
+        }
+        .markdown-body p { 
+            margin-bottom: 0.75rem; 
+            line-height: 1.625; 
+            color: #475569; 
+            text-align: justify;
+        }
+        .markdown-body ul, .markdown-body ol { 
+            margin-left: 1.5rem; 
+            margin-bottom: 0.75rem; 
+        }
+        .markdown-body ul { 
+            list-style-type: disc; 
+        }
+        .markdown-body ol { 
+            list-style-type: decimal; 
+        }
+        .markdown-body li { 
+            margin-bottom: 0.35rem; 
+            color: #475569; 
+        }
+        .markdown-body strong { 
+            color: #0f172a; 
+            font-weight: 700; 
+        }
+        .markdown-body blockquote { 
+            border-left: 4px solid #06b6d4; 
+            padding-left: 1rem; 
+            color: #64748b; 
+            font-style: italic; 
+            margin: 1rem 0; 
+            background: #ecfeff; 
+            padding-top: 0.5rem; 
+            padding-bottom: 0.5rem; 
+        }
+        .markdown-body hr {
+            border: 0;
+            border-top: 2px dashed #e2e8f0;
+            margin: 2rem 0;
+        }
+        
+        /* Print layout optimizations */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            #sidebar-hr, header, .no-print {
+                display: none !important;
+            }
+            main {
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: visible !important;
+                height: auto !important;
+            }
+            .print-card {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            .markdown-body h1 {
+                border-bottom: 2px solid #000;
+            }
+        }
+    </style>
     <?php endif; ?>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
@@ -320,6 +445,71 @@ if ($view === 'dashboard_asrama') {
                 </div>
             </div>
 
+            <?php elseif ($view === 'amanah'): ?>
+            <!-- ================================================== -->
+            <!-- TAMPILAN MENU AMANAH                              -->
+            <!-- ================================================== -->
+            <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-id-card text-cyan-600 mr-2"></i>Menu Amanah</h1>
+                    <p class="text-gray-500 mt-1">Daftar wewenang, rincian tugas berkala, dan Key Performance Indicators (KPI) Anda.</p>
+                </div>
+                <?php if (!empty($hasil_jobdesc)): ?>
+                <div class="flex items-center gap-2">
+                    <button onclick="window.print()" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                        <i class="fas fa-print"></i>
+                        <span>Cetak PDF</span>
+                    </button>
+                    <button id="btn-copy-amanah" onclick="copyAmanah()" class="bg-white hover:bg-gray-100 border border-gray-200 text-gray-750 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                        <i class="fas fa-copy"></i>
+                        <span id="copy-text-btn">Salin Teks</span>
+                    </button>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- CARD UTAMA AMANAH -->
+            <div class="bg-white rounded-2xl border border-gray-200/60 shadow-md p-6 md:p-8 print-card font-outfit">
+                <?php if (!empty($hasil_jobdesc)): ?>
+                    <!-- Tempat render hasil Markdown -->
+                    <div id="amanah-rendered" class="markdown-body text-sm leading-relaxed font-outfit"></div>
+                    
+                    <!-- Hidden textarea to store raw Markdown for copying -->
+                    <textarea id="amanah-raw" class="hidden"><?= htmlspecialchars($hasil_jobdesc) ?></textarea>
+                    
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const rawText = document.getElementById('amanah-raw').value;
+                            document.getElementById('amanah-rendered').innerHTML = marked.parse(rawText);
+                        });
+
+                        function copyAmanah() {
+                            const rawText = document.getElementById('amanah-raw').value;
+                            navigator.clipboard.writeText(rawText).then(() => {
+                                const btn = document.getElementById('btn-copy-amanah');
+                                const originalHtml = btn.innerHTML;
+                                btn.innerHTML = '<i class="fas fa-check text-emerald-500"></i> <span class="text-emerald-600 font-bold">Tersalin!</span>';
+                                setTimeout(() => {
+                                    btn.innerHTML = originalHtml;
+                                }, 2000);
+                            }).catch(err => {
+                                console.error("Gagal menyalin: ", err);
+                            });
+                        }
+                    </script>
+                <?php else: ?>
+                    <div class="py-12 flex flex-col items-center justify-center text-center max-w-md mx-auto">
+                        <div class="w-20 h-20 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center text-3xl shadow-inner mb-4">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <h3 class="font-bold text-gray-800 text-lg">Belum Ada Data Amanah</h3>
+                        <p class="text-sm text-gray-400 mt-2">
+                            Yayasan belum menerbitkan atau mengedit Job Description / Amanah untuk periode ini. Silakan hubungi pihak Yayasan untuk informasi lebih lanjut.
+                        </p>
+                    </div>
+                <?php endif; ?>
+            </div>
+
             <?php else: ?>
             <!-- ================================================== -->
             <!-- TAMPILAN DEFAULT (DASHBOARD PEGAWAI)              -->
@@ -393,7 +583,6 @@ if ($view === 'dashboard_asrama') {
                     </table>
                 </div>
             </div>
-
             <?php endif; ?>
         </main>
     </div>

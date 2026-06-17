@@ -35,6 +35,7 @@ $defined_menus = [
         'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
     ],
     'Kinerja & Akun' => [
+        'amanah_asatidz' => 'Menu Amanah',
         'kpi_ustadz' => 'KPI Ustadz',
         'kpi_musyrif' => 'KPI Musyrif',
         'ganti_password' => 'Ganti Password',

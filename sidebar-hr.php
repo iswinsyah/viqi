@@ -15,6 +15,16 @@ $is_super_admin = in_array('super_admin', $user_roles);
 // Ambil semua hak akses menu dari database
 $menu_permissions = [];
 if ($conn) {
+    // Pastikan tabel menu_permissions ada (Self-Healing)
+    $conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_key VARCHAR(100) UNIQUE NOT NULL,
+        allowed_roles TEXT
+    )");
+    
+    // Pastikan default permission untuk amanah_asatidz terisi agar langsung muncul untuk semua role
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('amanah_asatidz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_asrama,musyrif,ustadz')");
+
     $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
     if ($res_perms) {
         while ($row = $res_perms->fetch_assoc()) {
@@ -72,6 +82,7 @@ $menu_structure = [
         'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet', 'title' => 'Rekap Uang Saku Santri'],
     ],
     'Kinerja & Akun' => [
+        'amanah_asatidz' => ['href' => 'admin-ustadz.php?view=amanah', 'icon' => 'fa-id-card', 'title' => 'Menu Amanah'],
         'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher', 'title' => 'KPI Ustadz'],
         'kpi_musyrif' => ['href' => 'admin-pegawai-kpi-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'KPI Musyrif'],
         'ganti_password' => ['href' => 'ganti-password-ustadz.php', 'icon' => 'fa-key', 'title' => 'Ganti Password'],
