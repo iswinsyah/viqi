@@ -11,6 +11,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS struktur_sekolah (
     quota INT DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
+@$conn->query("ALTER TABLE struktur_sekolah ADD COLUMN amanah_global TEXT NULL AFTER nama_jabatan");
 
 // Cek apakah tabel kosong, jika iya masukkan data bawaan
 $res_check = $conn->query("SELECT COUNT(*) as total FROM struktur_sekolah");
@@ -59,7 +60,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_GET['action']) && $_GET['ac
             $id = (int)$item['id'];
             $ada = (int)$item['ada'];
             $quota = (int)$item['quota'];
-            $conn->query("UPDATE struktur_sekolah SET ada = $ada, quota = $quota WHERE id = $id");
+            $amanah_global = $conn->real_escape_string($item['amanah_global'] ?? '');
+            $conn->query("UPDATE struktur_sekolah SET ada = $ada, quota = $quota, amanah_global = '$amanah_global' WHERE id = $id");
         }
         $conn->commit();
         echo json_encode(['status' => 'success']);
@@ -185,7 +187,8 @@ $active_menu = 'struktur_jobdesc';
                             <thead>
                                 <tr class="bg-gray-50/75 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
                                     <th class="py-4 px-6 text-center w-16">No</th>
-                                    <th class="py-4 px-6">Nama Jabatan</th>
+                                    <th class="py-4 px-6 w-1/4">Nama Jabatan</th>
+                                    <th class="py-4 px-6">Amanah Global</th>
                                     <th class="py-4 px-6 text-center w-36">Ada / Tidak</th>
                                     <th class="py-4 px-6 text-center w-40">Quota Personil</th>
                                 </tr>
@@ -196,6 +199,9 @@ $active_menu = 'struktur_jobdesc';
                                         <td class="py-4 px-6 text-center font-bold text-gray-400 font-mono text-sm"><?= $row['nomor'] ?></td>
                                         <td class="py-4 px-6">
                                             <span class="role-name font-semibold text-gray-700 text-sm md:text-base transition-colors"><?= htmlspecialchars($row['nama_jabatan']) ?></span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <input type="text" value="<?= htmlspecialchars($row['amanah_global'] ?? '') ?>" class="input-amanah w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm transition focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-400 bg-white disabled:bg-gray-50 disabled:text-gray-400" placeholder="Masukkan konsep amanah global..." <?= $row['ada'] ? '' : 'disabled' ?>>
                                         </td>
                                         <td class="py-4 px-6 text-center">
                                             <label class="relative inline-flex items-center cursor-pointer select-none">
@@ -296,6 +302,7 @@ $active_menu = 'struktur_jobdesc';
         function handleRowState(checkbox) {
             const row = checkbox.closest('.table-row');
             const input = row.querySelector('.input-quota');
+            const inputAmanah = row.querySelector('.input-amanah');
             const roleName = row.querySelector('.role-name');
 
             if (checkbox.checked) {
@@ -303,6 +310,7 @@ $active_menu = 'struktur_jobdesc';
                 row.classList.add('bg-amber-50/45');
                 roleName.classList.add('text-amber-800');
                 input.disabled = false;
+                if (inputAmanah) inputAmanah.disabled = false;
                 if (parseInt(input.value) === 0) {
                     input.value = 1; // Default to 1 if checked
                 }
@@ -311,6 +319,7 @@ $active_menu = 'struktur_jobdesc';
                 row.classList.remove('bg-amber-50/45');
                 roleName.classList.remove('text-amber-800');
                 input.disabled = true;
+                if (inputAmanah) inputAmanah.disabled = true;
                 input.value = 0; // Reset quota to 0 when disabled
             }
             calculateStats();
@@ -349,11 +358,13 @@ $active_menu = 'struktur_jobdesc';
                 const id = row.getAttribute('data-id');
                 const ada = row.querySelector('.checkbox-ada').checked ? 1 : 0;
                 const quota = parseInt(row.querySelector('.input-quota').value) || 0;
+                const amanah_global = row.querySelector('.input-amanah').value || '';
                 
                 payloadData.push({
                     id: id,
                     ada: ada,
-                    quota: quota
+                    quota: quota,
+                    amanah_global: amanah_global
                 });
             });
 

@@ -12,12 +12,13 @@ $conn->query("CREATE TABLE IF NOT EXISTS job_descriptions (
     FOREIGN KEY (swot_id) REFERENCES swot_analysis(id) ON DELETE CASCADE
 )");
 
-// Ambil daftar SDM/jabatan yang aktif (ada = 1) untuk disuntikkan ke prompt AI
-$res_sdm = $conn->query("SELECT nama_jabatan, quota FROM struktur_sekolah WHERE ada = 1 ORDER BY nomor ASC");
+// Ambil daftar SDM/jabatan yang aktif (ada = 1) beserta Amanah Globalnya untuk disuntikkan ke prompt AI
+$res_sdm = $conn->query("SELECT nama_jabatan, quota, amanah_global FROM struktur_sekolah WHERE ada = 1 ORDER BY nomor ASC");
 $active_sdm = [];
 if ($res_sdm) {
     while ($row = $res_sdm->fetch_assoc()) {
-        $active_sdm[] = $row['nama_jabatan'] . " (Quota: " . $row['quota'] . " orang)";
+        $amanah = !empty($row['amanah_global']) ? " [Panduan Amanah Global: " . $row['amanah_global'] . "]" : '';
+        $active_sdm[] = $row['nama_jabatan'] . " (Quota: " . $row['quota'] . " orang)" . $amanah;
     }
 }
 $active_sdm_string = !empty($active_sdm) ? implode(', ', $active_sdm) : 'Tidak ada jabatan aktif yang terdefinisi di menu Struktur.';
