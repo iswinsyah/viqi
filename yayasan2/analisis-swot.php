@@ -53,15 +53,16 @@ if ($row_check['total'] == 0) {
     }
 }
 
-// Ambil daftar SDM/jabatan yang aktif (ada = 1) untuk disuntikkan ke prompt AI
-$res_sdm = $conn->query("SELECT nama_jabatan, quota FROM struktur_sekolah WHERE ada = 1 ORDER BY nomor ASC");
+// Ambil daftar SDM/jabatan yang aktif (ada = 1) beserta Amanah Globalnya untuk disuntikkan ke prompt AI
+$res_sdm = $conn->query("SELECT nama_jabatan, quota, amanah_global FROM struktur_sekolah WHERE ada = 1 ORDER BY nomor ASC");
 $active_sdm = [];
 if ($res_sdm) {
     while ($row = $res_sdm->fetch_assoc()) {
-        $active_sdm[] = $row['nama_jabatan'] . " (Quota: " . $row['quota'] . " orang)";
+        $amanah = !empty($row['amanah_global']) ? " - Deskripsi Tugas/Amanah Global: " . $row['amanah_global'] : '';
+        $active_sdm[] = "- " . $row['nama_jabatan'] . " (Quota: " . $row['quota'] . " orang)" . $amanah;
     }
 }
-$active_sdm_string = !empty($active_sdm) ? implode(', ', $active_sdm) : 'Tidak ada jabatan aktif yang terdefinisi di menu Struktur. Mohon ingatkan pengguna untuk mengaktifkan jabatan terlebih dahulu di menu Struktur.';
+$active_sdm_string = !empty($active_sdm) ? implode("\n", $active_sdm) : 'Tidak ada jabatan aktif yang terdefinisi di menu Struktur. Mohon ingatkan pengguna untuk mengaktifkan jabatan terlebih dahulu di menu Struktur.';
 
 
 // Handling AJAX API Requests
@@ -505,10 +506,10 @@ Buatlah rekomendasi program-program kerja internal sekolah/operasional yang konk
 Sajikan rekomendasi ini dalam format Markdown yang indah, profesional, dan mudah dibaca, lengkap dengan:
 - Nama Program Kerja Internal
 - Deskripsi Singkat & Tujuan Program
-- Penanggung Jawab (Tentukan penanggung jawab program ini HANYA dengan memilih dari daftar SDM yang aktif di bawah!)
+- Penanggung Jawab (Pilihlah penanggung jawab program ini HANYA dari daftar SDM yang aktif di bawah! Anda harus menyesuaikan penunjukan PJ ini dengan kecocokan program terhadap Deskripsi Tugas/Amanah Global masing-masing peran di bawah. JANGAN menunjuk peran yang tidak tercantum dalam daftar SDM aktif!)
 - Skala Prioritas (Tinggi/Sedang/Rendah)
 
-Daftar SDM yang aktif dan tersedia di sekolah untuk ditunjuk sebagai Penanggung Jawab:
+Daftar SDM yang aktif dan tersedia di sekolah untuk ditunjuk sebagai Penanggung Jawab (Peran yang TIDAK ada di bawah ini berarti tidak aktif/tidak ada saat ini, dan DILARANG untuk ditunjuk):
 ${activeSdm}`;
 
                     const GAS_URL = "../api-gemini.php";
