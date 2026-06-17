@@ -558,10 +558,20 @@ ${programRekomendasi}
 Daftar Jabatan Aktif di Sekolah (sebagai referensi tambahan jika diperlukan):
 ${activeSdm}
 
+Pedoman Konsep Dasar/Global untuk masing-masing Peran/Jabatan yang WAJIB diintegrasikan ke dalam deskripsi peran, tugas, wewenang, dan tanggung jawab utama mereka:
+1. Kepala Sekolah: Penanggungjawab dan wakil lembaga dalam urusan prestasi akademik santri secara umum.
+2. Sekretaris Sekolah: Wakil kepala sekolah dalam urusan administrasi dan kurikulum sekolah.
+3. Bendahara Sekolah: Wakil kepala sekolah dalam urusan administrasi keuangan.
+4. Administrator atau Admin Sekolah: Wakil kepala sekolah dalam urusan administrasi dan keuangan sekolah jika peran Sekretaris sekolah dan Bendahara sekolah tidak ada.
+5. Ustadz dan Ustadzah: Tenaga pendidik yang mengampu mata pelajaran umum sesuai kurikulum negara yang berlaku saat itu.
+6. Kepala Ma'had: Penanggungjawab pembentukan karakter santri sebagai seorang pengemban dakwah, penjaga Quran yang mandiri.
+7. Kepala Asrama: Wakil kepala ma'had dalam ruang lingkup asrama yang dipimpinnya.
+8. Musyrif dan Musyrifah: Wakil kepala asrama atas santri binaan masing-masing.
+
 Untuk setiap peran/Penanggung Jawab (PJ) unik yang diidentifikasi dari Program Kerja di atas, buatlah Job Description dengan struktur sebagai berikut:
 
 # Nama Jabatan / Peran PJ
-1. **Peran & Tanggung Jawab Utama**: Penjelasan singkat mengenai fungsi utama jabatan ini dalam menyukseskan program kerja yang menjadi tanggung jawabnya.
+1. **Peran & Tanggung Jawab Utama**: Penjelasan singkat mengenai fungsi utama jabatan ini dalam menyukseskan program kerja yang menjadi tanggung jawabnya (selaraskan dengan pedoman konsep dasar peran di atas).
 2. **Rincian Tugas Berkala**:
    - **Tugas Harian**: Rutinitas sehari-hari yang harus dilakukan.
    - **Tugas Mingguan**: Tugas yang dievaluasi atau dilakukan setiap pekan.
