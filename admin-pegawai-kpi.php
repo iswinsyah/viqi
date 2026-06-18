@@ -46,8 +46,15 @@ $skor_kehadiran_rapat = $jml_rapat > 0 ? 100 : 75; // Jika bulan ini hadir rapat
 $skor_administrasi = (($skor_jurnal * 0.4) + ($skor_kehadiran * 0.4) + ($skor_kehadiran_rapat * 0.2));
 
 // 2. Kualitas Pengajaran (Bobot 40%)
-$skor_penggunaan_ai = 70; // Placeholder. Logic: Hitung jumlah penggunaan AI dari tabel log_aktivitas_ai
-$skor_supervisi = 92; // Placeholder. Logic: Ambil skor terakhir dari tabel supervisi_mengajar
+// Cek penggunaan AI (RPP dsb) sebagai indikator efisiensi & kualitas ajar
+$res_ai = $conn->query("SELECT COUNT(*) as pemakaian FROM log_aktivitas_ai WHERE user_id = $user_id AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())");
+$jumlah_pakai_ai = $res_ai ? (int)($res_ai->fetch_assoc()['pemakaian'] ?? 0) : 0;
+$skor_penggunaan_ai = $jumlah_pakai_ai >= 5 ? 100 : ($jumlah_pakai_ai > 0 ? 85 : 70); // Minimal 5x pakai AI sebulan untuk skor sempurna
+
+// Ambil skor terakhir dari tabel supervisi_mengajar
+$res_sup = $conn->query("SELECT skor FROM supervisi_mengajar WHERE user_id = $user_id ORDER BY tanggal_supervisi DESC LIMIT 1");
+$skor_supervisi = $res_sup && $res_sup->num_rows > 0 ? (int)($res_sup->fetch_assoc()['skor']) : 85; // Default 85 jika belum ada supervisi
+
 $skor_kualitas_pengajaran = (($skor_penggunaan_ai * 0.4) + ($skor_supervisi * 0.6));
 
 // 3. Capaian Santri (Bobot 30%)
@@ -56,13 +63,17 @@ $res_nilai = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE
 $rata_rata_db = $res_nilai ? (float)($res_nilai->fetch_assoc()['rata_rata'] ?? 0) : 0;
 $skor_rata_nilai = $rata_rata_db > 0 ? $rata_rata_db : 75; // Default 75 jika belum ada nilai yang diinput
 
-$skor_pertumbuhan = 85; // Sementara kita set 85, nanti bisa dikembangkan membandingkan nilai UTS dan UAS
+// Menghitung pertumbuhan membandingkan rata-rata nilai UTS dan UAS
+$res_uts = $conn->query("SELECT AVG(nilai) as rata_uts FROM leger_nilai WHERE ustadz_id = $user_id AND jenis_ujian = 'Ujian Tengah Semester (UTS)'");
+$rata_uts = $res_uts ? (float)($res_uts->fetch_assoc()['rata_uts'] ?? 0) : 0;
+$res_uas = $conn->query("SELECT AVG(nilai) as rata_uas FROM leger_nilai WHERE ustadz_id = $user_id AND jenis_ujian = 'Ujian Akhir Semester (UAS)'");
+$rata_uas = $res_uas ? (float)($res_uas->fetch_assoc()['rata_uas'] ?? 0) : 0;
+$skor_pertumbuhan = ($rata_uts > 0 && $rata_uas > 0) ? (($rata_uas >= $rata_uts) ? 100 : 75) : 85; // UAS naik/sama = 100, turun = 75, tidak lengkap = 85
+
 $skor_capaian_santri = (($skor_rata_nilai * 0.6) + ($skor_pertumbuhan * 0.4));
 
 // 4. Pengembangan Diri (Bobot 10%)
-// Cek penggunaan AI (RPP dsb) sebagai indikator pengembangan diri digital
-$res_ai = $conn->query("SELECT COUNT(*) as pemakaian FROM log_aktivitas_ai WHERE user_id = $user_id AND MONTH(created_at) = MONTH(CURRENT_DATE())");
-$jumlah_pakai_ai = $res_ai ? (int)($res_ai->fetch_assoc()['pemakaian'] ?? 0) : 0;
+// Karena query penggunaan AI sudah dipanggil di Pilar 2, kita tinggal gunakan variabel $jumlah_pakai_ai
 $skor_kontribusi_silabus = $jumlah_pakai_ai > 0 ? 100 : 70; // Jika bulan ini pakai AI untuk RPP = 100
 
 $skor_pengembangan_diri = $skor_kontribusi_silabus;
