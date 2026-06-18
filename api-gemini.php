@@ -33,19 +33,33 @@ if (!$input) {
 
 // Ekstrak prompt dari struktur payload yang biasa dikirim ke GAS
 $prompt = '';
+$systemCommand = '';
+$leadsData = [];
+
 if (isset($input['leads']) && is_array($input['leads'])) {
     foreach ($input['leads'] as $lead) {
         if (isset($lead['jenis_lead']) && $lead['jenis_lead'] === 'SYSTEM_COMMAND') {
-            $prompt = $lead['sumber_info'] ?? '';
-            break;
+            $systemCommand = $lead['sumber_info'] ?? '';
+        } else {
+            // Kumpulkan data leads dari Ruang Marketing
+            $leadsData[] = $lead;
         }
     }
 }
 
 // Jika tidak ada di leads, coba langsung dari parameter 'prompt' atau 'sumber_info'
-if (empty($prompt)) {
-    $prompt = $input['prompt'] ?? $input['sumber_info'] ?? '';
+$prompt = $input['prompt'] ?? $input['sumber_info'] ?? '';
+
+// Gabungkan command sistem dan data leads menjadi satu prompt utuh
+if (!empty($systemCommand)) {
+    $prompt = $systemCommand . "\n\n" . $prompt;
 }
+
+if (!empty($leadsData)) {
+    $prompt .= "\n\nBerikut data leads untuk dianalisis:\n" . json_encode($leadsData, JSON_PRETTY_PRINT);
+}
+
+$prompt = trim($prompt);
 
 if (empty($prompt)) {
     echo json_encode(['status' => 'error', 'message' => 'Prompt tidak ditemukan dalam request.']);
@@ -97,8 +111,8 @@ if (empty($apiKey)) {
     exit;
 }
 
-// Panggil Gemini API secara langsung (menggunakan model gemini-1.5-flash-latest)
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" . $apiKey;
+// Panggil Gemini API secara langsung (menggunakan model gemini-2.5-flash)
+$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
 
 $payload = [
     "contents" => [
