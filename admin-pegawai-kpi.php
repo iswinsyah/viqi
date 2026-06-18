@@ -20,10 +20,20 @@ $tarif_grade_a = $data_gaji['gaji_grade_a'] ?? 25000;
 // --- LOGIC PERHITUNGAN KPI (CONTOH SEDERHANA) ---
 // Di aplikasi nyata, ini akan jadi fungsi yang kompleks dan mungkin dijalankan oleh CRON JOB bulanan
 
+// Ambil data jurnal bulan ini untuk efisiensi query Pilar 1 dan Perhitungan Gaji
+$res_jurnal_kpi = $conn->query("SELECT 
+    COUNT(*) as total_jurnal, 
+    SUM(CASE WHEN DATE(created_at) = tanggal THEN 1 ELSE 0 END) as tepat_waktu 
+    FROM jurnal_mengajar 
+    WHERE ustadz_id = $user_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
+$data_jurnal_kpi = $res_jurnal_kpi ? $res_jurnal_kpi->fetch_assoc() : ['total_jurnal' => 0, 'tepat_waktu' => 0];
+$jumlah_pertemuan = (int)($data_jurnal_kpi['total_jurnal'] ?? 0);
+$tepat_waktu = (int)($data_jurnal_kpi['tepat_waktu'] ?? 0);
+
 // 1. Administrasi & Disiplin (Bobot 20%)
-$skor_jurnal = 85; // Placeholder. Logic: Hitung persentase jurnal yg diisi tepat waktu dari tabel jurnal_mengajar
-$skor_kehadiran = 98; // Placeholder. Logic: Hitung dari log QR Code
-$skor_kehadiran_rapat = 100; // Placeholder. Logic: Cek apakah ada record di log_kehadiran_rapat bulan ini.
+$skor_jurnal = $jumlah_pertemuan > 0 ? ($tepat_waktu / $jumlah_pertemuan) * 100 : 75; // Rasio ketepatan waktu pengisian jurnal
+$skor_kehadiran = $jumlah_pertemuan > 0 ? 100 : 75; // Sementara disamakan dengan keaktifan mengisi jurnal
+$skor_kehadiran_rapat = 85; // Placeholder. Bisa dihubungkan ke tabel absensi rapat di masa depan
 $skor_administrasi = (($skor_jurnal * 0.4) + ($skor_kehadiran * 0.4) + ($skor_kehadiran_rapat * 0.2));
 
 // 2. Kualitas Pengajaran (Bobot 40%)
@@ -32,18 +42,24 @@ $skor_supervisi = 92; // Placeholder. Logic: Ambil skor terakhir dari tabel supe
 $skor_kualitas_pengajaran = (($skor_penggunaan_ai * 0.4) + ($skor_supervisi * 0.6));
 
 // 3. Capaian Santri (Bobot 30%)
-$skor_rata_nilai = 88; // Placeholder. Logic: Hitung AVG(nilai) dari bank_nilai
-$skor_pertumbuhan = 90; // Placeholder. Logic: Hitung selisih AVG(nilai) UTS vs UAS
+// Menghitung rata-rata nilai dari santri yang diampu oleh ustadz ini
+$res_nilai = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE ustadz_id = $user_id");
+$rata_rata_db = $res_nilai ? (float)($res_nilai->fetch_assoc()['rata_rata'] ?? 0) : 0;
+$skor_rata_nilai = $rata_rata_db > 0 ? $rata_rata_db : 75; // Default 75 jika belum ada nilai yang diinput
+
+$skor_pertumbuhan = 85; // Sementara kita set 85, nanti bisa dikembangkan membandingkan nilai UTS dan UAS
 $skor_capaian_santri = (($skor_rata_nilai * 0.6) + ($skor_pertumbuhan * 0.4));
 
 // 4. Pengembangan Diri (Bobot 10%)
-$skor_kontribusi_silabus = 100; // Placeholder. Logic: Cek apakah user pernah input/update di master_silabus
+// Cek penggunaan AI (RPP dsb) sebagai indikator pengembangan diri digital
+$res_ai = $conn->query("SELECT COUNT(*) as pemakaian FROM log_aktivitas_ai WHERE user_id = $user_id AND MONTH(created_at) = MONTH(CURRENT_DATE())");
+$jumlah_pakai_ai = $res_ai ? (int)($res_ai->fetch_assoc()['pemakaian'] ?? 0) : 0;
+$skor_kontribusi_silabus = $jumlah_pakai_ai > 0 ? 100 : 70; // Jika bulan ini pakai AI untuk RPP = 100
+
 $skor_pengembangan_diri = $skor_kontribusi_silabus;
 
 // Total Skor KPI
 $total_skor_kpi = ($skor_administrasi * 0.20) + ($skor_kualitas_pengajaran * 0.40) + ($skor_capaian_santri * 0.30) + ($skor_pengembangan_diri * 0.10);
-
-$jumlah_pertemuan = 24; // Dummy: Nanti dihitung otomatis dari tabel jurnal_mengajar
 
 // Variabel Penampung Gaji Final
 $gaji_per_pertemuan = 0;
