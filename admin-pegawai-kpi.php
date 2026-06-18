@@ -32,8 +32,17 @@ $tepat_waktu = (int)($data_jurnal_kpi['tepat_waktu'] ?? 0);
 
 // 1. Administrasi & Disiplin (Bobot 20%)
 $skor_jurnal = $jumlah_pertemuan > 0 ? ($tepat_waktu / $jumlah_pertemuan) * 100 : 75; // Rasio ketepatan waktu pengisian jurnal
-$skor_kehadiran = $jumlah_pertemuan > 0 ? 100 : 75; // Sementara disamakan dengan keaktifan mengisi jurnal
-$skor_kehadiran_rapat = 85; // Placeholder. Bisa dihubungkan ke tabel absensi rapat di masa depan
+
+// Hitung kehadiran harian dari tabel absensi_pegawai
+$res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $user_id AND jenis_absen = 'Harian' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+$jml_hadir = $res_hadir ? (int)($res_hadir->fetch_assoc()['jml'] ?? 0) : 0;
+$skor_kehadiran = $jml_hadir > 0 ? min(100, ($jml_hadir / 20) * 100) : 75; // Asumsi 20 hari kerja sebulan
+
+// Hitung kehadiran rapat dari tabel absensi_pegawai
+$res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $user_id AND jenis_absen = 'Rapat' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+$jml_rapat = $res_rapat ? (int)($res_rapat->fetch_assoc()['jml'] ?? 0) : 0;
+$skor_kehadiran_rapat = $jml_rapat > 0 ? 100 : 75; // Jika bulan ini hadir rapat minimal 1x maka 100
+
 $skor_administrasi = (($skor_jurnal * 0.4) + ($skor_kehadiran * 0.4) + ($skor_kehadiran_rapat * 0.2));
 
 // 2. Kualitas Pengajaran (Bobot 40%)

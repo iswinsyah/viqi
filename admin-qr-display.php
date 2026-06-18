@@ -7,17 +7,14 @@ $locations = [
     'kantor_utama' => [
         'nama' => 'Gedung B (Kantor Villa Quran)',
         'coords' => ['latitude' => -6.595038, 'longitude' => 106.800247],
-        'allowed_ips' => ['182.253.50.69', '127.0.0.1', '::1'], // IP Kantor
     ],
     'asrama_rijal' => [
         'nama' => 'Gedung A (Asrama Rijal)',
         'coords' => ['latitude' => -6.597638, 'longitude' => 106.79955],
-        'allowed_ips' => ['182.253.50.103', '127.0.0.1', '::1'], // IP Asrama Rijal
     ],
     'asrama_nisa' => [
         'nama' => 'Gedung C (Asrama Nisa)',
         'coords' => ['latitude' => -6.598333, 'longitude' => 106.801111],
-        'allowed_ips' => ['182.253.50.119', '127.0.0.1', '::1'], // IP Asrama Nisa
     ],
 ];
 
@@ -27,27 +24,25 @@ define('ENCRYPTION_IV', '1234567890123456'); // 16 bytes IV
 
 // --- LOGIKA PEMILIHAN LOKASI ---
 $location_key = $_GET['lokasi'] ?? null;
+$jenis_absen = $_GET['jenis'] ?? 'Harian'; // Default Harian
 
 // Jika tidak ada ?lokasi=... di URL, tampilkan halaman pemilihan
 if (!$location_key || !isset($locations[$location_key])) {
-    include 'template-pemilihan-lokasi-qr.php';
-    exit;
+    if (file_exists('template-pemilihan-lokasi-qr.php')) {
+        include 'template-pemilihan-lokasi-qr.php';
+        exit;
+    } else {
+        die("<div style='font-family:sans-serif;text-align:center;padding:50px;'><h1>Pemilihan Lokasi & Jenis Absen</h1><p>Gunakan URL seperti: <code>?lokasi=kantor_utama&jenis=Harian</code> atau <code>?lokasi=kantor_utama&jenis=Rapat</code></p></div>");
+    }
 }
 
 $current_location = $locations[$location_key];
 
-// --- VALIDASI AKSES BERDASARKAN ALAMAT IP LOKASI TERPILIH ---
-$visitor_ip = $_SERVER['REMOTE_ADDR'];
-if (!in_array($visitor_ip, $current_location['allowed_ips'])) {
-    header("HTTP/1.1 403 Forbidden");
-    die("<div style='font-family:sans-serif;text-align:center;padding:50px;'><h1>Akses Ditolak</h1><p>Halaman QR untuk <b>".htmlspecialchars($current_location['nama'])."</b> hanya bisa diakses dari jaringan internet resmi lokasi tersebut.</p><p>IP Anda: $visitor_ip</p></div>");
-}
-
 // --- PEMBUATAN DATA QR CODE DINAMIS ---
-// Data QR sekarang berisi 'lokasi' agar prosesor tahu harus validasi ke koordinat mana
+// Data QR Statis (tanpa timestamp) agar bisa dicetak dan ditempel
 $data_to_encrypt = json_encode([
     'lokasi' => $location_key,
-    'time' => time() // Timestamp UNIX saat ini
+    'jenis' => $jenis_absen
 ]);
 
 $encrypted_data = openssl_encrypt($data_to_encrypt, 'aes-256-cbc', ENCRYPTION_KEY, 0, ENCRYPTION_IV);
@@ -63,18 +58,20 @@ $encrypted_data = openssl_encrypt($data_to_encrypt, 'aes-256-cbc', ENCRYPTION_KE
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Library untuk generate QR Code di browser -->
     <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <!-- Refresh halaman setiap 60 detik untuk QR baru -->
-    <meta http-equiv="refresh" content="60">
+    <style>
+        @media print { .no-print { display: none !important; } }
+    </style>
 </head>
-<body class="bg-gray-900 flex items-center justify-center min-h-screen text-white font-sans">
+<body class="bg-gray-100 flex items-center justify-center min-h-screen text-gray-900 font-sans">
     <div class="text-center">
         <div class="bg-white p-6 rounded-2xl shadow-2xl inline-block">
             <div id="qrcode"></div>
         </div>
-        <h1 id="clock" class="text-6xl font-bold mt-6"></h1>
-        <p class="text-2xl font-semibold text-cyan-400 mt-4"><?= htmlspecialchars($current_location['nama']) ?></p>
-        <p class="text-lg text-gray-400 mt-1">Silakan scan QR Code di atas untuk mencatat kehadiran.</p>
-        <p class="text-sm text-gray-500 mt-4"><i class="fas fa-sync-alt fa-spin mr-2"></i> QR Code ini akan diperbarui secara otomatis.</p>
+        <h1 class="text-3xl font-bold mt-6"><?= htmlspecialchars($current_location['nama']) ?></h1>
+        <p class="text-xl font-semibold text-cyan-600 mt-2">QR Absensi Statis - <?= htmlspecialchars($jenis_absen) ?></p>
+        <p class="text-md text-gray-600 mt-2 max-w-md mx-auto">Silakan cetak dan tempel QR Code ini di lokasi. Pegawai dapat melakukan scan untuk mencatat kehadiran Masuk & Pulang.</p>
+        
+        <button onclick="window.print()" class="no-print mt-6 bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-6 rounded-lg shadow transition"><i class="fas fa-print mr-2"></i> Cetak QR Code</button>
     </div>
 
     <script>
@@ -87,17 +84,6 @@ $encrypted_data = openssl_encrypt($data_to_encrypt, 'aes-256-cbc', ENCRYPTION_KE
             colorLight : "#ffffff",
             correctLevel : QRCode.CorrectLevel.H
         });
-
-        // Jam Digital
-        function updateClock() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
     </script>
 </body>
 </html>
