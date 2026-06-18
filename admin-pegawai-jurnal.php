@@ -5,6 +5,7 @@ require_once 'koneksi.php';
 // 1. Buat Tabel Otomatis
 $conn->query("CREATE TABLE IF NOT EXISTS jurnal_mengajar (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    ustadz_id INT NULL,
     tanggal DATE,
     kelas VARCHAR(50),
     mata_pelajaran VARCHAR(100),
@@ -13,10 +14,14 @@ $conn->query("CREATE TABLE IF NOT EXISTS jurnal_mengajar (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 
+// Self-healing: Tambahkan kolom ustadz_id jika tabel sudah terlanjur dibuat
+@$conn->query("ALTER TABLE jurnal_mengajar ADD COLUMN ustadz_id INT NULL AFTER id");
+
 // 2. Hapus Data
 if (isset($_GET['hapus_id'])) {
     $id = (int)$_GET['hapus_id'];
-    $conn->query("DELETE FROM jurnal_mengajar WHERE id = $id");
+    $ustadz_id_aktif = $_SESSION['ustadz_id'];
+    $conn->query("DELETE FROM jurnal_mengajar WHERE id = $id AND ustadz_id = $ustadz_id_aktif");
     header("Location: admin-pegawai-jurnal.php");
     exit;
 }
@@ -29,12 +34,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $mata_pelajaran = $conn->real_escape_string($_POST['mata_pelajaran']);
     $materi = $conn->real_escape_string($_POST['materi']);
     $absensi = $conn->real_escape_string($_POST['absensi']);
+    $ustadz_id_aktif = $_SESSION['ustadz_id'];
 
     if ($id > 0) {
-        $sql = "UPDATE jurnal_mengajar SET tanggal='$tanggal', kelas='$kelas', mata_pelajaran='$mata_pelajaran', materi='$materi', absensi='$absensi' WHERE id=$id";
+        $sql = "UPDATE jurnal_mengajar SET tanggal='$tanggal', kelas='$kelas', mata_pelajaran='$mata_pelajaran', materi='$materi', absensi='$absensi' WHERE id=$id AND ustadz_id=$ustadz_id_aktif";
         $pesan_sukses = "Jurnal berhasil diupdate!";
     } else {
-        $sql = "INSERT INTO jurnal_mengajar (tanggal, kelas, mata_pelajaran, materi, absensi) VALUES ('$tanggal', '$kelas', '$mata_pelajaran', '$materi', '$absensi')";
+        $sql = "INSERT INTO jurnal_mengajar (ustadz_id, tanggal, kelas, mata_pelajaran, materi, absensi) VALUES ($ustadz_id_aktif, '$tanggal', '$kelas', '$mata_pelajaran', '$materi', '$absensi')";
         $pesan_sukses = "Jurnal baru berhasil disimpan!";
     }
     $conn->query($sql);
@@ -150,7 +156,8 @@ $active_menu = 'jurnal_mengajar';
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php
-                            $res = $conn->query("SELECT * FROM jurnal_mengajar ORDER BY tanggal DESC, id DESC");
+                            $ustadz_id_aktif = $_SESSION['ustadz_id'];
+                            $res = $conn->query("SELECT * FROM jurnal_mengajar WHERE ustadz_id = $ustadz_id_aktif ORDER BY tanggal DESC, id DESC");
                             if ($res && $res->num_rows > 0) {
                                 while($row = $res->fetch_assoc()) { ?>
                                 <tr class="hover:bg-gray-50">

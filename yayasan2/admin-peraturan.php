@@ -34,6 +34,8 @@ if ($res) {
         $saved_rules[$row['jabatan']] = $row['konten'];
     }
 }
+
+$active_menu = 'admin_peraturan';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -59,9 +61,8 @@ if ($res) {
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-    <!-- Anda bisa menyesuaikan include sidebar yayasan Anda di sini -->
-    <!-- <?php // include 'sidebar-yayasan.php'; ?> -->
-    
+    <?php include 'sidebar.php'; ?>
+
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative w-full">
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
             <div class="flex items-center">
