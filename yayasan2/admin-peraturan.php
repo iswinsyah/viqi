@@ -47,6 +47,7 @@ $active_menu = 'admin_peraturan';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Library Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
     <style>
         .markdown-body h1, .markdown-body h2 { font-size: 1.5rem; font-weight: bold; color: #1e3a8a; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; }
         .markdown-body h3 { font-size: 1.25rem; font-weight: bold; color: #1e40af; margin-top: 1rem; margin-bottom: 0.5rem; }
@@ -116,15 +117,17 @@ $active_menu = 'admin_peraturan';
                     <h3 class="font-bold text-gray-800"><i class="fas fa-file-contract mr-2 text-blue-800"></i> Dokumen Peraturan</h3>
                     
                     <!-- 4 TOMBOL AKSI -->
-                    <div id="action-buttons" class="hidden flex flex-wrap gap-2">
-                        <button onclick="toggleEdit()" id="btn-edit" class="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-edit mr-1"></i> Edit Teks</button>
-                        <button onclick="copyDoc()" id="btn-copy" class="bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-copy mr-1"></i> Salin</button>
-                        <button onclick="printDoc()" class="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border border-indigo-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-file-pdf mr-1"></i> Cetak PDF</button>
+                    <div id="action-buttons" class="flex flex-wrap gap-2 opacity-40 pointer-events-none">
+                        <button type="button" onclick="toggleEdit()" id="btn-edit" disabled class="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-edit mr-1"></i> Edit Teks</button>
+                        <button type="button" onclick="copyDoc()" id="btn-copy" disabled class="bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-copy mr-1"></i> Salin</button>
+                        <button type="button" onclick="printDoc()" id="btn-print" disabled class="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border border-indigo-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-file-pdf mr-1"></i> Cetak PDF</button>
+                        <button type="button" onclick="downloadPDF()" id="btn-download" disabled class="bg-sky-100 text-sky-800 hover:bg-sky-200 border border-sky-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-download mr-1"></i> Download PDF</button>
+                        <button type="button" onclick="resetDoc()" id="btn-reset" disabled class="bg-white text-gray-800 hover:bg-gray-100 border border-gray-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-undo mr-1"></i> Reset</button>
                         <form action="" method="POST" class="inline">
                             <input type="hidden" name="simpan_peraturan" value="1">
                             <input type="hidden" name="jabatan" id="form_jabatan_input">
                             <textarea name="konten" id="form_konten_input" class="hidden"></textarea>
-                            <button type="submit" onclick="return sinkronisasiForm()" class="bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 rounded-lg text-sm font-bold transition shadow-md"><i class="fas fa-save mr-1"></i> Save (Sahkan)</button>
+                            <button type="submit" id="btn-save" disabled onclick="return sinkronisasiForm()" class="bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 rounded-lg text-sm font-bold transition shadow-md"><i class="fas fa-save mr-1"></i> Save (Sahkan)</button>
                         </form>
                     </div>
                 </div>
@@ -159,6 +162,7 @@ $active_menu = 'admin_peraturan';
         
         // Menampung data dari database jika mau melihat yang sudah ada
         const savedRules = <?= json_encode($saved_rules) ?>;
+        let currentMarkdown = '';
         
         // Auto-load jika jabatan dipilih dan sudah ada di database
         document.getElementById('jabatan_input').addEventListener('change', function() {
@@ -212,8 +216,68 @@ $active_menu = 'admin_peraturan';
             document.getElementById('view-mode').innerHTML = marked.parse(markdownText);
             
             document.getElementById('view-mode').classList.remove('hidden');
-            document.getElementById('action-buttons').classList.remove('hidden');
-            document.getElementById('action-buttons').classList.add('flex');
+            document.getElementById('action-buttons').classList.remove('opacity-40', 'pointer-events-none');
+            document.getElementById('btn-edit').disabled = false;
+            document.getElementById('btn-copy').disabled = false;
+            document.getElementById('btn-print').disabled = false;
+            document.getElementById('btn-download').disabled = false;
+            document.getElementById('btn-reset').disabled = false;
+            document.getElementById('btn-save').disabled = false;
+            currentMarkdown = markdownText;
+        }
+
+        function downloadPDF() {
+            if (!document.getElementById('edit-mode').classList.contains('hidden')) toggleEdit();
+            const jabatan = document.getElementById('jabatan_input').value.trim() || 'peraturan';
+            const filename = jabatan.replace(/[^a-zA-Z0-9-_]/g, '_').toLowerCase() + '_peraturan.pdf';
+            const element = document.createElement('div');
+            element.style.padding = '24px';
+            element.style.fontFamily = 'Arial, sans-serif';
+            element.innerHTML = `
+                <h1 style="text-align:center; font-size:20px; margin-bottom:16px;">SOP & Peraturan - ${jabatan}</h1>
+                ${document.getElementById('view-mode').innerHTML}
+            `;
+
+            const opt = {
+                margin: 0.5,
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function resetDoc() {
+            if (!currentMarkdown) return;
+            document.getElementById('edit-mode').value = currentMarkdown;
+            document.getElementById('view-mode').innerHTML = marked.parse(currentMarkdown);
+            document.getElementById('view-mode').classList.remove('hidden');
+            document.getElementById('edit-mode').classList.add('hidden');
+            const btn = document.getElementById('btn-edit');
+            btn.innerHTML = '<i class="fas fa-edit mr-1"></i> Edit Teks';
+            btn.classList.remove('bg-emerald-100', 'text-emerald-800');
+            btn.classList.add('bg-amber-100', 'text-amber-800');
+            showToast('Dokumen berhasil di-reset ke versi AI terakhir.');
+        }
+
+        function showToast(message) {
+            let toast = document.getElementById('toast-message');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-message';
+                toast.className = 'fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl ring-1 ring-slate-700/30 opacity-0 transition duration-300';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            clearTimeout(window.toastTimer);
+            window.toastTimer = setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2400);
         }
 
         function toggleEdit() {
