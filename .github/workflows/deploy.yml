@@ -18,16 +18,15 @@ jobs:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
     
-    - name: 📂 Sync files to Hostinger via SFTP
-      uses: appleboy/scp-action@master
+    - name: 📂 Sync files to Hostinger via SSH
+      uses: appleboy/scp-action@v1
       with:
         host: ${{ secrets.SFTP_SERVER }}
         username: ${{ secrets.SFTP_USERNAME }}
         password: ${{ secrets.SFTP_PASSWORD }}
-        port: 22
-        protocol: sftp
+        port: 65002
         source: "./"
-        target: "/public_html"
+        target: "/home/u829486010/domains/villaquranindonesia.com/public_html"
         rm: true
         strip_components: 0
 
