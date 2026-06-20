@@ -18,27 +18,16 @@ jobs:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
     
-    - name: 📂 Sync files to Hostinger via SSH
-      uses: appleboy/scp-action@v1
+    - name: 📂 Sync files to Hostinger via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
-        host: ${{ secrets.SFTP_SERVER }}
-        username: ${{ secrets.SFTP_USERNAME }}
-        password: ${{ secrets.SFTP_PASSWORD }}
-        port: 65002
-        source: "./"
-        target: "/home/u829486010/domains/villaquranindonesia.com/public_html"
-        rm: true
-        strip_components: 0
-
-    # Jika Hostinger tidak mendukung SFTP dan Anda perlu kembali ke FTP,
-    # cukup ganti kembali langkah di atas dengan SamKirkland/FTP-Deploy-Action.
-    # - name: 📂 Sync files to Hostinger
-    #   uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-    #   with:
-    #     server: ${{ secrets.FTP_SERVER }}
-    #     username: ${{ secrets.FTP_USERNAME }}
-    #     password: ${{ secrets.FTP_PASSWORD }}
-    #     # exclude: |
-    #     #   **/.git*
-    #     #   **/.git*/**
-    #     #   **/README.md
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: './'
+        remote-dir: '/home/u829486010/domains/villaquranindonesia.com/public_html'
+        # Jika perlu, uncomment baris exclude berikut untuk mengecualikan file tertentu.
+        # exclude: |
+        #   **/.git*
+        #   **/.git*/**
+        #   **/README.md

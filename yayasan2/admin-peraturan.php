@@ -100,8 +100,8 @@ $active_menu = 'admin_peraturan';
             <?php endif; ?>
             <!-- TAB NAVIGASI -->
             <div class="mb-6 flex gap-2 border-b border-gray-300">
-                <button onclick="switchTab('tab-generate')" class="tab-btn active px-6 py-3 border-b-2 border-blue-800 text-blue-800 font-bold focus:outline-none"><i class="fas fa-wand-magic-sparkles mr-2"></i> Generate</button>
-                <button onclick="switchTab('tab-daftar')" class="tab-btn px-6 py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900 font-bold focus:outline-none"><i class="fas fa-list mr-2"></i> Daftar Tersimpan (<?= count($all_peraturan) ?>)</button>
+                <button data-tab="tab-generate" onclick="switchTab('tab-generate', event)" class="tab-btn active px-6 py-3 border-b-2 border-blue-800 text-blue-800 font-bold focus:outline-none"><i class="fas fa-wand-magic-sparkles mr-2"></i> Generate</button>
+                <button data-tab="tab-daftar" onclick="switchTab('tab-daftar', event)" class="tab-btn px-6 py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900 font-bold focus:outline-none"><i class="fas fa-list mr-2"></i> Daftar Tersimpan (<?= count($all_peraturan) ?>)</button>
             </div>
 
             <!-- TAB: GENERATE -->
@@ -287,7 +287,7 @@ $active_menu = 'admin_peraturan';
             currentMarkdown = markdownText;
         }
 
-        function switchTab(tabName) {
+        function switchTab(tabName, evt = null) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.add('hidden');
@@ -301,9 +301,11 @@ $active_menu = 'admin_peraturan';
             
             // Show active tab
             document.getElementById(tabName).classList.remove('hidden');
-            event.target.classList.add('active');
-            event.target.classList.remove('border-transparent', 'text-gray-600');
-            event.target.classList.add('border-blue-800', 'text-blue-800');
+            const activeBtn = evt?.currentTarget || evt?.target || document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+            if (!activeBtn) return;
+            activeBtn.classList.add('active');
+            activeBtn.classList.remove('border-transparent', 'text-gray-600');
+            activeBtn.classList.add('border-blue-800', 'text-blue-800');
         }
 
         function loadPeraturan(jabatan) {
