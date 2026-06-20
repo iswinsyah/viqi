@@ -158,7 +158,7 @@ $active_menu = 'admin_peraturan';
 
     <script>
         // Mengambil referensi URL API di root directory
-        const GAS_WEB_APP_URL = "../api-gemini.php"; 
+        const GAS_WEB_APP_URL = "../api-ai.php"; 
         
         // Menampung data dari database jika mau melihat yang sudah ada
         const savedRules = <?= json_encode($saved_rules) ?>;
