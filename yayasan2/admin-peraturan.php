@@ -71,6 +71,15 @@ $active_menu = 'admin_peraturan';
         .markdown-body th, .markdown-body td { border: 1px solid #cbd5e1; padding: 0.75rem; text-align: left; }
         .markdown-body th { background-color: #f1f5f9; }
         .markdown-body strong { color: #0f172a; }
+        .markdown-body img { max-width: 100%; border-radius: 0.75rem; margin-top: 1rem; }
+        .markdown-body pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 0.75rem; overflow-x: auto; margin: 1rem 0; }
+        .markdown-body code { background: #e2e8f0; color: #0f172a; padding: 0.18rem 0.4rem; border-radius: 0.4rem; }
+        .markdown-body blockquote { border-left: 4px solid #93c5fd; padding-left: 1rem; color: #334155; background: #eff6ff; margin: 1rem 0; }
+        .markdown-body ul, .markdown-body ol { padding-left: 1.5rem; }
+        .tab-btn.active { background: #eff6ff; }
+        .tab-btn { transition: background-color 0.2s ease, color 0.2s ease; }
+        #view-mode { min-height: 420px; }
+        #edit-mode { min-height: 420px; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
@@ -106,105 +115,119 @@ $active_menu = 'admin_peraturan';
 
             <!-- TAB: GENERATE -->
             <div id="tab-generate" class="tab-content block">
-            <!-- KOTAK KENDALI GENERATOR -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Jabatan / Peran</label>
-                        <input type="text" id="jabatan_input" list="daftar_jabatan" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ketik atau pilih jabatan (Contoh: Kepala Asrama, Musyrif, Guru Umum...)">
-                        <datalist id="daftar_jabatan">
-                            <option value="Kepala Sekolah">
-                            <option value="Kepala Asrama (Mudir)">
-                            <option value="Ustadz / Guru Pengampu">
-                            <option value="Musyrif Asrama">
-                            <option value="Staf Administrasi & Keuangan">
-                            <option value="Staf Dapur & Gizi">
-                            <option value="Petugas Kebersihan (Cleaning Service)">
-                            <option value="Satpam / Security">
-                        </datalist>
-                    </div>
-                    <div>
-                        <button onclick="generateAI()" id="btn-generate" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center justify-center">
-                            <i class="fas fa-robot mr-2"></i> Rumuskan dengan AI
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- DOKUMEN HASIL -->
-            <div class="bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col min-h-[600px]">
-                <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <h3 class="font-bold text-gray-800"><i class="fas fa-file-contract mr-2 text-blue-800"></i> Dokumen Peraturan</h3>
-                    
-                    <!-- 4 TOMBOL AKSI -->
-                    <div id="action-buttons" class="flex flex-wrap gap-2 opacity-40 pointer-events-none">
-                        <button type="button" onclick="toggleEdit()" id="btn-edit" disabled class="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-edit mr-1"></i> Edit Teks</button>
-                        <button type="button" onclick="copyDoc()" id="btn-copy" disabled class="bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-copy mr-1"></i> Salin</button>
-                        <button type="button" onclick="printDoc()" id="btn-print" disabled class="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border border-indigo-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-file-pdf mr-1"></i> Cetak PDF</button>
-                        <button type="button" onclick="downloadPDF()" id="btn-download" disabled class="bg-sky-100 text-sky-800 hover:bg-sky-200 border border-sky-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-download mr-1"></i> Download PDF</button>
-                        <button type="button" onclick="resetDoc()" id="btn-reset" disabled class="bg-white text-gray-800 hover:bg-gray-100 border border-gray-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-undo mr-1"></i> Reset</button>
-                        <form action="" method="POST" class="inline">
-                            <input type="hidden" name="simpan_peraturan" value="1">
-                            <input type="hidden" name="jabatan" id="form_jabatan_input">
-                            <textarea name="konten" id="form_konten_input" class="hidden"></textarea>
-                            <button type="submit" id="btn-save" disabled onclick="return sinkronisasiForm()" class="bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 rounded-lg text-sm font-bold transition shadow-md"><i class="fas fa-save mr-1"></i> Save (Sahkan)</button>
-                        </form>
-                    </div>
-                </div>
-                
-                <div class="p-8 flex-1 relative bg-white rounded-b-xl overflow-y-auto">
-                    <!-- State Idle -->
-                    <div id="state-idle" class="flex flex-col items-center justify-center h-full text-gray-400 py-20 text-center">
-                        <i class="fas fa-file-signature text-7xl mb-4 opacity-30 text-blue-800"></i>
-                        <p class="text-lg">Ketik jabatan dan klik tombol "Rumuskan dengan AI"</p>
-                        <p class="text-sm mt-2">AI akan menyusun aturan jam kerja, cuti, larangan, hingga sanksi secara otomatis.</p>
-                    </div>
-                    
-                    <!-- State Loading -->
-                    <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-blue-800 py-20 text-center">
-                        <i class="fas fa-spinner fa-spin text-5xl mb-4"></i>
-                        <p class="font-bold text-lg animate-pulse">Menulis SOP & Tata Tertib Berdasarkan Hukum Ketenagakerjaan & Syariat...</p>
+                <div class="grid grid-cols-1 xl:grid-cols-[1fr_1.4fr] gap-6">
+                    <div class="space-y-6">
+                        <!-- KOTAK KENDALI GENERATOR -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-bold text-gray-700 mb-2">Pilih Jabatan / Peran</label>
+                                    <input type="text" id="jabatan_input" list="daftar_jabatan" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ketik atau pilih jabatan (Contoh: Kepala Asrama, Musyrif, Guru Umum...)">
+                                    <datalist id="daftar_jabatan">
+                                        <option value="Kepala Sekolah">
+                                        <option value="Kepala Asrama (Mudir)">
+                                        <option value="Ustadz / Guru Pengampu">
+                                        <option value="Musyrif Asrama">
+                                        <option value="Staf Administrasi & Keuangan">
+                                        <option value="Staf Dapur & Gizi">
+                                        <option value="Petugas Kebersihan (Cleaning Service)">
+                                        <option value="Satpam / Security">
+                                    </datalist>
+                                </div>
+                                <div>
+                                    <button onclick="generateAI()" id="btn-generate" class="w-full bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center justify-center">
+                                        <i class="fas fa-robot mr-2"></i> Rumuskan dengan AI
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- View Mode (Markdown Rendered) -->
-                    <div id="view-mode" class="hidden markdown-body max-w-4xl mx-auto"></div>
+                    <div class="space-y-6">
+                        <!-- DOKUMEN HASIL -->
+                        <div class="bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col min-h-[600px]">
+                            <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                                <h3 class="font-bold text-gray-800"><i class="fas fa-file-contract mr-2 text-blue-800"></i> Dokumen Peraturan</h3>
+                                <div id="action-buttons" class="flex flex-wrap gap-2 opacity-40 pointer-events-none">
+                                    <button type="button" onclick="toggleEdit()" id="btn-edit" disabled class="bg-amber-100 text-amber-800 hover:bg-amber-200 border border-amber-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-edit mr-1"></i> Edit Teks</button>
+                                    <button type="button" onclick="copyDoc()" id="btn-copy" disabled class="bg-gray-100 text-gray-800 hover:bg-gray-200 border border-gray-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-copy mr-1"></i> Salin</button>
+                                    <button type="button" onclick="printDoc()" id="btn-print" disabled class="bg-indigo-100 text-indigo-800 hover:bg-indigo-200 border border-indigo-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-file-pdf mr-1"></i> Cetak PDF</button>
+                                    <button type="button" onclick="downloadPDF()" id="btn-download" disabled class="bg-sky-100 text-sky-800 hover:bg-sky-200 border border-sky-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-download mr-1"></i> Download PDF</button>
+                                    <button type="button" onclick="resetDoc()" id="btn-reset" disabled class="bg-white text-gray-800 hover:bg-gray-100 border border-gray-300 px-3 py-2 rounded-lg text-sm font-bold transition shadow-sm"><i class="fas fa-undo mr-1"></i> Reset</button>
+                                    <form action="" method="POST" class="inline">
+                                        <input type="hidden" name="simpan_peraturan" value="1">
+                                        <input type="hidden" name="jabatan" id="form_jabatan_input">
+                                        <textarea name="konten" id="form_konten_input" class="hidden"></textarea>
+                                        <button type="submit" id="btn-save" disabled onclick="return sinkronisasiForm()" class="bg-emerald-600 text-white hover:bg-emerald-700 px-4 py-2 rounded-lg text-sm font-bold transition shadow-md"><i class="fas fa-save mr-1"></i> Save (Sahkan)</button>
+                                    </form>
+                                </div>
+                            </div>
 
-                    <!-- Edit Mode (Raw Textarea) -->
-                    <textarea id="edit-mode" class="hidden w-full h-[600px] p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Edit markdown di sini..."></textarea>
+                            <div class="p-8 flex-1 relative bg-white rounded-b-xl overflow-y-auto">
+                                <!-- State Idle -->
+                                <div id="state-idle" class="flex flex-col items-center justify-center h-full text-gray-400 py-20 text-center">
+                                    <i class="fas fa-file-signature text-7xl mb-4 opacity-30 text-blue-800"></i>
+                                    <p class="text-lg">Ketik jabatan dan klik tombol "Rumuskan dengan AI"</p>
+                                    <p class="text-sm mt-2">AI akan menyusun aturan jam kerja, cuti, larangan, hingga sanksi secara otomatis.</p>
+                                </div>
+                                
+                                <!-- State Loading -->
+                                <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-blue-800 py-20 text-center">
+                                    <i class="fas fa-spinner fa-spin text-5xl mb-4"></i>
+                                    <p class="font-bold text-lg animate-pulse">Menulis SOP & Tata Tertib Berdasarkan Hukum Ketenagakerjaan & Syariat...</p>
+                                </div>
+
+                                <!-- View Mode (Markdown Rendered) -->
+                                <div id="view-mode" class="hidden markdown-body max-w-4xl mx-auto"></div>
+
+                                <!-- Edit Mode (Raw Textarea) -->
+                                <textarea id="edit-mode" class="hidden w-full h-[600px] p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Edit markdown di sini..."></textarea>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
             </div><!-- end tab-generate -->
 
             <!-- TAB: DAFTAR TERSIMPAN -->
             <div id="tab-daftar" class="tab-content hidden">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-database text-blue-800 mr-2"></i> Peraturan Tersimpan</h3>
-                    <a href="?export_all=zip" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i class="fas fa-download mr-2"></i> Export Semua (ZIP)</a>
+                <div class="space-y-4 mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-database text-blue-800 mr-2"></i> Peraturan Tersimpan</h3>
+                            <p class="text-sm text-gray-500 mt-1">Kelola aturan yang sudah disimpan dan buka kembali peraturan untuk dievaluasi atau dicetak.</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-3 py-1 text-sm font-semibold">Total: <?= count($all_peraturan) ?> peraturan</span>
+                            <a href="?export_all=zip" class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg transition"><i class="fas fa-download mr-2"></i> Export Semua (ZIP)</a>
+                        </div>
+                    </div>
                 </div>
 
                 <?php if (count($all_peraturan) > 0): ?>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
                         <?php foreach ($all_peraturan as $p): ?>
-                            <div class="bg-white rounded-lg shadow-md border border-gray-200 p-4 hover:shadow-lg transition">
-                                <h4 class="font-bold text-gray-800 mb-2 text-lg"><?= htmlspecialchars($p['jabatan']) ?></h4>
-                                <p class="text-xs text-gray-500 mb-4">Update: <?= date('d-m-Y H:i', strtotime($p['updated_at'])) ?></p>
-                                <p class="text-sm text-gray-600 mb-4 line-clamp-3"><?= substr(strip_tags($p['konten']), 0, 100) ?>...</p>
-                                <div class="flex gap-2">
-                                    <button onclick="loadPeraturan('<?= addslashes($p['jabatan']) ?>')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded text-sm transition"><i class="fas fa-eye mr-1"></i> Lihat</button>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin hapus peraturan ini?');">
+                            <div class="group relative overflow-hidden rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
+                                <div class="mb-4">
+                                    <h4 class="font-semibold text-gray-900 text-lg mb-1"><?= htmlspecialchars($p['jabatan']) ?></h4>
+                                    <p class="text-xs text-gray-500">Terakhir diperbarui: <?= date('d-m-Y H:i', strtotime($p['updated_at'])) ?></p>
+                                </div>
+                                <p class="text-sm text-gray-600 leading-7 mb-5 max-h-[120px] overflow-hidden"><?= htmlspecialchars(substr(strip_tags($p['konten']), 0, 180)) ?>...</p>
+                                <div class="flex flex-col gap-3 sm:flex-row">
+                                    <button onclick="loadPeraturan('<?= addslashes($p['jabatan']) ?>')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm transition"> <i class="fas fa-eye mr-2"></i> Lihat</button>
+                                    <form method="POST" class="w-full" onsubmit="return confirm('Yakin hapus peraturan ini?');">
                                         <input type="hidden" name="hapus_peraturan" value="1">
                                         <input type="hidden" name="jabatan" value="<?= htmlspecialchars($p['jabatan']) ?>">
-                                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded text-sm transition"><i class="fas fa-trash mr-1"></i> Hapus</button>
+                                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-sm transition"><i class="fas fa-trash mr-2"></i> Hapus</button>
                                     </form>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
                 <?php else: ?>
-                    <div class="bg-gray-100 text-gray-600 px-6 py-12 rounded-lg text-center">
-                        <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
-                        <p class="text-lg font-semibold">Tidak ada peraturan tersimpan yet.</p>
-                        <p class="text-sm mt-2">Generate dan simpan peraturan dari tab Generate.</p>
+                    <div class="bg-gray-100 text-gray-600 px-6 py-12 rounded-xl text-center border border-dashed border-gray-300">
+                        <i class="fas fa-inbox text-5xl mb-4 opacity-40"></i>
+                        <p class="text-lg font-semibold">Tidak ada peraturan tersimpan.</p>
+                        <p class="text-sm mt-2">Generate dan simpan peraturan dari tab Generate untuk melihat daftar peraturan di sini.</p>
                     </div>
                 <?php endif; ?>
             </div><!-- end tab-daftar -->
