@@ -18,17 +18,27 @@ jobs:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
     
-    - name: 📂 Sync files to Hostinger
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+    - name: 📂 Sync files to Hostinger via SFTP
+      uses: appleboy/scp-action@master
       with:
-        # Pastikan nama secrets di bawah ini persis sama dengan yang Anda buat di Settings > Secrets GitHub
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        
-        # Jika Anda ingin mengecualikan folder/file tertentu agar tidak ikut ter-upload, 
-        # aktifkan (hapus tanda pagar) dan sesuaikan baris di bawah ini:
-        # exclude: |
-        #   **/.git*
-        #   **/.git*/**
-        #   **/README.md
+        host: ${{ secrets.SFTP_SERVER }}
+        username: ${{ secrets.SFTP_USERNAME }}
+        password: ${{ secrets.SFTP_PASSWORD }}
+        port: 22
+        source: "./"
+        target: "/public_html"
+        rm: true
+        recursive: true
+
+    # Jika Hostinger tidak mendukung SFTP dan Anda perlu kembali ke FTP,
+    # cukup ganti kembali langkah di atas dengan SamKirkland/FTP-Deploy-Action.
+    # - name: 📂 Sync files to Hostinger
+    #   uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+    #   with:
+    #     server: ${{ secrets.FTP_SERVER }}
+    #     username: ${{ secrets.FTP_USERNAME }}
+    #     password: ${{ secrets.FTP_PASSWORD }}
+    #     # exclude: |
+    #     #   **/.git*
+    #     #   **/.git*/**
+    #     #   **/README.md
