@@ -176,12 +176,18 @@ $active_menu = 'admin_peraturan';
             const jabatan = document.getElementById('jabatan_input').value.trim();
             if (!jabatan) { alert("Tentukan jabatan terlebih dahulu!"); return; }
 
-            // Tampilan Loading
+            // Tampilan Loading (tombol aksi tetap terlihat namun dinonaktifkan)
             document.getElementById('state-idle').classList.add('hidden');
             document.getElementById('view-mode').classList.add('hidden');
             document.getElementById('edit-mode').classList.add('hidden');
-            document.getElementById('action-buttons').classList.add('hidden');
             document.getElementById('state-loading').classList.remove('hidden');
+            // pastikan tombol tetap non-aktif selama proses
+            document.getElementById('btn-edit').disabled = true;
+            document.getElementById('btn-copy').disabled = true;
+            document.getElementById('btn-print').disabled = true;
+            document.getElementById('btn-download').disabled = true;
+            document.getElementById('btn-reset').disabled = true;
+            document.getElementById('btn-save').disabled = true;
             document.getElementById('btn-generate').disabled = true;
 
             const promptText = `Anda adalah HRD & Legal Konsultan Pesantren tingkat senior. Susun dokumen SOP & Peraturan Pegawai (format Markdown) yang SPECIFIC dan SESUAI dengan salah satu dari 3 model akad pegawai di sekolah ini, lalu sesuaikan isinya berdasarkan jabatan yang dimasukkan: \n\nModel akad dan contoh jabatan (pilih sesuai jabatan yang diketik):\n1) Yayasan Mukim — pegawai tinggal di asrama, ada jam kerja dan jam siaga. Jam kerja: 07:00–13:00 (tanpa jeda istirahat). Jam siaga: 13:00–06:59 esok hari; selama jam siaga tetap melayani santri namun boleh mengurus kepentingan pribadi (keluar asrama, istirahat, dsb). Contoh: Musyrif, Musyrifah, Kepala Asrama.\n2) Yayasan Tidak Mukim — pegawai pulang setelah jam kerja, TIDAK ada jam siaga. Contoh: Kepala Sekolah, Sekretaris Sekolah, Bendahara Sekolah, Admin Sekolah. (Pegawai digaji penuh).\n3) Honorer / Ustadz (tamu) — jam kerja hanya saat mengajar; setelah mengajar pulang. Bayaran berdasarkan jam hadir (sistem per-jam). Contoh: Ustadz, Ustadzah.\n\nInstruksi output (WAJIB ditaati):\n- Awali dengan ringkasan kebijakan 1 paragraf yang menjelaskan model akad yang relevan untuk jabatan tersebut.\n- Susun Bab terpisah: Definisi & Ruang Lingkup; Jam Kerja & Jam Siaga (jika ada); Tugas Utama; Hak & Kewajiban; Mekanisme Absensi; Sistem Penggajian / Kompensasi; Hak Cuti & Izin; Prosedur Penggantian Tugas; Skema Sanksi (tabel jika perlu); Lampiran: Form Tanda Tangan Persetujuan.\n- Untuk model Yayasan Mukim: sertakan klausul detail tentang pola jam siaga, tanggung jawab pada jam siaga, tata cara izinnya (keluar asrama), dan hak istirahat serta kompensasi jika ada lembur/penugasan malam.\n- Untuk model Yayasan Tidak Mukim: sebutkan bahwa tidak ada jam siaga, aturan pulang, kewajiban laporan, dan mekanisme cuti/penggantian tugas.\n- Untuk model Honorer/Ustadz: jelaskan perhitungan honor per-jam, absensi per-kuliah, dan syarat pembayaran (mis. billing bulanan).\n- Gunakan bahasa formal, jelas, dan menjaga adab serta akhlak syariah. Beri contoh konkret (mis. tabel jadwal kerja + tabel sanksi) bila relevan.\n- Akhiri dengan bagian Form Tanda Tangan (Yayasan kiri, Pegawai kanan) dan ringkasan tindakan bila terjadi pelanggaran berat.\n\nKeluaran harus berupa satu string Markdown siap render (tanpa metadata tambahan). Fokus utamanya: menyesuaikan setiap pasal dengan model akad yang sesuai untuk jabatan yang dimasukkan: **${jabatan}**.`;
