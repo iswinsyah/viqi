@@ -4,6 +4,15 @@ require_once 'koneksi.php';
 
 $view = $_GET['view'] ?? 'default';
 $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Ustadz';
+$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+$allowed_peraturan_roles = ['super_admin','kepala_sekolah','sekretaris_sekolah','bendahara_sekolah','admin_sekolah','kepala_mahad','kepala_asrama','musyrif','ustadz'];
+$has_peraturan_menu = false;
+foreach ($user_roles as $role) {
+    if (in_array(trim($role), $allowed_peraturan_roles, true)) {
+        $has_peraturan_menu = true;
+        break;
+    }
+}
 
 // --- LOGIC & DATA FETCHING BERDASARKAN VIEW ---
 if ($view === 'dashboard_asrama') {
@@ -105,23 +114,117 @@ if ($view === 'dashboard_asrama') {
         106 => "Quraisy", 107 => "Al-Ma'un", 108 => "Al-Kausar", 109 => "Al-Kafirun", 110 => "An-Nasr", 111 => "Al-Masad", 112 => "Al-Ikhlas", 113 => "Al-Falaq", 114 => "An-Nas"
     ];
 
+} elseif ($view === 'peraturan_role') {
+    $active_menu = 'peraturan_role';
+    $conn->query("CREATE TABLE IF NOT EXISTS peraturan_pegawai (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        jabatan VARCHAR(255) UNIQUE NOT NULL,
+        konten TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )");
+
+    $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+    $role_keywords = [
+        'kepala_sekolah' => ['kepala sekolah'],
+        'sekretaris_sekolah' => ['sekretaris sekolah'],
+        'bendahara_sekolah' => ['bendahara sekolah'],
+        'admin_sekolah' => ['admin sekolah', 'staf administrasi', 'tata usaha', 'administrasi', 'keuangan sekolah'],
+        'kepala_mahad' => ["kepala ma'had", 'kepala mahad', 'kepala mahad'],
+        'kepala_asrama' => ['kepala asrama', 'mudir', 'ka asrama'],
+        'musyrif' => ['musyrif', 'musyrifah'],
+        'ustadz' => ['ustadz', 'guru pengampu', 'pengajar', 'guru'],
+        'super_admin' => ['']
+    ];
+
+    $all_peraturan = [];
+    $res = $conn->query("SELECT * FROM peraturan_pegawai ORDER BY jabatan ASC");
+    if ($res) {
+        while ($row = $res->fetch_assoc()) {
+            $all_peraturan[] = $row;
+        }
+    }
+
+    $matched_peraturan = [];
+    foreach ($all_peraturan as $row) {
+        $jabatan_lower = strtolower($row['jabatan']);
+        $match = false;
+        if (in_array('super_admin', $user_roles, true)) {
+            $match = true;
+        } else {
+            foreach ($user_roles as $role) {
+                $role = trim($role);
+                if ($role === '') continue;
+                $keywords = $role_keywords[$role] ?? [$role];
+                foreach ($keywords as $keyword) {
+                    if ($keyword !== '' && str_contains($jabatan_lower, strtolower($keyword))) {
+                        $match = true;
+                        break 2;
+                    }
+                }
+            }
+        }
+        if ($match) {
+            $matched_peraturan[] = $row;
+        }
+    }
+
+    $user_roles_label = [];
+    foreach ($user_roles as $role) {
+        if (!$role) continue;
+        $user_roles_label[] = ucwords(str_replace(['_', 'mahad'], [' ', 'mahad'], $role));
+    }
+    $user_roles_label = array_unique($user_roles_label);
+
 } elseif ($view === 'amanah') {
     $active_menu = 'amanah_asatidz';
-    
-    // Pastikan tabel job_descriptions ada (Self-Healing)
-    $conn->query("CREATE TABLE IF NOT EXISTS job_descriptions (
+
+    // Buat tabel penyimpanan amanah per role jika belum ada
+    $conn->query("CREATE TABLE IF NOT EXISTS amanah_role (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        swot_id INT NOT NULL,
-        hasil_jobdesc TEXT NULL,
+        role_key VARCHAR(100) UNIQUE NOT NULL,
+        role_label VARCHAR(150) NOT NULL,
+        konten TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        FOREIGN KEY (swot_id) REFERENCES swot_analysis(id) ON DELETE CASCADE
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )");
-    
-    // Ambil data jobdesc terbaru
-    $res_jd = $conn->query("SELECT hasil_jobdesc FROM job_descriptions ORDER BY id DESC LIMIT 1");
-    $jobdesc_data = $res_jd ? $res_jd->fetch_assoc() : null;
-    $hasil_jobdesc = $jobdesc_data['hasil_jobdesc'] ?? '';
+
+    // Definisikan daftar role yang digunakan di sistem
+    $defined_roles = [
+        'kepala_sekolah' => 'Kepala Sekolah',
+        'sekretaris_sekolah' => 'Sekretaris Sekolah',
+        'bendahara_sekolah' => 'Bendahara Sekolah',
+        'admin_sekolah' => 'Admin Sekolah',
+        'kepala_mahad' => "Kepala Ma'had",
+        'kepala_asrama' => 'Kepala Asrama',
+        'musyrif' => 'Musyrif',
+        'ustadz' => 'Ustadz'
+    ];
+
+    // Ambil konten amanah per role dari DB
+    $amanah_roles = [];
+    $stmt = $conn->prepare("SELECT konten, updated_at FROM amanah_role WHERE role_key = ?");
+    foreach ($defined_roles as $rk => $rl) {
+        $konten = '';
+        $updated = null;
+        $stmt->bind_param('s', $rk);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        if ($res && $row = $res->fetch_assoc()) {
+            $konten = $row['konten'];
+            $updated = $row['updated_at'];
+        }
+        $amanah_roles[$rk] = ['label' => $rl, 'konten' => $konten, 'updated_at' => $updated];
+    }
+    $stmt->close();
+
+    // Tentukan tab awal: pilih role pertama yang dimiliki user, jika ada
+    $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+    $active_tab = array_key_first($defined_roles);
+    foreach ($user_roles as $ur) {
+        $ur = trim($ur);
+        if (isset($defined_roles[$ur])) { $active_tab = $ur; break; }
+    }
 
 } else { // default view
     $active_menu = 'dashboard_pegawai';
@@ -147,7 +250,7 @@ if ($view === 'dashboard_asrama') {
     <?php if ($view === 'dashboard_asrama'): ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <?php endif; ?>
-    <?php if ($view === 'amanah'): ?>
+    <?php if ($view === 'amanah' || $view === 'peraturan_role'): ?>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         .font-outfit {
@@ -381,6 +484,44 @@ if ($view === 'dashboard_asrama') {
                 </div>
             </div>
 
+            <?php elseif ($view === 'peraturan_role'): ?>
+            <!-- ================================================== -->
+            <!-- TAMPILAN PERATURAN ROLE                           -->
+            <!-- ================================================== -->
+            <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-file-contract text-cyan-600 mr-2"></i>Peraturan Pegawai</h1>
+                    <p class="text-gray-500 mt-1">Lihat peraturan dan SOP yang relevan dengan peran Anda.</p>
+                    <?php if (!empty($user_roles_label)): ?>
+                        <p class="text-sm text-gray-500 mt-2">Peran Anda: <?= htmlspecialchars(implode(', ', $user_roles_label)) ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php if (count($matched_peraturan) > 0): ?>
+                <div class="grid grid-cols-1 gap-6">
+                    <?php foreach ($matched_peraturan as $rule): ?>
+                        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                                <div>
+                                    <h2 class="text-xl font-bold text-gray-900"><?= htmlspecialchars($rule['jabatan']) ?></h2>
+                                    <p class="text-xs text-gray-500 mt-1">Terakhir diperbarui <?= date('d M Y H:i', strtotime($rule['updated_at'])) ?></p>
+                                </div>
+                                <span class="inline-flex items-center rounded-full bg-cyan-100 text-cyan-800 px-3 py-1 text-xs font-semibold">Read-only</span>
+                            </div>
+                            <div class="markdown-body peraturan-view">
+                                <div class="hidden peraturan-md"><?= htmlspecialchars($rule['konten']) ?></div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php else: ?>
+                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center text-gray-600">
+                    <i class="fas fa-exclamation-circle text-4xl mb-4 text-amber-500"></i>
+                    <h3 class="text-lg font-bold text-gray-900 mb-2">Belum ada peraturan untuk peran Anda.</h3>
+                    <p class="text-sm">Silakan minta admin Yayasan untuk menambahkan SOP & Peraturan pada menu <strong>SOP & Peraturan</strong>.</p>
+                </div>
+            <?php endif; ?>
+
             <?php elseif ($view === 'setor_hafalan'): ?>
             <!-- ================================================== -->
             <!-- TAMPILAN SETORAN HAFALAN                          -->
@@ -454,13 +595,14 @@ if ($view === 'dashboard_asrama') {
                     <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-id-card text-cyan-600 mr-2"></i>Menu Amanah</h1>
                     <p class="text-gray-500 mt-1">Daftar wewenang, rincian tugas berkala, dan Key Performance Indicators (KPI) Anda.</p>
                 </div>
-                <?php if (!empty($hasil_jobdesc)): ?>
+                <?php $has_any_amanah = false; foreach($amanah_roles as $r) { if (!empty(trim($r['konten']))) { $has_any_amanah = true; break; } } ?>
+                <?php if ($has_any_amanah): ?>
                 <div class="flex items-center gap-2">
-                    <button onclick="window.print()" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                    <button id="btn-print-amanah" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
                         <i class="fas fa-print"></i>
                         <span>Cetak PDF</span>
                     </button>
-                    <button id="btn-copy-amanah" onclick="copyAmanah()" class="bg-white hover:bg-gray-100 border border-gray-200 text-gray-750 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                    <button id="btn-copy-amanah" class="bg-white hover:bg-gray-100 border border-gray-200 text-gray-750 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
                         <i class="fas fa-copy"></i>
                         <span id="copy-text-btn">Salin Teks</span>
                     </button>
@@ -468,46 +610,76 @@ if ($view === 'dashboard_asrama') {
                 <?php endif; ?>
             </div>
 
-            <!-- CARD UTAMA AMANAH -->
+            <!-- CARD UTAMA AMANAH: TAB PER ROLE -->
             <div class="bg-white rounded-2xl border border-gray-200/60 shadow-md p-6 md:p-8 print-card font-outfit">
-                <?php if (!empty($hasil_jobdesc)): ?>
-                    <!-- Tempat render hasil Markdown -->
-                    <div id="amanah-rendered" class="markdown-body text-sm leading-relaxed font-outfit"></div>
-                    
-                    <!-- Hidden textarea to store raw Markdown for copying -->
-                    <textarea id="amanah-raw" class="hidden"><?= htmlspecialchars($hasil_jobdesc) ?></textarea>
-                    
-                    <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const rawText = document.getElementById('amanah-raw').value;
-                            document.getElementById('amanah-rendered').innerHTML = marked.parse(rawText);
-                        });
+                <div class="mb-4">
+                    <div id="amanah-tabs" class="flex space-x-2 overflow-x-auto">
+                        <?php foreach ($amanah_roles as $rk => $r): ?>
+                            <button data-role="<?= $rk ?>" class="px-3 py-2 rounded-lg border text-sm <?= ($rk === $active_tab) ? 'bg-cyan-600 text-white' : 'bg-white' ?>"><?= htmlspecialchars($r['label']) ?></button>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
 
-                        function copyAmanah() {
-                            const rawText = document.getElementById('amanah-raw').value;
-                            navigator.clipboard.writeText(rawText).then(() => {
-                                const btn = document.getElementById('btn-copy-amanah');
-                                const originalHtml = btn.innerHTML;
-                                btn.innerHTML = '<i class="fas fa-check text-emerald-500"></i> <span class="text-emerald-600 font-bold">Tersalin!</span>';
-                                setTimeout(() => {
-                                    btn.innerHTML = originalHtml;
-                                }, 2000);
-                            }).catch(err => {
-                                console.error("Gagal menyalin: ", err);
+                <div id="amanah-panels" class="space-y-6">
+                    <?php foreach ($amanah_roles as $rk => $r): ?>
+                        <div class="amanah-panel <?= ($rk === $active_tab) ? '' : 'hidden' ?>" data-role="<?= $rk ?>">
+                            <div id="amanah-render-<?= $rk ?>" class="markdown-body text-sm leading-relaxed font-outfit"></div>
+                            <textarea id="amanah-raw-<?= $rk ?>" class="hidden"><?= htmlspecialchars($r['konten']) ?></textarea>
+                            <?php if (!empty($r['updated_at'])): ?><p class="text-xs text-gray-500 mt-2">Terakhir diperbarui <?= date('d M Y H:i', strtotime($r['updated_at'])) ?></p><?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const tabs = document.querySelectorAll('#amanah-tabs button');
+                        let activeRole = '<?= $active_tab ?>';
+
+                        function renderAll() {
+                            document.querySelectorAll('[id^="amanah-raw-"]').forEach(el => {
+                                const id = el.id.replace('amanah-raw-', '');
+                                const htmlTarget = document.getElementById('amanah-render-' + id);
+                                if (htmlTarget) htmlTarget.innerHTML = marked.parse(el.value || '');
                             });
                         }
-                    </script>
-                <?php else: ?>
-                    <div class="py-12 flex flex-col items-center justify-center text-center max-w-md mx-auto">
-                        <div class="w-20 h-20 rounded-full bg-cyan-50 text-cyan-600 flex items-center justify-center text-3xl shadow-inner mb-4">
-                            <i class="fas fa-id-card"></i>
-                        </div>
-                        <h3 class="font-bold text-gray-800 text-lg">Belum Ada Data Amanah</h3>
-                        <p class="text-sm text-gray-400 mt-2">
-                            Yayasan belum menerbitkan atau mengedit Job Description / Amanah untuk periode ini. Silakan hubungi pihak Yayasan untuk informasi lebih lanjut.
-                        </p>
-                    </div>
-                <?php endif; ?>
+
+                        function showRole(role) {
+                            activeRole = role;
+                            document.querySelectorAll('.amanah-panel').forEach(p => p.classList.toggle('hidden', p.dataset.role !== role));
+                            tabs.forEach(b => b.classList.toggle('bg-cyan-600', b.dataset.role === role));
+                            tabs.forEach(b => b.classList.toggle('text-white', b.dataset.role === role));
+                        }
+
+                        tabs.forEach(btn => btn.addEventListener('click', function(){ showRole(this.dataset.role); }));
+                        renderAll();
+                        showRole(activeRole);
+
+                        const copyBtn = document.getElementById('btn-copy-amanah');
+                        if (copyBtn) copyBtn.addEventListener('click', function(){
+                            const raw = document.getElementById('amanah-raw-' + activeRole).value || '';
+                            navigator.clipboard.writeText(raw).then(() => {
+                                const original = copyBtn.innerHTML;
+                                copyBtn.innerHTML = '<i class="fas fa-check text-emerald-500"></i> <span class="text-emerald-600 font-bold">Tersalin!</span>';
+                                setTimeout(()=> copyBtn.innerHTML = original, 1800);
+                            }).catch(err => console.error(err));
+                        });
+
+                        const printBtn = document.getElementById('btn-print-amanah');
+                        if (printBtn) printBtn.addEventListener('click', function(){
+                            const panel = document.querySelector('.amanah-panel[data-role="' + activeRole + '"]');
+                            if (!panel) return window.print();
+                            const w = window.open('', '_blank');
+                            w.document.write('<html><head><title>Amanah - ' + activeRole + '</title>');
+                            w.document.write('<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">');
+                            w.document.write('<style>body{font-family:Arial, Helvetica, sans-serif;padding:20px;color:#111}</style></head><body>');
+                            w.document.write('<h2>' + panel.querySelector('h2')?.textContent || '' + '</h2>');
+                            w.document.write(panel.innerHTML);
+                            w.document.write('</body></html>');
+                            w.document.close();
+                            w.print();
+                        });
+                    });
+                </script>
             </div>
 
             <?php else: ?>
@@ -533,6 +705,12 @@ if ($view === 'dashboard_asrama') {
                     <i class="fas fa-magic text-blue-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
                     <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI RPP</span>
                 </a>
+                <?php if ($has_peraturan_menu): ?>
+                <a href="admin-ustadz.php?view=peraturan_role" class="bg-white hover:bg-slate-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-file-contract text-slate-700 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Peraturan Pegawai</span>
+                </a>
+                <?php endif; ?>
             </div>
 
             <!-- WIDGET STATISTIK -->
@@ -634,6 +812,16 @@ if ($view === 'dashboard_asrama') {
                 },
                 options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
             });
+            <?php if ($view === 'peraturan_role'): ?>
+                document.querySelectorAll('.peraturan-view').forEach(card => {
+                    const rawContainer = card.querySelector('.peraturan-md');
+                    const raw = rawContainer ? rawContainer.textContent.trim() : '';
+                    if (raw.length > 0) {
+                        card.innerHTML = marked.parse(raw);
+                    } else {
+                        card.innerHTML = '<div class="text-sm text-gray-500">Konten peraturan tidak tersedia.</div>';
+                    }
+                });
             <?php endif; ?>
         });
     </script>
