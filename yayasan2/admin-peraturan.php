@@ -99,13 +99,13 @@ $active_menu = 'admin_peraturan';
                 <div class="bg-rose-100 text-rose-800 px-4 py-3 rounded-lg mb-6 shadow-sm border border-rose-200 flex items-center"><i class="fas fa-exclamation-triangle mr-2 text-xl"></i> <div><?= $pesan_error ?></div></div>
             <?php endif; ?>
             <!-- TAB NAVIGASI -->
-            <div class=\"mb-6 flex gap-2 border-b border-gray-300\">
-                <button onclick=\"switchTab('tab-generate')\" class=\"tab-btn active px-6 py-3 border-b-2 border-blue-800 text-blue-800 font-bold focus:outline-none\"><i class=\"fas fa-wand-magic-sparkles mr-2\"></i> Generate</button>
-                <button onclick=\"switchTab('tab-daftar')\" class=\"tab-btn px-6 py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900 font-bold focus:outline-none\"><i class=\"fas fa-list mr-2\"></i> Daftar Tersimpan (<?= count($all_peraturan) ?>)</button>
+            <div class="mb-6 flex gap-2 border-b border-gray-300">
+                <button onclick="switchTab('tab-generate')" class="tab-btn active px-6 py-3 border-b-2 border-blue-800 text-blue-800 font-bold focus:outline-none"><i class="fas fa-wand-magic-sparkles mr-2"></i> Generate</button>
+                <button onclick="switchTab('tab-daftar')" class="tab-btn px-6 py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900 font-bold focus:outline-none"><i class="fas fa-list mr-2"></i> Daftar Tersimpan (<?= count($all_peraturan) ?>)</button>
             </div>
 
             <!-- TAB: GENERATE -->
-            <div id=\"tab-generate\" class=\"tab-content block\">
+            <div id="tab-generate" class="tab-content block">
             <!-- KOTAK KENDALI GENERATOR -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -176,35 +176,35 @@ $active_menu = 'admin_peraturan';
             </div><!-- end tab-generate -->
 
             <!-- TAB: DAFTAR TERSIMPAN -->
-            <div id=\"tab-daftar\" class=\"tab-content hidden\">
-                <div class=\"flex justify-between items-center mb-6\">
-                    <h3 class=\"text-xl font-bold text-gray-800\"><i class=\"fas fa-database text-blue-800 mr-2\"></i> Peraturan Tersimpan</h3>
-                    <a href=\"?export_all=zip\" class=\"bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center\"><i class=\"fas fa-download mr-2\"></i> Export Semua (ZIP)</a>
+            <div id="tab-daftar" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800"><i class="fas fa-database text-blue-800 mr-2"></i> Peraturan Tersimpan</h3>
+                    <a href="?export_all=zip" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center"><i class="fas fa-download mr-2"></i> Export Semua (ZIP)</a>
                 </div>
 
                 <?php if (count($all_peraturan) > 0): ?>
-                    <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4\">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <?php foreach ($all_peraturan as $p): ?>
-                            <div class=\"bg-white rounded-lg shadow-md border border-gray-200 p-4 hover:shadow-lg transition\">
-                                <h4 class=\"font-bold text-gray-800 mb-2 text-lg\"><?= htmlspecialchars($p['jabatan']) ?></h4>
-                                <p class=\"text-xs text-gray-500 mb-4\">Update: <?= date('d-m-Y H:i', strtotime($p['updated_at'])) ?></p>
-                                <p class=\"text-sm text-gray-600 mb-4 line-clamp-3\"><?= substr(strip_tags($p['konten']), 0, 100) ?>...</p>
-                                <div class=\"flex gap-2\">
-                                    <button onclick=\"loadPeraturan('<?= addslashes($p['jabatan']) ?>')\" class=\"flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded text-sm transition\"><i class=\"fas fa-eye mr-1\"></i> Lihat</button>
-                                    <form method=\"POST\" style=\"display:inline;\" onsubmit=\"return confirm('Yakin hapus peraturan ini?');\">
-                                        <input type=\"hidden\" name=\"hapus_peraturan\" value=\"1\">
-                                        <input type=\"hidden\" name=\"jabatan\" value=\"<?= htmlspecialchars($p['jabatan']) ?>\">
-                                        <button type=\"submit\" class=\"bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded text-sm transition\"><i class=\"fas fa-trash mr-1\"></i> Hapus</button>
+                            <div class="bg-white rounded-lg shadow-md border border-gray-200 p-4 hover:shadow-lg transition">
+                                <h4 class="font-bold text-gray-800 mb-2 text-lg"><?= htmlspecialchars($p['jabatan']) ?></h4>
+                                <p class="text-xs text-gray-500 mb-4">Update: <?= date('d-m-Y H:i', strtotime($p['updated_at'])) ?></p>
+                                <p class="text-sm text-gray-600 mb-4 line-clamp-3"><?= substr(strip_tags($p['konten']), 0, 100) ?>...</p>
+                                <div class="flex gap-2">
+                                    <button onclick="loadPeraturan('<?= addslashes($p['jabatan']) ?>')" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded text-sm transition"><i class="fas fa-eye mr-1"></i> Lihat</button>
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin hapus peraturan ini?');">
+                                        <input type="hidden" name="hapus_peraturan" value="1">
+                                        <input type="hidden" name="jabatan" value="<?= htmlspecialchars($p['jabatan']) ?>">
+                                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded text-sm transition"><i class="fas fa-trash mr-1"></i> Hapus</button>
                                     </form>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
                 <?php else: ?>
-                    <div class=\"bg-gray-100 text-gray-600 px-6 py-12 rounded-lg text-center\">
-                        <i class=\"fas fa-inbox text-5xl mb-4 opacity-30\"></i>
-                        <p class=\"text-lg font-semibold\">Tidak ada peraturan tersimpan yet.</p>
-                        <p class=\"text-sm mt-2\">Generate dan simpan peraturan dari tab Generate.</p>
+                    <div class="bg-gray-100 text-gray-600 px-6 py-12 rounded-lg text-center">
+                        <i class="fas fa-inbox text-5xl mb-4 opacity-30"></i>
+                        <p class="text-lg font-semibold">Tidak ada peraturan tersimpan yet.</p>
+                        <p class="text-sm mt-2">Generate dan simpan peraturan dari tab Generate.</p>
                     </div>
                 <?php endif; ?>
             </div><!-- end tab-daftar -->
