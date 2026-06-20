@@ -26,12 +26,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_peraturan'])) {
     }
 }
 
-// Ambil data peraturan yang sudah ada untuk dropdown
+// 3. Proses Hapus Peraturan
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['hapus_peraturan'])) {
+    $jabatan = $conn->real_escape_string($_POST['jabatan']);
+    $sql = "DELETE FROM peraturan_pegawai WHERE jabatan = '$jabatan'";
+    if ($conn->query($sql) === TRUE) {
+        $pesan_sukses = "Peraturan untuk jabatan <b>$jabatan</b> berhasil dihapus.";
+    } else {
+        $pesan_error = "Gagal menghapus peraturan: " . $conn->error;
+    }
+}
+
+// Ambil data peraturan yang sudah ada untuk dropdown & list
 $saved_rules = [];
-$res = $conn->query("SELECT jabatan, konten FROM peraturan_pegawai ORDER BY jabatan ASC");
+$all_peraturan = [];
+$res = $conn->query("SELECT id, jabatan, konten, updated_at FROM peraturan_pegawai ORDER BY jabatan ASC");
 if ($res) {
     while($row = $res->fetch_assoc()) {
         $saved_rules[$row['jabatan']] = $row['konten'];
+        $all_peraturan[] = $row;
     }
 }
 
@@ -85,7 +98,14 @@ $active_menu = 'admin_peraturan';
             <?php if(isset($pesan_error)): ?>
                 <div class="bg-rose-100 text-rose-800 px-4 py-3 rounded-lg mb-6 shadow-sm border border-rose-200 flex items-center"><i class="fas fa-exclamation-triangle mr-2 text-xl"></i> <div><?= $pesan_error ?></div></div>
             <?php endif; ?>
+            <!-- TAB NAVIGASI -->
+            <div class=\"mb-6 flex gap-2 border-b border-gray-300\">
+                <button onclick=\"switchTab('tab-generate')\" class=\"tab-btn active px-6 py-3 border-b-2 border-blue-800 text-blue-800 font-bold focus:outline-none\"><i class=\"fas fa-wand-magic-sparkles mr-2\"></i> Generate</button>
+                <button onclick=\"switchTab('tab-daftar')\" class=\"tab-btn px-6 py-3 border-b-2 border-transparent text-gray-600 hover:text-gray-900 font-bold focus:outline-none\"><i class=\"fas fa-list mr-2\"></i> Daftar Tersimpan (<?= count($all_peraturan) ?>)</button>
+            </div>
 
+            <!-- TAB: GENERATE -->
+            <div id=\"tab-generate\" class=\"tab-content block\">
             <!-- KOTAK KENDALI GENERATOR -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -153,6 +173,41 @@ $active_menu = 'admin_peraturan';
                     <textarea id="edit-mode" class="hidden w-full h-[600px] p-4 border border-gray-300 rounded-lg font-mono text-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Edit markdown di sini..."></textarea>
                 </div>
             </div>
+            </div><!-- end tab-generate -->
+
+            <!-- TAB: DAFTAR TERSIMPAN -->
+            <div id=\"tab-daftar\" class=\"tab-content hidden\">
+                <div class=\"flex justify-between items-center mb-6\">
+                    <h3 class=\"text-xl font-bold text-gray-800\"><i class=\"fas fa-database text-blue-800 mr-2\"></i> Peraturan Tersimpan</h3>
+                    <a href=\"?export_all=zip\" class=\"bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center\"><i class=\"fas fa-download mr-2\"></i> Export Semua (ZIP)</a>
+                </div>
+
+                <?php if (count($all_peraturan) > 0): ?>
+                    <div class=\"grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4\">
+                        <?php foreach ($all_peraturan as $p): ?>
+                            <div class=\"bg-white rounded-lg shadow-md border border-gray-200 p-4 hover:shadow-lg transition\">
+                                <h4 class=\"font-bold text-gray-800 mb-2 text-lg\"><?= htmlspecialchars($p['jabatan']) ?></h4>
+                                <p class=\"text-xs text-gray-500 mb-4\">Update: <?= date('d-m-Y H:i', strtotime($p['updated_at'])) ?></p>
+                                <p class=\"text-sm text-gray-600 mb-4 line-clamp-3\"><?= substr(strip_tags($p['konten']), 0, 100) ?>...</p>
+                                <div class=\"flex gap-2\">
+                                    <button onclick=\"loadPeraturan('<?= addslashes($p['jabatan']) ?>')\" class=\"flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded text-sm transition\"><i class=\"fas fa-eye mr-1\"></i> Lihat</button>
+                                    <form method=\"POST\" style=\"display:inline;\" onsubmit=\"return confirm('Yakin hapus peraturan ini?');\">
+                                        <input type=\"hidden\" name=\"hapus_peraturan\" value=\"1\">
+                                        <input type=\"hidden\" name=\"jabatan\" value=\"<?= htmlspecialchars($p['jabatan']) ?>\">
+                                        <button type=\"submit\" class=\"bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded text-sm transition\"><i class=\"fas fa-trash mr-1\"></i> Hapus</button>
+                                    </form>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class=\"bg-gray-100 text-gray-600 px-6 py-12 rounded-lg text-center\">
+                        <i class=\"fas fa-inbox text-5xl mb-4 opacity-30\"></i>
+                        <p class=\"text-lg font-semibold\">Tidak ada peraturan tersimpan yet.</p>
+                        <p class=\"text-sm mt-2\">Generate dan simpan peraturan dari tab Generate.</p>
+                    </div>
+                <?php endif; ?>
+            </div><!-- end tab-daftar -->
         </main>
     </div>
 
@@ -230,6 +285,33 @@ $active_menu = 'admin_peraturan';
             document.getElementById('btn-reset').disabled = false;
             document.getElementById('btn-save').disabled = false;
             currentMarkdown = markdownText;
+        }
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            // Deactivate all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                btn.classList.remove('border-blue-800', 'text-blue-800');
+                btn.classList.add('border-transparent', 'text-gray-600');
+            });
+            
+            // Show active tab
+            document.getElementById(tabName).classList.remove('hidden');
+            event.target.classList.add('active');
+            event.target.classList.remove('border-transparent', 'text-gray-600');
+            event.target.classList.add('border-blue-800', 'text-blue-800');
+        }
+
+        function loadPeraturan(jabatan) {
+            document.getElementById('jabatan_input').value = jabatan;
+            switchTab('tab-generate');
+            // Trigger loading from database
+            const event = new Event('change', { bubbles: true });
+            document.getElementById('jabatan_input').dispatchEvent(event);
         }
 
         function downloadPDF() {
