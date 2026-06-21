@@ -145,18 +145,21 @@ $menu_structure = [
 </aside>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebar = document.getElementById('sidebar-hr');
-    const openBtn = document.getElementById('open-sidebar-hr');
-    const closeBtn = document.getElementById('close-sidebar-hr');
-    const overlay = document.getElementById('sidebar-overlay-hr');
+document.addEventListener('click', function(event) {
+    const openBtn = event.target.closest('#open-sidebar-hr');
+    const closeBtn = event.target.closest('#close-sidebar-hr');
+    const overlay = event.target.closest('#sidebar-overlay-hr');
 
-    function toggleSidebar() {
-        if(sidebar && overlay) { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); }
+    if (openBtn || closeBtn || overlay) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+        
+        const sidebar = document.getElementById('sidebar-hr');
+        const overlayEl = document.getElementById('sidebar-overlay-hr');
+        if (sidebar && overlayEl) {
+            sidebar.classList.toggle('hidden');
+            overlayEl.classList.toggle('hidden');
+        }
     }
-
-    if(openBtn) openBtn.addEventListener('click', toggleSidebar);
-    if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
-    if(overlay) overlay.addEventListener('click', toggleSidebar);
-});
+}, true);
 </script>
