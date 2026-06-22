@@ -68,6 +68,39 @@ function mikirKeGemini($payload) {
     return json_decode($response, true);
 }
 
+// Fungsi untuk mengambil gambar gratis & bebas hak cipta dari Pixabay
+function dapatkanGambarPixabay($keyword) {
+    $pixabay_key = defined('PIXABAY_API_KEY') ? PIXABAY_API_KEY : '';
+    if (empty($pixabay_key)) {
+        return '';
+    }
+    
+    // Ambil kata kunci pencarian utama (sebelum koma)
+    $clean_keywords = explode(',', $keyword);
+    $query = urlencode(trim($clean_keywords[0]));
+    if (empty($query)) {
+        return '';
+    }
+    
+    $url = "https://pixabay.com/api/?key=" . $pixabay_key . "&q=" . $query . "&image_type=photo&orientation=horizontal&safesearch=true&per_page=3";
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    if ($response) {
+        $data = json_decode($response, true);
+        if (isset($data['hits']) && count($data['hits']) > 0) {
+            // Ambil acak dari 3 teratas agar bervariasi
+            $idx = rand(0, min(count($data['hits']) - 1, 2));
+            return $data['hits'][$idx]['webformatURL'] ?? '';
+        }
+    }
+    return '';
+}
+
 // =========================================================================================
 // TUGAS BULANAN (Tiap Tanggal 1, Jam 05:00) : PERSONA, TREND MAKRO & KALENDER 30 HARI
 // =========================================================================================
@@ -299,9 +332,28 @@ if ($current_hour >= '07' && !$daily_done) {
             
             // Auto Cover Gambar
             $gambar_cover = '';
-            if (file_exists('uploads/')) {
-                $files = glob('uploads/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
-                if (!empty($files)) $gambar_cover = $files[array_rand($files)];
+            
+            // Opsi 1: Coba ambil dari Pixabay API menggunakan kata kunci terpilih
+            if (!empty($keyword)) {
+                logAgent("Mencoba mengambil gambar cover dari Pixabay untuk kata kunci: '$keyword'...");
+                $gambar_cover = dapatkanGambarPixabay($keyword);
+            }
+            
+            // Fallback 1: Jika gagal atau Pixabay API Key kosong, gunakan gambar lokal dari uploads/
+            if (empty($gambar_cover)) {
+                logAgent("Menggunakan fallback gambar cover lokal...");
+                if (file_exists('uploads/')) {
+                    $files = glob('uploads/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
+                    if (!empty($files)) {
+                        $gambar_cover = $files[array_rand($files)];
+                    }
+                }
+            }
+            
+            // Fallback 2: Jika uploads kosong, gunakan generator gambar bebas hak cipta LoremFlickr
+            if (empty($gambar_cover)) {
+                logAgent("Menggunakan fallback generator gambar bebas hak cipta LoremFlickr...");
+                $gambar_cover = "https://loremflickr.com/800/600/islamic,parenting";
             }
             
             $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords, gambar_cover) 
