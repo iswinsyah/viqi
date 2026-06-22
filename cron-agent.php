@@ -110,26 +110,7 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
 
     sleep(5); // Jeda nafas API
 
-    // 1B. MIKIR TREND MAKRO (BULANAN)
-    logAgent("Agent Trend Scout: Menganalisa tren besar (Makro) untuk bulan ini...");
-    $prompt_trend_macro_default = "Anda adalah seorang SEO & Market Trend Analyst. Berdasarkan data persona yang tersimpan, tentukan 1 TEMA BESAR untuk konten marketing bulan ini. Lalu, buat laporan singkat dalam format Markdown yang berisi: 1. Tema Besar Bulan Ini. 2. Tiga Pilar Konten turunan dari tema tersebut. 3. Rekomendasi 5 long-tail keywords utama yang relevan dengan tema besar.";
-    $prompt_trend_macro = file_exists('prompt_trend_macro.txt') ? file_get_contents('prompt_trend_macro.txt') : $prompt_trend_macro_default;
-    $payloadTrendMakro = [
-        [
-            "jenis_lead" => "SYSTEM_COMMAND",
-            "sumber_info" => $prompt_trend_macro,
-            "status" => "URGENT"
-        ]
-    ];
-    $dataTrendMakro = mikirKeGemini(['leads' => $payloadTrendMakro, 'type' => 'trend_macro']);
-    if (isset($dataTrendMakro['status']) && $dataTrendMakro['status'] === 'success') {
-        file_put_contents(__DIR__ . '/saved_trends_macro.txt', $dataTrendMakro['result']);
-        logAgent("✅ Laporan Tren Makro bulanan berhasil dibuat.");
-    } else {
-        logAgent("❌ Gagal membuat laporan Tren Makro.");
-    }
-    
-    sleep(5);
+    // Laporan Tren Makro bulanan ditiadakan, diganti menjadi laporan tren harian di tugas harian.
 
     // 1C. MIKIR KALENDER
     logAgent("Agent Perencana: Menyusun Kalender Konten 30 Hari ke depan...");
@@ -167,6 +148,27 @@ if (file_exists($daily_log_file)) {
 
 if ($current_hour >= '07' && !$daily_done) {
     logAgent("======= MEMULAI TUGAS HARIAN ($today) =======");
+
+    // 0. MIKIR TREND HARIAN (Dulu Bulanan)
+    logAgent("Agent Trend Scout: Menganalisa tren harian...");
+    $prompt_trend_macro_default = "Anda adalah seorang SEO & Market Trend Analyst. Tugas Anda adalah memberikan analisis trend konten parenting Islam untuk anak remaja usia 10 sampai dengan 15 tahun dari satu hari terakhir disemua plaform sosmed dan google search. Analisis harus meliputi: 1. Tema yang paling trending, 2. Angel/sudut pandang konten, 4. Hashtag yang digunakan, 5. Keyword Google Search yang sedang tren, serta hal penting lainnya yang relevan. Sajikan dalam format Markdown.";
+    $prompt_trend_macro = file_exists('prompt_trend_macro.txt') ? file_get_contents('prompt_trend_macro.txt') : $prompt_trend_macro_default;
+    $payloadTrendMakro = [
+        [
+            "jenis_lead" => "SYSTEM_COMMAND",
+            "sumber_info" => $prompt_trend_macro,
+            "status" => "URGENT"
+        ]
+    ];
+    $dataTrendMakro = mikirKeGemini(['leads' => $payloadTrendMakro, 'type' => 'trend_macro']);
+    if (isset($dataTrendMakro['status']) && $dataTrendMakro['status'] === 'success') {
+        file_put_contents(__DIR__ . '/saved_trends_macro.txt', $dataTrendMakro['result']);
+        logAgent("✅ Laporan Tren Harian berhasil dibuat.");
+    } else {
+        logAgent("❌ Gagal membuat laporan Tren Harian.");
+    }
+
+    sleep(5);
 
     // 1. MIKIR TREND MIKRO (SEKARANG HARIAN)
     logAgent("Agent Trend Scout: Menganalisa tren mikro untuk hari ini...");

@@ -6,9 +6,9 @@ $active_menu = 'trend_scout';
 
 // --- PROMPT MANAGEMENT ---
 $prompt_file_macro = 'prompt_trend_macro.txt';
-$default_prompt_macro = "Anda adalah seorang SEO & Market Trend Analyst. Berdasarkan data persona yang tersimpan, tentukan 1 TEMA BESAR untuk konten marketing bulan ini. Lalu, buat laporan singkat dalam format Markdown yang berisi: 1. Tema Besar Bulan Ini. 2. Tiga Pilar Konten turunan dari tema tersebut. 3. Rekomendasi 5 long-tail keywords utama yang relevan dengan tema besar.";
+$default_prompt_macro = "Anda adalah seorang SEO & Market Trend Analyst. Tugas Anda adalah memberikan analisis trend konten parenting Islam untuk anak remaja usia 10 sampai dengan 15 tahun dari satu hari terakhir disemua plaform sosmed dan google search. Analisis harus meliputi: 1. Tema yang paling trending, 2. Angel/sudut pandang konten, 4. Hashtag yang digunakan, 5. Keyword Google Search yang sedang tren, serta hal penting lainnya yang relevan. Sajikan dalam format Markdown.";
 $prompt_file_micro = 'prompt_trend_micro.txt';
-$default_prompt_micro = "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n{{THEME}}\n\n Tugas Anda adalah mencari 1 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 24 jam terakhir terkait tema tersebut. Berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.";
+$default_prompt_micro = "Anda adalah seorang SEO & Content Strategist. Tema besar hari ini adalah: \n\n{{THEME}}\n\n Tugas Anda adalah mencari 1 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 24 jam terakhir terkait tema tersebut. Berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
     if (isset($_POST['prompt_macro'])) {
@@ -74,26 +74,26 @@ $saved_micro = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_
                 <!-- Laporan Makro (Bulanan) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[400px] flex flex-col overflow-hidden">
                     <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
-                        <h3 class="font-bold text-gray-800"><i class="fas fa-calendar-day mr-2 text-indigo-500"></i>Laporan Tren Makro (Bulanan)</h3>
-                        <p class="text-xs text-gray-500">Dijalankan otomatis setiap tanggal 1 untuk menentukan tema besar.</p>
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-calendar-day mr-2 text-indigo-500"></i>Laporan Tren Harian (Trend Scout)</h3>
+                        <p class="text-xs text-gray-500">Dijalankan otomatis setiap hari jam 07:00 untuk menganalisa tren konten parenting Islam remaja.</p>
                     </div>
                     <div class="p-6 flex-1 overflow-y-auto">
                         <?php if (empty($saved_macro)): ?>
                             <div class="flex flex-col items-center justify-center h-full text-gray-400 text-center">
                                 <i class="fas fa-moon text-5xl mb-4 opacity-50"></i>
-                                <p>Belum ada laporan tren makro untuk bulan ini.</p>
-                                <p class="text-xs">Agent akan bekerja pada tanggal 1 setiap bulan.</p>
+                                <p>Belum ada laporan tren harian untuk hari ini.</p>
+                                <p class="text-xs">Agent akan bekerja pada jam 07:00 setiap hari.</p>
                             </div>
                         <?php else: ?>
                             <div class="markdown-body macro-body" id="macro-result"></div>
                         <?php endif; ?>
                     </div>
                 </div>
-                <!-- Laporan Mikro (Mingguan) -->
+                <!-- Laporan Mikro (Harian) -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[400px] flex flex-col overflow-hidden">
                     <div class="px-6 py-4 bg-gray-50 border-b border-gray-100">
-                        <h3 class="font-bold text-gray-800"><i class="fas fa-calendar-week mr-2 text-emerald-500"></i>Laporan Tren Mikro (Harian)</h3>
-                        <p class="text-xs text-gray-500">Dijalankan otomatis setiap hari jam 07:00 untuk mencari angle viral.</p>
+                        <h3 class="font-bold text-gray-800"><i class="fas fa-calendar-week mr-2 text-emerald-500"></i>Ide & Sudut Pandang Konten (Mikro)</h3>
+                        <p class="text-xs text-gray-500">Dijalankan otomatis setiap hari jam 07:00 setelah tren harian dirumuskan.</p>
                     </div>
                     <div class="p-6 flex-1 overflow-y-auto">
                         <?php if (empty($saved_micro)): ?>
@@ -121,12 +121,12 @@ $saved_micro = file_exists('saved_trends_micro.txt') ? file_get_contents('saved_
                             <input type="hidden" name="action" value="save_prompt">
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <div>
-                                    <label for="prompt_macro" class="block text-sm font-medium text-gray-700 mb-2">Prompt Tren Makro (Bulanan)</label>
+                                    <label for="prompt_macro" class="block text-sm font-medium text-gray-700 mb-2">Prompt Tren Harian (Trend Scout)</label>
                                     <textarea id="prompt_macro" name="prompt_macro" rows="10" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-indigo-500 focus:border-indigo-500"><?= htmlspecialchars($prompt_macro) ?></textarea>
                                 </div>
                                 <div>
                                     <label for="prompt_micro" class="block text-sm font-medium text-gray-700 mb-2">Prompt Tren Mikro (Harian)</label>
-                                    <p class="text-xs text-gray-500 mb-2">Gunakan placeholder <code>{{THEME}}</code> untuk menyisipkan tema besar bulanan.</p>
+                                    <p class="text-xs text-gray-500 mb-2">Gunakan placeholder <code>{{THEME}}</code> untuk menyisipkan tema besar hari ini.</p>
                                     <textarea id="prompt_micro" name="prompt_micro" rows="10" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-emerald-500 focus:border-emerald-500"><?= htmlspecialchars($prompt_micro) ?></textarea>
                                 </div>
                             </div>
