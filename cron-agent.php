@@ -104,34 +104,10 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
     if (isset($dataPersona['status']) && $dataPersona['status'] === 'success') {
         file_put_contents(__DIR__ . '/saved_persona.txt', $dataPersona['result']);
         logAgent("✅ Persona bulan ini berhasil dirumuskan.");
-    } else {
-        logAgent("❌ Gagal merumuskan Persona.");
-    }
-
-    sleep(5); // Jeda nafas API
-
-    // Laporan Tren Makro bulanan ditiadakan, diganti menjadi laporan tren harian di tugas harian.
-
-    // 1C. MIKIR KALENDER
-    logAgent("Agent Perencana: Menyusun Kalender Konten 30 Hari ke depan...");
-    $payloadKalender = $leads;
-    $prompt_kalender_default = "WAJIB BUAT DALAM BENTUK TABEL MARKDOWN. TANGGAL MULAI HARI 1: $today. BUAT FULL SAMPAI HARI KE-30. KOLOM TABEL: | Hari/Tanggal | Topik | Judul Artikel SEO | Keyword yang Disasar | Copywriting Singkat (untuk WA/FB) |. DILARANG memberikan teks pendahuluan! ACUAN UTAMA STRATEGI KONTEN ADALAH LAPORAN TREN BERIKUT: \n\n";
-    $prompt_kalender = file_exists(__DIR__ . '/prompt_kalender.txt') ? file_get_contents(__DIR__ . '/prompt_kalender.txt') : $prompt_kalender_default;
-    $trend_makro_report = file_exists(__DIR__ . '/saved_trends_macro.txt') ? file_get_contents(__DIR__ . '/saved_trends_macro.txt') : 'Tidak ada laporan tren.';
-    array_unshift($payloadKalender, [
-        "jenis_lead" => "SYSTEM_COMMAND",
-        "sumber_info" => str_replace('{{DATE}}', $today, $prompt_kalender) . $trend_makro_report,
-        "status" => "URGENT"
-    ]);
-
-    $dataKalender = mikirKeGemini(['leads' => $payloadKalender, 'type' => 'kalender', 'date' => $today]);
-    if (isset($dataKalender['status']) && $dataKalender['status'] === 'success') {
-        file_put_contents(__DIR__ . '/saved_kalender.txt', $dataKalender['result']);
-        logAgent("✅ Kalender konten 30 hari berhasil disusun.");
         file_put_contents($monthly_log_file, "SUCCESS_$current_month\n", FILE_APPEND);
         logAgent("Tugas Bulanan Selesai dengan Sukses! Agent kembali istirahat.");
     } else {
-        logAgent("❌ Gagal menyusun Kalender.");
+        logAgent("❌ Gagal merumuskan Persona.");
     }
     
     // Keluar agar tugas harian (jika kebetulan jam 07:00 juga) diproses di eksekusi Cron berikutnya (Mencegah PHP timeout)
@@ -215,29 +191,80 @@ if ($current_hour >= '07' && !$daily_done) {
     }
 
     sleep(5);
+    // 3. MIKIR HOOK & KEYWORD EXPLORER (HARIAN)
+    logAgent("Agent Hook & Keyword Explorer: Meriset opsi judul hook viral dan keyword...");
+    $trend_macro = file_exists(__DIR__ . '/saved_trends_macro.txt') ? file_get_contents(__DIR__ . '/saved_trends_macro.txt') : 'Tidak ada laporan tren makro.';
+    $leads = [];
+    $resL = $conn->query("SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 50");
+    if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
     
-    // 3. Cari topik hari ini di Kalender
+    $prompt_hook_explorer_default = "Anda adalah AI Agent Riset Hook & Keyword SEO. Tugas Anda adalah meriset dan memilih judul hook yang bisa viral serta keyword yang tepat sesuai algoritma Google Search terbaru, berdasarkan hasil riset Trend Scout berikut:\n\n{{TREND_SCOUT}}\n\nKetentuan:\n1. Target audiens: Orang tua dengan anak remaja usia 10-15 tahun, dalam konteks Islamic Parenting / Pendidikan Remaja Muslim.\n2. Riset 5 opsi judul hook viral yang memicu rasa penasaran/emosi (menggunakan formula hook seperti pengakuan, kontradiktif, pertanyaan retoris, dsb).\n3. Tentukan keyword utama & turunan yang memiliki potensi trafik tinggi dan relevan sesuai algoritma Google Search terbaru.\n4. Pilih 1 kombinasi terbaik yang paling berpotensi viral dan memiliki search intent yang kuat untuk ditulis hari ini.\n5. Berikan output dalam format JSON murni tanpa markdown (tanpa ```json). Format JSON harus tepat seperti ini:\n{\n  \"selected_topic\": \"Topik singkat dari judul terpilih\",\n  \"selected_title\": \"Judul Hook Terpilih yang Bisa Viral\",\n  \"selected_keyword\": \"keyword utama, keyword turunan 1, keyword turunan 2\",\n  \"report\": \"# Laporan Riset Hook & Keyword\\n\\n(Sajikan laporan lengkap riset Anda dalam format markdown di sini. Laporkan 5 opsi judul hook beserta keyword masing-masing, analisis kecocokan algoritma Google Search, serta alasan kuat pemilihan 1 judul terbaik untuk hari ini.)\"\n}";
+    
+    $prompt_hook_explorer_raw = file_exists(__DIR__ . '/prompt_hook_explorer.txt') ? file_get_contents(__DIR__ . '/prompt_hook_explorer.txt') : $prompt_hook_explorer_default;
+    $prompt_hook_explorer = str_replace('{{TREND_SCOUT}}', $trend_macro, $prompt_hook_explorer_raw);
+    
+    $payloadExplorer = $leads;
+    array_unshift($payloadExplorer, [
+        "jenis_lead" => "SYSTEM_COMMAND",
+        "sumber_info" => $prompt_hook_explorer,
+        "status" => "URGENT"
+    ]);
+
+    $dataExplorer = mikirKeGemini(['leads' => $payloadExplorer, 'type' => 'hook_explorer']);
+    if (isset($dataExplorer['status']) && $dataExplorer['status'] === 'success') {
+        $cleanJson = trim(preg_replace('/^```json|```$/i', '', $dataExplorer['result']));
+        $obj = json_decode($cleanJson, true);
+        if ($obj && isset($obj['selected_title'])) {
+            file_put_contents(__DIR__ . '/today_seo_task.json', json_encode([
+                'selected_topic' => $obj['selected_topic'] ?? '',
+                'selected_title' => $obj['selected_title'] ?? '',
+                'selected_keyword' => $obj['selected_keyword'] ?? ''
+            ], JSON_PRETTY_PRINT));
+            file_put_contents(__DIR__ . '/saved_kalender.txt', $obj['report'] ?? $dataExplorer['result']);
+            logAgent("✅ Riset Hook & Keyword harian berhasil disimpan.");
+        } else {
+            logAgent("⚠️ Format JSON Hook Explorer tidak sesuai. Menyimpan hasil mentah ke saved_kalender.txt.");
+            file_put_contents(__DIR__ . '/saved_kalender.txt', $dataExplorer['result']);
+        }
+    } else {
+        logAgent("❌ Gagal menjalankan Hook & Keyword Explorer.");
+    }
+
+    sleep(5);
+
+    // 4. Ambil topik/judul/keyword hari ini dari Hook & Keyword Explorer atau fallback
     $topic = "Keistimewaan Menghafal Al-Quran"; // Fallback topic
     $judul = "Keutamaan Menjadi Hafidz Quran di Usia Belia"; // Fallback judul
     $keyword = "pesantren tahfidz, hafal quran"; // Fallback keyword
-    
-    if (file_exists(__DIR__ . '/saved_kalender.txt')) {
-        $kalender = file_get_contents(__DIR__ . '/saved_kalender.txt');
-        $lines = explode("\n", $kalender);
-        foreach($lines as $line) {
-            if (strpos($line, $today) !== false) {
-                $cols = array_map('trim', explode('|', $line));
-                if(count($cols) >= 6) { // Pastikan kolomnya lengkap (5 data + 2 empty dari | di awal & akhir)
-                    $topic = $cols[2]; // Kolom ke-2: Topik
-                    $judul = $cols[3]; // Kolom ke-3: Judul Artikel SEO
-                    $keyword = $cols[4]; // Kolom ke-4: Keyword yang Disasar
-                    logAgent("Agent Penulis: Menemukan topik hari ini dari kalender -> Judul: '$judul', Keyword: '$keyword'");
-                    break; 
-                }
-            }
+
+    if (file_exists(__DIR__ . '/today_seo_task.json')) {
+        $seoTaskData = json_decode(file_get_contents(__DIR__ . '/today_seo_task.json'), true);
+        if ($seoTaskData && !empty($seoTaskData['selected_title'])) {
+            $topic = $seoTaskData['selected_topic'] ?? $topic;
+            $judul = $seoTaskData['selected_title'] ?? $judul;
+            $keyword = $seoTaskData['selected_keyword'] ?? $keyword;
+            logAgent("Agent Penulis: Menemukan data SEO hari ini dari today_seo_task.json -> Judul: '$judul', Keyword: '$keyword'");
         }
     } else {
-        logAgent("Agent Penulis: Kalender tidak ditemukan, menggunakan topik fallback.");
+        // Fallback jika json tidak ditemukan, coba cari di saved_kalender.txt (jika masih ada format baris tanggal, demi backward compatibility)
+        if (file_exists(__DIR__ . '/saved_kalender.txt')) {
+            $kalender = file_get_contents(__DIR__ . '/saved_kalender.txt');
+            $lines = explode("\n", $kalender);
+            foreach($lines as $line) {
+                if (strpos($line, $today) !== false) {
+                    $cols = array_map('trim', explode('|', $line));
+                    if(count($cols) >= 6) {
+                        $topic = $cols[2];
+                        $judul = $cols[3];
+                        $keyword = $cols[4];
+                        logAgent("Agent Penulis: Menemukan topik hari ini dari kalender -> Judul: '$judul', Keyword: '$keyword'");
+                        break;
+                    }
+                }
+            }
+        } else {
+            logAgent("Agent Penulis: Data target SEO tidak ditemukan, menggunakan fallback.");
+        }
     }
 
     // 4. MIKIR ARTIKEL SEO
