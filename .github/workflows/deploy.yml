@@ -26,6 +26,7 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: './'
         remote-dir: '/home/u829486010/domains/villaquranindonesia.com/public_html'
+        timeout: 300000
         # Jika perlu, uncomment baris exclude berikut untuk mengecualikan file tertentu.
         # exclude: |
         #   **/.git*
