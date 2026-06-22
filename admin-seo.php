@@ -21,9 +21,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $meta_keywords = $conn->real_escape_string($_POST['meta_keywords'] ?? '');
     $konten = $conn->real_escape_string($_POST['konten'] ?? '');
     
-    // Pilih gambar cover acak dari folder Penyimpanan Media jika diminta AI
-    $gambar_cover = '';
-    if (isset($_POST['auto_cover']) && $_POST['auto_cover'] === 'true') {
+    // Pilih gambar cover: Prioritaskan custom input, lalu AI Pixabay
+    $gambar_cover = $_POST['custom_image'] ?? '';
+    if (empty($gambar_cover)) {
+        $gambar_cover = $_POST['ai_image'] ?? '';
+    }
+    
+    // Fallback jika keduanya kosong, ambil gambar cover acak dari folder Penyimpanan Media jika auto_cover true
+    if (empty($gambar_cover) && isset($_POST['auto_cover']) && $_POST['auto_cover'] === 'true') {
         $upload_dir = 'uploads/';
         if (file_exists($upload_dir)) {
             $files = scandir($upload_dir);
@@ -70,6 +75,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 }
 
 $saved_seo = file_exists('saved_seo.txt') ? file_get_contents('saved_seo.txt') : '';
+$today_seo_task = file_exists('today_seo_task.json') ? json_decode(file_get_contents('today_seo_task.json'), true) : null;
+$ai_image_url = $today_seo_task['selected_image'] ?? '';
 
 // --- PROMPT MANAGEMENT ---
 $prompt_file = 'prompt_seo.txt';
@@ -133,7 +140,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 p-6">
                 <div class="flex items-center mb-4">
-                    <div class="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xl mr-4">
+                    <div class="w-12 h-12 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center text-xl mr-4 shadow-inner">
                         <i class="fas fa-google"></i>
                     </div>
                     <div>
@@ -142,11 +149,6 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                     </div>
                 </div>
 
-                <!-- Info Smart Paste -->
-                <div class="mb-4 bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-lg text-sm flex items-start">
-                    <i class="fas fa-lightbulb mt-1 mr-3 text-amber-500 text-lg"></i>
-                    <p><strong>Tips Cepat (Smart Paste):</strong> Klik tombol <b>"Copy SEO"</b> pada tabel di menu Kalender Konten AI, lalu <i>Paste</i> (Ctrl+V) di kolom <b>Topik</b> di bawah. Sistem akan otomatis membagi isinya ke 3 kolom secara instan!</p>
-                </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Topik / Ide Artikel <span class="text-red-500">*</span></label>
@@ -161,6 +163,19 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                         <input type="text" id="keyword-artikel" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="Contoh: tahfidz quran, asrama nyaman">
                     </div>
                 </div>
+
+                <!-- OPSI GAMBAR COVER (AI VS CUSTOM EDIT ADMIN) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pt-2 border-t border-gray-100">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">URL Gambar Cover (AI Pixabay)</label>
+                        <input type="text" id="ai-image-url" readonly class="w-full px-4 py-2 border border-gray-200 bg-gray-50 text-gray-500 rounded-lg cursor-not-allowed" value="<?= htmlspecialchars($ai_image_url) ?>" placeholder="Menunggu hasil riset AI...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Custom URL Gambar (Opsi Edit Admin)</label>
+                        <input type="text" id="custom-image-url" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-teal-500 focus:border-teal-500" placeholder="Ketik/paste link gambar di sini untuk menimpa gambar AI...">
+                    </div>
+                </div>
+
                 <div class="flex justify-end">
                     <button id="btn-generate" onclick="jalankanGenerator()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-lg transition shadow-md flex items-center group whitespace-nowrap">
                         <i class="fas fa-magic mr-2 group-hover:rotate-12 transition transform"></i> Buat Artikel
@@ -170,7 +185,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[500px] flex flex-col overflow-hidden mb-6">
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2"></i> Hasil Draft Artikel</h3>
+                    <h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2 text-teal-600"></i> Hasil Draft Artikel</h3>
                     <div class="flex items-center space-x-2">
                         <button id="btn-publish" onclick="terbitkanKeBlog()" class="hidden bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-amber-200"><i class="fas fa-edit mr-1"></i> Edit di Artikel & Berita</button>
                         <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan</button>
@@ -181,13 +196,13 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                 
                 <div id="result-container" class="p-6 flex-1 overflow-y-auto relative">
                     <div id="state-idle" class="<?= !empty($saved_seo) ? 'hidden' : 'flex flex-col items-center justify-center h-full text-gray-400 py-16 text-center' ?>">
-                        <i class="fas fa-keyboard text-6xl mb-4 opacity-50"></i>
+                        <i class="fas fa-keyboard text-6xl mb-4 opacity-50 text-teal-300"></i>
                         <p>Lengkapi Topik, Judul, dan Keyword lalu klik "Buat Artikel" untuk mulai.</p>
                     </div>
                     
                     <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-teal-600 py-16 text-center">
-                        <i class="fas fa-spinner fa-spin text-5xl mb-4"></i>
-                        <p class="font-bold animate-pulse">Menulis artikel SEO...</p>
+                        <i class="fas fa-spinner fa-spin text-5xl mb-4 text-teal-500"></i>
+                        <p class="font-bold animate-pulse text-lg">Menulis artikel SEO...</p>
                         <p class="text-sm text-gray-500 mt-2">Menerapkan algoritma E-E-A-T Google. Proses ini memakan waktu 10-15 detik.</p>
                     </div>
 
@@ -199,7 +214,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
             <div class="bg-white rounded-xl shadow-sm border border-gray-100">
                 <details>
                     <summary class="px-6 py-4 font-bold text-gray-800 cursor-pointer flex justify-between items-center">
-                        <span><i class="fas fa-cogs mr-2"></i> Pengaturan Prompt AI</span>
+                        <span><i class="fas fa-cogs mr-2 text-teal-500"></i> Pengaturan Prompt AI</span>
                         <i class="fas fa-chevron-down transition-transform duration-300"></i>
                     </summary>
                     <div class="p-6 border-t border-gray-100">
@@ -239,29 +254,19 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
             if (localStorage.getItem('seo_topik')) document.getElementById('topik-artikel').value = localStorage.getItem('seo_topik');
             if (localStorage.getItem('seo_judul')) document.getElementById('judul-artikel').value = localStorage.getItem('seo_judul');
             if (localStorage.getItem('seo_keyword')) document.getElementById('keyword-artikel').value = localStorage.getItem('seo_keyword');
+            if (localStorage.getItem('seo_custom_image')) document.getElementById('custom-image-url').value = localStorage.getItem('seo_custom_image');
 
-            // Handle paste JSON dari tombol "Copy SEO" di Kalender
-            const topikInput = document.getElementById('topik-artikel');
-            if (topikInput) {
-                topikInput.addEventListener('paste', function(e) {
-                    let pasteData = (e.clipboardData || window.clipboardData).getData('text');
-                    try {
-                        let json = JSON.parse(pasteData);
-                        if (json.topik && json.judul && json.keyword) {
-                            e.preventDefault(); // Cegah paste default
-                            document.getElementById('topik-artikel').value = json.topik;
-                            document.getElementById('judul-artikel').value = json.judul;
-                            document.getElementById('keyword-artikel').value = json.keyword;
-                            simpanInputSementara(); // Langsung simpan ke memori sementara browser
-                        }
-                    } catch (err) {
-                        // Jika bukan copy-an dari tombol Copy SEO, biarkan paste default berjalan normal
-                    }
-                });
+            // Ambil data hari ini dari PHP today_seo_task jika localStorage kosong
+            const todayTask = <?= json_encode($today_seo_task) ?>;
+            if (todayTask) {
+                if (!document.getElementById('topik-artikel').value) document.getElementById('topik-artikel').value = todayTask.selected_topic || '';
+                if (!document.getElementById('judul-artikel').value) document.getElementById('judul-artikel').value = todayTask.selected_title || '';
+                if (!document.getElementById('keyword-artikel').value) document.getElementById('keyword-artikel').value = todayTask.selected_keyword || '';
+                if (!document.getElementById('ai-image-url').value) document.getElementById('ai-image-url').value = todayTask.selected_image || '';
             }
 
             // Auto save input ke local storage saat admin mengetik
-            ['topik-artikel', 'judul-artikel', 'keyword-artikel'].forEach(id => {
+            ['topik-artikel', 'judul-artikel', 'keyword-artikel', 'custom-image-url'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.addEventListener('input', simpanInputSementara);
             });
@@ -271,6 +276,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
             localStorage.setItem('seo_topik', document.getElementById('topik-artikel').value);
             localStorage.setItem('seo_judul', document.getElementById('judul-artikel').value);
             localStorage.setItem('seo_keyword', document.getElementById('keyword-artikel').value);
+            localStorage.setItem('seo_custom_image', document.getElementById('custom-image-url').value);
         }
 
         function jalankanGenerator() {
@@ -279,7 +285,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
             const keyword = document.getElementById('keyword-artikel').value.trim();
 
             if (!topik || !judul || !keyword) {
-                    alert("Mohon lengkapi Topik, Judul, dan Keyword terlebih dahulu!");
+                alert("Mohon lengkapi Topik, Judul, dan Keyword terlebih dahulu!");
                 return;
             }
             if (rawLeadsData.length === 0) {
@@ -307,7 +313,6 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
             }
             btnSave.disabled = false;
 
-            // INJEKSI PROMPT KETAT KE DALAM PAYLOAD (Mencegah basa-basi AI dan simbol Markdown)
             const payloadLeads = JSON.parse(JSON.stringify(rawLeadsData));
             const promptText = document.getElementById('prompt_content').value;
             const replacements = {'{{JUDUL}}': judul, '{{TOPIK}}': topik, '{{KEYWORD}}': keyword, '{{TREND_MIKRO}}': 'Tidak ada tren mikro untuk mode manual.'};
@@ -331,7 +336,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                     currentMarkdown = data.result;
                     document.getElementById('state-result').innerHTML = renderPreview(currentMarkdown);
                     document.getElementById('btn-save').classList.remove('hidden');
-                document.getElementById('btn-save-as').classList.remove('hidden');
+                    document.getElementById('btn-save-as').classList.remove('hidden');
                     document.getElementById('btn-publish').classList.remove('hidden');
                     document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
                     document.getElementById('badge-status').textContent = "Selesai";
@@ -404,6 +409,9 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                 }
             }
             
+            const aiImage = document.getElementById('ai-image-url').value.trim();
+            const customImage = document.getElementById('custom-image-url').value.trim();
+
             const formData = new FormData();
             formData.append('action', 'publish_blog');
             formData.append('judul', judul);
@@ -411,6 +419,8 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
             formData.append('meta_description', meta_desc);
             formData.append('meta_keywords', meta_key);
             formData.append('konten', konten);
+            formData.append('ai_image', aiImage);
+            formData.append('custom_image', customImage);
 
             const btnPub = document.getElementById('btn-publish');
             const oldText = btnPub.innerHTML;

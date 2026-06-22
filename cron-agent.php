@@ -267,10 +267,16 @@ if ($current_hour >= '07' && !$daily_done) {
         $cleanJson = trim(preg_replace('/^```json|```$/i', '', $dataExplorer['result']));
         $obj = json_decode($cleanJson, true);
         if ($obj && isset($obj['selected_title'])) {
+            $selected_keyword = $obj['selected_keyword'] ?? '';
+            $selected_image = '';
+            if (!empty($selected_keyword)) {
+                $selected_image = dapatkanGambarPixabay($selected_keyword);
+            }
             file_put_contents(__DIR__ . '/today_seo_task.json', json_encode([
                 'selected_topic' => $obj['selected_topic'] ?? '',
                 'selected_title' => $obj['selected_title'] ?? '',
-                'selected_keyword' => $obj['selected_keyword'] ?? ''
+                'selected_keyword' => $selected_keyword,
+                'selected_image' => $selected_image
             ], JSON_PRETTY_PRINT));
             file_put_contents(__DIR__ . '/saved_kalender.txt', $obj['report'] ?? $dataExplorer['result']);
             logAgent("✅ Riset Hook & Keyword harian berhasil disimpan.");
@@ -352,9 +358,15 @@ if ($current_hour >= '07' && !$daily_done) {
             // Auto Cover Gambar
             $gambar_cover = '';
             
-            // Opsi 1: Coba ambil dari Pixabay API menggunakan kata kunci terpilih
-            if (!empty($keyword)) {
-                logAgent("Mencoba mengambil gambar cover dari Pixabay untuk kata kunci: '$keyword'...");
+            // Opsi 1: Coba gunakan gambar terpilih dari today_seo_task.json (Pixabay)
+            if (isset($seoTaskData) && !empty($seoTaskData['selected_image'])) {
+                $gambar_cover = $seoTaskData['selected_image'];
+                logAgent("Menggunakan gambar cover dari riset Hook & Keyword: '$gambar_cover'");
+            }
+            
+            // Opsi 2: Coba ambil langsung dari Pixabay jika today_seo_task tidak ada tapi ada keyword
+            if (empty($gambar_cover) && !empty($keyword)) {
+                logAgent("Mencoba mengambil gambar cover baru dari Pixabay untuk kata kunci: '$keyword'...");
                 $gambar_cover = dapatkanGambarPixabay($keyword);
             }
             
