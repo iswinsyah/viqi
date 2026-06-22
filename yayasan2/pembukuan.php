@@ -118,6 +118,48 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     }
 }
 
+// Handler Tambah Akun COA Baru
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'tambah_akun') {
+    $kode_akun = $conn->real_escape_string(trim($_POST['kode_akun']));
+    $nama_akun = $conn->real_escape_string(trim($_POST['nama_akun']));
+    $tipe_akun = $conn->real_escape_string($_POST['tipe_akun']);
+
+    if (empty($kode_akun) || empty($nama_akun) || empty($tipe_akun)) {
+        $pesan_error = "Harap lengkapi semua isian untuk membuat akun baru!";
+    } else {
+        // Cek apakah kode akun sudah digunakan
+        $check = $conn->query("SELECT id FROM keuangan_akun WHERE kode_akun = '$kode_akun'");
+        if ($check && $check->num_rows > 0) {
+            $pesan_error = "Kode Akun $kode_akun sudah terdaftar!";
+        } else {
+            $sql = "INSERT INTO keuangan_akun (kode_akun, nama_akun, tipe_akun) VALUES ('$kode_akun', '$nama_akun', '$tipe_akun')";
+            if ($conn->query($sql)) {
+                $pesan_sukses = "Akun baru '$kode_akun - $nama_akun' berhasil didaftarkan!";
+            } else {
+                $pesan_error = "Gagal mendaftarkan akun: " . $conn->error;
+            }
+        }
+    }
+}
+
+// Handler Hapus Akun COA
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'hapus_akun') {
+    $akun_id = (int)$_POST['akun_id'];
+    
+    // Cek apakah ada jurnal detail yang sudah memakai akun ini
+    $check_use = $conn->query("SELECT id FROM keuangan_jurnal_detail WHERE akun_id = $akun_id LIMIT 1");
+    if ($check_use && $check_use->num_rows > 0) {
+        $pesan_error = "Akun tidak dapat dihapus karena sudah memiliki riwayat transaksi!";
+    } else {
+        $sql = "DELETE FROM keuangan_akun WHERE id = $akun_id";
+        if ($conn->query($sql)) {
+            $pesan_sukses = "Akun berhasil dihapus dari Bagan Akun!";
+        } else {
+            $pesan_error = "Gagal menghapus akun: " . $conn->error;
+        }
+    }
+}
+
 // 3. Load COA & Lembaga untuk form dropdown
 $list_akun = $conn->query("SELECT id, kode_akun, nama_akun, tipe_akun FROM keuangan_akun ORDER BY kode_akun ASC")->fetch_all(MYSQLI_ASSOC);
 $list_lembaga = $conn->query("SELECT id, nama_lembaga FROM keuangan_lembaga WHERE status = 'aktif' ORDER BY id ASC")->fetch_all(MYSQLI_ASSOC);
@@ -246,6 +288,9 @@ $recent_transactions = $conn->query($sql_jurnal)->fetch_all(MYSQLI_ASSOC);
                     <?php if(count($overdue_santri) > 0): ?>
                     <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-bounce"><?= count($overdue_santri) ?></span>
                     <?php endif; ?>
+                </button>
+                <button onclick="switchTab('tab-coa')" id="btn-tab-coa" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
+                    <i class="fas fa-list-ol mr-1"></i> Kelola Akun (COA)
                 </button>
             </div>
 
@@ -467,6 +512,90 @@ $recent_transactions = $conn->query($sql_jurnal)->fetch_all(MYSQLI_ASSOC);
                                 <?php endforeach; endif; ?>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS CONTENT: COA MANAGEMENT -->
+            <div id="tab-coa" class="tab-pane hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Form Tambah Akun -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col h-fit">
+                        <h2 class="font-bold text-lg text-gray-800 mb-4 border-b border-gray-100 pb-2"><i class="fas fa-plus-circle text-amber-600 mr-2"></i>Tambah Akun Baru</h2>
+                        <form action="" method="POST" class="space-y-4">
+                            <input type="hidden" name="action" value="tambah_akun">
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Kode Akun</label>
+                                <input type="text" name="kode_akun" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-amber-500" placeholder="Contoh: 1103 (untuk Kas/Bank)">
+                                <p class="text-[10px] text-gray-400 mt-1">Saran kode: 11xx (Aset/Bank), 21xx (Kewajiban), 31xx (Ekuitas), 41xx/42xx (Pendapatan), 51xx (Beban)</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Nama Akun / Nama Bank & Rekening</label>
+                                <input type="text" name="nama_akun" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-amber-500" placeholder="Contoh: Bank Syariah Mandiri (BSM)">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tipe Akun</label>
+                                <select name="tipe_akun" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-amber-500">
+                                    <option value="Aset">Aset (Kas, Bank, Piutang)</option>
+                                    <option value="Kewajiban">Kewajiban (Hutang)</option>
+                                    <option value="Ekuitas">Ekuitas (Modal)</option>
+                                    <option value="Pendapatan">Pendapatan</option>
+                                    <option value="Beban">Beban / Biaya</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-lg text-sm shadow transition"><i class="fas fa-plus mr-1"></i> Simpan Akun</button>
+                        </form>
+                    </div>
+
+                    <!-- Tabel Daftar Akun -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:col-span-2 flex flex-col overflow-hidden">
+                        <h2 class="font-bold text-lg text-gray-800 mb-4 border-b border-gray-100 pb-2"><i class="fas fa-list-ol text-amber-600 mr-2"></i>Bagan Akun (Chart of Accounts - COA)</h2>
+                        <div class="overflow-x-auto flex-1">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr class="text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                        <th class="py-2.5 px-3">Kode</th>
+                                        <th class="py-2.5 px-3">Nama Akun</th>
+                                        <th class="py-2.5 px-3">Tipe Akun</th>
+                                        <th class="py-2.5 px-3 text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100 text-xs">
+                                    <?php foreach($list_akun as $ak): ?>
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="py-2.5 px-3 font-semibold text-gray-800"><?= $ak['kode_akun'] ?></td>
+                                        <td class="py-2.5 px-3 font-bold text-gray-900"><?= htmlspecialchars($ak['nama_akun']) ?></td>
+                                        <td class="py-2.5 px-3">
+                                            <?php 
+                                            $tipe_colors = [
+                                                'Aset' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                                'Kewajiban' => 'bg-amber-50 text-amber-800 border-amber-200',
+                                                'Ekuitas' => 'bg-indigo-50 text-indigo-800 border-indigo-200',
+                                                'Pendapatan' => 'bg-blue-50 text-blue-800 border-blue-200',
+                                                'Beban' => 'bg-rose-50 text-rose-800 border-rose-200'
+                                            ];
+                                            $color = $tipe_colors[$ak['tipe_akun']] ?? 'bg-gray-50 text-gray-800';
+                                            ?>
+                                            <span class="px-2 py-0.5 rounded border text-[10px] font-semibold <?= $color ?>"><?= $ak['tipe_akun'] ?></span>
+                                        </td>
+                                        <td class="py-2.5 px-3 text-center">
+                                            <form action="" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus akun ini?');" class="inline">
+                                                <input type="hidden" name="action" value="hapus_akun">
+                                                <input type="hidden" name="akun_id" value="<?= $ak['id'] ?>">
+                                                <button type="submit" class="text-rose-600 hover:text-rose-900 font-bold transition">
+                                                    <i class="fas fa-trash-alt"></i> Hapus
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
