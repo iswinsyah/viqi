@@ -108,10 +108,10 @@ $last_log = $log_lines[count($log_lines)-1];
 
                 <!-- Agent 2 -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center arrow">
-                    <div class="w-16 h-16 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-calendar-alt"></i></div>
-                    <h3 class="font-bold text-lg text-gray-800">Kalender Konten</h3>
-                    <p class="text-sm text-gray-500 mt-2">Menyusun jadwal dan ide konten editorial untuk 30 hari ke depan berdasarkan hasil analisa persona.</p>
-                    <span class="absolute top-2 right-2 text-xs font-bold bg-gray-200 text-gray-600 px-2 py-1 rounded-full">Bulanan</span>
+                    <div class="w-16 h-16 bg-sky-100 text-sky-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-search-dollar"></i></div>
+                    <h3 class="font-bold text-lg text-gray-800">Hook & Keyword Explorer</h3>
+                    <p class="text-sm text-gray-500 mt-2">Meriset judul hook viral dan kata kunci target penulisan artikel berdasarkan hasil harian Trend Scout.</p>
+                    <span class="absolute top-2 right-2 text-xs font-bold bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">Harian</span>
                 </div>
 
                 <!-- Agent 3 -->
