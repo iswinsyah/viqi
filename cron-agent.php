@@ -68,7 +68,6 @@ function mikirKeGemini($payload) {
     return json_decode($response, true);
 }
 
-// Fungsi untuk mengambil gambar gratis & bebas hak cipta dari Pixabay
 function dapatkanGambarPixabay($keyword) {
     $pixabay_key = defined('PIXABAY_API_KEY') ? PIXABAY_API_KEY : '';
     if (empty($pixabay_key)) {
@@ -77,12 +76,16 @@ function dapatkanGambarPixabay($keyword) {
     
     // Ambil kata kunci pencarian utama (sebelum koma)
     $clean_keywords = explode(',', $keyword);
-    $query = urlencode(trim($clean_keywords[0]));
-    if (empty($query)) {
+    $primary_keyword = trim($clean_keywords[0]);
+    if (empty($primary_keyword)) {
         return '';
     }
     
-    $url = "https://pixabay.com/api/?key=" . $pixabay_key . "&q=" . $query . "&image_type=photo&orientation=horizontal&safesearch=true&per_page=3";
+    // Tambahkan embel-embel bernuansa Islami untuk memastikan gambar relevan dengan sekolah Tahfidz
+    $query_string = $primary_keyword . " muslim islamic";
+    $query = urlencode($query_string);
+    
+    $url = "https://pixabay.com/api/?key=" . $pixabay_key . "&q=" . $query . "&image_type=photo&orientation=horizontal&safesearch=true&per_page=5";
     
     $ch = curl_init($url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -93,9 +96,25 @@ function dapatkanGambarPixabay($keyword) {
     if ($response) {
         $data = json_decode($response, true);
         if (isset($data['hits']) && count($data['hits']) > 0) {
-            // Ambil acak dari 3 teratas agar bervariasi
-            $idx = rand(0, min(count($data['hits']) - 1, 2));
+            // Ambil acak dari 5 teratas agar bervariasi
+            $idx = rand(0, min(count($data['hits']) - 1, 4));
             return $data['hits'][$idx]['webformatURL'] ?? '';
+        } else {
+            // Fallback: Jika tidak ditemukan dengan query gabungan, cari dengan kata kunci umum Islami
+            $fallback_url = "https://pixabay.com/api/?key=" . $pixabay_key . "&q=" . urlencode("muslim islamic") . "&image_type=photo&orientation=horizontal&safesearch=true&per_page=5";
+            $ch = curl_init($fallback_url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+            $res_fallback = curl_exec($ch);
+            curl_close($ch);
+            
+            if ($res_fallback) {
+                $data_fallback = json_decode($res_fallback, true);
+                if (isset($data_fallback['hits']) && count($data_fallback['hits']) > 0) {
+                    $idx = rand(0, min(count($data_fallback['hits']) - 1, 4));
+                    return $data_fallback['hits'][$idx]['webformatURL'] ?? '';
+                }
+            }
         }
     }
     return '';
