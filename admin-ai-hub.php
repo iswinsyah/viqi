@@ -12,7 +12,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['autopilot_status'])) {
     $pesan_notif = "Status AI Agent berhasil diubah menjadi " . ($status === 'ON' ? 'AKTIF' : 'NONAKTIF');
 }
 
-$autopilot_status = file_exists('autopilot_status.txt') ? file_get_contents('autopilot_status.txt') : 'OFF';
+$autopilot_status = file_exists('autopilot_status.txt') ? trim(file_get_contents('autopilot_status.txt')) : 'OFF';
 
 // Baca log untuk status
 $log_content = file_exists('agent_cron_log.txt') ? file_get_contents('agent_cron_log.txt') : 'Belum ada aktivitas.';

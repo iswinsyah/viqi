@@ -48,7 +48,7 @@ function logAgent($msg) {
 }
 
 // 1. CEK OTORITAS DARI PUSAT KENDALI
-$autopilot = file_exists(__DIR__ . '/autopilot_status.txt') ? file_get_contents(__DIR__ . '/autopilot_status.txt') : 'OFF';
+$autopilot = file_exists(__DIR__ . '/autopilot_status.txt') ? trim(file_get_contents(__DIR__ . '/autopilot_status.txt')) : 'OFF';
 if ($autopilot !== 'ON') {
     die("Agent sedang dinonaktifkan (OFF) dari Pusat Kendali. Menunggu izin Bos...");
 }

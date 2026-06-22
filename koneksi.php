@@ -17,6 +17,14 @@ $conn = new mysqli($host, $username, $password, $database);
 
 // Memeriksa koneksi
 if ($conn->connect_error) {
-    die("Koneksi database gagal: " . $conn->connect_error);
+    if ($host === 'localhost' || $host === '127.0.0.1') {
+        // Fallback untuk local development di XAMPP
+        $conn = new mysqli($host, 'root', '', $database);
+        if ($conn->connect_error) {
+            die("Koneksi database gagal (termasuk fallback local): " . $conn->connect_error);
+        }
+    } else {
+        die("Koneksi database gagal: " . $conn->connect_error);
+    }
 }
 ?>
