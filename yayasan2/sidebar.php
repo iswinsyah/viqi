@@ -31,6 +31,9 @@
             </a>
 
             <p class="px-2 text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-2 mt-6">Keuangan & SDM</p>
+            <a href="pembukuan.php" class="<?= (isset($active_menu) && $active_menu == 'pembukuan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-calculator w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'pembukuan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Pembukuan Terpusat (AI)
+            </a>
             <a href="gaji-asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-chalkboard-teacher w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Asatidz
             </a>
