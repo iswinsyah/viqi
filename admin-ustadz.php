@@ -812,6 +812,7 @@ if ($view === 'dashboard_asrama') {
                 },
                 options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
             });
+            <?php endif; ?>
             <?php if ($view === 'peraturan_role'): ?>
                 document.querySelectorAll('.peraturan-view').forEach(card => {
                     const rawContainer = card.querySelector('.peraturan-md');
