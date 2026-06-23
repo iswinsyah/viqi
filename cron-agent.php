@@ -70,9 +70,9 @@ if (php_sapi_name() === 'cli') {
     $GAS_URL = $APP_URL . "/api-gemini.php";
 } else {
     $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-    $host = $_SERVER['HTTP_HOST'];
+    $http_host = $_SERVER['HTTP_HOST'];
     $uri_dir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-    $GAS_URL = $protocol . $host . $uri_dir . '/api-gemini.php';
+    $GAS_URL = $protocol . $http_host . $uri_dir . '/api-gemini.php';
 }
 
 $FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL";
