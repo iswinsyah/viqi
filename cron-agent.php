@@ -47,6 +47,13 @@ function logAgent($msg) {
     echo $log_entry . "<br>";
 }
 
+// Fungsi Jeda Khusus untuk menghindari Gemini API Rate Limit & Web Timeout
+function jedaAgent($detik) {
+    if (php_sapi_name() === 'cli') {
+        sleep($detik);
+    }
+}
+
 // 1. CEK OTORITAS DARI PUSAT KENDALI
 $autopilot = file_exists(__DIR__ . '/autopilot_status.txt') ? trim(file_get_contents(__DIR__ . '/autopilot_status.txt')) : 'OFF';
 $force = isset($_GET['force']) ? $_GET['force'] : '';
@@ -198,7 +205,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         logAgent("❌ Gagal membuat laporan Tren Harian.");
     }
 
-    sleep(5);
+    jedaAgent(5);
 
     // 1. MIKIR TREND MIKRO (SEKARANG HARIAN)
     logAgent("Agent Trend Scout: Menganalisa tren mikro untuk hari ini...");
@@ -221,7 +228,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         logAgent("❌ Gagal membuat laporan Tren Mikro.");
     }
 
-    sleep(5);
+    jedaAgent(5);
 
     // 2. MIKIR COMMUNITY SCOUT (SEKARANG HARIAN)
     logAgent("Agent Community Scout: Mencari grup komunitas potensial hari ini...");
@@ -244,7 +251,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         logAgent("❌ Gagal membuat laporan pencarian komunitas.");
     }
 
-    sleep(5);
+    jedaAgent(5);
     // 3. MIKIR HOOK & KEYWORD EXPLORER (HARIAN)
     logAgent("Agent Hook & Keyword Explorer: Meriset opsi judul hook viral dan keyword...");
     $trend_macro = file_exists(__DIR__ . '/saved_trends_macro.txt') ? file_get_contents(__DIR__ . '/saved_trends_macro.txt') : 'Tidak ada laporan tren makro.';
@@ -290,7 +297,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         logAgent("❌ Gagal menjalankan Hook & Keyword Explorer.");
     }
 
-    sleep(5);
+    jedaAgent(5);
 
     // 4. Ambil topik/judul/keyword hari ini dari Hook & Keyword Explorer atau fallback
     $topic = "Keistimewaan Menghafal Al-Quran"; // Fallback topic
@@ -435,7 +442,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
                 curl_exec($ch);
                 curl_close($ch);
                 
-                $jeda = rand(60, 180); // Jeda acak 1-3 menit
+                $jeda = (php_sapi_name() === 'cli') ? rand(60, 180) : 1;
                 logAgent("-> Pesan WA (ID: $artikel_id_kirim) dilesatkan ke: {$agen['nama']}. Jeda {$jeda} detik...");
                 sleep($jeda);
             }
