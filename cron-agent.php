@@ -11,13 +11,30 @@ set_time_limit(600); // Beri waktu 10 menit karena tugas bulanan lumayan panjang
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
+// Disable output buffering to support real-time log streaming
+if (php_sapi_name() !== 'cli') {
+    header('Content-Type: text/html; charset=utf-8');
+    header('Cache-Control: no-cache');
+    header('X-Accel-Buffering: no'); // Disable buffering for Nginx/LiteSpeed
+    @ini_set('zlib.output_compression', 0);
+    @ini_set('implicit_flush', 1);
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+}
+
 // Atur zona waktu ke Waktu Indonesia Barat (WIB) agar jadwal akurat
 date_default_timezone_set('Asia/Jakarta');
 
 require_once __DIR__ . '/koneksi.php';
 
-// Self-healing: Pastikan kolom status_broadcast ada di tabel artikel
+// Self-healing: Pastikan kolom pendukung ada di tabel artikel
 @$conn->query("ALTER TABLE artikel ADD COLUMN status_broadcast ENUM('menunggu', 'terkirim') DEFAULT 'menunggu' AFTER status");
+@$conn->query("ALTER TABLE artikel ADD COLUMN published_at DATETIME NULL AFTER status");
+@$conn->query("ALTER TABLE artikel ADD COLUMN meta_title VARCHAR(255) AFTER published_at");
+@$conn->query("ALTER TABLE artikel ADD COLUMN meta_description TEXT AFTER meta_title");
+@$conn->query("ALTER TABLE artikel ADD COLUMN meta_keywords VARCHAR(255) AFTER meta_description");
+
 // Self-healing untuk tabel leads & footprints agar query tidak crash
 @$conn->query("ALTER TABLE leads ADD COLUMN status VARCHAR(50) DEFAULT 'Level 1' AFTER whatsapp");
 @$conn->query("ALTER TABLE leads ADD COLUMN jenis_lead VARCHAR(50) DEFAULT 'brosur' AFTER status");
@@ -25,7 +42,17 @@ require_once __DIR__ . '/koneksi.php';
 @$conn->query("ALTER TABLE visitor_footprints ADD COLUMN campaign VARCHAR(100) AFTER source");
 
 $APP_URL = "https://villaquranindonesia.com"; // Gunakan URL absolut agar link broadcast tidak pecah saat dijalankan via Cron
-$GAS_URL = $APP_URL . "/api-gemini.php";
+
+// Tentukan GAS_URL secara dinamis untuk meminimalkan kegagalan loopback cURL
+if (php_sapi_name() === 'cli') {
+    $GAS_URL = $APP_URL . "/api-gemini.php";
+} else {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'];
+    $uri_dir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+    $GAS_URL = $protocol . $host . $uri_dir . '/api-gemini.php';
+}
+
 $FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL";
 
 $log_file = __DIR__ . '/agent_cron_log.txt';
@@ -38,13 +65,16 @@ $current_month = date('Y-m');
 $current_day = date('d');
 $current_hour = date('H');
 
-// Fungsi Logging Otonom
+// Fungsi Logging Otonom dengan real-time flush
 function logAgent($msg) {
     global $log_file;
     $timestamp = date('Y-m-d H:i:s');
     $log_entry = "[$timestamp] 🤖 AGENT: $msg\n";
     file_put_contents($log_file, $log_entry, FILE_APPEND);
     echo $log_entry . "<br>";
+    if (php_sapi_name() !== 'cli') {
+        flush();
+    }
 }
 
 // Fungsi Jeda Khusus untuk menghindari Gemini API Rate Limit & Web Timeout
@@ -360,7 +390,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         $obj = json_decode($cleanJson, true);
 
         if ($obj && isset($obj['konten'])) {
-            $j = $conn->real_escape_string($obj['judul']);
+            $j = $conn->real_escape_string($obj['judul'] ?? $judul);
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $j)));
             $k = $conn->real_escape_string($obj['konten']);
             
@@ -396,12 +426,29 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
                 $gambar_cover = "https://loremflickr.com/800/600/islamic,parenting";
             }
             
+            // Escape optional meta fields to prevent SQL injection or syntax breakages
+            $meta_title = $conn->real_escape_string($obj['meta_title'] ?? $obj['judul'] ?? $judul);
+            $meta_description = $conn->real_escape_string($obj['meta_description'] ?? '');
+            $meta_keywords = $conn->real_escape_string($obj['meta_keywords'] ?? $keyword);
+            $gambar_cover = $conn->real_escape_string($gambar_cover);
+
             $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords, gambar_cover) 
-                    VALUES ('$j', '$slug', '$k', 'publish', '{$obj['meta_title']}', '{$obj['meta_description']}', '{$obj['meta_keywords']}', '$gambar_cover')";
+                    VALUES ('$j', '$slug', '$k', 'publish', '$meta_title', '$meta_description', '$meta_keywords', '$gambar_cover')";
             if ($conn->query($sql) === TRUE) {
                 $newArticleId = $conn->insert_id;
                 logAgent("✅ Artikel otomatis dipublikasikan! (ID: $newArticleId)");
+            } else {
+                logAgent("❌ Gagal menyimpan artikel ke database: " . $conn->error);
+                logAgent("Query: " . $sql);
             }
+        } else {
+            logAgent("❌ Gagal men-decode JSON artikel dari Gemini atau field 'konten' kosong.");
+            logAgent("Raw Result (200 char): " . substr($dataSEO['result'] ?? '', 0, 200));
+        }
+    } else {
+        logAgent("❌ Gagal mendapatkan respon sukses dari Gemini untuk pembuatan artikel.");
+        if (isset($dataSEO['message'])) {
+            logAgent("Pesan error Gemini: " . $dataSEO['message']);
         }
     }
 
@@ -474,7 +521,15 @@ if (file_exists($billing_log_file)) {
 $allowed_days = ['01', '03', '06', '10'];
 $force_billing = ($force === 'billing');
 if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billing) && (in_array($current_day, $allowed_days) || $force_billing)) {
-    logAgent("======= MEMULAI AGENT PENAGIHAN OTOMATIS ($today) =======");
+    
+    $simulated_day = $current_day;
+    if ($force_billing && !in_array($current_day, $allowed_days)) {
+        $simulated_day = '01';
+        logAgent("======= MEMULAI AGENT PENAGIHAN OTOMATIS (FORCED) =======");
+        logAgent("Dijalankan manual diluar tanggal penagihan resmi (1, 3, 6, 10). Mensimulasikan sebagai penagihan Tanggal 01.");
+    } else {
+        logAgent("======= MEMULAI AGENT PENAGIHAN OTOMATIS ($today) =======");
+    }
     
     // Pastikan database terinisialisasi
     require_once __DIR__ . '/yayasan2/setup-pembukuan.php';
@@ -489,7 +544,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
     
     // 1. Query Santri Aktif yang memiliki kewajiban (belum bayar SPP bulan ini ATAU memiliki sisa cicilan uang masuk > 0)
     $sql_santri = "
-        SELECT s.id, s.nama_lengkap, s.kelas_sekarang, s.sisa_uang_masuk,
+        SELECT s.id, s.nama_lengkap, s.kelas_sekarang, s.sisa_uang_masuk, p.id as spp_bayar_id,
                COALESCE(s.no_whatsapp_ayah, s.no_whatsapp_ibu, s.no_whatsapp_wali, o.no_whatsapp) as no_wa,
                COALESCE(s.nama_ayah, s.nama_ibu, s.nama_wali, o.nama_orangtua) as nama_ortu
         FROM buku_induk_santri s
@@ -506,9 +561,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
     $overdue_list = [];
     if ($res_santri) {
         while ($row = $res_santri->fetch_assoc()) {
-            // Cek apakah SPP-nya yang belum lunas
-            $check_spp = $conn->query("SELECT id FROM pembayaran_spp WHERE santri_id = {$row['id']} AND bulan = '$bulan_sekarang' AND tahun = '$tahun_sekarang' AND status = 'Berhasil'");
-            $row['spp_belum_lunas'] = ($check_spp && $check_spp->num_rows == 0);
+            $row['spp_belum_lunas'] = is_null($row['spp_bayar_id']);
             $overdue_list[] = $row;
         }
     }
@@ -542,7 +595,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
             $pesan = "";
             
             // Kirim pesan sesuai tanggal
-            if ($current_day == '01') {
+            if ($simulated_day == '01') {
                 // Tanggal 1: Pengingat awal
                 $pesan = "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu {$s['nama_ortu']},\n\n"
                        . "Semoga Allah SWT melimpahkan kesehatan dan berkah bagi keluarga.\n\n"
@@ -556,7 +609,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
                        . "Jazaakumullahu Khairan.\n"
                        . "-- Bendahara Yayasan Villa Quran --";
             } 
-            elseif ($current_day == '03') {
+            elseif ($simulated_day == '03') {
                 // Tanggal 3: Konfirmasi pertama
                 $pesan = "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu {$s['nama_ortu']},\n\n"
                        . "Mohon konfirmasinya terkait pembayaran tagihan ananda *{$s['nama_lengkap']}*:\n"
@@ -566,7 +619,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
                        . "Jazaakumullahu Khairan.\n"
                        . "-- Bendahara Yayasan Villa Quran --";
             } 
-            elseif ($current_day == '06') {
+            elseif ($simulated_day == '06') {
                 // Tanggal 6: Konfirmasi kedua (lebih tegas)
                 $pesan = "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu {$s['nama_ortu']},\n\n"
                        . "Pengingat ulang terkait konfirmasi pembayaran tagihan ananda *{$s['nama_lengkap']}*:\n"
@@ -576,7 +629,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
                        . "Jazaakumullahu Khairan.\n"
                        . "-- Bendahara Yayasan Villa Quran --";
             } 
-            elseif ($current_day == '10') {
+            elseif ($simulated_day == '10') {
                 // Tanggal 10: Tanya kapan melunasi (Link Janji Bayar)
                 $secret_token = md5($s['id'] . 'viqi_billing_secret');
                 $link_promise = $APP_URL . "/konfirmasi-janji-bayar.php?s=" . $s['id'] . "&t=" . $secret_token;
@@ -605,7 +658,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
                 curl_exec($ch);
                 curl_close($ch);
                 
-                logAgent("-> Penagihan otomatis tanggal $current_day dikirim ke {$s['nama_lengkap']} ({$no_wa})");
+                logAgent("-> Penagihan otomatis tanggal $simulated_day dikirim ke {$s['nama_lengkap']} ({$no_wa})");
                 
                 // Jeda acak antarkirim 1-3 detik untuk menghindari blokir spam
                 sleep(rand(1, 3));

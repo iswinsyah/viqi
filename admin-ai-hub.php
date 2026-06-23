@@ -171,7 +171,7 @@ $last_log = $log_lines[count($log_lines)-1];
             if(overlay) overlay.addEventListener('click', toggleSidebar);
         });
 
-        // Jalankan AI Agent secara manual via AJAX
+        // Jalankan AI Agent secara manual via AJAX dengan Log Streaming Real-Time
         function jalankanAgentManual(type) {
             const btnSeo = document.getElementById('btn-run-seo');
             const btnBilling = document.getElementById('btn-run-billing');
@@ -185,19 +185,41 @@ $last_log = $log_lines[count($log_lines)-1];
             
             targetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Memproses...';
             logBox.innerHTML = "> Menghubungi AI Agent untuk memulai proses secara manual...\n";
+            logBox.scrollTop = logBox.scrollHeight;
             
             fetch('cron-agent.php?force=' + type)
-            .then(res => res.text())
-            .then(data => {
-                // Bersihkan tag <br> jika ada dari output PHP echo
-                const cleanLog = data.replace(/<br>/gi, '\n');
-                logBox.innerHTML += cleanLog + "\n> Proses selesai!";
-                logBox.scrollTop = logBox.scrollHeight;
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("HTTP error! Status: " + response.status);
+                }
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                
+                function readChunk() {
+                    return reader.read().then(({ done, value }) => {
+                        if (value) {
+                            const chunkText = decoder.decode(value, { stream: !done });
+                            // Ubah <br> menjadi \n agar rapi di textarea/log console
+                            const cleanText = chunkText.replace(/<br>/gi, '\n');
+                            logBox.innerHTML += cleanText;
+                            logBox.scrollTop = logBox.scrollHeight;
+                        }
+                        if (done) {
+                            logBox.innerHTML += "\n> Proses selesai!";
+                            logBox.scrollTop = logBox.scrollHeight;
+                            btnSeo.disabled = false;
+                            btnBilling.disabled = false;
+                            targetBtn.innerHTML = originalText;
+                            return;
+                        }
+                        return readChunk();
+                    });
+                }
+                return readChunk();
             })
             .catch(err => {
-                logBox.innerHTML += "\n[Error] Gagal mengeksekusi agent: " + err + "\n";
-            })
-            .finally(() => {
+                logBox.innerHTML += "\n[Error] Gagal mengeksekusi agent: " + err.message + "\n";
+                logBox.scrollTop = logBox.scrollHeight;
                 btnSeo.disabled = false;
                 btnBilling.disabled = false;
                 targetBtn.innerHTML = originalText;
