@@ -647,7 +647,8 @@ if (($current_hour >= '07' || $force_community) && (!$community_done || $force_c
         . "Aturan Wajib:\n"
         . "1. Grup yang dicari harus bersifat terbuka/publik (siapa saja boleh bergabung).\n"
         . "2. Grup tersebut BUKAN merupakan grup kolam marketing milik sekolah/pesantren kompetitor lain.\n"
-        . "3. Kembalikan output HANYA dalam format JSON array murni tanpa markdown (tanpa ```json dan tanpa penjelasan lain). Format JSON harus tepat seperti ini:\n"
+        . "3. Grup yang dicari harus AKTIF dengan tingkat interaksi tinggi. Khusus untuk Facebook Group, pastikan grup tersebut memiliki tingkat postingan harian yang ramai (minimal 5-10 postingan baru per hari). Hindari grup pasif, mati, atau sepi.\n"
+        . "4. Kembalikan output HANYA dalam format JSON array murni tanpa markdown (tanpa ```json dan tanpa penjelasan lain). Format JSON harus tepat seperti ini:\n"
         . "[\n"
         . "  {\n"
         . "    \"nama_grup\": \"Nama Grup Komunitas\",\n"
@@ -662,7 +663,7 @@ if (($current_hour >= '07' || $force_community) && (!$community_done || $force_c
 
     $prompt_community_raw = file_exists(__DIR__ . '/prompt_community_scout.txt') ? file_get_contents(__DIR__ . '/prompt_community_scout.txt') : $prompt_community_default;
     // Enforce JSON format requirements by appending them
-    $prompt_community_enforced = $prompt_community_raw . "\n\nATURAN WAJIB FORMAT OUTPUT: Output harus berupa JSON array murni tanpa pembungkus markdown (tanpa ```json). Setiap item dalam array harus berupa objek dengan key: 'nama_grup', 'platform', 'link_gabung', 'analisa_relevansi', 'skor_kualitas', 'saran_pembuka'. Grup yang dicari harus merupakan grup terbuka/publik dan BUKAN milik sekolah/pesantren kompetitor." . $exclusion_text;
+    $prompt_community_enforced = $prompt_community_raw . "\n\nATURAN WAJIB FORMAT OUTPUT: Output harus berupa JSON array murni tanpa pembungkus markdown (tanpa ```json). Setiap item dalam array harus berupa objek dengan key: 'nama_grup', 'platform', 'link_gabung', 'analisa_relevansi', 'skor_kualitas', 'saran_pembuka'. Grup yang dicari harus merupakan grup terbuka/publik, AKTIF dengan interaksi ramai (minimal 5-10 post baru per hari khususnya di Facebook), dan BUKAN milik sekolah/pesantren kompetitor." . $exclusion_text;
 
     $prompt_community = str_replace('{{PERSONA}}', $persona, $prompt_community_enforced);
 
