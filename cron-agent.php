@@ -28,6 +28,28 @@ date_default_timezone_set('Asia/Jakarta');
 
 require_once __DIR__ . '/koneksi.php';
 
+// Helper function to prevent "MySQL server has gone away" during long-running API tasks
+function pastikanKoneksiDb() {
+    global $conn, $host, $username, $password, $database;
+    if (!$conn || !@$conn->ping()) {
+        if ($conn) { @$conn->close(); }
+        $conn = new mysqli($host, $username, $password, $database);
+        if ($conn->connect_error) {
+            if ($host === 'localhost' || $host === '127.0.0.1') {
+                $conn = new mysqli($host, 'root', '', $database);
+                if ($conn->connect_error) {
+                    logAgent("Re-koneksi database gagal (fallback local): " . $conn->connect_error);
+                }
+            } else {
+                logAgent("Re-koneksi database gagal: " . $conn->connect_error);
+            }
+        }
+        // Matikan mode strict exception PHP 8.1+ agar tidak Error 500 jika query gagal
+        mysqli_report(MYSQLI_REPORT_OFF);
+    }
+}
+
+pastikanKoneksiDb();
 // Self-healing: Pastikan kolom pendukung ada di tabel artikel
 @$conn->query("ALTER TABLE artikel ADD COLUMN status_broadcast ENUM('menunggu', 'terkirim') DEFAULT 'menunggu' AFTER status");
 @$conn->query("ALTER TABLE artikel ADD COLUMN published_at DATETIME NULL AFTER status");
@@ -171,9 +193,11 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
     
     // Kumpulkan Data (Maks 100 terbaru)
     $leads = []; $footprints = [];
+    pastikanKoneksiDb();
     $resL = $conn->query("SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 100");
     if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
     
+    pastikanKoneksiDb();
     $resF = $conn->query("SELECT device, location, source, campaign FROM visitor_footprints ORDER BY id DESC LIMIT 100");
     if($resF) while($r = $resF->fetch_assoc()) $footprints[] = $r;
 
@@ -263,6 +287,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
     logAgent("Agent Hook & Keyword Explorer: Meriset opsi judul hook viral dan keyword...");
     $trend_macro = file_exists(__DIR__ . '/saved_trends_macro.txt') ? file_get_contents(__DIR__ . '/saved_trends_macro.txt') : 'Tidak ada laporan tren makro.';
     $leads = [];
+    pastikanKoneksiDb();
     $resL = $conn->query("SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 50");
     if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
     
@@ -348,7 +373,9 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
     // 4. MIKIR ARTIKEL SEO
     logAgent("Mulai menulis draf artikel: $judul...");
-    $leads = []; $resL = $conn->query("SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 50");
+    $leads = []; 
+    pastikanKoneksiDb();
+    $resL = $conn->query("SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 50");
     if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
 
     $payloadSEO = $leads;
@@ -380,6 +407,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         $judul_art = $obj['judul'] ?? $obj['title'] ?? $judul;
 
         if ($obj && !empty($konten)) {
+            pastikanKoneksiDb();
             $j = $conn->real_escape_string($judul_art);
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $j)));
             $k = $conn->real_escape_string($konten);
@@ -444,6 +472,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
     // 5. BROADCAST PUBLISHER (SEKARANG LEBIH PINTAR)
     logAgent("Agent Publisher: Mencari artikel yang belum disebar...");
+    pastikanKoneksiDb();
     $res_artikel_kirim = $conn->query("SELECT id, judul FROM artikel WHERE status = 'publish' AND status_broadcast = 'menunggu' ORDER BY COALESCE(published_at, created_at) ASC LIMIT 1");
     
     if ($res_artikel_kirim && $res_artikel_kirim->num_rows > 0) {
@@ -454,6 +483,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         logAgent("Menemukan artikel (ID: $artikel_id_kirim) '$artikel_judul_kirim'. Memulai proses broadcast...");
 
         $agen_data = [];
+        pastikanKoneksiDb();
         $resA = $conn->query("SELECT nama, whatsapp, kode_ref FROM agen");
         if($resA) while($r = $resA->fetch_assoc()) $agen_data[] = $r;
 
@@ -485,6 +515,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
             }
 
             // Setelah selesai broadcast, update status artikel
+            pastikanKoneksiDb();
             $conn->query("UPDATE artikel SET status_broadcast = 'terkirim' WHERE id = $artikel_id_kirim");
             logAgent("✅ Broadcast untuk artikel ID $artikel_id_kirim selesai. Status diupdate.");
         }
@@ -511,6 +542,7 @@ if (($current_hour >= '07' || $force_community) && (!$community_done || $force_c
     logAgent("======= MEMULAI AGENT COMMUNITY SCOUT ($today) =======");
 
     // Self-healing: Pastikan tabel grup_komunitas ada
+    pastikanKoneksiDb();
     $conn->query("CREATE TABLE IF NOT EXISTS grup_komunitas (
         id INT AUTO_INCREMENT PRIMARY KEY,
         nama_grup VARCHAR(255) NOT NULL,
@@ -527,6 +559,7 @@ if (($current_hour >= '07' || $force_community) && (!$community_done || $force_c
     
     // Ambil beberapa link/nama grup yang sudah ada di database untuk dikecualikan agar AI mencari yang baru
     $exclusions = [];
+    pastikanKoneksiDb();
     $res_ex = $conn->query("SELECT nama_grup, link_gabung FROM grup_komunitas ORDER BY id DESC LIMIT 20");
     if ($res_ex && $res_ex->num_rows > 0) {
         while ($row_ex = $res_ex->fetch_assoc()) {
@@ -588,6 +621,7 @@ if (($current_hour >= '07' || $force_community) && (!$community_done || $force_c
             $exist_count = 0;
             foreach ($groups as $g) {
                 if (isset($g['link_gabung']) && !empty($g['link_gabung'])) {
+                    pastikanKoneksiDb();
                     $link = $conn->real_escape_string($g['link_gabung']);
                     
                     // Cek duplikasi
@@ -675,6 +709,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
           AND (p.id IS NULL OR s.sisa_uang_masuk > 0)
         ORDER BY s.id ASC";
         
+    pastikanKoneksiDb();
     $res_santri = $conn->query($sql_santri);
     $overdue_list = [];
     if ($res_santri) {
