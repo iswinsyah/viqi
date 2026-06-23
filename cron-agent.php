@@ -56,6 +56,7 @@ pastikanKoneksiDb();
 @$conn->query("ALTER TABLE artikel ADD COLUMN meta_title VARCHAR(255) AFTER published_at");
 @$conn->query("ALTER TABLE artikel ADD COLUMN meta_description TEXT AFTER meta_title");
 @$conn->query("ALTER TABLE artikel ADD COLUMN meta_keywords VARCHAR(255) AFTER meta_description");
+@$conn->query("ALTER TABLE artikel ADD COLUMN copywriting_promo TEXT AFTER meta_keywords");
 
 // Self-healing untuk tabel leads & footprints agar query tidak crash
 @$conn->query("ALTER TABLE leads ADD COLUMN status VARCHAR(50) DEFAULT 'Level 1' AFTER whatsapp");
@@ -379,7 +380,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
     if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
 
     $payloadSEO = $leads;
-    $prompt_seo_default = "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"{{JUDUL}}\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"{{KEYWORD}}\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: {{TOPIK}}. PERTIMBANGKAN JUGA insight dari laporan tren terbaru berikut: \n\n{{TREND_MIKRO}}";
+    $prompt_seo_default = "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"{{JUDUL}}\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"{{KEYWORD}}\", \"copywriting_promo\":\"(Buat 1 postingan copywriting promosi WhatsApp/sosmed yang persuasif, memicu rasa penasaran, menggunakan formula viral hook, dan diakhiri dengan placeholder {{LINK_AFILIASI}})\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: {{TOPIK}}. PERTIMBANGKAN JUGA insight dari laporan tren terbaru berikut: \n\n{{TREND_MIKRO}}";
     $prompt_seo_raw = file_exists(__DIR__ . '/prompt_seo.txt') ? file_get_contents(__DIR__ . '/prompt_seo.txt') : $prompt_seo_default;
     $trend_mikro_report = file_exists(__DIR__ . '/saved_trends_micro.txt') ? file_get_contents(__DIR__ . '/saved_trends_micro.txt') : 'Tidak ada laporan tren mikro.';
     $replacements = ['{{JUDUL}}' => $judul, '{{KEYWORD}}' => $keyword, '{{TOPIK}}' => $topic, '{{TREND_MIKRO}}' => $trend_mikro_report];
@@ -449,9 +450,11 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
             $meta_description = $conn->real_escape_string($obj['meta_description'] ?? '');
             $meta_keywords = $conn->real_escape_string($obj['meta_keywords'] ?? $keyword);
             $gambar_cover = $conn->real_escape_string($gambar_cover);
+            $copywriting_promo = $obj['copywriting_promo'] ?? $obj['copywriting'] ?? '';
+            $copywriting_promo_esc = $conn->real_escape_string($copywriting_promo);
 
-            $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords, gambar_cover) 
-                    VALUES ('$j', '$slug', '$k', 'publish', '$meta_title', '$meta_description', '$meta_keywords', '$gambar_cover')";
+            $sql = "INSERT INTO artikel (judul, slug, konten, status, meta_title, meta_description, meta_keywords, gambar_cover, copywriting_promo) 
+                    VALUES ('$j', '$slug', '$k', 'publish', '$meta_title', '$meta_description', '$meta_keywords', '$gambar_cover', '$copywriting_promo_esc')";
             if ($conn->query($sql) === TRUE) {
                 $newArticleId = $conn->insert_id;
                 logAgent("✅ Artikel otomatis dipublikasikan! (ID: $newArticleId)");
@@ -473,7 +476,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
     // 5. BROADCAST PUBLISHER (SEKARANG LEBIH PINTAR)
     logAgent("Agent Publisher: Mencari artikel yang belum disebar...");
     pastikanKoneksiDb();
-    $res_artikel_kirim = $conn->query("SELECT id, judul, konten FROM artikel WHERE status = 'publish' AND status_broadcast = 'menunggu' ORDER BY COALESCE(published_at, created_at) ASC LIMIT 1");
+    $res_artikel_kirim = $conn->query("SELECT id, judul, konten, copywriting_promo FROM artikel WHERE status = 'publish' AND status_broadcast = 'menunggu' ORDER BY COALESCE(published_at, created_at) ASC LIMIT 1");
     
     if ($res_artikel_kirim && $res_artikel_kirim->num_rows > 0) {
         $artikel_kirim = $res_artikel_kirim->fetch_assoc();
@@ -482,40 +485,49 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
         logAgent("Menemukan artikel (ID: $artikel_id_kirim) '$artikel_judul_kirim'. Memulai proses broadcast...");
 
-        // Buat copywriting persuasif dengan AI berdasarkan isi artikel
-        $artikel_konten_kirim = $artikel_kirim['konten'] ?? '';
-        $konten_plain = strip_tags($artikel_konten_kirim);
-        $konten_teaser = (mb_strlen($konten_plain) > 2500) ? mb_substr($konten_plain, 0, 2500) . '...' : $konten_plain;
+        $copywriting_template = trim($artikel_kirim['copywriting_promo'] ?? '');
 
-        logAgent("Agent Publisher: Merumuskan copywriting persuasif pembuka (viral hook) via AI...");
-        $prompt_copywriting = "Anda adalah seorang Copywriter & Publisher Specialist. Tugas Anda adalah membuat 1 postingan copywriting WhatsApp/sosmed (micro-copywriting) untuk mempromosikan artikel berikut:\n\n"
-            . "Judul Artikel: $artikel_judul_kirim\n"
-            . "Isi Artikel (ringkasan): \n$konten_teaser\n\n"
-            . "Ketentuan Copywriting:\n"
-            . "1. Gunakan formula HOOK yang sangat menarik, menantang, kontradiktif, atau memicu emosi/keingintahuan pembaca (terutama kalangan orang tua Muslim dengan anak usia 10-15 tahun).\n"
-            . "2. Berikan cuplikan/teaser berupa pertanyaan menarik atau 1 solusi penting dari artikel tersebut, namun JANGAN berikan seluruh isi solusi agar pembaca penasaran dan terdorong mengklik tautan artikel.\n"
-            . "3. Gunakan sapaan yang sopan, bersahabat, dibumbui emoji yang relevan dan proporsional (jangan berlebihan).\n"
-            . "4. Tata letak penulisan harus rapi dengan paragraf renggang (gunakan enter ganda) agar mudah dibaca di layar HP/WhatsApp.\n"
-            . "5. Berikan CTA (Call to Action) yang jelas untuk mengklik tautan selengkapnya.\n"
-            . "6. Di akhir tulisan, sertakan placeholder untuk link afiliasi dalam bentuk: {{LINK_AFILIASI}}\n"
-            . "7. Output HANYA berupa teks copywriting siap kirim tanpa penjelasan tambahan, tanpa tanda kutip pembungkus, dan tanpa format markdown ```.";
+        if (empty($copywriting_template)) {
+            // Buat copywriting persuasif dengan AI berdasarkan isi artikel (jika belum ada)
+            $artikel_konten_kirim = $artikel_kirim['konten'] ?? '';
+            $konten_plain = strip_tags($artikel_konten_kirim);
+            $konten_teaser = (mb_strlen($konten_plain) > 2500) ? mb_substr($konten_plain, 0, 2500) . '...' : $konten_plain;
 
-        $payload_copy = [
-            [
-                "jenis_lead" => "SYSTEM_COMMAND",
-                "sumber_info" => $prompt_copywriting,
-                "status" => "URGENT"
-            ]
-        ];
+            logAgent("Agent Publisher: Merumuskan copywriting persuasif pembuka (viral hook) via AI...");
+            $prompt_copywriting = "Anda adalah seorang Copywriter & Publisher Specialist. Tugas Anda adalah membuat 1 postingan copywriting WhatsApp/sosmed (micro-copywriting) untuk mempromosikan artikel berikut:\n\n"
+                . "Judul Artikel: $artikel_judul_kirim\n"
+                . "Isi Artikel (ringkasan): \n$konten_teaser\n\n"
+                . "Ketentuan Copywriting:\n"
+                . "1. Gunakan formula HOOK yang sangat menarik, menantang, kontradiktif, atau memicu emosi/keingintahuan pembaca (terutama kalangan orang tua Muslim dengan anak usia 10-15 tahun).\n"
+                . "2. Berikan cuplikan/teaser berupa pertanyaan menarik atau 1 solusi penting dari artikel tersebut, namun JANGAN berikan seluruh isi solusi agar pembaca penasaran dan terdorong mengklik tautan artikel.\n"
+                . "3. Gunakan sapaan yang sopan, bersahabat, dibumbui emoji yang relevan dan proporsional (jangan berlebihan).\n"
+                . "4. Tata letak penulisan harus rapi dengan paragraf renggang (gunakan enter ganda) agar mudah dibaca di layar HP/WhatsApp.\n"
+                . "5. Berikan CTA (Call to Action) yang jelas untuk mengklik tautan selengkapnya.\n"
+                . "6. Di akhir tulisan, sertakan placeholder untuk link afiliasi dalam bentuk: {{LINK_AFILIASI}}\n"
+                . "7. Output HANYA berupa teks copywriting siap kirim tanpa penjelasan tambahan, tanpa tanda kutip pembungkus, dan tanpa format markdown ```.";
 
-        $dataCopywriting = mikirKeGemini(['leads' => $payload_copy, 'type' => 'copywriting_publisher']);
-        
-        $copywriting_template = "";
-        if (isset($dataCopywriting['status']) && $dataCopywriting['status'] === 'success') {
-            $copywriting_template = trim($dataCopywriting['result'] ?? '');
-            logAgent("✅ Copywriting promosi berhasil dibuat oleh AI.");
+            $payload_copy = [
+                [
+                    "jenis_lead" => "SYSTEM_COMMAND",
+                    "sumber_info" => $prompt_copywriting,
+                    "status" => "URGENT"
+                ]
+            ];
+
+            $dataCopywriting = mikirKeGemini(['leads' => $payload_copy, 'type' => 'copywriting_publisher']);
+            
+            if (isset($dataCopywriting['status']) && $dataCopywriting['status'] === 'success') {
+                $copywriting_template = trim($dataCopywriting['result'] ?? '');
+                logAgent("✅ Copywriting promosi berhasil dibuat oleh AI.");
+                
+                // Simpan copywriting yang baru dibuat ke database agar bisa digunakan nanti
+                $copy_esc = $conn->real_escape_string($copywriting_template);
+                $conn->query("UPDATE artikel SET copywriting_promo = '$copy_esc' WHERE id = $artikel_id_kirim");
+            } else {
+                logAgent("⚠️ Gagal membuat copywriting promosi via AI. Menggunakan template fallback.");
+            }
         } else {
-            logAgent("⚠️ Gagal membuat copywriting promosi via AI. Menggunakan template fallback.");
+            logAgent("Menggunakan copywriting promo dari database (pre-generated).");
         }
 
         // Jika gagal atau kosong, gunakan template fallback yang lebih dinamis dan persuasif

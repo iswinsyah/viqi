@@ -4,6 +4,11 @@ require_once 'koneksi.php';
 
 $active_menu = 'community_scout';
 
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+$http_host = $_SERVER['HTTP_HOST'];
+$dir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+$web_url = $protocol . $http_host . $dir;
+
 // Self-healing: Pastikan tabel grup_komunitas ada
 $conn->query("CREATE TABLE IF NOT EXISTS grup_komunitas (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -110,6 +115,24 @@ if (!empty($search)) {
 
 $query_grup = "SELECT * FROM grup_komunitas WHERE $where ORDER BY id DESC";
 $res_grup = $conn->query($query_grup);
+
+// Load 10 recent published articles
+$recent_articles = [];
+$res_art = $conn->query("SELECT id, judul, copywriting_promo FROM artikel WHERE status = 'publish' ORDER BY COALESCE(published_at, created_at) DESC LIMIT 10");
+if ($res_art) {
+    while ($r = $res_art->fetch_assoc()) {
+        $recent_articles[] = $r;
+    }
+}
+
+// Load agents list
+$agents_list = [];
+$res_age = $conn->query("SELECT nama, kode_ref FROM agen ORDER BY nama ASC");
+if ($res_age) {
+    while ($r = $res_age->fetch_assoc()) {
+        $agents_list[] = $r;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -241,9 +264,14 @@ $res_grup = $conn->query($query_grup);
                                         <div class="mt-1"><span class="px-2 py-0.5 inline-flex items-center text-[10px] font-bold rounded border <?= $plat_badge ?>"><i class="<?= $plat_icon ?> mr-1"></i><?= htmlspecialchars($row['platform']) ?></span></div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <a href="<?= htmlspecialchars($row['link_gabung']) ?>" target="_blank" class="inline-flex items-center px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded font-bold text-[11px] shadow-sm transition">
-                                            Gabung Grup <i class="fas fa-external-link-alt ml-1.5"></i>
-                                        </a>
+                                        <div class="flex flex-col gap-1.5">
+                                            <a href="<?= htmlspecialchars($row['link_gabung']) ?>" target="_blank" class="inline-flex items-center justify-center px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded font-bold text-[11px] shadow-sm transition">
+                                                Gabung Grup <i class="fas fa-external-link-alt ml-1.5"></i>
+                                            </a>
+                                            <button type="button" onclick="bukaModalBagikan('<?= htmlspecialchars($row['nama_grup'], ENT_QUOTES) ?>', '<?= htmlspecialchars($row['link_gabung'], ENT_QUOTES) ?>')" class="inline-flex items-center justify-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold text-[11px] shadow-sm transition">
+                                                Bagikan Promosi <i class="fas fa-share-alt ml-1.5"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 max-w-sm">
                                         <details class="text-xs text-gray-600 bg-gray-50 rounded-lg p-2 border border-gray-200 cursor-pointer hover:bg-gray-100 transition">
@@ -310,6 +338,77 @@ $res_grup = $conn->query($query_grup);
             </div>
         </main>
     </div>
+    <!-- MODAL BAGIKAN PROMOSI -->
+    <div id="modal-bagikan" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/0 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col transform scale-95 opacity-0 transition-all duration-300" id="modal-content">
+            <!-- Header -->
+            <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-lg" id="modal-title">Bagikan Promosi</h3>
+                    <p class="text-xs text-indigo-100 mt-0.5" id="modal-subtitle">Grup: ...</p>
+                </div>
+                <button type="button" onclick="tutupModalBagikan()" class="text-white/80 hover:text-white transition focus:outline-none"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            
+            <!-- Body -->
+            <div class="p-6 space-y-4 overflow-y-auto max-h-[70vh]">
+                <!-- Select Article -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">1. Pilih Artikel yang Ingin Dipromosikan</label>
+                    <select id="share-article-select" onchange="renderCopywritingText()" class="w-full text-xs rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                        <?php if (!empty($recent_articles)): ?>
+                            <?php foreach ($recent_articles as $idx => $art_item): ?>
+                                <option value="<?= $art_item['id'] ?>" <?= $idx === 0 ? 'selected' : '' ?>><?= htmlspecialchars($art_item['judul']) ?></option>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <option value="">Belum ada artikel diterbitkan</option>
+                        <?php endif; ?>
+                    </select>
+                </div>
+                
+                <!-- Select Agent -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">2. Pilih Kode Afiliasi (Agen)</label>
+                    <select id="share-agent-select" onchange="renderCopywritingText()" class="w-full text-xs rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="" selected>Organik / Website Utama (Tanpa Kode Agen)</option>
+                        <?php foreach ($agents_list as $age_item): ?>
+                            <option value="<?= htmlspecialchars($age_item['kode_ref']) ?>"><?= htmlspecialchars($age_item['nama']) ?> (<?= htmlspecialchars($age_item['kode_ref']) ?>)</option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                
+                <!-- Text Copywriting -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1 flex justify-between items-center">
+                        <span>3. Teks Copywriting Promosi (Siap Kirim)</span>
+                        <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 border border-emerald-100 rounded px-2 py-0.5"><i class="fas fa-magic mr-1 animate-pulse"></i> Auto-Generated by AI</span>
+                    </label>
+                    <textarea id="share-copy-text" rows="10" class="w-full mt-1 p-3 border border-gray-300 rounded-xl font-sans text-xs focus:ring-indigo-500 focus:border-indigo-500" placeholder="Memuat copywriting..."></textarea>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-3 sm:justify-between items-center">
+                <button type="button" onclick="salinTeksPromosi()" class="w-full sm:w-auto inline-flex items-center justify-center bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-5 rounded-lg text-xs transition shadow-sm">
+                    <i class="fas fa-copy mr-2"></i> Salin Teks Copywriting
+                </button>
+                <div class="flex w-full sm:w-auto gap-3">
+                    <button type="button" onclick="tutupModalBagikan()" class="flex-1 sm:flex-initial bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2.5 px-4 rounded-lg text-xs transition">
+                        Batal
+                    </button>
+                    <button type="button" id="btn-buka-grup-fb" onclick="bukaGrupFB()" class="flex-1 sm:flex-initial inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-lg text-xs transition shadow-sm">
+                        <i class="fab fa-facebook-square mr-2"></i> Buka Grup & Tempel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="copy-toast" class="fixed bottom-6 right-6 z-[60] bg-gray-900 text-white text-xs font-bold py-3 px-5 rounded-lg shadow-2xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <i class="fas fa-check-circle text-emerald-400 text-sm"></i> Link & Teks berhasil disalin ke Clipboard!
+    </div>
+
     <script>
         document.getElementById('open-sidebar').addEventListener('click', () => { 
             const sidebar = document.getElementById('sidebar');
@@ -319,6 +418,118 @@ $res_grup = $conn->query($query_grup);
                 overlay.classList.toggle('hidden'); 
             }
         });
+
+        const recentArticles = <?= json_encode($recent_articles) ?>;
+        const agentsList = <?= json_encode($agents_list) ?>;
+        const webUrl = "<?= $web_url ?>";
+        
+        let activeGroupLink = "";
+        let activeGroupName = "";
+
+        function bukaModalBagikan(groupName, groupLink) {
+            activeGroupLink = groupLink;
+            activeGroupName = groupName;
+
+            document.getElementById('modal-title').textContent = "Bagikan Promosi";
+            document.getElementById('modal-subtitle').textContent = "Target Grup: " + groupName;
+
+            // Show modal with animation
+            const modal = document.getElementById('modal-bagikan');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('bg-gray-900/0');
+                modal.classList.add('bg-gray-900/60');
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            // Render copywriting for default selection
+            renderCopywritingText();
+        }
+
+        function tutupModalBagikan() {
+            const modal = document.getElementById('modal-bagikan');
+            const content = document.getElementById('modal-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            modal.classList.remove('bg-gray-900/60');
+            modal.classList.add('bg-gray-900/0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function renderCopywritingText() {
+            const articleSelect = document.getElementById('share-article-select');
+            const agentSelect = document.getElementById('share-agent-select');
+            const copyTextArea = document.getElementById('share-copy-text');
+
+            if (!articleSelect.value) {
+                copyTextArea.value = "Belum ada artikel yang dipilih.";
+                return;
+            }
+
+            const articleId = parseInt(articleSelect.value);
+            const agentRef = agentSelect.value;
+
+            // Find article details
+            const article = recentArticles.find(a => parseInt(a.id) === articleId);
+            if (!article) return;
+
+            let copywriting = article.copywriting_promo || "";
+            if (!copywriting) {
+                // Fallback default
+                copywriting = "Banyak orang tua yang belum tahu rahasia ini... 😱\n\n"
+                    + "Telah terbit artikel penting: *\"" + article.judul + "\"*\n\n"
+                    + "Ingin tahu bagaimana cara mengatasinya secara Islami? Yuk baca selengkapnya di link berikut:\n"
+                    + "{{LINK_AFILIASI}}";
+            }
+
+            // Construct link
+            let articleUrl = webUrl + "/artikel-detail.php?id=" + articleId;
+            if (agentRef) {
+                articleUrl += "&ref=" + encodeURIComponent(agentRef);
+            }
+
+            // Replace placeholder link
+            const finalCopy = copywriting.replace(/\{\{LINK_AFILIASI\}\}/g, articleUrl);
+            copyTextArea.value = finalCopy;
+        }
+
+        function salinTeksPromosi() {
+            const copyText = document.getElementById('share-copy-text').value;
+            navigator.clipboard.writeText(copyText).then(() => {
+                showToast("Teks copywriting berhasil disalin ke clipboard!");
+            }).catch(err => {
+                alert("Gagal menyalin teks: " + err);
+            });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('copy-toast');
+            toast.textContent = message;
+            
+            // Insert checkmark icon
+            toast.innerHTML = `<i class="fas fa-check-circle text-emerald-400 text-sm"></i> ` + message;
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function bukaGrupFB() {
+            if (activeGroupLink) {
+                // Buka link grup FB di tab baru
+                window.open(activeGroupLink, '_blank');
+            } else {
+                alert("Link gabung tidak tersedia.");
+            }
+        }
     </script>
 </body>
 </html>

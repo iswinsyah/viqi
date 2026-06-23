@@ -9,6 +9,12 @@ if (!$result || $result->num_rows == 0) {
 }
 $art = $result->fetch_assoc();
 $imgUrl = !empty($art['gambar_cover']) ? $art['gambar_cover'] : 'https://images.unsplash.com/photo-1585036156171-384164a8c675?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+// Pastikan og:image menggunakan URL absolut agar thumbnail muncul di Facebook & WhatsApp
+if (!empty($imgUrl) && strpos($imgUrl, 'http') !== 0) {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $dir = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+    $imgUrl = $protocol . $_SERVER['HTTP_HOST'] . $dir . '/' . ltrim($imgUrl, '/');
+}
 $tgl_rilis = !empty($art['published_at']) ? $art['published_at'] : $art['created_at'];
 
 // SETUP SEO METADATA
