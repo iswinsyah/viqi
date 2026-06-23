@@ -567,7 +567,12 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
                 ];
                 $pesan = str_replace(array_keys($replacements_wa), array_values($replacements_wa), $prompt_publisher_raw);
 
-                $waFd = ['target' => $agen['whatsapp'], 'message' => $pesan];
+                $no_wa = preg_replace('/[^0-9]/', '', $agen['whatsapp']);
+                if (substr($no_wa, 0, 1) === '0') {
+                    $no_wa = '62' . substr($no_wa, 1);
+                }
+
+                $waFd = ['target' => $no_wa, 'message' => $pesan];
                 $ch = curl_init();
                 curl_setopt_array($ch, [
                     CURLOPT_URL => "https://api.fonnte.com/send",
@@ -577,11 +582,23 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
                     CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
                     CURLOPT_TIMEOUT => 30
                 ]);
-                curl_exec($ch);
+                $response = curl_exec($ch);
+                $curl_error = curl_error($ch);
                 curl_close($ch);
                 
+                if ($curl_error) {
+                    logAgent("-> Gagal mengirim WA ke {$agen['nama']} ({$no_wa}): " . $curl_error);
+                } else {
+                    $res_obj = json_decode($response, true);
+                    if (isset($res_obj['status']) && $res_obj['status'] == true) {
+                        logAgent("-> Pesan WA (ID: $artikel_id_kirim) berhasil terkirim ke: {$agen['nama']} ({$no_wa})!");
+                    } else {
+                        logAgent("-> Fonnte menolak pengiriman ke {$agen['nama']} ({$no_wa}): " . ($res_obj['reason'] ?? $response));
+                    }
+                }
+                
                 $jeda = (php_sapi_name() === 'cli') ? rand(60, 180) : 1;
-                logAgent("-> Pesan WA (ID: $artikel_id_kirim) dilesatkan ke: {$agen['nama']}. Jeda {$jeda} detik...");
+                logAgent("-> Jeda {$jeda} detik...");
                 sleep($jeda);
             }
 
