@@ -25,7 +25,7 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: './'
-        server-dir: '/home/u829486010/domains/villaquranindonesia.com/public_html/'
+        server-dir: './'
         timeout: 300000
         # Jika perlu, uncomment baris exclude berikut untuk mengecualikan file tertentu.
         # exclude: |
