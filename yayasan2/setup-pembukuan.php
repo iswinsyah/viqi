@@ -73,4 +73,19 @@ $conn->query("CREATE TABLE IF NOT EXISTS keuangan_jurnal_detail (
     FOREIGN KEY (lembaga_id) REFERENCES keuangan_lembaga(id) ON DELETE RESTRICT
 )");
 
+// 5. Tambahkan kolom sisa_uang_masuk di buku_induk_santri jika belum ada
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN sisa_uang_masuk INT DEFAULT 0 AFTER kelas_sekarang");
+
+// 6. Buat Tabel Janji Pembayaran Wali Santri (Komitmen Pembayaran)
+$conn->query("CREATE TABLE IF NOT EXISTS keuangan_janji_bayar (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    santri_id INT NOT NULL,
+    bulan VARCHAR(20) NOT NULL,
+    tahun VARCHAR(4) NOT NULL,
+    tanggal_janji DATE NOT NULL,
+    catatan TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (santri_id) REFERENCES buku_induk_santri(id) ON DELETE CASCADE
+)");
+
 ?>

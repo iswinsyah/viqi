@@ -235,6 +235,17 @@ $sql_jurnal = "
     ORDER BY j.tanggal DESC, j.id DESC LIMIT 50";
 $recent_transactions = $conn->query($sql_jurnal)->fetch_all(MYSQLI_ASSOC);
 
+// 7. Query Janji Pembayaran Wali Santri (Komitmen Pembayaran)
+$sql_promises = "
+    SELECT kjb.*, s.nama_lengkap, s.kelas_sekarang,
+           COALESCE(s.no_whatsapp_ayah, s.no_whatsapp_ibu, s.no_whatsapp_wali, o.no_whatsapp) as no_wa
+    FROM keuangan_janji_bayar kjb
+    JOIN buku_induk_santri s ON kjb.santri_id = s.id
+    LEFT JOIN akun_orangtua o ON s.id_orangtua = o.id
+    ORDER BY kjb.tanggal_janji ASC, kjb.id DESC";
+$res_promises = $conn->query($sql_promises);
+$payment_promises = ($res_promises) ? $res_promises->fetch_all(MYSQLI_ASSOC) : [];
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -291,6 +302,12 @@ $recent_transactions = $conn->query($sql_jurnal)->fetch_all(MYSQLI_ASSOC);
                 </button>
                 <button onclick="switchTab('tab-coa')" id="btn-tab-coa" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
                     <i class="fas fa-list-ol mr-1"></i> Kelola Akun (COA)
+                </button>
+                <button onclick="switchTab('tab-promises')" id="btn-tab-promises" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition relative">
+                    <i class="fas fa-handshake mr-1"></i> Komitmen Janji Bayar
+                    <?php if(count($payment_promises) > 0): ?>
+                    <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full"><?= count($payment_promises) ?></span>
+                    <?php endif; ?>
                 </button>
             </div>
 
@@ -599,6 +616,64 @@ $recent_transactions = $conn->query($sql_jurnal)->fetch_all(MYSQLI_ASSOC);
                     </div>
                 </div>
             </div>
+
+            <!-- TABS CONTENT: PAYMENT COMMITMENTS (JANJI BAYAR) -->
+            <div id="tab-promises" class="tab-pane hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[500px]">
+                    <div class="px-6 py-4 bg-amber-50 border-b border-amber-100 flex justify-between items-center">
+                        <div>
+                            <h2 class="font-bold text-amber-800"><i class="fas fa-handshake mr-2"></i> Komitmen Janji Pembayaran Wali Santri</h2>
+                            <p class="text-xs text-amber-600 mt-1">Daftar janji pembayaran SPP & Uang Masuk yang diinput langsung oleh orang tua/wali santri dari pesan WhatsApp.</p>
+                        </div>
+                        <span class="bg-amber-600 text-white text-xs font-bold px-3 py-1 rounded-full"><?= count($payment_promises) ?> Komitmen Tercatat</span>
+                    </div>
+
+                    <div class="overflow-x-auto flex-1 p-4">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr class="text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                    <th class="py-3 px-4">Nama Santri</th>
+                                    <th class="py-3 px-4">Kelas</th>
+                                    <th class="py-3 px-4">Periode Tagihan</th>
+                                    <th class="py-3 px-4">Tanggal Janji Bayar</th>
+                                    <th class="py-3 px-4">Catatan Wali Santri</th>
+                                    <th class="py-3 px-4 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 text-sm">
+                                <?php if(empty($payment_promises)): ?>
+                                <tr><td colspan="6" class="text-center py-10 text-gray-400 italic">Belum ada komitmen janji pembayaran yang diinput oleh wali santri.</td></tr>
+                                <?php else: foreach($payment_promises as $p): ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="py-3 px-4 font-bold text-gray-900"><?= htmlspecialchars($p['nama_lengkap']) ?></td>
+                                    <td class="py-3 px-4 font-semibold text-gray-600"><?= htmlspecialchars($p['kelas_sekarang']) ?></td>
+                                    <td class="py-3 px-4 font-medium text-amber-800"><?= htmlspecialchars($p['bulan']) ?> <?= htmlspecialchars($p['tahun']) ?></td>
+                                    <td class="py-3 px-4 font-mono font-bold text-indigo-700">
+                                        <?= date('d/m/Y', strtotime($p['tanggal_janji'])) ?>
+                                        <?php 
+                                        $hari_sisa = (strtotime($p['tanggal_janji']) - strtotime(date('Y-m-d'))) / 86400;
+                                        if ($hari_sisa < 0) {
+                                            echo ' <span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded font-sans">Terlewat</span>';
+                                        } elseif ($hari_sisa == 0) {
+                                            echo ' <span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded font-sans animate-pulse">Hari ini!</span>';
+                                        } else {
+                                            echo ' <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded font-sans">' . ceil($hari_sisa) . ' hari lagi</span>';
+                                        }
+                                        ?>
+                                    </td>
+                                    <td class="py-3 px-4 text-xs text-gray-600 max-w-xs truncate" title="<?= htmlspecialchars($p['catatan']) ?>"><?= htmlspecialchars($p['catatan'] ?: '-') ?></td>
+                                    <td class="py-3 px-4 text-center">
+                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                            Menunggu Pelunasan
+                                        </span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -615,6 +690,7 @@ $recent_transactions = $conn->query($sql_jurnal)->fetch_all(MYSQLI_ASSOC);
         const recentTransactions = <?= json_encode($recent_transactions) ?>;
         const currentBulan = <?= json_encode($bulan_sekarang) ?>;
         const currentTahun = <?= json_encode($tahun_sekarang) ?>;
+        const paymentPromises = <?= json_encode($payment_promises) ?>;
 
         // Switch Tab
         function switchTab(tabId) {
@@ -653,7 +729,8 @@ $recent_transactions = $conn->query($sql_jurnal)->fetch_all(MYSQLI_ASSOC);
                 beban_bulan_ini: bebanBulanIni,
                 coa_balances: coaBalances,
                 overdue_spp_count: overdueSppCount,
-                recent_transactions: recentTransactions
+                recent_transactions: recentTransactions,
+                payment_promises: paymentPromises
             };
 
             const prompt = "Anda adalah AI Agent Auditor & Konsultan Keuangan Yayasan Villa Quran (Sekolah Tahfidz, Filantropi, dan Unit Usaha).\n"
@@ -664,7 +741,8 @@ $recent_transactions = $conn->query($sql_jurnal)->fetch_all(MYSQLI_ASSOC);
                 + "  * Bank BSI: Rp " + formatRupiah(payloadData.bank_bsi) + "\n"
                 + "- Pemasukan Bulan Ini: Rp " + formatRupiah(payloadData.pendapatan_bulan_ini) + "\n"
                 + "- Pengeluaran Bulan Ini: Rp " + formatRupiah(payloadData.beban_bulan_ini) + "\n"
-                + "- Wali Santri Belum Bayar SPP: " + payloadData.overdue_spp_count + " orang\n\n"
+                + "- Wali Santri Belum Bayar SPP: " + payloadData.overdue_spp_count + " orang\n"
+                + "- Komitmen Janji Pembayaran Wali Santri Tercatat: " + JSON.stringify(payloadData.payment_promises, null, 2) + "\n\n"
                 + "Detail Saldo COA:\n" + JSON.stringify(payloadData.coa_balances, null, 2) + "\n\n"
                 + "10 Transaksi Terakhir:\n" + JSON.stringify(payloadData.recent_transactions, null, 2) + "\n\n"
                 + "ATURAN AUDIT SYARIAH & OPERASIONAL:\n"

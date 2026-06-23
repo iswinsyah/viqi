@@ -451,4 +451,162 @@ if ($current_hour >= '07' && !$daily_done) {
     logAgent("🎉 Tugas Harian ($today) Tuntas! Agent kembali tidur.\n");
     exit;
 }
+
+// =========================================================================================
+// AGENT PENAGIHAN OTOMATIS (Setiap tanggal 1, 3, 6, 10 jam 08:00 WIB)
+// =========================================================================================
+$billing_done = false;
+$billing_log_file = __DIR__ . '/agent_billing_log.txt';
+if (file_exists($billing_log_file)) {
+    if (strpos(file_get_contents($billing_log_file), "SUCCESS_$today") !== false) $billing_done = true;
+}
+
+// Hanya jalan jika jam >= 08 pagi, status belum done hari ini, dan tanggal adalah 1, 3, 6, atau 10
+$allowed_days = ['01', '03', '06', '10'];
+if ($current_hour >= '08' && !$billing_done && in_array($current_day, $allowed_days)) {
+    logAgent("======= MEMULAI AGENT PENAGIHAN OTOMATIS ($today) =======");
+    
+    // Pastikan database terinisialisasi
+    require_once __DIR__ . '/yayasan2/setup-pembukuan.php';
+    
+    $bulan_indo = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+    ];
+    $bulan_sekarang = $bulan_indo[(int)date('n')];
+    $tahun_sekarang = date('Y');
+    
+    // 1. Query Santri Aktif yang memiliki kewajiban (belum bayar SPP bulan ini ATAU memiliki sisa cicilan uang masuk > 0)
+    $sql_santri = "
+        SELECT s.id, s.nama_lengkap, s.kelas_sekarang, s.sisa_uang_masuk,
+               COALESCE(s.no_whatsapp_ayah, s.no_whatsapp_ibu, s.no_whatsapp_wali, o.no_whatsapp) as no_wa,
+               COALESCE(s.nama_ayah, s.nama_ibu, s.nama_wali, o.nama_orangtua) as nama_ortu
+        FROM buku_induk_santri s
+        LEFT JOIN akun_orangtua o ON s.id_orangtua = o.id
+        LEFT JOIN pembayaran_spp p ON s.id = p.santri_id 
+            AND p.bulan = '$bulan_sekarang' 
+            AND p.tahun = '$tahun_sekarang' 
+            AND p.status = 'Berhasil'
+        WHERE s.status_santri = 'Aktif' 
+          AND (p.id IS NULL OR s.sisa_uang_masuk > 0)
+        ORDER BY s.id ASC";
+        
+    $res_santri = $conn->query($sql_santri);
+    $overdue_list = [];
+    if ($res_santri) {
+        while ($row = $res_santri->fetch_assoc()) {
+            // Cek apakah SPP-nya yang belum lunas
+            $check_spp = $conn->query("SELECT id FROM pembayaran_spp WHERE santri_id = {$row['id']} AND bulan = '$bulan_sekarang' AND tahun = '$tahun_sekarang' AND status = 'Berhasil'");
+            $row['spp_belum_lunas'] = ($check_spp && $check_spp->num_rows == 0);
+            $overdue_list[] = $row;
+        }
+    }
+    
+    if (count($overdue_list) > 0) {
+        logAgent("Menemukan " . count($overdue_list) . " santri dengan kewajiban keuangan aktif.");
+        
+        foreach ($overdue_list as $s) {
+            if (empty($s['no_wa'])) {
+                logAgent("Wali santri dari {$s['nama_lengkap']} tidak memiliki nomor WA. Skip.");
+                continue;
+            }
+            
+            // Bersihkan nomor WA
+            $no_wa = preg_replace('/[^0-9]/', '', $s['no_wa']);
+            if (substr($no_wa, 0, 1) === '0') {
+                $no_wa = '62' . substr($no_wa, 1);
+            }
+            
+            // Susun rincian tagihan
+            $rincian = "";
+            if ($s['spp_belum_lunas']) {
+                $rincian .= "- SPP Bulanan periode $bulan_sekarang $tahun_sekarang\n";
+            }
+            if ($s['sisa_uang_masuk'] > 0) {
+                $rincian .= "- Cicilan Uang Masuk (Sisa tagihan: Rp " . number_format($s['sisa_uang_masuk'], 0, ',', '.') . ")\n";
+            }
+            
+            if (empty($rincian)) continue; // Jika ternyata tidak ada tagihan
+            
+            $pesan = "";
+            
+            // Kirim pesan sesuai tanggal
+            if ($current_day == '01') {
+                // Tanggal 1: Pengingat awal
+                $pesan = "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu {$s['nama_ortu']},\n\n"
+                       . "Semoga Allah SWT melimpahkan kesehatan dan berkah bagi keluarga.\n\n"
+                       . "Kami menginformasikan bahwa tagihan keuangan untuk ananda *{$s['nama_lengkap']}* kelas *{$s['kelas_sekarang']}* telah diterbitkan:\n"
+                       . $rincian . "\n"
+                       . "Mohon dapat menyalurkan pembayaran melalui transfer ke rekening resmi Yayasan:\n"
+                       . "*Bank Syariah Indonesia (BSI)*\n"
+                       . "*No Rekening: 7700889911*\n"
+                       . "*Atas Nama: Villa Quran Indonesia*\n\n"
+                       . "Silakan upload bukti bayar di Ruang Orang Tua jika transfer telah selesai dilakukan. Abaikan pesan ini jika baru saja melakukan pembayaran.\n\n"
+                       . "Jazaakumullahu Khairan.\n"
+                       . "-- Bendahara Yayasan Villa Quran --";
+            } 
+            elseif ($current_day == '03') {
+                // Tanggal 3: Konfirmasi pertama
+                $pesan = "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu {$s['nama_ortu']},\n\n"
+                       . "Mohon konfirmasinya terkait pembayaran tagihan ananda *{$s['nama_lengkap']}*:\n"
+                       . $rincian . "\n"
+                       . "Hingga hari ini kami belum mencatat konfirmasi pembayaran tersebut. Jika Bapak/Ibu sudah melakukan transfer, silakan konfirmasi melalui Ruang Orang Tua dengan melampirkan bukti transfer agar segera kami verifikasi.\n\n"
+                       . "Jika belum, pembayaran dapat ditransfer ke *BSI Rekening 7700889911 a.n. Villa Quran Indonesia*.\n\n"
+                       . "Jazaakumullahu Khairan.\n"
+                       . "-- Bendahara Yayasan Villa Quran --";
+            } 
+            elseif ($current_day == '06') {
+                // Tanggal 6: Konfirmasi kedua (lebih tegas)
+                $pesan = "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu {$s['nama_ortu']},\n\n"
+                       . "Pengingat ulang terkait konfirmasi pembayaran tagihan ananda *{$s['nama_lengkap']}*:\n"
+                       . $rincian . "\n"
+                       . "Mohon dibantu untuk melunasi kewajiban tersebut sebelum pertengahan bulan demi kelancaran operasional pendidikan santri. Pembayaran dapat dikirim ke *BSI 7700889911 a.n. Villa Quran Indonesia*.\n\n"
+                       . "Jika Bapak/Ibu mengalami kendala, silakan hubungi bagian keuangan Yayasan untuk berkonsultasi.\n\n"
+                       . "Jazaakumullahu Khairan.\n"
+                       . "-- Bendahara Yayasan Villa Quran --";
+            } 
+            elseif ($current_day == '10') {
+                // Tanggal 10: Tanya kapan melunasi (Link Janji Bayar)
+                $secret_token = md5($s['id'] . 'viqi_billing_secret');
+                $link_promise = $APP_URL . "/konfirmasi-janji-bayar.php?s=" . $s['id'] . "&t=" . $secret_token;
+                
+                $pesan = "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu {$s['nama_ortu']},\n\n"
+                       . "Mohon maaf mengganggu waktu Bapak/Ibu. Terkait kewajiban tagihan ananda *{$s['nama_lengkap']}*:\n"
+                       . $rincian . "\n"
+                       . "Hingga tanggal 10 ini pembayaran belum lunas. Agar kami dapat menjadwalkan kebutuhan anggaran Yayasan, bolehkah kami mengetahui perkiraan tanggal Bapak/Ibu dapat melunasi tagihan tersebut?\n\n"
+                       . "Silakan isi tanggal perkiraan bayar melalui link konfirmasi berikut:\n"
+                       . $link_promise . "\n\n"
+                       . "Terima kasih banyak atas perhatian dan kerja samanya.\n"
+                       . "-- Bendahara Yayasan Villa Quran --";
+            }
+            
+            if (!empty($pesan)) {
+                $waFd = ['target' => $no_wa, 'message' => $pesan];
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => "https://api.fonnte.com/send",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => http_build_query($waFd),
+                    CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                    CURLOPT_TIMEOUT => 20
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+                
+                logAgent("-> Penagihan otomatis tanggal $current_day dikirim ke {$s['nama_lengkap']} ({$no_wa})");
+                
+                // Jeda acak antarkirim 1-3 detik untuk menghindari blokir spam
+                sleep(rand(1, 3));
+            }
+        }
+    } else {
+        logAgent("Maa Syaa Allah, seluruh santri aktif telah melunasi kewajiban keuangan bulan ini!");
+    }
+    
+    // TANDAI SELESAI HARI INI
+    file_put_contents($billing_log_file, "SUCCESS_$today\n", FILE_APPEND);
+    logAgent("🎉 Penagihan Otomatis ($today) Selesai dilakukan.");
+}
 ?>
