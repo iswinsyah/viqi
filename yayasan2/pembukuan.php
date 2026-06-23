@@ -246,6 +246,67 @@ $sql_promises = "
 $res_promises = $conn->query($sql_promises);
 $payment_promises = ($res_promises) ? $res_promises->fetch_all(MYSQLI_ASSOC) : [];
 
+// 8. Query Data untuk Grafik Keuangan
+// 8A. Tren Arus Kas Bulanan (6 Bulan Terakhir)
+$sql_cashflow_trend = "
+    SELECT DATE_FORMAT(j.tanggal, '%Y-%m') as bulan,
+           SUM(CASE WHEN a.tipe_akun = 'Pendapatan' THEN d.kredit - d.debit ELSE 0 END) as pendapatan,
+           SUM(CASE WHEN a.tipe_akun = 'Beban' THEN d.debit - d.kredit ELSE 0 END) as beban
+    FROM keuangan_jurnal_detail d
+    JOIN keuangan_jurnal j ON d.jurnal_id = j.id
+    JOIN keuangan_akun a ON d.akun_id = a.id
+    GROUP BY DATE_FORMAT(j.tanggal, '%Y-%m')
+    ORDER BY DATE_FORMAT(j.tanggal, '%Y-%m') ASC
+    LIMIT 6";
+$res_cashflow_trend = $conn->query($sql_cashflow_trend);
+$cashflow_trend = [];
+if ($res_cashflow_trend) {
+    while ($row = $res_cashflow_trend->fetch_assoc()) {
+        $t = explode('-', $row['bulan']);
+        $m_num = (int)$t[1];
+        $m_name = isset($bulan_indo[$m_num]) ? substr($bulan_indo[$m_num], 0, 3) : $row['bulan'];
+        $cashflow_trend[] = [
+            'label' => $m_name . ' ' . $t[0],
+            'pendapatan' => (double)$row['pendapatan'],
+            'beban' => (double)$row['beban']
+        ];
+    }
+}
+
+// 8B. Distribusi Pendapatan per Lembaga/Divisi
+$sql_divisi_dist = "
+    SELECT l.nama_lembaga, 
+           COALESCE(SUM(d.kredit - d.debit), 0) as total
+    FROM keuangan_jurnal_detail d
+    JOIN keuangan_akun a ON d.akun_id = a.id
+    JOIN keuangan_lembaga l ON d.lembaga_id = l.id
+    WHERE a.tipe_akun = 'Pendapatan'
+    GROUP BY l.id";
+$res_divisi_dist = $conn->query($sql_divisi_dist);
+$divisi_distribution = ($res_divisi_dist) ? $res_divisi_dist->fetch_all(MYSQLI_ASSOC) : [];
+
+// 8C. Status Pembayaran SPP (Lunas vs Belum Lunas)
+$res_paid_spp = $conn->query("
+    SELECT COUNT(id) as total 
+    FROM pembayaran_spp 
+    WHERE bulan = '$bulan_sekarang' 
+      AND tahun = '$tahun_sekarang' 
+      AND status = 'Berhasil'
+");
+$total_paid_spp = $res_paid_spp ? (int)$res_paid_spp->fetch_assoc()['total'] : 0;
+$total_unpaid_spp = count($overdue_santri);
+
+// 8D. Saldo Kas & Rekening Bank (Bagan Akun Aset)
+$bank_balances = [];
+foreach ($ringkasan as $kode => $info) {
+    if ($info['tipe'] == 'Aset' && (strpos($kode, '11') === 0)) {
+        $bank_balances[] = [
+            'nama' => $info['nama'],
+            'balance' => $info['balance']
+        ];
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -256,6 +317,7 @@ $payment_promises = ($res_promises) ? $res_promises->fetch_all(MYSQLI_ASSOC) : [
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .markdown-body h1, .markdown-body h2 { font-size: 1.5rem; font-weight: bold; color: #78350f; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid #f59e0b; padding-bottom: 0.5rem; }
         .markdown-body h3 { font-size: 1.25rem; font-weight: bold; color: #92400e; margin-top: 1rem; margin-bottom: 0.5rem; }
@@ -308,6 +370,9 @@ $payment_promises = ($res_promises) ? $res_promises->fetch_all(MYSQLI_ASSOC) : [
                     <?php if(count($payment_promises) > 0): ?>
                     <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full"><?= count($payment_promises) ?></span>
                     <?php endif; ?>
+                </button>
+                <button onclick="switchTab('tab-charts')" id="btn-tab-charts" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
+                    <i class="fas fa-chart-pie mr-1"></i> Analisis Grafik (Visual)
                 </button>
             </div>
 
@@ -674,6 +739,43 @@ $payment_promises = ($res_promises) ? $res_promises->fetch_all(MYSQLI_ASSOC) : [
                     </div>
                 </div>
             </div>
+
+            <!-- TABS CONTENT: CHARTS & VISUALIZATION -->
+            <div id="tab-charts" class="tab-pane hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <!-- Tren Arus Kas -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[350px]">
+                        <h2 class="font-bold text-gray-800 text-sm mb-4 border-b border-gray-100 pb-2"><i class="fas fa-chart-line text-emerald-600 mr-2"></i>Tren Arus Kas (Pemasukan vs Pengeluaran)</h2>
+                        <div class="flex-1 relative h-64">
+                            <canvas id="chart-cashflow"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Distribusi Pendapatan per Divisi -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[350px]">
+                        <h2 class="font-bold text-gray-800 text-sm mb-4 border-b border-gray-100 pb-2"><i class="fas fa-chart-pie text-amber-600 mr-2"></i>Distribusi Pendapatan per Lembaga/Divisi</h2>
+                        <div class="flex-1 relative h-64">
+                            <canvas id="chart-divisi"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Status Pembayaran SPP -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[350px]">
+                        <h2 class="font-bold text-gray-800 text-sm mb-4 border-b border-gray-100 pb-2"><i class="fas fa-user-check text-indigo-600 mr-2"></i>Status Penagihan SPP (Bulan Ini)</h2>
+                        <div class="flex-1 relative h-64">
+                            <canvas id="chart-spp"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Saldo Rekening Bank -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[350px]">
+                        <h2 class="font-bold text-gray-800 text-sm mb-4 border-b border-gray-100 pb-2"><i class="fas fa-university text-blue-600 mr-2"></i>Saldo Kas & Rekening Bank</h2>
+                        <div class="flex-1 relative h-64">
+                            <canvas id="chart-bank"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -691,6 +793,13 @@ $payment_promises = ($res_promises) ? $res_promises->fetch_all(MYSQLI_ASSOC) : [
         const currentBulan = <?= json_encode($bulan_sekarang) ?>;
         const currentTahun = <?= json_encode($tahun_sekarang) ?>;
         const paymentPromises = <?= json_encode($payment_promises) ?>;
+        
+        // Data Grafik
+        const cashflowTrend = <?= json_encode($cashflow_trend) ?>;
+        const divisiDistribution = <?= json_encode($divisi_distribution) ?>;
+        const totalPaidSpp = <?= $total_paid_spp ?>;
+        const totalUnpaidSpp = <?= $total_unpaid_spp ?>;
+        const bankBalances = <?= json_encode($bank_balances) ?>;
 
         // Switch Tab
         function switchTab(tabId) {
@@ -705,6 +814,165 @@ $payment_promises = ($res_promises) ? $res_promises->fetch_all(MYSQLI_ASSOC) : [
             document.getElementById(tabId).classList.remove('hidden');
             // Add active class
             document.getElementById('btn-' + tabId).className = "px-4 py-2 text-sm font-bold border-b-2 border-amber-600 text-amber-700 focus:outline-none transition";
+            
+            // Init charts if charts tab
+            if (tabId === 'tab-charts') {
+                initCharts();
+            }
+        }
+
+        // Inisialisasi Grafik saat Tab Dibuka
+        let chartsInitialized = false;
+        function initCharts() {
+            if (chartsInitialized) return;
+            chartsInitialized = true;
+
+            // 1. Grafik Tren Arus Kas
+            const ctxCashflow = document.getElementById('chart-cashflow').getContext('2d');
+            new Chart(ctxCashflow, {
+                type: 'bar',
+                data: {
+                    labels: cashflowTrend.map(d => d.label),
+                    datasets: [
+                        {
+                            label: 'Pemasukan',
+                            data: cashflowTrend.map(d => d.pendapatan),
+                            backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Pengeluaran',
+                            data: cashflowTrend.map(d => d.beban),
+                            backgroundColor: 'rgba(239, 68, 68, 0.75)',
+                            borderColor: 'rgb(239, 68, 68)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rp ' + formatRupiah(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': Rp ' + formatRupiah(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 2. Grafik Distribusi Pendapatan per Divisi
+            const ctxDivisi = document.getElementById('chart-divisi').getContext('2d');
+            new Chart(ctxDivisi, {
+                type: 'doughnut',
+                data: {
+                    labels: divisiDistribution.map(d => d.nama_lembaga),
+                    datasets: [{
+                        data: divisiDistribution.map(d => d.total),
+                        backgroundColor: [
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(99, 102, 241, 0.8)'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': Rp ' + formatRupiah(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // 3. Grafik Status Pembayaran SPP
+            const ctxSpp = document.getElementById('chart-spp').getContext('2d');
+            new Chart(ctxSpp, {
+                type: 'pie',
+                data: {
+                    labels: ['Sudah Lunas', 'Belum Lunas'],
+                    datasets: [{
+                        data: [totalPaidSpp, totalUnpaidSpp],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(239, 68, 68, 0.8)'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // 4. Grafik Saldo Rekening Bank
+            const ctxBank = document.getElementById('chart-bank').getContext('2d');
+            new Chart(ctxBank, {
+                type: 'bar',
+                data: {
+                    labels: bankBalances.map(b => b.nama),
+                    datasets: [{
+                        label: 'Saldo Rekening',
+                        data: bankBalances.map(b => b.balance),
+                        backgroundColor: 'rgba(99, 102, 241, 0.8)',
+                        borderColor: 'rgb(99, 102, 241)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return 'Rp ' + formatRupiah(value);
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Saldo: Rp ' + formatRupiah(context.raw);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
         // Format Rupiah Helper
