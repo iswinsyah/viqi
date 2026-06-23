@@ -200,7 +200,6 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
         logAgent("❌ Gagal merumuskan Persona.");
     }
     
-    // Keluar agar tugas harian (jika kebetulan jam 07:00 juga) diproses di eksekusi Cron berikutnya (Mencegah PHP timeout)
     exit; 
 }
 
@@ -216,7 +215,7 @@ $force_seo = ($force === 'seo');
 if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
     logAgent("======= MEMULAI TUGAS HARIAN ($today) =======");
 
-    // 0. MIKIR TREND HARIAN (Dulu Bulanan)
+    // 0. MIKIR TREND HARIAN
     logAgent("Agent Trend Scout: Menganalisa tren harian...");
     $prompt_trend_macro_default = "Anda adalah seorang SEO & Market Trend Analyst. Tugas Anda adalah memberikan analisis trend konten parenting Islam untuk anak remaja usia 10 sampai dengan 15 tahun dari satu hari terakhir disemua plaform sosmed dan google search. Analisis harus meliputi: 1. Tema yang paling trending, 2. Angel/sudut pandang konten, 4. Hashtag yang digunakan, 5. Keyword Google Search yang sedang tren, serta hal penting lainnya yang relevan. Sajikan dalam format Markdown.";
     $prompt_trend_macro = file_exists('prompt_trend_macro.txt') ? file_get_contents('prompt_trend_macro.txt') : $prompt_trend_macro_default;
@@ -237,7 +236,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
     jedaAgent(5);
 
-    // 1. MIKIR TREND MIKRO (SEKARANG HARIAN)
+    // 1. MIKIR TREND MIKRO (HARIAN)
     logAgent("Agent Trend Scout: Menganalisa tren mikro untuk hari ini...");
     $tema_bulanan = file_exists(__DIR__ . '/saved_trends_macro.txt') ? file_get_contents(__DIR__ . '/saved_trends_macro.txt') : 'Pendidikan Anak Islami';
     $prompt_trend_micro_default = "Anda adalah seorang SEO & Content Strategist. Tema besar bulan ini adalah: \n\n{{THEME}}\n\n Tugas Anda adalah mencari 1 SUDUT PANDANG (angle) atau topik spesifik yang sedang hangat dibicarakan dalam 24 jam terakhir terkait tema tersebut. Berikan 1 rekomendasi judul artikel yang viral dan 3 keyword turunan yang relevan. Sajikan dalam format Markdown.";
@@ -260,29 +259,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
     jedaAgent(5);
 
-    // 2. MIKIR COMMUNITY SCOUT (SEKARANG HARIAN)
-    logAgent("Agent Community Scout: Mencari grup komunitas potensial hari ini...");
-    $persona = file_exists(__DIR__ . '/saved_persona.txt') ? file_get_contents(__DIR__ . '/saved_persona.txt') : 'Orang tua yang mencari pesantren untuk anak.';
-    $prompt_community_default = "Anda adalah seorang Digital Community Specialist. Target audiens kita adalah: \n\n{{PERSONA}}\n\n Tugas Anda adalah mencari link grup WhatsApp, Telegram, dan Facebook yang relevan dengan target audiens tersebut. Buat laporan dalam bentuk TABEL MARKDOWN dengan kolom: | Nama Grup | Platform | Link Gabung | Analisa Relevansi | Skor Kualitas (1-10) | Saran Pembuka Diskusi |. Cari minimal 5 grup.";
-    $prompt_community_raw = file_exists(__DIR__ . '/prompt_community_scout.txt') ? file_get_contents(__DIR__ . '/prompt_community_scout.txt') : $prompt_community_default;
-    $prompt_community = str_replace('{{PERSONA}}', $persona, $prompt_community_raw);
-    $payloadCommunity = [
-        [
-            "jenis_lead" => "SYSTEM_COMMAND",
-            "sumber_info" => $prompt_community,
-            "status" => "URGENT"
-        ]
-    ];
-    $dataCommunity = mikirKeGemini(['leads' => $payloadCommunity, 'type' => 'community_scout']);
-    if (isset($dataCommunity['status']) && $dataCommunity['status'] === 'success') {
-        file_put_contents(__DIR__ . '/saved_communities.txt', $dataCommunity['result']);
-        logAgent("✅ Laporan pencarian komunitas berhasil dibuat.");
-    } else {
-        logAgent("❌ Gagal membuat laporan pencarian komunitas.");
-    }
-
-    jedaAgent(5);
-    // 3. MIKIR HOOK & KEYWORD EXPLORER (HARIAN)
+    // 2. MIKIR HOOK & KEYWORD EXPLORER (HARIAN)
     logAgent("Agent Hook & Keyword Explorer: Meriset opsi judul hook viral dan keyword...");
     $trend_macro = file_exists(__DIR__ . '/saved_trends_macro.txt') ? file_get_contents(__DIR__ . '/saved_trends_macro.txt') : 'Tidak ada laporan tren makro.';
     $leads = [];
@@ -303,7 +280,12 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
     $dataExplorer = mikirKeGemini(['leads' => $payloadExplorer, 'type' => 'hook_explorer']);
     if (isset($dataExplorer['status']) && $dataExplorer['status'] === 'success') {
-        $cleanJson = trim(preg_replace('/^```json|```$/i', '', $dataExplorer['result']));
+        $rawResult = trim($dataExplorer['result'] ?? '');
+        if (preg_match('/^```(?:json)?\s*([\s\S]*?)\s*```$/i', $rawResult, $matches)) {
+            $cleanJson = trim($matches[1]);
+        } else {
+            $cleanJson = $rawResult;
+        }
         $obj = json_decode($cleanJson, true);
         if ($obj && isset($obj['selected_title'])) {
             $selected_keyword = $obj['selected_keyword'] ?? '';
@@ -329,7 +311,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
     jedaAgent(5);
 
-    // 4. Ambil topik/judul/keyword hari ini dari Hook & Keyword Explorer atau fallback
+    // 3. Ambil topik/judul/keyword hari ini dari Hook & Keyword Explorer atau fallback
     $topic = "Keistimewaan Menghafal Al-Quran"; // Fallback topic
     $judul = "Keutamaan Menjadi Hafidz Quran di Usia Belia"; // Fallback judul
     $keyword = "pesantren tahfidz, hafal quran"; // Fallback keyword
@@ -386,13 +368,21 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
     $newArticleId = '';
 
     if (isset($dataSEO['status']) && $dataSEO['status'] === 'success') {
-        $cleanJson = trim(preg_replace('/^```json|```$/i', '', $dataSEO['result']));
+        $rawResult = trim($dataSEO['result'] ?? '');
+        if (preg_match('/^```(?:json)?\s*([\s\S]*?)\s*```$/i', $rawResult, $matches)) {
+            $cleanJson = trim($matches[1]);
+        } else {
+            $cleanJson = $rawResult;
+        }
         $obj = json_decode($cleanJson, true);
 
-        if ($obj && isset($obj['konten'])) {
-            $j = $conn->real_escape_string($obj['judul'] ?? $judul);
+        $konten = $obj['konten'] ?? $obj['content'] ?? $obj['isi'] ?? '';
+        $judul_art = $obj['judul'] ?? $obj['title'] ?? $judul;
+
+        if ($obj && !empty($konten)) {
+            $j = $conn->real_escape_string($judul_art);
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $j)));
-            $k = $conn->real_escape_string($obj['konten']);
+            $k = $conn->real_escape_string($konten);
             
             // Auto Cover Gambar
             $gambar_cover = '';
@@ -504,8 +494,136 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
     // TANDAI SELESAI
     file_put_contents($daily_log_file, "SUCCESS_$today\n", FILE_APPEND);
-    logAgent("🎉 Tugas Harian ($today) Tuntas! Agent kembali tidur.\n");
-    exit;
+    logAgent("🎉 Tugas Harian ($today) Tuntas!\n");
+}
+
+// =========================================================================================
+// AGENT COMMUNITY SCOUT MANDIRI (Tiap Hari, Jam 07:00)
+// =========================================================================================
+$community_done = false;
+$community_log_file = __DIR__ . '/agent_community_log.txt';
+if (file_exists($community_log_file)) {
+    if (strpos(file_get_contents($community_log_file), "SUCCESS_$today") !== false) $community_done = true;
+}
+
+$force_community = ($force === 'community');
+if (($current_hour >= '07' || $force_community) && (!$community_done || $force_community)) {
+    logAgent("======= MEMULAI AGENT COMMUNITY SCOUT ($today) =======");
+
+    // Self-healing: Pastikan tabel grup_komunitas ada
+    $conn->query("CREATE TABLE IF NOT EXISTS grup_komunitas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        nama_grup VARCHAR(255) NOT NULL,
+        platform VARCHAR(50) NOT NULL,
+        link_gabung VARCHAR(255) NOT NULL UNIQUE,
+        analisa_relevansi TEXT,
+        skor_kualitas INT DEFAULT 5,
+        saran_pembuka TEXT,
+        status VARCHAR(50) DEFAULT 'Belum Dihubungi',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    $persona = file_exists(__DIR__ . '/saved_persona.txt') ? file_get_contents(__DIR__ . '/saved_persona.txt') : 'Orang tua yang mencari pesantren untuk anak.';
+    
+    // Ambil beberapa link/nama grup yang sudah ada di database untuk dikecualikan agar AI mencari yang baru
+    $exclusions = [];
+    $res_ex = $conn->query("SELECT nama_grup, link_gabung FROM grup_komunitas ORDER BY id DESC LIMIT 20");
+    if ($res_ex && $res_ex->num_rows > 0) {
+        while ($row_ex = $res_ex->fetch_assoc()) {
+            $exclusions[] = "- " . $row_ex['nama_grup'] . " (" . $row_ex['link_gabung'] . ")";
+        }
+    }
+    
+    $exclusion_text = "";
+    if (count($exclusions) > 0) {
+        $exclusion_text = "\n\nHINDARI grup berikut karena sudah ditemukan sebelumnya:\n" . implode("\n", $exclusions);
+    }
+
+    $prompt_community_default = "Anda adalah seorang Digital Community Specialist. Target audiens kita adalah: \n\n{{PERSONA}}\n\n Tugas Anda adalah mencari link grup WhatsApp, Telegram, dan Facebook yang relevan dengan target audiens tersebut.\n"
+        . "Aturan Wajib:\n"
+        . "1. Grup yang dicari harus bersifat terbuka/publik (siapa saja boleh bergabung).\n"
+        . "2. Grup tersebut BUKAN merupakan grup kolam marketing milik sekolah/pesantren kompetitor lain.\n"
+        . "3. Kembalikan output HANYA dalam format JSON array murni tanpa markdown (tanpa ```json dan tanpa penjelasan lain). Format JSON harus tepat seperti ini:\n"
+        . "[\n"
+        . "  {\n"
+        . "    \"nama_grup\": \"Nama Grup Komunitas\",\n"
+        . "    \"platform\": \"WhatsApp/Telegram/Facebook\",\n"
+        . "    \"link_gabung\": \"URL Link Gabung Grup\",\n"
+        . "    \"analisa_relevansi\": \"Penjelasan mengapa grup ini sangat relevan untuk prospek/leads kita\",\n"
+        . "    \"skor_kualitas\": 8,\n"
+        . "    \"saran_pembuka\": \"Kalimat pembuka diskusi yang natural, sopan, dan tidak bernuansa hard selling\"\n"
+        . "  }\n"
+        . "]\n"
+        . "Cari minimal 5 grup baru.";
+
+    $prompt_community_raw = file_exists(__DIR__ . '/prompt_community_scout.txt') ? file_get_contents(__DIR__ . '/prompt_community_scout.txt') : $prompt_community_default;
+    // Enforce JSON format requirements by appending them
+    $prompt_community_enforced = $prompt_community_raw . "\n\nATURAN WAJIB FORMAT OUTPUT: Output harus berupa JSON array murni tanpa pembungkus markdown (tanpa ```json). Setiap item dalam array harus berupa objek dengan key: 'nama_grup', 'platform', 'link_gabung', 'analisa_relevansi', 'skor_kualitas', 'saran_pembuka'. Grup yang dicari harus merupakan grup terbuka/publik dan BUKAN milik sekolah/pesantren kompetitor." . $exclusion_text;
+
+    $prompt_community = str_replace('{{PERSONA}}', $persona, $prompt_community_enforced);
+
+    $payloadCommunity = [
+        [
+            "jenis_lead" => "SYSTEM_COMMAND",
+            "sumber_info" => $prompt_community,
+            "status" => "URGENT"
+        ]
+    ];
+
+    $dataCommunity = mikirKeGemini(['leads' => $payloadCommunity, 'type' => 'community_scout']);
+    if (isset($dataCommunity['status']) && $dataCommunity['status'] === 'success') {
+        $rawResult = trim($dataCommunity['result'] ?? '');
+        if (preg_match('/^```(?:json)?\s*([\s\S]*?)\s*```$/i', $rawResult, $matches)) {
+            $cleanJson = trim($matches[1]);
+        } else {
+            $cleanJson = $rawResult;
+        }
+        
+        // Simpan backup raw
+        file_put_contents(__DIR__ . '/saved_communities.txt', $rawResult);
+
+        $groups = json_decode($cleanJson, true);
+        if (is_array($groups)) {
+            $new_count = 0;
+            $exist_count = 0;
+            foreach ($groups as $g) {
+                if (isset($g['link_gabung']) && !empty($g['link_gabung'])) {
+                    $link = $conn->real_escape_string($g['link_gabung']);
+                    
+                    // Cek duplikasi
+                    $check = $conn->query("SELECT id FROM grup_komunitas WHERE link_gabung = '$link'");
+                    if ($check && $check->num_rows > 0) {
+                        $exist_count++;
+                        continue;
+                    }
+                    
+                    $nama = $conn->real_escape_string($g['nama_grup'] ?? 'Grup Relevan');
+                    $plat = $conn->real_escape_string($g['platform'] ?? 'Unknown');
+                    $analisa = $conn->real_escape_string($g['analisa_relevansi'] ?? '');
+                    $skor = (int)($g['skor_kualitas'] ?? 5);
+                    $saran = $conn->real_escape_string($g['saran_pembuka'] ?? '');
+                    
+                    $sql_ins = "INSERT INTO grup_komunitas (nama_grup, platform, link_gabung, analisa_relevansi, skor_kualitas, saran_pembuka)
+                                VALUES ('$nama', '$plat', '$link', '$analisa', $skor, '$saran')";
+                    if ($conn->query($sql_ins) === TRUE) {
+                        $new_count++;
+                    }
+                }
+            }
+            logAgent("✅ Sukses mencari grup komunitas. Berhasil menyimpan $new_count grup baru ke database. ($exist_count grup sudah terdaftar sebelumnya).");
+        } else {
+            logAgent("⚠️ Hasil dari Gemini bukan merupakan array JSON valid. Gagal memproses data grup.");
+            logAgent("Raw result (200 char): " . substr($rawResult, 0, 200));
+        }
+    } else {
+        logAgent("❌ Gagal membuat laporan pencarian grup komunitas.");
+    }
+
+    // TANDAI SELESAI
+    file_put_contents($community_log_file, "SUCCESS_$today\n", FILE_APPEND);
+    logAgent("🎉 Tugas Community Scout ($today) Selesai dilakukan.\n");
+    
+    jedaAgent(5);
 }
 
 // =========================================================================================

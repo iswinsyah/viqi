@@ -104,6 +104,9 @@ $last_log = $log_lines[count($log_lines)-1];
                         <button onclick="jalankanAgentManual('billing')" id="btn-run-billing" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition flex items-center">
                             <i class="fas fa-bell mr-1.5 animate-pulse"></i> Kirim Tagihan WA Santri
                         </button>
+                        <button onclick="jalankanAgentManual('community')" id="btn-run-community" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition flex items-center">
+                            <i class="fas fa-search-location mr-1.5 animate-pulse"></i> Cari Grup Komunitas
+                        </button>
                     </div>
                     <p class="text-xs text-gray-500 mt-3">
                         Klik tombol di atas untuk memaksa AI Agent memproses data langsung hari ini tanpa menunggu jadwal.
@@ -175,15 +178,30 @@ $last_log = $log_lines[count($log_lines)-1];
         function jalankanAgentManual(type) {
             const btnSeo = document.getElementById('btn-run-seo');
             const btnBilling = document.getElementById('btn-run-billing');
+            const btnCommunity = document.getElementById('btn-run-community');
             const logBox = document.getElementById('manual-run-log');
             
-            btnSeo.disabled = true;
-            btnBilling.disabled = true;
+            if (btnSeo) btnSeo.disabled = true;
+            if (btnBilling) btnBilling.disabled = true;
+            if (btnCommunity) btnCommunity.disabled = true;
             
-            const originalText = type === 'seo' ? btnSeo.innerHTML : btnBilling.innerHTML;
-            const targetBtn = type === 'seo' ? btnSeo : btnBilling;
+            let originalText = '';
+            let targetBtn = null;
             
-            targetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Memproses...';
+            if (type === 'seo') {
+                originalText = btnSeo.innerHTML;
+                targetBtn = btnSeo;
+            } else if (type === 'billing') {
+                originalText = btnBilling.innerHTML;
+                targetBtn = btnBilling;
+            } else if (type === 'community') {
+                originalText = btnCommunity.innerHTML;
+                targetBtn = btnCommunity;
+            }
+            
+            if (targetBtn) {
+                targetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Memproses...';
+            }
             logBox.innerHTML = "> Menghubungi AI Agent untuk memulai proses secara manual...\n";
             logBox.scrollTop = logBox.scrollHeight;
             
@@ -207,9 +225,10 @@ $last_log = $log_lines[count($log_lines)-1];
                         if (done) {
                             logBox.innerHTML += "\n> Proses selesai!";
                             logBox.scrollTop = logBox.scrollHeight;
-                            btnSeo.disabled = false;
-                            btnBilling.disabled = false;
-                            targetBtn.innerHTML = originalText;
+                            if (btnSeo) btnSeo.disabled = false;
+                            if (btnBilling) btnBilling.disabled = false;
+                            if (btnCommunity) btnCommunity.disabled = false;
+                            if (targetBtn) targetBtn.innerHTML = originalText;
                             return;
                         }
                         return readChunk();
@@ -220,9 +239,10 @@ $last_log = $log_lines[count($log_lines)-1];
             .catch(err => {
                 logBox.innerHTML += "\n[Error] Gagal mengeksekusi agent: " + err.message + "\n";
                 logBox.scrollTop = logBox.scrollHeight;
-                btnSeo.disabled = false;
-                btnBilling.disabled = false;
-                targetBtn.innerHTML = originalText;
+                if (btnSeo) btnSeo.disabled = false;
+                if (btnBilling) btnBilling.disabled = false;
+                if (btnCommunity) btnCommunity.disabled = false;
+                if (targetBtn) targetBtn.innerHTML = originalText;
             });
         }
     </script>
