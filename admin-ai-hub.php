@@ -75,21 +75,40 @@ $last_log = $log_lines[count($log_lines)-1];
             </div>
             <?php endif; ?>
 
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
-                <h3 class="font-bold text-lg text-gray-800 mb-3">Status Autopilot</h3>
-                <form action="admin-ai-hub.php" method="POST" class="flex items-center space-x-4">
-                    <input type="hidden" name="autopilot_status" value="<?= $autopilot_status === 'ON' ? 'OFF' : 'ON' ?>">
-                    <button type="submit" class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 <?= $autopilot_status === 'ON' ? 'bg-indigo-600' : 'bg-gray-200' ?>">
-                        <span class="sr-only">Enable notifications</span>
-                        <span class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform <?= $autopilot_status === 'ON' ? 'translate-x-6' : 'translate-x-1' ?>"></span>
-                    </button>
-                    <span class="font-medium text-lg <?= $autopilot_status === 'ON' ? 'text-indigo-700' : 'text-gray-500' ?>">
-                        <?= $autopilot_status === 'ON' ? 'AKTIF' : 'NONAKTIF' ?>
-                    </span>
-                </form>
-                <p class="text-sm text-gray-500 mt-3">
-                    Jika <span class="font-bold text-indigo-600">AKTIF</span>, semua AI Agent akan bekerja secara otomatis sesuai jadwal yang ditentukan. Jika <span class="font-bold text-gray-600">NONAKTIF</span>, semua agent akan berhenti bekerja.
-                </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- Status Autopilot Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-bold text-lg text-gray-800 mb-3"><i class="fas fa-toggle-on text-indigo-600 mr-2"></i>Status Autopilot</h3>
+                    <form action="admin-ai-hub.php" method="POST" class="flex items-center space-x-4">
+                        <input type="hidden" name="autopilot_status" value="<?= $autopilot_status === 'ON' ? 'OFF' : 'ON' ?>">
+                        <button type="submit" class="relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 <?= $autopilot_status === 'ON' ? 'bg-indigo-600' : 'bg-gray-200' ?>">
+                            <span class="sr-only">Enable notifications</span>
+                            <span class="inline-block w-4 h-4 transform bg-white rounded-full transition-transform <?= $autopilot_status === 'ON' ? 'translate-x-6' : 'translate-x-1' ?>"></span>
+                        </button>
+                        <span class="font-medium text-lg <?= $autopilot_status === 'ON' ? 'text-indigo-700' : 'text-gray-500' ?>">
+                            <?= $autopilot_status === 'ON' ? 'AKTIF' : 'NONAKTIF' ?>
+                        </span>
+                    </form>
+                    <p class="text-xs text-gray-500 mt-3">
+                        Jika <span class="font-bold text-indigo-600">AKTIF</span>, semua AI Agent bekerja otomatis via cron job. Jika <span class="font-bold text-gray-600">NONAKTIF</span>, agent hanya dapat dijalankan manual.
+                    </p>
+                </div>
+
+                <!-- Manual Trigger Card -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-bold text-lg text-gray-800 mb-3"><i class="fas fa-play text-emerald-600 mr-2"></i>Pusat Jalankan Manual</h3>
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="jalankanAgentManual('seo')" id="btn-run-seo" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition flex items-center">
+                            <i class="fas fa-pen-nib mr-1.5 animate-pulse"></i> Tulis & Publish Artikel (SEO)
+                        </button>
+                        <button onclick="jalankanAgentManual('billing')" id="btn-run-billing" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition flex items-center">
+                            <i class="fas fa-bell mr-1.5 animate-pulse"></i> Kirim Tagihan WA Santri
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3">
+                        Klik tombol di atas untuk memaksa AI Agent memproses data langsung hari ini tanpa menunggu jadwal.
+                    </p>
+                </div>
             </div>
 
             <div class="mb-6">
@@ -132,8 +151,8 @@ $last_log = $log_lines[count($log_lines)-1];
             </div>
 
             <div class="bg-gray-800 text-gray-300 rounded-xl shadow-inner p-4 mt-8 font-mono text-xs">
-                <p class="font-bold text-cyan-400 mb-2">> Log Aktivitas Terakhir:</p>
-                <p><?= htmlspecialchars($last_log) ?></p>
+                <p class="font-bold text-cyan-400 mb-2">> Log Aktivitas & Hasil Eksekusi Manual:</p>
+                <div id="manual-run-log" class="max-h-60 overflow-y-auto whitespace-pre-wrap leading-relaxed"><?= htmlspecialchars($last_log) ?></div>
             </div>
 
         </main>
@@ -151,6 +170,39 @@ $last_log = $log_lines[count($log_lines)-1];
             if(openBtn) openBtn.addEventListener('click', toggleSidebar);
             if(overlay) overlay.addEventListener('click', toggleSidebar);
         });
+
+        // Jalankan AI Agent secara manual via AJAX
+        function jalankanAgentManual(type) {
+            const btnSeo = document.getElementById('btn-run-seo');
+            const btnBilling = document.getElementById('btn-run-billing');
+            const logBox = document.getElementById('manual-run-log');
+            
+            btnSeo.disabled = true;
+            btnBilling.disabled = true;
+            
+            const originalText = type === 'seo' ? btnSeo.innerHTML : btnBilling.innerHTML;
+            const targetBtn = type === 'seo' ? btnSeo : btnBilling;
+            
+            targetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1.5"></i> Memproses...';
+            logBox.innerHTML = "> Menghubungi AI Agent untuk memulai proses secara manual...\n";
+            
+            fetch('cron-agent.php?force=' + type)
+            .then(res => res.text())
+            .then(data => {
+                // Bersihkan tag <br> jika ada dari output PHP echo
+                const cleanLog = data.replace(/<br>/gi, '\n');
+                logBox.innerHTML += cleanLog + "\n> Proses selesai!";
+                logBox.scrollTop = logBox.scrollHeight;
+            })
+            .catch(err => {
+                logBox.innerHTML += "\n[Error] Gagal mengeksekusi agent: " + err + "\n";
+            })
+            .finally(() => {
+                btnSeo.disabled = false;
+                btnBilling.disabled = false;
+                targetBtn.innerHTML = originalText;
+            });
+        }
     </script>
 </body>
 </html>

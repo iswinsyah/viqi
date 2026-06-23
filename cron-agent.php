@@ -49,7 +49,8 @@ function logAgent($msg) {
 
 // 1. CEK OTORITAS DARI PUSAT KENDALI
 $autopilot = file_exists(__DIR__ . '/autopilot_status.txt') ? trim(file_get_contents(__DIR__ . '/autopilot_status.txt')) : 'OFF';
-if ($autopilot !== 'ON') {
+$force = isset($_GET['force']) ? $_GET['force'] : '';
+if ($autopilot !== 'ON' && empty($force)) {
     die("Agent sedang dinonaktifkan (OFF) dari Pusat Kendali. Menunggu izin Bos...");
 }
 
@@ -174,7 +175,8 @@ if (file_exists($daily_log_file)) {
     if (strpos(file_get_contents($daily_log_file), "SUCCESS_$today") !== false) $daily_done = true;
 }
 
-if ($current_hour >= '07' && !$daily_done) {
+$force_seo = ($force === 'seo');
+if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
     logAgent("======= MEMULAI TUGAS HARIAN ($today) =======");
 
     // 0. MIKIR TREND HARIAN (Dulu Bulanan)
@@ -463,7 +465,8 @@ if (file_exists($billing_log_file)) {
 
 // Hanya jalan jika jam >= 08 pagi, status belum done hari ini, dan tanggal adalah 1, 3, 6, atau 10
 $allowed_days = ['01', '03', '06', '10'];
-if ($current_hour >= '08' && !$billing_done && in_array($current_day, $allowed_days)) {
+$force_billing = ($force === 'billing');
+if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billing) && (in_array($current_day, $allowed_days) || $force_billing)) {
     logAgent("======= MEMULAI AGENT PENAGIHAN OTOMATIS ($today) =======");
     
     // Pastikan database terinisialisasi
