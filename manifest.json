@@ -1,0 +1,22 @@
+{
+  "name": "Jepret Villa Quran",
+  "short_name": "Jepret VQ",
+  "description": "Dokumentasi Harian Musyrif Villa Quran",
+  "start_url": "musyrif-upload-sosmed.php",
+  "display": "standalone",
+  "background_color": "#1e1b4b",
+  "theme_color": "#312e81",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192/312e81/ffffff?text=VQ",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://via.placeholder.com/512/312e81/ffffff?text=VQ",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
+}

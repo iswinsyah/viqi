@@ -50,6 +50,11 @@
             <a href="admin-publisher.php" class="<?= (isset($active_menu) && $active_menu == 'publisher') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-paper-plane w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'publisher') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Publisher
             </a>
+
+            <p class="px-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-2 mt-6">Sosmed Workflow</p>
+            <a href="admin-sosmed-workflow.php" class="<?= (isset($active_menu) && $active_menu == 'sosmed_workflow') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-route w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'sosmed_workflow') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Pusat Kendali Sosmed
+            </a>
         </nav>
     </div>
 
