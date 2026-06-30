@@ -12,5 +12,6 @@ Ketentuan:
   "selected_topic": "Topik singkat dari judul terpilih",
   "selected_title": "Judul Hook Terpilih yang Bisa Viral",
   "selected_keyword": "keyword utama, keyword turunan 1, keyword turunan 2",
+  "pixabay_search_query": "1-3 English keywords for Pixabay image search (e.g. 'muslim teen', 'islamic family', 'stressed student' related to the topic)",
   "report": "# Laporan Riset Hook & Keyword\n\n(Sajikan laporan lengkap riset Anda dalam format markdown di sini. Laporkan 5 opsi judul hook beserta keyword masing-masing, analisis kecocokan algoritma Google Search, serta alasan kuat pemilihan 1 judul terbaik untuk hari ini.)"
 }

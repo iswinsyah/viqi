@@ -47,7 +47,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
            . "Wassalamu'alaikum Wr. Wb.\n"
            . "-- Bendahara Yayasan Villa Quran --";
            
-    $FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL"; // Sesuai token di cron-agent.php
+    if (file_exists(dirname(__DIR__) . '/config-key.php')) {
+        require_once dirname(__DIR__) . '/config-key.php';
+    }
+    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
     
     $waFd = ['target' => $no_wa, 'message' => $pesan];
     $ch = curl_init();

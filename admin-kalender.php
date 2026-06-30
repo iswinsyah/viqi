@@ -19,8 +19,11 @@ function dapatkanGambarPixabay($keyword) {
         return '';
     }
     
-    // Tambahkan embel-embel bernuansa Islami untuk memastikan gambar relevan dengan sekolah Tahfidz
-    $query_string = $primary_keyword . " muslim islamic";
+    // Tambahkan embel-embel bernuansa Islami jika belum ada kata kunci Islami/religius
+    $query_string = $primary_keyword;
+    if (!preg_match('/(muslim|islam|hijab|mosque|quran|ramadan|allah|indonesia)/i', $query_string)) {
+        $query_string .= " muslim islamic";
+    }
     $query = urlencode($query_string);
     
     $url = "https://pixabay.com/api/?key=" . $pixabay_key . "&q=" . $query . "&image_type=photo&orientation=horizontal&safesearch=true&per_page=5";
@@ -79,10 +82,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         $selected_data = json_decode($_POST['selected_data'], true);
         if ($selected_data) {
             // Dapatkan gambar dari Pixabay secara real-time sebelum disimpan
-            $selected_keyword = $selected_data['selected_keyword'] ?? '';
+            $pixabay_query = $selected_data['pixabay_search_query'] ?? $selected_data['selected_keyword'] ?? '';
             $selected_image = '';
-            if (!empty($selected_keyword)) {
-                $selected_image = dapatkanGambarPixabay($selected_keyword);
+            if (!empty($pixabay_query)) {
+                $selected_image = dapatkanGambarPixabay($pixabay_query);
             }
             $selected_data['selected_image'] = $selected_image;
             file_put_contents('today_seo_task.json', json_encode($selected_data, JSON_PRETTY_PRINT));
@@ -98,7 +101,7 @@ $trend_scout_report = file_exists('saved_trends_macro.txt') ? file_get_contents(
 
 // --- PROMPT MANAGEMENT ---
 $prompt_file = 'prompt_hook_explorer.txt';
-$default_prompt = "Anda adalah AI Agent Riset Hook & Keyword SEO. Tugas Anda adalah meriset dan memilih judul hook yang bisa viral serta keyword yang tepat sesuai algoritma Google Search terbaru, berdasarkan hasil riset Trend Scout berikut:\n\n{{TREND_SCOUT}}\n\nKetentuan:\n1. Target audiens: Orang tua dengan anak remaja usia 10-15 tahun, dalam konteks Islamic Parenting / Pendidikan Remaja Muslim.\n2. Riset 5 opsi judul hook viral yang memicu rasa penasaran/emosi (menggunakan formula hook seperti pengakuan, kontradiktif, pertanyaan retoris, dsb).\n3. Tentukan keyword utama & turunan yang memiliki potensi trafik tinggi dan relevan sesuai algoritma Google Search terbaru.\n4. Pilih 1 kombinasi terbaik yang paling berpotensi viral dan memiliki search intent yang kuat untuk ditulis hari ini.\n5. Berikan output dalam format JSON murni tanpa markdown (tanpa ```json). Format JSON harus tepat seperti ini:\n{\n  \"selected_topic\": \"Topik singkat dari judul terpilih\",\n  \"selected_title\": \"Judul Hook Terpilih yang Bisa Viral\",\n  \"selected_keyword\": \"keyword utama, keyword turunan 1, keyword turunan 2\",\n  \"report\": \"# Laporan Riset Hook & Keyword\\n\\n(Sajikan laporan lengkap riset Anda dalam format markdown di sini. Laporkan 5 opsi judul hook beserta keyword masing-masing, analisis kecocokan algoritma Google Search, serta alasan kuat pemilihan 1 judul terbaik untuk hari ini.)\"\n}";
+$default_prompt = "Anda adalah AI Agent Riset Hook & Keyword SEO. Tugas Anda adalah meriset dan memilih judul hook yang bisa viral serta keyword yang tepat sesuai algoritma Google Search terbaru, berdasarkan hasil riset Trend Scout berikut:\n\n{{TREND_SCOUT}}\n\nKetentuan:\n1. Target audiens: Orang tua dengan anak remaja usia 10-15 tahun, dalam konteks Islamic Parenting / Pendidikan Remaja Muslim.\n2. Riset 5 opsi judul hook viral yang memicu rasa penasaran/emosi (menggunakan formula hook seperti pengakuan, kontradiktif, pertanyaan retoris, dsb).\n3. Tentukan keyword utama & turunan yang memiliki potensi trafik tinggi dan relevan sesuai algoritma Google Search terbaru.\n4. Pilih 1 kombinasi terbaik yang paling berpotensi viral dan memiliki search intent yang kuat untuk ditulis hari ini.\n5. Berikan output dalam format JSON murni tanpa markdown (tanpa ```json). Format JSON harus tepat seperti ini:\n{\n  \"selected_topic\": \"Topik singkat dari judul terpilih\",\n  \"selected_title\": \"Judul Hook Terpilih yang Bisa Viral\",\n  \"selected_keyword\": \"keyword utama, keyword turunan 1, keyword turunan 2\",\n  \"pixabay_search_query\": \"1-3 English keywords for Pixabay image search (e.g. 'muslim teen', 'islamic family', 'stressed student' related to the topic)\",\n  \"report\": \"# Laporan Riset Hook & Keyword\\n\\n(Sajikan laporan lengkap riset Anda dalam format markdown di sini. Laporkan 5 opsi judul hook beserta keyword masing-masing, analisis kecocokan algoritma Google Search, serta alasan kuat pemilihan 1 judul terbaik untuk hari ini.)\"\n}";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
     file_put_contents($prompt_file, $_POST['prompt_content']);

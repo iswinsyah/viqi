@@ -45,6 +45,9 @@
             <a href="admin-parenting.php" class="<?= (isset($active_menu) && $active_menu == 'parenting') ? 'bg-emerald-800 text-white' : 'text-emerald-100 hover:bg-emerald-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-calendar-check w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'parenting') ? 'text-amber-400' : 'text-emerald-300 group-hover:text-white' ?>"></i> Jadwal Parenting
             </a>
+            <a href="admin-counseling-karir.php" class="<?= (isset($active_menu) && $active_menu == 'counseling_karir') ? 'bg-emerald-800 text-white' : 'text-emerald-100 hover:bg-emerald-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-graduation-cap w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'counseling_karir') ? 'text-amber-400' : 'text-emerald-300 group-hover:text-white' ?>"></i> Pemetaan Karir & PTN (AI)
+            </a>
             <a href="admin-artikel.php" class="<?= (isset($active_menu) && $active_menu == 'artikel') ? 'bg-emerald-800 text-white' : 'text-emerald-100 hover:bg-emerald-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-file-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'artikel') ? 'text-amber-400' : 'text-emerald-300 group-hover:text-white' ?>"></i> Artikel & Blog
             </a>

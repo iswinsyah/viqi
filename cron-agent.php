@@ -27,6 +27,9 @@ if (php_sapi_name() !== 'cli') {
 date_default_timezone_set('Asia/Jakarta');
 
 require_once __DIR__ . '/koneksi.php';
+if (file_exists(__DIR__ . '/config-key.php')) {
+    require_once __DIR__ . '/config-key.php';
+}
 
 // Helper function to prevent "MySQL server has gone away" during long-running API tasks
 function pastikanKoneksiDb() {
@@ -76,7 +79,7 @@ if (php_sapi_name() === 'cli') {
     $GAS_URL = $protocol . $http_host . $uri_dir . '/api-gemini.php';
 }
 
-$FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL";
+$FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
 
 $log_file = __DIR__ . '/agent_cron_log.txt';
 $monthly_log_file = __DIR__ . '/agent_monthly_log.txt';
@@ -142,8 +145,11 @@ function dapatkanGambarPixabay($keyword) {
         return '';
     }
     
-    // Tambahkan embel-embel bernuansa Islami untuk memastikan gambar relevan dengan sekolah Tahfidz
-    $query_string = $primary_keyword . " muslim islamic";
+    // Tambahkan embel-embel bernuansa Islami jika belum ada kata kunci Islami/religius
+    $query_string = $primary_keyword;
+    if (!preg_match('/(muslim|islam|hijab|mosque|quran|ramadan|allah|indonesia)/i', $query_string)) {
+        $query_string .= " muslim islamic";
+    }
     $query = urlencode($query_string);
     
     $url = "https://pixabay.com/api/?key=" . $pixabay_key . "&q=" . $query . "&image_type=photo&orientation=horizontal&safesearch=true&per_page=5";
@@ -292,7 +298,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
     $resL = $conn->query("SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 50");
     if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
     
-    $prompt_hook_explorer_default = "Anda adalah AI Agent Riset Hook & Keyword SEO. Tugas Anda adalah meriset dan memilih judul hook yang bisa viral serta keyword yang tepat sesuai algoritma Google Search terbaru, berdasarkan hasil riset Trend Scout berikut:\n\n{{TREND_SCOUT}}\n\nKetentuan:\n1. Target audiens: Orang tua dengan anak remaja usia 10-15 tahun, dalam konteks Islamic Parenting / Pendidikan Remaja Muslim.\n2. Riset 5 opsi judul hook viral yang memicu rasa penasaran/emosi (menggunakan formula hook seperti pengakuan, kontradiktif, pertanyaan retoris, dsb).\n3. Tentukan keyword utama & turunan yang memiliki potensi trafik tinggi dan relevan sesuai algoritma Google Search terbaru.\n4. Pilih 1 kombinasi terbaik yang paling berpotensi viral dan memiliki search intent yang kuat untuk ditulis hari ini.\n5. Berikan output dalam format JSON murni tanpa markdown (tanpa ```json). Format JSON harus tepat seperti ini:\n{\n  \"selected_topic\": \"Topik singkat dari judul terpilih\",\n  \"selected_title\": \"Judul Hook Terpilih yang Bisa Viral\",\n  \"selected_keyword\": \"keyword utama, keyword turunan 1, keyword turunan 2\",\n  \"report\": \"# Laporan Riset Hook & Keyword\\n\\n(Sajikan laporan lengkap riset Anda dalam format markdown di sini. Laporkan 5 opsi judul hook beserta keyword masing-masing, analisis kecocokan algoritma Google Search, serta alasan kuat pemilihan 1 judul terbaik untuk hari ini.)\"\n}";
+    $prompt_hook_explorer_default = "Anda adalah AI Agent Riset Hook & Keyword SEO. Tugas Anda adalah meriset dan memilih judul hook yang bisa viral serta keyword yang tepat sesuai algoritma Google Search terbaru, berdasarkan hasil riset Trend Scout berikut:\n\n{{TREND_SCOUT}}\n\nKetentuan:\n1. Target audiens: Orang tua dengan anak remaja usia 10-15 tahun, dalam konteks Islamic Parenting / Pendidikan Remaja Muslim.\n2. Riset 5 opsi judul hook viral yang memicu rasa penasaran/emosi (menggunakan formula hook seperti pengakuan, kontradiktif, pertanyaan retoris, dsb).\n3. Tentukan keyword utama & turunan yang memiliki potensi trafik tinggi dan relevan sesuai algoritma Google Search terbaru.\n4. Pilih 1 kombinasi terbaik yang paling berpotensi viral dan memiliki search intent yang kuat untuk ditulis hari ini.\n5. Berikan output dalam format JSON murni tanpa markdown (tanpa ```json). Format JSON harus tepat seperti ini:\n{\n  \"selected_topic\": \"Topik singkat dari judul terpilih\",\n  \"selected_title\": \"Judul Hook Terpilih yang Bisa Viral\",\n  \"selected_keyword\": \"keyword utama, keyword turunan 1, keyword turunan 2\",\n  \"pixabay_search_query\": \"1-3 English keywords for Pixabay image search (e.g. 'muslim teen', 'islamic family', 'stressed student' related to the topic)\",\n  \"report\": \"# Laporan Riset Hook & Keyword\\n\\n(Sajikan laporan lengkap riset Anda dalam format markdown di sini. Laporkan 5 opsi judul hook beserta keyword masing-masing, analisis kecocokan algoritma Google Search, serta alasan kuat pemilihan 1 judul terbaik untuk hari ini.)\"\n}";
     
     $prompt_hook_explorer_raw = file_exists(__DIR__ . '/prompt_hook_explorer.txt') ? file_get_contents(__DIR__ . '/prompt_hook_explorer.txt') : $prompt_hook_explorer_default;
     $prompt_hook_explorer = str_replace('{{TREND_SCOUT}}', $trend_macro, $prompt_hook_explorer_raw);
@@ -315,14 +321,16 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         $obj = json_decode($cleanJson, true);
         if ($obj && isset($obj['selected_title'])) {
             $selected_keyword = $obj['selected_keyword'] ?? '';
+            $pixabay_query = $obj['pixabay_search_query'] ?? $selected_keyword;
             $selected_image = '';
-            if (!empty($selected_keyword)) {
-                $selected_image = dapatkanGambarPixabay($selected_keyword);
+            if (!empty($pixabay_query)) {
+                $selected_image = dapatkanGambarPixabay($pixabay_query);
             }
             file_put_contents(__DIR__ . '/today_seo_task.json', json_encode([
                 'selected_topic' => $obj['selected_topic'] ?? '',
                 'selected_title' => $obj['selected_title'] ?? '',
                 'selected_keyword' => $selected_keyword,
+                'pixabay_search_query' => $obj['pixabay_search_query'] ?? '',
                 'selected_image' => $selected_image
             ], JSON_PRETTY_PRINT));
             file_put_contents(__DIR__ . '/saved_kalender.txt', $obj['report'] ?? $dataExplorer['result']);
@@ -425,21 +433,12 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
             // Opsi 2: Coba ambil langsung dari Pixabay jika today_seo_task tidak ada tapi ada keyword
             if (empty($gambar_cover) && !empty($keyword)) {
                 logAgent("Mencoba mengambil gambar cover baru dari Pixabay untuk kata kunci: '$keyword'...");
-                $gambar_cover = dapatkanGambarPixabay($keyword);
+                $pixabay_q = $seoTaskData['pixabay_search_query'] ?? $keyword;
+                $gambar_cover = dapatkanGambarPixabay($pixabay_q);
             }
             
-            // Fallback 1: Jika gagal atau Pixabay API Key kosong, gunakan gambar lokal dari uploads/
-            if (empty($gambar_cover)) {
-                logAgent("Menggunakan fallback gambar cover lokal...");
-                if (file_exists('uploads/')) {
-                    $files = glob('uploads/*.{jpg,jpeg,png,webp}', GLOB_BRACE);
-                    if (!empty($files)) {
-                        $gambar_cover = $files[array_rand($files)];
-                    }
-                }
-            }
-            
-            // Fallback 2: Jika uploads kosong, gunakan generator gambar bebas hak cipta LoremFlickr
+            // Fallback: Jika gagal atau Pixabay API Key kosong, gunakan generator gambar bebas hak cipta LoremFlickr
+            // (Kita hindari scanning folder uploads/ umum agar tidak memunculkan gambar internal yang tidak nyambung seperti struk atau toilet)
             if (empty($gambar_cover)) {
                 logAgent("Menggunakan fallback generator gambar bebas hak cipta LoremFlickr...");
                 $gambar_cover = "https://loremflickr.com/800/600/islamic,parenting";
@@ -591,7 +590,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
                 } else {
                     $res_obj = json_decode($response, true);
                     if (isset($res_obj['status']) && $res_obj['status'] == true) {
-                        logAgent("-> Pesan WA (ID: $artikel_id_kirim) berhasil terkirim ke: {$agen['nama']} ({$no_wa})!");
+                        logAgent("-> Pesan WA (ID: $artikel_id_kirim) dilesatkan ke: {$agen['nama']}.");
                     } else {
                         logAgent("-> Fonnte menolak pengiriman ke {$agen['nama']} ({$no_wa}): " . ($res_obj['reason'] ?? $response));
                     }
