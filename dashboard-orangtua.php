@@ -83,6 +83,9 @@ if ($res) while($r = $res->fetch_assoc()) $santri_list[] = $r;
                                 <a href="orangtua-rapot-diniyah.php?id=<?= $s['id'] ?>" class="text-purple-600 text-xs font-bold hover:underline">
                                     <i class="fas fa-book-quran mr-1"></i> Rapor Diniyah
                                 </a>
+                                <a href="orangtua-karir.php?id=<?= $s['id'] ?>" class="text-purple-600 text-xs font-bold hover:underline">
+                                    <i class="fas fa-route mr-1"></i> Rencana Karir & PTN (AI)
+                                </a>
                             </div>
                             <button class="text-purple-600 text-xs font-bold hover:underline">Mutaba'ah Harian</button>
                         </div>
