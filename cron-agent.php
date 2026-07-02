@@ -119,7 +119,14 @@ if ($autopilot !== 'ON' && empty($force)) {
 
 // Fungsi Komunikasi ke Otak AI Utama (Gemini)
 function mikirKeGemini($payload) {
-    global $GAS_URL;
+    global $GAS_URL, $conn;
+    
+    // Tutup koneksi database sebelum long-running cURL request
+    if (isset($conn) && $conn) {
+        @$conn->close();
+        $conn = null;
+    }
+    
     $ch = curl_init($GAS_URL);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
@@ -129,6 +136,10 @@ function mikirKeGemini($payload) {
     $response = curl_exec($ch);
     if(curl_errno($ch)) logAgent("Error koneksi ke Otak AI: " . curl_error($ch));
     curl_close($ch);
+    
+    // Buka kembali koneksi database setelah request selesai
+    pastikanKoneksiDb();
+    
     return json_decode($response, true);
 }
 
