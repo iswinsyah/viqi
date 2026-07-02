@@ -69,7 +69,47 @@ if (empty($prompt)) {
 $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
 $gasUrl = defined('GEMINI_GAS_URL') ? GEMINI_GAS_URL : '';
 
-// JIKA GAS_URL DITENTUKAN, GUNAKAN SEBAGAI TUNNEL (Mengatasi Blokir Firewall Outbound Hostinger)
+// 1. COBA KONEKSI LANGSUNG TERLEBIH DAHULU (Lebih Cepat & Handal)
+if (!empty($apiKey)) {
+    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+    
+    $payload = [
+        "contents" => [
+            [
+                "parts" => [
+                    ["text" => $prompt]
+                ]
+            ]
+        ]
+    ];
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Content-Type: application/json"
+    ]);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+    
+    // Jika koneksi langsung berhasil (HTTP 200) dan mengembalikan respon teks yang valid
+    if (!$curlError && $httpCode === 200) {
+        $result = json_decode($response, true);
+        $text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        if (!empty($text)) {
+            echo json_encode(['status' => 'success', 'result' => $text]);
+            exit;
+        }
+    }
+}
+
+// 2. FALLBACK: JIKA KONEKSI LANGSUNG GAGAL/BLOKIR, COBA TUNNELING VIA GAS (JIKA DIKONFIGURASI)
 if (!empty($gasUrl)) {
     $ch = curl_init($gasUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -78,6 +118,8 @@ if (!empty($gasUrl)) {
     // Kirim payload asli + injeksi apiKey agar diproses oleh GAS
     $payload = $input;
     $payload['apiKey'] = $apiKey;
+    // Pastikan prompt terisi di payload
+    $payload['prompt'] = $prompt;
     
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
     curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
@@ -92,71 +134,19 @@ if (!empty($gasUrl)) {
     $curlError = curl_error($ch);
     curl_close($ch);
 
-    if ($curlError) {
-        echo json_encode(['status' => 'error', 'message' => 'cURL Tunneling Error via GAS: ' . $curlError]);
+    if (!$curlError && $httpCode === 200) {
+        // Teruskan output JSON secara langsung
+        echo $response;
         exit;
     }
-    
-    // Teruskan output JSON secara langsung
-    echo $response;
-    exit;
 }
 
-// FALLBACK: KONEKSI LANGSUNG JIKA GAS URL KOSONG
-if (empty($apiKey)) {
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'API Key Gemini belum dikonfigurasi di server. Silakan buat file "config-key.php" di root direktori proyek Anda di Hostinger (sejajar dengan api-gemini.php, bukan di dalam folder yayasan2).'
-    ]);
-    exit;
-}
-
-// Panggil Gemini API secara langsung (menggunakan model gemini-2.5-flash)
-$url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
-
-$payload = [
-    "contents" => [
-        [
-            "parts" => [
-                ["text" => $prompt]
-            ]
-        ]
-    ]
-];
-
-$ch = curl_init($url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-curl_setopt($ch, CURLOPT_HTTPHEADER, [
-    "Content-Type: application/json"
+// 3. JIKA SEMUA METODE KONEKSI GAGAL
+echo json_encode([
+    'status' => 'error', 
+    'message' => 'Gagal menghubungkan ke Otak AI Gemini.' . 
+                 (isset($curlError) ? ' Error cURL Langsung: ' . $curlError : '') . 
+                 (isset($curlError_gas) ? ' Error cURL GAS: ' . $curlError_gas : '')
 ]);
-
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
-curl_close($ch);
-
-if ($curlError) {
-    echo json_encode(['status' => 'error', 'message' => 'cURL Error: ' . $curlError]);
-    exit;
-}
-
-if ($httpCode !== 200) {
-    echo json_encode(['status' => 'error', 'message' => 'Gemini API Error (HTTP ' . $httpCode . '): ' . $response]);
-    exit;
-}
-
-$result = json_decode($response, true);
-$text = $result['candidates'][0]['content']['parts'][0]['text'] ?? '';
-
-if (empty($text)) {
-    echo json_encode(['status' => 'error', 'message' => 'Respon AI kosong atau format tidak sesuai.']);
-    exit;
-}
-
-echo json_encode(['status' => 'success', 'result' => $text]);
 exit;
 ?>
