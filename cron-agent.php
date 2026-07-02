@@ -18,9 +18,9 @@ if (php_sapi_name() !== 'cli') {
     header('X-Accel-Buffering: no'); // Disable buffering for Nginx/LiteSpeed
     @ini_set('zlib.output_compression', 0);
     @ini_set('implicit_flush', 1);
-    // while (ob_get_level() > 0) {
-    //     ob_end_clean();
-    // }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
 }
 
 // Atur zona waktu ke Waktu Indonesia Barat (WIB) agar jadwal akurat
@@ -119,7 +119,7 @@ if ($autopilot !== 'ON' && empty($force)) {
 
 // Fungsi Komunikasi ke Otak AI Utama (Gemini)
 function mikirKeGemini($payload) {
-    global $GAS_URL, $conn;
+    global $conn;
     
     // Tutup koneksi database sebelum long-running cURL request
     if (isset($conn) && $conn) {
@@ -127,20 +127,110 @@ function mikirKeGemini($payload) {
         $conn = null;
     }
     
-    $ch = curl_init($GAS_URL);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 120); // Maksimal 2 menit nunggu balasan Google
-    $response = curl_exec($ch);
-    if(curl_errno($ch)) logAgent("Error koneksi ke Otak AI: " . curl_error($ch));
-    curl_close($ch);
+    $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+    $gasUrl = defined('GEMINI_GAS_URL') ? GEMINI_GAS_URL : '';
+    
+    // 1. Ekstrak prompt dari payload
+    $prompt = '';
+    $systemCommand = '';
+    $leadsData = [];
+    
+    if (isset($payload['leads']) && is_array($payload['leads'])) {
+        foreach ($payload['leads'] as $lead) {
+            if (isset($lead['jenis_lead']) && $lead['jenis_lead'] === 'SYSTEM_COMMAND') {
+                $systemCommand = $lead['sumber_info'] ?? '';
+            } else {
+                $leadsData[] = $lead;
+            }
+        }
+    }
+    
+    $prompt = $payload['prompt'] ?? $payload['sumber_info'] ?? '';
+    if (!empty($systemCommand)) {
+        $prompt = $systemCommand . "\n\n" . $prompt;
+    }
+    if (!empty($leadsData)) {
+        $prompt .= "\n\nBerikut data leads untuk dianalisis:\n" . json_encode($leadsData, JSON_PRETTY_PRINT);
+    }
+    $prompt = trim($prompt);
+    
+    $resultText = '';
+    
+    // 2. COBA KONEKSI LANGSUNG TERLEBIH DAHULU (Lebih Cepat & Handal)
+    if (!empty($apiKey)) {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+        $gemini_payload = [
+            "contents" => [
+                [
+                    "parts" => [
+                        ["text" => $prompt]
+                    ]
+                ]
+            ]
+        ];
+        
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($gemini_payload));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json"
+        ]);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+        
+        if (!$curlError && $httpCode === 200) {
+            $res_arr = json_decode($response, true);
+            $resultText = $res_arr['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        }
+    }
+    
+    // 3. FALLBACK: JIKA GAGAL/BLOKIR, COBA TUNNELING VIA GAS (JIKA DIKONFIGURASI)
+    if (empty($resultText) && !empty($gasUrl)) {
+        $ch = curl_init($gasUrl);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        
+        // Kirim payload asli + injeksi apiKey
+        $payload_gas = $payload;
+        $payload_gas['apiKey'] = $apiKey;
+        $payload_gas['prompt'] = $prompt;
+        
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload_gas));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            "Content-Type: application/json"
+        ]);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if (!$curlError && $httpCode === 200) {
+            $res_arr = json_decode($response, true);
+            $resultText = $res_arr['result'] ?? '';
+            if (empty($resultText)) {
+                $resultText = $response;
+            }
+        }
+    }
     
     // Buka kembali koneksi database setelah request selesai
     pastikanKoneksiDb();
     
-    return json_decode($response, true);
+    if (!empty($resultText)) {
+        return ['status' => 'success', 'result' => $resultText];
+    } else {
+        return ['status' => 'error', 'message' => 'Gagal mendapatkan respon dari Gemini'];
+    }
 }
 
 function dapatkanGambarPixabay($keyword) {
