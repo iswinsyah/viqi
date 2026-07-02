@@ -18,9 +18,9 @@ if (php_sapi_name() !== 'cli') {
     header('X-Accel-Buffering: no'); // Disable buffering for Nginx/LiteSpeed
     @ini_set('zlib.output_compression', 0);
     @ini_set('implicit_flush', 1);
-    while (ob_get_level() > 0) {
-        ob_end_clean();
-    }
+    // while (ob_get_level() > 0) {
+    //     ob_end_clean();
+    // }
 }
 
 // Atur zona waktu ke Waktu Indonesia Barat (WIB) agar jadwal akurat
