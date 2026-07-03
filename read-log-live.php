@@ -10,9 +10,7 @@ if (file_exists($log_file)) {
     $content = file_get_contents($log_file);
     echo "Total size: " . strlen($content) . " bytes\n";
     echo "=====================================\n";
-    $lines = explode("\n", $content);
-    $last_lines = array_slice($lines, -50);
-    echo implode("\n", $last_lines);
+    echo substr($content, -2000);
 } else {
     echo "Log file not found.";
 }
