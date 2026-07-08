@@ -23,12 +23,20 @@ $res_jurnal_exp = $conn->query("SELECT SUM(d.debit - d.kredit) as total
     WHERE a.tipe_akun = 'Beban'");
 $pengeluaran_jurnal = $res_jurnal_exp ? (double)($res_jurnal_exp->fetch_assoc()['total'] ?? 0.0) : 0.0;
 
-// 4. Hitung Gaji Ustadz Offline (Rumus: Jumlah Mapel Offline * Tarif Grade A)
-$res_mapel_offline = $conn->query("SELECT id, nama_mapel, kategori_mapel FROM master_mapel WHERE metode_belajar = 'offline'");
-$mapel_offline_count = $res_mapel_offline ? $res_mapel_offline->num_rows : 0;
+// 4. Hitung Gaji Ustadz Offline (Rumus: Total Kelas Sasaran Mapel Offline * Tarif Grade A * 4 Pekan)
+$res_mapel_offline = $conn->query("SELECT id, nama_mapel, kategori_mapel, 
+    (SELECT COUNT(kelas_id) FROM mapel_kelas_target WHERE mapel_id = master_mapel.id) as jumlah_kelas 
+    FROM master_mapel WHERE metode_belajar = 'offline'");
+
+$mapel_offline_count = 0;
+$total_kelas_offline = 0;
 $mapel_offline_list = [];
+
 if ($res_mapel_offline) {
+    $mapel_offline_count = $res_mapel_offline->num_rows;
     while ($row = $res_mapel_offline->fetch_assoc()) {
+        $kelas_count = (int)$row['jumlah_kelas'];
+        $total_kelas_offline += $kelas_count;
         $mapel_offline_list[] = $row;
     }
 }
@@ -39,7 +47,7 @@ if ($res_rate && $res_rate->num_rows > 0) {
     $rate_grade_a = (double)$res_rate->fetch_assoc()['gaji_grade_a'];
 }
 
-$cost_gaji_offline = $mapel_offline_count * $rate_grade_a * 4;
+$cost_gaji_offline = $total_kelas_offline * $rate_grade_a * 4;
 
 // 5. Total Akumulasi
 $total_pemasukan = $pemasukan_spp + $pemasukan_jurnal;
@@ -158,14 +166,14 @@ $persen_pengeluaran = $total_pemasukan > 0 ? round(($total_pengeluaran / $total_
                                 <i class="fas fa-calculator mr-1.5 text-amber-600"></i>Cost Gaji Ustadz Offline (Estimasi)
                             </h3>
                             <p class="text-[11px] text-amber-800 leading-relaxed mb-4">
-                                Dihitung dengan rumus: <strong>Jumlah mata pelajaran Offline</strong> dikalikan <strong>Tarif Gaji Grade A</strong> dikalikan <strong>4 pekan</strong> (pertemuan bulanan).
+                                Dihitung dengan rumus: <strong>Total Kelas Sasaran Mapel Offline</strong> dikalikan <strong>Tarif Gaji Grade A</strong> dikalikan <strong>4 pekan</strong> (pertemuan bulanan).
                             </p>
 
                             <!-- RINCIAN NILAI FORMULA -->
                             <div class="grid grid-cols-3 gap-2 bg-white/70 backdrop-blur-sm rounded-lg p-3.5 border border-amber-150 mb-3 text-center">
                                 <div>
-                                    <span class="text-[9px] font-bold text-gray-500 uppercase block">Mapel Offline</span>
-                                    <span class="text-sm font-black text-amber-800 block"><?= $mapel_offline_count ?> Mapel</span>
+                                    <span class="text-[9px] font-bold text-gray-500 uppercase block">Total Kelas Sasaran</span>
+                                    <span class="text-sm font-black text-amber-800 block"><?= $total_kelas_offline ?> Kelas</span>
                                 </div>
                                 <div>
                                     <span class="text-[9px] font-bold text-gray-500 uppercase block">Tarif Grade A</span>
@@ -187,13 +195,13 @@ $persen_pengeluaran = $total_pemasukan > 0 ? round(($total_pengeluaran / $total_
                             <?php if ($mapel_offline_count > 0): ?>
                                 <div class="mt-4 pt-3 border-t border-amber-200/40">
                                     <button onclick="toggleOfflineList()" class="text-[10px] font-bold text-amber-700 hover:text-amber-900 flex items-center">
-                                        <i class="fas fa-list mr-1"></i> Tampilkan Daftar Mapel Offline (<?= $mapel_offline_count ?>) <i class="fas fa-chevron-down ml-1 text-[8px]" id="arrow-list"></i>
+                                        <i class="fas fa-list mr-1"></i> Tampilkan Rincian Kelas Mapel Offline (<?= $mapel_offline_count ?>) <i class="fas fa-chevron-down ml-1 text-[8px]" id="arrow-list"></i>
                                     </button>
                                     <div id="offlineMapelList" class="hidden mt-2 space-y-1 max-h-40 overflow-y-auto pl-2">
                                         <?php foreach ($mapel_offline_list as $mo): ?>
                                             <div class="text-[11px] text-gray-600 flex justify-between items-center border-b border-gray-100 py-1">
-                                                <span><i class="fas fa-check text-[8px] text-amber-600 mr-1.5"></i><?= htmlspecialchars($mo['nama_mapel']) ?></span>
-                                                <span class="text-[9px] font-semibold bg-gray-100 px-1 py-0.5 rounded text-gray-500"><?= $mo['kategori_mapel'] ?></span>
+                                                <span><i class="fas fa-check text-[8px] text-amber-600 mr-1.5"></i><strong><?= htmlspecialchars($mo['nama_mapel']) ?></strong></span>
+                                                <span class="text-[9px] font-bold bg-amber-100 border border-amber-200 px-2 py-0.5 rounded text-amber-800"><?= (int)$mo['jumlah_kelas'] ?> Kelas</span>
                                             </div>
                                         <?php endforeach; ?>
                                     </div>
