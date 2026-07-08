@@ -7,6 +7,12 @@ require_once '../koneksi.php';
 
 $conn->query("CREATE TABLE IF NOT EXISTS akun_ustadz (id INT AUTO_INCREMENT PRIMARY KEY, nama VARCHAR(150), username VARCHAR(50) UNIQUE, password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 
+// Self-healing: Tambahkan kolom status_pegawai jika belum ada
+$res_status_col = $conn->query("SHOW COLUMNS FROM akun_ustadz LIKE 'status_pegawai'");
+if ($res_status_col && $res_status_col->num_rows == 0) {
+    $conn->query("ALTER TABLE akun_ustadz ADD COLUMN status_pegawai VARCHAR(50) DEFAULT 'Pengabdian' AFTER role");
+}
+
 if (isset($_GET['hapus_id'])) {
     $id = (int)$_GET['hapus_id'];
     $conn->query("DELETE FROM akun_ustadz WHERE id = $id");
@@ -21,16 +27,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $conn->real_escape_string($_POST['password']); // Password disimpan plain text sesuai struktur saat ini
     $roles_array = $_POST['roles'] ?? [];
     $role = implode(',', $roles_array);
+    $status_pegawai = $conn->real_escape_string($_POST['status_pegawai']);
 
     $cek = $conn->query("SELECT id FROM akun_ustadz WHERE username = '$username' AND id != $id");
     if ($cek && $cek->num_rows > 0) {
         $pesan_error = "Username '$username' sudah terpakai!";
     } else {
         if ($id > 0) {
-            $sql = "UPDATE akun_ustadz SET nama='$nama', username='$username', password='$password', role='$role' WHERE id=$id";
+            $sql = "UPDATE akun_ustadz SET nama='$nama', username='$username', password='$password', role='$role', status_pegawai='$status_pegawai' WHERE id=$id";
             $pesan_sukses = "Akun ustadz berhasil diupdate!";
         } else {
-            $sql = "INSERT INTO akun_ustadz (nama, username, password, role) VALUES ('$nama', '$username', '$password', '$role')";
+            $sql = "INSERT INTO akun_ustadz (nama, username, password, role, status_pegawai) VALUES ('$nama', '$username', '$password', '$role', '$status_pegawai')";
             $pesan_sukses = "Akun ustadz baru berhasil ditambahkan!";
         }
         $conn->query($sql);
@@ -69,10 +76,22 @@ $active_menu = 'asatidz';
                 <div class="px-6 py-4 bg-amber-50 border-b border-amber-100"><h2 class="font-bold text-amber-800"><i class="fas <?= $edit_mode ? 'fa-edit' : 'fa-user-plus' ?> mr-2"></i><?= $edit_mode ? 'Edit Akun' : 'Buat Akun Baru' ?></h2></div>
                 <form action="asatidz.php" method="POST" class="p-6">
                     <input type="hidden" name="id" value="<?= $edit_mode ? $data_edit['id'] : '' ?>">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                         <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label><input type="text" name="nama" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: Ust. Ahmad"></div>
                         <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: ahmad123"></div>
                         <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="text" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '12345678' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Kata sandi..."></div>
+                        <div class="md:col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status Pegawai</label>
+                            <select name="status_pegawai" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500">
+                                <?php
+                                $statuses = ['Pengabdian', 'Honorer', 'Pegawai Muda', 'Pegawai Utama'];
+                                foreach ($statuses as $s) {
+                                    $sel = ($edit_mode && ($data_edit['status_pegawai'] ?? 'Pengabdian') === $s) ? 'selected' : '';
+                                    echo "<option value='$s' $sel>$s</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
                         <div class="md:col-span-3">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Peran (Bisa pilih lebih dari satu)</label>
                             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 border p-4 rounded-lg bg-gray-50">
@@ -102,7 +121,16 @@ $active_menu = 'asatidz';
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Daftar Akun Terdaftar</h2></div>
                 <div class="overflow-x-auto p-4">
                     <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-white"><tr><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nama Ustadz</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Password</th><th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Peran</th><th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Aksi</th></tr></thead>
+                        <thead class="bg-white">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nama Ustadz</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Password</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Peran</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Aksi</th>
+                            </tr>
+                        </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php 
                             $res = $conn->query("SELECT * FROM akun_ustadz ORDER BY nama ASC"); 
@@ -118,10 +146,28 @@ $active_menu = 'asatidz';
                                     } else {
                                         $roles_display_html = "<span class='text-gray-400 italic'>Belum diatur</span>";
                                     }
-                                    echo "<tr class='hover:bg-gray-50'><td class='px-4 py-3 font-bold text-gray-900'>".htmlspecialchars($row['nama'])."</td><td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded text-sm font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td><td class='px-4 py-3'><span class='text-sm text-gray-500 italic'>".htmlspecialchars($row['password'])."</span></td><td class='px-4 py-3'>$roles_display_html</td><td class='px-4 py-3 text-center'><a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-3'><i class='fas fa-edit'></i></a><a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700'><i class='fas fa-trash'></i></a></td></tr>"; 
+
+                                    $status_display = htmlspecialchars($row['status_pegawai'] ?? 'Pengabdian');
+                                    $status_color = 'bg-gray-100 text-gray-800 border-gray-200';
+                                    if ($status_display === 'Pengabdian') $status_color = 'bg-blue-50 text-blue-700 border-blue-200';
+                                    if ($status_display === 'Honorer') $status_color = 'bg-amber-50 text-amber-700 border-amber-200';
+                                    if ($status_display === 'Pegawai Muda') $status_color = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                    if ($status_display === 'Pegawai Utama') $status_color = 'bg-purple-50 text-purple-700 border-purple-200';
+
+                                    echo "<tr class='hover:bg-gray-50'>
+                                        <td class='px-4 py-3 font-bold text-gray-900'>".htmlspecialchars($row['nama'])."</td>
+                                        <td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded text-sm font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td>
+                                        <td class='px-4 py-3'><span class='text-sm text-gray-500 italic'>".htmlspecialchars($row['password'])."</span></td>
+                                        <td class='px-4 py-3'>$roles_display_html</td>
+                                        <td class='px-4 py-3'><span class='inline-block px-2.5 py-0.5 rounded text-xs font-bold border $status_color'>$status_display</span></td>
+                                        <td class='px-4 py-3 text-center'>
+                                            <a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-3'><i class='fas fa-edit'></i></a>
+                                            <a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700'><i class='fas fa-trash'></i></a>
+                                        </td>
+                                    </tr>"; 
                                 } 
                             } else { 
-                                echo "<tr><td colspan='5' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
+                                echo "<tr><td colspan='6' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
                             } 
                             ?>
                         </tbody>
