@@ -37,6 +37,9 @@
             <a href="pembukuan.php" class="<?= (isset($active_menu) && $active_menu == 'pembukuan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-calculator w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'pembukuan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Pembukuan Terpusat (AI)
             </a>
+            <a href="cashflow.php" class="<?= (isset($active_menu) && $active_menu == 'cashflow') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-funnel-dollar w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'cashflow') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Cashflow Terpadu
+            </a>
             <a href="gaji-asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-chalkboard-teacher w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Asatidz
             </a>
