@@ -72,7 +72,7 @@ if ($is_admin_view) {
 }
 
 $mapel_list = [];
-$res_mapel = $conn->query("SELECT id, nama_mapel, kategori_mapel FROM master_mapel WHERE kategori_mapel IN ('Diknas', 'Diniyah') AND status_aktif = 1 ORDER BY kategori_mapel, nama_mapel ASC");
+$res_mapel = $conn->query("SELECT id, nama_mapel, kategori_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY kategori_mapel, nama_mapel ASC");
 if ($res_mapel) {
     while($row = $res_mapel->fetch_assoc()) {
         $mapel_list[$row['kategori_mapel']][] = $row;
