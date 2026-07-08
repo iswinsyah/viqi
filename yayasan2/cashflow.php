@@ -39,7 +39,7 @@ if ($res_rate && $res_rate->num_rows > 0) {
     $rate_grade_a = (double)$res_rate->fetch_assoc()['gaji_grade_a'];
 }
 
-$cost_gaji_offline = $mapel_offline_count * $rate_grade_a;
+$cost_gaji_offline = $mapel_offline_count * $rate_grade_a * 4;
 
 // 5. Total Akumulasi
 $total_pemasukan = $pemasukan_spp + $pemasukan_jurnal;
@@ -158,18 +158,22 @@ $persen_pengeluaran = $total_pemasukan > 0 ? round(($total_pengeluaran / $total_
                                 <i class="fas fa-calculator mr-1.5 text-amber-600"></i>Cost Gaji Ustadz Offline (Estimasi)
                             </h3>
                             <p class="text-[11px] text-amber-800 leading-relaxed mb-4">
-                                Dihitung dengan rumus: <strong>Jumlah mata pelajaran Offline</strong> dikalikan dengan <strong>Tarif Gaji Asatidz per pertemuan Grade A</strong>.
+                                Dihitung dengan rumus: <strong>Jumlah mata pelajaran Offline</strong> dikalikan <strong>Tarif Gaji Grade A</strong> dikalikan <strong>4 pekan</strong> (pertemuan bulanan).
                             </p>
 
                             <!-- RINCIAN NILAI FORMULA -->
-                            <div class="grid grid-cols-2 gap-4 bg-white/70 backdrop-blur-sm rounded-lg p-3.5 border border-amber-150 mb-3">
+                            <div class="grid grid-cols-3 gap-2 bg-white/70 backdrop-blur-sm rounded-lg p-3.5 border border-amber-150 mb-3 text-center">
                                 <div>
-                                    <span class="text-[10px] font-bold text-gray-500 uppercase block">Jumlah Mapel Offline</span>
-                                    <span class="text-lg font-black text-amber-800 block"><?= $mapel_offline_count ?> Mapel</span>
+                                    <span class="text-[9px] font-bold text-gray-500 uppercase block">Mapel Offline</span>
+                                    <span class="text-sm font-black text-amber-800 block"><?= $mapel_offline_count ?> Mapel</span>
                                 </div>
                                 <div>
-                                    <span class="text-[10px] font-bold text-gray-500 uppercase block">Tarif Grade A (Sesi)</span>
-                                    <span class="text-lg font-black text-amber-800 block">Rp <?= number_format($rate_grade_a, 0, ',', '.') ?></span>
+                                    <span class="text-[9px] font-bold text-gray-500 uppercase block">Tarif Grade A</span>
+                                    <span class="text-sm font-black text-amber-800 block">Rp <?= number_format($rate_grade_a, 0, ',', '.') ?></span>
+                                </div>
+                                <div>
+                                    <span class="text-[9px] font-bold text-gray-500 uppercase block">Pekan / Bulan</span>
+                                    <span class="text-sm font-black text-amber-800 block">4 Pekan</span>
                                 </div>
                             </div>
 
