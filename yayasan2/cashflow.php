@@ -23,10 +23,21 @@ $res_jurnal_exp = $conn->query("SELECT SUM(d.debit - d.kredit) as total
     WHERE a.tipe_akun = 'Beban'");
 $pengeluaran_jurnal = $res_jurnal_exp ? (double)($res_jurnal_exp->fetch_assoc()['total'] ?? 0.0) : 0.0;
 
-// 4. Hitung Gaji Ustadz Offline (Rumus: Total Kelas Sasaran Mapel Offline * Tarif Grade A * 4 Pekan)
-$res_mapel_offline = $conn->query("SELECT id, nama_mapel, kategori_mapel, 
+// 4. Hitung Gaji Ustadz Offline (Rumus: Total Kelas Sasaran Mapel Offline Non-Musyrif * Tarif Grade A * 4 Pekan)
+$sql_offline = "SELECT id, nama_mapel, kategori_mapel, 
     (SELECT COUNT(kelas_id) FROM mapel_kelas_target WHERE mapel_id = master_mapel.id) as jumlah_kelas 
-    FROM master_mapel WHERE metode_belajar = 'offline'");
+    FROM master_mapel 
+    WHERE metode_belajar = 'offline' 
+      AND id NOT IN (
+          SELECT DISTINCT m_id FROM (
+              SELECT COALESCE(mapel_1_id, 0) as m_id FROM kesediaan_mengajar k JOIN akun_ustadz u ON k.ustadz_id = u.id WHERE u.role LIKE '%musyrif%'
+              UNION
+              SELECT COALESCE(mapel_2_id, 0) as m_id FROM kesediaan_mengajar k JOIN akun_ustadz u ON k.ustadz_id = u.id WHERE u.role LIKE '%musyrif%'
+              UNION
+              SELECT COALESCE(mapel_3_id, 0) as m_id FROM kesediaan_mengajar k JOIN akun_ustadz u ON k.ustadz_id = u.id WHERE u.role LIKE '%musyrif%'
+          ) as tmp
+      )";
+$res_mapel_offline = $conn->query($sql_offline);
 
 $mapel_offline_count = 0;
 $total_kelas_offline = 0;
@@ -166,7 +177,7 @@ $persen_pengeluaran = $total_pemasukan > 0 ? round(($total_pengeluaran / $total_
                                 <i class="fas fa-calculator mr-1.5 text-amber-600"></i>Cost Gaji Ustadz Offline (Estimasi)
                             </h3>
                             <p class="text-[11px] text-amber-800 leading-relaxed mb-4">
-                                Dihitung dengan rumus: <strong>Total Kelas Sasaran Mapel Offline</strong> dikalikan <strong>Tarif Gaji Grade A</strong> dikalikan <strong>4 pekan</strong> (pertemuan bulanan).
+                                Dihitung dengan rumus: <strong>Total Kelas Sasaran Mapel Offline (selain diampu Musyrif)</strong> dikalikan <strong>Tarif Gaji Grade A</strong> dikalikan <strong>4 pekan</strong>. Mapel yang diampu oleh Musyrif dikecualikan karena sudah masuk dalam komponen gaji pokok bulanan mereka.
                             </p>
 
                             <!-- RINCIAN NILAI FORMULA -->
