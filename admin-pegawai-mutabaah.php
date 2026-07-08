@@ -69,7 +69,15 @@ if (!empty($filter_kelas)) {
 
 $where_sql = count($where_clauses) > 0 ? "WHERE " . implode(" AND ", $where_clauses) : "";
 
-$daftar_kelas_opsi = ['Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12', 'Kelas Rijal', 'Kelas Nisa'];
+$daftar_kelas_opsi = [];
+$res_kelas = $conn->query("SELECT nama_kelas FROM master_kelas ORDER BY nama_kelas ASC");
+if ($res_kelas && $res_kelas->num_rows > 0) {
+    while($row = $res_kelas->fetch_assoc()) {
+        $daftar_kelas_opsi[] = $row['nama_kelas'];
+    }
+} else {
+    $daftar_kelas_opsi = ['Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12', 'Kelas Rijal', 'Kelas Nisa'];
+}
 
 $active_menu = 'mutabaah';
 ?>
@@ -112,13 +120,18 @@ $active_menu = 'mutabaah';
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Kelas Asrama</label>
-                            <select name="kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500">
+                             <select name="kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500 bg-white">
                                 <option value="">-- Pilih Kelas --</option>
                                 <?php
                                 $kelas_tersimpan = $edit_mode ? $data_edit['kelas'] : '';
+                                $kelas_ada = false;
                                 foreach ($daftar_kelas_opsi as $nama_kelas) {
                                     $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
-                                    echo "<option value=\"$nama_kelas\" $sel>$nama_kelas</option>";
+                                    if ($sel) $kelas_ada = true;
+                                    echo "<option value=\"".htmlspecialchars($nama_kelas)."\" $sel>".htmlspecialchars($nama_kelas)."</option>";
+                                }
+                                if ($edit_mode && !$kelas_ada && !empty($kelas_tersimpan)) {
+                                    echo "<option value=\"".htmlspecialchars($kelas_tersimpan)."\" selected>".htmlspecialchars($kelas_tersimpan)." (Data Lama)</option>";
                                 }
                                 ?>
                             </select>

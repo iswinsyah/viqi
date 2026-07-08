@@ -55,6 +55,15 @@ if (isset($_GET['edit_id'])) {
 }
 
 $active_menu = 'laporan_adab';
+
+// Ambil daftar kelas dari Master Kelas (Ruang Yayasan)
+$daftar_kelas = [];
+$res_kelas = $conn->query("SELECT nama_kelas FROM master_kelas ORDER BY nama_kelas ASC");
+if ($res_kelas && $res_kelas->num_rows > 0) {
+    while($row = $res_kelas->fetch_assoc()) {
+        $daftar_kelas[] = $row['nama_kelas'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -84,7 +93,24 @@ $active_menu = 'laporan_adab';
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Kejadian</label><input type="date" name="tanggal" value="<?= $edit_mode ? $data_edit['tanggal'] : date('Y-m-d') ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500"></div>
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">Nama Santri</label><input type="text" name="nama_santri" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama_santri']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Nama santri terkait"></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label><input type="text" name="kelas" value="<?= $edit_mode ? htmlspecialchars($data_edit['kelas']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Kelas asrama"></div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Kelas</label>
+                            <select name="kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500 bg-white">
+                                <option value="">-- Pilih Kelas --</option>
+                                <?php
+                                $kelas_tersimpan = $edit_mode ? $data_edit['kelas'] : '';
+                                $kelas_ada = false;
+                                foreach ($daftar_kelas as $nama_kelas) {
+                                    $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
+                                    if ($sel) $kelas_ada = true;
+                                    echo "<option value=\"".htmlspecialchars($nama_kelas)."\" $sel>".htmlspecialchars($nama_kelas)."</option>";
+                                }
+                                if ($edit_mode && !$kelas_ada && !empty($kelas_tersimpan)) {
+                                    echo "<option value=\"".htmlspecialchars($kelas_tersimpan)."\" selected>".htmlspecialchars($kelas_tersimpan)." (Data Lama)</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Laporan</label>
                             <select name="jenis_laporan" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">

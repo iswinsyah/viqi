@@ -56,6 +56,31 @@ if (isset($_GET['edit_id'])) {
 }
 
 $active_menu = 'jurnal_mengajar';
+
+// Ambil daftar kelas dari Master Kelas (Ruang Yayasan)
+$daftar_kelas = [];
+$res_kelas = $conn->query("SELECT nama_kelas FROM master_kelas ORDER BY nama_kelas ASC");
+if ($res_kelas && $res_kelas->num_rows > 0) {
+    while($row = $res_kelas->fetch_assoc()) {
+        $daftar_kelas[] = $row['nama_kelas'];
+    }
+} else {
+    // Fallback jika kosong / tabel belum ada
+    $daftar_kelas = [
+        'Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12',
+        'Kelas A', 'Kelas B', 'Kelas C',
+        'Kelas Rijal', 'Kelas Nisa'
+    ];
+}
+
+// Ambil daftar mapel dari Master Mapel (Ruang Yayasan)
+$daftar_mapel = [];
+$res_mapel = $conn->query("SELECT nama_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
+if ($res_mapel && $res_mapel->num_rows > 0) {
+    while($row = $res_mapel->fetch_assoc()) {
+        $daftar_mapel[] = $row['nama_mapel'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -92,21 +117,16 @@ $active_menu = 'jurnal_mengajar';
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Kelas / Rombel</label>
                             <div class="flex gap-2">
-                                <select name="kelas" id="input-kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500">
+                                <select name="kelas" id="input-kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500 bg-white">
                                 <option value="">-- Pilih Kelas --</option>
                                 <?php
-                                $daftar_kelas = [
-                                    'Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12',
-                                    'Kelas A', 'Kelas B', 'Kelas C',
-                                    'Kelas Rijal', 'Kelas Nisa'
-                                ];
                                 $kelas_tersimpan = $edit_mode ? $data_edit['kelas'] : '';
                                 $ada_di_list = false;
 
                                 foreach ($daftar_kelas as $nama_kelas) {
                                     $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
                                     if ($sel) $ada_di_list = true;
-                                    echo "<option value=\"$nama_kelas\" $sel>$nama_kelas</option>";
+                                    echo "<option value=\"".htmlspecialchars($nama_kelas)."\" $sel>".htmlspecialchars($nama_kelas)."</option>";
                                 }
                                 
                                 // Jaga-jaga jika data lama diketik manual dan tidak ada di daftar kombinasi baru
@@ -122,7 +142,21 @@ $active_menu = 'jurnal_mengajar';
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
-                            <input type="text" name="mata_pelajaran" value="<?= $edit_mode ? htmlspecialchars($data_edit['mata_pelajaran']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Contoh: Fiqih Ibadah">
+                            <select name="mata_pelajaran" required class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500 bg-white">
+                                <option value="">-- Pilih Mata Pelajaran --</option>
+                                <?php
+                                $mapel_tersimpan = $edit_mode ? $data_edit['mata_pelajaran'] : '';
+                                $mapel_ada = false;
+                                foreach ($daftar_mapel as $nama_mapel) {
+                                    $sel = ($mapel_tersimpan == $nama_mapel) ? 'selected' : '';
+                                    if ($sel) $mapel_ada = true;
+                                    echo "<option value=\"".htmlspecialchars($nama_mapel)."\" $sel>".htmlspecialchars($nama_mapel)."</option>";
+                                }
+                                if ($edit_mode && !$mapel_ada && !empty($mapel_tersimpan)) {
+                                    echo "<option value=\"".htmlspecialchars($mapel_tersimpan)."\" selected>".htmlspecialchars($mapel_tersimpan)." (Data Lama)</option>";
+                                }
+                                ?>
+                            </select>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

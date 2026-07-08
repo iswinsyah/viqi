@@ -170,6 +170,15 @@ if ($res_ortu) {
 }
 
 $active_menu = 'buku_induk';
+
+// Ambil daftar kelas dari Master Kelas (Ruang Yayasan)
+$daftar_kelas = [];
+$res_kelas = $conn->query("SELECT nama_kelas FROM master_kelas ORDER BY nama_kelas ASC");
+if ($res_kelas && $res_kelas->num_rows > 0) {
+    while($row = $res_kelas->fetch_assoc()) {
+        $daftar_kelas[] = $row['nama_kelas'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -222,7 +231,24 @@ $active_menu = 'buku_induk';
                             <div><label class="text-sm font-medium">Tanggal Masuk</label><input type="date" name="tanggal_masuk" value="<?= $edit_mode ? $data_edit['tanggal_masuk'] : date('Y-m-d') ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Asal Sekolah</label><input type="text" name="asal_sekolah" value="<?= $edit_mode ? htmlspecialchars($data_edit['asal_sekolah']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Status Santri</label><select name="status_santri" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><?php $opts = ['Aktif', 'Lulus', 'Pindah', 'Dikeluarkan', 'Mengundurkan Diri']; foreach($opts as $o) { $sel = ($edit_mode && $data_edit['status_santri'] == $o) ? 'selected' : ''; echo "<option value='$o' $sel>$o</option>"; } ?></select></div>
-                            <div><label class="text-sm font-medium">Kelas Sekarang</label><input type="text" name="kelas_sekarang" value="<?= $edit_mode ? htmlspecialchars($data_edit['kelas_sekarang']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+                             <div>
+                                 <label class="text-sm font-medium">Kelas Sekarang</label>
+                                 <select name="kelas_sekarang" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white">
+                                     <option value="">-- Pilih Kelas --</option>
+                                     <?php
+                                     $kelas_tersimpan = $edit_mode ? $data_edit['kelas_sekarang'] : '';
+                                     $kelas_ada = false;
+                                     foreach ($daftar_kelas as $nama_kelas) {
+                                         $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
+                                         if ($sel) $kelas_ada = true;
+                                         echo "<option value=\"".htmlspecialchars($nama_kelas)."\" $sel>".htmlspecialchars($nama_kelas)."</option>";
+                                     }
+                                     if ($edit_mode && !$kelas_ada && !empty($kelas_tersimpan)) {
+                                         echo "<option value=\"".htmlspecialchars($kelas_tersimpan)."\" selected>".htmlspecialchars($kelas_tersimpan)." (Data Lama)</option>";
+                                     }
+                                     ?>
+                                 </select>
+                             </div>
                             <div><label class="text-sm font-medium">Kamar Asrama</label><input type="text" name="kamar_asrama" value="<?= $edit_mode ? htmlspecialchars($data_edit['kamar_asrama']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">URL Foto Santri</label><input type="text" name="foto_santri" value="<?= $edit_mode ? htmlspecialchars($data_edit['foto_santri']) : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="https://..."></div>
                         </div>

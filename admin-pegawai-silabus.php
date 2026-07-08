@@ -59,6 +59,24 @@ if (isset($_GET['edit_id'])) {
 }
 
 $active_menu = 'master_silabus';
+
+// Ambil daftar kelas dari Master Kelas (Ruang Yayasan)
+$daftar_kelas = [];
+$res_kelas = $conn->query("SELECT nama_kelas FROM master_kelas ORDER BY nama_kelas ASC");
+if ($res_kelas && $res_kelas->num_rows > 0) {
+    while($row = $res_kelas->fetch_assoc()) {
+        $daftar_kelas[] = $row['nama_kelas'];
+    }
+}
+
+// Ambil daftar mapel dari Master Mapel (Ruang Yayasan)
+$daftar_mapel = [];
+$res_mapel = $conn->query("SELECT nama_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
+if ($res_mapel && $res_mapel->num_rows > 0) {
+    while($row = $res_mapel->fetch_assoc()) {
+        $daftar_mapel[] = $row['nama_mapel'];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -88,11 +106,39 @@ $active_menu = 'master_silabus';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
-                            <input type="text" name="mata_pelajaran" value="<?= $edit_mode ? htmlspecialchars($data_edit['mata_pelajaran']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500" placeholder="Contoh: Digital Marketing, AI Terapan">
+                            <select name="mata_pelajaran" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500 bg-white">
+                                <option value="">-- Pilih Mata Pelajaran --</option>
+                                <?php
+                                $mapel_tersimpan = $edit_mode ? $data_edit['mata_pelajaran'] : '';
+                                $mapel_ada = false;
+                                foreach ($daftar_mapel as $nama_mapel) {
+                                    $sel = ($mapel_tersimpan == $nama_mapel) ? 'selected' : '';
+                                    if ($sel) $mapel_ada = true;
+                                    echo "<option value=\"".htmlspecialchars($nama_mapel)."\" $sel>".htmlspecialchars($nama_mapel)."</option>";
+                                }
+                                if ($edit_mode && !$mapel_ada && !empty($mapel_tersimpan)) {
+                                    echo "<option value=\"".htmlspecialchars($mapel_tersimpan)."\" selected>".htmlspecialchars($mapel_tersimpan)." (Data Lama)</option>";
+                                }
+                                ?>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Kelas / Jenjang</label>
-                            <input type="text" name="kelas" value="<?= $edit_mode ? htmlspecialchars($data_edit['kelas']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500" placeholder="Contoh: Kelas 11 & 12">
+                            <select name="kelas" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500 bg-white">
+                                <option value="">-- Pilih Kelas --</option>
+                                <?php
+                                $kelas_tersimpan = $edit_mode ? $data_edit['kelas'] : '';
+                                $kelas_ada = false;
+                                foreach ($daftar_kelas as $nama_kelas) {
+                                    $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
+                                    if ($sel) $kelas_ada = true;
+                                    echo "<option value=\"".htmlspecialchars($nama_kelas)."\" $sel>".htmlspecialchars($nama_kelas)."</option>";
+                                }
+                                if ($edit_mode && !$kelas_ada && !empty($kelas_tersimpan)) {
+                                    echo "<option value=\"".htmlspecialchars($kelas_tersimpan)."\" selected>".htmlspecialchars($kelas_tersimpan)." (Data Lama)</option>";
+                                }
+                                ?>
+                            </select>
                         </div>
                     </div>
                     <div class="mb-4">
