@@ -21,6 +21,11 @@ if ($res->num_rows == 0) {
     $conn->query("ALTER TABLE master_mapel ADD COLUMN status_aktif TINYINT(1) DEFAULT 1 AFTER metode_belajar");
 }
 
+$res = $conn->query("SHOW COLUMNS FROM master_mapel LIKE 'pengampu_id'");
+if ($res->num_rows == 0) {
+    $conn->query("ALTER TABLE master_mapel ADD COLUMN pengampu_id INT NULL AFTER status_aktif");
+}
+
 // Inisialisasi tabel target kelas mapel
 $conn->query("CREATE TABLE IF NOT EXISTS mapel_kelas_target (
     mapel_id INT NOT NULL,
@@ -47,6 +52,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $kategori_mapel = $conn->real_escape_string($_POST['kategori_mapel']);
     $metode_belajar = $conn->real_escape_string($_POST['metode_belajar']);
     $status_aktif = isset($_POST['status_aktif']) ? 1 : 0;
+    $pengampu_id = !empty($_POST['pengampu_id']) ? (int)$_POST['pengampu_id'] : 'NULL';
     $kelas_ids = isset($_POST['target_kelas']) && is_array($_POST['target_kelas']) ? $_POST['target_kelas'] : [];
 
     // Validasi duplikasi nama mapel saat tambah baru
@@ -57,10 +63,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $pesan_error = "Mata pelajaran '$nama_mapel' sudah terdaftar!";
     } else {
         if ($id > 0) {
-            $sql = "UPDATE master_mapel SET nama_mapel='$nama_mapel', kategori_mapel='$kategori_mapel', metode_belajar='$metode_belajar', status_aktif=$status_aktif WHERE id=$id";
+            $sql = "UPDATE master_mapel SET nama_mapel='$nama_mapel', kategori_mapel='$kategori_mapel', metode_belajar='$metode_belajar', status_aktif=$status_aktif, pengampu_id=$pengampu_id WHERE id=$id";
             $pesan_sukses = "Data mata pelajaran berhasil diupdate!";
         } else {
-            $sql = "INSERT INTO master_mapel (nama_mapel, kategori_mapel, metode_belajar, status_aktif) VALUES ('$nama_mapel', '$kategori_mapel', '$metode_belajar', $status_aktif)";
+            $sql = "INSERT INTO master_mapel (nama_mapel, kategori_mapel, metode_belajar, status_aktif, pengampu_id) VALUES ('$nama_mapel', '$kategori_mapel', '$metode_belajar', $status_aktif, $pengampu_id)";
             $pesan_sukses = "Mata pelajaran baru berhasil ditambahkan!";
         }
 
@@ -123,6 +129,15 @@ $res_kelas = $conn->query("SELECT * FROM master_kelas ORDER BY kategori_kelas, n
 if ($res_kelas) {
     while ($row = $res_kelas->fetch_assoc()) {
         $kelas_list[$row['kategori_kelas']][] = $row;
+    }
+}
+
+// Ambil list semua Asatidz untuk dropdown pengampu
+$asatidz_list = [];
+$res_asatidz = $conn->query("SELECT id, nama FROM akun_ustadz ORDER BY nama ASC");
+if ($res_asatidz) {
+    while ($row = $res_asatidz->fetch_assoc()) {
+        $asatidz_list[] = $row;
     }
 }
 
@@ -245,6 +260,18 @@ $active_menu = 'master_mapel';
                             </div>
                         </div>
 
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Pengampu / Guru</label>
+                            <select name="pengampu_id" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm">
+                                <option value="">-- Pilih Pengampu (Opsional) --</option>
+                                <?php foreach ($asatidz_list as $ast): 
+                                    $sel = ($edit_mode && ($data_edit['pengampu_id'] ?? '') == $ast['id']) ? 'selected' : '';
+                                ?>
+                                    <option value="<?= $ast['id'] ?>" <?= $sel ?>><?= htmlspecialchars($ast['nama']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
                         <!-- TOGGLE STATUS AKTIF -->
                         <div class="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
                             <input type="checkbox" id="status_aktif" name="status_aktif" value="1" <?= (!$edit_mode || (isset($data_edit['status_aktif']) && $data_edit['status_aktif'] == 1)) ? 'checked' : '' ?> class="w-4 h-4 text-amber-600 focus:ring-amber-500 border-gray-300 rounded">
@@ -314,17 +341,19 @@ $active_menu = 'master_mapel';
                                     <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Mode Belajar</th>
                                     <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Status Ajaran</th>
                                     <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Target Kelas</th>
+                                    <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Pengampu</th>
                                     <th class="px-5 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="mapelTableBody" class="divide-y divide-gray-100 text-sm">
                                 <?php
-                                $sql_list = "SELECT m.*, 
+                                $sql_list = "SELECT m.*, u.nama as nama_pengampu,
                                              (SELECT GROUP_CONCAT(k.nama_kelas ORDER BY k.nama_kelas ASC SEPARATOR ', ') 
                                               FROM mapel_kelas_target t 
                                               JOIN master_kelas k ON t.kelas_id = k.id 
                                               WHERE t.mapel_id = m.id) as target_kelas
                                              FROM master_mapel m 
+                                             LEFT JOIN akun_ustadz u ON m.pengampu_id = u.id
                                              ORDER BY m.kategori_mapel, m.nama_mapel ASC";
                                 $res_list = $conn->query($sql_list);
                                 
@@ -376,6 +405,13 @@ $active_menu = 'master_mapel';
                                                     <span class="text-xs text-gray-400 italic">Semua Kelas / Umum</span>
                                                 <?php endif; ?>
                                             </td>
+                                            <td class="px-5 py-3.5">
+                                                <?php if (!empty($row['nama_pengampu'])): ?>
+                                                    <span class="text-sm font-semibold text-gray-700"><i class="fas fa-chalkboard-teacher mr-1 text-amber-500"></i><?= htmlspecialchars($row['nama_pengampu']) ?></span>
+                                                <?php else: ?>
+                                                    <span class="text-xs text-gray-450 italic">Belum ditentukan</span>
+                                                <?php endif; ?>
+                                            </td>
                                             <td class="px-5 py-3.5 text-center">
                                                 <div class="flex items-center justify-center space-x-1.5">
                                                     <a href="master-mapel.php?edit_id=<?= $row['id'] ?>" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 p-1.5 rounded transition text-xs" title="Edit Mapel">
@@ -392,7 +428,7 @@ $active_menu = 'master_mapel';
                                 else: 
                                 ?>
                                     <tr>
-                                        <td colspan="6" class="px-6 py-12 text-center text-gray-400">
+                                        <td colspan="7" class="px-6 py-12 text-center text-gray-400">
                                             <i class="fas fa-book-open text-4xl mb-2 block text-gray-200"></i>
                                             Belum ada mata pelajaran terdaftar.
                                         </td>
