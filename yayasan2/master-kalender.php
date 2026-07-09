@@ -35,12 +35,40 @@ if ($res_ahad && $res_ahad->num_rows > 0) {
     $val_ahad = $row_ahad['tanggal'];
 }
 
-// D. Ambil semua data tanggal libur dari database
+// D. Ambil semua data tanggal libur dari database dan lakukan propagasi AHD (Ahad)
 $overrides = [];
 $res_overrides = $conn->query("SELECT tanggal, status_hari FROM kalender_akademik");
 if ($res_overrides) {
     while ($row = $res_overrides->fetch_assoc()) {
         $overrides[$row['tanggal']] = $row['status_hari'];
+    }
+}
+
+// Jika ada Ahad acuan yang sudah diset, propagasikan setiap 7 hari ke depan
+if (!empty($val_ahad)) {
+    $start_date = "2026-07-01";
+    $end_date = "2027-07-31"; // Rentang kalender akademik
+    
+    $target_ahad_ts = strtotime($val_ahad);
+    $current_ts = strtotime($start_date);
+    $end_ts = strtotime($end_date);
+    
+    while ($current_ts <= $end_ts) {
+        $date_str = date('Y-m-d', $current_ts);
+        $m_num = (int)date('m', $current_ts);
+        $d_num = (int)date('d', $current_ts);
+        $y_num = (int)date('Y', $current_ts);
+        
+        // Hanya propagasikan ke tanggal-tanggal yang valid
+        if (checkdate($m_num, $d_num, $y_num)) {
+            $diff_seconds = $current_ts - $target_ahad_ts;
+            $diff_days = round($diff_seconds / 86400);
+            
+            if ($diff_days >= 0 && $diff_days % 7 == 0) {
+                $overrides[$date_str] = 'AHD';
+            }
+        }
+        $current_ts = strtotime("+1 day", $current_ts);
     }
 }
 
@@ -67,11 +95,6 @@ $month_map = [
             width: 28px;
             height: 28px;
             border: 1px solid #d1d5db;
-        }
-        .invalid-day {
-            background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 3px, #cbd5e1 3px, #cbd5e1 6px);
-            color: transparent;
-            cursor: not-allowed;
         }
     </style>
 </head>
@@ -131,7 +154,7 @@ $month_map = [
                                     <?php for ($day = 1; $day <= 31; $day++): 
                                         if (!checkdate($month_num, $day, $year)):
                                     ?>
-                                            <td class="border border-gray-300 grid-cell invalid-day"></td>
+                                            <td class="border border-gray-300 grid-cell bg-black"></td>
                                     <?php 
                                         else:
                                             $date_str = sprintf("%04d-%02d-%02d", $year, $month_num, $day);
