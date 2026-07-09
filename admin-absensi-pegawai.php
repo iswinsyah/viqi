@@ -463,7 +463,7 @@ if ($rapat_status === 'belum_absen') {
             updateGPSStatus();
         });
 
-        // Mulai deteksi GPS saat halaman dimuat
+        // Jalankan deteksi GPS saat halaman dimuat
         updateGPSStatus();
     </script>
 </body>
