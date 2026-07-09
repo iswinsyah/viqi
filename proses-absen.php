@@ -64,37 +64,71 @@ $ustadz_id = $_SESSION['ustadz_id'];
 $qr_data_base64 = $_POST['qr_data'] ?? '';
 $user_lat = (float)($_POST['user_lat'] ?? 0);
 $user_lon = (float)($_POST['user_lon'] ?? 0);
+$req_jenis_absen = $_POST['jenis_absen'] ?? 'Harian';
 
-if (empty($qr_data_base64) || $user_lat == 0 || $user_lon == 0) {
-    json_response('error', 'Data tidak lengkap dari perangkat Anda.');
+if ($user_lat == 0 || $user_lon == 0) {
+    json_response('error', 'Koordinat lokasi Anda tidak valid atau gagal dibaca.');
 }
 
-// 1. Dekripsi data dari QR Code Statis
-$encrypted_data = base64_decode($qr_data_base64);
-$decrypted_json = openssl_decrypt($encrypted_data, 'aes-256-cbc', ENCRYPTION_KEY, 0, ENCRYPTION_IV);
-$qr_content = json_decode($decrypted_json, true);
+$qr_location_key = '';
+$qr_jenis_absen = $req_jenis_absen;
+$distance = 0;
 
-if (!$qr_content || !isset($qr_content['lokasi'])) {
-    json_response('error', 'QR Code tidak valid atau format salah.');
-}
+if (!empty($qr_data_base64)) {
+    // --- METODE HYBRID (DENGAN QR) ---
+    // 1. Dekripsi data dari QR Code Statis
+    $encrypted_data = base64_decode($qr_data_base64);
+    $decrypted_json = openssl_decrypt($encrypted_data, 'aes-256-cbc', ENCRYPTION_KEY, 0, ENCRYPTION_IV);
+    $qr_content = json_decode($decrypted_json, true);
 
-$qr_location_key = $qr_content['lokasi'];
-$qr_jenis_absen = $qr_content['jenis'] ?? 'Harian';
+    if (!$qr_content || !isset($qr_content['lokasi'])) {
+        json_response('error', 'QR Code tidak valid atau format salah.');
+    }
 
-// Cek apakah lokasi dari QR ada di konfigurasi kita
-if (!isset($locations[$qr_location_key])) {
-    json_response('error', 'Lokasi absensi dari QR Code tidak dikenali oleh sistem.');
-}
+    $qr_location_key = $qr_content['lokasi'];
+    $qr_jenis_absen = $qr_content['jenis'] ?? $req_jenis_absen;
 
-// Ambil koordinat yang benar berdasarkan data dari QR
-$qr_coords = $locations[$qr_location_key]['coords'];
-$qr_lat = $qr_coords['latitude'];
-$qr_lon = $qr_coords['longitude'];
+    // Cek apakah lokasi dari QR ada di konfigurasi kita
+    if (!isset($locations[$qr_location_key])) {
+        json_response('error', 'Lokasi absensi dari QR Code tidak dikenali oleh sistem.');
+    }
 
-// 2. Validasi Jarak Lokasi
-$distance = haversine_distance($user_lat, $user_lon, $qr_lat, $qr_lon);
-if ($distance > MAX_DISTANCE_METERS) {
-    json_response('error', 'Anda berada di luar area absensi yang diizinkan. Jarak Anda: ' . round($distance) . ' meter.');
+    // Ambil koordinat yang benar berdasarkan data dari QR
+    $qr_coords = $locations[$qr_location_key]['coords'];
+    $qr_lat = $qr_coords['latitude'];
+    $qr_lon = $qr_coords['longitude'];
+
+    // 2. Validasi Jarak Lokasi
+    $distance = haversine_distance($user_lat, $user_lon, $qr_lat, $qr_lon);
+    if ($distance > MAX_DISTANCE_METERS) {
+        json_response('error', 'Anda berada di luar area absensi yang diizinkan. Jarak Anda: ' . round($distance) . ' meter.');
+    }
+} else {
+    // --- METODE GEOLOCATION-ONLY (TANPA QR) ---
+    $closest_location_key = null;
+    $closest_distance = null;
+
+    foreach ($locations as $key => $loc) {
+        $loc_lat = $loc['coords']['latitude'];
+        $loc_lon = $loc['coords']['longitude'];
+        $dist = haversine_distance($user_lat, $user_lon, $loc_lat, $loc_lon);
+
+        if ($closest_distance === null || $dist < $closest_distance) {
+            $closest_distance = $dist;
+            $closest_location_key = $key;
+        }
+    }
+
+    if ($closest_location_key === null || $closest_distance > MAX_DISTANCE_METERS) {
+        $err_msg = 'Anda berada di luar area absensi yang diizinkan.';
+        if ($closest_location_key !== null) {
+            $err_msg .= ' Jarak terdekat Anda: ' . round($closest_distance) . ' meter dari ' . $locations[$closest_location_key]['nama'] . '.';
+        }
+        json_response('error', $err_msg);
+    }
+
+    $qr_location_key = $closest_location_key;
+    $distance = $closest_distance;
 }
 
 // 3. Tentukan Status Kehadiran (Masuk atau Pulang) berdasarkan absen hari ini
