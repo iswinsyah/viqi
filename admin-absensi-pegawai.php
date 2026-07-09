@@ -3,6 +3,61 @@ require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
 $active_menu = 'absensi_pegawai';
+
+$ustadz_id = $_SESSION['ustadz_id'];
+$today = date('Y-m-d');
+
+// Cek absensi harian hari ini
+$res_harian = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Harian' ORDER BY waktu_absen ASC");
+$harian_status = 'belum_absen';
+if ($res_harian) {
+    $num = $res_harian->num_rows;
+    if ($num >= 2) {
+        $harian_status = 'selesai';
+    } elseif ($num == 1) {
+        $harian_status = 'datang';
+    }
+}
+
+// Cek absensi rapat hari ini
+$res_rapat = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Rapat' ORDER BY waktu_absen ASC");
+$rapat_status = 'belum_absen';
+if ($res_rapat) {
+    $num = $res_rapat->num_rows;
+    if ($num >= 2) {
+        $rapat_status = 'selesai';
+    } elseif ($num == 1) {
+        $rapat_status = 'hadir';
+    }
+}
+
+// Persiapan Teks, Icon, & Class Tombol Harian
+$harian_btn_text = '';
+$harian_btn_icon = '';
+if ($harian_status === 'belum_absen') {
+    $harian_btn_text = 'Absen Datang';
+    $harian_btn_icon = 'fa-sign-in-alt';
+} elseif ($harian_status === 'datang') {
+    $harian_btn_text = 'Absen Pulang';
+    $harian_btn_icon = 'fa-sign-out-alt';
+} else {
+    $harian_btn_text = 'Absensi Harian Selesai';
+    $harian_btn_icon = 'fa-check-double';
+}
+
+// Persiapan Teks, Icon, & Class Tombol Rapat
+$rapat_btn_text = '';
+$rapat_btn_icon = '';
+if ($rapat_status === 'belum_absen') {
+    $rapat_btn_text = 'Hadir Rapat';
+    $rapat_btn_icon = 'fa-handshake';
+} elseif ($rapat_status === 'hadir') {
+    $rapat_btn_text = 'Selesai Rapat';
+    $rapat_btn_icon = 'fa-door-open';
+} else {
+    $rapat_btn_text = 'Absensi Rapat Selesai';
+    $rapat_btn_icon = 'fa-calendar-check';
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -25,65 +80,92 @@ $active_menu = 'absensi_pegawai';
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-map-marker-alt text-cyan-600 mr-2"></i>Absensi Kehadiran Pegawai</h1>
-                <p class="text-gray-500 mt-1">Catat kehadiran masuk dan pulang Anda dengan memverifikasi lokasi GPS perangkat Anda.</p>
+                <p class="text-gray-500 mt-1">Verifikasi lokasi GPS Anda untuk melakukan absensi harian maupun kehadiran rapat.</p>
             </div>
 
-            <!-- PILIHAN METODE (TAB) -->
-            <div class="flex justify-center mb-6 max-w-xl mx-auto bg-gray-200 p-1 rounded-xl">
-                <button id="tab-gps" class="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-200 bg-white text-cyan-700 shadow-sm">
-                    <i class="fas fa-location-crosshairs mr-2"></i>Geolocation (GPS)
-                </button>
-                <button id="tab-qr" class="flex-1 py-2.5 px-4 rounded-lg font-semibold text-sm transition-all duration-200 text-gray-600 hover:text-gray-900">
-                    <i class="fas fa-qrcode mr-2"></i>Scan QR Code
-                </button>
-            </div>
-
-            <!-- CONTAINER ABSENSI GEOLOCATION -->
-            <div id="gps-container" class="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-6 max-w-xl mx-auto text-center transition-all">
-                <div class="mb-6">
-                    <label for="jenis_absen" class="block text-left text-sm font-semibold text-gray-700 mb-2">Jenis Absensi / Kegiatan:</label>
-                    <div class="relative">
-                        <select id="jenis_absen" class="block w-full pl-10 pr-3 py-3 text-base border-gray-300 focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm rounded-lg bg-gray-50 border transition duration-200">
-                            <option value="Harian">Absensi Harian (Masuk / Pulang)</option>
-                            <option value="Rapat">Absensi Rapat</option>
-                        </select>
-                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                            <i class="fas fa-calendar-day text-gray-400"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tampilan Status GPS -->
-                <div id="gps-status-card" class="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6 text-sm text-gray-600 flex items-center justify-between">
+            <!-- Tampilan Status GPS (Global) -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 max-w-4xl mx-auto">
+                <div id="gps-status-card" class="bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm text-gray-600 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="flex items-center text-left">
-                        <i class="fas fa-circle-notch fa-spin text-cyan-500 text-lg mr-3" id="gps-loading-icon"></i>
-                        <i class="fas fa-location-dot text-emerald-500 text-lg mr-3 hidden" id="gps-success-icon"></i>
-                        <i class="fas fa-circle-exclamation text-rose-500 text-lg mr-3 hidden" id="gps-error-icon"></i>
+                        <i class="fas fa-circle-notch fa-spin text-cyan-500 text-2xl mr-3 flex-shrink-0" id="gps-loading-icon"></i>
+                        <i class="fas fa-location-dot text-emerald-500 text-2xl mr-3 flex-shrink-0 hidden" id="gps-success-icon"></i>
+                        <i class="fas fa-circle-exclamation text-rose-500 text-2xl mr-3 flex-shrink-0 hidden" id="gps-error-icon"></i>
                         <div>
                             <p class="font-semibold text-gray-800" id="gps-status-title">Mendeteksi Lokasi Anda...</p>
                             <p class="text-xs text-gray-500" id="gps-status-desc">Izinkan akses GPS jika diminta oleh browser.</p>
                         </div>
                     </div>
-                    <button id="btn-refresh-gps" class="text-xs font-semibold text-cyan-600 hover:text-cyan-800 bg-cyan-50 hover:bg-cyan-100 px-3 py-1.5 rounded-lg transition">
-                        <i class="fas fa-sync-alt mr-1"></i>Segarkan
+                    <button id="btn-refresh-gps" class="w-full sm:w-auto text-xs font-semibold text-cyan-600 hover:text-cyan-800 bg-cyan-50 hover:bg-cyan-100 px-4 py-2 rounded-lg transition-all duration-200">
+                        <i class="fas fa-sync-alt mr-2"></i>Segarkan Lokasi
+                    </button>
+                </div>
+            </div>
+
+            <!-- GRID DUA KARTU ABSENSI -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+                
+                <!-- KARTU 1: ABSENSI HARIAN -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg">
+                    <div>
+                        <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Harian</h2>
+                        <p class="text-sm text-gray-500 mb-6 font-medium">
+                            <?php if ($harian_status === 'belum_absen'): ?>
+                                Belum absen masuk hari ini.
+                            <?php elseif ($harian_status === 'datang'): ?>
+                                Sudah absen masuk. Klik untuk absen pulang.
+                            <?php else: ?>
+                                Selesai absen masuk dan pulang hari ini.
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    
+                    <button id="btn-absen-harian" 
+                            data-status="<?= $harian_status ?>" 
+                            data-jenis="Harian"
+                            data-active-class="<?= ($harian_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200 hover:shadow-lg active:scale-95' ?>"
+                            <?= ($harian_status === 'selesai') ? 'disabled' : '' ?>
+                            class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 cursor-not-allowed opacity-50 bg-gray-300 text-gray-500">
+                        <i class="fas <?= $harian_btn_icon ?> text-xl"></i>
+                        <span><?= $harian_btn_text ?></span>
                     </button>
                 </div>
 
-                <!-- Tombol Absen GPS -->
-                <button id="btn-absen-gps" disabled class="w-full py-4 px-6 bg-gray-300 text-gray-500 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center cursor-not-allowed">
-                    <i class="fas fa-fingerprint text-2xl mr-3"></i>
-                    <span>Catat Kehadiran Saya</span>
-                </button>
-            </div>
+                <!-- KARTU 2: ABSENSI RAPAT -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg">
+                    <div>
+                        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                            <i class="fas fa-users-rectangle"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Rapat</h2>
+                        <p class="text-sm text-gray-500 mb-6 font-medium">
+                            <?php if ($rapat_status === 'belum_absen'): ?>
+                                Belum hadir rapat hari ini.
+                            <?php elseif ($rapat_status === 'hadir'): ?>
+                                Sudah hadir rapat. Klik jika rapat telah selesai.
+                            <?php else: ?>
+                                Selesai absensi hadir dan selesai rapat hari ini.
+                            <?php endif; ?>
+                        </p>
+                    </div>
+                    
+                    <button id="btn-absen-rapat" 
+                            data-status="<?= $rapat_status ?>" 
+                            data-jenis="Rapat"
+                            data-active-class="<?= ($rapat_status === 'belum_absen') ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 hover:shadow-lg active:scale-95' : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200 hover:shadow-lg active:scale-95' ?>"
+                            <?= ($rapat_status === 'selesai') ? 'disabled' : '' ?>
+                            class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 cursor-not-allowed opacity-50 bg-gray-300 text-gray-500">
+                        <i class="fas <?= $rapat_btn_icon ?> text-xl"></i>
+                        <span><?= $rapat_btn_text ?></span>
+                    </button>
+                </div>
 
-            <!-- CONTAINER ABSENSI QR (HIDDEN BY DEFAULT) -->
-            <div id="qr-container" class="bg-white rounded-xl shadow-md border border-gray-100 p-6 mb-6 max-w-xl mx-auto hidden">
-                <p class="text-sm text-gray-500 mb-4 text-center">Arahkan kamera ke QR Code absensi resmi di lokasi gedung.</p>
-                <div id="qr-reader" class="w-full rounded-lg overflow-hidden border border-gray-200"></div>
             </div>
 
             <!-- KOTAK HASIL/STATUS UTAMA -->
-            <div id="scan-result" class="max-w-xl mx-auto mb-8 text-center">
+            <div id="scan-result" class="max-w-4xl mx-auto mb-8 text-center">
                 <!-- Status akan diisi secara dinamis -->
             </div>
         </main>
@@ -147,18 +229,32 @@ $active_menu = 'absensi_pegawai';
             `;
         }
 
-        function enableAbsenButton() {
-            const btn = document.getElementById('btn-absen-gps');
-            btn.disabled = false;
-            btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-            btn.classList.add('bg-cyan-600', 'hover:bg-cyan-700', 'text-white', 'hover:shadow-lg', 'active:scale-95');
+        function enableAbsenButtons() {
+            ['btn-absen-harian', 'btn-absen-rapat'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn && btn.getAttribute('data-status') !== 'selesai') {
+                    btn.disabled = false;
+                    btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed', 'opacity-50');
+                    const activeClasses = btn.getAttribute('data-active-class').split(' ');
+                    activeClasses.forEach(cls => {
+                        if (cls) btn.classList.add(cls);
+                    });
+                }
+            });
         }
 
-        function disableAbsenButton() {
-            const btn = document.getElementById('btn-absen-gps');
-            btn.disabled = true;
-            btn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-            btn.classList.remove('bg-cyan-600', 'hover:bg-cyan-700', 'text-white', 'hover:shadow-lg', 'active:scale-95');
+        function disableAbsenButtons() {
+            ['btn-absen-harian', 'btn-absen-rapat'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn && btn.getAttribute('data-status') !== 'selesai') {
+                    btn.disabled = true;
+                    btn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed', 'opacity-50');
+                    const activeClasses = btn.getAttribute('data-active-class').split(' ');
+                    activeClasses.forEach(cls => {
+                        if (cls) btn.classList.remove(cls);
+                    });
+                }
+            });
         }
 
         // Ambil data lokasi user
@@ -173,7 +269,7 @@ $active_menu = 'absensi_pegawai';
             loadingIcon.classList.remove('hidden');
             successIcon.classList.add('hidden');
             errorIcon.classList.add('hidden');
-            disableAbsenButton();
+            disableAbsenButtons();
 
             if (!navigator.geolocation) {
                 loadingIcon.classList.add('hidden');
@@ -209,7 +305,7 @@ $active_menu = 'absensi_pegawai';
                         title.innerText = `Terdeteksi di dekat ${closestLocation.nama}`;
                         desc.innerText = `Akurasi baik. Jarak Anda: ${Math.round(minDistance)} meter.`;
                         isLocationValid = true;
-                        enableAbsenButton();
+                        enableAbsenButtons();
                     } else {
                         errorIcon.classList.remove('hidden');
                         title.innerText = "Di Luar Jangkauan Gedung";
@@ -219,7 +315,7 @@ $active_menu = 'absensi_pegawai';
                             desc.innerText = "Jauh dari semua lokasi absensi.";
                         }
                         isLocationValid = false;
-                        disableAbsenButton();
+                        disableAbsenButtons();
                     }
                 },
                 (error) => {
@@ -237,23 +333,21 @@ $active_menu = 'absensi_pegawai';
                     }
                     desc.innerText = errMsg;
                     isLocationValid = false;
-                    disableAbsenButton();
+                    disableAbsenButtons();
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
         }
 
-        // Event listener absen GPS
-        document.getElementById('btn-absen-gps').addEventListener('click', () => {
+        // Jalankan absensi via AJAX
+        function doAbsensi(jenisAbsen) {
             if (!isLocationValid || userLatitude === null || userLongitude === null) {
                 showStatus('Lokasi Anda tidak berada di dalam wilayah absensi.', false);
                 return;
             }
-
-            const jenisAbsen = document.getElementById('jenis_absen').value;
             
-            disableAbsenButton();
-            showStatus('Mengirim data absensi...', true);
+            disableAbsenButtons();
+            showStatus(`Mengirim data absensi ${jenisAbsen === 'Harian' ? 'Harian' : 'Rapat'}...`, true);
 
             const formData = new FormData();
             formData.append('user_lat', userLatitude);
@@ -271,14 +365,23 @@ $active_menu = 'absensi_pegawai';
                     setTimeout(() => window.location.reload(), 4000);
                 } else {
                     showStatus(data.message, false);
-                    enableAbsenButton();
+                    enableAbsenButtons();
                 }
             })
             .catch(error => {
                 showStatus('Terjadi kesalahan koneksi ke server.', false);
                 console.error('Error:', error);
-                enableAbsenButton();
+                enableAbsenButtons();
             });
+        }
+
+        // Event listener click tombol absensi
+        document.getElementById('btn-absen-harian').addEventListener('click', () => {
+            doAbsensi('Harian');
+        });
+
+        document.getElementById('btn-absen-rapat').addEventListener('click', () => {
+            doAbsensi('Rapat');
         });
 
         // Event listener refresh GPS
@@ -286,104 +389,6 @@ $active_menu = 'absensi_pegawai';
             e.preventDefault();
             updateGPSStatus();
         });
-
-        // Tab Toggling
-        const tabGps = document.getElementById('tab-gps');
-        const tabQr = document.getElementById('tab-qr');
-        const gpsContainer = document.getElementById('gps-container');
-        const qrContainer = document.getElementById('qr-container');
-
-        tabGps.addEventListener('click', () => {
-            tabGps.classList.add('bg-white', 'text-cyan-700', 'shadow-sm');
-            tabGps.classList.remove('text-gray-600', 'hover:text-gray-900');
-            tabQr.classList.remove('bg-white', 'text-cyan-700', 'shadow-sm');
-            tabQr.classList.add('text-gray-600', 'hover:text-gray-900');
-
-            gpsContainer.classList.remove('hidden');
-            qrContainer.classList.add('hidden');
-            
-            if (html5QrcodeScanner) {
-                try {
-                    html5QrcodeScanner.clear();
-                } catch(e) {}
-            }
-        });
-
-        tabQr.addEventListener('click', () => {
-            tabQr.classList.add('bg-white', 'text-cyan-700', 'shadow-sm');
-            tabQr.classList.remove('text-gray-600', 'hover:text-gray-900');
-            tabGps.classList.remove('bg-white', 'text-cyan-700', 'shadow-sm');
-            tabGps.classList.add('text-gray-600', 'hover:text-gray-900');
-
-            qrContainer.classList.remove('hidden');
-            gpsContainer.classList.add('hidden');
-
-            initQrScanner();
-        });
-
-        // Scan QR Success Handler
-        function onScanSuccess(decodedText, decodedResult) {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear();
-            }
-            
-            showStatus('QR terdeteksi. Mengambil lokasi Anda dan memproses...', true);
-
-            if (!navigator.geolocation) {
-                showStatus('Geolocation tidak didukung oleh browser Anda.', false);
-                return;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const userLat = position.coords.latitude;
-                    const userLon = position.coords.longitude;
-
-                    const formData = new FormData();
-                    formData.append('qr_data', decodedText);
-                    formData.append('user_lat', userLat);
-                    formData.append('user_lon', userLon);
-
-                    fetch('proses-absen.php', {
-                        method: 'POST',
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            showStatus(`Absensi Berhasil! Waktu: ${data.waktu}. Halaman akan disegarkan.`, true);
-                            setTimeout(() => window.location.reload(), 4000);
-                        } else {
-                            showStatus(data.message, false);
-                            setTimeout(() => initQrScanner(), 3000);
-                        }
-                    })
-                    .catch(error => {
-                        showStatus('Terjadi kesalahan koneksi ke server.', false);
-                        console.error('Error:', error);
-                    });
-                },
-                () => {
-                    showStatus('Gagal mendapatkan lokasi. Pastikan GPS dan izin lokasi aktif.', false);
-                    setTimeout(() => initQrScanner(), 3000);
-                }
-            );
-        }
-
-        function onScanFailure(error) {
-            // Biarkan scanner terus memindai
-        }
-
-        function initQrScanner() {
-            if (!html5QrcodeScanner) {
-                html5QrcodeScanner = new Html5QrcodeScanner(
-                    "qr-reader", 
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    false
-                );
-            }
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        }
 
         // Mulai deteksi GPS saat halaman dimuat
         updateGPSStatus();
