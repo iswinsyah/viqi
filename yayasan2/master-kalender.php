@@ -2,13 +2,55 @@
 require_once 'auth.php';
 require_once '../koneksi.php';
 
-$active_menu = 'master_kalender';
-// Trigger deploy rerun - 1
+// A. Inisialisasi Database (Self-Healing Migrations)
+$conn->query("CREATE TABLE IF NOT EXISTS kalender_akademik (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tanggal DATE UNIQUE NOT NULL,
+    status_hari VARCHAR(10) DEFAULT 'efektif',
+    keterangan VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
 
+$active_menu = 'master_kalender';
+
+// B. Handler POST Simpan Pengaturan
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['hari_ahad_1_bulan'])) {
+    $hari_ahad = $conn->real_escape_string($_POST['hari_ahad_1_bulan']);
+    if (!empty($hari_ahad)) {
+        // Simpan ke tabel kalender_akademik dengan status 'AHD'
+        $conn->query("INSERT INTO kalender_akademik (tanggal, status_hari, keterangan) 
+                      VALUES ('$hari_ahad', 'AHD', 'Hari Ahad 1 Bulan')
+                      ON DUPLICATE KEY UPDATE status_hari = 'AHD', keterangan = 'Hari Ahad 1 Bulan'");
+    }
+    header("Location: master-kalender.php?sukses=1");
+    exit;
+}
+
+// C. Ambil data Hari Ahad 1 Bulan yang sudah tersimpan
+$res_ahad = $conn->query("SELECT tanggal FROM kalender_akademik WHERE status_hari = 'AHD' LIMIT 1");
+$val_ahad = "";
+if ($res_ahad && $res_ahad->num_rows > 0) {
+    $row_ahad = $res_ahad->fetch_assoc();
+    $val_ahad = $row_ahad['tanggal'];
+}
+
+// D. Ambil semua data tanggal libur dari database
+$overrides = [];
+$res_overrides = $conn->query("SELECT tanggal, status_hari FROM kalender_akademik");
+if ($res_overrides) {
+    while ($row = $res_overrides->fetch_assoc()) {
+        $overrides[$row['tanggal']] = $row['status_hari'];
+    }
+}
 
 $months = [
     'JULI 2026', 'AGUSTUS 2026', 'SEPTEMBER 2026', 'OKTOBER 2026', 'NOVEMBER 2026', 'DESEMBER 2026',
     'JANUARI 2027', 'FEBRUARI 2027', 'MARET 2027', 'APRIL 2027', 'MEI 2027', 'JUNI 2027', 'JULI 2027'
+];
+
+$month_map = [
+    'JULI' => 7, 'AGUSTUS' => 8, 'SEPTEMBER' => 9, 'OKTOBER' => 10, 'NOVEMBER' => 11, 'DESEMBER' => 12,
+    'JANUARI' => 1, 'FEBRUARI' => 2, 'MARET' => 3, 'APRIL' => 4, 'MEI' => 5, 'JUNI' => 6
 ];
 ?>
 <!DOCTYPE html>
@@ -24,6 +66,11 @@ $months = [
             width: 28px;
             height: 28px;
             border: 1px solid #d1d5db;
+        }
+        .invalid-day {
+            background: repeating-linear-gradient(45deg, #f1f5f9, #f1f5f9 3px, #cbd5e1 3px, #cbd5e1 6px);
+            color: transparent;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -42,6 +89,12 @@ $months = [
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-calendar-alt text-amber-500 mr-2"></i>Master Kalender Akademik</h1>
                 <p class="text-gray-500 mt-1">Format tabel kosong 33 kolom dan 15 baris (termasuk header).</p>
             </div>
+
+            <?php if (isset($_GET['sukses'])): ?>
+                <div class="bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center max-w-7xl mx-auto text-left text-sm">
+                    <i class="fas fa-check-circle mr-2"></i> Pengaturan Hari Ahad berhasil disimpan!
+                </div>
+            <?php endif; ?>
 
             <!-- CARD WIDGET UNTUK TABEL GRID -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 overflow-x-auto max-w-7xl mx-auto mb-8">
@@ -62,17 +115,37 @@ $months = [
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-200">
-                            <!-- BARIS 3 s/d 15 (13 baris bulan kosong) -->
+                            <!-- BARIS 3 s/d 15 (13 baris bulan kosong / terisi AHD) -->
                             <?php 
                             $no = 1;
                             foreach ($months as $m): 
+                                $parts = explode(' ', $m);
+                                $month_name = $parts[0];
+                                $year = (int)$parts[1];
+                                $month_num = $month_map[$month_name];
                             ?>
                                 <tr class="hover:bg-slate-50 transition">
                                     <td class="border border-gray-300 text-center font-bold bg-amber-50 text-amber-900 py-2"><?= $no++ ?></td>
                                     <td class="border border-gray-300 font-bold bg-amber-50 text-amber-900 px-3 py-2 whitespace-nowrap text-left text-xs"><?= $m ?></td>
-                                    <?php for ($day = 1; $day <= 31; $day++): ?>
-                                        <td class="border border-gray-300 grid-cell bg-white"></td>
-                                    <?php endfor; ?>
+                                    <?php for ($day = 1; $day <= 31; $day++): 
+                                        if (!checkdate($month_num, $day, $year)):
+                                    ?>
+                                            <td class="border border-gray-300 grid-cell invalid-day"></td>
+                                    <?php 
+                                        else:
+                                            $date_str = sprintf("%04d-%02d-%02d", $year, $month_num, $day);
+                                            if (isset($overrides[$date_str]) && $overrides[$date_str] === 'AHD'):
+                                    ?>
+                                                <td class="border border-gray-300 grid-cell bg-red-700 text-white font-extrabold flex items-center justify-center text-[10px]" title="Hari Ahad 1 Bulan">AHD</td>
+                                    <?php 
+                                            else:
+                                    ?>
+                                                <td class="border border-gray-300 grid-cell bg-white"></td>
+                                    <?php 
+                                            endif;
+                                        endif;
+                                    endfor; 
+                                    ?>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -86,7 +159,7 @@ $months = [
                 <form action="" method="POST" class="space-y-4">
                     <div class="max-w-md">
                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2" for="hari_ahad_1_bulan">Hari Ahad 1 Bulan</label>
-                        <input type="date" name="hari_ahad_1_bulan" id="hari_ahad_1_bulan" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white">
+                        <input type="date" name="hari_ahad_1_bulan" id="hari_ahad_1_bulan" value="<?= $val_ahad ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white">
                     </div>
                     <div class="pt-2">
                         <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2 px-6 rounded-lg text-sm shadow-md transition-all duration-200">
