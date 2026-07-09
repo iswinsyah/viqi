@@ -122,8 +122,8 @@ $warning_msg = null;
 if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
     $current_time = date('H:i');
     if ($status_kehadiran === 'Masuk') {
-        if ($current_time < '07:00' || $current_time > '13:00') {
-            json_response('error', 'Absen Kedatangan harian hanya dibuka antara pukul 07:00 s/d 13:00 WIB.');
+        if ($current_time < '06:30' || $current_time > '13:00') {
+            json_response('error', 'Absen Kedatangan harian hanya dibuka antara pukul 06:30 s/d 13:00 WIB.');
         }
         
         // Pengecekan Keterlambatan (> 07:00 WIB)
@@ -139,7 +139,12 @@ if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
             $keterangan = 'Tepat Waktu';
         }
     } elseif ($status_kehadiran === 'Pulang') {
-        // Pengecekan Pulang Lebih Awal (Absen Pulang diperbolehkan kapan saja, tetapi jika sebelum 13:00 dicatat sebagai pelanggaran)
+        // Batas akhir absen pulang adalah 14:00 WIB (60 menit setelah jam pulang kerja 13:00 WIB)
+        if ($current_time > '14:00') {
+            json_response('error', 'Absen Pulang harian hanya dibuka hingga pukul 14:00 WIB (60 menit setelah jam pulang kerja).');
+        }
+        
+        // Pengecekan Pulang Lebih Awal (Absen Pulang diperbolehkan sebelum 13:00, tetapi dicatat sebagai pelanggaran)
         if ($current_time < '13:00') {
             $work_end = strtotime(date('Y-m-d') . ' 13:00:00');
             $absen_time = time();
