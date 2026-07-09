@@ -69,6 +69,22 @@ $user_lat = (float)($_POST['user_lat'] ?? 0);
 $user_lon = (float)($_POST['user_lon'] ?? 0);
 $req_jenis_absen = $_POST['jenis_absen'] ?? 'Harian';
 
+// F. Validasi Hak Akses Role Khusus Harian
+if ($req_jenis_absen === 'Harian') {
+    $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+    $eligible_roles = ['kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
+    $is_eligible = false;
+    foreach ($user_roles as $role) {
+        if (in_array(trim($role), $eligible_roles)) {
+            $is_eligible = true;
+            break;
+        }
+    }
+    if (!$is_eligible) {
+        json_response('error', 'Anda tidak memiliki hak akses untuk melakukan Absensi Harian.');
+    }
+}
+
 if ($user_lat == 0 || $user_lon == 0) {
     json_response('error', 'Koordinat lokasi Anda tidak valid atau gagal dibaca.');
 }

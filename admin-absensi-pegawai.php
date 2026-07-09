@@ -112,12 +112,12 @@ if ($rapat_status === 'belum_absen') {
                 </div>
             </div>
 
-            <!-- GRID DUA KARTU ABSENSI -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+            <!-- GRID KARTU ABSENSI -->
+            <div class="<?= $is_eligible_harian ? 'grid grid-cols-1 md:grid-cols-2' : 'flex justify-center max-w-md' ?> gap-6 max-w-4xl mx-auto mb-8">
                 
                 <?php if ($is_eligible_harian): ?>
                     <!-- KARTU 1: ABSENSI HARIAN -->
-                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg">
+                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
                         <div>
                             <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
                                 <i class="fas fa-user-clock"></i>
@@ -143,29 +143,10 @@ if ($rapat_status === 'belum_absen') {
                             <span><?= $harian_btn_text ?></span>
                         </button>
                     </div>
-                <?php else: ?>
-                    <!-- KARTU 1: INFO ABSENSI HARIAN KHUSUS USTADZ -->
-                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg border-l-4 border-l-amber-500">
-                        <div>
-                            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
-                                <i class="fas fa-chalkboard-user"></i>
-                            </div>
-                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Harian Ustadz</h2>
-                            <p class="text-sm text-gray-600 mb-6 font-medium leading-relaxed">
-                                Absensi harian untuk pengajar/ustadz dicatat secara otomatis ketika Anda mengisi **Jurnal Mengajar** saat kelas berlangsung.
-                            </p>
-                        </div>
-                        
-                        <a href="admin-pegawai-jurnal.php" 
-                           class="w-full py-4 px-6 font-bold rounded-xl shadow-md bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-3 active:scale-95">
-                            <i class="fas fa-book-open text-xl"></i>
-                            <span>Isi Jurnal Mengajar</span>
-                        </a>
-                    </div>
                 <?php endif; ?>
 
                 <!-- KARTU 2: ABSENSI RAPAT -->
-                <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg">
+                <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
                     <div>
                         <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
                             <i class="fas fa-users-rectangle"></i>
