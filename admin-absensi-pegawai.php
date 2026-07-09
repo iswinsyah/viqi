@@ -31,6 +31,18 @@ if ($res_rapat) {
     }
 }
 
+// Cek absensi pegawai hari ini
+$res_pegawai = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' ORDER BY waktu_absen ASC");
+$pegawai_status = 'belum_absen';
+if ($res_pegawai) {
+    $num = $res_pegawai->num_rows;
+    if ($num >= 2) {
+        $pegawai_status = 'selesai';
+    } elseif ($num == 1) {
+        $pegawai_status = 'datang';
+    }
+}
+
 // Cek Otoritas Role untuk Absensi Harian
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
 $eligible_roles = ['kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
@@ -54,6 +66,20 @@ if ($harian_status === 'belum_absen') {
 } else {
     $harian_btn_text = 'Absensi Harian Selesai';
     $harian_btn_icon = 'fa-check-double';
+}
+
+// Persiapan Teks, Icon, & Class Tombol Pegawai
+$pegawai_btn_text = '';
+$pegawai_btn_icon = '';
+if ($pegawai_status === 'belum_absen') {
+    $pegawai_btn_text = 'Absensi Kedatangan';
+    $pegawai_btn_icon = 'fa-sign-in-alt';
+} elseif ($pegawai_status === 'datang') {
+    $pegawai_btn_text = 'Absensi Kepulangan';
+    $pegawai_btn_icon = 'fa-sign-out-alt';
+} else {
+    $pegawai_btn_text = 'Absensi Pegawai Selesai';
+    $pegawai_btn_icon = 'fa-check-double';
 }
 
 // Persiapan Teks, Icon, & Class Tombol Rapat
@@ -112,8 +138,8 @@ if ($rapat_status === 'belum_absen') {
                 </div>
             </div>
 
-            <!-- GRID KARTU ABSENSI -->
-            <div class="<?= $is_eligible_harian ? 'grid grid-cols-1 md:grid-cols-2' : 'flex justify-center max-w-md' ?> gap-6 max-w-4xl mx-auto mb-8">
+            <!-- GRID DUA KARTU ABSENSI -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
                 
                 <?php if ($is_eligible_harian): ?>
                     <!-- KARTU 1: ABSENSI HARIAN -->
@@ -141,6 +167,34 @@ if ($rapat_status === 'belum_absen') {
                                 class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($harian_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($harian_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95') ?>">
                             <i class="fas <?= $harian_btn_icon ?> text-xl"></i>
                             <span><?= $harian_btn_text ?></span>
+                        </button>
+                    </div>
+                <?php else: ?>
+                    <!-- KARTU 1: ABSENSI PEGAWAI -->
+                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
+                        <div>
+                            <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Pegawai</h2>
+                            <p class="text-sm text-gray-500 mb-6 font-medium">
+                                <?php if ($pegawai_status === 'belum_absen'): ?>
+                                    Belum absen masuk hari ini.
+                                <?php elseif ($pegawai_status === 'datang'): ?>
+                                    Sudah absen masuk. Klik untuk absen pulang.
+                                <?php else: ?>
+                                    Selesai absen masuk dan pulang hari ini.
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                        
+                        <button id="btn-absen-pegawai" 
+                                data-status="<?= $pegawai_status ?>" 
+                                data-jenis="Pegawai"
+                                <?= ($pegawai_status === 'selesai') ? 'disabled' : '' ?>
+                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($pegawai_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($pegawai_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95') ?>">
+                            <i class="fas <?= $pegawai_btn_icon ?> text-xl"></i>
+                            <span><?= $pegawai_btn_text ?></span>
                         </button>
                     </div>
                 <?php endif; ?>
@@ -447,6 +501,13 @@ if ($rapat_status === 'belum_absen') {
         if (btnHarian) {
             btnHarian.addEventListener('click', () => {
                 doAbsensi('Harian');
+            });
+        }
+
+        const btnPegawai = document.getElementById('btn-absen-pegawai');
+        if (btnPegawai) {
+            btnPegawai.addEventListener('click', () => {
+                doAbsensi('Pegawai');
             });
         }
 

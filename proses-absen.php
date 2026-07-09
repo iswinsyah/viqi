@@ -115,29 +115,47 @@ if ($res_check) {
     }
 }
 
-// B. Validasi Waktu Khusus Absensi Harian & Kalkulasi Kedisiplinan Kerja
+// B. Validasi Waktu Khusus Absensi Harian/Pegawai & Kalkulasi Kedisiplinan Kerja
 $keterangan = NULL;
 $warning_msg = null;
 
-if ($qr_jenis_absen === 'Harian') {
+if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
     $current_time = date('H:i');
     if ($status_kehadiran === 'Masuk') {
         if ($current_time < '07:00' || $current_time > '13:00') {
-            json_response('error', 'Absen Datang (Masuk) harian hanya dibuka antara pukul 07:00 s/d 13:00 WIB.');
+            json_response('error', 'Absen Kedatangan harian hanya dibuka antara pukul 07:00 s/d 13:00 WIB.');
         }
         
-        // Pengecekan Keterlambatan
+        // Pengecekan Keterlambatan (> 07:00 WIB)
         if ($current_time > '07:00') {
-            $keterangan = 'Terlambat';
-            $warning_msg = "Anda terdeteksi Terlambat masuk kerja (Absen dilakukan pukul " . date('H:i') . "). Keterangan ini telah dicatat di database untuk perhitungan gaji bulanan.";
+            $work_start = strtotime(date('Y-m-d') . ' 07:00:00');
+            $absen_time = time();
+            $diff_seconds = $absen_time - $work_start;
+            $diff_minutes = max(1, floor($diff_seconds / 60));
+            
+            $keterangan = "Terlambat: $diff_minutes menit";
+            $warning_msg = "Anda terdeteksi Terlambat masuk kerja selama $diff_minutes menit (Absen dilakukan pukul " . date('H:i') . "). Catatan ini telah disimpan di database.";
         } else {
             $keterangan = 'Tepat Waktu';
         }
     } elseif ($status_kehadiran === 'Pulang') {
         // Pengecekan Pulang Lebih Awal (Absen Pulang diperbolehkan kapan saja, tetapi jika sebelum 13:00 dicatat sebagai pelanggaran)
         if ($current_time < '13:00') {
-            $keterangan = 'Pulang Lebih Awal';
-            $warning_msg = "Anda terdeteksi Pulang Lebih Awal (Absen dilakukan pukul " . date('H:i') . "). Keterangan ini telah dicatat di database untuk perhitungan gaji bulanan.";
+            $work_end = strtotime(date('Y-m-d') . ' 13:00:00');
+            $absen_time = time();
+            $diff_seconds = $work_end - $absen_time;
+            $diff_minutes = max(1, floor($diff_seconds / 60));
+            
+            if ($diff_minutes >= 60) {
+                $hours = floor($diff_minutes / 60);
+                $mins = $diff_minutes % 60;
+                $time_str = "$hours jam $mins menit";
+            } else {
+                $time_str = "$diff_minutes menit";
+            }
+            
+            $keterangan = "Pulang Lebih Awal: $time_str";
+            $warning_msg = "Anda terdeteksi Pulang Awal selama $time_str sebelum jam pulang (Absen dilakukan pukul " . date('H:i') . "). Catatan ini telah disimpan di database.";
         } else {
             $keterangan = 'Tepat Waktu';
         }
