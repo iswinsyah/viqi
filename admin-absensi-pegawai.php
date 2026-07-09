@@ -31,6 +31,17 @@ if ($res_rapat) {
     }
 }
 
+// Cek Otoritas Role untuk Absensi Harian
+$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+$eligible_roles = ['kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
+$is_eligible_harian = false;
+foreach ($user_roles as $role) {
+    if (in_array(trim($role), $eligible_roles)) {
+        $is_eligible_harian = true;
+        break;
+    }
+}
+
 // Persiapan Teks, Icon, & Class Tombol Harian
 $harian_btn_text = '';
 $harian_btn_icon = '';
@@ -104,34 +115,54 @@ if ($rapat_status === 'belum_absen') {
             <!-- GRID DUA KARTU ABSENSI -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
                 
-                <!-- KARTU 1: ABSENSI HARIAN -->
-                <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg">
-                    <div>
-                        <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
-                            <i class="fas fa-user-clock"></i>
+                <?php if ($is_eligible_harian): ?>
+                    <!-- KARTU 1: ABSENSI HARIAN -->
+                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg">
+                        <div>
+                            <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                                <i class="fas fa-user-clock"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Harian</h2>
+                            <p class="text-sm text-gray-500 mb-6 font-medium">
+                                <?php if ($harian_status === 'belum_absen'): ?>
+                                    Belum absen masuk hari ini.
+                                <?php elseif ($harian_status === 'datang'): ?>
+                                    Sudah absen masuk. Klik untuk absen pulang.
+                                <?php else: ?>
+                                    Selesai absen masuk dan pulang hari ini.
+                                <?php endif; ?>
+                            </p>
                         </div>
-                        <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Harian</h2>
-                        <p class="text-sm text-gray-500 mb-6 font-medium">
-                            <?php if ($harian_status === 'belum_absen'): ?>
-                                Belum absen masuk hari ini.
-                            <?php elseif ($harian_status === 'datang'): ?>
-                                Sudah absen masuk. Klik untuk absen pulang.
-                            <?php else: ?>
-                                Selesai absen masuk dan pulang hari ini.
-                            <?php endif; ?>
-                        </p>
+                        
+                        <button id="btn-absen-harian" 
+                                data-status="<?= $harian_status ?>" 
+                                data-jenis="Harian"
+                                <?= ($harian_status === 'selesai') ? 'disabled' : '' ?>
+                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($harian_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($harian_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95') ?>">
+                            <i class="fas <?= $harian_btn_icon ?> text-xl"></i>
+                            <span><?= $harian_btn_text ?></span>
+                        </button>
                     </div>
-                    
-                    <button id="btn-absen-harian" 
-                            data-status="<?= $harian_status ?>" 
-                            data-jenis="Harian"
-                            data-active-class="<?= ($harian_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200 hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-200 hover:shadow-lg active:scale-95' ?>"
-                            <?= ($harian_status === 'selesai') ? 'disabled' : '' ?>
-                            class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 cursor-not-allowed opacity-50 bg-gray-300 text-gray-500">
-                        <i class="fas <?= $harian_btn_icon ?> text-xl"></i>
-                        <span><?= $harian_btn_text ?></span>
-                    </button>
-                </div>
+                <?php else: ?>
+                    <!-- KARTU 1: INFO ABSENSI HARIAN KHUSUS USTADZ -->
+                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg border-l-4 border-l-amber-500">
+                        <div>
+                            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                                <i class="fas fa-chalkboard-user"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Harian Ustadz</h2>
+                            <p class="text-sm text-gray-600 mb-6 font-medium leading-relaxed">
+                                Absensi harian untuk pengajar/ustadz dicatat secara otomatis ketika Anda mengisi **Jurnal Mengajar** saat kelas berlangsung.
+                            </p>
+                        </div>
+                        
+                        <a href="admin-pegawai-jurnal.php" 
+                           class="w-full py-4 px-6 font-bold rounded-xl shadow-md bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200 hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-3 active:scale-95">
+                            <i class="fas fa-book-open text-xl"></i>
+                            <span>Isi Jurnal Mengajar</span>
+                        </a>
+                    </div>
+                <?php endif; ?>
 
                 <!-- KARTU 2: ABSENSI RAPAT -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg">
@@ -154,9 +185,8 @@ if ($rapat_status === 'belum_absen') {
                     <button id="btn-absen-rapat" 
                             data-status="<?= $rapat_status ?>" 
                             data-jenis="Rapat"
-                            data-active-class="<?= ($rapat_status === 'belum_absen') ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-200 hover:shadow-lg active:scale-95' : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200 hover:shadow-lg active:scale-95' ?>"
                             <?= ($rapat_status === 'selesai') ? 'disabled' : '' ?>
-                            class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 cursor-not-allowed opacity-50 bg-gray-300 text-gray-500">
+                            class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($rapat_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($rapat_status === 'belum_absen') ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg active:scale-95' : 'bg-amber-500 hover:bg-amber-600 text-white hover:shadow-lg active:scale-95') ?>">
                         <i class="fas <?= $rapat_btn_icon ?> text-xl"></i>
                         <span><?= $rapat_btn_text ?></span>
                     </button>
@@ -167,6 +197,33 @@ if ($rapat_status === 'belum_absen') {
             <!-- KOTAK HASIL/STATUS UTAMA -->
             <div id="scan-result" class="max-w-4xl mx-auto mb-8 text-center">
                 <!-- Status akan diisi secara dinamis -->
+            </div>
+
+            <!-- Custom Alert Modal -->
+            <div id="alert-modal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div id="modal-overlay" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                    
+                    <div id="modal-card" class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full p-6">
+                        <div class="sm:flex sm:items-start">
+                            <div id="modal-icon-bg" class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+                                <i id="modal-icon" class="fas text-lg"></i>
+                            </div>
+                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                                <h3 class="text-lg leading-6 font-bold text-gray-900" id="modal-title">Judul Notifikasi</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500 leading-relaxed" id="modal-message">Isi pesan peringatan.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 sm:flex sm:flex-row-reverse">
+                            <button type="button" id="btn-close-modal" class="w-full inline-flex justify-center rounded-xl border border-transparent shadow-md px-4 py-2.5 text-base font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm transition duration-200">
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
@@ -195,7 +252,6 @@ if ($rapat_status === 'belum_absen') {
         let userLatitude = null;
         let userLongitude = null;
         let isLocationValid = false;
-        let html5QrcodeScanner = null;
 
         document.getElementById('open-sidebar-hr').addEventListener('click', () => {
             document.getElementById('sidebar-hr').classList.toggle('hidden');
@@ -214,50 +270,48 @@ if ($rapat_status === 'belum_absen') {
             return R * c;
         }
 
-        function showStatus(message, isSuccess) {
-            const resultDiv = document.getElementById('scan-result');
-            const icon = isSuccess ? 'fa-check-circle text-emerald-500' : 'fa-times-circle text-rose-500';
-            const bgColor = isSuccess ? 'bg-emerald-50' : 'bg-rose-50';
-            const borderColor = isSuccess ? 'border-emerald-200' : 'border-rose-200';
-            const textColor = isSuccess ? 'text-emerald-800' : 'text-rose-800';
+        // Tampilkan Modal Peringatan Premium
+        function showAlertModal(title, message, type = 'success') {
+            const modal = document.getElementById('alert-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalIcon = document.getElementById('modal-icon');
+            const modalIconBg = document.getElementById('modal-icon-bg');
+            const closeBtn = document.getElementById('btn-close-modal');
 
-            resultDiv.innerHTML = `
-                <div class="${bgColor} ${borderColor} ${textColor} border px-4 py-3 rounded-lg shadow-sm flex items-center justify-center">
-                    <i class="fas ${icon} mr-3 text-xl"></i>
-                    <span class="font-medium">${message}</span>
-                </div>
-            `;
+            modalTitle.innerText = title;
+            modalMessage.innerText = message;
+
+            // Reset Class
+            modalIconBg.className = "mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10 ";
+            closeBtn.className = "w-full inline-flex justify-center rounded-xl border border-transparent shadow-md px-4 py-2.5 text-base font-semibold text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm transition duration-200 ";
+
+            if (type === 'success') {
+                modalIcon.className = "fas fa-check-circle text-emerald-600 text-lg";
+                modalIconBg.classList.add("bg-emerald-100");
+                closeBtn.classList.add("bg-emerald-600", "hover:bg-emerald-700", "focus:ring-emerald-500");
+            } else if (type === 'warning') {
+                modalIcon.className = "fas fa-exclamation-triangle text-amber-600 text-lg";
+                modalIconBg.classList.add("bg-amber-100");
+                closeBtn.classList.add("bg-amber-500", "hover:bg-amber-600", "focus:ring-amber-500");
+            } else { // error / rejected
+                modalIcon.className = "fas fa-circle-xmark text-rose-600 text-lg";
+                modalIconBg.classList.add("bg-rose-100");
+                closeBtn.classList.add("bg-rose-600", "hover:bg-rose-700", "focus:ring-rose-500");
+            }
+
+            modal.classList.remove('hidden');
         }
 
-        function enableAbsenButtons() {
-            ['btn-absen-harian', 'btn-absen-rapat'].forEach(id => {
-                const btn = document.getElementById(id);
-                if (btn && btn.getAttribute('data-status') !== 'selesai') {
-                    btn.disabled = false;
-                    btn.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed', 'opacity-50');
-                    const activeClasses = btn.getAttribute('data-active-class').split(' ');
-                    activeClasses.forEach(cls => {
-                        if (cls) btn.classList.add(cls);
-                    });
-                }
-            });
-        }
+        // Tutup Modal
+        document.getElementById('btn-close-modal').addEventListener('click', () => {
+            document.getElementById('alert-modal').classList.add('hidden');
+        });
+        document.getElementById('modal-overlay').addEventListener('click', () => {
+            document.getElementById('alert-modal').classList.add('hidden');
+        });
 
-        function disableAbsenButtons() {
-            ['btn-absen-harian', 'btn-absen-rapat'].forEach(id => {
-                const btn = document.getElementById(id);
-                if (btn && btn.getAttribute('data-status') !== 'selesai') {
-                    btn.disabled = true;
-                    btn.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed', 'opacity-50');
-                    const activeClasses = btn.getAttribute('data-active-class').split(' ');
-                    activeClasses.forEach(cls => {
-                        if (cls) btn.classList.remove(cls);
-                    });
-                }
-            });
-        }
-
-        // Ambil data lokasi user
+        // Ambil data lokasi user untuk visualisasi status GPS
         function updateGPSStatus() {
             const title = document.getElementById('gps-status-title');
             const desc = document.getElementById('gps-status-desc');
@@ -269,7 +323,6 @@ if ($rapat_status === 'belum_absen') {
             loadingIcon.classList.remove('hidden');
             successIcon.classList.add('hidden');
             errorIcon.classList.add('hidden');
-            disableAbsenButtons();
 
             if (!navigator.geolocation) {
                 loadingIcon.classList.add('hidden');
@@ -305,7 +358,6 @@ if ($rapat_status === 'belum_absen') {
                         title.innerText = `Terdeteksi di dekat ${closestLocation.nama}`;
                         desc.innerText = `Akurasi baik. Jarak Anda: ${Math.round(minDistance)} meter.`;
                         isLocationValid = true;
-                        enableAbsenButtons();
                     } else {
                         errorIcon.classList.remove('hidden');
                         title.innerText = "Di Luar Jangkauan Gedung";
@@ -315,7 +367,6 @@ if ($rapat_status === 'belum_absen') {
                             desc.innerText = "Jauh dari semua lokasi absensi.";
                         }
                         isLocationValid = false;
-                        disableAbsenButtons();
                     }
                 },
                 (error) => {
@@ -333,7 +384,6 @@ if ($rapat_status === 'belum_absen') {
                     }
                     desc.innerText = errMsg;
                     isLocationValid = false;
-                    disableAbsenButtons();
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
@@ -341,13 +391,39 @@ if ($rapat_status === 'belum_absen') {
 
         // Jalankan absensi via AJAX
         function doAbsensi(jenisAbsen) {
-            if (!isLocationValid || userLatitude === null || userLongitude === null) {
-                showStatus('Lokasi Anda tidak berada di dalam wilayah absensi.', false);
+            const btnId = jenisAbsen === 'Harian' ? 'btn-absen-harian' : 'btn-absen-rapat';
+            const btn = document.getElementById(btnId);
+
+            if (userLatitude === null || userLongitude === null) {
+                // GPS belum terdeteksi, coba ambil paksa sekali lagi
+                if (navigator.geolocation) {
+                    showAlertModal('Mendeteksi GPS...', 'Sistem sedang meminta koordinat GPS perangkat Anda. Harap tunggu...', 'warning');
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            userLatitude = position.coords.latitude;
+                            userLongitude = position.coords.longitude;
+                            document.getElementById('alert-modal').classList.add('hidden'); // Tutup modal
+                            sendAbsensiRequest(jenisAbsen, btn);
+                        },
+                        (error) => {
+                            showAlertModal('Akses GPS Dibutuhkan', 'Gagal mendapatkan lokasi Anda. Pastikan GPS aktif dan izinkan akses lokasi di pengaturan browser.', 'error');
+                        },
+                        { enableHighAccuracy: true, timeout: 5000 }
+                    );
+                } else {
+                    showAlertModal('GPS Tidak Didukung', 'Browser Anda tidak mendukung deteksi lokasi.', 'error');
+                }
                 return;
             }
-            
-            disableAbsenButtons();
-            showStatus(`Mengirim data absensi ${jenisAbsen === 'Harian' ? 'Harian' : 'Rapat'}...`, true);
+
+            sendAbsensiRequest(jenisAbsen, btn);
+        }
+
+        function sendAbsensiRequest(jenisAbsen, btnElement) {
+            // Nonaktifkan tombol sementara untuk mencegah double click
+            btnElement.disabled = true;
+            const originalHTML = btnElement.innerHTML;
+            btnElement.innerHTML = `<i class="fas fa-spinner fa-spin text-xl"></i> <span>Memproses...</span>`;
 
             const formData = new FormData();
             formData.append('user_lat', userLatitude);
@@ -361,28 +437,40 @@ if ($rapat_status === 'belum_absen') {
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    showStatus(data.message + ` Waktu: ${data.waktu}. Halaman akan disegarkan...`, true);
+                    showAlertModal('Absensi Berhasil', data.message, 'success');
                     setTimeout(() => window.location.reload(), 4000);
+                } else if (data.status === 'rejected') {
+                    showAlertModal('Absensi Ditolak', data.message, 'rejected');
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalHTML;
                 } else {
-                    showStatus(data.message, false);
-                    enableAbsenButtons();
+                    showAlertModal('Gagal Absensi', data.message, 'error');
+                    btnElement.disabled = false;
+                    btnElement.innerHTML = originalHTML;
                 }
             })
             .catch(error => {
-                showStatus('Terjadi kesalahan koneksi ke server.', false);
+                showAlertModal('Kesalahan Koneksi', 'Terjadi kesalahan saat menghubungi server.', 'error');
                 console.error('Error:', error);
-                enableAbsenButtons();
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalHTML;
             });
         }
 
-        // Event listener click tombol absensi
-        document.getElementById('btn-absen-harian').addEventListener('click', () => {
-            doAbsensi('Harian');
-        });
+        // Event listener click tombol absensi (dengan check existence)
+        const btnHarian = document.getElementById('btn-absen-harian');
+        if (btnHarian) {
+            btnHarian.addEventListener('click', () => {
+                doAbsensi('Harian');
+            });
+        }
 
-        document.getElementById('btn-absen-rapat').addEventListener('click', () => {
-            doAbsensi('Rapat');
-        });
+        const btnRapat = document.getElementById('btn-absen-rapat');
+        if (btnRapat) {
+            btnRapat.addEventListener('click', () => {
+                doAbsensi('Rapat');
+            });
+        }
 
         // Event listener refresh GPS
         document.getElementById('btn-refresh-gps').addEventListener('click', (e) => {

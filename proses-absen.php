@@ -60,6 +60,8 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 }
 
 // --- PROSES VALIDASI ---
+date_default_timezone_set('Asia/Jakarta');
+
 $ustadz_id = $_SESSION['ustadz_id'];
 $qr_data_base64 = $_POST['qr_data'] ?? '';
 $user_lat = (float)($_POST['user_lat'] ?? 0);
@@ -73,10 +75,50 @@ if ($user_lat == 0 || $user_lon == 0) {
 $qr_location_key = '';
 $qr_jenis_absen = $req_jenis_absen;
 $distance = 0;
+$target_location_name = '';
 
+// A. Tentukan Status Kehadiran (Masuk atau Pulang) berdasarkan absen hari ini
+$today = date('Y-m-d');
+// Pengecekan riwayat absensi sukses untuk hari ini
+$res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = '$qr_jenis_absen' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+
+$status_kehadiran = 'Masuk';
+if ($res_check) {
+    $num_absen = $res_check->num_rows;
+    if ($num_absen >= 2) {
+        json_response('error', "Anda sudah menyelesaikan absensi Masuk dan Pulang untuk $qr_jenis_absen hari ini.");
+    } elseif ($num_absen == 1) {
+        $row = $res_check->fetch_assoc();
+        // Cek jeda waktu untuk menghindari scan ganda tanpa sengaja (misal jeda < 30 menit ditolak)
+        $waktu_terakhir = strtotime($row['waktu_absen']);
+        if (time() - $waktu_terakhir < 1800) { // 1800 detik = 30 menit
+            json_response('error', 'Absen terlalu cepat dari absen sebelumnya. Harap tunggu minimal 30 menit untuk absen Pulang.');
+        }
+        $status_kehadiran = 'Pulang';
+    }
+}
+
+// B. Validasi Waktu Khusus Absensi Harian (07:00 - 13:00 untuk Masuk, >= 13:00 untuk Pulang)
+if ($qr_jenis_absen === 'Harian') {
+    $current_time = date('H:i');
+    if ($status_kehadiran === 'Masuk') {
+        if ($current_time < '07:00' || $current_time > '13:00') {
+            json_response('error', 'Absen Datang (Masuk) harian hanya dibuka antara pukul 07:00 s/d 13:00 WIB.');
+        }
+    } elseif ($status_kehadiran === 'Pulang') {
+        if ($current_time < '13:00') {
+            json_response('error', 'Absen Pulang harian baru dibuka mulai pukul 13:00 WIB.');
+        }
+    }
+}
+
+// C. Cek apakah pegawai memiliki status perizinan aktif untuk hari ini (Bypass GPS)
+$res_izin = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND status_kehadiran = 'Izin'");
+$is_izin_approved = ($res_izin && $res_izin->num_rows > 0);
+
+// D. Cari koordinat dan jarak lokasi
 if (!empty($qr_data_base64)) {
     // --- METODE HYBRID (DENGAN QR) ---
-    // 1. Dekripsi data dari QR Code Statis
     $encrypted_data = base64_decode($qr_data_base64);
     $decrypted_json = openssl_decrypt($encrypted_data, 'aes-256-cbc', ENCRYPTION_KEY, 0, ENCRYPTION_IV);
     $qr_content = json_decode($decrypted_json, true);
@@ -88,21 +130,16 @@ if (!empty($qr_data_base64)) {
     $qr_location_key = $qr_content['lokasi'];
     $qr_jenis_absen = $qr_content['jenis'] ?? $req_jenis_absen;
 
-    // Cek apakah lokasi dari QR ada di konfigurasi kita
     if (!isset($locations[$qr_location_key])) {
         json_response('error', 'Lokasi absensi dari QR Code tidak dikenali oleh sistem.');
     }
 
-    // Ambil koordinat yang benar berdasarkan data dari QR
     $qr_coords = $locations[$qr_location_key]['coords'];
     $qr_lat = $qr_coords['latitude'];
     $qr_lon = $qr_coords['longitude'];
+    $target_location_name = $locations[$qr_location_key]['nama'];
 
-    // 2. Validasi Jarak Lokasi
     $distance = haversine_distance($user_lat, $user_lon, $qr_lat, $qr_lon);
-    if ($distance > MAX_DISTANCE_METERS) {
-        json_response('error', 'Anda berada di luar area absensi yang diizinkan. Jarak Anda: ' . round($distance) . ' meter.');
-    }
 } else {
     // --- METODE GEOLOCATION-ONLY (TANPA QR) ---
     $closest_location_key = null;
@@ -119,39 +156,36 @@ if (!empty($qr_data_base64)) {
         }
     }
 
-    if ($closest_location_key === null || $closest_distance > MAX_DISTANCE_METERS) {
-        $err_msg = 'Anda berada di luar area absensi yang diizinkan.';
-        if ($closest_location_key !== null) {
-            $err_msg .= ' Jarak terdekat Anda: ' . round($closest_distance) . ' meter dari ' . $locations[$closest_location_key]['nama'] . '.';
-        }
-        json_response('error', $err_msg);
-    }
-
-    $qr_location_key = $closest_location_key;
-    $distance = $closest_distance;
-}
-
-// 3. Tentukan Status Kehadiran (Masuk atau Pulang) berdasarkan absen hari ini
-$today = date('Y-m-d');
-$res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = '$qr_jenis_absen' ORDER BY waktu_absen ASC");
-
-$status_kehadiran = 'Masuk';
-if ($res_check) {
-    $num_absen = $res_check->num_rows;
-    if ($num_absen >= 2) {
-        json_response('error', "Anda sudah menyelesaikan absensi Masuk dan Pulang untuk $qr_jenis_absen hari ini.");
-    } elseif ($num_absen == 1) {
-        $row = $res_check->fetch_assoc();
-        // Cek jeda waktu untuk menghindari scan ganda tanpa sengaja (misal jeda < 30 menit ditolak)
-        $waktu_terakhir = strtotime($row['waktu_absen']);
-        if (time() - $waktu_terakhir < 1800) { // 1800 detik = 30 menit
-            json_response('error', 'Scan terlalu cepat dari absen sebelumnya. Harap tunggu minimal 30 menit untuk absen Pulang.');
-        }
-        $status_kehadiran = 'Pulang';
+    if ($closest_location_key !== null) {
+        $qr_location_key = $closest_location_key;
+        $distance = $closest_distance;
+        $target_location_name = $locations[$closest_location_key]['nama'];
+    } else {
+        json_response('error', 'Tidak ada koordinat gedung resmi yang terdaftar.');
     }
 }
 
-// --- JIKA SEMUA VALIDASI LOLOS, SIMPAN DATA ---
+// E. Validasi Jarak & Eksekusi Penyimpanan
+if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
+    // --- DI LUAR JANGKAUAN DAN TIDAK ADA IZIN ---
+    // Tetap catat ke database dengan status "Ditolak ([Status])"
+    $status_ditolak = 'Ditolak (' . $status_kehadiran . ')';
+    $waktu_sekarang = date('Y-m-d H:i:s');
+    $koordinat_pegawai = "$user_lat, $user_lon";
+
+    $stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai) VALUES (?, ?, ?, ?, ?)");
+    $stmt->bind_param("issss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_ditolak, $koordinat_pegawai);
+    $stmt->execute();
+    $stmt->close();
+
+    // Kirim response khusus
+    die(json_encode([
+        'status' => 'rejected',
+        'message' => 'Absensi ditolak karena Anda berada di luar jangkauan gedung. Jarak Anda: ' . round($distance) . ' meter dari ' . $target_location_name . '. Upaya ini telah dicatat sistem.'
+    ]));
+}
+
+// --- JIKA DALAM JANGKAUAN ATAU ADA IZIN, SIMPAN SUKSES ---
 $waktu_sekarang = date('Y-m-d H:i:s');
 $koordinat_pegawai = "$user_lat, $user_lon";
 
@@ -166,5 +200,4 @@ if ($stmt->execute()) {
 
 $stmt->close();
 $conn->close();
-
 ?>
