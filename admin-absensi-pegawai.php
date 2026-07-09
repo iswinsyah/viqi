@@ -437,7 +437,11 @@ if ($rapat_status === 'belum_absen') {
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    showAlertModal('Absensi Berhasil', data.message, 'success');
+                    if (data.warning_msg) {
+                        showAlertModal('Absensi Berhasil (Catatan)', data.warning_msg, 'warning');
+                    } else {
+                        showAlertModal('Absensi Berhasil', data.message, 'success');
+                    }
                     setTimeout(() => window.location.reload(), 4000);
                 } else if (data.status === 'rejected') {
                     showAlertModal('Absensi Ditolak', data.message, 'rejected');

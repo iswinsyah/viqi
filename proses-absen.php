@@ -39,6 +39,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS absensi_pegawai (
 
 // Self-healing: Tambahkan kolom status_kehadiran jika belum ada
 @$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN status_kehadiran VARCHAR(20) DEFAULT 'Masuk' AFTER jenis_absen");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN keterangan VARCHAR(100) DEFAULT NULL AFTER koordinat_pegawai");
 
 function json_response($status, $message, $data = []) {
     die(json_encode(['status' => $status, 'message' => $message] + $data));
@@ -98,16 +99,31 @@ if ($res_check) {
     }
 }
 
-// B. Validasi Waktu Khusus Absensi Harian (07:00 - 13:00 untuk Masuk, >= 13:00 untuk Pulang)
+// B. Validasi Waktu Khusus Absensi Harian & Kalkulasi Kedisiplinan Kerja
+$keterangan = NULL;
+$warning_msg = null;
+
 if ($qr_jenis_absen === 'Harian') {
     $current_time = date('H:i');
     if ($status_kehadiran === 'Masuk') {
         if ($current_time < '07:00' || $current_time > '13:00') {
             json_response('error', 'Absen Datang (Masuk) harian hanya dibuka antara pukul 07:00 s/d 13:00 WIB.');
         }
+        
+        // Pengecekan Keterlambatan
+        if ($current_time > '07:00') {
+            $keterangan = 'Terlambat';
+            $warning_msg = "Anda terdeteksi Terlambat masuk kerja (Absen dilakukan pukul " . date('H:i') . "). Keterangan ini telah dicatat di database untuk perhitungan gaji bulanan.";
+        } else {
+            $keterangan = 'Tepat Waktu';
+        }
     } elseif ($status_kehadiran === 'Pulang') {
+        // Pengecekan Pulang Lebih Awal (Absen Pulang diperbolehkan kapan saja, tetapi jika sebelum 13:00 dicatat sebagai pelanggaran)
         if ($current_time < '13:00') {
-            json_response('error', 'Absen Pulang harian baru dibuka mulai pukul 13:00 WIB.');
+            $keterangan = 'Pulang Lebih Awal';
+            $warning_msg = "Anda terdeteksi Pulang Lebih Awal (Absen dilakukan pukul " . date('H:i') . "). Keterangan ini telah dicatat di database untuk perhitungan gaji bulanan.";
+        } else {
+            $keterangan = 'Tepat Waktu';
         }
     }
 }
@@ -172,9 +188,10 @@ if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
     $status_ditolak = 'Ditolak (' . $status_kehadiran . ')';
     $waktu_sekarang = date('Y-m-d H:i:s');
     $koordinat_pegawai = "$user_lat, $user_lon";
+    $keterangan_ditolak = 'Ditolak (Di luar jangkauan)';
 
-    $stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("issss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_ditolak, $koordinat_pegawai);
+    $stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan) VALUES (?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("isssss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_ditolak, $koordinat_pegawai, $keterangan_ditolak);
     $stmt->execute();
     $stmt->close();
 
@@ -189,11 +206,15 @@ if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
 $waktu_sekarang = date('Y-m-d H:i:s');
 $koordinat_pegawai = "$user_lat, $user_lon";
 
-$stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai) VALUES (?, ?, ?, ?, ?)");
-$stmt->bind_param("issss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_kehadiran, $koordinat_pegawai);
+$stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan) VALUES (?, ?, ?, ?, ?, ?)");
+$stmt->bind_param("isssss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_kehadiran, $koordinat_pegawai, $keterangan);
 
 if ($stmt->execute()) {
-    json_response('success', "Absensi $status_kehadiran berhasil dicatat!", ['waktu' => date('H:i:s', strtotime($waktu_sekarang))]);
+    $res_data = ['waktu' => date('H:i:s', strtotime($waktu_sekarang))];
+    if ($warning_msg !== null) {
+        $res_data['warning_msg'] = $warning_msg;
+    }
+    json_response('success', "Absensi $status_kehadiran berhasil dicatat!", $res_data);
 } else {
     json_response('error', 'Gagal menyimpan data ke database: ' . $conn->error);
 }
