@@ -14,6 +14,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS kalender_akademik (
 $active_menu = 'master_kalender';
 
 // B. Handler POST Simpan Pengaturan
+// Trigger deploy rerun - 2
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['hari_ahad_1_bulan'])) {
     $hari_ahad = $conn->real_escape_string($_POST['hari_ahad_1_bulan']);
     if (!empty($hari_ahad)) {
