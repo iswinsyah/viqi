@@ -35,6 +35,9 @@
             <a href="kitab-rujukan.php" class="<?= (isset($active_menu) && $active_menu == 'kitab_rujukan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-book-open w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kitab_rujukan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Kitab Rujukan
             </a>
+            <a href="master-kalender.php" class="<?= (isset($active_menu) && $active_menu == 'master_kalender') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-calendar-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'master_kalender') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Master Kalender Akademik
+            </a>
 
             <p class="px-2 text-[10px] font-bold text-amber-300 uppercase tracking-wider mb-2 mt-6">Keuangan & SDM</p>
             <a href="pembukuan.php" class="<?= (isset($active_menu) && $active_menu == 'pembukuan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
