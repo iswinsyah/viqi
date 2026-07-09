@@ -63,6 +63,18 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 // --- PROSES VALIDASI ---
 date_default_timezone_set('Asia/Jakarta');
 
+// A. Inisialisasi Database (Self-Healing Migrations)
+$conn->query("CREATE TABLE IF NOT EXISTS jadwal_rapat (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    agenda VARCHAR(255) NOT NULL,
+    pengundang VARCHAR(50) NOT NULL,
+    waktu_mulai DATETIME NOT NULL,
+    status VARCHAR(20) DEFAULT 'aktif',
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN rapat_id INT DEFAULT NULL AFTER jenis_absen");
+
 $ustadz_id = $_SESSION['ustadz_id'];
 $qr_data_base64 = $_POST['qr_data'] ?? '';
 $user_lat = (float)($_POST['user_lat'] ?? 0);
@@ -70,8 +82,8 @@ $user_lon = (float)($_POST['user_lon'] ?? 0);
 $req_jenis_absen = $_POST['jenis_absen'] ?? 'Harian';
 
 // F. Validasi Hak Akses Role Khusus Harian/Pegawai
+$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
 if ($req_jenis_absen === 'Harian' || $req_jenis_absen === 'Pegawai') {
-    $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
     $eligible_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
     $is_eligible = false;
     foreach ($user_roles as $role) {
@@ -85,6 +97,50 @@ if ($req_jenis_absen === 'Harian' || $req_jenis_absen === 'Pegawai') {
     }
 }
 
+// G. Validasi Hak Akses & Status Rapat untuk Absensi Rapat
+$rapat_id = NULL;
+if ($req_jenis_absen === 'Rapat') {
+    $rapat_id = (int)($_POST['rapat_id'] ?? 0);
+    if ($rapat_id <= 0) {
+        json_response('error', 'ID Rapat tidak valid.');
+    }
+    
+    // Verifikasi rapat aktif
+    $res_rpt = $conn->query("SELECT * FROM jadwal_rapat WHERE id = $rapat_id AND status = 'aktif' LIMIT 1");
+    if (!$res_rpt || $res_rpt->num_rows == 0) {
+        json_response('error', 'Rapat tidak aktif atau telah diselesaikan.');
+    }
+    $rapat = $res_rpt->fetch_assoc();
+    $pengundang = $rapat['pengundang'];
+    
+    $is_invited = false;
+    if ($pengundang === 'kepala_sekolah') {
+        $is_admin_sekolah = in_array('admin_sekolah', $user_roles);
+        $is_ustadz = in_array('ustadz', $user_roles);
+        $is_ustadz_diknas = false;
+        if ($is_ustadz) {
+            $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
+            $is_ustadz_diknas = ($check_diknas && $check_diknas->num_rows > 0);
+        }
+        $is_invited = ($is_admin_sekolah || $is_ustadz_diknas || in_array('super_admin', $user_roles));
+    } elseif ($pengundang === 'kepala_mahad') {
+        $is_musyrif = in_array('musyrif', $user_roles);
+        $is_ustadz = in_array('ustadz', $user_roles);
+        $is_ustadz_diniyah = false;
+        if ($is_ustadz) {
+            $check_diniyah = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
+            $is_ustadz_diniyah = ($check_diniyah && $check_diniyah->num_rows > 0);
+        }
+        $is_invited = ($is_musyrif || $is_ustadz_diniyah || in_array('super_admin', $user_roles));
+    } elseif ($pengundang === 'ketua_yayasan') {
+        $is_invited = true;
+    }
+    
+    if (!$is_invited) {
+        json_response('error', 'Anda tidak terdaftar sebagai peserta wajib untuk rapat ini.');
+    }
+}
+
 if ($user_lat == 0 || $user_lon == 0) {
     json_response('error', 'Koordinat lokasi Anda tidak valid atau gagal dibaca.');
 }
@@ -94,16 +150,19 @@ $qr_jenis_absen = $req_jenis_absen;
 $distance = 0;
 $target_location_name = '';
 
-// A. Tentukan Status Kehadiran (Masuk atau Pulang) berdasarkan absen hari ini
+// A. Tentukan Status Kehadiran (Masuk atau Pulang) berdasarkan absen hari ini / rapat_id
 $today = date('Y-m-d');
-// Pengecekan riwayat absensi sukses untuk hari ini
-$res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = '$qr_jenis_absen' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+if ($qr_jenis_absen === 'Rapat') {
+    $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND jenis_absen = 'Rapat' AND rapat_id = $rapat_id AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+} else {
+    $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = '$qr_jenis_absen' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+}
 
 $status_kehadiran = 'Masuk';
 if ($res_check) {
     $num_absen = $res_check->num_rows;
     if ($num_absen >= 2) {
-        json_response('error', "Anda sudah menyelesaikan absensi Masuk dan Pulang untuk $qr_jenis_absen hari ini.");
+        json_response('error', "Anda sudah menyelesaikan absensi Masuk dan Pulang untuk " . ($qr_jenis_absen === 'Rapat' ? 'rapat ini' : $qr_jenis_absen) . ".");
     } elseif ($num_absen == 1) {
         $row = $res_check->fetch_assoc();
         // Cek jeda waktu untuk menghindari scan ganda tanpa sengaja (misal jeda < 30 menit ditolak)
@@ -229,8 +288,8 @@ if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
     $koordinat_pegawai = "$user_lat, $user_lon";
     $keterangan_ditolak = 'Ditolak (Di luar jangkauan)';
 
-    $stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("isssss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_ditolak, $koordinat_pegawai, $keterangan_ditolak);
+    $stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan, rapat_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("isssssi", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_ditolak, $koordinat_pegawai, $keterangan_ditolak, $rapat_id);
     $stmt->execute();
     $stmt->close();
 
@@ -245,8 +304,8 @@ if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
 $waktu_sekarang = date('Y-m-d H:i:s');
 $koordinat_pegawai = "$user_lat, $user_lon";
 
-$stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan) VALUES (?, ?, ?, ?, ?, ?)");
-$stmt->bind_param("isssss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_kehadiran, $koordinat_pegawai, $keterangan);
+$stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan, rapat_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+$stmt->bind_param("isssssi", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_kehadiran, $koordinat_pegawai, $keterangan, $rapat_id);
 
 if ($stmt->execute()) {
     $res_data = ['waktu' => date('H:i:s', strtotime($waktu_sekarang))];

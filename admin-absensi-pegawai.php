@@ -2,24 +2,57 @@
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
-$active_menu = 'absensi_pegawai';
+// A. Inisialisasi Database (Self-Healing Migrations)
+$conn->query("CREATE TABLE IF NOT EXISTS jadwal_rapat (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    agenda VARCHAR(255) NOT NULL,
+    pengundang VARCHAR(50) NOT NULL,
+    waktu_mulai DATETIME NOT NULL,
+    status VARCHAR(20) DEFAULT 'aktif',
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN rapat_id INT DEFAULT NULL AFTER jenis_absen");
 
+$active_menu = 'absensi_pegawai';
 $ustadz_id = $_SESSION['ustadz_id'];
 $today = date('Y-m-d');
+$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
 
-// Cek absensi rapat hari ini
-$res_rapat = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Rapat' ORDER BY waktu_absen ASC");
-$rapat_status = 'belum_absen';
-if ($res_rapat) {
-    $num = $res_rapat->num_rows;
-    if ($num >= 2) {
-        $rapat_status = 'selesai';
-    } elseif ($num == 1) {
-        $rapat_status = 'hadir';
+// B. Handler Pembuatan Rapat Baru oleh Kepala Sekolah, Kepala Ma'had, atau Super Admin
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === 'buat_rapat') {
+    $agenda = $conn->real_escape_string($_POST['agenda']);
+    $waktu_rapat = $conn->real_escape_string($_POST['waktu_rapat']);
+    $pengundang = $conn->real_escape_string($_POST['pengundang']);
+    
+    $is_authorized = false;
+    if ($pengundang === 'kepala_sekolah' && in_array('kepala_sekolah', $user_roles)) $is_authorized = true;
+    if ($pengundang === 'kepala_mahad' && in_array('kepala_mahad', $user_roles)) $is_authorized = true;
+    if ($pengundang === 'ketua_yayasan' && in_array('super_admin', $user_roles)) $is_authorized = true;
+    if (in_array('super_admin', $user_roles)) $is_authorized = true; // Super Admin can do anything
+
+    if ($is_authorized) {
+        $conn->query("INSERT INTO jadwal_rapat (agenda, pengundang, waktu_mulai, status, created_by) VALUES ('$agenda', '$pengundang', '$waktu_rapat', 'aktif', $ustadz_id)");
+        header("Location: admin-absensi-pegawai.php?sukses_rapat=1");
+        exit;
+    } else {
+        header("Location: admin-absensi-pegawai.php?gagal_rapat=1");
+        exit;
     }
 }
 
-// Cek absensi pegawai hari ini
+// C. Handler Selesaikan Rapat
+if (isset($_GET['selesaikan_rapat_id'])) {
+    $r_id = (int)$_GET['selesaikan_rapat_id'];
+    $check_r = $conn->query("SELECT created_by FROM jadwal_rapat WHERE id = $r_id")->fetch_assoc();
+    if ($check_r && ($check_r['created_by'] == $ustadz_id || in_array('super_admin', $user_roles))) {
+        $conn->query("UPDATE jadwal_rapat SET status = 'selesai' WHERE id = $r_id");
+        header("Location: admin-absensi-pegawai.php?sukses_rapat=2");
+        exit;
+    }
+}
+
+// D. Cek absensi pegawai (harian kerja) hari ini
 $res_pegawai = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' ORDER BY waktu_absen ASC");
 $pegawai_status = 'belum_absen';
 if ($res_pegawai) {
@@ -31,8 +64,7 @@ if ($res_pegawai) {
     }
 }
 
-// Cek Otoritas Role untuk Absensi Pegawai (Harian)
-$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+// E. Cek Otoritas Role untuk Absensi Pegawai (Harian)
 $eligible_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
 $is_eligible_pegawai = false;
 foreach ($user_roles as $role) {
@@ -42,7 +74,7 @@ foreach ($user_roles as $role) {
     }
 }
 
-// Persiapan Teks, Icon, & Class Tombol Pegawai
+// F. Persiapan Teks, Icon, & Class Tombol Pegawai
 $pegawai_btn_text = '';
 $pegawai_btn_icon = '';
 if ($pegawai_status === 'belum_absen') {
@@ -56,18 +88,65 @@ if ($pegawai_status === 'belum_absen') {
     $pegawai_btn_icon = 'fa-check-double';
 }
 
-// Persiapan Teks, Icon, & Class Tombol Rapat
-$rapat_btn_text = '';
-$rapat_btn_icon = '';
-if ($rapat_status === 'belum_absen') {
-    $rapat_btn_text = 'Hadir Rapat';
-    $rapat_btn_icon = 'fa-handshake';
-} elseif ($rapat_status === 'hadir') {
-    $rapat_btn_text = 'Selesai Rapat';
-    $rapat_btn_icon = 'fa-door-open';
-} else {
-    $rapat_btn_text = 'Absensi Rapat Selesai';
-    $rapat_btn_icon = 'fa-calendar-check';
+// G. Pengecekan Rapat Aktif & Pengecekan Hak Undang/Peserta Wajib
+$res_rapat_aktif = $conn->query("SELECT * FROM jadwal_rapat WHERE status = 'aktif' ORDER BY waktu_mulai DESC LIMIT 1");
+$rapat_aktif = ($res_rapat_aktif && $res_rapat_aktif->num_rows > 0) ? $res_rapat_aktif->fetch_assoc() : null;
+
+$is_invited_rapat = false;
+$rapat_status = 'tidak_ada';
+$rapat_btn_text = 'Hadir Rapat';
+$rapat_btn_icon = 'fa-handshake';
+
+if ($rapat_aktif) {
+    $rapat_id = $rapat_aktif['id'];
+    $pengundang = $rapat_aktif['pengundang'];
+    
+    // Tentukan kelompok peserta wajib
+    if ($pengundang === 'kepala_sekolah') {
+        $is_admin_sekolah = in_array('admin_sekolah', $user_roles);
+        $is_ustadz = in_array('ustadz', $user_roles);
+        $is_ustadz_diknas = false;
+        if ($is_ustadz) {
+            $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
+            $is_ustadz_diknas = ($check_diknas && $check_diknas->num_rows > 0);
+        }
+        $is_invited_rapat = ($is_admin_sekolah || $is_ustadz_diknas || in_array('super_admin', $user_roles));
+    } elseif ($pengundang === 'kepala_mahad') {
+        $is_musyrif = in_array('musyrif', $user_roles);
+        $is_ustadz = in_array('ustadz', $user_roles);
+        $is_ustadz_diniyah = false;
+        if ($is_ustadz) {
+            $check_diniyah = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
+            $is_ustadz_diniyah = ($check_diniyah && $check_diniyah->num_rows > 0);
+        }
+        $is_invited_rapat = ($is_musyrif || $is_ustadz_diniyah || in_array('super_admin', $user_roles));
+    } elseif ($pengundang === 'ketua_yayasan') {
+        $is_invited_rapat = true; // Siapa saja boleh
+    }
+    
+    if ($is_invited_rapat) {
+        $res_check_rapat = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND jenis_absen = 'Rapat' AND rapat_id = $rapat_id ORDER BY waktu_absen ASC");
+        $rapat_status = 'belum_absen';
+        if ($res_check_rapat) {
+            $num = $res_check_rapat->num_rows;
+            if ($num >= 2) {
+                $rapat_status = 'selesai';
+            } elseif ($num == 1) {
+                $rapat_status = 'hadir';
+            }
+        }
+        
+        if ($rapat_status === 'belum_absen') {
+            $rapat_btn_text = 'Hadir Rapat';
+            $rapat_btn_icon = 'fa-handshake';
+        } elseif ($rapat_status === 'hadir') {
+            $rapat_btn_text = 'Selesai Rapat';
+            $rapat_btn_icon = 'fa-door-open';
+        } else {
+            $rapat_btn_text = 'Absensi Rapat Selesai';
+            $rapat_btn_icon = 'fa-calendar-check';
+        }
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -93,6 +172,23 @@ if ($rapat_status === 'belum_absen') {
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-map-marker-alt text-cyan-600 mr-2"></i>Absensi Kehadiran Pegawai</h1>
                 <p class="text-gray-500 mt-1">Verifikasi lokasi GPS Anda untuk melakukan absensi harian maupun kehadiran rapat.</p>
             </div>
+
+            <?php if (isset($_GET['sukses_rapat']) && $_GET['sukses_rapat'] == 1): ?>
+                <div class="bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm max-w-4xl mx-auto flex items-center">
+                    <i class="fas fa-check-circle mr-2 text-lg flex-shrink-0"></i> 
+                    <span>Jadwal rapat baru berhasil dipublikasikan!</span>
+                </div>
+            <?php elseif (isset($_GET['sukses_rapat']) && $_GET['sukses_rapat'] == 2): ?>
+                <div class="bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm max-w-4xl mx-auto flex items-center">
+                    <i class="fas fa-check-circle mr-2 text-lg flex-shrink-0"></i> 
+                    <span>Rapat berhasil diselesaikan dan dinonaktifkan!</span>
+                </div>
+            <?php elseif (isset($_GET['gagal_rapat'])): ?>
+                <div class="bg-rose-100 text-rose-700 px-4 py-3 rounded-lg mb-6 shadow-sm max-w-4xl mx-auto flex items-center">
+                    <i class="fas fa-circle-exclamation mr-2 text-lg flex-shrink-0"></i> 
+                    <span>Gagal: Anda tidak memiliki wewenang untuk membuat rapat dengan pengundang tersebut.</span>
+                </div>
+            <?php endif; ?>
 
             <!-- Tampilan Status GPS (Global) -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 max-w-4xl mx-auto">
@@ -152,28 +248,157 @@ if ($rapat_status === 'belum_absen') {
                             <i class="fas fa-users-rectangle"></i>
                         </div>
                         <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Rapat</h2>
-                        <p class="text-sm text-gray-500 mb-6 font-medium">
-                            <?php if ($rapat_status === 'belum_absen'): ?>
-                                Belum hadir rapat hari ini.
-                            <?php elseif ($rapat_status === 'hadir'): ?>
-                                Sudah hadir rapat. Klik jika rapat telah selesai.
-                            <?php else: ?>
-                                Selesai absensi hadir dan selesai rapat hari ini.
-                            <?php endif; ?>
-                        </p>
-                    </div>
-                    
-                    <button id="btn-absen-rapat" 
-                            data-status="<?= $rapat_status ?>" 
-                            data-jenis="Rapat"
-                            <?= ($rapat_status === 'selesai') ? 'disabled' : '' ?>
-                            class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($rapat_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($rapat_status === 'belum_absen') ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg active:scale-95' : 'bg-amber-500 hover:bg-amber-600 text-white hover:shadow-lg active:scale-95') ?>">
-                        <i class="fas <?= $rapat_btn_icon ?> text-xl"></i>
-                        <span><?= $rapat_btn_text ?></span>
-                    </button>
+                        
+                        <?php if (!$rapat_aktif): ?>
+                            <p class="text-sm text-gray-400 mb-6 font-medium leading-relaxed">
+                                Tidak ada jadwal rapat aktif saat ini.
+                            </p>
+                            </div> <!-- Close text div -->
+                            <button disabled class="w-full py-4 px-6 font-bold rounded-xl shadow-md bg-gray-200 text-gray-450 cursor-not-allowed flex items-center justify-center gap-3">
+                                <i class="fas fa-calendar-xmark text-xl"></i>
+                                <span>Rapat Tidak Tersedia</span>
+                            </button>
+                        <?php elseif (!$is_invited_rapat): ?>
+                            <div class="text-xs text-gray-500 mb-6 font-semibold text-left bg-slate-50 border border-slate-100 rounded-lg p-3 leading-relaxed">
+                                <span class="block font-bold text-indigo-800 mb-1"><i class="fas fa-circle-info mr-1"></i> Rapat Aktif: <?= htmlspecialchars($rapat_aktif['agenda']) ?></span>
+                                Anda tidak terdaftar sebagai peserta wajib untuk rapat ini.
+                            </div>
+                            </div> <!-- Close text div -->
+                            <button disabled class="w-full py-4 px-6 font-bold rounded-xl shadow-md bg-gray-200 text-gray-450 cursor-not-allowed flex items-center justify-center gap-3">
+                                <i class="fas fa-user-slash text-xl"></i>
+                                <span>Tidak Diundang</span>
+                            </button>
+                        <?php else: ?>
+                            <?php
+                            $lbl_peng = '';
+                            if ($rapat_aktif['pengundang'] === 'kepala_sekolah') $lbl_peng = 'Kepala Sekolah';
+                            elseif ($rapat_aktif['pengundang'] === 'kepala_mahad') $lbl_peng = "Kepala Ma'had";
+                            else $lbl_peng = 'Ketua Yayasan';
+                            ?>
+                            <div class="text-left bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-6 text-xs text-indigo-900">
+                                <p class="font-bold text-sm text-indigo-950 mb-1"><i class="fas fa-bullhorn mr-1"></i> <?= htmlspecialchars($rapat_aktif['agenda']) ?></p>
+                                <p class="mb-1"><span class="font-semibold text-indigo-700">Pengundang:</span> <?= $lbl_peng ?></p>
+                                <p><span class="font-semibold text-indigo-700">Waktu Mulai:</span> <?= date('H:i', strtotime($rapat_aktif['waktu_mulai'])) ?> WIB</p>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-6 font-medium">
+                                <?php if ($rapat_status === 'belum_absen'): ?>
+                                    Belum absen hadir rapat.
+                                <?php elseif ($rapat_status === 'hadir'): ?>
+                                    Sudah absen hadir. Klik jika rapat selesai.
+                                <?php else: ?>
+                                    Selesai absensi hadir dan pulang rapat.
+                                <?php endif; ?>
+                            </p>
+                            </div> <!-- Close text div -->
+                            
+                            <button id="btn-absen-rapat" 
+                                    data-status="<?= $rapat_status ?>" 
+                                    data-jenis="Rapat"
+                                    data-rapat-id="<?= $rapat_aktif['id'] ?>"
+                                    <?= ($rapat_status === 'selesai') ? 'disabled' : '' ?>
+                                    class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($rapat_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($rapat_status === 'belum_absen') ? 'bg-indigo-600 hover:bg-indigo-700 text-white hover:shadow-lg active:scale-95' : 'bg-amber-500 hover:bg-amber-600 text-white hover:shadow-lg active:scale-95') ?>">
+                                <i class="fas <?= $rapat_btn_icon ?> text-xl"></i>
+                                <span><?= $rapat_btn_text ?></span>
+                            </button>
+                        <?php endif; ?>
                 </div>
 
             </div>
+
+            <?php if (in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                <!-- PANEL MANAJEMEN RAPAT -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-4xl mx-auto mb-8 text-left">
+                    <div class="border-b border-gray-100 pb-3 mb-6">
+                        <h2 class="text-lg font-bold text-gray-800"><i class="fas fa-calendar-plus text-indigo-600 mr-2"></i>Panel Pembuatan Jadwal Rapat</h2>
+                        <p class="text-xs text-gray-500 mt-1">Gunakan panel ini untuk menjadwalkan rapat dan menentukan target peserta wajib.</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Form Buat Rapat -->
+                        <div class="md:col-span-1 border-r border-gray-100 pr-0 md:pr-6">
+                            <h3 class="text-sm font-bold text-gray-700 mb-4">Buat Rapat Baru</h3>
+                            <form action="admin-absensi-pegawai.php" method="POST" class="space-y-4">
+                                <input type="hidden" name="action" value="buat_rapat">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Agenda / Nama Rapat</label>
+                                    <input type="text" name="agenda" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500" placeholder="Contoh: Rapat Kurikulum">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Pengundang / Penyelenggara</label>
+                                    <select name="pengundang" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                        <?php if (in_array('kepala_sekolah', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                                            <option value="kepala_sekolah">Kepala Sekolah (Wajib: Admin & Ustadz Diknas)</option>
+                                        <?php endif; ?>
+                                        <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                                            <option value="kepala_mahad">Kepala Ma'had (Wajib: Musyrif & Ustadz Diniyah)</option>
+                                        <?php endif; ?>
+                                        <?php if (in_array('super_admin', $user_roles)): ?>
+                                            <option value="ketua_yayasan">Ketua Yayasan (Wajib: Semua Pegawai)</option>
+                                        <?php endif; ?>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Waktu Mulai</label>
+                                    <input type="datetime-local" name="waktu_rapat" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-md transition-all duration-200">
+                                    <i class="fas fa-save mr-1"></i> Publikasikan Rapat
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Daftar Rapat Aktif -->
+                        <div class="md:col-span-2">
+                            <h3 class="text-sm font-bold text-gray-700 mb-4">Rapat Aktif Saat Ini</h3>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-100 text-xs">
+                                    <thead>
+                                        <tr class="bg-gray-50 text-gray-500">
+                                            <th class="px-3 py-2 text-left font-bold">Agenda</th>
+                                            <th class="px-3 py-2 text-left font-bold">Penyelenggara</th>
+                                            <th class="px-3 py-2 text-left font-bold">Waktu Mulai</th>
+                                            <th class="px-3 py-2 text-center font-bold">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <?php
+                                        $res_active = $conn->query("SELECT * FROM jadwal_rapat WHERE status = 'aktif' ORDER BY waktu_mulai ASC");
+                                        if ($res_active && $res_active->num_rows > 0):
+                                            while ($r = $res_active->fetch_assoc()):
+                                                $lbl_role = '';
+                                                if ($r['pengundang'] === 'kepala_sekolah') $lbl_role = 'Kepala Sekolah';
+                                                elseif ($r['pengundang'] === 'kepala_mahad') $lbl_role = "Kepala Ma'had";
+                                                else $lbl_role = 'Ketua Yayasan';
+                                        ?>
+                                                <tr>
+                                                    <td class="px-3 py-2 font-semibold text-gray-800"><?= htmlspecialchars($r['agenda']) ?></td>
+                                                    <td class="px-3 py-2 text-gray-500"><?= $lbl_role ?></td>
+                                                    <td class="px-3 py-2 text-gray-500"><?= date('d M Y H:i', strtotime($r['waktu_mulai'])) ?> WIB</td>
+                                                    <td class="px-3 py-2 text-center">
+                                                        <?php if ($r['created_by'] == $ustadz_id || in_array('super_admin', $user_roles)): ?>
+                                                            <a href="admin-absensi-pegawai.php?selesaikan_rapat_id=<?= $r['id'] ?>" class="bg-rose-50 hover:bg-rose-100 text-rose-600 px-2.5 py-1 rounded-md font-bold transition duration-150" onclick="return confirm('Selesaikan rapat ini? Pegawai tidak akan bisa absen rapat ini lagi.')">
+                                                                Selesaikan
+                                                            </a>
+                                                        <?php else: ?>
+                                                            <span class="text-gray-400">-</span>
+                                                        <?php endif; ?>
+                                                    </td>
+                                                </tr>
+                                        <?php
+                                            endwhile;
+                                        else:
+                                        ?>
+                                            <tr>
+                                                <td colspan="4" class="px-3 py-4 text-center text-gray-400">Tidak ada rapat aktif saat ini.</td>
+                                            </tr>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <!-- KOTAK HASIL/STATUS UTAMA -->
             <div id="scan-result" class="max-w-4xl mx-auto mb-8 text-center">
@@ -372,7 +597,7 @@ if ($rapat_status === 'belum_absen') {
 
         // Jalankan absensi via AJAX
         function doAbsensi(jenisAbsen) {
-            const btnId = jenisAbsen === 'Harian' ? 'btn-absen-harian' : 'btn-absen-rapat';
+            const btnId = jenisAbsen === 'Pegawai' ? 'btn-absen-pegawai' : 'btn-absen-rapat';
             const btn = document.getElementById(btnId);
 
             if (userLatitude === null || userLongitude === null) {
@@ -410,6 +635,13 @@ if ($rapat_status === 'belum_absen') {
             formData.append('user_lat', userLatitude);
             formData.append('user_lon', userLongitude);
             formData.append('jenis_absen', jenisAbsen);
+            
+            if (jenisAbsen === 'Rapat') {
+                const rId = btnElement.getAttribute('data-rapat-id');
+                if (rId) {
+                    formData.append('rapat_id', rId);
+                }
+            }
 
             fetch('proses-absen.php', {
                 method: 'POST',
