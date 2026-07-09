@@ -210,13 +210,13 @@ ksort($list_holiday_large);
 // Mapping gaya warna status hari
 $status_colors = [
     'efektif' => 'bg-white text-gray-800 border-gray-250',
-    'LHB' => 'bg-red-650 text-white border-red-700 font-extrabold',
-    'LU' => 'bg-red-650 text-white border-red-700 font-extrabold',
+    'LHB' => 'bg-red-600 text-white border-red-700 font-extrabold',
+    'LU' => 'bg-red-600 text-white border-red-700 font-extrabold',
     'LS1' => 'bg-cyan-500 text-white border-cyan-600 font-extrabold',
     'LS2' => 'bg-cyan-500 text-white border-cyan-600 font-extrabold',
     'CB' => 'bg-slate-400 text-white border-slate-500 font-extrabold',
-    'KPP' => 'bg-amber-450 text-white border-amber-500 font-extrabold',
-    'LHR' => 'bg-rose-450 text-white border-rose-500 font-extrabold',
+    'KPP' => 'bg-amber-500 text-white border-amber-600 font-extrabold',
+    'LHR' => 'bg-rose-500 text-white border-rose-600 font-extrabold',
     'KTS' => 'bg-emerald-500 text-white border-emerald-600 font-extrabold',
     'KE' => 'bg-blue-500 text-white border-blue-600 font-extrabold'
 ];
