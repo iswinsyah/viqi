@@ -79,6 +79,22 @@ $months = [
                     </table>
                 </div>
             </div>
+
+            <!-- FORM PENGATURAN KALENDER AKADEMIK -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-7xl mx-auto mb-8 text-left">
+                <h3 class="font-bold text-gray-800 text-base mb-4"><i class="fas fa-cog text-amber-500 mr-2"></i>Form Pengaturan Kalender Akademik</h3>
+                <form action="" method="POST" class="space-y-4">
+                    <div class="max-w-md">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2" for="hari_ahad_1_bulan">Hari Ahad 1 Bulan</label>
+                        <input type="date" name="hari_ahad_1_bulan" id="hari_ahad_1_bulan" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white">
+                    </div>
+                    <div class="pt-2">
+                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2 px-6 rounded-lg text-sm shadow-md transition-all duration-200">
+                            Simpan Pengaturan
+                        </button>
+                    </div>
+                </form>
+            </div>
         </main>
     </div>
 </body>
