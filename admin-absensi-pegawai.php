@@ -7,18 +7,6 @@ $active_menu = 'absensi_pegawai';
 $ustadz_id = $_SESSION['ustadz_id'];
 $today = date('Y-m-d');
 
-// Cek absensi harian hari ini
-$res_harian = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Harian' ORDER BY waktu_absen ASC");
-$harian_status = 'belum_absen';
-if ($res_harian) {
-    $num = $res_harian->num_rows;
-    if ($num >= 2) {
-        $harian_status = 'selesai';
-    } elseif ($num == 1) {
-        $harian_status = 'datang';
-    }
-}
-
 // Cek absensi rapat hari ini
 $res_rapat = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Rapat' ORDER BY waktu_absen ASC");
 $rapat_status = 'belum_absen';
@@ -43,29 +31,15 @@ if ($res_pegawai) {
     }
 }
 
-// Cek Otoritas Role untuk Absensi Harian
+// Cek Otoritas Role untuk Absensi Pegawai (Harian)
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
 $eligible_roles = ['kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
-$is_eligible_harian = false;
+$is_eligible_pegawai = false;
 foreach ($user_roles as $role) {
     if (in_array(trim($role), $eligible_roles)) {
-        $is_eligible_harian = true;
+        $is_eligible_pegawai = true;
         break;
     }
-}
-
-// Persiapan Teks, Icon, & Class Tombol Harian
-$harian_btn_text = '';
-$harian_btn_icon = '';
-if ($harian_status === 'belum_absen') {
-    $harian_btn_text = 'Absen Datang';
-    $harian_btn_icon = 'fa-sign-in-alt';
-} elseif ($harian_status === 'datang') {
-    $harian_btn_text = 'Absen Pulang';
-    $harian_btn_icon = 'fa-sign-out-alt';
-} else {
-    $harian_btn_text = 'Absensi Harian Selesai';
-    $harian_btn_icon = 'fa-check-double';
 }
 
 // Persiapan Teks, Icon, & Class Tombol Pegawai
@@ -138,38 +112,10 @@ if ($rapat_status === 'belum_absen') {
                 </div>
             </div>
 
-            <!-- GRID DUA KARTU ABSENSI -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+            <!-- GRID KARTU ABSENSI -->
+            <div class="<?= $is_eligible_pegawai ? 'grid grid-cols-1 md:grid-cols-2' : 'flex justify-center max-w-md' ?> gap-6 max-w-4xl mx-auto mb-8">
                 
-                <?php if ($is_eligible_harian): ?>
-                    <!-- KARTU 1: ABSENSI HARIAN -->
-                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
-                        <div>
-                            <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
-                                <i class="fas fa-user-clock"></i>
-                            </div>
-                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Harian</h2>
-                            <p class="text-sm text-gray-500 mb-6 font-medium">
-                                <?php if ($harian_status === 'belum_absen'): ?>
-                                    Belum absen masuk hari ini.
-                                <?php elseif ($harian_status === 'datang'): ?>
-                                    Sudah absen masuk. Klik untuk absen pulang.
-                                <?php else: ?>
-                                    Selesai absen masuk dan pulang hari ini.
-                                <?php endif; ?>
-                            </p>
-                        </div>
-                        
-                        <button id="btn-absen-harian" 
-                                data-status="<?= $harian_status ?>" 
-                                data-jenis="Harian"
-                                <?= ($harian_status === 'selesai') ? 'disabled' : '' ?>
-                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($harian_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($harian_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95') ?>">
-                            <i class="fas <?= $harian_btn_icon ?> text-xl"></i>
-                            <span><?= $harian_btn_text ?></span>
-                        </button>
-                    </div>
-                <?php else: ?>
+                <?php if ($is_eligible_pegawai): ?>
                     <!-- KARTU 1: ABSENSI PEGAWAI -->
                     <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
                         <div>
@@ -497,13 +443,6 @@ if ($rapat_status === 'belum_absen') {
         }
 
         // Event listener click tombol absensi (dengan check existence)
-        const btnHarian = document.getElementById('btn-absen-harian');
-        if (btnHarian) {
-            btnHarian.addEventListener('click', () => {
-                doAbsensi('Harian');
-            });
-        }
-
         const btnPegawai = document.getElementById('btn-absen-pegawai');
         if (btnPegawai) {
             btnPegawai.addEventListener('click', () => {
