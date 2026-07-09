@@ -69,10 +69,10 @@ $user_lat = (float)($_POST['user_lat'] ?? 0);
 $user_lon = (float)($_POST['user_lon'] ?? 0);
 $req_jenis_absen = $_POST['jenis_absen'] ?? 'Harian';
 
-// F. Validasi Hak Akses Role Khusus Harian
-if ($req_jenis_absen === 'Harian') {
+// F. Validasi Hak Akses Role Khusus Harian/Pegawai
+if ($req_jenis_absen === 'Harian' || $req_jenis_absen === 'Pegawai') {
     $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-    $eligible_roles = ['kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
+    $eligible_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
     $is_eligible = false;
     foreach ($user_roles as $role) {
         if (in_array(trim($role), $eligible_roles)) {
@@ -81,7 +81,7 @@ if ($req_jenis_absen === 'Harian') {
         }
     }
     if (!$is_eligible) {
-        json_response('error', 'Anda tidak memiliki hak akses untuk melakukan Absensi Harian.');
+        json_response('error', 'Anda tidak memiliki hak akses untuk melakukan Absensi Pegawai.');
     }
 }
 

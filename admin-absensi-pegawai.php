@@ -33,7 +33,7 @@ if ($res_pegawai) {
 
 // Cek Otoritas Role untuk Absensi Pegawai (Harian)
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-$eligible_roles = ['kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
+$eligible_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
 $is_eligible_pegawai = false;
 foreach ($user_roles as $role) {
     if (in_array(trim($role), $eligible_roles)) {
