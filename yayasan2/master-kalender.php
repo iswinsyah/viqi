@@ -13,21 +13,97 @@ $conn->query("CREATE TABLE IF NOT EXISTS kalender_akademik (
 
 $active_menu = 'master_kalender';
 
-// B. Handler POST Simpan Pengaturan
-// Trigger deploy rerun - 2
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['hari_ahad_1_bulan'])) {
-    $hari_ahad = $conn->real_escape_string($_POST['hari_ahad_1_bulan']);
-    if (!empty($hari_ahad)) {
-        // Simpan ke tabel kalender_akademik dengan status 'AHD'
-        $conn->query("INSERT INTO kalender_akademik (tanggal, status_hari, keterangan) 
-                      VALUES ('$hari_ahad', 'AHD', 'Hari Ahad 1 Bulan')
-                      ON DUPLICATE KEY UPDATE status_hari = 'AHD', keterangan = 'Hari Ahad 1 Bulan'");
+// B. Definisi Kategori dan Deskripsi Hari Libur / Agenda
+$holiday_categories = [
+    'Hari Besar Nasional' => [
+        'HUT' => 'HUT RI',
+        'HBI' => 'Hari Buruh Internasional',
+        'PCS' => 'Lahir Pancasila'
+    ],
+    'Hari Besar Islam' => [
+        'MLD' => 'Maulud Nabi saw',
+        'TBM' => 'Tahun Baru Masehi',
+        'IMN' => "Isro' Mi'roj Nabi saw",
+        'IDF' => 'Idul Fitri',
+        'IDA' => 'Idul Adha',
+        'TBI' => 'Tahun Baru Islam'
+    ],
+    'Hari Besar Lain' => [
+        'NTL' => 'Natal',
+        'IML' => 'Imlek',
+        'NYP' => 'Nyepi',
+        'WFT' => 'Kematian Yudas Escariot',
+        'PSK' => 'Paskah',
+        'ISA' => 'Kenaikan Isa as',
+        'WSK' => 'Waisak'
+    ],
+    'Agenda Akademik' => [
+        'KS1' => 'Kedatangan Santri Awal Semester 1',
+        'KS2' => 'Kedatangan Santri Awal Semester 2',
+        'AS1' => 'Awal Semester 1',
+        'AS2' => 'Awal Semester 2',
+        'KPP' => 'Kegiatan Permulaan Puasa',
+        'LHR' => 'Libur Hari Raya',
+        'KT1' => 'Kegiatan Tengah Semester 1',
+        'KT2' => 'Kegiatan Tengah Semester 2',
+        'UA1' => 'Ujian Akhir Semester 1',
+        'UA2' => 'Ujian Akhir Semester 2',
+        'RMD' => 'Remidi',
+        'UJK' => 'Ujian Kesetaraan',
+        'LS1' => 'Libur Semester 1',
+        'LS2' => 'Libur Semester 2',
+        'CTB' => 'Cuti Bersama'
+    ]
+];
+
+$holiday_descriptions = ['AHD' => 'Hari Ahad 1 Bulan'];
+foreach ($holiday_categories as $cat => $items) {
+    foreach ($items as $code => $desc) {
+        $holiday_descriptions[$code] = $desc;
     }
+}
+
+// C. Handler POST Simpan Pengaturan
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // 1. Handle Hari Ahad 1 Bulan
+    if (isset($_POST['hari_ahad_1_bulan'])) {
+        $hari_ahad = $conn->real_escape_string($_POST['hari_ahad_1_bulan']);
+        if (!empty($hari_ahad)) {
+            $conn->query("INSERT INTO kalender_akademik (tanggal, status_hari, keterangan) 
+                          VALUES ('$hari_ahad', 'AHD', 'Hari Ahad 1 Bulan')
+                          ON DUPLICATE KEY UPDATE status_hari = 'AHD', keterangan = 'Hari Ahad 1 Bulan'");
+        } else {
+            $conn->query("DELETE FROM kalender_akademik WHERE status_hari = 'AHD'");
+        }
+    }
+    
+    // 2. Handle Kode Hari Besar & Agenda Lainya
+    if (isset($_POST['kode']) && is_array($_POST['kode'])) {
+        foreach ($_POST['kode'] as $code => $date) {
+            $code = $conn->real_escape_string($code);
+            $date = $conn->real_escape_string($date);
+            
+            if (isset($holiday_descriptions[$code])) {
+                $desc = $conn->real_escape_string($holiday_descriptions[$code]);
+                
+                // Hapus entri lama untuk kode ini
+                $conn->query("DELETE FROM kalender_akademik WHERE status_hari = '$code'");
+                
+                if (!empty($date)) {
+                    // Simpan entri baru
+                    $conn->query("INSERT INTO kalender_akademik (tanggal, status_hari, keterangan) 
+                                  VALUES ('$date', '$code', '$desc')
+                                  ON DUPLICATE KEY UPDATE status_hari = '$code', keterangan = '$desc'");
+                }
+            }
+        }
+    }
+    
     header("Location: master-kalender.php?sukses=1");
     exit;
 }
 
-// C. Ambil data Hari Ahad 1 Bulan yang sudah tersimpan
+// D. Ambil data Hari Ahad 1 Bulan yang sudah tersimpan
 $res_ahad = $conn->query("SELECT tanggal FROM kalender_akademik WHERE status_hari = 'AHD' LIMIT 1");
 $val_ahad = "";
 if ($res_ahad && $res_ahad->num_rows > 0) {
@@ -35,16 +111,18 @@ if ($res_ahad && $res_ahad->num_rows > 0) {
     $val_ahad = $row_ahad['tanggal'];
 }
 
-// D. Ambil semua data tanggal libur dari database dan lakukan propagasi AHD (Ahad)
+// E. Ambil semua data tanggal libur dari database
 $overrides = [];
+$code_to_date = [];
 $res_overrides = $conn->query("SELECT tanggal, status_hari FROM kalender_akademik");
 if ($res_overrides) {
     while ($row = $res_overrides->fetch_assoc()) {
         $overrides[$row['tanggal']] = $row['status_hari'];
+        $code_to_date[$row['status_hari']] = $row['tanggal'];
     }
 }
 
-// Jika ada Ahad acuan yang sudah diset, propagasikan setiap 7 hari ke depan
+// F. Jika ada Ahad acuan yang sudah diset, propagasikan setiap 7 hari ke depan
 if (!empty($val_ahad)) {
     $start_date = "2026-07-01";
     $end_date = "2027-07-31"; // Rentang kalender akademik
@@ -65,7 +143,10 @@ if (!empty($val_ahad)) {
             $diff_days = round($diff_seconds / 86400);
             
             if ($diff_days >= 0 && $diff_days % 7 == 0) {
-                $overrides[$date_str] = 'AHD';
+                // Jangan override jika tanggal tersebut sudah diset sebagai hari khusus di DB
+                if (!isset($overrides[$date_str]) || $overrides[$date_str] === 'AHD') {
+                    $overrides[$date_str] = 'AHD';
+                }
             }
         }
         $current_ts = strtotime("+1 day", $current_ts);
@@ -158,9 +239,25 @@ $month_map = [
                                     <?php 
                                         else:
                                             $date_str = sprintf("%04d-%02d-%02d", $year, $month_num, $day);
-                                            if (isset($overrides[$date_str]) && $overrides[$date_str] === 'AHD'):
+                                            if (isset($overrides[$date_str])):
+                                                $status_code = $overrides[$date_str];
+                                                $desc = $holiday_descriptions[$status_code] ?? 'Hari Libur/Agenda';
+                                                
+                                                // Tentukan warna cell berdasarkan status_code/kategori
+                                                $bg_color = 'bg-gray-400 text-white';
+                                                if ($status_code === 'AHD') {
+                                                    $bg_color = 'bg-red-700 text-white font-extrabold';
+                                                } elseif (in_array($status_code, ['HUT', 'HBI', 'PCS'])) {
+                                                    $bg_color = 'bg-red-500 text-white font-bold'; // Hari Besar Nasional
+                                                } elseif (in_array($status_code, ['MLD', 'TBM', 'IMN', 'IDF', 'IDA', 'TBI'])) {
+                                                    $bg_color = 'bg-emerald-600 text-white font-bold'; // Hari Besar Islam
+                                                } elseif (in_array($status_code, ['KS1', 'KS2', 'AS1', 'AS2', 'KPP', 'LHR', 'KT1', 'KT2', 'UA1', 'UA2', 'RMD', 'UJK', 'LS1', 'LS2', 'CTB'])) {
+                                                    $bg_color = 'bg-indigo-600 text-white font-bold'; // Agenda Akademik
+                                                } elseif (in_array($status_code, ['NTL', 'IML', 'NYP', 'WFT', 'PSK', 'ISA', 'WSK'])) {
+                                                    $bg_color = 'bg-amber-600 text-white font-bold'; // Hari Besar Lain
+                                                }
                                     ?>
-                                                <td class="border border-gray-300 grid-cell bg-red-700 text-white font-extrabold flex items-center justify-center text-[10px]" title="Hari Ahad 1 Bulan">AHD</td>
+                                                <td class="border border-gray-300 grid-cell <?= $bg_color ?> flex items-center justify-center text-[9px] cursor-help" title="<?= $status_code ?> - <?= htmlspecialchars($desc) ?>"><?= $status_code ?></td>
                                     <?php 
                                             else:
                                     ?>
@@ -175,23 +272,115 @@ $month_map = [
                         </tbody>
                     </table>
                 </div>
+
+                <!-- LEGENDA KALENDER AKADEMIK -->
+                <div class="mt-6 border-t border-gray-100 pt-4">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Legenda Kalender</h4>
+                    <div class="flex flex-wrap gap-4 text-xs font-medium">
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-red-700 text-white flex items-center justify-center font-extrabold mr-2 text-[9px]">AHD</span> Ahad (Mingguan)</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-red-500 text-white flex items-center justify-center font-bold mr-2 text-[9px]">HUT/HBI...</span> Hari Besar Nasional</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-emerald-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">MLD/IDF...</span> Hari Besar Islam</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-indigo-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">AS1/KS1...</span> Agenda Akademik</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-amber-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">NTL/NYP...</span> Hari Besar Lain</div>
+                    </div>
+                </div>
             </div>
 
             <!-- FORM PENGATURAN KALENDER AKADEMIK -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-7xl mx-auto mb-8 text-left">
-                <h3 class="font-bold text-gray-800 text-base mb-4"><i class="fas fa-cog text-amber-500 mr-2"></i>Form Pengaturan Kalender Akademik</h3>
-                <form action="" method="POST" class="space-y-4">
-                    <div class="max-w-md">
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2" for="hari_ahad_1_bulan">Hari Ahad 1 Bulan</label>
-                        <input type="date" name="hari_ahad_1_bulan" id="hari_ahad_1_bulan" value="<?= $val_ahad ?>" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 bg-white">
+            <form action="" method="POST" class="max-w-7xl mx-auto space-y-6 text-left mb-8">
+                <!-- GRID FOR THE CARDS -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- CARD 1: ACUAN & HARI BESAR NASIONAL -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-base mb-4 flex items-center">
+                                <i class="fas fa-flag text-red-500 mr-2"></i> Acuan & Nasional
+                            </h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1" for="hari_ahad_1_bulan">
+                                        Hari Ahad 1 Bulan
+                                    </label>
+                                    <input type="date" name="hari_ahad_1_bulan" id="hari_ahad_1_bulan" value="<?= $val_ahad ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                </div>
+                                <hr class="border-gray-100">
+                                <?php foreach ($holiday_categories['Hari Besar Nasional'] as $code => $desc): ?>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1" for="kode_<?= $code ?>">
+                                            <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
+                                        </label>
+                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
-                    <div class="pt-2">
-                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2 px-6 rounded-lg text-sm shadow-md transition-all duration-200">
-                            Simpan Pengaturan
-                        </button>
+
+                    <!-- CARD 2: HARI BESAR ISLAM -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-base mb-4 flex items-center">
+                                <i class="fas fa-moon text-emerald-500 mr-2"></i> Hari Besar Islam
+                            </h3>
+                            <div class="space-y-4">
+                                <?php foreach ($holiday_categories['Hari Besar Islam'] as $code => $desc): ?>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1" for="kode_<?= $code ?>">
+                                            <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
+                                        </label>
+                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </div>
+
+                    <!-- CARD 3: HARI BESAR LAIN -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-base mb-4 flex items-center">
+                                <i class="fas fa-star-of-david text-amber-500 mr-2"></i> Hari Besar Lain
+                            </h3>
+                            <div class="space-y-4">
+                                <?php foreach ($holiday_categories['Hari Besar Lain'] as $code => $desc): ?>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1" for="kode_<?= $code ?>">
+                                            <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
+                                        </label>
+                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- CARD 4: AGENDA AKADEMIK (GRID LAYOUT) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-bold text-gray-800 text-base mb-4 flex items-center">
+                        <i class="fas fa-graduation-cap text-indigo-500 mr-2"></i> Agenda Akademik
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <?php foreach ($holiday_categories['Agenda Akademik'] as $code => $desc): ?>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1 truncate" for="kode_<?= $code ?>" title="<?= $desc ?>">
+                                    <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-indigo-100 text-indigo-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
+                                </label>
+                                <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex justify-end">
+                    <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-2.5 px-8 rounded-lg text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 flex items-center">
+                        <i class="fas fa-save mr-2"></i> Simpan Pengaturan Kalender
+                    </button>
+                </div>
+            </form>
         </main>
     </div>
 </body>
