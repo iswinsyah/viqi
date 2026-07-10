@@ -42,17 +42,19 @@ $holiday_categories = [
         'KS2' => 'Kedatangan Santri Awal Semester 2',
         'AS1' => 'Awal Semester 1',
         'AS2' => 'Awal Semester 2',
-        'KPP' => 'Kegiatan Permulaan Puasa',
-        'LHR' => 'Libur Hari Raya',
-        'KT1' => 'Kegiatan Tengah Semester 1',
-        'KT2' => 'Kegiatan Tengah Semester 2',
-        'UA1' => 'Ujian Akhir Semester 1',
-        'UA2' => 'Ujian Akhir Semester 2',
         'RMD' => 'Remidi',
         'UJK' => 'Ujian Kesetaraan',
         'LS1' => 'Libur Semester 1',
         'LS2' => 'Libur Semester 2',
         'CTB' => 'Cuti Bersama'
+    ],
+    'Agenda Akademik Panjang' => [
+        'KPP' => 'Kegiatan Permulaan Puasa',
+        'LHR' => 'Libur Hari Raya',
+        'KT1' => 'Kegiatan Tengah Semester 1',
+        'KT2' => 'Kegiatan Tengah Semester 2',
+        'UA1' => 'Ujian Akhir Semester 1',
+        'UA2' => 'Ujian Akhir Semester 2'
     ]
 ];
 
@@ -77,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
     
-    // 2. Handle Kode Hari Besar & Agenda Lainya
+    // 2. Handle Kode Hari Besar & Agenda Lainya (Single Date)
     if (isset($_POST['kode']) && is_array($_POST['kode'])) {
         foreach ($_POST['kode'] as $code => $date) {
             $code = $conn->real_escape_string($code);
@@ -99,6 +101,42 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
     }
     
+    // 3. Handle Agenda Akademik Panjang (Date Ranges)
+    if (isset($_POST['range_start']) && is_array($_POST['range_start']) && isset($_POST['range_end']) && is_array($_POST['range_end'])) {
+        foreach ($holiday_categories['Agenda Akademik Panjang'] as $code => $desc) {
+            $start = $_POST['range_start'][$code] ?? '';
+            $end = $_POST['range_end'][$code] ?? '';
+            
+            // Hapus entri lama untuk kode ini
+            $code_escaped = $conn->real_escape_string($code);
+            $conn->query("DELETE FROM kalender_akademik WHERE status_hari = '$code_escaped'");
+            
+            if (!empty($start) || !empty($end)) {
+                $start_date = !empty($start) ? $start : $end;
+                $end_date = !empty($end) ? $end : $start;
+                
+                // Pastikan start_date <= end_date
+                if (strtotime($start_date) > strtotime($end_date)) {
+                    $tmp = $start_date;
+                    $start_date = $end_date;
+                    $end_date = $tmp;
+                }
+                
+                $desc_escaped = $conn->real_escape_string($desc);
+                
+                $curr_ts = strtotime($start_date);
+                $end_ts = strtotime($end_date);
+                while ($curr_ts <= $end_ts) {
+                    $curr_date = date('Y-m-d', $curr_ts);
+                    $conn->query("INSERT INTO kalender_akademik (tanggal, status_hari, keterangan) 
+                                  VALUES ('$curr_date', '$code_escaped', '$desc_escaped')
+                                  ON DUPLICATE KEY UPDATE status_hari = '$code_escaped', keterangan = '$desc_escaped'");
+                    $curr_ts = strtotime("+1 day", $curr_ts);
+                }
+            }
+        }
+    }
+    
     header("Location: master-kalender.php?sukses=1");
     exit;
 }
@@ -114,11 +152,27 @@ if ($res_ahad && $res_ahad->num_rows > 0) {
 // E. Ambil semua data tanggal libur dari database
 $overrides = [];
 $code_to_date = [];
+$code_ranges = [];
 $res_overrides = $conn->query("SELECT tanggal, status_hari FROM kalender_akademik");
 if ($res_overrides) {
     while ($row = $res_overrides->fetch_assoc()) {
         $overrides[$row['tanggal']] = $row['status_hari'];
-        $code_to_date[$row['status_hari']] = $row['tanggal'];
+        
+        $code = $row['status_hari'];
+        $date = $row['tanggal'];
+        
+        $code_to_date[$code] = $date;
+        
+        if (!isset($code_ranges[$code])) {
+            $code_ranges[$code] = ['start' => $date, 'end' => $date];
+        } else {
+            if ($date < $code_ranges[$code]['start']) {
+                $code_ranges[$code]['start'] = $date;
+            }
+            if ($date > $code_ranges[$code]['end']) {
+                $code_ranges[$code]['end'] = $date;
+            }
+        }
     }
 }
 
@@ -369,6 +423,32 @@ $month_map = [
                                     <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-indigo-100 text-indigo-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
                                 </label>
                                 <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- CARD 5: AGENDA AKADEMIK PANJANG (GRID LAYOUT) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <h3 class="font-bold text-gray-800 text-base mb-4 flex items-center">
+                        <i class="fas fa-calendar-alt text-indigo-500 mr-2"></i> Agenda Akademik Panjang
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                        <?php foreach ($holiday_categories['Agenda Akademik Panjang'] as $code => $desc): ?>
+                            <div class="border border-gray-100 rounded-lg p-3 bg-slate-50/50">
+                                <label class="block text-xs font-bold text-gray-700 mb-2 truncate" for="kode_<?= $code ?>_start" title="<?= $desc ?>">
+                                    <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-indigo-200 text-indigo-800 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
+                                </label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <span class="text-[9px] text-gray-500 block mb-0.5">Tanggal Awal</span>
+                                        <input type="date" name="range_start[<?= $code ?>]" id="kode_<?= $code ?>_start" value="<?= $code_ranges[$code]['start'] ?? '' ?>" class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                    </div>
+                                    <div>
+                                        <span class="text-[9px] text-gray-500 block mb-0.5">Tanggal Akhir</span>
+                                        <input type="date" name="range_end[<?= $code ?>]" id="kode_<?= $code ?>_end" value="<?= $code_ranges[$code]['end'] ?? '' ?>" class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                    </div>
+                                </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
