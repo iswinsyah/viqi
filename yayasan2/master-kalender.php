@@ -22,13 +22,13 @@ $holiday_categories = [
     ],
     'Hari Besar Islam' => [
         'MLD' => 'Maulud Nabi saw',
-        'TBM' => 'Tahun Baru Masehi',
         'IMN' => "Isro' Mi'roj Nabi saw",
         'IDF' => 'Idul Fitri',
         'IDA' => 'Idul Adha',
         'TBI' => 'Tahun Baru Islam'
     ],
-    'Hari Besar Lain' => [
+    'Hari Besar Agama Lain' => [
+        'TBM' => 'Tahun Baru Masehi',
         'NTL' => 'Natal',
         'IML' => 'Imlek',
         'NYP' => 'Nyepi',
@@ -249,12 +249,12 @@ $month_map = [
                                                     $bg_color = 'bg-red-700 text-white font-extrabold';
                                                 } elseif (in_array($status_code, ['HUT', 'HBI', 'PCS'])) {
                                                     $bg_color = 'bg-red-500 text-white font-bold'; // Hari Besar Nasional
-                                                } elseif (in_array($status_code, ['MLD', 'TBM', 'IMN', 'IDF', 'IDA', 'TBI'])) {
+                                                } elseif (in_array($status_code, ['MLD', 'IMN', 'IDF', 'IDA', 'TBI'])) {
                                                     $bg_color = 'bg-emerald-600 text-white font-bold'; // Hari Besar Islam
                                                 } elseif (in_array($status_code, ['KS1', 'KS2', 'AS1', 'AS2', 'KPP', 'LHR', 'KT1', 'KT2', 'UA1', 'UA2', 'RMD', 'UJK', 'LS1', 'LS2', 'CTB'])) {
                                                     $bg_color = 'bg-indigo-600 text-white font-bold'; // Agenda Akademik
-                                                } elseif (in_array($status_code, ['NTL', 'IML', 'NYP', 'WFT', 'PSK', 'ISA', 'WSK'])) {
-                                                    $bg_color = 'bg-amber-600 text-white font-bold'; // Hari Besar Lain
+                                                } elseif (in_array($status_code, ['TBM', 'NTL', 'IML', 'NYP', 'WFT', 'PSK', 'ISA', 'WSK'])) {
+                                                    $bg_color = 'bg-amber-600 text-white font-bold'; // Hari Besar Agama Lain
                                                 }
                                     ?>
                                                 <td class="border border-gray-300 grid-cell <?= $bg_color ?> flex items-center justify-center text-[9px] cursor-help" title="<?= $status_code ?> - <?= htmlspecialchars($desc) ?>"><?= $status_code ?></td>
@@ -281,7 +281,7 @@ $month_map = [
                         <div class="flex items-center"><span class="w-6 h-6 rounded bg-red-500 text-white flex items-center justify-center font-bold mr-2 text-[9px]">HUT/HBI...</span> Hari Besar Nasional</div>
                         <div class="flex items-center"><span class="w-6 h-6 rounded bg-emerald-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">MLD/IDF...</span> Hari Besar Islam</div>
                         <div class="flex items-center"><span class="w-6 h-6 rounded bg-indigo-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">AS1/KS1...</span> Agenda Akademik</div>
-                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-amber-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">NTL/NYP...</span> Hari Besar Lain</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-amber-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">TBM/NTL...</span> Hari Besar Agama Lain</div>
                     </div>
                 </div>
             </div>
@@ -291,11 +291,11 @@ $month_map = [
                 <!-- GRID FOR THE CARDS -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     
-                    <!-- CARD 1: ACUAN & HARI BESAR NASIONAL -->
+                    <!-- CARD 1: HARI BESAR NASIONAL -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
                         <div>
                             <h3 class="font-bold text-gray-800 text-base mb-4 flex items-center">
-                                <i class="fas fa-flag text-red-500 mr-2"></i> Acuan & Nasional
+                                <i class="fas fa-flag text-red-500 mr-2"></i> Hari Besar Nasional
                             </h3>
                             <div class="space-y-4">
                                 <div>
@@ -336,14 +336,14 @@ $month_map = [
                         </div>
                     </div>
 
-                    <!-- CARD 3: HARI BESAR LAIN -->
+                    <!-- CARD 3: HARI BESAR AGAMA LAIN -->
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
                         <div>
                             <h3 class="font-bold text-gray-800 text-base mb-4 flex items-center">
-                                <i class="fas fa-star-of-david text-amber-500 mr-2"></i> Hari Besar Lain
+                                <i class="fas fa-star-of-david text-amber-500 mr-2"></i> Hari Besar Agama Lain
                             </h3>
                             <div class="space-y-4">
-                                <?php foreach ($holiday_categories['Hari Besar Lain'] as $code => $desc): ?>
+                                <?php foreach ($holiday_categories['Hari Besar Agama Lain'] as $code => $desc): ?>
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-600 mb-1" for="kode_<?= $code ?>">
                                             <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
