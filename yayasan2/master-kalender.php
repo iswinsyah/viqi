@@ -299,19 +299,22 @@ $month_map = [
                                                 
                                                 // Tentukan warna cell berdasarkan status_code/kategori
                                                 $bg_color = 'bg-gray-400 text-white';
+                                                $show_code = true;
+                                                
                                                 if ($status_code === 'AHD') {
                                                     $bg_color = 'bg-red-700 text-white font-extrabold';
                                                 } elseif (in_array($status_code, ['HUT', 'HBI', 'PCS'])) {
-                                                    $bg_color = 'bg-red-500 text-white font-bold'; // Hari Besar Nasional
+                                                    $bg_color = 'bg-red-600 text-white font-bold'; // Hari Besar Nasional (merah)
                                                 } elseif (in_array($status_code, ['MLD', 'IMN', 'IDF', 'IDA', 'TBI'])) {
-                                                    $bg_color = 'bg-emerald-600 text-white font-bold'; // Hari Besar Islam
-                                                } elseif (in_array($status_code, ['KS1', 'KS2', 'AS1', 'AS2', 'KPP', 'LHR', 'KT1', 'KT2', 'UA1', 'UA2', 'RMD', 'UJK', 'LS1', 'LS2', 'CTB'])) {
-                                                    $bg_color = 'bg-indigo-600 text-white font-bold'; // Agenda Akademik
+                                                    $bg_color = 'bg-green-600 text-white font-bold'; // Hari Besar Islam (hijau)
+                                                } elseif (in_array($status_code, ['KS1', 'KS2', 'AS1', 'AS2', 'RMD', 'UJK', 'LS1', 'LS2', 'CTB', 'KPP', 'LHR', 'KT1', 'KT2', 'UA1', 'UA2'])) {
+                                                    $bg_color = 'bg-sky-300 text-black font-bold'; // Agenda Akademik & Panjang (biru terang)
                                                 } elseif (in_array($status_code, ['TBM', 'NTL', 'IML', 'NYP', 'WFT', 'PSK', 'ISA', 'WSK'])) {
-                                                    $bg_color = 'bg-amber-600 text-white font-bold'; // Hari Besar Agama Lain
+                                                    $bg_color = 'bg-gray-400 text-transparent font-normal'; // Hari Besar Agama Lain (abu-abu, tanpa kode)
+                                                    $show_code = false;
                                                 }
                                     ?>
-                                                <td class="border border-gray-300 grid-cell <?= $bg_color ?> flex items-center justify-center text-[9px] cursor-help" title="<?= $status_code ?> - <?= htmlspecialchars($desc) ?>"><?= $status_code ?></td>
+                                                <td class="border border-gray-300 grid-cell <?= $bg_color ?> flex items-center justify-center text-[9px] cursor-help" title="<?= $status_code ?> - <?= htmlspecialchars($desc) ?>"><?= $show_code ? $status_code : '' ?></td>
                                     <?php 
                                             else:
                                     ?>
@@ -332,10 +335,10 @@ $month_map = [
                     <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Legenda Kalender</h4>
                     <div class="flex flex-wrap gap-4 text-xs font-medium">
                         <div class="flex items-center"><span class="w-6 h-6 rounded bg-red-700 text-white flex items-center justify-center font-extrabold mr-2 text-[9px]">AHD</span> Ahad (Mingguan)</div>
-                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-red-500 text-white flex items-center justify-center font-bold mr-2 text-[9px]">HUT/HBI...</span> Hari Besar Nasional</div>
-                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-emerald-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">MLD/IDF...</span> Hari Besar Islam</div>
-                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-indigo-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">AS1/KS1...</span> Agenda Akademik</div>
-                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-amber-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">TBM/NTL...</span> Hari Besar Agama Lain</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-red-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">HUT/HBI...</span> Hari Besar Nasional</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-green-600 text-white flex items-center justify-center font-bold mr-2 text-[9px]">MLD/IDF...</span> Hari Besar Islam</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-sky-300 text-black flex items-center justify-center font-bold mr-2 text-[9px]">AS1/KS1...</span> Agenda Akademik</div>
+                        <div class="flex items-center"><span class="w-6 h-6 rounded bg-gray-400 mr-2 text-[9px]"></span> Hari Besar Agama Lain (Marker Saja)</div>
                     </div>
                 </div>
             </div>
