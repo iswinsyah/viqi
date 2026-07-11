@@ -47,11 +47,9 @@ $holiday_categories = [
         'KS2' => 'Kedatangan Santri Awal Semester 2',
         'AS1' => 'Awal Semester 1',
         'AS2' => 'Awal Semester 2',
-        'RMD' => 'Remidi',
         'UJK' => 'Ujian Kesetaraan',
-        'LS1' => 'Libur Semester 1',
-        'LS2' => 'Libur Semester 2',
-        'CTB' => 'Cuti Bersama'
+        'PLH' => 'Penjemputan Santri Libur Hari Raya',
+        'KPH' => 'Kedatangan Santri Pasca Hari Raya'
     ],
     'Agenda Akademik Panjang' => [
         'KPP' => 'Kegiatan Permulaan Puasa',
@@ -59,7 +57,9 @@ $holiday_categories = [
         'KT1' => 'Kegiatan Tengah Semester 1',
         'KT2' => 'Kegiatan Tengah Semester 2',
         'UA1' => 'Ujian Akhir Semester 1',
-        'UA2' => 'Ujian Akhir Semester 2'
+        'UA2' => 'Ujian Akhir Semester 2',
+        'LS1' => 'Libur Semester 1',
+        'LS2' => 'Libur Semester 2'
     ]
 ];
 
@@ -312,7 +312,7 @@ $month_map = [
                                                     $bg_color = 'bg-red-600 text-white font-bold'; // Hari Besar Nasional (merah)
                                                 } elseif (in_array($status_code, ['MLD', 'IMN', 'IDF', 'IDA', 'TBI'])) {
                                                     $bg_color = 'bg-green-600 text-white font-bold'; // Hari Besar Islam (hijau)
-                                                } elseif (in_array($status_code, ['KS1', 'KS2', 'AS1', 'AS2', 'RMD', 'UJK', 'LS1', 'LS2', 'CTB', 'KPP', 'LHR', 'KT1', 'KT2', 'UA1', 'UA2'])) {
+                                                } elseif (in_array($status_code, ['KS1', 'KS2', 'AS1', 'AS2', 'UJK', 'PLH', 'KPH', 'KPP', 'LHR', 'KT1', 'KT2', 'UA1', 'UA2', 'LS1', 'LS2'])) {
                                                     $bg_color = 'bg-sky-300 text-black font-bold'; // Agenda Akademik & Panjang (biru terang)
                                                 } elseif (in_array($status_code, ['TBM', 'NTL', 'IML', 'NYP', 'WFT', 'PSK', 'ISA', 'WSK'])) {
                                                     $bg_color = 'bg-gray-400 text-transparent font-normal'; // Hari Besar Agama Lain (abu-abu, tanpa kode)
