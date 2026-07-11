@@ -15,6 +15,9 @@
     <div class="flex-1 overflow-y-auto py-4">
         <nav class="px-4 space-y-1">
             <p class="px-2 text-[10px] font-bold text-purple-300 uppercase tracking-wider mb-2 mt-2">Menu Utama</p>
+            <a href="kalender-akademik.php" class="<?= (isset($active_menu) && $active_menu == 'kalender_akademik') ? 'bg-purple-800 text-white' : 'text-purple-100 hover:bg-purple-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-calendar-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kalender_akademik') ? 'text-amber-400' : 'text-purple-300 group-hover:text-white' ?>"></i> Kalender Akademik
+            </a>
             <a href="dashboard-orangtua.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_orangtua') ? 'bg-purple-800 text-white' : 'text-purple-100 hover:bg-purple-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-home w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_orangtua') ? 'text-amber-400' : 'text-purple-300 group-hover:text-white' ?>"></i> Dashboard
             </a>

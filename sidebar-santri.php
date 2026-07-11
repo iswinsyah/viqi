@@ -11,10 +11,12 @@
             <i class="fas fa-times text-xl"></i>
         </button>
     </div>
-
     <div class="flex-1 overflow-y-auto py-4">
         <nav class="px-4 space-y-1">
             <p class="px-2 text-[10px] font-bold text-indigo-300 uppercase tracking-wider mb-2 mt-2">Menu Utama</p>
+            <a href="kalender-akademik.php" class="<?= (isset($active_menu) && $active_menu == 'kalender_akademik') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-calendar-alt w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kalender_akademik') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Kalender Akademik
+            </a>
             <a href="ruang-santri.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_santri') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-home w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'dashboard_santri') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Dashboard
             </a>
