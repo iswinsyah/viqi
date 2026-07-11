@@ -7,16 +7,9 @@ header("Pragma: no-cache");
 require_once 'auth-ustadz.php'; // Proteksi session ustadz
 require_once 'koneksi.php';
 
-// Pastikan user memiliki salah satu role: kepala_sekolah, kepala_mahad, atau super_admin
+// Tentukan hak akses edit
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-$is_authorized = !empty(array_intersect(['kepala_sekolah', 'kepala_mahad', 'super_admin'], $user_roles));
-
-if (!$is_authorized) {
-    echo "<div style='color: red; padding: 20px; font-weight: bold; text-align: center; font-family: sans-serif; margin-top: 50px;'>
-            <i class='fas fa-exclamation-triangle'></i> Anda tidak memiliki hak akses untuk membuka halaman ini. Hanya Kepala Sekolah, Kepala Ma'had, dan Super Admin yang diizinkan.
-          </div>";
-    exit;
-}
+$can_edit = !empty(array_intersect(['kepala_sekolah', 'kepala_mahad', 'super_admin', 'admin_sekolah'], $user_roles));
 
 // Helper to get distinct soft pastel colors for subjects
 function dapatkan_warna_mapel($mapel_name) {
@@ -64,13 +57,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_pelajaran (
     UNIQUE KEY unique_slot (hari, jam_ke, kelas_id)
 )");
 
-// Seeding kelas default jika kosong
-$cek_kelas = $conn->query("SELECT id FROM master_kelas LIMIT 1");
-if ($cek_kelas && $cek_kelas->num_rows === 0) {
-    $classes = ['E4 406', 'E4 402', 'E4 157', 'E4.2'];
-    foreach ($classes as $cls) {
-        $conn->query("INSERT IGNORE INTO master_kelas (nama_kelas, kategori_kelas, keterangan) VALUES ('$cls', 'Diniyah', 'Kelas dari gambar jadwal')");
-    }
+// Pastikan 4 kelas default dari gambar selalu terdaftar
+$classes = ['E4 406', 'E4 402', 'E4 157', 'E4.2'];
+foreach ($classes as $cls) {
+    $conn->query("INSERT IGNORE INTO master_kelas (nama_kelas, kategori_kelas, keterangan) VALUES ('$cls', 'Diniyah', 'Kelas dari gambar jadwal')");
 }
 
 // 2. Handle POST Request (AJAX/Simpan)
@@ -78,6 +68,13 @@ $pesan_sukses = "";
 $pesan_error = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action'])) {
+    if (!$can_edit) {
+        echo "<div style='color: red; padding: 20px; font-weight: bold; text-align: center; font-family: sans-serif; margin-top: 50px;'>
+                Anda tidak memiliki hak akses untuk mengedit jadwal pelajaran.
+              </div>";
+        exit;
+    }
+    
     $action = $_POST['action'];
     $hari = $conn->real_escape_string($_POST['hari']);
     $jam_ke = (int)$_POST['jam_ke'];
@@ -118,9 +115,9 @@ if (isset($_GET['error']) && !empty($_GET['error'])) {
 }
 
 // 3. Ambil data pendukung
-// List Kelas Diniyah
+// List Kelas Moving Class
 $kelas_list = [];
-$res_kelas = $conn->query("SELECT * FROM master_kelas ORDER BY id ASC");
+$res_kelas = $conn->query("SELECT * FROM master_kelas WHERE nama_kelas IN ('E4 406', 'E4 402', 'E4 157', 'E4.2') ORDER BY FIELD(nama_kelas, 'E4 406', 'E4 402', 'E4 157', 'E4.2')");
 if ($res_kelas) {
     while ($row = $res_kelas->fetch_assoc()) {
         $kelas_list[] = $row;
@@ -306,9 +303,16 @@ $active_menu = 'jadwal_pelajaran';
                                                     $colors = dapatkan_warna_mapel($sched['mapel_nama']);
                                                     $style_attr = "style='background-color: {$colors['bg']}; color: {$colors['text']};'";
                                                 }
+
+                                                if ($can_edit) {
+                                                    $click_handler = "onclick=\"openEditModal('{$day}', {$jk}, '{$slot['pukul']}', {$c_id}, '" . htmlspecialchars($cls['nama_kelas']) . "', '" . ($sched['mapel_id'] ?? '') . "', '" . ($sched['ustadz_id'] ?? '') . "')\"";
+                                                    $cursor_class = "cursor-pointer hover:bg-emerald-50/20 transition duration-150 relative group";
+                                                } else {
+                                                    $click_handler = "";
+                                                    $cursor_class = "relative";
+                                                }
                                             ?>
-                                                <td class="px-1 py-1.5 align-middle cursor-pointer transition duration-150 relative group" <?= $style_attr ?>
-                                                    onclick="openEditModal('<?= $day ?>', <?= $jk ?>, '<?= $slot['pukul'] ?>', <?= $c_id ?>, '<?= htmlspecialchars($cls['nama_kelas']) ?>', '<?= $sched['mapel_id'] ?? '' ?>', '<?= $sched['ustadz_id'] ?? '' ?>')">
+                                                <td class="px-1 py-1.5 align-middle <?= $cursor_class ?>" <?= $style_attr ?> <?= $click_handler ?>>
                                                     
                                                     <?php if ($sched): ?>
                                                         <div class="flex flex-col items-center">
@@ -319,12 +323,16 @@ $active_menu = 'jadwal_pelajaran';
                                                                 <?= htmlspecialchars($sched['ustadz_nama']) ?>
                                                             </span>
                                                         </div>
-                                                        <!-- Edit overlay icon -->
-                                                        <div class="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-150 rounded">
-                                                            <i class="fas fa-pen text-[10px]" style="color: inherit;"></i>
-                                                        </div>
+                                                        <?php if ($can_edit): ?>
+                                                            <!-- Edit overlay icon -->
+                                                            <div class="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-150 rounded">
+                                                                <i class="fas fa-pen text-[10px]" style="color: inherit;"></i>
+                                                            </div>
+                                                        <?php endif; ?>
                                                     <?php else: ?>
-                                                        <span class="text-gray-300 italic text-[9px] block py-1.5">+ Isi</span>
+                                                        <?php if ($can_edit): ?>
+                                                            <span class="text-gray-300 italic text-[9px] block py-1.5">+ Isi</span>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
                                                 </td>
                                             <?php endforeach; ?>
