@@ -364,7 +364,7 @@ $month_map = [
                                     <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1" for="hari_ahad_1_bulan">
                                         Hari Ahad 1 Bulan
                                     </label>
-                                    <input type="date" name="hari_ahad_1_bulan" id="hari_ahad_1_bulan" value="<?= $val_ahad ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                    <input type="date" name="hari_ahad_1_bulan" id="hari_ahad_1_bulan" value="<?= $val_ahad ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 date-input-ahd transition-colors duration-200 <?= !empty($val_ahad) ? 'bg-red-700 text-white font-extrabold' : 'bg-white text-gray-800' ?>">
                                 </div>
                                 <hr class="border-gray-100">
                                 <?php foreach ($holiday_categories['Hari Besar Nasional'] as $code => $desc): ?>
@@ -372,7 +372,7 @@ $month_map = [
                                         <label class="block text-xs font-semibold text-gray-600 mb-1" for="kode_<?= $code ?>">
                                             <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-red-100 text-red-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
                                         </label>
-                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 date-input-nasional transition-colors duration-200 <?= !empty($code_to_date[$code]) ? 'bg-red-600 text-white font-bold' : 'bg-white text-gray-800' ?>">
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -391,7 +391,7 @@ $month_map = [
                                         <label class="block text-xs font-semibold text-gray-600 mb-1" for="kode_<?= $code ?>">
                                             <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
                                         </label>
-                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 date-input-islam transition-colors duration-200 <?= !empty($code_to_date[$code]) ? 'bg-green-600 text-white font-bold' : 'bg-white text-gray-800' ?>">
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -410,7 +410,7 @@ $month_map = [
                                         <label class="block text-xs font-semibold text-gray-600 mb-1" for="kode_<?= $code ?>">
                                             <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
                                         </label>
-                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                        <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 date-input-lain transition-colors duration-200 <?= !empty($code_to_date[$code]) ? 'bg-gray-400 text-white font-bold' : 'bg-white text-gray-800' ?>">
                                     </div>
                                 <?php endforeach; ?>
                             </div>
@@ -430,7 +430,7 @@ $month_map = [
                                 <label class="block text-xs font-semibold text-gray-600 mb-1 truncate" for="kode_<?= $code ?>" title="<?= $desc ?>">
                                     <span class="inline-block px-1.5 py-0.5 rounded text-[10px] bg-indigo-100 text-indigo-700 font-bold mr-1.5"><?= $code ?></span><?= $desc ?>
                                 </label>
-                                <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                <input type="date" name="kode[<?= $code ?>]" id="kode_<?= $code ?>" value="<?= $code_to_date[$code] ?? '' ?>" class="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 date-input-akademik transition-colors duration-200 <?= !empty($code_to_date[$code]) ? 'bg-sky-300 text-black font-bold' : 'bg-white text-gray-800' ?>">
                             </div>
                         <?php endforeach; ?>
                     </div>
@@ -450,11 +450,11 @@ $month_map = [
                                 <div class="grid grid-cols-2 gap-2">
                                     <div>
                                         <span class="text-[9px] text-gray-500 block mb-0.5">Tanggal Awal</span>
-                                        <input type="date" name="range_start[<?= $code ?>]" id="kode_<?= $code ?>_start" value="<?= $code_ranges[$code]['start'] ?? '' ?>" class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                        <input type="date" name="range_start[<?= $code ?>]" id="kode_<?= $code ?>_start" value="<?= $code_ranges[$code]['start'] ?? '' ?>" class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 date-input-akademik transition-colors duration-200 <?= !empty($code_ranges[$code]['start']) ? 'bg-sky-300 text-black font-bold' : 'bg-white text-gray-800' ?>">
                                     </div>
                                     <div>
                                         <span class="text-[9px] text-gray-500 block mb-0.5">Tanggal Akhir</span>
-                                        <input type="date" name="range_end[<?= $code ?>]" id="kode_<?= $code ?>_end" value="<?= $code_ranges[$code]['end'] ?? '' ?>" class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white">
+                                        <input type="date" name="range_end[<?= $code ?>]" id="kode_<?= $code ?>_end" value="<?= $code_ranges[$code]['end'] ?? '' ?>" class="w-full px-2 py-1 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 date-input-akademik transition-colors duration-200 <?= !empty($code_ranges[$code]['end']) ? 'bg-sky-300 text-black font-bold' : 'bg-white text-gray-800' ?>">
                                     </div>
                                 </div>
                             </div>
@@ -471,5 +471,59 @@ $month_map = [
             </form>
         </main>
     </div>
+
+    <!-- JS DYNAMIC COLOR-CODING FOR DATE INPUTS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function updateInputStyle(input, type) {
+                // Reset classes
+                input.classList.remove(
+                    'bg-red-700', 'bg-red-600', 'bg-green-600', 'bg-gray-400', 'bg-sky-300', 
+                    'text-white', 'text-black', 'text-gray-800', 'font-extrabold', 'font-bold', 'bg-white'
+                );
+                
+                if (input.value) {
+                    if (type === 'ahd') {
+                        input.classList.add('bg-red-700', 'text-white', 'font-extrabold');
+                    } else if (type === 'nasional') {
+                        input.classList.add('bg-red-600', 'text-white', 'font-bold');
+                    } else if (type === 'islam') {
+                        input.classList.add('bg-green-600', 'text-white', 'font-bold');
+                    } else if (type === 'lain') {
+                        input.classList.add('bg-gray-400', 'text-white', 'font-bold');
+                    } else if (type === 'akademik') {
+                        input.classList.add('bg-sky-300', 'text-black', 'font-bold');
+                    }
+                } else {
+                    input.classList.add('bg-white', 'text-gray-800');
+                }
+            }
+
+            // Bind events for ahd
+            document.querySelectorAll('.date-input-ahd').forEach(el => {
+                el.addEventListener('change', () => updateInputStyle(el, 'ahd'));
+            });
+
+            // Bind events for nasional
+            document.querySelectorAll('.date-input-nasional').forEach(el => {
+                el.addEventListener('change', () => updateInputStyle(el, 'nasional'));
+            });
+
+            // Bind events for islam
+            document.querySelectorAll('.date-input-islam').forEach(el => {
+                el.addEventListener('change', () => updateInputStyle(el, 'islam'));
+            });
+
+            // Bind events for lain
+            document.querySelectorAll('.date-input-lain').forEach(el => {
+                el.addEventListener('change', () => updateInputStyle(el, 'lain'));
+            });
+
+            // Bind events for akademik
+            document.querySelectorAll('.date-input-akademik').forEach(el => {
+                el.addEventListener('change', () => updateInputStyle(el, 'akademik'));
+            });
+        });
+    </script>
 </body>
 </html>
