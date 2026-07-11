@@ -235,7 +235,7 @@ $month_map = [
     <style>
         .grid-cell {
             width: 28px;
-            height: 28px;
+            height: 19px;
             border: 1px solid #d1d5db;
         }
     </style>
@@ -291,8 +291,8 @@ $month_map = [
                                 $month_num = $month_map[$month_name];
                             ?>
                                 <tr class="hover:bg-slate-50 transition">
-                                    <td class="border border-gray-300 text-center font-bold bg-amber-50 text-amber-900 py-2"><?= $no++ ?></td>
-                                    <td class="border border-gray-300 font-bold bg-amber-50 text-amber-900 px-3 py-2 whitespace-nowrap text-left text-xs"><?= $m ?></td>
+                                    <td class="border border-gray-300 text-center font-bold bg-amber-50 text-amber-900 py-0.5 text-[11px]"><?= $no++ ?></td>
+                                    <td class="border border-gray-300 font-bold bg-amber-50 text-amber-900 px-3 py-0.5 whitespace-nowrap text-left text-[11px]"><?= $m ?></td>
                                     <?php for ($day = 1; $day <= 31; $day++): 
                                         if (!checkdate($month_num, $day, $year)):
                                     ?>
