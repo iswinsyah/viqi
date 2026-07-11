@@ -18,6 +18,32 @@ if (!$is_authorized) {
     exit;
 }
 
+// Helper to get distinct soft pastel colors for subjects
+function dapatkan_warna_mapel($mapel_name) {
+    if (empty($mapel_name)) {
+        return ['bg' => '#ffffff', 'text' => '#1f2937'];
+    }
+    $colors = [
+        ['bg' => '#ffe4e6', 'text' => '#9f1239'], // soft rose / red
+        ['bg' => '#ffedd5', 'text' => '#9a3412'], // soft orange
+        ['bg' => '#fef9c3', 'text' => '#854d0e'], // soft yellow
+        ['bg' => '#dcfce7', 'text' => '#166534'], // soft green
+        ['bg' => '#ccfbf1', 'text' => '#115e59'], // soft teal
+        ['bg' => '#e0f2fe', 'text' => '#075985'], // soft light blue
+        ['bg' => '#e0e7ff', 'text' => '#3730a3'], // soft indigo
+        ['bg' => '#f3e8ff', 'text' => '#6b21a8'], // soft purple
+        ['bg' => '#fae8ff', 'text' => '#86198f'], // soft fuchsia
+        ['bg' => '#fce7f3', 'text' => '#9d174d'], // soft pink
+        ['bg' => '#f1f5f9', 'text' => '#334155'], // soft slate
+        ['bg' => '#f5f5f4', 'text' => '#44403c'], // soft stone
+        ['bg' => '#ecfeff', 'text' => '#155e75'], // soft cyan
+        ['bg' => '#fef2f2', 'text' => '#991b1b']  // soft light red
+    ];
+    $hash = crc32($mapel_name);
+    $idx = abs($hash) % count($colors);
+    return $colors[$idx];
+}
+
 // 1. Buat Tabel Otomatis (Self-healing)
 $conn->query("CREATE TABLE IF NOT EXISTS master_kelas (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -140,22 +166,22 @@ if ($res_sched) {
 
 // Definisi Baris Jam / Pukul dan Jenis Kegiatannya
 $slots_definition = [
-    ['type' => 'slot', 'jam_ke' => 1, 'pukul' => '04.30 sd 05.15'],
-    ['type' => 'slot', 'jam_ke' => 2, 'pukul' => '05.15 sd 06.00'],
-    ['type' => 'break', 'pukul' => '06.00 sd 07.00', 'keterangan' => 'Istirahat: mandi, sholat, dhuha, sarapan'],
-    ['type' => 'slot', 'jam_ke' => 3, 'pukul' => '07.00 sd 07.45'],
-    ['type' => 'slot', 'jam_ke' => 4, 'pukul' => '07.45 sd 08.30'],
-    ['type' => 'slot', 'jam_ke' => 5, 'pukul' => '08.30 sd 09.15'],
-    ['type' => 'slot', 'jam_ke' => 6, 'pukul' => '09.15 sd 10.00'],
-    ['type' => 'slot', 'jam_ke' => 7, 'pukul' => '10.00 sd 10.45'],
-    ['type' => 'slot', 'jam_ke' => 8, 'pukul' => '10.45 sd 11.30'],
-    ['type' => 'break', 'pukul' => '11.30 sd 15.30', 'keterangan' => 'Istirahat: sholat dhuhur makan siang, tidur siang, sholat ashar'],
-    ['type' => 'slot', 'jam_ke' => 9, 'pukul' => '15.30 sd 16.15'],
-    ['type' => 'slot', 'jam_ke' => 10, 'pukul' => '16.15 sd 17.00'],
-    ['type' => 'break', 'pukul' => '17.00 sd 19.00', 'keterangan' => 'Istirahat: sholat maghrib, makan malam'],
-    ['type' => 'slot', 'jam_ke' => 12, 'pukul' => '19.00 sd 19.45'],
-    ['type' => 'slot', 'jam_ke' => 13, 'pukul' => '19.45 sd 20.30'],
-    ['type' => 'break', 'pukul' => '20.30 sd 03.00', 'keterangan' => 'Istirahat: tidur malam']
+    ['type' => 'slot', 'jam_ke' => 1, 'pukul' => '05.00 sd 05.45'],
+    ['type' => 'slot', 'jam_ke' => 2, 'pukul' => '05.45 sd 06.30'],
+    ['type' => 'break', 'pukul' => '06.30 sd 07.30', 'keterangan' => 'Istirahat: mandi, sholat, dhuha, sarapan'],
+    ['type' => 'slot', 'jam_ke' => 3, 'pukul' => '07.30 sd 08.15'],
+    ['type' => 'slot', 'jam_ke' => 4, 'pukul' => '08.15 sd 09.00'],
+    ['type' => 'slot', 'jam_ke' => 5, 'pukul' => '09.00 sd 09.45'],
+    ['type' => 'slot', 'jam_ke' => 6, 'pukul' => '09.45 sd 10.30'],
+    ['type' => 'slot', 'jam_ke' => 7, 'pukul' => '10.30 sd 11.15'],
+    ['type' => 'slot', 'jam_ke' => 8, 'pukul' => '11.15 sd 12.00'],
+    ['type' => 'break', 'pukul' => '12.00 sd 16.00', 'keterangan' => 'Istirahat: sholat dhuhur makan siang, tidur siang, sholat ashar'],
+    ['type' => 'slot', 'jam_ke' => 9, 'pukul' => '16.00 sd 16.45'],
+    ['type' => 'slot', 'jam_ke' => 10, 'pukul' => '16.45 sd 17.30'],
+    ['type' => 'break', 'pukul' => '17.30 sd 19.30', 'keterangan' => 'Istirahat: sholat maghrib, makan malam'],
+    ['type' => 'slot', 'jam_ke' => 12, 'pukul' => '19.30 sd 20.15'],
+    ['type' => 'slot', 'jam_ke' => 13, 'pukul' => '20.15 sd 21.00'],
+    ['type' => 'break', 'pukul' => '21.00 sd 03.30', 'keterangan' => 'Istirahat: tidur malam']
 ];
 
 $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -274,22 +300,28 @@ $active_menu = 'jadwal_pelajaran';
                                             <?php foreach ($kelas_list as $cls): 
                                                 $c_id = $cls['id'];
                                                 $sched = $schedules[$day][$jk][$c_id] ?? null;
+                                                
+                                                $style_attr = "";
+                                                if ($sched) {
+                                                    $colors = dapatkan_warna_mapel($sched['mapel_nama']);
+                                                    $style_attr = "style='background-color: {$colors['bg']}; color: {$colors['text']};'";
+                                                }
                                             ?>
-                                                <td class="px-1 py-1.5 align-middle cursor-pointer hover:bg-emerald-50 transition duration-150 relative group"
+                                                <td class="px-1 py-1.5 align-middle cursor-pointer transition duration-150 relative group" <?= $style_attr ?>
                                                     onclick="openEditModal('<?= $day ?>', <?= $jk ?>, '<?= $slot['pukul'] ?>', <?= $c_id ?>, '<?= htmlspecialchars($cls['nama_kelas']) ?>', '<?= $sched['mapel_id'] ?? '' ?>', '<?= $sched['ustadz_id'] ?? '' ?>')">
                                                     
                                                     <?php if ($sched): ?>
                                                         <div class="flex flex-col items-center">
-                                                            <span class="font-bold text-emerald-800 text-[10px] break-all leading-tight">
+                                                            <span class="font-bold text-[10px] break-all leading-tight">
                                                                 <?= htmlspecialchars($sched['mapel_kode']) ?>
                                                             </span>
-                                                            <span class="text-[9px] text-gray-500 mt-0.5 leading-none italic max-w-[70px] truncate" title="<?= htmlspecialchars($sched['ustadz_nama']) ?>">
+                                                            <span class="text-[9px] opacity-75 mt-0.5 leading-none italic max-w-[70px] truncate" title="<?= htmlspecialchars($sched['ustadz_nama']) ?>" style="color: inherit;">
                                                                 <?= htmlspecialchars($sched['ustadz_nama']) ?>
                                                             </span>
                                                         </div>
                                                         <!-- Edit overlay icon -->
-                                                        <div class="absolute inset-0 bg-emerald-700/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-150 rounded">
-                                                            <i class="fas fa-pen text-emerald-800 text-[10px]"></i>
+                                                        <div class="absolute inset-0 bg-black/5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-150 rounded">
+                                                            <i class="fas fa-pen text-[10px]" style="color: inherit;"></i>
                                                         </div>
                                                     <?php else: ?>
                                                         <span class="text-gray-300 italic text-[9px] block py-1.5">+ Isi</span>
