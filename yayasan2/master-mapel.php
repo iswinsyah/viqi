@@ -5,12 +5,18 @@ require_once '../koneksi.php';
 // 1. Buat Tabel & Kolom Otomatis (Self-healing)
 $conn->query("CREATE TABLE IF NOT EXISTS master_mapel (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_mapel VARCHAR(50) DEFAULT NULL,
     nama_mapel VARCHAR(150) UNIQUE NOT NULL,
     kategori_mapel ENUM('Diknas', 'Diniyah', 'Ekstrakurikuler', 'Lainnya') DEFAULT 'Lainnya',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 
 // Tambahkan kolom baru jika belum ada
+$res = $conn->query("SHOW COLUMNS FROM master_mapel LIKE 'kode_mapel'");
+if ($res->num_rows == 0) {
+    $conn->query("ALTER TABLE master_mapel ADD COLUMN kode_mapel VARCHAR(50) DEFAULT NULL AFTER id");
+}
+
 $res = $conn->query("SHOW COLUMNS FROM master_mapel LIKE 'metode_belajar'");
 if ($res->num_rows == 0) {
     $conn->query("ALTER TABLE master_mapel ADD COLUMN metode_belajar ENUM('offline', 'online') DEFAULT 'offline' AFTER kategori_mapel");
@@ -48,6 +54,7 @@ if (isset($_GET['hapus_id'])) {
 // 3. Simpan / Update Data
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
+    $kode_mapel = $conn->real_escape_string($_POST['kode_mapel']);
     $nama_mapel = $conn->real_escape_string($_POST['nama_mapel']);
     $kategori_mapel = $conn->real_escape_string($_POST['kategori_mapel']);
     $metode_belajar = $conn->real_escape_string($_POST['metode_belajar']);
@@ -63,10 +70,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $pesan_error = "Mata pelajaran '$nama_mapel' sudah terdaftar!";
     } else {
         if ($id > 0) {
-            $sql = "UPDATE master_mapel SET nama_mapel='$nama_mapel', kategori_mapel='$kategori_mapel', metode_belajar='$metode_belajar', status_aktif=$status_aktif, pengampu_id=$pengampu_id WHERE id=$id";
+            $sql = "UPDATE master_mapel SET kode_mapel='$kode_mapel', nama_mapel='$nama_mapel', kategori_mapel='$kategori_mapel', metode_belajar='$metode_belajar', status_aktif=$status_aktif, pengampu_id=$pengampu_id WHERE id=$id";
             $pesan_sukses = "Data mata pelajaran berhasil diupdate!";
         } else {
-            $sql = "INSERT INTO master_mapel (nama_mapel, kategori_mapel, metode_belajar, status_aktif, pengampu_id) VALUES ('$nama_mapel', '$kategori_mapel', '$metode_belajar', $status_aktif, $pengampu_id)";
+            $sql = "INSERT INTO master_mapel (kode_mapel, nama_mapel, kategori_mapel, metode_belajar, status_aktif, pengampu_id) VALUES ('$kode_mapel', '$nama_mapel', '$kategori_mapel', '$metode_belajar', $status_aktif, $pengampu_id)";
             $pesan_sukses = "Mata pelajaran baru berhasil ditambahkan!";
         }
 
@@ -234,6 +241,11 @@ $active_menu = 'master_mapel';
                         <input type="hidden" name="id" value="<?= $edit_mode ? $data_edit['id'] : '' ?>">
                         
                         <div>
+                            <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Kode Mapel</label>
+                            <input type="text" name="kode_mapel" value="<?= $edit_mode ? htmlspecialchars($data_edit['kode_mapel'] ?? '') : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm" placeholder="Contoh: FIQ">
+                        </div>
+
+                        <div>
                             <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Nama Mata Pelajaran</label>
                             <input type="text" name="nama_mapel" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama_mapel']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm" placeholder="Contoh: Fiqih Ibadah">
                         </div>
@@ -336,6 +348,7 @@ $active_menu = 'master_mapel';
                         <table class="min-w-full divide-y divide-gray-200 text-left">
                             <thead class="bg-slate-50">
                                 <tr>
+                                    <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Kode</th>
                                     <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Nama Mata Pelajaran</th>
                                     <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Kategori</th>
                                     <th class="px-5 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Mode Belajar</th>
@@ -361,6 +374,9 @@ $active_menu = 'master_mapel';
                                     while($row = $res_list->fetch_assoc()):
                                 ?>
                                         <tr class="hover:bg-slate-50/80 transition-colors">
+                                            <td class="px-5 py-3.5 font-bold text-gray-600">
+                                                <?= htmlspecialchars($row['kode_mapel'] ?? '-') ?>
+                                            </td>
                                             <td class="px-5 py-3.5 font-bold text-gray-800">
                                                 <?= htmlspecialchars($row['nama_mapel']) ?>
                                             </td>
@@ -478,16 +494,18 @@ $active_menu = 'master_mapel';
             const tr = table.getElementsByTagName("tr");
 
             for (let i = 0; i < tr.length; i++) {
-                const tdName = tr[i].getElementsByTagName("td")[0];
-                const tdCat = tr[i].getElementsByTagName("td")[1];
-                const tdClasses = tr[i].getElementsByTagName("td")[4];
+                const tdCode = tr[i].getElementsByTagName("td")[0];
+                const tdName = tr[i].getElementsByTagName("td")[1];
+                const tdCat = tr[i].getElementsByTagName("td")[2];
+                const tdClasses = tr[i].getElementsByTagName("td")[5];
                 
-                if (tdName || tdCat || tdClasses) {
-                    const textName = (tdName.textContent || tdName.innerText).toUpperCase();
-                    const textCat = (tdCat.textContent || tdCat.innerText).toUpperCase();
+                if (tdCode || tdName || tdCat || tdClasses) {
+                    const textCode = tdCode ? (tdCode.textContent || tdCode.innerText).toUpperCase() : "";
+                    const textName = tdName ? (tdName.textContent || tdName.innerText).toUpperCase() : "";
+                    const textCat = tdCat ? (tdCat.textContent || tdCat.innerText).toUpperCase() : "";
                     const textClasses = tdClasses ? (tdClasses.textContent || tdClasses.innerText).toUpperCase() : "";
                     
-                    if (textName.indexOf(filter) > -1 || textCat.indexOf(filter) > -1 || textClasses.indexOf(filter) > -1) {
+                    if (textCode.indexOf(filter) > -1 || textName.indexOf(filter) > -1 || textCat.indexOf(filter) > -1 || textClasses.indexOf(filter) > -1) {
                         tr[i].style.display = "";
                     } else {
                         tr[i].style.display = "none";
