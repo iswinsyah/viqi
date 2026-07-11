@@ -319,7 +319,7 @@ $month_map = [
                                                     $show_code = false;
                                                 }
                                     ?>
-                                                <td class="border border-gray-300 grid-cell <?= $bg_color ?> flex items-center justify-center text-[9px] cursor-help" title="<?= $status_code ?> - <?= htmlspecialchars($desc) ?>"><?= $show_code ? $status_code : '' ?></td>
+                                                <td class="border border-gray-300 grid-cell <?= $bg_color ?> text-center align-middle text-[9px] cursor-help" title="<?= $status_code ?> - <?= htmlspecialchars($desc) ?>"><?= $show_code ? $status_code : '' ?></td>
                                     <?php 
                                             else:
                                     ?>
