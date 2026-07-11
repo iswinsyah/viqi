@@ -49,7 +49,9 @@ $holiday_categories = [
         'AS2' => 'Awal Semester 2',
         'UJK' => 'Ujian Kesetaraan',
         'PLH' => 'Penjemputan Santri Libur Hari Raya',
-        'KPH' => 'Kedatangan Santri Pasca Hari Raya'
+        'KPH' => 'Kedatangan Santri Pasca Hari Raya',
+        'RP1' => 'Terima Rapot & Penjemputan Semester 1',
+        'RP2' => 'Terima Rapot & Penjemputan Semester 2'
     ],
     'Agenda Akademik Panjang' => [
         'KPP' => 'Kegiatan Permulaan Puasa',
@@ -312,7 +314,7 @@ $month_map = [
                                                     $bg_color = 'bg-red-600 text-white font-bold'; // Hari Besar Nasional (merah)
                                                 } elseif (in_array($status_code, ['MLD', 'IMN', 'IDF', 'IDA', 'TBI'])) {
                                                     $bg_color = 'bg-green-600 text-white font-bold'; // Hari Besar Islam (hijau)
-                                                } elseif (in_array($status_code, ['KS1', 'KS2', 'AS1', 'AS2', 'UJK', 'PLH', 'KPH', 'KPP', 'LHR', 'KT1', 'KT2', 'UA1', 'UA2', 'LS1', 'LS2'])) {
+                                                } elseif (in_array($status_code, ['KS1', 'KS2', 'AS1', 'AS2', 'UJK', 'PLH', 'KPH', 'RP1', 'RP2', 'KPP', 'LHR', 'KT1', 'KT2', 'UA1', 'UA2', 'LS1', 'LS2'])) {
                                                     $bg_color = 'bg-sky-300 text-black font-bold'; // Agenda Akademik & Panjang (biru terang)
                                                 } elseif (in_array($status_code, ['TBM', 'NTL', 'IML', 'NYP', 'WFT', 'PSK', 'ISA', 'WSK'])) {
                                                     $bg_color = 'bg-gray-400 text-transparent font-normal'; // Hari Besar Agama Lain (abu-abu, tanpa kode)
