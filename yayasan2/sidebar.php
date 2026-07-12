@@ -47,7 +47,7 @@
                 <i class="fas fa-funnel-dollar w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'cashflow') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Cashflow Terpadu
             </a>
             <a href="gaji-asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-chalkboard-teacher w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Asatidz
+                <i class="fas fa-id-card-clip w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Pegawai
             </a>
             <a href="gaji-musyrif.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_musyrif') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-user-shield w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_musyrif') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Musyrif
