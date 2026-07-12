@@ -441,14 +441,40 @@ if ($default_santri_count === 0) {
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[10px] font-semibold text-gray-600 mb-1">Target Santri Baru</label>
-                                    <input type="number" id="sim_new_santri" value="45" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Target Santri Baru</label>
+                                <input type="number" id="sim_new_santri" value="45" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+
+                            <!-- RINCIAN UANG PANGKAL -->
+                            <div class="p-3 bg-emerald-50/20 rounded-xl border border-emerald-100 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wide"><i class="fas fa-hand-holding-dollar mr-1"></i>Rincian Uang Pangkal</span>
+                                    <span class="text-[10px] font-black text-emerald-600" id="total_uang_pangkal_label">Rp 12.000.000</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Uang Seragam</label>
+                                        <input type="number" id="sim_up_seragam" value="1500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Uang Asrama</label>
+                                        <input type="number" id="sim_up_asrama" value="2500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Uang Kegiatan</label>
+                                        <input type="number" id="sim_up_kegiatan" value="2000000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Uang Buku</label>
+                                        <input type="number" id="sim_up_buku" value="1500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
                                 </div>
                                 <div>
-                                    <label class="block text-[10px] font-semibold text-gray-600 mb-1">Uang Pangkal / Anak</label>
-                                    <input type="number" id="sim_uang_pangkal" value="12000000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                                    <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Wakaf Akomodasi</label>
+                                    <input type="number" id="sim_up_wakaf" value="4500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
                                 </div>
                             </div>
 
@@ -718,7 +744,19 @@ if ($default_santri_count === 0) {
             const beasiswa_potongan = parseFloat(document.getElementById('sim_beasiswa_potongan').value) || 0;
 
             const newSantriCount = parseInt(document.getElementById('sim_new_santri').value) || 0;
-            const uangPangkal = parseFloat(document.getElementById('sim_uang_pangkal').value) || 0;
+            
+            // Uang Pangkal Components
+            const up_seragam = parseFloat(document.getElementById('sim_up_seragam').value) || 0;
+            const up_asrama = parseFloat(document.getElementById('sim_up_asrama').value) || 0;
+            const up_kegiatan = parseFloat(document.getElementById('sim_up_kegiatan').value) || 0;
+            const up_buku = parseFloat(document.getElementById('sim_up_buku').value) || 0;
+            const up_wakaf = parseFloat(document.getElementById('sim_up_wakaf').value) || 0;
+            
+            const uangPangkal = up_seragam + up_asrama + up_kegiatan + up_buku + up_wakaf;
+            
+            // Update UI Label
+            document.getElementById('total_uang_pangkal_label').innerText = formatRupiah(uangPangkal);
+
             const donasi = parseFloat(document.getElementById('sim_donasi').value) || 0;
             
             const gajiPokok = parseFloat(document.getElementById('sim_gaji_pokok').value) || 0;
