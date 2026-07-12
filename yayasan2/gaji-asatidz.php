@@ -19,6 +19,8 @@ $active_menu = 'gaji_asatidz';
 @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_asrama_a INT DEFAULT 1200000");
 @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_asrama_b INT DEFAULT 800000");
 @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_asrama_c INT DEFAULT 400000");
+@$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN insentif_kpi_muda INT DEFAULT 100000");
+@$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN insentif_kpi_utama INT DEFAULT 500000");
 
 $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_gaji (
     id INT PRIMARY KEY DEFAULT 1, 
@@ -35,7 +37,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_gaji (
     tunj_mahad_c INT DEFAULT 500000,
     tunj_asrama_a INT DEFAULT 1200000,
     tunj_asrama_b INT DEFAULT 800000,
-    tunj_asrama_c INT DEFAULT 400000
+    tunj_asrama_c INT DEFAULT 400000,
+    insentif_kpi_muda INT DEFAULT 100000,
+    insentif_kpi_utama INT DEFAULT 500000
 )");
 $conn->query("INSERT IGNORE INTO pengaturan_gaji (id) VALUES (1)");
 
@@ -45,7 +49,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_gaji'])) {
     $gaji_a = (int)$_POST['gaji_grade_a'];
     
     $gaji_muda = (int)$_POST['gaji_pokok_muda'];
+    $insentif_muda = (int)$_POST['insentif_kpi_muda'];
     $gaji_utama = (int)$_POST['gaji_pokok_utama'];
+    $insentif_utama = (int)$_POST['insentif_kpi_utama'];
     
     $tunj_kepsek_a = (int)$_POST['tunj_kepsek_a'];
     $tunj_kepsek_b = (int)$_POST['tunj_kepsek_b'];
@@ -61,7 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_gaji'])) {
 
     $conn->query("UPDATE pengaturan_gaji SET 
         gaji_grade_c=$gaji_c, gaji_grade_b=$gaji_b, gaji_grade_a=$gaji_a,
-        gaji_pokok_muda=$gaji_muda, gaji_pokok_utama=$gaji_utama,
+        gaji_pokok_muda=$gaji_muda, insentif_kpi_muda=$insentif_muda,
+        gaji_pokok_utama=$gaji_utama, insentif_kpi_utama=$insentif_utama,
         tunj_kepsek_a=$tunj_kepsek_a, tunj_kepsek_b=$tunj_kepsek_b, tunj_kepsek_c=$tunj_kepsek_c,
         tunj_mahad_a=$tunj_mahad_a, tunj_mahad_b=$tunj_mahad_b, tunj_mahad_c=$tunj_mahad_c,
         tunj_asrama_a=$tunj_asrama_a, tunj_asrama_b=$tunj_asrama_b, tunj_asrama_c=$tunj_asrama_c
@@ -77,7 +84,9 @@ $gaji_grade_b = $data_gaji['gaji_grade_b'] ?? 22500;
 $gaji_grade_a = $data_gaji['gaji_grade_a'] ?? 25000;
 
 $gaji_pokok_muda = $data_gaji['gaji_pokok_muda'] ?? 2500000;
+$insentif_kpi_muda = $data_gaji['insentif_kpi_muda'] ?? 100000;
 $gaji_pokok_utama = $data_gaji['gaji_pokok_utama'] ?? 3500000;
+$insentif_kpi_utama = $data_gaji['insentif_kpi_utama'] ?? 500000;
 
 $tunj_kepsek_a = $data_gaji['tunj_kepsek_a'] ?? 1500000;
 $tunj_kepsek_b = $data_gaji['tunj_kepsek_b'] ?? 1000000;
@@ -154,18 +163,41 @@ $tunj_asrama_c = $data_gaji['tunj_asrama_c'] ?? 400000;
                 <!-- 2. GAJI POKOK PEGAWAI YAYASAN -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="px-6 py-4 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-                        <h2 class="font-bold text-emerald-900 text-sm flex items-center"><i class="fas fa-users-cog mr-2 text-emerald-600"></i>2. Gaji Pokok Pegawai Yayasan</h2>
-                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">Gaji Pokok</span>
+                        <h2 class="font-bold text-emerald-900 text-sm flex items-center"><i class="fas fa-users-cog mr-2 text-emerald-600"></i>2. Gaji Pokok & Insentif Pegawai Yayasan</h2>
+                        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">Gaji & KPI</span>
                     </div>
                     <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Pegawai Muda - Rp</label>
-                                <input type="number" name="gaji_pokok_muda" value="<?= $gaji_pokok_muda ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500 text-sm" required>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Pegawai Muda -->
+                            <div class="p-4 bg-slate-50 rounded-xl border border-gray-200/80 space-y-3">
+                                <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fas fa-user-clock mr-1.5 text-slate-500 text-sm"></i>Pegawai Muda</span>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 mb-1">Gaji Pokok Tetap (Rp)</label>
+                                        <input type="number" name="gaji_pokok_muda" value="<?= $gaji_pokok_muda ?>" class="w-full px-3 py-1.5 border rounded-lg focus:ring-amber-500 text-xs" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 mb-1">Insentif KPI Max (Rp)</label>
+                                        <input type="number" name="insentif_kpi_muda" value="<?= $insentif_kpi_muda ?>" class="w-full px-3 py-1.5 border rounded-lg focus:ring-amber-500 text-xs" required>
+                                    </div>
+                                </div>
+                                <span class="text-[9px] text-gray-400 block"><i class="fas fa-info-circle mr-1 text-amber-600"></i> Rekomendasi: Pokok Rp 900.000 + Insentif KPI Rp 100.000 (Total Rp 1.000.000 jika sangat rajin).</span>
                             </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Pegawai Utama - Rp</label>
-                                <input type="number" name="gaji_pokok_utama" value="<?= $gaji_pokok_utama ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500 text-sm" required>
+
+                            <!-- Pegawai Utama -->
+                            <div class="p-4 bg-slate-50 rounded-xl border border-gray-200/80 space-y-3">
+                                <span class="text-xs font-bold text-slate-800 flex items-center"><i class="fas fa-user-check mr-1.5 text-slate-500 text-sm"></i>Pegawai Utama</span>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 mb-1">Gaji Pokok Tetap (Rp)</label>
+                                        <input type="number" name="gaji_pokok_utama" value="<?= $gaji_pokok_utama ?>" class="w-full px-3 py-1.5 border rounded-lg focus:ring-amber-500 text-xs" required>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-gray-500 mb-1">Insentif KPI Max (Rp)</label>
+                                        <input type="number" name="insentif_kpi_utama" value="<?= $insentif_kpi_utama ?>" class="w-full px-3 py-1.5 border rounded-lg focus:ring-amber-500 text-xs" required>
+                                    </div>
+                                </div>
+                                <span class="text-[9px] text-gray-400 block"><i class="fas fa-info-circle mr-1 text-emerald-600"></i> Diberikan penuh jika nilai KPI sangat baik, parsial jika cukup, dan Rp 0 jika kurang.</span>
                             </div>
                         </div>
                     </div>
