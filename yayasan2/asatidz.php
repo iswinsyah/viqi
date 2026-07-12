@@ -203,8 +203,8 @@ $active_menu = 'asatidz';
                                         <td class='px-4 py-3'><span class='inline-block px-2.5 py-0.5 rounded text-[10px] font-bold border $status_color'>$status_display</span></td>
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($gaji_pokok, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($tunjangan, 0, ',', '.')."</td>
-                                        <td class="px-4 py-3 text-right font-semibold text-slate-700">Rp ".number_format($honor, 0, ',', '.')." <span class="text-[9px] text-gray-400 block">($total_pertemuan x)</span></td>
-                                        <td class="px-4 py-3 text-right font-bold text-amber-600 bg-amber-50/20">Rp ".number_format($total_gaji, 0, ',', '.')."</td>
+                                        <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($honor, 0, ',', '.')." <span class='text-[9px] text-gray-400 block'>($total_pertemuan x)</span></td>
+                                        <td class='px-4 py-3 text-right font-bold text-amber-600 bg-amber-50/20'>Rp ".number_format($total_gaji, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-center'>
                                             <a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-3'><i class='fas fa-edit'></i></a>
                                             <a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700'><i class='fas fa-trash'></i></a>
