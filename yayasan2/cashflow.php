@@ -385,14 +385,60 @@ if ($default_santri_count === 0) {
                                 <input type="number" id="sim_init_cash" value="120000000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
                             </div>
 
-                            <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Jumlah Santri Aktif</label>
-                                <input type="number" id="sim_santri_count" value="<?= $default_santri_count ?>" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            <!-- SPP BERDASARKAN 3 ANGKATAN -->
+                            <div class="p-3 bg-emerald-50/30 rounded-xl border border-emerald-100 space-y-2">
+                                <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wide block"><i class="fas fa-users mr-1"></i>SPP 3 Angkatan Santri</span>
+                                
+                                <!-- Angkatan Terlama (2024) -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Santri Terlama ('24)</label>
+                                        <input type="number" id="sim_santri_2024" value="35" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Tarif SPP / Bln</label>
+                                        <input type="number" id="sim_spp_2024" value="1100000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+
+                                <!-- Angkatan Tengah (2025) -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Santri Tengah ('25)</label>
+                                        <input type="number" id="sim_santri_2025" value="40" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Tarif SPP / Bln</label>
+                                        <input type="number" id="sim_spp_2025" value="1300000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+
+                                <!-- Angkatan Baru (2026) -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Santri Baru ('26)</label>
+                                        <input type="number" id="sim_santri_2026" value="45" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Tarif SPP / Bln</label>
+                                        <input type="number" id="sim_spp_2026" value="1500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
                             </div>
 
-                            <div>
-                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Tarif SPP Santri / Bulan</label>
-                                <input type="number" id="sim_spp_tarif" value="1500000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            <!-- SUBSIDI BEASISWA / KERINGANAN SPP -->
+                            <div class="p-3 bg-sky-50/20 rounded-xl border border-sky-100 space-y-2">
+                                <span class="text-[10px] font-bold text-sky-800 uppercase tracking-wide block"><i class="fas fa-hand-holding-hand mr-1"></i>Beasiswa & Keringanan SPP</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Penerima Beasiswa</label>
+                                        <input type="number" id="sim_beasiswa_count" value="12" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Rata Potongan / Bln</label>
+                                        <input type="number" id="sim_beasiswa_potongan" value="750000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-3">
@@ -471,6 +517,20 @@ if ($default_santri_count === 0) {
                                 <input type="number" id="sim_anggaran_thr" value="38000000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
                             </div>
                         </div>
+
+                        <!-- KARTU PANDUAN JURNAL AKUNTANSI -->
+                        <div class="bg-blue-50/50 border border-blue-200 rounded-xl p-4 text-xs text-left space-y-2 mt-4">
+                            <span class="font-bold text-blue-900 flex items-center"><i class="fas fa-book mr-1.5 text-blue-600"></i>Panduan Pembukuan Beasiswa</span>
+                            <p class="text-[10px] text-blue-800 leading-relaxed">
+                                Untuk santri penerima beasiswa / keringanan, catat transaksi di pembukuan menggunakan akun beban penyeimbang:
+                            </p>
+                            <div class="bg-white/80 rounded border border-blue-100 p-2 font-mono text-[9px] text-slate-700 space-y-1">
+                                <div><strong class="text-blue-950">[D]</strong> Kas/Bank: Rp 900.000</div>
+                                <div><strong class="text-blue-950">[D]</strong> Beban Keringanan/Beasiswa: Rp 600.000</div>
+                                <div><strong class="text-rose-900">[K]</strong> Pendapatan SPP Santri: Rp 1.500.000</div>
+                            </div>
+                            <span class="text-[9px] text-gray-400 block italic font-semibold">Tujuan: Menjaga total kapasitas pendapatan kotor tetap tercatat & subsidi beasiswa terukur jelas.</span>
+                        </div>
                     </div>
 
                     <!-- KANAN (Col-8): GRAFIK & TABEL HASIL SIMULASI -->
@@ -528,13 +588,14 @@ if ($default_santri_count === 0) {
                                     <thead class="bg-gray-50 text-[9px] uppercase tracking-wider text-gray-500 font-bold">
                                         <tr class="divide-x divide-gray-100">
                                             <th class="px-3 py-3 text-left w-[120px]" rowspan="2">Bulan</th>
-                                            <th class="px-2 py-2" colspan="4">Pemasukan (Inflow)</th>
+                                            <th class="px-2 py-2" colspan="5">Pemasukan (Inflow)</th>
                                             <th class="px-2 py-2" colspan="7">Pengeluaran (Outflow)</th>
                                             <th class="px-2 py-3 w-[100px]" rowspan="2">Net Cashflow</th>
                                             <th class="px-3 py-3 w-[120px]" rowspan="2">Saldo Kas</th>
                                         </tr>
                                         <tr class="divide-x divide-gray-100 border-t border-gray-150 text-[8px]">
-                                            <th class="px-2 py-1.5 text-right">SPP</th>
+                                            <th class="px-2 py-1.5 text-right">SPP Kotor</th>
+                                            <th class="px-2 py-1.5 text-right">Keringanan</th>
                                             <th class="px-2 py-1.5 text-right">U. Pangkal</th>
                                             <th class="px-2 py-1.5 text-right">Donasi</th>
                                             <th class="px-2 py-1.5 text-right bg-emerald-50/50">Total</th>
@@ -643,8 +704,19 @@ if ($default_santri_count === 0) {
         function calculateProjections() {
             // Read input values
             const initCash = parseFloat(document.getElementById('sim_init_cash').value) || 0;
-            const santriCount = parseInt(document.getElementById('sim_santri_count').value) || 0;
-            const sppTarif = parseFloat(document.getElementById('sim_spp_tarif').value) || 0;
+            
+            // 3 Cohort SPP
+            const santri_2024 = parseInt(document.getElementById('sim_santri_2024').value) || 0;
+            const spp_2024 = parseFloat(document.getElementById('sim_spp_2024').value) || 0;
+            const santri_2025 = parseInt(document.getElementById('sim_santri_2025').value) || 0;
+            const spp_2025 = parseFloat(document.getElementById('sim_spp_2025').value) || 0;
+            const santri_2026 = parseInt(document.getElementById('sim_santri_2026').value) || 0;
+            const spp_2026 = parseFloat(document.getElementById('sim_spp_2026').value) || 0;
+
+            // Scholarships
+            const beasiswa_count = parseInt(document.getElementById('sim_beasiswa_count').value) || 0;
+            const beasiswa_potongan = parseFloat(document.getElementById('sim_beasiswa_potongan').value) || 0;
+
             const newSantriCount = parseInt(document.getElementById('sim_new_santri').value) || 0;
             const uangPangkal = parseFloat(document.getElementById('sim_uang_pangkal').value) || 0;
             const donasi = parseFloat(document.getElementById('sim_donasi').value) || 0;
@@ -660,6 +732,8 @@ if ($default_santri_count === 0) {
             const biayaUjian = parseFloat(document.getElementById('sim_biaya_ujian').value) || 0;
             const anggaranThr = parseFloat(document.getElementById('sim_anggaran_thr').value) || 0;
 
+            const total_santri = santri_2024 + santri_2025 + santri_2026;
+
             let currentCash = initCash;
             let totalRevAccum = 0;
             let totalExpAccum = 0;
@@ -672,15 +746,18 @@ if ($default_santri_count === 0) {
 
             monthDefinitions.forEach((month, index) => {
                 // Pemasukan (Inflows)
-                const incSpp = santriCount * sppTarif;
+                const spp_gross = (santri_2024 * spp_2024) + (santri_2025 * spp_2025) + (santri_2026 * spp_2026);
+                const spp_discount = beasiswa_count * beasiswa_potongan;
+                const spp_net = Math.max(0, spp_gross - spp_discount);
+
                 const incUangPangkal = newSantriCount * uangPangkal * month.upRatio;
                 const incDonasi = donasi;
-                const totalInc = incSpp + incUangPangkal + incDonasi;
+                const totalInc = spp_net + incUangPangkal + incDonasi;
 
                 // Pengeluaran (Outflows)
                 const expGaji = gajiPokok;
                 const expHonor = honorOffline;
-                const expMakan = (santriCount + 8) * costMakanHari * month.days; // 8 staff/asatidz mukim
+                const expMakan = (total_santri + 8) * costMakanHari * month.days; // 8 staff/asatidz mukim
                 const expSewa = (index === rentMonthIndex) ? (sewaAsramaRumah * jumlahRumahSewa) : 0;
                 const expUtilitas = utilitas;
                 const expUjian = month.isExam ? biayaUjian : 0;
@@ -701,7 +778,8 @@ if ($default_santri_count === 0) {
                 row.className = 'border-b border-gray-150 hover:bg-slate-50 transition-colors text-[10px]';
                 row.innerHTML = `
                     <td class="px-3 py-2.5 font-bold text-slate-800 text-left text-xs bg-slate-50">${month.label}</td>
-                    <td class="px-2 py-2.5 text-right text-emerald-700 font-medium">${formatRupiah(incSpp)}</td>
+                    <td class="px-2 py-2.5 text-right text-emerald-700 font-medium">${formatRupiah(spp_gross)}</td>
+                    <td class="px-2 py-2.5 text-right text-rose-600 font-medium">${spp_discount > 0 ? '-' + formatRupiah(spp_discount) : 'Rp 0'}</td>
                     <td class="px-2 py-2.5 text-right text-emerald-700 font-medium">${formatRupiah(incUangPangkal)}</td>
                     <td class="px-2 py-2.5 text-right text-emerald-700 font-medium">${formatRupiah(incDonasi)}</td>
                     <td class="px-2 py-2.5 text-right font-bold text-emerald-800 bg-emerald-50/20">${formatRupiah(totalInc)}</td>
