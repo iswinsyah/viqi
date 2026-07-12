@@ -3,6 +3,15 @@ require_once 'auth.php';
 require_once '../koneksi.php';
 
 // Pastikan kolom 'role' ada di tabel akun_ustadz (sudah ditambahkan via login-ustadz.php, tapi jaga-jaga)
+$res_gaji = $conn->query("SELECT * FROM pengaturan_gaji WHERE id=1");
+$data_gaji = $res_gaji ? $res_gaji->fetch_assoc() : [];
+$gaji_grade_b = $data_gaji['gaji_grade_b'] ?? 22500;
+$gaji_pokok_muda = $data_gaji['gaji_pokok_muda'] ?? 2500000;
+$gaji_pokok_utama = $data_gaji['gaji_pokok_utama'] ?? 3500000;
+$tunj_kepsek_a = $data_gaji['tunj_kepsek_a'] ?? 1500000;
+$tunj_mahad_a = $data_gaji['tunj_mahad_a'] ?? 1500000;
+$tunj_asrama_a = $data_gaji['tunj_asrama_a'] ?? 1200000;
+
 @$conn->query("ALTER TABLE akun_ustadz MODIFY COLUMN role VARCHAR(255)");
 
 $conn->query("CREATE TABLE IF NOT EXISTS akun_ustadz (id INT AUTO_INCREMENT PRIMARY KEY, nama VARCHAR(150), username VARCHAR(50) UNIQUE, password VARCHAR(255), created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
@@ -128,6 +137,10 @@ $active_menu = 'asatidz';
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Password</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Peran</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Gaji Pokok</th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Tunjangan</th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Honor</th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Total</th>
                                 <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Aksi</th>
                             </tr>
                         </thead>
@@ -141,7 +154,7 @@ $active_menu = 'asatidz';
                                         $role_list = explode(',', $row['role']);
                                         foreach ($role_list as $r) {
                                             $label = ucwords(str_replace('_', ' ', $r));
-                                            $roles_display_html .= "<span class='inline-block bg-amber-100 text-amber-800 rounded-full px-2 py-1 text-xs font-semibold mr-1 mb-1'>$label</span>";
+                                            $roles_display_html .= "<span class='inline-block bg-amber-100 text-amber-800 rounded-full px-2 py-0.5 text-[10px] font-semibold mr-1 mb-1'>$label</span>";
                                         }
                                     } else {
                                         $roles_display_html = "<span class='text-gray-400 italic'>Belum diatur</span>";
@@ -154,12 +167,44 @@ $active_menu = 'asatidz';
                                     if ($status_display === 'Pegawai Muda') $status_color = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                                     if ($status_display === 'Pegawai Utama') $status_color = 'bg-purple-50 text-purple-700 border-purple-200';
 
-                                    echo "<tr class='hover:bg-gray-50'>
+                                    // 1. Gaji Pokok
+                                    $gaji_pokok = 0;
+                                    if ($status_display === 'Pegawai Muda') {
+                                        $gaji_pokok = $gaji_pokok_muda;
+                                    } elseif ($status_display === 'Pegawai Utama') {
+                                        $gaji_pokok = $gaji_pokok_utama;
+                                    }
+
+                                    // 2. Tunjangan (Dihitung dari Grade A Maksimal)
+                                    $tunjangan = 0;
+                                    if (!empty($row['role'])) {
+                                        $role_list = explode(',', $row['role']);
+                                        foreach ($role_list as $r) {
+                                            if ($r === 'kepala_sekolah') $tunjangan += $tunj_kepsek_a;
+                                            elseif ($r === 'kepala_mahad') $tunjangan += $tunj_mahad_a;
+                                            elseif ($r === 'kepala_asrama') $tunjangan += $tunj_asrama_a;
+                                        }
+                                    }
+
+                                    // 3. Honor Mengajar (Jurnal bulan berjalan * tarif Grade B)
+                                    $ust_id = (int)$row['id'];
+                                    $res_jurnal = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
+                                    $total_pertemuan = $res_jurnal ? (int)$res_jurnal->fetch_assoc()['total'] : 0;
+                                    $honor = $total_pertemuan * $gaji_grade_b;
+
+                                    // 4. Total Gaji
+                                    $total_gaji = $gaji_pokok + $tunjangan + $honor;
+
+                                    echo "<tr class='hover:bg-gray-50 text-xs'>
                                         <td class='px-4 py-3 font-bold text-gray-900'>".htmlspecialchars($row['nama'])."</td>
-                                        <td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded text-sm font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td>
-                                        <td class='px-4 py-3'><span class='text-sm text-gray-500 italic'>".htmlspecialchars($row['password'])."</span></td>
+                                        <td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td>
+                                        <td class='px-4 py-3'><span class='text-gray-500 italic'>".htmlspecialchars($row['password'])."</span></td>
                                         <td class='px-4 py-3'>$roles_display_html</td>
-                                        <td class='px-4 py-3'><span class='inline-block px-2.5 py-0.5 rounded text-xs font-bold border $status_color'>$status_display</span></td>
+                                        <td class='px-4 py-3'><span class='inline-block px-2.5 py-0.5 rounded text-[10px] font-bold border $status_color'>$status_display</span></td>
+                                        <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($gaji_pokok, 0, ',', '.')."</td>
+                                        <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($tunjangan, 0, ',', '.')."</td>
+                                        <td class="px-4 py-3 text-right font-semibold text-slate-700">Rp ".number_format($honor, 0, ',', '.')." <span class="text-[9px] text-gray-400 block">($total_pertemuan x)</span></td>
+                                        <td class="px-4 py-3 text-right font-bold text-amber-600 bg-amber-50/20">Rp ".number_format($total_gaji, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-center'>
                                             <a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-3'><i class='fas fa-edit'></i></a>
                                             <a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700'><i class='fas fa-trash'></i></a>
@@ -167,7 +212,7 @@ $active_menu = 'asatidz';
                                     </tr>"; 
                                 } 
                             } else { 
-                                echo "<tr><td colspan='6' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
+                                echo "<tr><td colspan='10' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
                             } 
                             ?>
                         </tbody>
