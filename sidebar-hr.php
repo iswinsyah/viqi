@@ -41,6 +41,8 @@ if ($conn) {
 // Fungsi helper untuk mengecek hak akses
 function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) {
     if ($is_super_admin) return true;
+    // Menu dasar yang wajib tampil untuk seluruh pegawai terdaftar (bahkan jika belum diset role-nya)
+    if (in_array($menu_key, ['absensi_pegawai', 'ganti_password'])) return true;
     if (!isset($menu_permissions[$menu_key])) return false; // Default: sembunyikan jika belum diatur
 
     foreach ($user_roles as $role) {

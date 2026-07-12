@@ -5,40 +5,42 @@ require_once '../koneksi.php';
 // 1. Definisikan semua menu dan role yang ada di Ruang Asatidz
 $defined_menus = [
     'Menu Utama' => [
-        'dashboard_pegawai' => 'Dashboard Pegawai',
+        'absensi_pegawai' => 'Absensi Kehadiran',
+        'peraturan_role' => 'Peraturan Pegawai',
+        'kpi_ustadz' => 'KPI Ustadz',
+        'ganti_password' => 'Ganti Password',
     ],
     'Administrasi' => [
         'buku_induk' => 'Buku Induk Santri',
         'akun_orangtua' => 'Akun Orang Tua',
         'leger_nilai' => 'Leger Nilai Digital',
+        'counseling_karir' => 'Pemetaan Karir & PTN (AI)',
         'rekap_keuangan' => 'Rekap Pembayaran Keuangan',
         'rekap_uang_saku' => 'Rekap Uang Saku',
     ],
     'Asatidz' => [
-        'jurnal_mengajar' => 'Jurnal Mengajar',
-        'master_silabus' => 'Master Silabus & CP',
         'kesediaan_mengajar' => 'Kesediaan Mengajar',
+        'kalender_akademik' => 'Kalender Akademik',
+        'jadwal_pelajaran' => 'Jadwal Pelajaran',
+        'master_silabus' => 'Master Silabus & CP',
         'ai_rpp' => 'AI Generator RPP',
+        'jurnal_mengajar' => 'Jurnal Mengajar',
         'bank_nilai' => 'Bank Nilai Akademik',
     ],
-    'Musyrif' => [
+    'Asrama' => [
         'dashboard_asrama' => 'Dashboard Asrama',
+        'manajemen_halaqoh' => 'Manajemen Halaqoh',
+    ],
+    'Musyrif' => [
         'mutabaah' => 'Buku Mutaba\'ah Santri',
         'setor_hafalan' => 'Setoran Hafalan',
-        'manajemen_halaqoh' => 'Manajemen Halaqoh',
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'laporan_adab' => 'Laporan Kedisiplinan',
         'penilaian_adab' => 'Penilaian Adab (Rapor)',
-        'absensi_pegawai' => 'Absensi Kehadiran',
+        'kpi_musyrif' => 'KPI Musyrif',
     ],
     'Keuangan Santri' => [
         'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
-    ],
-    'Kinerja & Akun' => [
-        'amanah_asatidz' => 'Menu Amanah',
-        'kpi_ustadz' => 'KPI Ustadz',
-        'kpi_musyrif' => 'KPI Musyrif',
-        'ganti_password' => 'Ganti Password',
     ]
 ];
 
