@@ -102,6 +102,13 @@ if ($req_jenis_absen === 'Harian' || $req_jenis_absen === 'Pegawai') {
     }
 }
 
+if ($req_jenis_absen === 'Mengajar') {
+    $is_eligible = in_array('ustadz', $user_roles) || in_array('super_admin', $user_roles);
+    if (!$is_eligible) {
+        json_response('error', 'Anda tidak memiliki hak akses untuk melakukan Absensi Mengajar.');
+    }
+}
+
 // G. Validasi Hak Akses & Status Rapat untuk Absensi Rapat
 $rapat_id = NULL;
 if ($req_jenis_absen === 'Rapat') {
@@ -229,6 +236,10 @@ if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
             $keterangan = 'Tepat Waktu';
         }
     }
+}
+
+if ($qr_jenis_absen === 'Mengajar') {
+    $keterangan = 'Mengajar';
 }
 
 // C. Cek apakah pegawai memiliki status perizinan aktif untuk hari ini (Bypass GPS)

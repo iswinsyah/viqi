@@ -153,6 +153,57 @@ if ($rapat_aktif) {
         }
     }
 }
+
+// H. Pengecekan Absensi Mengajar & Otoritas Role
+$res_mengajar = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Mengajar' ORDER BY waktu_absen ASC");
+$mengajar_status = 'belum_absen';
+if ($res_mengajar) {
+    $num = $res_mengajar->num_rows;
+    if ($num >= 2) {
+        $mengajar_status = 'selesai';
+    } elseif ($num == 1) {
+        $mengajar_status = 'datang';
+    }
+}
+
+$is_eligible_mengajar = in_array('ustadz', $user_roles) || in_array('super_admin', $user_roles);
+
+$mengajar_btn_text = '';
+$mengajar_btn_icon = '';
+if ($mengajar_status === 'belum_absen') {
+    $mengajar_btn_text = 'Mulai Mengajar (Masuk)';
+    $mengajar_btn_icon = 'fa-door-open';
+} elseif ($mengajar_status === 'datang') {
+    $mengajar_btn_text = 'Selesai Mengajar (Pulang)';
+    $mengajar_btn_icon = 'fa-door-closed';
+} else {
+    $mengajar_btn_text = 'Absensi Mengajar Selesai';
+    $mengajar_btn_icon = 'fa-check-double';
+}
+
+// I. Jadwal Mengajar Hari Ini
+$days_id = [
+    'Sunday' => 'Ahad',
+    'Monday' => 'Senin',
+    'Tuesday' => 'Selasa',
+    'Wednesday' => 'Rabu',
+    'Thursday' => 'Kamis',
+    'Friday' => 'Jumat',
+    'Saturday' => 'Sabtu'
+];
+$hari_ini = $days_id[date('l')] ?? 'Senin';
+$q_jadwal = $conn->query("SELECT jp.id, mk.nama_kelas, mm.nama_mapel 
+                          FROM jadwal_pelajaran jp 
+                          JOIN master_kelas mk ON jp.kelas_id = mk.id 
+                          JOIN master_mapel mm ON jp.mapel_id = mm.id 
+                          WHERE jp.ustadz_id = $ustadz_id AND jp.hari = '$hari_ini'");
+$jadwal_hari_ini = [];
+if ($q_jadwal) {
+    while ($r = $q_jadwal->fetch_assoc()) {
+        $jadwal_hari_ini[] = $r;
+    }
+}
+$has_schedule_today = !empty($jadwal_hari_ini);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -213,8 +264,41 @@ if ($rapat_aktif) {
                 </div>
             </div>
 
+            <?php if ($is_eligible_mengajar && $has_schedule_today): ?>
+                <!-- Jadwal Mengajar Hari Ini -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-150 p-5 mb-6 max-w-4xl mx-auto text-left">
+                    <h3 class="font-bold text-gray-800 text-sm mb-3.5 flex items-center"><i class="fas fa-calendar-day mr-2 text-cyan-600"></i>Jadwal Mengajar Anda Hari Ini (<?= $hari_ini ?>)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        <?php foreach ($jadwal_hari_ini as $j): ?>
+                            <div class="p-3 bg-cyan-50/50 rounded-xl border border-cyan-100 flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold text-xs">
+                                    <i class="fas fa-chalkboard"></i>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800"><?= htmlspecialchars($j['nama_mapel']) ?></p>
+                                    <p class="text-[10px] text-gray-500 font-medium">Kelas: <?= htmlspecialchars($j['nama_kelas']) ?></p>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php
+            $cols_count = 1; // Rapat is always shown
+            if ($is_eligible_pegawai) $cols_count++;
+            if ($is_eligible_mengajar) $cols_count++;
+            
+            $grid_cols_class = 'flex justify-center max-w-md';
+            if ($cols_count == 2) {
+                $grid_cols_class = 'grid grid-cols-1 md:grid-cols-2';
+            } elseif ($cols_count == 3) {
+                $grid_cols_class = 'grid grid-cols-1 md:grid-cols-3';
+            }
+            ?>
+
             <!-- GRID KARTU ABSENSI -->
-            <div class="<?= $is_eligible_pegawai ? 'grid grid-cols-1 md:grid-cols-2' : 'flex justify-center max-w-md' ?> gap-6 max-w-4xl mx-auto mb-8">
+            <div class="<?= $grid_cols_class ?> gap-6 max-w-4xl mx-auto mb-8">
                 
                 <?php if ($is_eligible_pegawai): ?>
                     <!-- KARTU 1: ABSENSI PEGAWAI -->
@@ -246,7 +330,37 @@ if ($rapat_aktif) {
                     </div>
                 <?php endif; ?>
 
-                <!-- KARTU 2: ABSENSI RAPAT -->
+                <?php if ($is_eligible_mengajar): ?>
+                    <!-- KARTU 2: ABSENSI MENGAJAR -->
+                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
+                        <div>
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                                <i class="fas fa-chalkboard-user"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Mengajar</h2>
+                            <p class="text-sm text-gray-500 mb-6 font-medium">
+                                <?php if ($mengajar_status === 'belum_absen'): ?>
+                                    Belum absen masuk mengajar.
+                                <?php elseif ($mengajar_status === 'datang'): ?>
+                                    Sudah absen masuk. Klik untuk absen selesai.
+                                <?php else: ?>
+                                    Selesai absensi mengajar hari ini.
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                        
+                        <button id="btn-absen-mengajar" 
+                                data-status="<?= $mengajar_status ?>" 
+                                data-jenis="Mengajar"
+                                <?= ($mengajar_status === 'selesai') ? 'disabled' : '' ?>
+                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($mengajar_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($mengajar_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95') ?>">
+                            <i class="fas <?= $mengajar_btn_icon ?> text-xl"></i>
+                            <span><?= $mengajar_btn_text ?></span>
+                        </button>
+                    </div>
+                <?php endif; ?>
+
+                <!-- KARTU 3: ABSENSI RAPAT -->
                 <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
                     <div>
                         <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
@@ -691,6 +805,13 @@ if ($rapat_aktif) {
         if (btnRapat) {
             btnRapat.addEventListener('click', () => {
                 doAbsensi('Rapat');
+            });
+        }
+
+        const btnMengajar = document.getElementById('btn-absen-mengajar');
+        if (btnMengajar) {
+            btnMengajar.addEventListener('click', () => {
+                doAbsensi('Mengajar');
             });
         }
 

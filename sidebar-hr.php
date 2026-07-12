@@ -54,7 +54,6 @@ function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) 
 // Definisikan struktur menu untuk iterasi
 $menu_structure = [
     'Menu Utama' => [
-        'dashboard_pegawai' => ['href' => 'admin-ustadz.php', 'icon' => 'fa-tachometer-alt', 'title' => 'Dashboard Pegawai'],
         'absensi_pegawai' => ['href' => 'admin-absensi-pegawai.php', 'icon' => 'fa-qrcode', 'title' => 'Absensi Kehadiran'],
         'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract', 'title' => 'Peraturan Pegawai'],
         'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher', 'title' => 'KPI Ustadz'],

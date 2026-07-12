@@ -227,15 +227,8 @@ if ($view === 'dashboard_asrama') {
     }
 
 } else { // default view
-    $active_menu = 'dashboard_pegawai';
-    // --- LOGIC UNTUK DASHBOARD PEGAWAI ---
-    $q_jurnal = $conn->query("SELECT COUNT(id) AS tot FROM jurnal_mengajar");
-    $total_jurnal = $q_jurnal ? ($q_jurnal->fetch_assoc()['tot'] ?? 0) : 0;
-    $q_nilai = $conn->query("SELECT COUNT(id) AS tot FROM leger_nilai");
-    $total_nilai = $q_nilai ? ($q_nilai->fetch_assoc()['tot'] ?? 0) : 0;
-    $jurnal_terbaru = [];
-    $res_jurnal = $conn->query("SELECT * FROM jurnal_mengajar ORDER BY id DESC LIMIT 5");
-    if ($res_jurnal) { while($r = $res_jurnal->fetch_assoc()) { $jurnal_terbaru[] = $r; } }
+    header("Location: admin-absensi-pegawai.php");
+    exit;
 }
 ?>
 <!DOCTYPE html>
