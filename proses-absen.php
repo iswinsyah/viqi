@@ -1,6 +1,9 @@
 <?php
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
+if (file_exists(__DIR__ . '/config-key.php')) {
+    require_once __DIR__ . '/config-key.php';
+}
 
 header('Content-Type: application/json');
 
@@ -54,6 +57,24 @@ function haversine_distance($lat1, $lon1, $lat2, $lon2) {
          sin($dLon / 2) * sin($dLon / 2);
     $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
     return $earth_radius * $c;
+}
+
+function kirim_notifikasi_wa_yayasan($pesan) {
+    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
+    $no_wa = '6285196572223';
+    
+    $waFd = ['target' => $no_wa, 'message' => $pesan];
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => "https://api.fonnte.com/send",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($waFd),
+        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+        CURLOPT_TIMEOUT => 15
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
 }
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
@@ -309,6 +330,18 @@ if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
     $stmt->execute();
     $stmt->close();
 
+    // Kirim notifikasi WA
+    $nama_pegawai = $_SESSION['ustadz_nama'] ?? 'Pegawai';
+    $pesan_wa = "⚠️ *UPAYA ABSENSI DI LUAR JANGKAUAN*\n\n"
+              . "Pegawai: *$nama_pegawai*\n"
+              . "Waktu: " . date('H:i:s') . " WIB\n"
+              . "Jenis Absen: *$qr_jenis_absen* ($status_kehadiran)\n"
+              . "Status: *DITOLAK (Di luar jangkauan)*\n"
+              . "Jarak: " . round($distance) . " meter dari $target_location_name\n"
+              . "Koordinat: `$user_lat, $user_lon`\n\n"
+              . "-- SIM Yayasan Villa Quran --";
+    kirim_notifikasi_wa_yayasan($pesan_wa);
+
     // Kirim response khusus
     die(json_encode([
         'status' => 'rejected',
@@ -328,6 +361,20 @@ if ($stmt->execute()) {
     if ($warning_msg !== null) {
         $res_data['warning_msg'] = $warning_msg;
     }
+
+    // Kirim notifikasi WA
+    $nama_pegawai = $_SESSION['ustadz_nama'] ?? 'Pegawai';
+    $pesan_wa = "✅ *LAPORAN ABSENSI PEGAWAI*\n\n"
+              . "Pegawai: *$nama_pegawai*\n"
+              . "Waktu: " . date('H:i:s') . " WIB\n"
+              . "Jenis Absen: *$qr_jenis_absen* ($status_kehadiran)\n"
+              . "Status: *BERHASIL*\n"
+              . "Lokasi: $target_location_name (Jarak: " . round($distance) . "m)\n"
+              . ($warning_msg ? "Catatan: _" . strip_tags($warning_msg) . "_\n" : "")
+              . "Koordinat: `$user_lat, $user_lon`\n\n"
+              . "-- SIM Yayasan Villa Quran --";
+    kirim_notifikasi_wa_yayasan($pesan_wa);
+
     json_response('success', "Absensi $status_kehadiran berhasil dicatat!", $res_data);
 } else {
     json_response('error', 'Gagal menyimpan data ke database: ' . $conn->error);
