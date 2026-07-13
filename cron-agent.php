@@ -90,6 +90,8 @@ $today = date('Y-m-d');
 $current_month = date('Y-m');
 $current_day = date('d');
 $current_hour = date('H');
+$current_minute = date('i');
+$current_time_hm = date('H:i');
 
 // Fungsi Logging Otonom dengan real-time flush
 function logAgent($msg) {
@@ -1024,14 +1026,14 @@ function generate_hrd_pesan_ai($nama, $tipe_reminder, $detail_tambahan = '') {
     $fallback = "";
     
     if ($tipe_reminder === 'absen_datang') {
-        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama $nama agar melakukan absen masuk/kedatangan pagi ini. Gunakan sapaan Assalamu'alaikum Ustadz/Ustadzah, ingatkan secara santun tapi jelas. Jangan gunakan format markdown tebal miring selain tanda * untuk bold.";
-        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nMengingatkan untuk melakukan absensi kedatangan (check-in) pagi ini di Ruang Asatidz agar tidak terhitung membolos. Abaikan jika Anda sedang izin resmi yang telah disetujui.\n\n-- AI HRD Yayasan Villa Quran --";
+        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan staf/pimpinan bernama $nama agar melakukan absen masuk/kedatangan pagi ini sebelum batas waktu pukul 07.00 WIB. Gunakan sapaan Assalamu'alaikum, ingatkan secara santun tapi jelas. Jangan gunakan format markdown tebal miring selain tanda * untuk bold.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nMengingatkan bahwa 5 menit lagi (pukul 07.00 WIB) batas waktu absensi datang dimulai. Silakan lakukan absensi kedatangan (check-in) di Ruang Asatidz sebelum terlambat.\n\n-- AI HRD Yayasan Villa Quran --";
     } elseif ($tipe_reminder === 'absen_pulang') {
-        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama $nama agar melakukan absen pulang/check-out sore ini sebelum pulang. Berikan ucapan terima kasih atas kerja keras dan dedikasinya hari ini.";
-        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nMengingatkan kembali untuk melakukan absensi kepulangan (check-out) sore ini di Ruang Asatidz sebelum meninggalkan area gedung. Jazaakumullahu Khairan atas dedikasi hari ini.\n\n-- AI HRD Yayasan Villa Quran --";
+        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan staf/pimpinan bernama $nama agar melakukan absen pulang/check-out siang ini karena jam kerja berakhir pukul 13.00 WIB. Berikan ucapan terima kasih atas kerja keras dan dedikasinya hari ini.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nMengingatkan bahwa 1 menit lagi (pukul 13.00 WIB) jam kerja berakhir. Silakan lakukan absensi kepulangan (check-out) di Ruang Asatidz.\n\n-- AI HRD Yayasan Villa Quran --";
     } elseif ($tipe_reminder === 'jurnal_mengajar') {
-        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama $nama agar mengisi Jurnal Mengajar untuk kelas/jadwal hari ini ($detail_tambahan) yang belum diisi. Ingatkan pentingnya pencatatan materi demi laporan wali santri.";
-        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nKami melihat Anda memiliki jadwal mengajar hari ini ($detail_tambahan), namun belum mengisi Jurnal Mengajar di Ruang Asatidz. Mohon segera melengkapi data materi dan absensi santri di kelas.\n\n-- AI HRD Yayasan Villa Quran --";
+        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama $nama yang akan mengajar $detail_tambahan dalam 5 menit. Ingatkan untuk melakukan absen Mengajar dan mengisi Jurnal Mengajar setelah selesai mengajar nanti.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nMengingatkan bahwa 5 menit lagi Anda dijadwalkan mengajar $detail_tambahan. Mohon tidak lupa melakukan absen Mengajar dan melengkapi Jurnal Mengajar setelah selesai nanti.\n\n-- AI HRD Yayasan Villa Quran --";
     }
     
     $res = mikirKeGemini([
@@ -1046,7 +1048,7 @@ function generate_hrd_pesan_ai($nama, $tipe_reminder, $detail_tambahan = '') {
     return $fallback;
 }
 
-// 1. ABSEN DATANG REMINDER (Jam 08:00 - 09:00 WIB)
+// 1. ABSEN DATANG REMINDER (Pukul 06:55 WIB)
 $hrd_datang_done = false;
 $hrd_datang_log_file = __DIR__ . '/agent_hrd_datang_log.txt';
 if (file_exists($hrd_datang_log_file)) {
@@ -1054,16 +1056,22 @@ if (file_exists($hrd_datang_log_file)) {
 }
 
 $force_hrd_datang = ($force === 'hrd_datang');
-if (($current_hour == '08' || $force_hrd_datang) && (!$hrd_datang_done || $force_hrd_datang)) {
+if (($current_time_hm === '06:55' || $force_hrd_datang) && (!$hrd_datang_done || $force_hrd_datang)) {
     $day_num = (int)date('N');
     if ($day_num != 7 || $force_hrd_datang) { // Skip Minggu
-        logAgent("======= MEMULAI AGENT HRD: REMINDER ABSEN DATANG ($today) =======");
+        logAgent("======= MEMULAI AGENT HRD PREVENTIF: REMINDER ABSEN DATANG ($today) =======");
         
         pastikanKoneksiDb();
-        $res_ust = $conn->query("SELECT id, nama, whatsapp FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
+        $res_ust = $conn->query("SELECT id, nama, whatsapp, role FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
+        
+        $eligible_roles = ['kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
         
         if ($res_ust && $res_ust->num_rows > 0) {
             while ($row = $res_ust->fetch_assoc()) {
+                $u_roles = explode(',', $row['role'] ?? '');
+                $intersect = array_intersect($eligible_roles, $u_roles);
+                if (empty($intersect)) continue; // Skip jika bukan staf/pimpinan kerja harian
+                
                 $ust_id = (int)$row['id'];
                 $ust_nama = $row['nama'];
                 $no_wa = preg_replace('/[^0-9]/', '', $row['whatsapp']);
@@ -1072,7 +1080,6 @@ if (($current_hour == '08' || $force_hrd_datang) && (!$hrd_datang_done || $force
                 $res_chk = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $ust_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Izin') LIMIT 1");
                 
                 if ($res_chk && $res_chk->num_rows == 0) {
-                    // Belum absen masuk, kirim peringatan
                     $pesan = generate_hrd_pesan_ai($ust_nama, 'absen_datang');
                     
                     $waFd = ['target' => $no_wa, 'message' => $pesan];
@@ -1088,7 +1095,7 @@ if (($current_hour == '08' || $force_hrd_datang) && (!$hrd_datang_done || $force
                     curl_exec($ch);
                     curl_close($ch);
                     
-                    logAgent("-> Reminder absen datang dikirim ke: $ust_nama ($no_wa)");
+                    logAgent("-> Pengingat absen datang dikirim ke staf: $ust_nama ($no_wa)");
                     sleep(rand(1, 3));
                 }
             }
@@ -1099,7 +1106,7 @@ if (($current_hour == '08' || $force_hrd_datang) && (!$hrd_datang_done || $force
     }
 }
 
-// 2. ABSEN PULANG REMINDER (Jam 16:00 - 17:00 WIB)
+// 2. ABSEN PULANG REMINDER (Pukul 12:59 WIB)
 $hrd_pulang_done = false;
 $hrd_pulang_log_file = __DIR__ . '/agent_hrd_pulang_log.txt';
 if (file_exists($hrd_pulang_log_file)) {
@@ -1107,16 +1114,22 @@ if (file_exists($hrd_pulang_log_file)) {
 }
 
 $force_hrd_pulang = ($force === 'hrd_pulang');
-if (($current_hour == '16' || $force_hrd_pulang) && (!$hrd_pulang_done || $force_hrd_pulang)) {
+if (($current_time_hm === '12:59' || $force_hrd_pulang) && (!$hrd_pulang_done || $force_hrd_pulang)) {
     $day_num = (int)date('N');
     if ($day_num != 7 || $force_hrd_pulang) { // Skip Minggu
-        logAgent("======= MEMULAI AGENT HRD: REMINDER ABSEN PULANG ($today) =======");
+        logAgent("======= MEMULAI AGENT HRD PREVENTIF: REMINDER ABSEN PULANG ($today) =======");
         
         pastikanKoneksiDb();
-        $res_ust = $conn->query("SELECT id, nama, whatsapp FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
+        $res_ust = $conn->query("SELECT id, nama, whatsapp, role FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
+        
+        $eligible_roles = ['kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
         
         if ($res_ust && $res_ust->num_rows > 0) {
             while ($row = $res_ust->fetch_assoc()) {
+                $u_roles = explode(',', $row['role'] ?? '');
+                $intersect = array_intersect($eligible_roles, $u_roles);
+                if (empty($intersect)) continue; // Skip jika bukan staf/pimpinan
+                
                 $ust_id = (int)$row['id'];
                 $ust_nama = $row['nama'];
                 $no_wa = preg_replace('/[^0-9]/', '', $row['whatsapp']);
@@ -1129,7 +1142,6 @@ if (($current_hour == '16' || $force_hrd_pulang) && (!$hrd_pulang_done || $force
                     $res_out = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $ust_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran = 'Pulang' LIMIT 1");
                     
                     if ($res_out && $res_out->num_rows == 0) {
-                        // Belum absen pulang, kirim peringatan
                         $pesan = generate_hrd_pesan_ai($ust_nama, 'absen_pulang');
                         
                         $waFd = ['target' => $no_wa, 'message' => $pesan];
@@ -1145,7 +1157,7 @@ if (($current_hour == '16' || $force_hrd_pulang) && (!$hrd_pulang_done || $force
                         curl_exec($ch);
                         curl_close($ch);
                         
-                        logAgent("-> Reminder absen pulang dikirim ke: $ust_nama ($no_wa)");
+                        logAgent("-> Pengingat absen pulang dikirim ke staf: $ust_nama ($no_wa)");
                         sleep(rand(1, 3));
                     }
                 }
@@ -1157,85 +1169,124 @@ if (($current_hour == '16' || $force_hrd_pulang) && (!$hrd_pulang_done || $force
     }
 }
 
-// 3. JURNAL MENGAJAR REMINDER (Jam 19:00 - 20:00 WIB)
-$hrd_jurnal_done = false;
+// 3. JURNAL MENGAJAR & ABSEN MENGAJAR REMINDER (5 Menit Sebelum Kelas)
 $hrd_jurnal_log_file = __DIR__ . '/agent_hrd_jurnal_log.txt';
-if (file_exists($hrd_jurnal_log_file)) {
-    if (strpos(file_get_contents($hrd_jurnal_log_file), "SUCCESS_$today") !== false) $hrd_jurnal_done = true;
-}
+
+$remind_slots = [
+    '04:55' => ['jam_ke' => 1, 'start' => '05:00'],
+    '05:40' => ['jam_ke' => 2, 'start' => '05:45'],
+    '07:25' => ['jam_ke' => 3, 'start' => '07:30'],
+    '08:10' => ['jam_ke' => 4, 'start' => '08:15'],
+    '08:55' => ['jam_ke' => 5, 'start' => '09:00'],
+    '09:40' => ['jam_ke' => 6, 'start' => '09:45'],
+    '10:25' => ['jam_ke' => 7, 'start' => '10:30'],
+    '11:10' => ['jam_ke' => 8, 'start' => '11:15'],
+    '15:55' => ['jam_ke' => 9, 'start' => '16:00'],
+    '16:40' => ['jam_ke' => 10, 'start' => '16:45'],
+    '19:25' => ['jam_ke' => 12, 'start' => '19:30'],
+    '20:10' => ['jam_ke' => 13, 'start' => '20:15']
+];
 
 $force_hrd_jurnal = ($force === 'hrd_jurnal');
-if (($current_hour == '19' || $force_hrd_jurnal) && (!$hrd_jurnal_done || $force_hrd_jurnal)) {
+$slots_to_check = [];
+
+if (isset($remind_slots[$current_time_hm])) {
+    $slots_to_check[] = $remind_slots[$current_time_hm];
+} elseif ($force_hrd_jurnal) {
+    // Mode Force: Cek semua slot jadwal KBM hari ini untuk demo pengujian
+    $slots_to_check = array_values($remind_slots);
+}
+
+if (!empty($slots_to_check)) {
     $days_indo = [
         1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu', 7 => 'Ahad'
     ];
     $today_day_name = $days_indo[date('N')];
     
-    logAgent("======= MEMULAI AGENT HRD: REMINDER JURNAL MENGAJAR ($today_day_name, $today) =======");
+    logAgent("======= MEMULAI AGENT HRD PREVENTIF: CHECKER JURNAL & ABSEN MENGAJAR ($today_day_name, $today) =======");
     
     pastikanKoneksiDb();
     
-    // Ambil ustadz yang terjadwal hari ini
-    $sql_sched = "
-        SELECT DISTINCT j.ustadz_id, u.nama, u.whatsapp 
-        FROM jadwal_pelajaran j 
-        JOIN akun_ustadz u ON j.ustadz_id = u.id 
-        WHERE j.hari = '$today_day_name' 
-          AND u.whatsapp IS NOT NULL 
-          AND u.whatsapp != ''";
-          
-    $res_sched = $conn->query($sql_sched);
-    
-    if ($res_sched && $res_sched->num_rows > 0) {
-        while ($row = $res_sched->fetch_assoc()) {
-            $ust_id = (int)$row['ustadz_id'];
-            $ust_nama = $row['nama'];
-            $no_wa = preg_replace('/[^0-9]/', '', $row['whatsapp']);
-            
-            // Cek apakah sudah mengisi jurnal hari ini
-            $res_jur = $conn->query("SELECT id FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal = '$today' LIMIT 1");
-            
-            if ($res_jur && $res_jur->num_rows == 0) {
-                // Belum mengisi jurnal, dapatkan detail kelas yang diajar hari ini untuk info tambahan
-                $res_classes = $conn->query("
-                    SELECT DISTINCT c.nama_kelas 
-                    FROM jadwal_pelajaran j 
-                    JOIN master_kelas c ON j.kelas_id = c.id 
-                    WHERE j.ustadz_id = $ust_id AND j.hari = '$today_day_name'");
+    foreach ($slots_to_check as $slot) {
+        $jk = $slot['jam_ke'];
+        $pukul_start = $slot['start'];
+        
+        // Ambil ustadz dan detail mapel yang terjadwal di jam_ke ini
+        $sql_sched = "
+            SELECT j.ustadz_id, j.kelas_id, j.mapel_id, u.nama as ustadz_nama, u.whatsapp, c.nama_kelas, m.nama_mapel 
+            FROM jadwal_pelajaran j 
+            JOIN akun_ustadz u ON j.ustadz_id = u.id 
+            JOIN master_kelas c ON j.kelas_id = c.id
+            LEFT JOIN master_mapel m ON j.mapel_id = m.id
+            WHERE j.hari = '$today_day_name' 
+              AND j.jam_ke = $jk
+              AND u.whatsapp IS NOT NULL 
+              AND u.whatsapp != ''";
+              
+        $res_sched = $conn->query($sql_sched);
+        
+        if ($res_sched && $res_sched->num_rows > 0) {
+            while ($row = $res_sched->fetch_assoc()) {
+                $ust_id = (int)$row['ustadz_id'];
+                $kelas_id = (int)$row['kelas_id'];
+                $mapel_id = (int)$row['mapel_id'];
+                $ust_nama = $row['ustadz_nama'];
+                $nama_kelas = $row['nama_kelas'];
+                $nama_mapel = $row['nama_mapel'] ?? 'Mata Pelajaran';
+                $no_wa = preg_replace('/[^0-9]/', '', $row['whatsapp']);
                 
-                $classes_list = [];
-                if ($res_classes) {
-                    while ($c_row = $res_classes->fetch_assoc()) {
-                        $classes_list[] = $c_row['nama_kelas'];
-                    }
+                // --- LOGIKA BLOCK-START VALIDATION ---
+                // Cek apakah di jam sebelumnya (jam_ke - 1) ustadz ini mengajar mata pelajaran yang sama di kelas yang sama
+                $preceding_jk = $jk - 1;
+                $res_preceding = $conn->query("
+                    SELECT id 
+                    FROM jadwal_pelajaran 
+                    WHERE hari = '$today_day_name' 
+                      AND ustadz_id = $ust_id 
+                      AND kelas_id = $kelas_id 
+                      AND mapel_id = $mapel_id 
+                      AND jam_ke = $preceding_jk 
+                    LIMIT 1");
+                
+                $is_start_of_block = ($res_preceding && $res_preceding->num_rows == 0);
+                
+                if (!$is_start_of_block) {
+                    // Skip reminder karena ini jam lanjutan (guru sudah di kelas mengajar pelajaran yang sama)
+                    logAgent("-> Skip jam ke-$jk untuk $ust_nama (lanjutan dari jam ke-$preceding_jk)");
+                    continue;
                 }
-                $detail_kelas = count($classes_list) > 0 ? "di kelas: " . implode(', ', $classes_list) : "";
                 
-                // Kirim reminder
-                $pesan = generate_hrd_pesan_ai($ust_nama, 'jurnal_mengajar', $detail_kelas);
+                // Ini adalah awal blok mengajar baru! Cek absensi / jurnal hari ini
+                // Cek apakah sudah melakukan absen Mengajar hari ini
+                $res_chk = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $ust_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Mengajar' AND status_kehadiran = 'Masuk' LIMIT 1");
                 
-                $waFd = ['target' => $no_wa, 'message' => $pesan];
-                $ch = curl_init();
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => "https://api.fonnte.com/send",
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_POST => true,
-                    CURLOPT_POSTFIELDS => http_build_query($waFd),
-                    CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
-                    CURLOPT_TIMEOUT => 15
-                ]);
-                curl_exec($ch);
-                curl_close($ch);
+                // Cek apakah sudah mengisi jurnal untuk kelas & mapel ini hari ini
+                $res_jur = $conn->query("SELECT id FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal = '$today' AND kelas = '$nama_kelas' AND mata_pelajaran = '$nama_mapel' LIMIT 1");
                 
-                logAgent("-> Reminder Jurnal Mengajar dikirim ke: $ust_nama ($no_wa)");
-                sleep(rand(1, 3));
+                if (($res_chk && $res_chk->num_rows == 0) || ($res_jur && $res_jur->num_rows == 0)) {
+                    // Guru belum absen ATAU belum isi jurnal, kirim reminder preventif
+                    $detail_tambahan = "*$nama_mapel* di kelas *$nama_kelas* pukul *$pukul_start* WIB";
+                    $pesan = generate_hrd_pesan_ai($ust_nama, 'jurnal_mengajar', $detail_tambahan);
+                    
+                    $waFd = ['target' => $no_wa, 'message' => $pesan];
+                    $ch = curl_init();
+                    curl_setopt_array($ch, [
+                        CURLOPT_URL => "https://api.fonnte.com/send",
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST => true,
+                        CURLOPT_POSTFIELDS => http_build_query($waFd),
+                        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                        CURLOPT_TIMEOUT => 15
+                    ]);
+                    curl_exec($ch);
+                    curl_close($ch);
+                    
+                    logAgent("-> Pengingat KBM jam ke-$jk dikirim ke: $ust_nama ($no_wa) - Mapel: $nama_mapel, Kelas: $nama_kelas");
+                    sleep(rand(1, 3));
+                }
             }
         }
-    } else {
-        logAgent("Tidak ada jadwal mengajar ustadz yang terdaftar untuk hari $today_day_name.");
     }
-    
-    file_put_contents($hrd_jurnal_log_file, "SUCCESS_$today\n", FILE_APPEND);
-    logAgent("🎉 Agent HRD: Jurnal Mengajar Selesai.");
+    logAgent("🎉 Agent HRD: Pengecekan Jurnal & Absen Mengajar Selesai.");
 }
 ?>
