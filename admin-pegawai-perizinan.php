@@ -1,6 +1,9 @@
 <?php
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
+if (file_exists(__DIR__ . '/config-key.php')) {
+    require_once __DIR__ . '/config-key.php';
+}
 
 $ustadz_id_aktif = $_SESSION['ustadz_id'];
 $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Pegawai';
@@ -30,6 +33,35 @@ $conn->query("CREATE TABLE IF NOT EXISTS kepegawaian_perizinan (
     FOREIGN KEY (ustadz_id) REFERENCES akun_ustadz(id) ON DELETE CASCADE
 )");
 
+// Self-healing: Tambahkan kolom ditujukan_ke jika belum ada
+$res_tgt = $conn->query("SHOW COLUMNS FROM kepegawaian_perizinan LIKE 'ditujukan_ke'");
+if ($res_tgt && $res_tgt->num_rows == 0) {
+    $conn->query("ALTER TABLE kepegawaian_perizinan ADD COLUMN ditujukan_ke VARCHAR(50) NOT NULL DEFAULT 'kepala_sekolah' AFTER kategori");
+}
+
+// Helper untuk mengirim WhatsApp Fonnte
+function kirim_notifikasi_wa($target, $pesan) {
+    if (empty($target)) return;
+    $target = preg_replace('/[^0-9]/', '', $target);
+    if (strpos($target, '0') === 0) {
+        $target = '62' . substr($target, 1);
+    }
+    
+    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
+    $waFd = ['target' => $target, 'message' => $pesan];
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => "https://api.fonnte.com/send",
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($waFd),
+        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+        CURLOPT_TIMEOUT => 15
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
 $pesan_sukses = "";
 $pesan_error = "";
 
@@ -38,17 +70,68 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $tanggal_mulai = $conn->real_escape_string($_POST['tanggal_mulai']);
     $tanggal_selesai = $conn->real_escape_string($_POST['tanggal_selesai']);
     $kategori = $conn->real_escape_string($_POST['kategori']);
+    $ditujukan_ke = $conn->real_escape_string($_POST['ditujukan_ke'] ?? 'kepala_sekolah');
     $keterangan = $conn->real_escape_string(trim($_POST['keterangan']));
 
-    if (empty($tanggal_mulai) || empty($tanggal_selesai) || empty($kategori) || empty($keterangan)) {
+    if (empty($tanggal_mulai) || empty($tanggal_selesai) || empty($kategori) || empty($ditujukan_ke) || empty($keterangan)) {
         $pesan_error = "Harap lengkapi semua kolom pengajuan!";
     } elseif (strtotime($tanggal_mulai) > strtotime($tanggal_selesai)) {
         $pesan_error = "Tanggal mulai tidak boleh melebihi tanggal selesai!";
     } else {
-        $stmt = $conn->prepare("INSERT INTO kepegawaian_perizinan (ustadz_id, tanggal_mulai, tanggal_selesai, kategori, keterangan) VALUES (?, ?, ?, ?, ?)");
-        $stmt->bind_param("issss", $ustadz_id_aktif, $tanggal_mulai, $tanggal_selesai, $kategori, $keterangan);
+        $stmt = $conn->prepare("INSERT INTO kepegawaian_perizinan (ustadz_id, tanggal_mulai, tanggal_selesai, kategori, ditujukan_ke, keterangan) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("isssss", $ustadz_id_aktif, $tanggal_mulai, $tanggal_selesai, $kategori, $ditujukan_ke, $keterangan);
         if ($stmt->execute()) {
             $pesan_sukses = "Pengajuan izin berhasil diajukan dan sedang menunggu persetujuan!";
+            
+            // Logika Notifikasi WhatsApp
+            $no_tujuan = "";
+            $nama_tujuan = "";
+            if ($ditujukan_ke === 'kepala_sekolah') {
+                $res_sup = $conn->query("SELECT whatsapp, nama FROM akun_ustadz WHERE role LIKE '%kepala_sekolah%' AND whatsapp IS NOT NULL AND whatsapp != '' LIMIT 1");
+                $sup = ($res_sup && $res_sup->num_rows > 0) ? $res_sup->fetch_assoc() : null;
+                $no_tujuan = $sup ? $sup['whatsapp'] : '';
+                $nama_tujuan = $sup ? $sup['nama'] : 'Kepala Sekolah';
+            } elseif ($ditujukan_ke === 'kepala_mahad') {
+                $res_sup = $conn->query("SELECT whatsapp, nama FROM akun_ustadz WHERE role LIKE '%kepala_mahad%' AND whatsapp IS NOT NULL AND whatsapp != '' LIMIT 1");
+                $sup = ($res_sup && $res_sup->num_rows > 0) ? $res_sup->fetch_assoc() : null;
+                $no_tujuan = $sup ? $sup['whatsapp'] : '';
+                $nama_tujuan = $sup ? $sup['nama'] : "Kepala Ma'had";
+            } elseif ($ditujukan_ke === 'ketua_yayasan') {
+                $no_tujuan = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223';
+                $nama_tujuan = 'Ketua Yayasan';
+            }
+            
+            // Format Pesan WA
+            $kategori_label = $kategori;
+            if ($kategori === 'Pulang') $kategori_label = "Pulang Cepat";
+            
+            $pesan_wa = "🔔 *PENGAJUAN IZIN PEGAWAI BARU*\n\n"
+                      . "Yth. *$nama_tujuan*,\n"
+                      . "Ada pengajuan izin baru yang membutuhkan persetujuan Anda:\n\n"
+                      . "• Pegawai: *$ustadz_nama*\n"
+                      . "• Kategori: *$kategori_label*\n"
+                      . "• Periode: " . date('d/m/Y', strtotime($tanggal_mulai)) . " s/d " . date('d/m/Y', strtotime($tanggal_selesai)) . "\n"
+                      . "• Alasan: _\"$keterangan\"_\n\n"
+                      . "Silakan login ke Ruang Asatidz untuk meninjau pengajuan ini.\n"
+                      . "-- SIM Yayasan Villa Quran --";
+            
+            // Kirim ke pejabat yang dituju
+            if (!empty($no_tujuan)) {
+                kirim_notifikasi_wa($no_tujuan, $pesan_wa);
+            }
+            
+            // Tembusan ke Ketua Yayasan jika ditujukan ke Kepala Sekolah / Kepala Ma'had
+            if ($ditujukan_ke === 'kepala_sekolah' || $ditujukan_ke === 'kepala_mahad') {
+                $no_ketua = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223';
+                $pesan_cc = "📢 *TEMBUSAN PENGAJUAN IZIN PEGAWAI*\n"
+                          . "(Tembusan dikirim ke: $nama_tujuan)\n\n"
+                          . "• Pegawai: *$ustadz_nama*\n"
+                          . "• Kategori: *$kategori_label*\n"
+                          . "• Periode: " . date('d/m/Y', strtotime($tanggal_mulai)) . " s/d " . date('d/m/Y', strtotime($tanggal_selesai)) . "\n"
+                          . "• Alasan: _\"$keterangan\"_\n\n"
+                          . "-- SIM Yayasan Villa Quran --";
+                kirim_notifikasi_wa($no_ketua, $pesan_cc);
+            }
         } else {
             $pesan_error = "Gagal mengajukan izin: " . $conn->error;
         }
@@ -189,7 +272,17 @@ $active_menu = 'perizinan_pegawai';
                                 <option value="Cuti Tahunan">Cuti Tahunan</option>
                                 <option value="Izin Urusan Penting">Izin Urusan Penting</option>
                                 <option value="Dinas Luar">Dinas Luar</option>
+                                <option value="Pulang">Pulang Cepat</option>
                                 <option value="Lain-lain">Lain-lain</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Ditujukan Ke</label>
+                            <select name="ditujukan_ke" required class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-cyan-500 bg-white">
+                                <option value="kepala_sekolah">Kepala Sekolah</option>
+                                <option value="kepala_mahad">Kepala Ma'had</option>
+                                <option value="ketua_yayasan">Ketua Yayasan</option>
                             </select>
                         </div>
 
@@ -231,6 +324,7 @@ $active_menu = 'perizinan_pegawai';
                                     <th class="px-6 py-3 text-left">Nama Pegawai</th>
                                     <?php endif; ?>
                                     <th class="px-6 py-3 text-left">Kategori</th>
+                                    <th class="px-6 py-3 text-left">Ditujukan Ke</th>
                                     <th class="px-6 py-3 text-left">Periode Izin</th>
                                     <th class="px-6 py-3 text-left">Alasan/Keterangan</th>
                                     <th class="px-6 py-3 text-center">Status</th>
@@ -242,7 +336,7 @@ $active_menu = 'perizinan_pegawai';
                             <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
                                 <?php if (empty($list_perizinan)): ?>
                                 <tr>
-                                    <td colspan="6" class="py-12 text-gray-400 italic text-center">Belum ada pengajuan izin/cuti yang terdaftar.</td>
+                                    <td colspan="7" class="py-12 text-gray-400 italic text-center">Belum ada pengajuan izin/cuti yang terdaftar.</td>
                                 </tr>
                                 <?php else: foreach ($list_perizinan as $row): 
                                     $st = $row['status'];
@@ -258,7 +352,16 @@ $active_menu = 'perizinan_pegawai';
                                     <?php if ($is_admin): ?>
                                     <td class="px-6 py-4 font-bold text-gray-900"><?= htmlspecialchars($row['nama_pegawai']) ?></td>
                                     <?php endif; ?>
-                                    <td class="px-6 py-4 font-semibold text-slate-800"><?= htmlspecialchars($row['kategori']) ?></td>
+                                    <td class="px-6 py-4 font-semibold text-slate-800"><?= htmlspecialchars($row['kategori'] === 'Pulang' ? 'Pulang Cepat' : $row['kategori']) ?></td>
+                                    <td class="px-6 py-4 font-medium text-slate-700">
+                                        <?php
+                                        $tuj = $row['ditujukan_ke'] ?? 'kepala_sekolah';
+                                        if ($tuj === 'kepala_sekolah') echo 'Kepala Sekolah';
+                                        elseif ($tuj === 'kepala_mahad') echo "Kepala Ma'had";
+                                        elseif ($tuj === 'ketua_yayasan') echo 'Ketua Yayasan';
+                                        else echo ucwords(str_replace('_', ' ', $tuj));
+                                        ?>
+                                    </td>
                                     <td class="px-6 py-4 font-medium text-gray-600">
                                         <?= date('d/m/Y', strtotime($row['tanggal_mulai'])) ?> 
                                         <span class="text-gray-400 mx-1">s/d</span> 

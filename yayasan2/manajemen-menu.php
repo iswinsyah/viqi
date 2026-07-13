@@ -6,6 +6,7 @@ require_once '../koneksi.php';
 $defined_menus = [
     'Menu Utama' => [
         'absensi_pegawai' => 'Absensi Kehadiran',
+        'perizinan_pegawai' => 'Pengajuan Izin / Cuti',
         'peraturan_role' => 'Peraturan Pegawai',
         'kpi_ustadz' => 'KPI Ustadz',
         'ganti_password' => 'Ganti Password',

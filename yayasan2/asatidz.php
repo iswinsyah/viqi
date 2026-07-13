@@ -21,6 +21,11 @@ $res_status_col = $conn->query("SHOW COLUMNS FROM akun_ustadz LIKE 'status_pegaw
 if ($res_status_col && $res_status_col->num_rows == 0) {
     $conn->query("ALTER TABLE akun_ustadz ADD COLUMN status_pegawai VARCHAR(50) DEFAULT 'Pengabdian' AFTER role");
 }
+// Self-healing: Tambahkan kolom whatsapp jika belum ada
+$res_wa_col = $conn->query("SHOW COLUMNS FROM akun_ustadz LIKE 'whatsapp'");
+if ($res_wa_col && $res_wa_col->num_rows == 0) {
+    $conn->query("ALTER TABLE akun_ustadz ADD COLUMN whatsapp VARCHAR(20) DEFAULT NULL AFTER status_pegawai");
+}
 
 if (isset($_GET['hapus_id'])) {
     $id = (int)$_GET['hapus_id'];
@@ -37,16 +42,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $roles_array = $_POST['roles'] ?? [];
     $role = implode(',', $roles_array);
     $status_pegawai = $conn->real_escape_string($_POST['status_pegawai']);
+    $whatsapp = $conn->real_escape_string(trim($_POST['whatsapp']));
 
     $cek = $conn->query("SELECT id FROM akun_ustadz WHERE username = '$username' AND id != $id");
     if ($cek && $cek->num_rows > 0) {
         $pesan_error = "Username '$username' sudah terpakai!";
     } else {
         if ($id > 0) {
-            $sql = "UPDATE akun_ustadz SET nama='$nama', username='$username', password='$password', role='$role', status_pegawai='$status_pegawai' WHERE id=$id";
+            $sql = "UPDATE akun_ustadz SET nama='$nama', username='$username', password='$password', role='$role', status_pegawai='$status_pegawai', whatsapp='$whatsapp' WHERE id=$id";
             $pesan_sukses = "Akun ustadz berhasil diupdate!";
         } else {
-            $sql = "INSERT INTO akun_ustadz (nama, username, password, role, status_pegawai) VALUES ('$nama', '$username', '$password', '$role', '$status_pegawai')";
+            $sql = "INSERT INTO akun_ustadz (nama, username, password, role, status_pegawai, whatsapp) VALUES ('$nama', '$username', '$password', '$role', '$status_pegawai', '$whatsapp')";
             $pesan_sukses = "Akun ustadz baru berhasil ditambahkan!";
         }
         $conn->query($sql);
@@ -85,7 +91,7 @@ $active_menu = 'asatidz';
                 <div class="px-6 py-4 bg-amber-50 border-b border-amber-100"><h2 class="font-bold text-amber-800"><i class="fas <?= $edit_mode ? 'fa-edit' : 'fa-user-plus' ?> mr-2"></i><?= $edit_mode ? 'Edit Akun' : 'Buat Akun Baru' ?></h2></div>
                 <form action="asatidz.php" method="POST" class="p-6">
                     <input type="hidden" name="id" value="<?= $edit_mode ? $data_edit['id'] : '' ?>">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                         <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label><input type="text" name="nama" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: Ust. Ahmad"></div>
                         <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: ahmad123"></div>
                         <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="text" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '12345678' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Kata sandi..."></div>
@@ -101,7 +107,8 @@ $active_menu = 'asatidz';
                                 ?>
                             </select>
                         </div>
-                        <div class="md:col-span-3">
+                        <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp</label><input type="text" name="whatsapp" value="<?= $edit_mode ? htmlspecialchars($data_edit['whatsapp'] ?? '') : '' ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: 62851xxxxxx"></div>
+                        <div class="md:col-span-5">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Peran (Bisa pilih lebih dari satu)</label>
                             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 border p-4 rounded-lg bg-gray-50">
                                 <?php
@@ -135,6 +142,7 @@ $active_menu = 'asatidz';
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Nama Ustadz</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Username</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Password</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">WhatsApp</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Peran</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
                                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Gaji Pokok</th>
@@ -199,6 +207,7 @@ $active_menu = 'asatidz';
                                         <td class='px-4 py-3 font-bold text-gray-900'>".htmlspecialchars($row['nama'])."</td>
                                         <td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td>
                                         <td class='px-4 py-3'><span class='text-gray-500 italic'>".htmlspecialchars($row['password'])."</span></td>
+                                        <td class='px-4 py-3 font-mono font-bold text-gray-700'>".htmlspecialchars($row['whatsapp'] ?? '-')."</td>
                                         <td class='px-4 py-3'>$roles_display_html</td>
                                         <td class='px-4 py-3'><span class='inline-block px-2.5 py-0.5 rounded text-[10px] font-bold border $status_color'>$status_display</span></td>
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($gaji_pokok, 0, ',', '.')."</td>
@@ -212,7 +221,7 @@ $active_menu = 'asatidz';
                                     </tr>"; 
                                 } 
                             } else { 
-                                echo "<tr><td colspan='10' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
+                                echo "<tr><td colspan='11' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
                             } 
                             ?>
                         </tbody>
