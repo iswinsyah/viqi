@@ -557,18 +557,18 @@ $has_schedule_today = !empty($jadwal_hari_ini);
         const locations = {
             'kantor_utama': {
                 nama: 'Gedung B (Kantor Villa Quran)',
-                lat: -6.595038,
-                lon: 106.800247
+                lat: -7.9485768,
+                lon: 112.5823352
             },
             'asrama_rijal': {
                 nama: 'Gedung A (Asrama Rijal)',
-                lat: -6.597638,
-                lon: 106.79955
+                lat: -7.9480284,
+                lon: 112.5796667
             },
             'asrama_nisa': {
                 nama: 'Gedung C (Asrama Nisa)',
-                lat: -6.598333,
-                lon: 106.801111
+                lat: -7.9403686,
+                lon: 112.5754103
             }
         };
 

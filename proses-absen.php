@@ -14,15 +14,15 @@ define('MAX_DISTANCE_METERS', 50); // Jarak toleransi dari titik QR (dalam meter
 $locations = [
     'kantor_utama' => [
         'nama' => 'Gedung B (Kantor Villa Quran)',
-        'coords' => ['latitude' => -6.595038, 'longitude' => 106.800247],
+        'coords' => ['latitude' => -7.9485768, 'longitude' => 112.5823352],
     ],
     'asrama_rijal' => [
         'nama' => 'Gedung A (Asrama Rijal)',
-        'coords' => ['latitude' => -6.597638, 'longitude' => 106.79955],
+        'coords' => ['latitude' => -7.9480284, 'longitude' => 112.5796667],
     ],
     'asrama_nisa' => [
         'nama' => 'Gedung C (Asrama Nisa)',
-        'coords' => ['latitude' => -6.598333, 'longitude' => 106.801111],
+        'coords' => ['latitude' => -7.9403686, 'longitude' => 112.5754103],
     ],
 ];
 
