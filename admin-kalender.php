@@ -2,6 +2,51 @@
 require_once 'auth.php';
 require_once 'koneksi.php';
 
+// Fungsi pembantu untuk mengunduh dan menyimpan gambar secara lokal
+function unduhDanSimpanGambarLokal($url) {
+    if (empty($url)) return '';
+    
+    // Pastikan folder uploads ada
+    $target_dir = __DIR__ . '/uploads/';
+    if (!file_exists($target_dir)) {
+        @mkdir($target_dir, 0755, true);
+    }
+    
+    // Tentukan ekstensi file
+    $ext = 'jpg';
+    if (preg_match('/\.(png|gif|jpeg|webp)/i', $url, $matches)) {
+        $ext = strtolower($matches[1]);
+    }
+    
+    $filename = 'cover_' . md5($url) . '.' . $ext;
+    $target_path = $target_dir . $filename;
+    
+    // Jika file sudah ada, langsung gunakan
+    if (file_exists($target_path)) {
+        return 'uploads/' . $filename;
+    }
+    
+    // Unduh gambar
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_FOLLOWLOCATION => true
+    ]);
+    $img_data = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($img_data && $http_code == 200) {
+        if (@file_put_contents($target_path, $img_data)) {
+            return 'uploads/' . $filename;
+        }
+    }
+    
+    return $url;
+}
+
 // Fungsi untuk mengambil gambar gratis & bebas hak cipta dari Pixabay
 function dapatkanGambarPixabay($keyword) {
     if (file_exists('config-key.php')) {
@@ -39,7 +84,8 @@ function dapatkanGambarPixabay($keyword) {
         if (isset($data['hits']) && count($data['hits']) > 0) {
             // Ambil acak dari 5 teratas agar bervariasi
             $idx = rand(0, min(count($data['hits']) - 1, 4));
-            return $data['hits'][$idx]['webformatURL'] ?? '';
+            $raw_url = $data['hits'][$idx]['webformatURL'] ?? '';
+            return unduhDanSimpanGambarLokal($raw_url);
         } else {
             // Fallback: Jika tidak ditemukan dengan query gabungan, cari dengan kata kunci umum Islami
             $fallback_url = "https://pixabay.com/api/?key=" . $pixabay_key . "&q=" . urlencode("muslim islamic") . "&image_type=photo&orientation=horizontal&safesearch=true&per_page=5";
@@ -53,7 +99,8 @@ function dapatkanGambarPixabay($keyword) {
                 $data_fallback = json_decode($res_fallback, true);
                 if (isset($data_fallback['hits']) && count($data_fallback['hits']) > 0) {
                     $idx = rand(0, min(count($data_fallback['hits']) - 1, 4));
-                    return $data_fallback['hits'][$idx]['webformatURL'] ?? '';
+                    $raw_url = $data_fallback['hits'][$idx]['webformatURL'] ?? '';
+                    return unduhDanSimpanGambarLokal($raw_url);
                 }
             }
         }

@@ -235,6 +235,51 @@ function mikirKeGemini($payload) {
     }
 }
 
+// Fungsi pembantu untuk mengunduh dan menyimpan gambar secara lokal
+function unduhDanSimpanGambarLokal($url) {
+    if (empty($url)) return '';
+    
+    // Pastikan folder uploads ada
+    $target_dir = __DIR__ . '/uploads/';
+    if (!file_exists($target_dir)) {
+        @mkdir($target_dir, 0755, true);
+    }
+    
+    // Tentukan ekstensi file
+    $ext = 'jpg';
+    if (preg_match('/\.(png|gif|jpeg|webp)/i', $url, $matches)) {
+        $ext = strtolower($matches[1]);
+    }
+    
+    $filename = 'cover_' . md5($url) . '.' . $ext;
+    $target_path = $target_dir . $filename;
+    
+    // Jika file sudah ada, langsung gunakan
+    if (file_exists($target_path)) {
+        return 'uploads/' . $filename;
+    }
+    
+    // Unduh gambar
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_FOLLOWLOCATION => true
+    ]);
+    $img_data = curl_exec($ch);
+    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    if ($img_data && $http_code == 200) {
+        if (@file_put_contents($target_path, $img_data)) {
+            return 'uploads/' . $filename;
+        }
+    }
+    
+    return $url;
+}
+
 function dapatkanGambarPixabay($keyword) {
     $pixabay_key = defined('PIXABAY_API_KEY') ? PIXABAY_API_KEY : '';
     if (empty($pixabay_key)) {
@@ -268,7 +313,8 @@ function dapatkanGambarPixabay($keyword) {
         if (isset($data['hits']) && count($data['hits']) > 0) {
             // Ambil acak dari 5 teratas agar bervariasi
             $idx = rand(0, min(count($data['hits']) - 1, 4));
-            return $data['hits'][$idx]['webformatURL'] ?? '';
+            $raw_url = $data['hits'][$idx]['webformatURL'] ?? '';
+            return unduhDanSimpanGambarLokal($raw_url);
         } else {
             // Fallback: Jika tidak ditemukan dengan query gabungan, cari dengan kata kunci umum Islami
             $fallback_url = "https://pixabay.com/api/?key=" . $pixabay_key . "&q=" . urlencode("muslim islamic") . "&image_type=photo&orientation=horizontal&safesearch=true&per_page=5";
@@ -282,13 +328,59 @@ function dapatkanGambarPixabay($keyword) {
                 $data_fallback = json_decode($res_fallback, true);
                 if (isset($data_fallback['hits']) && count($data_fallback['hits']) > 0) {
                     $idx = rand(0, min(count($data_fallback['hits']) - 1, 4));
-                    return $data_fallback['hits'][$idx]['webformatURL'] ?? '';
+                    $raw_url = $data_fallback['hits'][$idx]['webformatURL'] ?? '';
+                    return unduhDanSimpanGambarLokal($raw_url);
                 }
             }
         }
     }
     return '';
 }
+
+// Self-healing: Perbaiki gambar cover artikel yang kosong, rusak, atau get temporer
+function perbaikiGambarCoverRusak() {
+    global $conn;
+    pastikanKoneksiDb();
+    
+    $res = $conn->query("SELECT id, judul, gambar_cover FROM artikel WHERE gambar_cover LIKE '%pixabay.com/get/%' OR gambar_cover = '' OR gambar_cover IS NULL");
+    if ($res && $res->num_rows > 0) {
+        logAgent("Menemukan " . $res->num_rows . " artikel dengan gambar cover kosong atau Pixabay get temporer. Memulai perbaikan...");
+        while ($row = $res->fetch_assoc()) {
+            $id = $row['id'];
+            $judul = $row['judul'];
+            logAgent("Memperbaiki gambar cover untuk artikel ID $id: '$judul'...");
+            
+            // Ambil kata kunci dari judul
+            $clean_title = preg_replace('/[^A-Za-z0-9\s]+/', '', $judul);
+            $words = explode(' ', $clean_title);
+            $keywords = [];
+            foreach ($words as $w) {
+                if (strlen($w) > 3) $keywords[] = $w;
+                if (count($keywords) >= 3) break;
+            }
+            $query = implode(' ', $keywords);
+            if (empty($query)) {
+                $query = "islamic parenting";
+            }
+            
+            // Dapatkan gambar baru dari Pixabay (yang akan diunduh lokal oleh fungsi baru)
+            $new_cover = dapatkanGambarPixabay($query);
+            
+            // Fallback jika gagal
+            if (empty($new_cover)) {
+                $new_cover = "https://loremflickr.com/800/600/islamic,parenting";
+                $new_cover = unduhDanSimpanGambarLokal($new_cover);
+            }
+            
+            if (!empty($new_cover)) {
+                $new_cover_esc = $conn->real_escape_string($new_cover);
+                $conn->query("UPDATE artikel SET gambar_cover = '$new_cover_esc' WHERE id = $id");
+                logAgent("-> Gambar cover diperbaiki menjadi: '$new_cover'");
+            }
+        }
+    }
+}
+perbaikiGambarCoverRusak();
 
 // =========================================================================================
 // TUGAS BULANAN (Tiap Tanggal 1, Jam 05:00) : PERSONA, TREND MAKRO & KALENDER 30 HARI
