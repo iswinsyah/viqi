@@ -9,7 +9,7 @@ $sql = "SELECT a.*, u.nama
         ORDER BY a.waktu_absen ASC";
 
 $res = $conn->query($sql);
-echo "=== ABSENSI HARI INI ($today) ===\n";
+echo "<pre>=== ABSENSI HARI INI ($today) ===\n";
 
 if ($res && $res->num_rows > 0) {
     while ($row = $res->fetch_assoc()) {
@@ -18,4 +18,5 @@ if ($res && $res->num_rows > 0) {
 } else {
     echo "Tidak ada data absensi untuk hari ini.\n";
 }
+echo "</pre>";
 ?>
