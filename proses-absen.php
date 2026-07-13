@@ -110,7 +110,7 @@ if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
     }
 }
 if ($req_jenis_absen === 'Harian' || $req_jenis_absen === 'Pegawai') {
-    $eligible_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
+    $eligible_roles = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
     $is_eligible = false;
     foreach ($user_roles as $role) {
         if (in_array(trim($role), $eligible_roles)) {

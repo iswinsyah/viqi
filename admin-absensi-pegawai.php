@@ -70,7 +70,7 @@ if ($res_pegawai) {
 }
 
 // E. Cek Otoritas Role untuk Absensi Pegawai (Harian)
-$eligible_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'musyrif'];
+$eligible_roles = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
 $is_eligible_pegawai = false;
 foreach ($user_roles as $role) {
     if (in_array(trim($role), $eligible_roles)) {
