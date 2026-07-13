@@ -704,6 +704,55 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
                 sleep($jeda);
             }
 
+            // --- BROADCAST KE GRUP WA AUTO BROADCAST ---
+            pastikanKoneksiDb();
+            $resG = $conn->query("SELECT id, nama_grup, whatsapp_group_jid FROM grup_komunitas WHERE platform = 'WhatsApp' AND auto_broadcast = 1 AND whatsapp_group_jid IS NOT NULL AND whatsapp_group_jid != ''");
+            $group_targets = [];
+            if ($resG) {
+                while ($rg = $resG->fetch_assoc()) {
+                    $group_targets[] = $rg;
+                }
+            }
+
+            if (count($group_targets) > 0 && $FONNTE_TOKEN !== "TOKEN_API_FONNTE_ANDA") {
+                logAgent("Menemukan " . count($group_targets) . " grup WA untuk Auto Broadcast. Mengirim...");
+                foreach ($group_targets as $gTarget) {
+                    $link = $APP_URL . "/artikel-detail.php?id=" . $artikel_id_kirim . "&ref=organik";
+                    
+                    // Ganti {{LINK_AFILIASI}} di dalam copywriting template dengan link organik
+                    $pesan_grup = str_replace('{{LINK_AFILIASI}}', $link, $copywriting_template);
+                    
+                    $waFd = ['target' => $gTarget['whatsapp_group_jid'], 'message' => $pesan_grup];
+                    $ch = curl_init();
+                    curl_setopt_array($ch, [
+                        CURLOPT_URL => "https://api.fonnte.com/send",
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST => true,
+                        CURLOPT_POSTFIELDS => http_build_query($waFd),
+                        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                        CURLOPT_TIMEOUT => 30
+                    ]);
+                    $response = curl_exec($ch);
+                    $curl_error = curl_error($ch);
+                    curl_close($ch);
+                    
+                    if ($curl_error) {
+                        logAgent("-> Gagal mengirim WA ke grup {$gTarget['nama_grup']} ({$gTarget['whatsapp_group_jid']}): " . $curl_error);
+                    } else {
+                        $res_obj = json_decode($response, true);
+                        if (isset($res_obj['status']) && $res_obj['status'] == true) {
+                            logAgent("-> Pesan WA dilesatkan ke grup: {$gTarget['nama_grup']}.");
+                        } else {
+                            logAgent("-> Fonnte menolak pengiriman ke grup {$gTarget['nama_grup']} ({$gTarget['whatsapp_group_jid']}): " . ($res_obj['reason'] ?? $response));
+                        }
+                    }
+                    
+                    $jeda = (php_sapi_name() === 'cli') ? rand(10, 30) : 1;
+                    logAgent("-> Jeda {$jeda} detik...");
+                    sleep($jeda);
+                }
+            }
+
             // Setelah selesai broadcast, update status artikel
             pastikanKoneksiDb();
             $conn->query("UPDATE artikel SET status_broadcast = 'terkirim' WHERE id = $artikel_id_kirim");
@@ -738,12 +787,24 @@ if (($current_hour >= '07' || $force_community) && (!$community_done || $force_c
         nama_grup VARCHAR(255) NOT NULL,
         platform VARCHAR(50) NOT NULL,
         link_gabung VARCHAR(255) NOT NULL UNIQUE,
+        whatsapp_group_jid VARCHAR(100) DEFAULT NULL,
         analisa_relevansi TEXT,
         skor_kualitas INT DEFAULT 5,
         saran_pembuka TEXT,
         status VARCHAR(50) DEFAULT 'Belum Dihubungi',
+        auto_broadcast TINYINT(1) DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+
+    // Self-healing migrations for JID and auto_broadcast columns
+    $res_jid_col = $conn->query("SHOW COLUMNS FROM grup_komunitas LIKE 'whatsapp_group_jid'");
+    if ($res_jid_col && $res_jid_col->num_rows == 0) {
+        $conn->query("ALTER TABLE grup_komunitas ADD COLUMN whatsapp_group_jid VARCHAR(100) DEFAULT NULL AFTER link_gabung");
+    }
+    $res_auto_col = $conn->query("SHOW COLUMNS FROM grup_komunitas LIKE 'auto_broadcast'");
+    if ($res_auto_col && $res_auto_col->num_rows == 0) {
+        $conn->query("ALTER TABLE grup_komunitas ADD COLUMN auto_broadcast TINYINT(1) DEFAULT 0 AFTER status");
+    }
 
     $persona = file_exists(__DIR__ . '/saved_persona.txt') ? file_get_contents(__DIR__ . '/saved_persona.txt') : 'Orang tua yang mencari pesantren untuk anak.';
     

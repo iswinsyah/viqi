@@ -15,12 +15,24 @@ $conn->query("CREATE TABLE IF NOT EXISTS grup_komunitas (
     nama_grup VARCHAR(255) NOT NULL,
     platform VARCHAR(50) NOT NULL,
     link_gabung VARCHAR(255) NOT NULL UNIQUE,
+    whatsapp_group_jid VARCHAR(100) DEFAULT NULL,
     analisa_relevansi TEXT,
     skor_kualitas INT DEFAULT 5,
     saran_pembuka TEXT,
     status VARCHAR(50) DEFAULT 'Belum Dihubungi',
+    auto_broadcast TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
+
+// Self-healing migrations for JID and auto_broadcast columns
+$res_jid_col = $conn->query("SHOW COLUMNS FROM grup_komunitas LIKE 'whatsapp_group_jid'");
+if ($res_jid_col && $res_jid_col->num_rows == 0) {
+    $conn->query("ALTER TABLE grup_komunitas ADD COLUMN whatsapp_group_jid VARCHAR(100) DEFAULT NULL AFTER link_gabung");
+}
+$res_auto_col = $conn->query("SHOW COLUMNS FROM grup_komunitas LIKE 'auto_broadcast'");
+if ($res_auto_col && $res_auto_col->num_rows == 0) {
+    $conn->query("ALTER TABLE grup_komunitas ADD COLUMN auto_broadcast TINYINT(1) DEFAULT 0 AFTER status");
+}
 
 // Auto-migration dari saved_communities.txt ke database jika tabel kosong
 $check_empty = $conn->query("SELECT id FROM grup_komunitas LIMIT 1");
@@ -81,6 +93,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
         header("Location: admin-community-scout.php?updated=1");
         exit;
     }
+    if ($_POST['action'] === 'tambah_manual') {
+        $nama_grup = $conn->real_escape_string($_POST['nama_grup']);
+        $platform = $conn->real_escape_string($_POST['platform']);
+        $link_gabung = $conn->real_escape_string($_POST['link_gabung']);
+        $whatsapp_group_jid = $conn->real_escape_string($_POST['whatsapp_group_jid'] ?? '');
+        $auto_broadcast = isset($_POST['auto_broadcast']) ? 1 : 0;
+        
+        $conn->query("INSERT INTO grup_komunitas (nama_grup, platform, link_gabung, whatsapp_group_jid, auto_broadcast, status) 
+                      VALUES ('$nama_grup', '$platform', '$link_gabung', '$whatsapp_group_jid', $auto_broadcast, 'Sudah Gabung')");
+        header("Location: admin-community-scout.php?sukses_tambah=1");
+        exit;
+    }
+    if ($_POST['action'] === 'update_broadcast_settings') {
+        $id = (int)$_POST['grup_id'];
+        $whatsapp_group_jid = $conn->real_escape_string($_POST['whatsapp_group_jid'] ?? '');
+        $auto_broadcast = isset($_POST['auto_broadcast']) ? 1 : 0;
+        
+        $conn->query("UPDATE grup_komunitas SET whatsapp_group_jid = '$whatsapp_group_jid', auto_broadcast = $auto_broadcast WHERE id = $id");
+        header("Location: admin-community-scout.php?updated_broadcast=1");
+        exit;
+    }
     if ($_POST['action'] === 'hapus') {
         $id = (int)$_POST['grup_id'];
         $conn->query("DELETE FROM grup_komunitas WHERE id = $id");
@@ -92,6 +125,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action'])) {
 // --- NOTIFIKASI ---
 if (isset($_GET['prompt_saved'])) $pesan_sukses = "Prompt AI berhasil disimpan!";
 if (isset($_GET['updated'])) $pesan_sukses = "Status grup berhasil diperbarui!";
+if (isset($_GET['sukses_tambah'])) $pesan_sukses = "Grup manual berhasil ditambahkan!";
+if (isset($_GET['updated_broadcast'])) $pesan_sukses = "Pengaturan Auto Broadcast berhasil diperbarui!";
 if (isset($_GET['deleted'])) $pesan_sukses = "Grup berhasil dihapus!";
 
 $prompt_file = 'prompt_community_scout.txt';
@@ -179,6 +214,46 @@ if ($res_age) {
                         AI bertugas mengintai dan mengumpulkan link grup publik/terbuka (dan menghindari kompetitor). Sebagai staf marketing, gunakan link gabung untuk masuk, bagikan konten bermanfaat, diskusikan topik secara alami, dan jangan lakukan spam promosi secara kasar agar tidak di-kick oleh admin grup.
                     </p>
                 </div>
+            <!-- Form Tambah Grup Manual -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
+                <details>
+                    <summary class="px-6 py-4 font-bold text-gray-800 cursor-pointer flex justify-between items-center select-none outline-none">
+                        <span><i class="fas fa-plus-circle mr-2 text-rose-600"></i> Tambah Grup Komunitas Manual</span>
+                        <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                    </summary>
+                    <div class="p-6 border-t border-gray-100">
+                        <form action="admin-community-scout.php" method="POST" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <input type="hidden" name="action" value="tambah_manual">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Nama Grup</label>
+                                <input type="text" name="nama_grup" required placeholder="Contoh: Grup Wali Santri 7A" class="w-full text-xs rounded-lg border border-gray-300 px-3 py-2 focus:ring-rose-500 focus:border-rose-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Platform</label>
+                                <select name="platform" required class="w-full text-xs rounded-lg border border-gray-300 px-3 py-2 bg-white focus:ring-rose-500 focus:border-rose-500">
+                                    <option value="WhatsApp">WhatsApp</option>
+                                    <option value="Telegram">Telegram</option>
+                                    <option value="Facebook">Facebook</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Link Gabung / Link Web</label>
+                                <input type="text" name="link_gabung" required placeholder="https://chat.whatsapp.com/..." class="w-full text-xs rounded-lg border border-gray-300 px-3 py-2 focus:ring-rose-500 focus:border-rose-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">WhatsApp Group JID (Opsional)</label>
+                                <input type="text" name="whatsapp_group_jid" placeholder="Contoh: 1203632938293@g.us" class="w-full text-xs rounded-lg border border-gray-300 px-3 py-2 focus:ring-rose-500 focus:border-rose-500">
+                            </div>
+                            <div class="md:col-span-4 flex items-center gap-2 mt-2">
+                                <input type="checkbox" name="auto_broadcast" value="1" id="add_auto_broadcast" class="rounded border-gray-300 text-rose-600 focus:ring-rose-500">
+                                <label for="add_auto_broadcast" class="text-xs font-semibold text-gray-700">Aktifkan Auto Broadcast (Kirim Artikel SEO otomatis ke grup ini)</label>
+                            </div>
+                            <div class="md:col-span-4 mt-2">
+                                <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-5 rounded-lg text-xs transition shadow-sm"><i class="fas fa-save mr-1"></i> Simpan Grup</button>
+                            </div>
+                        </form>
+                    </div>
+                </details>
             </div>
 
             <!-- FILTERS & SEARCH -->
@@ -227,6 +302,7 @@ if ($res_age) {
                                 <th class="px-6 py-3 text-left font-semibold text-gray-500 uppercase">Link Gabung</th>
                                 <th class="px-6 py-3 text-left font-semibold text-gray-500 uppercase">Analisa & Pembuka</th>
                                 <th class="px-6 py-3 text-center font-semibold text-gray-500 uppercase">Kualitas</th>
+                                <th class="px-6 py-3 text-center font-semibold text-gray-500 uppercase">Auto Broadcast</th>
                                 <th class="px-6 py-3 text-center font-semibold text-gray-500 uppercase">Status</th>
                                 <th class="px-6 py-3 text-center font-semibold text-gray-500 uppercase">Aksi</th>
                             </tr>
@@ -286,6 +362,22 @@ if ($res_age) {
                                         <span class="px-2.5 py-0.5 rounded-full text-xs font-bold border <?= $score_badge ?>"><?= $score ?>/10</span>
                                     </td>
                                     <td class="px-6 py-4 text-center whitespace-nowrap">
+                                        <?php if (strtolower($row['platform']) === 'whatsapp'): ?>
+                                            <form action="admin-community-scout.php" method="POST" class="flex flex-col gap-1 items-center">
+                                                <input type="hidden" name="action" value="update_broadcast_settings">
+                                                <input type="hidden" name="grup_id" value="<?= $row['id'] ?>">
+                                                <input type="text" name="whatsapp_group_jid" value="<?= htmlspecialchars($row['whatsapp_group_jid'] ?? '') ?>" placeholder="JID: ...@g.us" class="w-32 text-[10px] px-2 py-1 border rounded focus:ring-rose-500 focus:border-rose-500">
+                                                <div class="flex items-center gap-1.5 mt-0.5">
+                                                    <input type="checkbox" name="auto_broadcast" value="1" <?= ($row['auto_broadcast'] ?? 0) ? 'checked' : '' ?> onchange="this.form.submit()" class="rounded border-gray-300 text-rose-600 focus:ring-rose-500 w-3 h-3 cursor-pointer">
+                                                    <span class="text-[10px] text-gray-500 font-semibold select-none">Auto Kirim</span>
+                                                </div>
+                                                <button type="submit" class="hidden"></button>
+                                            </form>
+                                        <?php else: ?>
+                                            <span class="text-gray-400 font-mono">-</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-6 py-4 text-center whitespace-nowrap">
                                         <form action="admin-community-scout.php" method="POST" class="inline">
                                             <input type="hidden" name="action" value="update_status">
                                             <input type="hidden" name="grup_id" value="<?= $row['id'] ?>">
@@ -307,7 +399,7 @@ if ($res_age) {
                                 <?php endwhile; ?>
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="6" class="text-center py-12 text-gray-500">
+                                    <td colspan="7" class="text-center py-12 text-gray-500">
                                         <i class="fas fa-satellite-dish text-4xl mb-3 opacity-30 text-rose-500"></i>
                                         <p class="font-bold">Belum ada data grup.</p>
                                         <p class="text-xs mt-1">Grup baru akan terisi otomatis setiap pagi jam 07:00 via Cron Job, atau Anda bisa paksakan manual di AI Hub.</p>
