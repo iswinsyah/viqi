@@ -9,14 +9,11 @@ $sql = "SELECT a.*, u.nama
         ORDER BY a.waktu_absen ASC";
 
 $res = $conn->query($sql);
-echo "<pre>=== ABSENSI HARI INI ($today) ===\n";
-
-if ($res && $res->num_rows > 0) {
+$data = [];
+if ($res) {
     while ($row = $res->fetch_assoc()) {
-        echo "ID: {$row['id']} | Ustadz ID: {$row['ustadz_id']} | Nama: {$row['nama']} | Waktu: {$row['waktu_absen']} | Jenis: {$row['jenis_absen']} | Status: {$row['status_kehadiran']} | Ket: {$row['keterangan']} | Coords: {$row['koordinat_pegawai']}\n";
+        $data[] = $row;
     }
-} else {
-    echo "Tidak ada data absensi untuk hari ini.\n";
 }
-echo "</pre>";
+echo json_encode($data);
 ?>
