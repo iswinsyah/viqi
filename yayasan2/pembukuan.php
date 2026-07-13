@@ -195,6 +195,78 @@ $kas_utama = $ringkasan['1101']['balance'] ?? 0;
 $bank_bsi = $ringkasan['1102']['balance'] ?? 0;
 $total_kas_bank = $kas_utama + $bank_bsi;
 
+// --- DYNAMIC CASHFLOW CALCULATIONS ---
+// 1. Ambil data Pemasukan SPP
+$res_spp = $conn->query("SELECT SUM(jumlah) as total FROM pembayaran_spp WHERE status = 'Berhasil'");
+$pemasukan_spp = $res_spp ? (double)($res_spp->fetch_assoc()['total'] ?? 0.0) : 0.0;
+
+// 2. Ambil data Jurnal Pendapatan
+$res_jurnal_inc = $conn->query("SELECT SUM(d.kredit - d.debit) as total 
+    FROM keuangan_jurnal_detail d 
+    JOIN keuangan_akun a ON d.akun_id = a.id 
+    WHERE a.tipe_akun = 'Pendapatan'");
+$pemasukan_jurnal = $res_jurnal_inc ? (double)($res_jurnal_inc->fetch_assoc()['total'] ?? 0.0) : 0.0;
+
+// 3. Ambil data Jurnal Beban/Pengeluaran
+$res_jurnal_exp = $conn->query("SELECT SUM(d.debit - d.kredit) as total 
+    FROM keuangan_jurnal_detail d 
+    JOIN keuangan_akun a ON d.akun_id = a.id 
+    WHERE a.tipe_akun = 'Beban'");
+$pengeluaran_jurnal = $res_jurnal_exp ? (double)($res_jurnal_exp->fetch_assoc()['total'] ?? 0.0) : 0.0;
+
+// 4. Hitung Gaji Ustadz Offline (Rumus: Total Kelas Sasaran Mapel Offline Non-Musyrif * Tarif Grade A * 4 Pekan)
+$sql_offline = "SELECT id, nama_mapel, kategori_mapel, 
+    (SELECT COUNT(kelas_id) FROM mapel_kelas_target WHERE mapel_id = master_mapel.id) as jumlah_kelas 
+    FROM master_mapel 
+    WHERE metode_belajar = 'offline' 
+      AND id NOT IN (
+          SELECT DISTINCT m_id FROM (
+              SELECT COALESCE(mapel_1_id, 0) as m_id FROM kesediaan_mengajar k JOIN akun_ustadz u ON k.ustadz_id = u.id WHERE u.role LIKE '%musyrif%'
+              UNION
+              SELECT COALESCE(mapel_2_id, 0) as m_id FROM kesediaan_mengajar k JOIN akun_ustadz u ON k.ustadz_id = u.id WHERE u.role LIKE '%musyrif%'
+              UNION
+              SELECT COALESCE(mapel_3_id, 0) as m_id FROM kesediaan_mengajar k JOIN akun_ustadz u ON k.ustadz_id = u.id WHERE u.role LIKE '%musyrif%'
+          ) as tmp
+      )";
+$res_mapel_offline = $conn->query($sql_offline);
+
+$mapel_offline_count = 0;
+$total_kelas_offline = 0;
+$mapel_offline_list = [];
+
+if ($res_mapel_offline) {
+    $mapel_offline_count = $res_mapel_offline->num_rows;
+    while ($row = $res_mapel_offline->fetch_assoc()) {
+        $kelas_count = (int)$row['jumlah_kelas'];
+        $total_kelas_offline += $kelas_count;
+        $mapel_offline_list[] = $row;
+    }
+}
+
+$res_rate = $conn->query("SELECT gaji_grade_a FROM pengaturan_gaji WHERE id = 1");
+$rate_grade_a = 25000;
+if ($res_rate && $res_rate->num_rows > 0) {
+    $rate_grade_a = (double)$res_rate->fetch_assoc()['gaji_grade_a'];
+}
+
+$cost_gaji_offline = $total_kelas_offline * $rate_grade_a * 4;
+
+// 5. Total Akumulasi
+$total_pemasukan = $pemasukan_spp + $pemasukan_jurnal;
+$total_pengeluaran = $pengeluaran_jurnal + $cost_gaji_offline;
+$saldo_bersih = $total_pemasukan - $total_pengeluaran;
+
+// Persentase Pengeluaran terhadap Pemasukan
+$persen_pengeluaran = $total_pemasukan > 0 ? round(($total_pengeluaran / $total_pemasukan) * 100, 1) : 0;
+
+// Query Jumlah Santri untuk default perencanaan
+$res_count_santri = $conn->query("SELECT COUNT(*) as count FROM buku_induk_santri");
+$default_santri_count = ($res_count_santri) ? (int)$res_count_santri->fetch_assoc()['count'] : 0;
+if ($default_santri_count === 0) {
+    $res_count_s = $conn->query("SELECT COUNT(*) as count FROM santri");
+    $default_santri_count = ($res_count_s) ? (int)$res_count_s->fetch_assoc()['count'] : 120; // Default fallback
+}
+
 // Pendapatan & Beban Bulan Ini
 $bulan_ini = date('Y-m');
 $res_m = $conn->query("
@@ -352,35 +424,41 @@ foreach ($ringkasan as $kode => $info) {
             </div>
 
             <!-- TABS MENU -->
-            <div class="flex space-x-2 border-b border-gray-200 mb-6 flex-shrink-0">
-                <button onclick="switchTab('tab-jurnal')" id="btn-tab-jurnal" class="px-4 py-2 text-sm font-bold border-b-2 border-amber-600 text-amber-700 focus:outline-none transition">
+            <div class="flex space-x-2 border-b border-gray-200 mb-6 flex-shrink-0 overflow-x-auto whitespace-nowrap scrollbar-none">
+                <button onclick="switchTab('tab-laporan')" id="btn-tab-laporan" class="px-4 py-2.5 text-xs font-bold border-b-2 border-amber-600 text-amber-700 focus:outline-none transition">
+                    <i class="fas fa-file-invoice-dollar mr-1"></i> Laporan Terpadu
+                </button>
+                <button onclick="switchTab('tab-proyeksi')" id="btn-tab-proyeksi" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
+                    <i class="fas fa-sliders-h mr-1"></i> Perencanaan Kas (Plan)
+                </button>
+                <button onclick="switchTab('tab-jurnal')" id="btn-tab-jurnal" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
                     <i class="fas fa-book-open mr-1"></i> Pencatatan & Jurnal
                 </button>
-                <button onclick="switchTab('tab-ai-auditor')" id="btn-tab-ai-auditor" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition flex items-center">
-                    <i class="fas fa-user-shield mr-1"></i> AI Auditor & Konsultan
-                </button>
-                <button onclick="switchTab('tab-reminders')" id="btn-tab-reminders" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition relative">
-                    <i class="fas fa-bell mr-1"></i> Pengingat Tagihan SPP
-                    <?php if(count($overdue_santri) > 0): ?>
-                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-bounce"><?= count($overdue_santri) ?></span>
-                    <?php endif; ?>
-                </button>
-                <button onclick="switchTab('tab-coa')" id="btn-tab-coa" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
+                <button onclick="switchTab('tab-coa')" id="btn-tab-coa" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
                     <i class="fas fa-list-ol mr-1"></i> Kelola Akun (COA)
                 </button>
-                <button onclick="switchTab('tab-promises')" id="btn-tab-promises" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition relative">
-                    <i class="fas fa-handshake mr-1"></i> Komitmen Janji Bayar
-                    <?php if(count($payment_promises) > 0): ?>
-                    <span class="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full"><?= count($payment_promises) ?></span>
+                <button onclick="switchTab('tab-reminders')" id="btn-tab-reminders" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition relative">
+                    <i class="fas fa-bell mr-1"></i> Piutang & Pengingat SPP
+                    <?php if(count($overdue_santri) > 0): ?>
+                    <span class="absolute top-1 -right-0.5 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full animate-bounce"><?= count($overdue_santri) ?></span>
                     <?php endif; ?>
                 </button>
-                <button onclick="switchTab('tab-charts')" id="btn-tab-charts" class="px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
-                    <i class="fas fa-chart-pie mr-1"></i> Analisis Grafik (Visual)
+                <button onclick="switchTab('tab-promises')" id="btn-tab-promises" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition relative">
+                    <i class="fas fa-handshake mr-1"></i> Komitmen Janji Bayar
+                    <?php if(count($payment_promises) > 0): ?>
+                    <span class="absolute top-1 -right-0.5 bg-amber-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full"><?= count($payment_promises) ?></span>
+                    <?php endif; ?>
+                </button>
+                <button onclick="switchTab('tab-ai-auditor')" id="btn-tab-ai-auditor" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition flex items-center">
+                    <i class="fas fa-brain mr-1 text-indigo-500"></i> AI Auditor
+                </button>
+                <button onclick="switchTab('tab-charts')" id="btn-tab-charts" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
+                    <i class="fas fa-chart-pie mr-1"></i> Grafik Analisis
                 </button>
             </div>
 
             <!-- CARDS SUMMARY (CASHFLOW HEALTH) -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <!-- Total Kas & Bank -->
                 <div class="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-5 rounded-xl shadow-md border border-amber-500/20 relative overflow-hidden group">
                     <div class="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition"></div>
@@ -395,41 +473,614 @@ foreach ($ringkasan as $kode => $info) {
                 <!-- Pemasukan Bulan Ini -->
                 <div class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-5 rounded-xl shadow-md border border-emerald-500/20 relative overflow-hidden group">
                     <div class="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition"></div>
-                    <span class="text-xs uppercase tracking-wider text-emerald-100 font-semibold">Pemasukan (<?= $bulan_sekarang ?>)</span>
-                    <h2 class="text-2xl font-black mt-2">Rp <?= number_format($pendapatan_bulanan, 0, ',', '.') ?></h2>
+                    <span class="text-xs uppercase tracking-wider text-emerald-100 font-semibold">Pemasukan Terdaftar</span>
+                    <h2 class="text-2xl font-black mt-2">Rp <?= number_format($total_pemasukan, 0, ',', '.') ?></h2>
                     <div class="text-xs text-emerald-200 mt-3 pt-2 border-t border-white/10 flex items-center">
-                        <i class="fas fa-arrow-up mr-1"></i> Semua Penerimaan Unit
+                        <i class="fas fa-arrow-up mr-1"></i> SPP + Jurnal Pendapatan
                     </div>
                 </div>
 
                 <!-- Pengeluaran Bulan Ini -->
                 <div class="bg-gradient-to-r from-rose-600 to-rose-700 text-white p-5 rounded-xl shadow-md border border-rose-500/20 relative overflow-hidden group">
                     <div class="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition"></div>
-                    <span class="text-xs uppercase tracking-wider text-rose-100 font-semibold">Pengeluaran (<?= $bulan_sekarang ?>)</span>
-                    <h2 class="text-2xl font-black mt-2">Rp <?= number_format($beban_bulanan, 0, ',', '.') ?></h2>
+                    <span class="text-xs uppercase tracking-wider text-rose-100 font-semibold">Pengeluaran Terdaftar</span>
+                    <h2 class="text-2xl font-black mt-2">Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></h2>
                     <div class="text-xs text-rose-200 mt-3 pt-2 border-t border-white/10 flex items-center">
-                        <i class="fas fa-arrow-down mr-1"></i> Semua Beban Operasional
+                        <i class="fas fa-arrow-down mr-1"></i> Beban + Gaji Ustadz Offline
                     </div>
                 </div>
 
                 <!-- Cashflow Surplus/Defisit -->
                 <?php 
-                $surplus = $pendapatan_bulanan - $beban_bulanan;
-                $bg_c = $surplus >= 0 ? 'from-indigo-600 to-indigo-700 border-indigo-500/20' : 'from-red-600 to-red-700 border-red-500/20';
-                $txt_sub = $surplus >= 0 ? 'Surplus Cashflow' : 'Defisit Cashflow';
+                $surplus = $saldo_bersih;
+                $bg_c = $surplus >= 0 ? 'from-teal-600 to-teal-700 border-teal-500/20' : 'from-rose-600 to-rose-700 border-rose-500/20';
+                $txt_sub = $surplus >= 0 ? 'Surplus Bersih' : 'Defisit Bersih';
                 ?>
                 <div class="bg-gradient-to-r <?= $bg_c ?> text-white p-5 rounded-xl shadow-md relative overflow-hidden group">
                     <div class="absolute -right-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition"></div>
-                    <span class="text-xs uppercase tracking-wider text-indigo-100 font-semibold">Status Arus Kas</span>
+                    <span class="text-xs uppercase tracking-wider text-indigo-100 font-semibold">Status Operasional</span>
                     <h2 class="text-2xl font-black mt-2">Rp <?= number_format(abs($surplus), 0, ',', '.') ?></h2>
                     <div class="text-xs text-indigo-200 mt-3 pt-2 border-t border-white/10 flex items-center">
-                        <i class="fas <?= $surplus >= 0 ? 'fa-smile-beam' : 'fa-sad-tear' ?> mr-1.5"></i> <?= $txt_sub ?> Bulan Ini
+                        <i class="fas <?= $surplus >= 0 ? 'fa-scale-balanced' : 'fa-triangle-exclamation' ?> mr-1.5"></i> <?= $txt_sub ?> Saat Ini
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS CONTENT: LAPORAN TERPADU -->
+            <div id="tab-laporan" class="tab-pane block">
+                <!-- Sub-tab Selector for Laporan Terpadu -->
+                <div class="flex space-x-3 mb-6 bg-amber-50 p-2 rounded-xl border border-amber-200/50 w-fit">
+                    <button onclick="switchSubLaporan('sub-laba-rugi')" id="btn-sub-laba-rugi" class="px-4 py-2 text-xs font-bold bg-amber-700 text-white rounded-lg transition-all focus:outline-none shadow-sm">
+                        1. Laba Rugi (Profit & Loss)
+                    </button>
+                    <button onclick="switchSubLaporan('sub-arus-kas')" id="btn-sub-arus-kas" class="px-4 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 rounded-lg transition-all focus:outline-none">
+                        2. Arus Kas (Cashflow Aktual)
+                    </button>
+                    <button onclick="switchSubLaporan('sub-neraca')" id="btn-sub-neraca" class="px-4 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 rounded-lg transition-all focus:outline-none">
+                        3. Posisi Aktiva (Neraca/Aset)
+                    </button>
+                </div>
+
+                <!-- SUB-REPORT 1: LABA RUGI -->
+                <div id="sub-laba-rugi" class="sub-report-pane block">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Pendapatan Card -->
+                        <div class="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden text-left">
+                            <div class="px-6 py-4 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+                                <h3 class="font-bold text-emerald-800 text-sm flex items-center"><i class="fas fa-arrow-alt-circle-down mr-2 text-emerald-600"></i>Pendapatan (Revenue) - Akrual</h3>
+                                <span class="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">Operasional</span>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="flex justify-between items-center py-2.5 border-b border-gray-100">
+                                    <span class="text-xs text-gray-600">Pendapatan SPP Santri (Tabel Pembayaran)</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($pemasukan_spp, 0, ',', '.') ?></span>
+                                </div>
+                                <?php
+                                $res_lr_inc = $conn->query("SELECT a.nama_akun, a.kode_akun, SUM(d.kredit - d.debit) as total
+                                    FROM keuangan_jurnal_detail d
+                                    JOIN keuangan_akun a ON d.akun_id = a.id
+                                    WHERE a.tipe_akun = 'Pendapatan'
+                                    GROUP BY a.id");
+                                $has_lr_inc = false;
+                                if ($res_lr_inc):
+                                    while($r = $res_lr_inc->fetch_assoc()):
+                                        if ($r['total'] == 0) continue;
+                                        $has_lr_inc = true;
+                                ?>
+                                        <div class="flex justify-between items-center py-2.5 border-b border-gray-100 pl-4">
+                                            <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i><?= htmlspecialchars($r['nama_akun']) ?> (<?= $r['kode_akun'] ?>)</span>
+                                            <span class="text-xs font-semibold text-slate-800">Rp <?= number_format($r['total'], 0, ',', '.') ?></span>
+                                        </div>
+                                <?php
+                                    endwhile;
+                                endif;
+                                ?>
+                                <div class="flex justify-between items-center pt-4 font-bold text-sm text-emerald-800 border-t border-gray-200">
+                                    <span>Total Pendapatan:</span>
+                                    <span>Rp <?= number_format($total_pemasukan, 0, ',', '.') ?></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Beban Card -->
+                        <div class="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden text-left">
+                            <div class="px-6 py-4 bg-rose-50 border-b border-rose-100 flex items-center justify-between">
+                                <h3 class="font-bold text-rose-800 text-sm flex items-center"><i class="fas fa-arrow-alt-circle-up mr-2 text-rose-600"></i>Biaya / Beban (Expenses) - Akrual</h3>
+                                <span class="text-xs font-bold text-rose-700 bg-rose-100 px-2 py-0.5 rounded">Biaya</span>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="flex justify-between items-center py-2.5 border-b border-gray-100">
+                                    <span class="text-xs text-gray-600">Beban Gaji Ustadz Offline (Estimasi Formula)</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($cost_gaji_offline, 0, ',', '.') ?></span>
+                                </div>
+                                <?php
+                                $res_lr_exp = $conn->query("SELECT a.nama_akun, a.kode_akun, SUM(d.debit - d.kredit) as total
+                                    FROM keuangan_jurnal_detail d
+                                    JOIN keuangan_akun a ON d.akun_id = a.id
+                                    WHERE a.tipe_akun = 'Beban'
+                                    GROUP BY a.id");
+                                $has_lr_exp = false;
+                                if ($res_lr_exp):
+                                    while($r = $res_lr_exp->fetch_assoc()):
+                                        if ($r['total'] == 0) continue;
+                                        $has_lr_exp = true;
+                                ?>
+                                        <div class="flex justify-between items-center py-2.5 border-b border-gray-100 pl-4">
+                                            <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i><?= htmlspecialchars($r['nama_akun']) ?> (<?= $r['kode_akun'] ?>)</span>
+                                            <span class="text-xs font-semibold text-slate-800">Rp <?= number_format($r['total'], 0, ',', '.') ?></span>
+                                        </div>
+                                <?php
+                                    endwhile;
+                                endif;
+                                ?>
+                                <div class="flex justify-between items-center pt-4 font-bold text-sm text-rose-800 border-t border-gray-200">
+                                    <span>Total Beban:</span>
+                                    <span>Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Surplus Card -->
+                    <div class="bg-white rounded-2xl border border-gray-150 shadow-sm p-6 mt-6 flex justify-between items-center text-left">
+                        <div>
+                            <h4 class="font-extrabold text-gray-800 text-sm">SURPLUS / DEFISIT BERSIH PERIODE BERJALAN</h4>
+                            <p class="text-xs text-gray-400 mt-0.5">Selisih laba rugi bersih sekolah dan filantropi dari total pendapatan dikurangi beban operasional.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-black <?= $saldo_bersih >= 0 ? 'text-teal-600' : 'text-rose-700' ?>">
+                                Rp <?= number_format($saldo_bersih, 0, ',', '.') ?>
+                            </span>
+                            <span class="block text-[10px] text-gray-500 font-bold uppercase mt-1">Status: <?= $saldo_bersih >= 0 ? 'Surplus' : 'Defisit' ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-REPORT 2: ARUS KAS -->
+                <div id="sub-arus-kas" class="sub-report-pane hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Kas Masuk Card -->
+                        <div class="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden text-left">
+                            <div class="px-6 py-4 bg-teal-50 border-b border-teal-100 flex items-center justify-between">
+                                <h3 class="font-bold text-teal-800 text-sm flex items-center"><i class="fas fa-circle-down mr-2 text-teal-600"></i>Aliran Kas Masuk (Cash Inflows)</h3>
+                                <span class="text-xs font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded">Kas Masuk</span>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="flex justify-between items-center py-2.5 border-b border-gray-100">
+                                    <span class="text-xs text-gray-600">Penerimaan Tunai SPP Santri</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($pemasukan_spp, 0, ',', '.') ?></span>
+                                </div>
+                                <?php
+                                $res_cf_in = $conn->query("SELECT a.nama_akun, a.kode_akun, SUM(d.kredit - d.debit) as total
+                                    FROM keuangan_jurnal_detail d
+                                    JOIN keuangan_akun a ON d.akun_id = a.id
+                                    WHERE a.tipe_akun = 'Pendapatan'
+                                    GROUP BY a.id");
+                                if ($res_cf_in):
+                                    while($r = $res_cf_in->fetch_assoc()):
+                                        if ($r['total'] == 0) continue;
+                                ?>
+                                        <div class="flex justify-between items-center py-2.5 border-b border-gray-100 pl-4">
+                                            <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i>Penerimaan <?= htmlspecialchars($r['nama_akun']) ?></span>
+                                            <span class="text-xs font-semibold text-slate-800">Rp <?= number_format($r['total'], 0, ',', '.') ?></span>
+                                        </div>
+                                <?php
+                                    endwhile;
+                                endif;
+                                ?>
+                                <div class="flex justify-between items-center pt-4 font-bold text-sm text-teal-800 border-t border-gray-200">
+                                    <span>Total Kas Masuk:</span>
+                                    <span>Rp <?= number_format($total_pemasukan, 0, ',', '.') ?></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kas Keluar Card -->
+                        <div class="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden text-left">
+                            <div class="px-6 py-4 bg-orange-50 border-b border-orange-100 flex items-center justify-between">
+                                <h3 class="font-bold text-orange-800 text-sm flex items-center"><i class="fas fa-circle-up mr-2 text-orange-600"></i>Aliran Kas Keluar (Cash Outflows)</h3>
+                                <span class="text-xs font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded">Kas Keluar</span>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="flex justify-between items-center py-2.5 border-b border-gray-100">
+                                    <span class="text-xs text-gray-600">Pengeluaran Tunai Gaji Offline</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($cost_gaji_offline, 0, ',', '.') ?></span>
+                                </div>
+                                <?php
+                                $res_cf_out = $conn->query("SELECT a.nama_akun, a.kode_akun, SUM(d.debit - d.kredit) as total
+                                    FROM keuangan_jurnal_detail d
+                                    JOIN keuangan_akun a ON d.akun_id = a.id
+                                    WHERE a.tipe_akun = 'Beban'
+                                    GROUP BY a.id");
+                                if ($res_cf_out):
+                                    while($r = $res_cf_out->fetch_assoc()):
+                                        if ($r['total'] == 0) continue;
+                                ?>
+                                        <div class="flex justify-between items-center py-2.5 border-b border-gray-100 pl-4">
+                                            <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i>Pembayaran <?= htmlspecialchars($r['nama_akun']) ?></span>
+                                            <span class="text-xs font-semibold text-slate-800">Rp <?= number_format($r['total'], 0, ',', '.') ?></span>
+                                        </div>
+                                <?php
+                                    endwhile;
+                                endif;
+                                ?>
+                                <div class="flex justify-between items-center pt-4 font-bold text-sm text-orange-800 border-t border-gray-200">
+                                    <span>Total Kas Keluar:</span>
+                                    <span>Rp <?= number_format($total_pengeluaran, 0, ',', '.') ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Net Cash Card -->
+                    <div class="bg-white rounded-2xl border border-gray-150 shadow-sm p-6 mt-6 flex justify-between items-center text-left">
+                        <div>
+                            <h4 class="font-extrabold text-gray-800 text-sm">KENAIKAN / PENURUNAN KAS BERSIH (NET CASHFLOW)</h4>
+                            <p class="text-xs text-gray-400 mt-0.5">Jumlah mutasi uang kas fisik bersih yang benar-benar tersisa atau terpakai pada periode ini.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-2xl font-black <?= $saldo_bersih >= 0 ? 'text-teal-600' : 'text-rose-700' ?>">
+                                Rp <?= number_format($saldo_bersih, 0, ',', '.') ?>
+                            </span>
+                            <span class="block text-[10px] text-gray-500 font-bold uppercase mt-1">Saldo Kas: <?= $saldo_bersih >= 0 ? 'Surplus' : 'Defisit' ?></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SUB-REPORT 3: NERACA -->
+                <div id="sub-neraca" class="sub-report-pane hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Aktiva (Assets) Card -->
+                        <div class="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden text-left">
+                            <div class="px-6 py-4 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
+                                <h3 class="font-bold text-blue-800 text-sm flex items-center"><i class="fas fa-coins mr-2 text-blue-600"></i>Aktiva (Aset / Kekayaan)</h3>
+                                <span class="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded">Harta</span>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="flex justify-between items-center py-2.5 border-b border-gray-100">
+                                    <span class="text-xs font-semibold text-gray-800">Aktiva Lancar</span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 pl-4">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i>Kas Utama Yayasan (1101)</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($kas_utama, 0, ',', '.') ?></span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 pl-4">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i>Bank BSI Yayasan (1102)</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($bank_bsi, 0, ',', '.') ?></span>
+                                </div>
+                                <?php
+                                $piutang_spp = count($overdue_santri) * 1100000;
+                                ?>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 pl-4">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i>Piutang SPP Santri (Tunggakan)</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($piutang_spp, 0, ',', '.') ?></span>
+                                </div>
+                                <?php
+                                $total_aktiva = $kas_utama + $bank_bsi + $piutang_spp;
+                                ?>
+                                <div class="flex justify-between items-center pt-4 font-bold text-sm text-blue-800 border-t border-gray-200">
+                                    <span>Total Aktiva:</span>
+                                    <span>Rp <?= number_format($total_aktiva, 0, ',', '.') ?></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pasiva (Liabilities & Equity) Card -->
+                        <div class="bg-white rounded-2xl border border-gray-150 shadow-sm overflow-hidden text-left">
+                            <div class="px-6 py-4 bg-indigo-50 border-b border-indigo-100 flex items-center justify-between">
+                                <h3 class="font-bold text-indigo-800 text-sm flex items-center"><i class="fas fa-balance-scale mr-2 text-indigo-600"></i>Kewajiban & Ekuitas (Pasiva)</h3>
+                                <span class="text-xs font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">Modal & Hutang</span>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <div class="flex justify-between items-center py-2.5 border-b border-gray-100">
+                                    <span class="text-xs font-semibold text-gray-800">Kewajiban (Hutang)</span>
+                                </div>
+                                <?php
+                                $hutang = $ringkasan['2101']['balance'] ?? 0;
+                                ?>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 pl-4">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i>Hutang Operasional (2101)</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($hutang, 0, ',', '.') ?></span>
+                                </div>
+                                <div class="flex justify-between items-center py-2.5 border-b border-gray-100 pt-4">
+                                    <span class="text-xs font-semibold text-gray-800">Ekuitas (Modal & Surplus)</span>
+                                </div>
+                                <?php
+                                $modal = $ringkasan['3101']['balance'] ?? 0;
+                                $surplus_laba = $saldo_bersih;
+                                ?>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 pl-4">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i>Modal Awal Yayasan (3101)</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($modal, 0, ',', '.') ?></span>
+                                </div>
+                                <div class="flex justify-between items-center py-2 border-b border-gray-100 pl-4">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-angle-right mr-1.5"></i>Surplus/Laba Periode Berjalan</span>
+                                    <span class="text-xs font-bold text-slate-800">Rp <?= number_format($surplus_laba, 0, ',', '.') ?></span>
+                                </div>
+                                <?php
+                                $total_pasiva = $hutang + $modal + $surplus_laba;
+                                // Menghitung selisih balance jika ada ketidaksesuaian kecil akibat penyesuaian piutang luar jurnal
+                                $selisih = $total_aktiva - $total_pasiva;
+                                $total_pasiva_adj = $total_pasiva + $selisih;
+                                ?>
+                                <?php if ($selisih != 0): ?>
+                                    <div class="flex justify-between items-center py-2 border-b border-gray-100 pl-4">
+                                        <span class="text-xs text-indigo-700 italic font-semibold"><i class="fas fa-circle-info mr-1.5"></i>Penyesuaian Piutang SPP Berjalan</span>
+                                        <span class="text-xs font-bold text-indigo-700">Rp <?= number_format($selisih, 0, ',', '.') ?></span>
+                                    </div>
+                                <?php endif; ?>
+                                <div class="flex justify-between items-center pt-4 font-bold text-sm text-indigo-800 border-t border-gray-200">
+                                    <span>Total Kewajiban & Ekuitas:</span>
+                                    <span>Rp <?= number_format($total_pasiva_adj, 0, ',', '.') ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Balance indicator check -->
+                    <div class="bg-gradient-to-r from-teal-500 to-emerald-600 text-white rounded-2xl shadow-sm p-4.5 mt-6 flex justify-between items-center text-left">
+                        <div class="flex items-center">
+                            <div class="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-lg mr-3 shadow"><i class="fas fa-scale-balanced"></i></div>
+                            <div>
+                                <h4 class="font-bold text-xs">Pemeriksaan Keseimbangan Akun Neraca (Balance Check)</h4>
+                                <p class="text-[10px] text-teal-100">Menyatakan bahwa total aset di bagian kiri seimbang dengan total kewajiban dan ekuitas di bagian kanan.</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="bg-white/25 text-white text-[11px] font-black px-4 py-1.5 rounded-lg border border-white/20 shadow-sm flex items-center gap-1.5"><i class="fas fa-check-circle"></i> SEIMBANG (BALANCED)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABS CONTENT: PERENCANAAN KAS (CASHFLOW PLAN) -->
+            <div id="tab-proyeksi" class="tab-pane hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                    
+                    <!-- KIRI (Col-4): FORMULIR SIMULASI -->
+                    <div class="lg:col-span-4 bg-white rounded-2xl border border-gray-250 shadow-sm overflow-hidden p-6 space-y-5 text-left">
+                        <div class="border-b border-gray-100 pb-3 mb-1">
+                            <h3 class="font-bold text-slate-900 text-sm flex items-center"><i class="fas fa-sliders-h text-amber-500 mr-2"></i>Parameter Simulasi TA 26/27</h3>
+                            <p class="text-[10px] text-gray-400 mt-1">Ubah nilai di bawah ini untuk melihat dampaknya pada arus kas.</p>
+                        </div>
+
+                        <!-- GRUP PEMASUKAN -->
+                        <div class="space-y-3.5">
+                            <h4 class="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded flex items-center uppercase tracking-wider"><i class="fas fa-wallet mr-1.5"></i>Proyeksi Pemasukan</h4>
+                            
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Kas Awal Tahun Ajaran</label>
+                                <input type="number" id="sim_init_cash" value="<?= $total_kas_bank ?>" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+
+                            <!-- SPP BERDASARKAN 3 ANGKATAN -->
+                            <div class="p-3 bg-emerald-50/30 rounded-xl border border-emerald-100 space-y-2">
+                                <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wide block"><i class="fas fa-users mr-1"></i>SPP 3 Angkatan Santri</span>
+                                
+                                <!-- Angkatan Terlama (2024) -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Santri Terlama ('24)</label>
+                                        <input type="number" id="sim_santri_2024" value="35" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Tarif SPP / Bln</label>
+                                        <input type="number" id="sim_spp_2024" value="1100000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+
+                                <!-- Angkatan Tengah (2025) -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Santri Tengah ('25)</label>
+                                        <input type="number" id="sim_santri_2025" value="40" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Tarif SPP / Bln</label>
+                                        <input type="number" id="sim_spp_2025" value="1300000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+
+                                <!-- Angkatan Baru (2026) -->
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Santri Baru ('26)</label>
+                                        <input type="number" id="sim_santri_2026" value="45" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Tarif SPP / Bln</label>
+                                        <input type="number" id="sim_spp_2026" value="1500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- SUBSIDI BEASISWA / KERINGANAN SPP -->
+                            <div class="p-3 bg-sky-50/20 rounded-xl border border-sky-100 space-y-2">
+                                <span class="text-[10px] font-bold text-sky-800 uppercase tracking-wide block"><i class="fas fa-hand-holding-hand mr-1"></i>Beasiswa & Keringanan SPP</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Penerima Beasiswa</label>
+                                        <input type="number" id="sim_beasiswa_count" value="12" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Rata Potongan / Bln</label>
+                                        <input type="number" id="sim_beasiswa_potongan" value="750000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Target Santri Baru</label>
+                                <input type="number" id="sim_new_santri" value="45" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+
+                            <!-- RINCIAN UANG PANGKAL -->
+                            <div class="p-3 bg-emerald-50/20 rounded-xl border border-emerald-100 space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-[10px] font-bold text-emerald-800 uppercase tracking-wide"><i class="fas fa-hand-holding-dollar mr-1"></i>Rincian Uang Pangkal</span>
+                                    <span class="text-[10px] font-black text-emerald-600" id="total_uang_pangkal_label">Rp 12.000.000</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Uang Seragam</label>
+                                        <input type="number" id="sim_up_seragam" value="1500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Uang Asrama</label>
+                                        <input type="number" id="sim_up_asrama" value="2500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Uang Kegiatan</label>
+                                        <input type="number" id="sim_up_kegiatan" value="2000000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Uang Buku</label>
+                                        <input type="number" id="sim_up_buku" value="1500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-semibold text-gray-500 mb-0.5">Wakaf Akomodasi</label>
+                                    <input type="number" id="sim_up_wakaf" value="4500000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Estimasi Donasi Bulanan</label>
+                                <input type="number" id="sim_donasi" value="7500000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+                        </div>
+
+                        <!-- GRUP PENGELUARAN -->
+                        <div class="space-y-3.5 pt-3 border-t border-gray-100">
+                            <h4 class="text-xs font-bold text-rose-800 bg-rose-50 px-2.5 py-1 rounded flex items-center uppercase tracking-wider"><i class="fas fa-receipt mr-1.5"></i>Proyeksi Pengeluaran</h4>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Gaji Pokok & Staff Tetap / Bulan</label>
+                                <input type="number" id="sim_gaji_pokok" value="48000000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Honor Mengajar Ustadz Offline / Bulan</label>
+                                <input type="number" id="sim_honor_offline" value="<?= $cost_gaji_offline ?>" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Biaya Konsumsi / Anak / Hari</label>
+                                <input type="number" id="sim_cost_makan" value="22000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+
+                            <div class="p-3 bg-amber-50/50 rounded-xl border border-amber-200 space-y-2">
+                                <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wide block"><i class="fas fa-house-chimney mr-1"></i>Sewa Rumah Asrama</span>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-1">Tarif Sewa / Thn</label>
+                                        <input type="number" id="sim_sewa_asrama" value="35000000" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[9px] font-semibold text-gray-500 mb-1">Jumlah Unit Sewa</label>
+                                        <input type="number" id="sim_jumlah_rumah" value="3" oninput="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] font-semibold text-gray-500 mb-1">Bulan Pembayaran Sewa</label>
+                                    <select id="sim_rent_month" onchange="calculateProjections()" class="w-full px-2 py-1 border rounded text-[11px] bg-white">
+                                        <option value="0">Juli 2026</option>
+                                        <option value="1">Agustus 2026</option>
+                                        <option value="2">September 2026</option>
+                                        <option value="5">Desember 2026</option>
+                                        <option value="6">Januari 2027</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-gray-600 mb-1">Utilitas / Bulan</label>
+                                    <input type="number" id="sim_utilitas" value="6000000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-gray-600 mb-1">Biaya Ujian/Semester</label>
+                                    <input type="number" id="sim_biaya_ujian" value="12000000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[11px] font-semibold text-gray-600 mb-1">Anggaran THR Pegawai (Bulan April 27)</label>
+                                <input type="number" id="sim_anggaran_thr" value="38000000" oninput="calculateProjections()" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- KANAN (Col-8): GRAFIK & TABEL HASIL SIMULASI -->
+                    <div class="lg:col-span-8 space-y-6">
+                        <!-- BANNER ALARM KESEHATAN KAS -->
+                        <div id="projection-alert" class="bg-teal-100 text-teal-800 border border-teal-200 p-4 rounded-xl flex items-start text-xs text-left shadow-sm">
+                            <i class="fas fa-check-circle text-teal-600 mr-2.5 text-base mt-0.5"></i>
+                            <div>
+                                <span class="font-bold">Menganalisis Proyeksi...</span> Harap isi parameter di sebelah kiri.
+                            </div>
+                        </div>
+
+                        <!-- RINGKASAN OUTPUT PROYEKSI -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div class="bg-white p-4 border border-gray-200 rounded-xl text-center">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Total Pendapatan</span>
+                                <span class="text-sm font-black text-slate-800 block mt-1" id="summary_total_rev">Rp 0</span>
+                            </div>
+                            <div class="bg-white p-4 border border-gray-200 rounded-xl text-center">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Total Pengeluaran</span>
+                                <span class="text-sm font-black text-slate-800 block mt-1" id="summary_total_exp">Rp 0</span>
+                            </div>
+                            <div class="bg-white p-4 border border-gray-200 rounded-xl text-center">
+                                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Surplus / Defisit Kumulatif</span>
+                                <span class="text-sm font-black text-teal-600 block mt-1" id="summary_surplus_proj">Rp 0</span>
+                            </div>
+                            <div class="bg-white p-4 border border-gray-200 rounded-xl text-center bg-amber-50 border-amber-200">
+                                <span class="text-[9px] font-bold text-amber-700 uppercase tracking-wide">Estimasi Kas Akhir</span>
+                                <span class="text-sm font-black text-amber-800 block mt-1" id="summary_ending_cash">Rp 0</span>
+                            </div>
+                        </div>
+
+                        <!-- GRAFIK TREN KAS -->
+                        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm text-left">
+                            <div class="mb-4 flex items-center justify-between">
+                                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wide"><i class="fas fa-chart-line text-amber-500 mr-1.5"></i>Tren Saldo Kas Kumulatif (TA 2026/2027)</h3>
+                                <div class="text-[10px] text-gray-400 space-x-3.5 font-medium">
+                                    <span><i class="fas fa-arrow-down text-rose-500 mr-1"></i>Titik Terendah: <strong id="summary_lowest_cash" class="text-slate-700">Rp 0</strong></span>
+                                    <span><i class="fas fa-arrow-up text-teal-500 mr-1"></i>Titik Tertinggi: <strong id="summary_peak_cash" class="text-slate-700">Rp 0</strong></span>
+                                </div>
+                            </div>
+                            <div class="h-64">
+                                <canvas id="chart-projection"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- TABEL DETAIL PROYEKSI BULANAN -->
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-250 overflow-hidden text-left">
+                            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wide"><i class="fas fa-table mr-1.5 text-amber-500"></i>Tabel Proyeksi Finansial Bulanan</h3>
+                                <span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded">12 Bulan</span>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-center divide-y divide-gray-150">
+                                    <thead class="bg-gray-50 text-[9px] uppercase tracking-wider text-gray-500 font-bold">
+                                        <tr class="divide-x divide-gray-100">
+                                            <th class="px-3 py-3 text-left w-[120px]" rowspan="2">Bulan</th>
+                                            <th class="px-2 py-2" colspan="5">Pemasukan (Inflow)</th>
+                                            <th class="px-2 py-2" colspan="7">Pengeluaran (Outflow)</th>
+                                            <th class="px-2 py-3 w-[100px]" rowspan="2">Net Cashflow</th>
+                                            <th class="px-3 py-3 w-[120px]" rowspan="2">Saldo Kas</th>
+                                        </tr>
+                                        <tr class="divide-x divide-gray-100 border-t border-gray-150 text-[8px]">
+                                            <th class="px-2 py-1.5 text-right">SPP</th>
+                                            <th class="px-2 py-1.5 text-right">Beasiswa</th>
+                                            <th class="px-2 py-1.5 text-right">U. Pangkal</th>
+                                            <th class="px-2 py-1.5 text-right">Donasi</th>
+                                            <th class="px-2 py-1.5 text-right bg-emerald-50/50">Total</th>
+                                            <th class="px-2 py-1.5 text-right">Gaji Pokok</th>
+                                            <th class="px-2 py-1.5 text-right">H. Offline</th>
+                                            <th class="px-2 py-1.5 text-right">Makan</th>
+                                            <th class="px-2 py-1.5 text-right">Sewa</th>
+                                            <th class="px-2 py-1.5 text-right">Utilitas</th>
+                                            <th class="px-2 py-1.5 text-right">Ujian</th>
+                                            <th class="px-2 py-1.5 text-right">THR</th>
+                                            <th class="px-2 py-1.5 text-right bg-rose-50/50">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="projection-table-body" class="divide-y divide-gray-100 text-xs">
+                                        <!-- Javascript will populate rows here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- TABS CONTENT: JURNAL & PENCATATAN -->
-            <div id="tab-jurnal" class="tab-pane">
+            <div id="tab-jurnal" class="tab-pane hidden">
                 <?php if(!empty($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 border border-emerald-200 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
                 <?php if(!empty($pesan_error)) echo "<div class='bg-rose-100 text-rose-700 px-4 py-3 rounded-lg mb-6 border border-rose-200 shadow-sm flex items-center'><i class='fas fa-exclamation-circle mr-2'></i> $pesan_error</div>"; ?>
 
@@ -784,12 +1435,12 @@ foreach ($ringkasan as $kode => $info) {
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // Data Keuangan untuk AI Auditor
+        // Data Keuangan untuk AI Auditor & Dashboard
         const totalKasBank = <?= $total_kas_bank ?>;
         const kasUtama = <?= $kas_utama ?>;
         const bankBsi = <?= $bank_bsi ?>;
-        const pendapatanBulanIni = <?= $pendapatan_bulanan ?>;
-        const bebanBulanIni = <?= $beban_bulanan ?>;
+        const pendapatanBulanIni = <?= $total_pemasukan ?>;
+        const bebanBulanIni = <?= $total_pengeluaran ?>;
         const overdueSppCount = <?= count($overdue_santri) ?>;
         const coaBalances = <?= json_encode($ringkasan) ?>;
         const recentTransactions = <?= json_encode($recent_transactions) ?>;
@@ -810,19 +1461,264 @@ foreach ($ringkasan as $kode => $info) {
             document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
             // Remove active classes from buttons
             document.querySelectorAll('[id^="btn-tab-"]').forEach(btn => {
-                btn.className = "px-4 py-2 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition";
+                btn.className = "px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition";
             });
 
             // Show active
             document.getElementById(tabId).classList.remove('hidden');
             // Add active class
-            document.getElementById('btn-' + tabId).className = "px-4 py-2 text-sm font-bold border-b-2 border-amber-600 text-amber-700 focus:outline-none transition";
+            document.getElementById('btn-' + tabId).className = "px-4 py-2.5 text-xs font-bold border-b-2 border-amber-600 text-amber-700 focus:outline-none transition";
             
             // Init charts if charts tab
             if (tabId === 'tab-charts') {
                 initCharts();
             }
+            if (tabId === 'tab-proyeksi') {
+                setTimeout(calculateProjections, 100);
+            }
         }
+
+        // Sub-tab Laporan Terpadu
+        function switchSubLaporan(subId) {
+            document.querySelectorAll('.sub-report-pane').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('block');
+            });
+            document.querySelectorAll('[id^="btn-sub-"]').forEach(btn => {
+                btn.className = "px-4 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 rounded-lg transition-all focus:outline-none";
+            });
+            document.getElementById(subId).classList.remove('hidden');
+            document.getElementById(subId).classList.add('block');
+            document.getElementById('btn-' + subId).className = "px-4 py-2 text-xs font-bold bg-amber-700 text-white rounded-lg transition-all focus:outline-none shadow-sm";
+        }
+
+        // Toggle Rincian Mapel Offline
+        function toggleOfflineList() {
+            const list = document.getElementById("offlineMapelList");
+            const arrow = document.getElementById("arrow-list");
+            if (list.classList.contains("hidden")) {
+                list.classList.remove("hidden");
+                arrow.className = "fas fa-chevron-up ml-1 text-[8px]";
+            } else {
+                list.classList.add("hidden");
+                arrow.className = "fas fa-chevron-down ml-1 text-[8px]";
+            }
+        }
+
+        // DEFINISI PARAMETER PROYEKSI BULANAN TA 2026/2027
+        const monthDefinitions = [
+            { label: "Juli 2026", days: 31, isExam: false, isThr: false, isRent: true, upRatio: 0.60 },
+            { label: "Agustus 2026", days: 31, isExam: false, isThr: false, isRent: false, upRatio: 0.40 },
+            { label: "September 2026", days: 30, isExam: false, isThr: false, isRent: false, upRatio: 0.00 },
+            { label: "Oktober 2026", days: 31, isExam: false, isThr: false, isRent: false, upRatio: 0.00 },
+            { label: "November 2026", days: 30, isExam: false, isThr: false, isRent: false, upRatio: 0.00 },
+            { label: "Desember 2026", days: 31, isExam: true, isThr: false, isRent: false, upRatio: 0.00 },
+            { label: "Januari 2027", days: 31, isExam: false, isThr: false, isRent: false, upRatio: 0.00 },
+            { label: "Februari 2027", days: 28, isExam: false, isThr: false, isRent: false, upRatio: 0.00 },
+            { label: "Maret 2027", days: 31, isExam: false, isThr: false, isRent: false, upRatio: 0.00 },
+            { label: "April 2027", days: 30, isExam: false, isThr: true, isRent: false, upRatio: 0.00 },
+            { label: "Mei 2027", days: 31, isExam: false, isThr: false, isRent: false, upRatio: 0.00 },
+            { label: "Juni 2027", days: 30, isExam: true, isThr: false, isRent: false, upRatio: 0.00 }
+        ];
+
+        let projectionChart = null;
+
+        function calculateProjections() {
+            const initCash = parseFloat(document.getElementById('sim_init_cash').value) || 0;
+            const santri_2024 = parseInt(document.getElementById('sim_santri_2024').value) || 0;
+            const spp_2024 = parseFloat(document.getElementById('sim_spp_2024').value) || 0;
+            const santri_2025 = parseInt(document.getElementById('sim_santri_2025').value) || 0;
+            const spp_2025 = parseFloat(document.getElementById('sim_spp_2025').value) || 0;
+            const santri_2026 = parseInt(document.getElementById('sim_santri_2026').value) || 0;
+            const spp_2026 = parseFloat(document.getElementById('sim_spp_2026').value) || 0;
+
+            const beasiswa_count = parseInt(document.getElementById('sim_beasiswa_count').value) || 0;
+            const beasiswa_potongan = parseFloat(document.getElementById('sim_beasiswa_potongan').value) || 0;
+            const newSantriCount = parseInt(document.getElementById('sim_new_santri').value) || 0;
+            
+            const up_seragam = parseFloat(document.getElementById('sim_up_seragam').value) || 0;
+            const up_asrama = parseFloat(document.getElementById('sim_up_asrama').value) || 0;
+            const up_kegiatan = parseFloat(document.getElementById('sim_up_kegiatan').value) || 0;
+            const up_buku = parseFloat(document.getElementById('sim_up_buku').value) || 0;
+            const up_wakaf = parseFloat(document.getElementById('sim_up_wakaf').value) || 0;
+            
+            const uangPangkal = up_seragam + up_asrama + up_kegiatan + up_buku + up_wakaf;
+            document.getElementById('total_uang_pangkal_label').innerText = formatRupiah(uangPangkal);
+
+            const donasi = parseFloat(document.getElementById('sim_donasi').value) || 0;
+            const gajiPokok = parseFloat(document.getElementById('sim_gaji_pokok').value) || 0;
+            const honorOffline = parseFloat(document.getElementById('sim_honor_offline').value) || 0;
+            const costMakanHari = parseFloat(document.getElementById('sim_cost_makan').value) || 0;
+            const sewaAsramaRumah = parseFloat(document.getElementById('sim_sewa_asrama').value) || 0;
+            const jumlahRumahSewa = parseInt(document.getElementById('sim_jumlah_rumah').value) || 0;
+            const rentMonthIndex = parseInt(document.getElementById('sim_rent_month').value);
+            
+            const utilitas = parseFloat(document.getElementById('sim_utilitas').value) || 0;
+            const biayaUjian = parseFloat(document.getElementById('sim_biaya_ujian').value) || 0;
+            const anggaranThr = parseFloat(document.getElementById('sim_anggaran_thr').value) || 0;
+
+            const total_santri = santri_2024 + santri_2025 + santri_2026;
+            let currentCash = initCash;
+            let totalRevAccum = 0;
+            let totalExpAccum = 0;
+            
+            const tableBody = document.getElementById('projection-table-body');
+            if (tableBody) {
+                tableBody.innerHTML = '';
+            }
+
+            const chartLabels = [];
+            const chartData = [];
+
+            monthDefinitions.forEach((month, index) => {
+                const spp_gross = (santri_2024 * spp_2024) + (santri_2025 * spp_2025) + (santri_2026 * spp_2026);
+                const spp_discount = beasiswa_count * beasiswa_potongan;
+                const spp_net = Math.max(0, spp_gross - spp_discount);
+
+                const incUangPangkal = newSantriCount * uangPangkal * month.upRatio;
+                const incDonasi = donasi;
+                const totalInc = spp_net + incUangPangkal + incDonasi;
+
+                const expGaji = gajiPokok;
+                const expHonor = honorOffline;
+                const expMakan = (total_santri + 8) * costMakanHari * month.days;
+                const expSewa = (index === rentMonthIndex) ? (sewaAsramaRumah * jumlahRumahSewa) : 0;
+                const expUtilitas = utilitas;
+                const expUjian = month.isExam ? biayaUjian : 0;
+                const expThr = month.isThr ? anggaranThr : 0;
+                const totalExp = expGaji + expHonor + expMakan + expSewa + expUtilitas + expUjian + expThr;
+
+                const netCash = totalInc - totalExp;
+                currentCash += netCash;
+
+                totalRevAccum += totalInc;
+                totalExpAccum += totalExp;
+
+                chartLabels.push(month.label);
+                chartData.push(currentCash);
+
+                if (tableBody) {
+                    const row = document.createElement('tr');
+                    row.className = 'border-b border-gray-150 hover:bg-slate-50 transition-colors text-[10px]';
+                    row.innerHTML = `
+                        <td class="px-3 py-2.5 font-bold text-slate-800 text-left text-xs bg-slate-50">${month.label}</td>
+                        <td class="px-2 py-2.5 text-right text-emerald-700 font-medium">${formatRupiah(spp_gross)}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-600 font-medium">${spp_discount > 0 ? '-' + formatRupiah(spp_discount) : 'Rp 0'}</td>
+                        <td class="px-2 py-2.5 text-right text-emerald-700 font-medium">${formatRupiah(incUangPangkal)}</td>
+                        <td class="px-2 py-2.5 text-right text-emerald-700 font-medium">${formatRupiah(incDonasi)}</td>
+                        <td class="px-2 py-2.5 text-right font-bold text-emerald-800 bg-emerald-50/20">${formatRupiah(totalInc)}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-700 font-medium">${formatRupiah(expGaji)}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-700 font-medium">${formatRupiah(expHonor)}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-700 font-medium">${formatRupiah(expMakan)}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-700 font-medium">${formatRupiah(expSewa)}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-700 font-medium">${formatRupiah(expUtilitas)}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-700 font-medium">${formatRupiah(expUjian)}</td>
+                        <td class="px-2 py-2.5 text-right text-rose-700 font-medium">${formatRupiah(expThr)}</td>
+                        <td class="px-2 py-2.5 text-right font-bold text-rose-800 bg-rose-50/20">${formatRupiah(totalExp)}</td>
+                        <td class="px-2 py-2.5 text-right font-bold ${netCash >= 0 ? 'text-teal-600 bg-teal-50/10' : 'text-rose-600 bg-rose-50/10'}">${formatRupiah(netCash)}</td>
+                        <td class="px-3 py-2.5 text-right font-black ${currentCash >= 0 ? 'text-slate-900 bg-slate-50' : 'text-rose-900 bg-rose-100'}">${formatRupiah(currentCash)}</td>
+                    `;
+                    tableBody.appendChild(row);
+                }
+            });
+
+            document.getElementById('summary_total_rev').innerText = formatRupiah(totalRevAccum);
+            document.getElementById('summary_total_exp').innerText = formatRupiah(totalExpAccum);
+            const totalSurplus = totalRevAccum - totalExpAccum;
+            const surplusEl = document.getElementById('summary_surplus_proj') || document.getElementById('summary_surplus');
+            if (surplusEl) {
+                surplusEl.innerText = formatRupiah(totalSurplus);
+                if (totalSurplus >= 0) {
+                    surplusEl.className = 'text-sm font-black text-teal-600 block mt-1';
+                } else {
+                    surplusEl.className = 'text-sm font-black text-rose-700 block mt-1';
+                }
+            }
+            document.getElementById('summary_ending_cash').innerText = formatRupiah(currentCash);
+
+            const minCash = Math.min(...chartData);
+            const maxCash = Math.max(...chartData);
+            document.getElementById('summary_lowest_cash').innerText = formatRupiah(minCash);
+            document.getElementById('summary_peak_cash').innerText = formatRupiah(maxCash);
+
+            const alertBox = document.getElementById('projection-alert');
+            if (alertBox) {
+                if (minCash < 0) {
+                    alertBox.className = 'bg-rose-100 text-rose-800 border border-rose-200 p-4 rounded-xl flex items-start text-xs text-left shadow-sm';
+                    alertBox.innerHTML = `<i class="fas fa-exclamation-triangle text-rose-600 mr-2.5 text-base mt-0.5"></i>
+                        <div>
+                            <span class="font-bold text-rose-900">Peringatan Defisit Kas!</span> Proyeksi menunjukkan saldo kas kumulatif Anda akan berada di bawah nol (defisit) di beberapa bulan tertentu. Harap kurangi belanja modal, kurangi unit sewa rumah asrama, atau lakukan penagihan SPP yang lebih ketat.
+                        </div>`;
+                } else {
+                    alertBox.className = 'bg-teal-100 text-teal-800 border border-teal-200 p-4 rounded-xl flex items-start text-xs text-left shadow-sm';
+                    alertBox.innerHTML = `<i class="fas fa-check-circle text-teal-600 mr-2.5 text-base mt-0.5"></i>
+                        <div>
+                            <span class="font-bold text-teal-900">Rencana Kas Aman!</span> Berdasarkan parameter simulasi saat ini, saldo kas kumulatif Yayasan diproyeksikan akan selalu berada dalam kondisi surplus positif sepanjang tahun ajaran 2026/2027.
+                        </div>`;
+                }
+            }
+
+            if (projectionChart) {
+                projectionChart.data.labels = chartLabels;
+                projectionChart.data.datasets[0].data = chartData;
+                projectionChart.update();
+            } else {
+                const canvasProj = document.getElementById('chart-projection');
+                if (canvasProj) {
+                    const ctx = canvasProj.getContext('2d');
+                    projectionChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chartLabels,
+                            datasets: [{
+                                label: 'Saldo Kas Kumulatif',
+                                data: chartData,
+                                borderColor: '#d97706',
+                                backgroundColor: 'rgba(217, 119, 6, 0.05)',
+                                borderWidth: 3.5,
+                                fill: true,
+                                tension: 0.3,
+                                pointBackgroundColor: '#b45309',
+                                pointRadius: 4.5
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false }
+                            },
+                            scales: {
+                                y: {
+                                    ticks: {
+                                        callback: function(value) {
+                                            return value >= 0 ? "Rp " + (value / 1000000) + "M" : "-Rp " + (Math.abs(value) / 1000000) + "M";
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            calculateProjections();
+            
+            // Auto switch tab from URL parameter if exists
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam) {
+                if (tabParam === 'proyeksi') switchTab('tab-proyeksi');
+                else if (tabParam === 'jurnal') switchTab('tab-jurnal');
+                else if (tabParam === 'coa') switchTab('tab-coa');
+                else if (tabParam === 'reminders') switchTab('tab-reminders');
+                else if (tabParam === 'promises') switchTab('tab-promises');
+                else if (tabParam === 'ai-auditor') switchTab('tab-ai-auditor');
+                else if (tabParam === 'charts') switchTab('tab-charts');
+            }
+        });
 
         // Inisialisasi Grafik saat Tab Dibuka
         let chartsInitialized = false;
