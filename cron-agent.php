@@ -1039,6 +1039,12 @@ function generate_hrd_pesan_ai($tipe_reminder, $detail_tambahan = '') {
     } elseif ($tipe_reminder === 'jurnal_mengajar') {
         $prompt = "Tulis template pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama {{NAMA}} yang akan mengajar $detail_tambahan dalam 5 menit. Ingatkan untuk melakukan absen Mengajar dan mengisi Jurnal Mengajar setelah selesai mengajar nanti. Berikan placeholder {{NAMA}} dalam template Anda.";
         $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah {{NAMA}}* 🙏\n\nMengingatkan bahwa 5 menit lagi Anda dijadwalkan mengajar $detail_tambahan. Mohon tidak lupa melakukan absen Mengajar dan melengkapi Jurnal Mengajar setelah selesai nanti.\n\n-- AI HRD Yayasan Villa Quran --";
+    } elseif ($tipe_reminder === 'musyrif_remind') {
+        $prompt = "Tulis template pesan WhatsApp singkat, santun, ramah, dan bernuansa Islami untuk mengingatkan Musyrif bernama {{NAMA}} agar memeriksa dan memvalidasi Buku Mutaba'ah harian bagi santri binaannya di Ruang Asatidz hari ini. Gunakan sapaan Assalamu'alaikum. Berikan placeholder {{NAMA}}.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz {{NAMA}}* 🙏\n\nMengingatkan untuk memeriksa dan menginput Buku Mutaba'ah harian bagi santri binaan Anda di Ruang Asatidz hari ini.\n\nMari dukung keistiqomahan ibadah santri kita dengan verifikasi yang disiplin. Terima kasih!\n\n-- AI HRD Yayasan Villa Quran --";
+    } elseif ($tipe_reminder === 'musyrif_scold') {
+        $prompt = "Tulis template pesan WhatsApp singkat, tegas, bernuansa Islami untuk menegur Musyrif bernama {{NAMA}} karena terdeteksi belum memvalidasi Buku Mutaba'ah santri selama 2 hari berturut-turut (kemarin dan hari ini), padahal santri telah mengisi data ibadah harian. Sebutkan secara jelas bahwa kelalaian ini akan berdampak langsung pada pengurangan penilaian kinerja (KPI) bulanan mereka. Gunakan sapaan Assalamu'alaikum. Berikan placeholder {{NAMA}}.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz {{NAMA}}* ⚠️\n\nPeringatan Keras dari AI HRD: Anda terdeteksi belum melakukan verifikasi/input Buku Mutaba'ah santri binaan Anda selama 2 hari berturut-turut (kemarin dan hari ini), padahal santri telah mengisi data ibadah harian.\n\nKelalaian ini akan berdampak langsung pada pengurangan nilai penilaian kinerja (KPI) bulanan Anda. Mohon segera lakukan validasi di Ruang Asatidz sekarang juga.\n\n-- AI HRD Yayasan Villa Quran --";
     }
     
     $res = mikirKeGemini([
@@ -1290,5 +1296,131 @@ if (!empty($slots_to_check)) {
         }
     }
     logAgent("🎉 Agent HRD: Pengecekan Jurnal & Absen Mengajar Selesai.");
+}
+
+// 4. CHECKER VALIDASI MUTABAAH MUSYRIF (Pukul 20:30 WIB)
+$hrd_mutabaah_done = false;
+$hrd_mutabaah_log_file = __DIR__ . '/agent_hrd_mutabaah_log.txt';
+if (file_exists($hrd_mutabaah_log_file)) {
+    if (strpos(file_get_contents($hrd_mutabaah_log_file), "SUCCESS_$today") !== false) $hrd_mutabaah_done = true;
+}
+
+$force_hrd_mutabaah = ($force === 'hrd_mutabaah');
+if (($current_time_hm === '20:30' || $force_hrd_mutabaah) && (!$hrd_mutabaah_done || $force_hrd_mutabaah)) {
+    logAgent("======= MEMULAI AGENT HRD: PENGECEKAN VALIDASI MUTABAAH MUSYRIF ($today) =======");
+    
+    pastikanKoneksiDb();
+    
+    // Ambil daftar musyrif
+    $res_musyrif = $conn->query("SELECT id, nama, whatsapp FROM akun_ustadz WHERE role LIKE '%musyrif%' AND whatsapp IS NOT NULL AND whatsapp != ''");
+    
+    if ($res_musyrif && $res_musyrif->num_rows > 0) {
+        $yesterday = date('Y-m-d', strtotime('-1 day'));
+        
+        while ($musyrif = $res_musyrif->fetch_assoc()) {
+            $m_id = (int)$musyrif['id'];
+            $m_nama = $musyrif['nama'];
+            $no_wa = preg_replace('/[^0-9]/', '', $musyrif['whatsapp']);
+            if (substr($no_wa, 0, 1) === '0') {
+                $no_wa = '62' . substr($no_wa, 1);
+            }
+            
+            // Dapatkan santri_id dalam halaqoh musyrif ini
+            $res_santri = $conn->query("
+                SELECT a.santri_id, s.nama_lengkap 
+                FROM halaqoh_anggota a 
+                JOIN halaqoh_grup g ON a.grup_id = g.id 
+                JOIN buku_induk_santri s ON a.santri_id = s.id
+                WHERE g.musyrif_id = $m_id
+            ");
+            
+            if (!$res_santri || $res_santri->num_rows == 0) {
+                logAgent("-> Musyrif $m_nama tidak memiliki santri binaan. Skip.");
+                continue;
+            }
+            
+            $santri_ids = [];
+            $santri_names = [];
+            while ($s = $res_santri->fetch_assoc()) {
+                $santri_ids[] = (int)$s['santri_id'];
+                $santri_names[] = $conn->real_escape_string($s['nama_lengkap']);
+            }
+            
+            $santri_ids_str = implode(',', $santri_ids);
+            
+            // --- CEK DATA KEMARIN (YESTERDAY) ---
+            // 1. Apakah ada santri binaan yang mengisi ibadah harian kemarin?
+            $res_ih_y = $conn->query("SELECT count(*) as total FROM ibadah_harian_santri WHERE tanggal = '$yesterday' AND santri_id IN ($santri_ids_str)");
+            $row_ih_y = $res_ih_y ? $res_ih_y->fetch_assoc() : ['total' => 0];
+            $santri_has_data_y = ($row_ih_y['total'] > 0);
+            
+            // 2. Apakah musyrif menginput data mutaba'ah kemarin?
+            $res_bm_y = $conn->query("SELECT count(*) as total FROM buku_mutabaah WHERE tanggal = '$yesterday' AND musyrif_id = $m_id");
+            $row_bm_y = $res_bm_y ? $res_bm_y->fetch_assoc() : ['total' => 0];
+            $musyrif_checked_y = ($row_bm_y['total'] > 0);
+            
+            $missed_yesterday = ($santri_has_data_y && !$musyrif_checked_y);
+            
+            // --- CEK DATA HARI INI (TODAY) ---
+            // 1. Apakah ada santri binaan yang mengisi ibadah harian hari ini?
+            $res_ih_t = $conn->query("SELECT count(*) as total FROM ibadah_harian_santri WHERE tanggal = '$today' AND santri_id IN ($santri_ids_str)");
+            $row_ih_t = $res_ih_t ? $res_ih_t->fetch_assoc() : ['total' => 0];
+            $santri_has_data_t = ($row_ih_t['total'] > 0);
+            
+            // 2. Apakah musyrif menginput data mutaba'ah hari ini?
+            $res_bm_t = $conn->query("SELECT count(*) as total FROM buku_mutabaah WHERE tanggal = '$today' AND musyrif_id = $m_id");
+            $row_bm_t = $res_bm_t ? $res_bm_t->fetch_assoc() : ['total' => 0];
+            $musyrif_checked_t = ($row_bm_t['total'] > 0);
+            
+            $missed_today = ($santri_has_data_t && !$musyrif_checked_t);
+            
+            if ($missed_yesterday && $missed_today) {
+                // Teguran Keras: 2 hari tidak mengecek
+                $template_pesan = generate_hrd_pesan_ai('musyrif_scold');
+                $pesan = str_replace('{{NAMA}}', $m_nama, $template_pesan);
+                
+                $waFd = ['target' => $no_wa, 'message' => $pesan];
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => "https://api.fonnte.com/send",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => http_build_query($waFd),
+                    CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                    CURLOPT_TIMEOUT => 15
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+                
+                logAgent("⚠️ TEGURAN KPI (2 hari bolos): Dikirim ke Musyrif $m_nama ($no_wa)");
+                sleep(rand(1, 2));
+            } elseif ($missed_today) {
+                // Pengingat Harian (hari pertama)
+                $template_pesan = generate_hrd_pesan_ai('musyrif_remind');
+                $pesan = str_replace('{{NAMA}}', $m_nama, $template_pesan);
+                
+                $waFd = ['target' => $no_wa, 'message' => $pesan];
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => "https://api.fonnte.com/send",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => http_build_query($waFd),
+                    CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                    CURLOPT_TIMEOUT => 15
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+                
+                logAgent("✉️ Pengingat harian mutaba'ah: Dikirim ke Musyrif $m_nama ($no_wa)");
+                sleep(rand(1, 2));
+            } else {
+                logAgent("-> Musyrif $m_nama tertib (sudah memeriksa/tidak ada data baru).");
+            }
+        }
+    }
+    
+    file_put_contents($hrd_mutabaah_log_file, "SUCCESS_$today\n", FILE_APPEND);
+    logAgent("🎉 Agent HRD: Pengecekan Mutaba'ah Musyrif Selesai.");
 }
 ?>

@@ -5,6 +5,7 @@ require_once 'koneksi.php';
 // 1. Buat Tabel Otomatis
 $conn->query("CREATE TABLE IF NOT EXISTS buku_mutabaah (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    musyrif_id INT NULL,
     nama_santri VARCHAR(150),
     kelas VARCHAR(50),
     tanggal DATE,
@@ -15,6 +16,12 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_mutabaah (
     catatan_musyrif TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
+
+// Self-healing: Tambahkan kolom musyrif_id jika belum ada
+$res_musyrif_col = $conn->query("SHOW COLUMNS FROM buku_mutabaah LIKE 'musyrif_id'");
+if ($res_musyrif_col && $res_musyrif_col->num_rows == 0) {
+    $conn->query("ALTER TABLE buku_mutabaah ADD COLUMN musyrif_id INT NULL AFTER id");
+}
 
 // 2. Hapus Data
 if (isset($_GET['hapus_id'])) {
@@ -27,6 +34,7 @@ if (isset($_GET['hapus_id'])) {
 // 3. Simpan / Update Data
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
+    $musyrif_id = (int)$_SESSION['ustadz_id'];
     $nama_santri = $conn->real_escape_string($_POST['nama_santri']);
     $kelas = $conn->real_escape_string($_POST['kelas']);
     $tanggal = $conn->real_escape_string($_POST['tanggal']);
@@ -37,10 +45,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $catatan = $conn->real_escape_string($_POST['catatan_musyrif']);
 
     if ($id > 0) {
-        $sql = "UPDATE buku_mutabaah SET nama_santri='$nama_santri', kelas='$kelas', tanggal='$tanggal', shalat_berjamaah=$shalat, tilawah_harian=$tilawah, ziyadah_hafalan=$ziyadah, murajaah=$murajaah, catatan_musyrif='$catatan' WHERE id=$id";
+        $sql = "UPDATE buku_mutabaah SET musyrif_id=$musyrif_id, nama_santri='$nama_santri', kelas='$kelas', tanggal='$tanggal', shalat_berjamaah=$shalat, tilawah_harian=$tilawah, ziyadah_hafalan=$ziyadah, murajaah=$murajaah, catatan_musyrif='$catatan' WHERE id=$id";
         $pesan_sukses = "Data Mutaba'ah berhasil diupdate!";
     } else {
-        $sql = "INSERT INTO buku_mutabaah (nama_santri, kelas, tanggal, shalat_berjamaah, tilawah_harian, ziyadah_hafalan, murajaah, catatan_musyrif) VALUES ('$nama_santri', '$kelas', '$tanggal', $shalat, $tilawah, $ziyadah, $murajaah, '$catatan')";
+        $sql = "INSERT INTO buku_mutabaah (musyrif_id, nama_santri, kelas, tanggal, shalat_berjamaah, tilawah_harian, ziyadah_hafalan, murajaah, catatan_musyrif) VALUES ($musyrif_id, '$nama_santri', '$kelas', '$tanggal', $shalat, $tilawah, $ziyadah, $murajaah, '$catatan')";
         $pesan_sukses = "Data Mutaba'ah harian berhasil disimpan!";
     }
     $conn->query($sql);
