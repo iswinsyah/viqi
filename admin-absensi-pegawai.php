@@ -58,7 +58,7 @@ if (isset($_GET['selesaikan_rapat_id'])) {
 }
 
 // D. Cek absensi pegawai (harian kerja) hari ini
-$res_pegawai = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' ORDER BY waktu_absen ASC");
+$res_pegawai = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
 $pegawai_status = 'belum_absen';
 if ($res_pegawai) {
     $num = $res_pegawai->num_rows;
