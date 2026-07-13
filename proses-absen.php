@@ -61,7 +61,7 @@ function haversine_distance($lat1, $lon1, $lat2, $lon2) {
 
 function kirim_notifikasi_wa_yayasan($pesan) {
     $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
-    $no_wa = '6285196572223';
+    $no_wa = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223';
     
     $waFd = ['target' => $no_wa, 'message' => $pesan];
     $ch = curl_init();
