@@ -214,6 +214,8 @@ if ($res_age) {
                         AI bertugas mengintai dan mengumpulkan link grup publik/terbuka (dan menghindari kompetitor). Sebagai staf marketing, gunakan link gabung untuk masuk, bagikan konten bermanfaat, diskusikan topik secara alami, dan jangan lakukan spam promosi secara kasar agar tidak di-kick oleh admin grup.
                     </p>
                 </div>
+            </div>
+
             <!-- Form Tambah Grup Manual -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
                 <details>
