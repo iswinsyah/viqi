@@ -116,17 +116,17 @@ $gaji_per_pertemuan = 0;
 
 if ($total_skor_kpi >= 90) { // Grade A: 90 sd 100
     $gaji_per_pertemuan = $tarif_grade_a;
-    $predikat = "Sangat Baik (Grade A)";
+    $predikat = "Mumtaz (Grade A)";
     $pesan_evaluasi = "Alhamdulillah, jazakumullah khairan atas dedikasi Antum! Performa bulan ini sangat luar biasa. Pertahankan kedisiplinan administrasi dan inovasi mengajar Antum.";
     $ikon_evaluasi = "fa-star text-amber-400";
 } elseif ($total_skor_kpi >= 80) { // Grade B: 80 sd 89
     $gaji_per_pertemuan = $tarif_grade_b;
-    $predikat = "Baik (Grade B)";
+    $predikat = "Jayid (Grade B)";
     $pesan_evaluasi = "Performa Antum sudah baik, namun masih ada ruang untuk ditingkatkan. Mari fokus pada perbaikan kualitas pengajaran dan pendampingan santri di bulan depan.";
     $ikon_evaluasi = "fa-thumbs-up text-blue-500";
 } else { // Grade C: di bawah 80
     $gaji_per_pertemuan = $tarif_grade_c;
-    $predikat = "Cukup (Grade C)";
+    $predikat = "Aslha (Grade C)";
     $pesan_evaluasi = "Performa Antum bulan ini berada di bawah target yang diharapkan. Kami mohon kerjasamanya untuk lebih disiplin dalam mengisi jurnal dan mengawal target hafalan santri.";
     $ikon_evaluasi = "fa-exclamation-triangle text-rose-500";
 }
