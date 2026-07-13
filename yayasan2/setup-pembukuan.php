@@ -88,4 +88,20 @@ $conn->query("CREATE TABLE IF NOT EXISTS keuangan_janji_bayar (
     FOREIGN KEY (santri_id) REFERENCES buku_induk_santri(id) ON DELETE CASCADE
 )");
 
+// 7. Buat Tabel Inventaris Barang Sekolah
+$conn->query("CREATE TABLE IF NOT EXISTS keuangan_inventaris (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_barang VARCHAR(50) NOT NULL UNIQUE,
+    nama_barang VARCHAR(150) NOT NULL,
+    kategori VARCHAR(50) NOT NULL,
+    jumlah INT DEFAULT 1,
+    satuan VARCHAR(20) DEFAULT 'unit',
+    harga_beli DECIMAL(15,2) DEFAULT 0.00,
+    tanggal_beli DATE NOT NULL,
+    kondisi ENUM('Baik', 'Rusak Ringan', 'Rusak Berat') DEFAULT 'Baik',
+    lokasi VARCHAR(100),
+    keterangan TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
 ?>

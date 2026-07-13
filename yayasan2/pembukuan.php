@@ -163,9 +163,94 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     }
 }
 
-// 3. Load COA & Lembaga untuk form dropdown
+// Handler Tambah Inventaris Sekolah Baru
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'tambah_inventaris') {
+    $kode_barang = $conn->real_escape_string(trim($_POST['kode_barang']));
+    $nama_barang = $conn->real_escape_string(trim($_POST['nama_barang']));
+    $kategori = $conn->real_escape_string(trim($_POST['kategori']));
+    $jumlah = (int)$_POST['jumlah'];
+    $satuan = $conn->real_escape_string(trim($_POST['satuan']));
+    $harga_beli = (double)$_POST['harga_beli'];
+    $tanggal_beli = $conn->real_escape_string($_POST['tanggal_beli']);
+    $kondisi = $_POST['kondisi'];
+    $lokasi = $conn->real_escape_string(trim($_POST['lokasi']));
+    $keterangan = $conn->real_escape_string(trim($_POST['keterangan']));
+
+    if (empty($kode_barang) || empty($nama_barang) || empty($kategori) || empty($tanggal_beli)) {
+        $pesan_error = "Harap isi kolom Kode Barang, Nama Barang, Kategori, dan Tanggal Beli!";
+    } else {
+        $check = $conn->query("SELECT id FROM keuangan_inventaris WHERE kode_barang = '$kode_barang'");
+        if ($check && $check->num_rows > 0) {
+            $pesan_error = "Kode Barang $kode_barang sudah digunakan!";
+        } else {
+            $sql = "INSERT INTO keuangan_inventaris (kode_barang, nama_barang, kategori, jumlah, satuan, harga_beli, tanggal_beli, kondisi, lokasi, keterangan)
+                    VALUES ('$kode_barang', '$nama_barang', '$kategori', $jumlah, '$satuan', $harga_beli, '$tanggal_beli', '$kondisi', '$lokasi', '$keterangan')";
+            if ($conn->query($sql)) {
+                $pesan_sukses = "Barang '$nama_barang' berhasil dicatat ke inventaris sekolah!";
+            } else {
+                $pesan_error = "Gagal mencatat inventaris: " . $conn->error;
+            }
+        }
+    }
+}
+
+// Handler Edit Inventaris Sekolah
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'edit_inventaris') {
+    $id = (int)$_POST['inventaris_id'];
+    $kode_barang = $conn->real_escape_string(trim($_POST['kode_barang']));
+    $nama_barang = $conn->real_escape_string(trim($_POST['nama_barang']));
+    $kategori = $conn->real_escape_string(trim($_POST['kategori']));
+    $jumlah = (int)$_POST['jumlah'];
+    $satuan = $conn->real_escape_string(trim($_POST['satuan']));
+    $harga_beli = (double)$_POST['harga_beli'];
+    $tanggal_beli = $conn->real_escape_string($_POST['tanggal_beli']);
+    $kondisi = $_POST['kondisi'];
+    $lokasi = $conn->real_escape_string(trim($_POST['lokasi']));
+    $keterangan = $conn->real_escape_string(trim($_POST['keterangan']));
+
+    if (empty($kode_barang) || empty($nama_barang) || empty($kategori) || empty($tanggal_beli)) {
+        $pesan_error = "Harap isi kolom Kode Barang, Nama Barang, Kategori, dan Tanggal Beli!";
+    } else {
+        $check = $conn->query("SELECT id FROM keuangan_inventaris WHERE kode_barang = '$kode_barang' AND id <> $id");
+        if ($check && $check->num_rows > 0) {
+            $pesan_error = "Kode Barang $kode_barang sudah digunakan oleh barang lain!";
+        } else {
+            $sql = "UPDATE keuangan_inventaris SET 
+                    kode_barang = '$kode_barang',
+                    nama_barang = '$nama_barang',
+                    kategori = '$kategori',
+                    jumlah = $jumlah,
+                    satuan = '$satuan',
+                    harga_beli = $harga_beli,
+                    tanggal_beli = '$tanggal_beli',
+                    kondisi = '$kondisi',
+                    lokasi = '$lokasi',
+                    keterangan = '$keterangan'
+                    WHERE id = $id";
+            if ($conn->query($sql)) {
+                $pesan_sukses = "Data inventaris '$nama_barang' berhasil diperbarui!";
+            } else {
+                $pesan_error = "Gagal memperbarui data inventaris: " . $conn->error;
+            }
+        }
+    }
+}
+
+// Handler Hapus Inventaris Sekolah
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'hapus_inventaris') {
+    $id = (int)$_POST['inventaris_id'];
+    $sql = "DELETE FROM keuangan_inventaris WHERE id = $id";
+    if ($conn->query($sql)) {
+        $pesan_sukses = "Data barang berhasil dihapus dari inventaris!";
+    } else {
+        $pesan_error = "Gagal menghapus barang: " . $conn->error;
+    }
+}
+
+// 3. Load COA, Lembaga & Inventaris untuk form dropdown / tabel
 $list_akun = $conn->query("SELECT id, kode_akun, nama_akun, tipe_akun FROM keuangan_akun ORDER BY kode_akun ASC")->fetch_all(MYSQLI_ASSOC);
 $list_lembaga = $conn->query("SELECT id, nama_lembaga FROM keuangan_lembaga WHERE status = 'aktif' ORDER BY id ASC")->fetch_all(MYSQLI_ASSOC);
+$list_inventaris = $conn->query("SELECT * FROM keuangan_inventaris ORDER BY tanggal_beli DESC, id DESC")->fetch_all(MYSQLI_ASSOC);
 
 // 4. Kalkulasi Saldo Kas/Bank & Ringkasan Keuangan
 $res_coa = $conn->query("
@@ -454,6 +539,9 @@ foreach ($ringkasan as $kode => $info) {
                 </button>
                 <button onclick="switchTab('tab-charts')" id="btn-tab-charts" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
                     <i class="fas fa-chart-pie mr-1"></i> Grafik Analisis
+                </button>
+                <button onclick="switchTab('tab-inventaris')" id="btn-tab-inventaris" class="px-4 py-2.5 text-xs font-semibold border-b-2 border-transparent text-gray-500 hover:text-amber-700 focus:outline-none transition">
+                    <i class="fas fa-boxes-stacked mr-1"></i> Inventaris Sekolah
                 </button>
             </div>
 
@@ -1430,6 +1518,203 @@ foreach ($ringkasan as $kode => $info) {
                     </div>
                 </div>
             </div>
+
+            <!-- TABS CONTENT: INVENTARIS SEKOLAH -->
+            <div id="tab-inventaris" class="tab-pane hidden">
+                <?php
+                $total_items = 0;
+                $total_value = 0;
+                $baik_count = 0;
+                $rusak_count = 0;
+                foreach ($list_inventaris as $inv) {
+                    $total_items += $inv['jumlah'];
+                    $total_value += ($inv['jumlah'] * $inv['harga_beli']);
+                    if ($inv['kondisi'] == 'Baik') {
+                        $baik_count += $inv['jumlah'];
+                    } else {
+                        $rusak_count += $inv['jumlah'];
+                    }
+                }
+                ?>
+                <!-- SUMMARIES -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-5 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between text-left">
+                        <div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Unit Barang</span>
+                            <span class="text-2xl font-black text-slate-800"><?= number_format($total_items, 0, ',', '.') ?></span>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg"><i class="fas fa-boxes-stacked"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between text-left">
+                        <div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Nilai Aset</span>
+                            <span class="text-2xl font-black text-emerald-600">Rp <?= number_format($total_value, 0, ',', '.') ?></span>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg"><i class="fas fa-sack-dollar"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between text-left">
+                        <div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Kondisi Baik</span>
+                            <span class="text-2xl font-black text-teal-600"><?= number_format($baik_count, 0, ',', '.') ?></span>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-lg"><i class="fas fa-thumbs-up"></i></div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between text-left">
+                        <div>
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Kondisi Rusak</span>
+                            <span class="text-2xl font-black text-rose-600"><?= number_format($rusak_count, 0, ',', '.') ?></span>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-lg"><i class="fas fa-triangle-exclamation"></i></div>
+                    </div>
+                </div>
+
+                <!-- ACTIONS BAR -->
+                <div class="bg-white rounded-xl border border-gray-150 shadow-sm p-4 mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-left">
+                    <div class="relative w-full sm:w-80">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fas fa-search text-xs"></i></span>
+                        <input type="text" id="search-inventaris" oninput="filterInventaris()" class="w-full pl-9 pr-4 py-2 border rounded-lg text-xs focus:ring-amber-500" placeholder="Cari barang atau kode...">
+                    </div>
+                    <button onclick="openAddInventarisModal()" class="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 text-white font-bold px-4 py-2.5 rounded-lg text-xs shadow transition flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i> Tambah Barang Inventaris
+                    </button>
+                </div>
+
+                <!-- DATA TABLE -->
+                <div class="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden text-left">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-150 text-center">
+                            <thead class="bg-gray-50 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
+                                <tr>
+                                    <th class="px-4 py-3 text-left">Kode Barang</th>
+                                    <th class="px-4 py-3 text-left">Nama Barang</th>
+                                    <th class="px-4 py-3">Kategori</th>
+                                    <th class="px-4 py-3">Jumlah</th>
+                                    <th class="px-4 py-3 text-right">Harga Satuan</th>
+                                    <th class="px-4 py-3 text-right">Total Nilai</th>
+                                    <th class="px-4 py-3">Tgl Beli</th>
+                                    <th class="px-4 py-3">Kondisi</th>
+                                    <th class="px-4 py-3">Lokasi</th>
+                                    <th class="px-4 py-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventaris-table-body" class="divide-y divide-gray-100 text-xs text-gray-700">
+                                <?php if(empty($list_inventaris)): ?>
+                                <tr><td colspan="10" class="py-12 text-gray-400 italic text-center">Belum ada data barang inventaris sekolah.</td></tr>
+                                <?php else: foreach($list_inventaris as $inv): 
+                                    $c_badge = "";
+                                    if ($inv['kondisi'] == 'Baik') $c_badge = "bg-teal-50 text-teal-700 border-teal-200";
+                                    elseif ($inv['kondisi'] == 'Rusak Ringan') $c_badge = "bg-amber-50 text-amber-700 border-amber-200";
+                                    else $c_badge = "bg-rose-50 text-rose-700 border-rose-200";
+                                ?>
+                                <tr class="hover:bg-gray-50/50 transition-colors" data-search-target="<?= strtolower(htmlspecialchars($inv['nama_barang'] . ' ' . $inv['kode_barang'])) ?>">
+                                    <td class="px-4 py-3 text-left font-mono font-bold text-slate-700"><?= htmlspecialchars($inv['kode_barang']) ?></td>
+                                    <td class="px-4 py-3 text-left font-bold text-gray-900"><?= htmlspecialchars($inv['nama_barang']) ?></td>
+                                    <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-100 text-slate-700 font-semibold"><?= htmlspecialchars($inv['kategori']) ?></span></td>
+                                    <td class="px-4 py-3 font-semibold"><?= $inv['jumlah'] ?> <?= htmlspecialchars($inv['satuan']) ?></td>
+                                    <td class="px-4 py-3 text-right font-medium">Rp <?= number_format($inv['harga_beli'], 0, ',', '.') ?></td>
+                                    <td class="px-4 py-3 text-right font-bold text-slate-800">Rp <?= number_format($inv['jumlah'] * $inv['harga_beli'], 0, ',', '.') ?></td>
+                                    <td class="px-4 py-3 font-medium"><?= date('d/m/Y', strtotime($inv['tanggal_beli'])) ?></td>
+                                    <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold border <?= $c_badge ?>"><?= $inv['kondisi'] ?></span></td>
+                                    <td class="px-4 py-3 font-medium text-gray-600"><?= htmlspecialchars($inv['lokasi'] ?: '-') ?></td>
+                                    <td class="px-4 py-3 space-x-1.5 whitespace-nowrap">
+                                        <button onclick='openEditInventarisModal(<?= json_encode($inv) ?>)' class="text-amber-600 hover:text-amber-900 font-bold transition"><i class="fas fa-edit"></i> Edit</button>
+                                        <form action="" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus barang ini dari inventaris?');" class="inline">
+                                            <input type="hidden" name="action" value="hapus_inventaris">
+                                            <input type="hidden" name="inventaris_id" value="<?= $inv['id'] ?>">
+                                            <button type="submit" class="text-rose-600 hover:text-rose-900 font-bold transition"><i class="fas fa-trash-alt"></i> Hapus</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <?php endforeach; endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL INVENTARIS (ADD / EDIT) -->
+            <div id="modal-inventaris" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+                <div class="bg-white rounded-2xl border border-slate-100 w-full max-w-lg overflow-hidden shadow-2xl animate-fade-in mx-4">
+                    <div class="px-6 py-4 bg-amber-50 border-b border-amber-100 flex justify-between items-center text-left">
+                        <h3 id="modal-title-inventaris" class="font-bold text-amber-900 text-sm flex items-center"><i class="fas fa-boxes-stacked mr-2"></i> Tambah Barang Inventaris</h3>
+                        <button onclick="closeInventarisModal()" class="text-amber-900/50 hover:text-amber-900"><i class="fas fa-times"></i></button>
+                    </div>
+                    <form action="" method="POST" class="p-6 space-y-4 text-left">
+                        <input type="hidden" name="action" id="inventaris-form-action" value="tambah_inventaris">
+                        <input type="hidden" name="inventaris_id" id="inventaris-form-id" value="">
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Kode Barang / Register</label>
+                                <input type="text" name="kode_barang" id="inv_kode_barang" required class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500 font-mono font-bold" placeholder="INV-2026-001">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Nama Barang</label>
+                                <input type="text" name="nama_barang" id="inv_nama_barang" required class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500 font-bold" placeholder="Contoh: AC Sharp 1 PK">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Kategori</label>
+                                <select name="kategori" id="inv_kategori" required class="w-full px-2 py-1.5 border rounded-lg text-xs focus:ring-amber-500 bg-white">
+                                    <option value="Mebel / Furniture">Mebel / Furniture</option>
+                                    <option value="Elektronik">Elektronik</option>
+                                    <option value="Buku / Kitab Rujukan">Buku / Kitab Rujukan</option>
+                                    <option value="Peralatan Asrama">Peralatan Asrama</option>
+                                    <option value="Alat Olahraga">Alat Olahraga</option>
+                                    <option value="Kendaraan">Kendaraan</option>
+                                    <option value="Lain-lain">Lain-lain</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Jumlah</label>
+                                <input type="number" name="jumlah" id="inv_jumlah" value="1" required class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500 font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Satuan</label>
+                                <input type="text" name="satuan" id="inv_satuan" value="unit" required class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500" placeholder="Unit, Pcs, Set">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Harga Beli Satuan (Rp)</label>
+                                <input type="number" name="harga_beli" id="inv_harga_beli" value="0" required class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500 font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Tanggal Pembelian</label>
+                                <input type="date" name="tanggal_beli" id="inv_tanggal_beli" value="<?= date('Y-m-d') ?>" required class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Kondisi Barang</label>
+                                <select name="kondisi" id="inv_kondisi" required class="w-full px-2 py-1.5 border rounded-lg text-xs focus:ring-amber-500 bg-white font-bold">
+                                    <option value="Baik">Baik</option>
+                                    <option value="Rusak Ringan">Rusak Ringan</option>
+                                    <option value="Rusak Berat">Rusak Berat</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1">Lokasi Barang</label>
+                                <input type="text" name="lokasi" id="inv_lokasi" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500" placeholder="Ruang Kelas 1, Masjid, Asrama 2">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Keterangan Tambahan</label>
+                            <textarea name="keterangan" id="inv_keterangan" rows="2" class="w-full px-3 py-1.5 border rounded-lg text-xs focus:ring-amber-500" placeholder="Catatan opsional..."></textarea>
+                        </div>
+
+                        <div class="pt-3 border-t border-gray-100 flex justify-end gap-2">
+                            <button type="button" onclick="closeInventarisModal()" class="px-4 py-2 border rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50">Batal</button>
+                            <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs shadow-sm transition"><i class="fas fa-save mr-1"></i> Simpan Data</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -1717,8 +2002,73 @@ foreach ($ringkasan as $kode => $info) {
                 else if (tabParam === 'promises') switchTab('tab-promises');
                 else if (tabParam === 'ai-auditor') switchTab('tab-ai-auditor');
                 else if (tabParam === 'charts') switchTab('tab-charts');
+                else if (tabParam === 'inventaris') switchTab('tab-inventaris');
             }
         });
+
+        // MODAL INVENTARIS JS CONTROLS
+        function openAddInventarisModal() {
+            document.getElementById('modal-title-inventaris').innerHTML = '<i class="fas fa-boxes-stacked mr-2"></i> Tambah Barang Inventaris';
+            document.getElementById('inventaris-form-action').value = 'tambah_inventaris';
+            document.getElementById('inventaris-form-id').value = '';
+            
+            // Clear inputs
+            document.getElementById('inv_kode_barang').value = '';
+            document.getElementById('inv_kode_barang').readOnly = false;
+            document.getElementById('inv_nama_barang').value = '';
+            document.getElementById('inv_kategori').value = 'Mebel / Furniture';
+            document.getElementById('inv_jumlah').value = '1';
+            document.getElementById('inv_satuan').value = 'unit';
+            document.getElementById('inv_harga_beli').value = '0';
+            document.getElementById('inv_tanggal_beli').value = new Date().toISOString().substring(0, 10);
+            document.getElementById('inv_kondisi').value = 'Baik';
+            document.getElementById('inv_lokasi').value = '';
+            document.getElementById('inv_keterangan').value = '';
+
+            document.getElementById('modal-inventaris').classList.remove('hidden');
+        }
+
+        function openEditInventarisModal(item) {
+            document.getElementById('modal-title-inventaris').innerHTML = '<i class="fas fa-edit mr-2"></i> Edit Barang Inventaris';
+            document.getElementById('inventaris-form-action').value = 'edit_inventaris';
+            document.getElementById('inventaris-form-id').value = item.id;
+
+            // Fill inputs
+            document.getElementById('inv_kode_barang').value = item.kode_barang;
+            document.getElementById('inv_kode_barang').readOnly = true; // Prevent changing unique code register
+            document.getElementById('inv_nama_barang').value = item.nama_barang;
+            document.getElementById('inv_kategori').value = item.kategori;
+            document.getElementById('inv_jumlah').value = item.jumlah;
+            document.getElementById('inv_satuan').value = item.satuan;
+            document.getElementById('inv_harga_beli').value = Math.round(item.harga_beli);
+            document.getElementById('inv_tanggal_beli').value = item.tanggal_beli;
+            document.getElementById('inv_kondisi').value = item.kondisi;
+            document.getElementById('inv_lokasi').value = item.lokasi;
+            document.getElementById('inv_keterangan').value = item.keterangan;
+
+            document.getElementById('modal-inventaris').classList.remove('hidden');
+        }
+
+        function closeInventarisModal() {
+            document.getElementById('modal-inventaris').classList.add('hidden');
+        }
+
+        // Live Search Filter Table
+        function filterInventaris() {
+            const query = document.getElementById('search-inventaris').value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#inventaris-table-body tr');
+            
+            rows.forEach(row => {
+                const targetText = row.getAttribute('data-search-target');
+                if (targetText) {
+                    if (targetText.includes(query)) {
+                        row.classList.remove('hidden');
+                    } else {
+                        row.classList.add('hidden');
+                    }
+                }
+            });
+        }
 
         // Inisialisasi Grafik saat Tab Dibuka
         let chartsInitialized = false;
