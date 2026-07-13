@@ -42,7 +42,7 @@ if ($conn) {
 function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) {
     if ($is_super_admin) return true;
     // Menu dasar yang wajib tampil untuk seluruh pegawai terdaftar (bahkan jika belum diset role-nya)
-    if (in_array($menu_key, ['absensi_pegawai', 'ganti_password'])) return true;
+    if (in_array($menu_key, ['absensi_pegawai', 'perizinan_pegawai', 'ganti_password'])) return true;
     if (!isset($menu_permissions[$menu_key])) return false; // Default: sembunyikan jika belum diatur
 
     foreach ($user_roles as $role) {
@@ -57,6 +57,7 @@ function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) 
 $menu_structure = [
     'Menu Utama' => [
         'absensi_pegawai' => ['href' => 'admin-absensi-pegawai.php', 'icon' => 'fa-qrcode', 'title' => 'Absensi Kehadiran'],
+        'perizinan_pegawai' => ['href' => 'admin-pegawai-perizinan.php', 'icon' => 'fa-calendar-check', 'title' => 'Pengajuan Izin / Cuti'],
         'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract', 'title' => 'Peraturan Pegawai'],
         'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher', 'title' => 'KPI Ustadz'],
         'ganti_password' => ['href' => 'ganti-password-ustadz.php', 'icon' => 'fa-key', 'title' => 'Ganti Password'],
