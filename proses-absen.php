@@ -225,8 +225,16 @@ if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
             $diff_seconds = $absen_time - $work_start;
             $diff_minutes = max(1, floor($diff_seconds / 60));
             
-            $keterangan = "Terlambat: $diff_minutes menit";
-            $warning_msg = "Anda terdeteksi Terlambat masuk kerja selama $diff_minutes menit (Absen dilakukan pukul " . date('H:i') . "). Catatan ini telah disimpan di database.";
+            if ($diff_minutes >= 60) {
+                $hours = floor($diff_minutes / 60);
+                $mins = $diff_minutes % 60;
+                $time_str = $mins > 0 ? "$hours jam $mins menit" : "$hours jam";
+            } else {
+                $time_str = "$diff_minutes menit";
+            }
+            
+            $keterangan = "Terlambat: $time_str";
+            $warning_msg = "Anda terdeteksi Terlambat masuk kerja selama $time_str (Absen dilakukan pukul " . date('H:i') . "). Catatan ini telah disimpan di database.";
         } else {
             $keterangan = 'Tepat Waktu';
         }
