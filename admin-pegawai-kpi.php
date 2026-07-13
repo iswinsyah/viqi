@@ -17,8 +17,16 @@ $tarif_grade_c = $data_gaji['gaji_grade_c'] ?? 20000;
 $tarif_grade_b = $data_gaji['gaji_grade_b'] ?? 22500;
 $tarif_grade_a = $data_gaji['gaji_grade_a'] ?? 25000;
 
-// --- LOGIC PERHITUNGAN KPI (CONTOH SEDERHANA) ---
-// Di aplikasi nyata, ini akan jadi fungsi yang kompleks dan mungkin dijalankan oleh CRON JOB bulanan
+// --- LOGIC PERHITUNGAN KPI (REAL & PERAN SPESIFIK) ---
+
+// Ambil data detail akun ustadz/pegawai yang login untuk mendapatkan rolenya
+$res_user = $conn->query("SELECT role FROM akun_ustadz WHERE id = $user_id");
+$user_data = $res_user ? $res_user->fetch_assoc() : null;
+$user_roles = isset($user_data['role']) ? explode(',', $user_data['role']) : [];
+
+$is_teacher = in_array('ustadz', $user_roles) || in_array('guru', $user_roles);
+$eligible_roles_pegawai = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
+$is_daily_worker = !empty(array_intersect($eligible_roles_pegawai, $user_roles));
 
 // Ambil data jurnal bulan ini untuk efisiensi query Pilar 1 dan Perhitungan Gaji
 $res_jurnal_kpi = $conn->query("SELECT 
@@ -31,51 +39,73 @@ $jumlah_pertemuan = (int)($data_jurnal_kpi['total_jurnal'] ?? 0);
 $tepat_waktu = (int)($data_jurnal_kpi['tepat_waktu'] ?? 0);
 
 // 1. Administrasi & Disiplin (Bobot 20%)
-$skor_jurnal = $jumlah_pertemuan > 0 ? ($tepat_waktu / $jumlah_pertemuan) * 100 : 75; // Rasio ketepatan waktu pengisian jurnal
+if ($is_teacher) {
+    $skor_jurnal = $jumlah_pertemuan > 0 ? ($tepat_waktu / $jumlah_pertemuan) * 100 : 100; // 100 jika tidak ada kelas mengajar terjadwal
+} else {
+    $skor_jurnal = 100; // Non-guru otomatis mendapatkan nilai 100 untuk jurnal
+}
 
-// Hitung kehadiran harian dari tabel absensi_pegawai
-$res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $user_id AND jenis_absen = 'Harian' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+// Hitung kehadiran harian dari tabel absensi_pegawai (Pegawai & Harian)
+$res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $user_id AND jenis_absen IN ('Pegawai', 'Harian') AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
 $jml_hadir = $res_hadir ? (int)($res_hadir->fetch_assoc()['jml'] ?? 0) : 0;
-$skor_kehadiran = $jml_hadir > 0 ? min(100, ($jml_hadir / 20) * 100) : 75; // Asumsi 20 hari kerja sebulan
+
+if ($is_daily_worker) {
+    $skor_kehadiran = $jml_hadir > 0 ? min(100, ($jml_hadir / 20) * 100) : 0; // Asumsi 20 hari kerja sebulan
+} else {
+    // Jika bukan pekerja harian (ustadz honorer saja), hitung kehadiran mengajarnya dibanding jadwal mengajar bulanan
+    $res_hadir_mengajar = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $user_id AND jenis_absen = 'Mengajar' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+    $jml_hadir_mengajar = $res_hadir_mengajar ? (int)($res_hadir_mengajar->fetch_assoc()['jml'] ?? 0) : 0;
+    
+    $res_total_teaching_days = $conn->query("SELECT COUNT(DISTINCT tanggal) as total_days FROM jurnal_mengajar WHERE ustadz_id = $user_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
+    $total_teaching_days = $res_total_teaching_days ? (int)($res_total_teaching_days->fetch_assoc()['total_days'] ?? 0) : 0;
+    
+    $skor_kehadiran = $total_teaching_days > 0 ? min(100, ($jml_hadir_mengajar / $total_teaching_days) * 100) : 100;
+}
 
 // Hitung kehadiran rapat dari tabel absensi_pegawai
 $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $user_id AND jenis_absen = 'Rapat' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
 $jml_rapat = $res_rapat ? (int)($res_rapat->fetch_assoc()['jml'] ?? 0) : 0;
-$skor_kehadiran_rapat = $jml_rapat > 0 ? 100 : 75; // Jika bulan ini hadir rapat minimal 1x maka 100
+
+$res_total_rapat = $conn->query("SELECT COUNT(*) as total FROM jadwal_rapat WHERE MONTH(waktu_mulai) = MONTH(CURRENT_DATE()) AND YEAR(waktu_mulai) = YEAR(CURRENT_DATE())");
+$total_rapat = $res_total_rapat ? (int)($res_total_rapat->fetch_assoc()['total'] ?? 0) : 0;
+$skor_kehadiran_rapat = $total_rapat > 0 ? min(100, ($jml_rapat / $total_rapat) * 100) : 100;
 
 $skor_administrasi = (($skor_jurnal * 0.4) + ($skor_kehadiran * 0.4) + ($skor_kehadiran_rapat * 0.2));
 
 // 2. Kualitas Pengajaran (Bobot 40%)
-// Cek penggunaan AI (RPP dsb) sebagai indikator efisiensi & kualitas ajar
 $res_ai = $conn->query("SELECT COUNT(*) as pemakaian FROM log_aktivitas_ai WHERE user_id = $user_id AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())");
 $jumlah_pakai_ai = $res_ai ? (int)($res_ai->fetch_assoc()['pemakaian'] ?? 0) : 0;
-$skor_penggunaan_ai = $jumlah_pakai_ai >= 5 ? 100 : ($jumlah_pakai_ai > 0 ? 85 : 70); // Minimal 5x pakai AI sebulan untuk skor sempurna
+$skor_penggunaan_ai = $jumlah_pakai_ai >= 5 ? 100 : ($jumlah_pakai_ai > 0 ? 85 : 70);
 
-// Ambil skor terakhir dari tabel supervisi_mengajar
-$res_sup = $conn->query("SELECT skor FROM supervisi_mengajar WHERE user_id = $user_id ORDER BY tanggal_supervisi DESC LIMIT 1");
-$skor_supervisi = $res_sup && $res_sup->num_rows > 0 ? (int)($res_sup->fetch_assoc()['skor']) : 85; // Default 85 jika belum ada supervisi
+if ($is_teacher) {
+    $res_sup = $conn->query("SELECT skor FROM supervisi_mengajar WHERE user_id = $user_id ORDER BY tanggal_supervisi DESC LIMIT 1");
+    $skor_supervisi = $res_sup && $res_sup->num_rows > 0 ? (int)($res_sup->fetch_assoc()['skor']) : 85;
+} else {
+    $skor_supervisi = 100; // Non-guru otomatis mendapatkan nilai 100
+}
 
 $skor_kualitas_pengajaran = (($skor_penggunaan_ai * 0.4) + ($skor_supervisi * 0.6));
 
 // 3. Capaian Santri (Bobot 30%)
-// Menghitung rata-rata nilai dari santri yang diampu oleh ustadz ini
-$res_nilai = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE ustadz_id = $user_id");
-$rata_rata_db = $res_nilai ? (float)($res_nilai->fetch_assoc()['rata_rata'] ?? 0) : 0;
-$skor_rata_nilai = $rata_rata_db > 0 ? $rata_rata_db : 75; // Default 75 jika belum ada nilai yang diinput
-
-// Menghitung pertumbuhan membandingkan rata-rata nilai UTS dan UAS
-$res_uts = $conn->query("SELECT AVG(nilai) as rata_uts FROM leger_nilai WHERE ustadz_id = $user_id AND jenis_ujian = 'Ujian Tengah Semester (UTS)'");
-$rata_uts = $res_uts ? (float)($res_uts->fetch_assoc()['rata_uts'] ?? 0) : 0;
-$res_uas = $conn->query("SELECT AVG(nilai) as rata_uas FROM leger_nilai WHERE ustadz_id = $user_id AND jenis_ujian = 'Ujian Akhir Semester (UAS)'");
-$rata_uas = $res_uas ? (float)($res_uas->fetch_assoc()['rata_uas'] ?? 0) : 0;
-$skor_pertumbuhan = ($rata_uts > 0 && $rata_uas > 0) ? (($rata_uas >= $rata_uts) ? 100 : 75) : 85; // UAS naik/sama = 100, turun = 75, tidak lengkap = 85
+if ($is_teacher) {
+    $res_nilai = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE ustadz_id = $user_id");
+    $rata_rata_db = $res_nilai ? (float)($res_nilai->fetch_assoc()['rata_rata'] ?? 0) : 0;
+    $skor_rata_nilai = $rata_rata_db > 0 ? $rata_rata_db : 80;
+    
+    $res_uts = $conn->query("SELECT AVG(nilai) as rata_uts FROM leger_nilai WHERE ustadz_id = $user_id AND jenis_ujian = 'Ujian Tengah Semester (UTS)'");
+    $rata_uts = $res_uts ? (float)($res_uts->fetch_assoc()['rata_uts'] ?? 0) : 0;
+    $res_uas = $conn->query("SELECT AVG(nilai) as rata_uas FROM leger_nilai WHERE ustadz_id = $user_id AND jenis_ujian = 'Ujian Akhir Semester (UAS)'");
+    $rata_uas = $res_uas ? (float)($res_uas->fetch_assoc()['rata_uas'] ?? 0) : 0;
+    $skor_pertumbuhan = ($rata_uts > 0 && $rata_uas > 0) ? (($rata_uas >= $rata_uts) ? 100 : 75) : 85;
+} else {
+    $skor_rata_nilai = 100;
+    $skor_pertumbuhan = 100;
+}
 
 $skor_capaian_santri = (($skor_rata_nilai * 0.6) + ($skor_pertumbuhan * 0.4));
 
 // 4. Pengembangan Diri (Bobot 10%)
-// Karena query penggunaan AI sudah dipanggil di Pilar 2, kita tinggal gunakan variabel $jumlah_pakai_ai
-$skor_kontribusi_silabus = $jumlah_pakai_ai > 0 ? 100 : 70; // Jika bulan ini pakai AI untuk RPP = 100
-
+$skor_kontribusi_silabus = $jumlah_pakai_ai > 0 ? 100 : 70;
 $skor_pengembangan_diri = $skor_kontribusi_silabus;
 
 // Total Skor KPI
@@ -84,17 +114,17 @@ $total_skor_kpi = ($skor_administrasi * 0.20) + ($skor_kualitas_pengajaran * 0.4
 // Variabel Penampung Gaji Final
 $gaji_per_pertemuan = 0;
 
-if ($total_skor_kpi >= 85) { // Grade A
+if ($total_skor_kpi >= 90) { // Grade A: 90 sd 100
     $gaji_per_pertemuan = $tarif_grade_a;
     $predikat = "Sangat Baik (Grade A)";
     $pesan_evaluasi = "Alhamdulillah, jazakumullah khairan atas dedikasi Antum! Performa bulan ini sangat luar biasa. Pertahankan kedisiplinan administrasi dan inovasi mengajar Antum.";
     $ikon_evaluasi = "fa-star text-amber-400";
-} elseif ($total_skor_kpi >= 70) { // Grade B
+} elseif ($total_skor_kpi >= 80) { // Grade B: 80 sd 89
     $gaji_per_pertemuan = $tarif_grade_b;
     $predikat = "Baik (Grade B)";
     $pesan_evaluasi = "Performa Antum sudah baik, namun masih ada ruang untuk ditingkatkan. Mari fokus pada perbaikan kualitas pengajaran dan pendampingan santri di bulan depan.";
     $ikon_evaluasi = "fa-thumbs-up text-blue-500";
-} else { // Grade C
+} else { // Grade C: di bawah 80
     $gaji_per_pertemuan = $tarif_grade_c;
     $predikat = "Cukup (Grade C)";
     $pesan_evaluasi = "Performa Antum bulan ini berada di bawah target yang diharapkan. Kami mohon kerjasamanya untuk lebih disiplin dalam mengisi jurnal dan mengawal target hafalan santri.";
@@ -103,13 +133,28 @@ if ($total_skor_kpi >= 85) { // Grade A
 
 $gaji_total = $gaji_per_pertemuan * $jumlah_pertemuan;
 
+// --- AMBIL REKAMAN KEHADIRAN TERAKHIR ---
+$res_riwayat = $conn->query("
+    SELECT waktu_absen, jenis_absen, status_kehadiran, keterangan 
+    FROM absensi_pegawai 
+    WHERE ustadz_id = $user_id 
+    ORDER BY waktu_absen DESC 
+    LIMIT 30
+");
+$riwayat_kehadiran = [];
+if ($res_riwayat) {
+    while ($row = $res_riwayat->fetch_assoc()) {
+        $riwayat_kehadiran[] = $row;
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KPI Ustadz | Ruang Asatidz</title>
+    <title>KPI Pegawai | Ruang Asatidz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -123,7 +168,7 @@ $gaji_total = $gaji_per_pertemuan * $jumlah_pertemuan;
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chalkboard-teacher text-cyan-600 mr-2"></i>Key Performance Indicator (KPI) Ustadz</h1>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chalkboard-teacher text-cyan-600 mr-2"></i>Key Performance Indicator (KPI) Pegawai</h1>
                 <select class="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm font-medium">
                     <option>Periode: Mei 2026</option>
                     <option>Periode: April 2026</option>

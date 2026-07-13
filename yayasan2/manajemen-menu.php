@@ -8,7 +8,7 @@ $defined_menus = [
         'absensi_pegawai' => 'Absensi Kehadiran',
         'perizinan_pegawai' => 'Pengajuan Izin / Cuti',
         'peraturan_role' => 'Peraturan Pegawai',
-        'kpi_ustadz' => 'KPI Ustadz',
+        'kpi_ustadz' => 'KPI Pegawai',
         'ganti_password' => 'Ganti Password',
     ],
     'Administrasi' => [
