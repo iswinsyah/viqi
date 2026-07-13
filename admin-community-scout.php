@@ -2,6 +2,53 @@
 require_once 'auth.php';
 require_once 'koneksi.php';
 
+// AJAX helper to fetch WA groups from Fonnte
+if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'fetch_wa_groups') {
+    header('Content-Type: application/json');
+    $FONNTE_TOKEN = "Dtw72oRiQr8FympzpMHL";
+    if (file_exists(__DIR__ . '/config-key.php')) {
+        require_once __DIR__ . '/config-key.php';
+    }
+    
+    // Step 1: Trigger fetch-group to sync
+    $ch1 = curl_init();
+    curl_setopt_array($ch1, [
+        CURLOPT_URL => 'https://api.fonnte.com/fetch-group',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+        CURLOPT_TIMEOUT => 15
+    ]);
+    curl_exec($ch1);
+    curl_close($ch1);
+    
+    // Step 2: Get WhatsApp Group list
+    $ch2 = curl_init();
+    curl_setopt_array($ch2, [
+        CURLOPT_URL => 'https://api.fonnte.com/get-whatsapp-group',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+        CURLOPT_TIMEOUT => 15
+    ]);
+    $response = curl_exec($ch2);
+    $curl_error = curl_error($ch2);
+    curl_close($ch2);
+    
+    if ($curl_error) {
+        echo json_encode(['status' => 'error', 'message' => 'CURL Error: ' . $curl_error]);
+        exit;
+    }
+    
+    $res_obj = json_decode($response, true);
+    if (isset($res_obj['status']) && $res_obj['status'] == true) {
+        echo json_encode(['status' => 'success', 'groups' => $res_obj['data'] ?? []]);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => $res_obj['reason'] ?? 'Gagal mendapatkan data grup dari Fonnte.']);
+    }
+    exit;
+}
+
 $active_menu = 'community_scout';
 
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
@@ -250,8 +297,9 @@ if ($res_age) {
                                 <input type="checkbox" name="auto_broadcast" value="1" id="add_auto_broadcast" class="rounded border-gray-300 text-rose-600 focus:ring-rose-500">
                                 <label for="add_auto_broadcast" class="text-xs font-semibold text-gray-700">Aktifkan Auto Broadcast (Kirim Artikel SEO otomatis ke grup ini)</label>
                             </div>
-                            <div class="md:col-span-4 mt-2">
+                            <div class="md:col-span-4 mt-2 flex items-center gap-2">
                                 <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2 px-5 rounded-lg text-xs transition shadow-sm"><i class="fas fa-save mr-1"></i> Simpan Grup</button>
+                                <button type="button" onclick="bukaModalWaGroups()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg text-xs transition shadow-sm flex items-center gap-1.5"><i class="fab fa-whatsapp"></i> Ambil JID Grup dari WA Anda</button>
                             </div>
                         </form>
                     </div>
@@ -498,6 +546,31 @@ if ($res_age) {
         </div>
     </div>
 
+    <!-- MODAL FETCH GROUPS -->
+    <div id="modal-wa-groups" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/0 hidden transition-all duration-300">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transform scale-95 opacity-0 transition-all duration-300" id="modal-wa-content">
+            <!-- Header -->
+            <div class="px-6 py-4 bg-emerald-600 text-white flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-lg">Grup WhatsApp Fonnte Anda</h3>
+                    <p class="text-xs text-emerald-100 mt-0.5">Pilih grup untuk dimasukkan ke form tambah grup</p>
+                </div>
+                <button type="button" onclick="tutupModalWaGroups()" class="text-white/80 hover:text-white transition focus:outline-none"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto max-h-96" id="wa-groups-list">
+                <div class="text-center py-6 text-gray-500" id="wa-groups-loading">
+                    <i class="fas fa-spinner fa-spin text-3xl text-emerald-600 mb-2"></i>
+                    <p>Menghubungkan ke Fonnte...</p>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="button" onclick="tutupModalWaGroups()" class="px-4 py-2 border rounded-lg hover:bg-gray-100 text-xs font-semibold">Tutup</button>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION -->
     <div id="copy-toast" class="fixed bottom-6 right-6 z-[60] bg-gray-900 text-white text-xs font-bold py-3 px-5 rounded-lg shadow-2xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
         <i class="fas fa-check-circle text-emerald-400 text-sm"></i> Link & Teks berhasil disalin ke Clipboard!
@@ -623,6 +696,88 @@ if ($res_age) {
             } else {
                 alert("Link gabung tidak tersedia.");
             }
+        }
+
+        function bukaModalWaGroups() {
+            const modal = document.getElementById('modal-wa-groups');
+            const content = document.getElementById('modal-wa-content');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('bg-gray-900/0');
+                modal.classList.add('bg-gray-900/60');
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 50);
+
+            // Fetch groups
+            document.getElementById('wa-groups-list').innerHTML = `
+                <div class="text-center py-6 text-gray-500" id="wa-groups-loading">
+                    <i class="fas fa-spinner fa-spin text-3xl text-emerald-600 mb-2"></i>
+                    <p>Menghubungkan ke Fonnte & mengambil daftar grup...</p>
+                </div>
+            `;
+
+            fetch('admin-community-scout.php?ajax_action=fetch_wa_groups')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const groups = data.groups;
+                        if (!groups || groups.length === 0) {
+                            document.getElementById('wa-groups-list').innerHTML = `<p class="text-center py-6 text-gray-500">Tidak ada grup ditemukan. Pastikan nomor WA Fonnte Anda sudah bergabung di beberapa grup.</p>`;
+                            return;
+                        }
+                        
+                        let html = '<div class="space-y-3">';
+                        groups.forEach(g => {
+                            html += `
+                                <div class="flex items-center justify-between p-3 border rounded-xl hover:bg-gray-50 transition">
+                                    <div class="max-w-[70%]">
+                                        <h4 class="font-bold text-gray-800 truncate">${g.name}</h4>
+                                        <p class="text-[10px] text-gray-500 font-mono select-all truncate">${g.id}</p>
+                                    </div>
+                                    <button type="button" onclick="pilihGrupWa('${escapeHtml(g.name)}', '${g.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm">
+                                        Pilih
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                        document.getElementById('wa-groups-list').innerHTML = html;
+                    } else {
+                        document.getElementById('wa-groups-list').innerHTML = `<p class="text-center py-6 text-rose-600 font-semibold">${data.message}</p>`;
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('wa-groups-list').innerHTML = `<p class="text-center py-6 text-rose-600 font-semibold">Gagal memuat data dari server.</p>`;
+                });
+        }
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function pilihGrupWa(nama, jid) {
+            document.getElementsByName('nama_grup')[0].value = nama;
+            document.getElementsByName('whatsapp_group_jid')[0].value = jid;
+            document.getElementsByName('link_gabung')[0].value = 'https://chat.whatsapp.com/' + jid.split('@')[0];
+            tutupModalWaGroups();
+        }
+
+        function tutupModalWaGroups() {
+            const modal = document.getElementById('modal-wa-groups');
+            const content = document.getElementById('modal-wa-content');
+            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.add('scale-95', 'opacity-0');
+            modal.classList.remove('bg-gray-900/60');
+            modal.classList.add('bg-gray-900/0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
         }
     </script>
 </body>
