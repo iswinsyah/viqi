@@ -26,11 +26,13 @@ $res_wa_col = $conn->query("SHOW COLUMNS FROM akun_ustadz LIKE 'whatsapp'");
 if ($res_wa_col && $res_wa_col->num_rows == 0) {
     $conn->query("ALTER TABLE akun_ustadz ADD COLUMN whatsapp VARCHAR(20) DEFAULT NULL AFTER status_pegawai");
 }
+$pesan_sukses = isset($_GET['sukses']) ? $_GET['sukses'] : null;
+$pesan_error = isset($_GET['error']) ? $_GET['error'] : null;
 
 if (isset($_GET['hapus_id'])) {
     $id = (int)$_GET['hapus_id'];
     $conn->query("DELETE FROM akun_ustadz WHERE id = $id");
-    header("Location: asatidz.php");
+    header("Location: asatidz.php?sukses=" . urlencode("Akun ustadz berhasil dihapus!"));
     exit;
 }
 
@@ -55,7 +57,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $sql = "INSERT INTO akun_ustadz (nama, username, password, role, status_pegawai, whatsapp) VALUES ('$nama', '$username', '$password', '$role', '$status_pegawai', '$whatsapp')";
             $pesan_sukses = "Akun ustadz baru berhasil ditambahkan!";
         }
-        $conn->query($sql);
+        if ($conn->query($sql)) {
+            header("Location: asatidz.php?sukses=" . urlencode($pesan_sukses));
+            exit;
+        } else {
+            $pesan_error = "Gagal menyimpan data: " . $conn->error;
+        }
     }
 }
 
