@@ -1019,12 +1019,11 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
 
 // =========================================================================================
 // AI HRD AGENT helper & job blocks
-// =========================================================================================
-
 function generate_hrd_pesan_ai($tipe_reminder, $detail_tambahan = '') {
     static $cache = [];
-    if (isset($cache[$tipe_reminder])) {
-        return $cache[$tipe_reminder];
+    $cache_key = $tipe_reminder . '_' . md5($detail_tambahan);
+    if (isset($cache[$cache_key])) {
+        return $cache[$cache_key];
     }
     
     $prompt = "";
@@ -1037,7 +1036,7 @@ function generate_hrd_pesan_ai($tipe_reminder, $detail_tambahan = '') {
         $prompt = "Tulis template pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan staf/pimpinan bernama {{NAMA}} agar melakukan absen pulang/check-out siang ini karena jam kerja berakhir pukul 13.00 WIB. Berikan ucapan terima kasih atas kerja keras dan dedikasinya hari ini. Berikan placeholder {{NAMA}} dalam template Anda.";
         $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah {{NAMA}}* 🙏\n\nMengingatkan bahwa 1 menit lagi (pukul 13.00 WIB) jam kerja berakhir. Silakan lakukan absensi kepulangan (check-out) di Ruang Asatidz.\n\n-- AI HRD Yayasan Villa Quran --";
     } elseif ($tipe_reminder === 'jurnal_mengajar') {
-        $prompt = "Tulis template pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama {{NAMA}} yang akan mengajar $detail_tambahan dalam 5 menit. Ingatkan untuk melakukan absen Mengajar dan mengisi Jurnal Mengajar setelah selesai mengajar nanti. Berikan placeholder {{NAMA}} dalam template Anda.";
+        $prompt = "Tulis template pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama {{NAMA}} yang akan mengajar $detail_tambahan dalam 5 menit. Ingatkan untuk melakukan absen Mengajar and mengisi Jurnal Mengajar setelah selesai mengajar nanti. Berikan placeholder {{NAMA}} dalam template Anda.";
         $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah {{NAMA}}* 🙏\n\nMengingatkan bahwa 5 menit lagi Anda dijadwalkan mengajar $detail_tambahan. Mohon tidak lupa melakukan absen Mengajar dan melengkapi Jurnal Mengajar setelah selesai nanti.\n\n-- AI HRD Yayasan Villa Quran --";
     } elseif ($tipe_reminder === 'musyrif_remind') {
         $prompt = "Tulis template pesan WhatsApp singkat, santun, ramah, dan bernuansa Islami untuk mengingatkan Musyrif bernama {{NAMA}} agar memeriksa dan memvalidasi Buku Mutaba'ah harian bagi santri binaannya di Ruang Asatidz hari ini. Gunakan sapaan Assalamu'alaikum. Berikan placeholder {{NAMA}}.";
@@ -1045,6 +1044,9 @@ function generate_hrd_pesan_ai($tipe_reminder, $detail_tambahan = '') {
     } elseif ($tipe_reminder === 'musyrif_scold') {
         $prompt = "Tulis template pesan WhatsApp singkat, tegas, bernuansa Islami untuk menegur Musyrif bernama {{NAMA}} karena terdeteksi belum memvalidasi Buku Mutaba'ah santri selama 2 hari berturut-turut (kemarin dan hari ini), padahal santri telah mengisi data ibadah harian. Sebutkan secara jelas bahwa kelalaian ini akan berdampak langsung pada pengurangan penilaian kinerja (KPI) bulanan mereka. Gunakan sapaan Assalamu'alaikum. Berikan placeholder {{NAMA}}.";
         $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz {{NAMA}}* ⚠️\n\nPeringatan Keras dari AI HRD: Anda terdeteksi belum melakukan verifikasi/input Buku Mutaba'ah santri binaan Anda selama 2 hari berturut-turut (kemarin dan hari ini), padahal santri telah mengisi data ibadah harian.\n\nKelalaian ini akan berdampak langsung pada pengurangan nilai penilaian kinerja (KPI) bulanan Anda. Mohon segera lakukan validasi di Ruang Asatidz sekarang juga.\n\n-- AI HRD Yayasan Villa Quran --";
+    } elseif ($tipe_reminder === 'musyrif_performance_drop') {
+        $prompt = "Tulis template pesan WhatsApp singkat, bernuansa Islami dan peduli untuk memberi tahu Musyrif bernama {{NAMA}} agar membimbing dan memotivasi santri binaannya yang mengalami penurunan skor performa ibadah harian. Detail santri yang mengalami penurunan adalah sebagai berikut:\n$detail_tambahan\n\nBuat agar pesan tersebut mendorong Musyrif memikirkan strategi/cara agar performa ibadah santri tersebut naik kembali. Gunakan sapaan Assalamu'alaikum. Berikan placeholder {{NAMA}}.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz {{NAMA}}* 🙏\n\nAI HRD mendeteksi adanya penurunan performa ibadah harian pada santri binaan Anda:\n$detail_tambahan\n\nMohon perhatiannya untuk mendekati, membimbing, dan memikirkan cara terbaik agar ananda kembali semangat beribadah.\n\n-- AI HRD Yayasan Villa Quran --";
     }
     
     $res = mikirKeGemini([
@@ -1058,7 +1060,7 @@ function generate_hrd_pesan_ai($tipe_reminder, $detail_tambahan = '') {
         $msg = trim($res['result']);
     }
     
-    $cache[$tipe_reminder] = $msg;
+    $cache[$cache_key] = $msg;
     return $msg;
 }
 
@@ -1416,6 +1418,125 @@ if (($current_time_hm === '20:30' || $force_hrd_mutabaah) && (!$hrd_mutabaah_don
                 sleep(rand(1, 2));
             } else {
                 logAgent("-> Musyrif $m_nama tertib (sudah memeriksa/tidak ada data baru).");
+            }
+            
+            // --- PENGECEKAN PENURUNAN PERFORMA IBADAH SANTRI ---
+            $res_ibadah_logs = $conn->query("
+                SELECT santri_id, tanggal, sholat_subuh, sholat_dhuhur, sholat_ashar, sholat_maghrib, sholat_isya,
+                       sholat_tahajud, sholat_witir, sholat_qobliyah_subuh, sholat_dhuha, sholat_qobli_dhuhur, 
+                       sholat_bakdiyah_dhuhur, sholat_qobliyah_ashar, sholat_bakdiyah_maghrib, sholat_qobliyah_isya, 
+                       sholat_bakdiyah_isya, puasa_senin, puasa_kamis
+                FROM ibadah_harian_santri 
+                WHERE santri_id IN ($santri_ids_str) 
+                  AND tanggal >= DATE_SUB('$today', INTERVAL 5 DAY)
+                ORDER BY tanggal DESC
+            ");
+            
+            $santri_worship_data = [];
+            if ($res_ibadah_logs && $res_ibadah_logs->num_rows > 0) {
+                while ($log = $res_ibadah_logs->fetch_assoc()) {
+                    $s_id = (int)$log['santri_id'];
+                    $log_date = $log['tanggal'];
+                    
+                    $skor = 0;
+                    $wajib = ['sholat_subuh', 'sholat_dhuhur', 'sholat_ashar', 'sholat_maghrib', 'sholat_isya'];
+                    foreach ($wajib as $w) {
+                        $val = $log[$w] ?? '';
+                        if (strpos($val, 'Jamaah') !== false || $val === 'Udzur Syar\'i') {
+                            $skor += 2;
+                        } elseif ($val === 'Munfarid') {
+                            $skor += 1;
+                        }
+                    }
+                    
+                    $sunnah = [
+                        'sholat_tahajud', 'sholat_witir', 'sholat_qobliyah_subuh', 'sholat_dhuha', 
+                        'sholat_qobli_dhuhur', 'sholat_bakdiyah_dhuhur', 'sholat_qobliyah_ashar', 
+                        'sholat_bakdiyah_maghrib', 'sholat_qobliyah_isya', 'sholat_bakdiyah_isya',
+                        'puasa_senin', 'puasa_kamis'
+                    ];
+                    foreach ($sunnah as $su) {
+                        if (!empty($log[$su])) {
+                            $skor += 1;
+                        }
+                    }
+                    
+                    $santri_worship_data[$s_id][$log_date] = $skor;
+                }
+            }
+            
+            $days_recent = [];
+            for ($i = 0; $i < 3; $i++) {
+                $days_recent[] = date('Y-m-d', strtotime("-$i day"));
+            }
+            $days_past = [];
+            for ($i = 3; $i < 6; $i++) {
+                $days_past[] = date('Y-m-d', strtotime("-$i day"));
+            }
+            
+            $dropped_students = [];
+            $santri_names_map = [];
+            $res_santri_names = $conn->query("SELECT id, nama_lengkap FROM buku_induk_santri WHERE id IN ($santri_ids_str)");
+            if ($res_santri_names) {
+                while ($sn = $res_santri_names->fetch_assoc()) {
+                    $santri_names_map[(int)$sn['id']] = $sn['nama_lengkap'];
+                }
+            }
+            
+            foreach ($santri_ids as $s_id) {
+                $scores = $santri_worship_data[$s_id] ?? [];
+                if (empty($scores)) continue;
+                
+                $sum_recent = 0;
+                $count_recent = 0;
+                foreach ($days_recent as $d) {
+                    if (isset($scores[$d])) {
+                        $sum_recent += $scores[$d];
+                        $count_recent++;
+                    }
+                }
+                
+                $sum_past = 0;
+                $count_past = 0;
+                foreach ($days_past as $d) {
+                    if (isset($scores[$d])) {
+                        $sum_past += $scores[$d];
+                        $count_past++;
+                    }
+                }
+                
+                if ($count_recent > 0 && $count_past > 0) {
+                    $avg_recent = $sum_recent / $count_recent;
+                    $avg_past = $sum_past / $count_past;
+                    
+                    if ($avg_past >= 4.0 && ($avg_past - $avg_recent) >= 2.0) {
+                        $pct_drop = round((($avg_past - $avg_recent) / $avg_past) * 100);
+                        $s_name = $santri_names_map[$s_id] ?? "Santri ID $s_id";
+                        $dropped_students[] = "- *$s_name*: Skor turun dari " . round($avg_past, 1) . " ke " . round($avg_recent, 1) . " (Turun {$pct_drop}%)";
+                    }
+                }
+            }
+            
+            if (count($dropped_students) > 0) {
+                $detail_drop = implode("\n", $dropped_students);
+                $template_pesan = generate_hrd_pesan_ai('musyrif_performance_drop', $detail_drop);
+                $pesan = str_replace('{{NAMA}}', $m_nama, $template_pesan);
+                
+                $waFd = ['target' => $no_wa, 'message' => $pesan];
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => "https://api.fonnte.com/send",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => http_build_query($waFd),
+                    CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                    CURLOPT_TIMEOUT => 15
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+                
+                logAgent("📈 NOTIFIKASI PENURUNAN PERFORMA IBADAH: Dikirim ke Musyrif $m_nama ($no_wa)");
+                sleep(rand(1, 2));
             }
         }
     }
