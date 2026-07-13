@@ -1021,19 +1021,24 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
 // AI HRD AGENT helper & job blocks
 // =========================================================================================
 
-function generate_hrd_pesan_ai($nama, $tipe_reminder, $detail_tambahan = '') {
+function generate_hrd_pesan_ai($tipe_reminder, $detail_tambahan = '') {
+    static $cache = [];
+    if (isset($cache[$tipe_reminder])) {
+        return $cache[$tipe_reminder];
+    }
+    
     $prompt = "";
     $fallback = "";
     
     if ($tipe_reminder === 'absen_datang') {
-        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan staf/pimpinan bernama $nama agar melakukan absen masuk/kedatangan pagi ini sebelum batas waktu pukul 07.00 WIB. Gunakan sapaan Assalamu'alaikum, ingatkan secara santun tapi jelas. Jangan gunakan format markdown tebal miring selain tanda * untuk bold.";
-        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nMengingatkan bahwa 5 menit lagi (pukul 07.00 WIB) batas waktu absensi datang dimulai. Silakan lakukan absensi kedatangan (check-in) di Ruang Asatidz sebelum terlambat.\n\n-- AI HRD Yayasan Villa Quran --";
+        $prompt = "Tulis template pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan staf/pimpinan bernama {{NAMA}} agar melakukan absen masuk/kedatangan pagi ini sebelum batas waktu pukul 07.00 WIB. Gunakan sapaan Assalamu'alaikum, ingatkan secara santun tapi jelas. Berikan placeholder {{NAMA}} dalam template Anda. Jangan gunakan format markdown tebal miring selain tanda * untuk bold.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah {{NAMA}}* 🙏\n\nMengingatkan bahwa 5 menit lagi (pukul 07.00 WIB) batas waktu absensi datang dimulai. Silakan lakukan absensi kedatangan (check-in) di Ruang Asatidz sebelum terlambat.\n\n-- AI HRD Yayasan Villa Quran --";
     } elseif ($tipe_reminder === 'absen_pulang') {
-        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan staf/pimpinan bernama $nama agar melakukan absen pulang/check-out siang ini karena jam kerja berakhir pukul 13.00 WIB. Berikan ucapan terima kasih atas kerja keras dan dedikasinya hari ini.";
-        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nMengingatkan bahwa 1 menit lagi (pukul 13.00 WIB) jam kerja berakhir. Silakan lakukan absensi kepulangan (check-out) di Ruang Asatidz.\n\n-- AI HRD Yayasan Villa Quran --";
+        $prompt = "Tulis template pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan staf/pimpinan bernama {{NAMA}} agar melakukan absen pulang/check-out siang ini karena jam kerja berakhir pukul 13.00 WIB. Berikan ucapan terima kasih atas kerja keras dan dedikasinya hari ini. Berikan placeholder {{NAMA}} dalam template Anda.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah {{NAMA}}* 🙏\n\nMengingatkan bahwa 1 menit lagi (pukul 13.00 WIB) jam kerja berakhir. Silakan lakukan absensi kepulangan (check-out) di Ruang Asatidz.\n\n-- AI HRD Yayasan Villa Quran --";
     } elseif ($tipe_reminder === 'jurnal_mengajar') {
-        $prompt = "Tulis pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama $nama yang akan mengajar $detail_tambahan dalam 5 menit. Ingatkan untuk melakukan absen Mengajar dan mengisi Jurnal Mengajar setelah selesai mengajar nanti.";
-        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah $nama* 🙏\n\nMengingatkan bahwa 5 menit lagi Anda dijadwalkan mengajar $detail_tambahan. Mohon tidak lupa melakukan absen Mengajar dan melengkapi Jurnal Mengajar setelah selesai nanti.\n\n-- AI HRD Yayasan Villa Quran --";
+        $prompt = "Tulis template pesan WhatsApp singkat, ramah, dan bernuansa Islami untuk mengingatkan ustadz/ustadzah bernama {{NAMA}} yang akan mengajar $detail_tambahan dalam 5 menit. Ingatkan untuk melakukan absen Mengajar dan mengisi Jurnal Mengajar setelah selesai mengajar nanti. Berikan placeholder {{NAMA}} dalam template Anda.";
+        $fallback = "Assalamu'alaikum Wr. Wb. Yth. *Ustadz/Ustadzah {{NAMA}}* 🙏\n\nMengingatkan bahwa 5 menit lagi Anda dijadwalkan mengajar $detail_tambahan. Mohon tidak lupa melakukan absen Mengajar dan melengkapi Jurnal Mengajar setelah selesai nanti.\n\n-- AI HRD Yayasan Villa Quran --";
     }
     
     $res = mikirKeGemini([
@@ -1042,10 +1047,13 @@ function generate_hrd_pesan_ai($nama, $tipe_reminder, $detail_tambahan = '') {
         ]
     ]);
     
+    $msg = $fallback;
     if (isset($res['status']) && $res['status'] === 'success' && !empty($res['result'])) {
-        return trim($res['result']);
+        $msg = trim($res['result']);
     }
-    return $fallback;
+    
+    $cache[$tipe_reminder] = $msg;
+    return $msg;
 }
 
 // 1. ABSEN DATANG REMINDER (Pukul 06:55 WIB)
@@ -1067,6 +1075,7 @@ if (($current_time_hm === '06:55' || $force_hrd_datang) && (!$hrd_datang_done ||
         $eligible_roles = ['kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
         
         if ($res_ust && $res_ust->num_rows > 0) {
+            $template_pesan = generate_hrd_pesan_ai('absen_datang');
             while ($row = $res_ust->fetch_assoc()) {
                 $u_roles = explode(',', $row['role'] ?? '');
                 $intersect = array_intersect($eligible_roles, $u_roles);
@@ -1080,7 +1089,7 @@ if (($current_time_hm === '06:55' || $force_hrd_datang) && (!$hrd_datang_done ||
                 $res_chk = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $ust_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Izin') LIMIT 1");
                 
                 if ($res_chk && $res_chk->num_rows == 0) {
-                    $pesan = generate_hrd_pesan_ai($ust_nama, 'absen_datang');
+                    $pesan = str_replace('{{NAMA}}', $ust_nama, $template_pesan);
                     
                     $waFd = ['target' => $no_wa, 'message' => $pesan];
                     $ch = curl_init();
@@ -1096,7 +1105,7 @@ if (($current_time_hm === '06:55' || $force_hrd_datang) && (!$hrd_datang_done ||
                     curl_close($ch);
                     
                     logAgent("-> Pengingat absen datang dikirim ke staf: $ust_nama ($no_wa)");
-                    sleep(rand(1, 3));
+                    sleep(rand(1, 2));
                 }
             }
         }
@@ -1125,6 +1134,7 @@ if (($current_time_hm === '12:59' || $force_hrd_pulang) && (!$hrd_pulang_done ||
         $eligible_roles = ['kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
         
         if ($res_ust && $res_ust->num_rows > 0) {
+            $template_pesan = generate_hrd_pesan_ai('absen_pulang');
             while ($row = $res_ust->fetch_assoc()) {
                 $u_roles = explode(',', $row['role'] ?? '');
                 $intersect = array_intersect($eligible_roles, $u_roles);
@@ -1142,7 +1152,7 @@ if (($current_time_hm === '12:59' || $force_hrd_pulang) && (!$hrd_pulang_done ||
                     $res_out = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $ust_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran = 'Pulang' LIMIT 1");
                     
                     if ($res_out && $res_out->num_rows == 0) {
-                        $pesan = generate_hrd_pesan_ai($ust_nama, 'absen_pulang');
+                        $pesan = str_replace('{{NAMA}}', $ust_nama, $template_pesan);
                         
                         $waFd = ['target' => $no_wa, 'message' => $pesan];
                         $ch = curl_init();
@@ -1158,7 +1168,7 @@ if (($current_time_hm === '12:59' || $force_hrd_pulang) && (!$hrd_pulang_done ||
                         curl_close($ch);
                         
                         logAgent("-> Pengingat absen pulang dikirim ke staf: $ust_nama ($no_wa)");
-                        sleep(rand(1, 3));
+                        sleep(rand(1, 2));
                     }
                 }
             }
@@ -1193,7 +1203,6 @@ $slots_to_check = [];
 if (isset($remind_slots[$current_time_hm])) {
     $slots_to_check[] = $remind_slots[$current_time_hm];
 } elseif ($force_hrd_jurnal) {
-    // Mode Force: Cek semua slot jadwal KBM hari ini untuk demo pengujian
     $slots_to_check = array_values($remind_slots);
 }
 
@@ -1211,7 +1220,6 @@ if (!empty($slots_to_check)) {
         $jk = $slot['jam_ke'];
         $pukul_start = $slot['start'];
         
-        // Ambil ustadz dan detail mapel yang terjadwal di jam_ke ini
         $sql_sched = "
             SELECT j.ustadz_id, j.kelas_id, j.mapel_id, u.nama as ustadz_nama, u.whatsapp, c.nama_kelas, m.nama_mapel 
             FROM jadwal_pelajaran j 
@@ -1235,8 +1243,6 @@ if (!empty($slots_to_check)) {
                 $nama_mapel = $row['nama_mapel'] ?? 'Mata Pelajaran';
                 $no_wa = preg_replace('/[^0-9]/', '', $row['whatsapp']);
                 
-                // --- LOGIKA BLOCK-START VALIDATION ---
-                // Cek apakah di jam sebelumnya (jam_ke - 1) ustadz ini mengajar mata pelajaran yang sama di kelas yang sama
                 $preceding_jk = $jk - 1;
                 $res_preceding = $conn->query("
                     SELECT id 
@@ -1251,22 +1257,18 @@ if (!empty($slots_to_check)) {
                 $is_start_of_block = ($res_preceding && $res_preceding->num_rows == 0);
                 
                 if (!$is_start_of_block) {
-                    // Skip reminder karena ini jam lanjutan (guru sudah di kelas mengajar pelajaran yang sama)
                     logAgent("-> Skip jam ke-$jk untuk $ust_nama (lanjutan dari jam ke-$preceding_jk)");
                     continue;
                 }
                 
-                // Ini adalah awal blok mengajar baru! Cek absensi / jurnal hari ini
-                // Cek apakah sudah melakukan absen Mengajar hari ini
                 $res_chk = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $ust_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Mengajar' AND status_kehadiran = 'Masuk' LIMIT 1");
                 
-                // Cek apakah sudah mengisi jurnal untuk kelas & mapel ini hari ini
                 $res_jur = $conn->query("SELECT id FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal = '$today' AND kelas = '$nama_kelas' AND mata_pelajaran = '$nama_mapel' LIMIT 1");
                 
                 if (($res_chk && $res_chk->num_rows == 0) || ($res_jur && $res_jur->num_rows == 0)) {
-                    // Guru belum absen ATAU belum isi jurnal, kirim reminder preventif
                     $detail_tambahan = "*$nama_mapel* di kelas *$nama_kelas* pukul *$pukul_start* WIB";
-                    $pesan = generate_hrd_pesan_ai($ust_nama, 'jurnal_mengajar', $detail_tambahan);
+                    $template_pesan = generate_hrd_pesan_ai('jurnal_mengajar', $detail_tambahan);
+                    $pesan = str_replace('{{NAMA}}', $ust_nama, $template_pesan);
                     
                     $waFd = ['target' => $no_wa, 'message' => $pesan];
                     $ch = curl_init();
@@ -1282,7 +1284,7 @@ if (!empty($slots_to_check)) {
                     curl_close($ch);
                     
                     logAgent("-> Pengingat KBM jam ke-$jk dikirim ke: $ust_nama ($no_wa) - Mapel: $nama_mapel, Kelas: $nama_kelas");
-                    sleep(rand(1, 3));
+                    sleep(rand(1, 2));
                 }
             }
         }
