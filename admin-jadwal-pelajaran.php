@@ -7,9 +7,9 @@ header("Pragma: no-cache");
 require_once 'auth-ustadz.php'; // Proteksi session ustadz
 require_once 'koneksi.php';
 
-// Tentukan hak akses edit
+// Tentukan hak akses edit (dikembalikan agar semua asatidz bisa menginput)
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-$can_edit = !empty(array_intersect(['kepala_sekolah', 'kepala_mahad', 'super_admin', 'admin_sekolah'], $user_roles));
+$can_edit = true;
 
 // Helper to get distinct soft pastel colors for subjects
 function dapatkan_warna_mapel($mapel_name) {
