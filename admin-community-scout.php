@@ -9,6 +9,9 @@ if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'fetch_wa_groups') {
     if (file_exists(__DIR__ . '/config-key.php')) {
         require_once __DIR__ . '/config-key.php';
     }
+    if (defined('FONNTE_TOKEN')) {
+        $FONNTE_TOKEN = FONNTE_TOKEN;
+    }
     
     // Step 1: Trigger fetch-group to sync
     $ch1 = curl_init();
