@@ -1,6 +1,25 @@
 <?php
-require_once 'auth.php';
+require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
+
+// Cek Otoritas Akses Menu
+$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+$is_super_admin = in_array('super_admin', $user_roles);
+
+// Ambil permission allowed_roles dari db
+$res_perm = $conn->query("SELECT allowed_roles FROM menu_permissions WHERE menu_key = 'master_kelas' LIMIT 1");
+$allowed_roles = [];
+if ($res_perm && $res_perm->num_rows > 0) {
+    $row_p = $res_perm->fetch_assoc();
+    $allowed_roles = !empty($row_p['allowed_roles']) ? explode(',', $row_p['allowed_roles']) : [];
+}
+
+if (!$is_super_admin && empty(array_intersect($allowed_roles, $user_roles))) {
+    echo "<div style='color: red; padding: 20px; font-weight: bold; text-align: center; font-family: sans-serif; margin-top: 50px;'>
+            Anda tidak memiliki hak akses untuk membuka halaman ini.
+          </div>";
+    exit;
+}
 
 // 1. Buat Tabel Otomatis
 $conn->query("CREATE TABLE IF NOT EXISTS master_kelas (
@@ -60,10 +79,10 @@ $active_menu = 'master_kelas';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
-    <?php include 'sidebar.php'; ?>
+    <?php include 'sidebar-hr.php'; ?>
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
-            <div class="flex items-center"><button id="open-sidebar" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2></div>
+            <div class="flex items-center"><button id="open-sidebar-hr" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2></div>
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
@@ -132,18 +151,5 @@ $active_menu = 'master_kelas';
             </div>
         </main>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar');
-            const openBtn = document.getElementById('open-sidebar');
-            const closeBtn = document.getElementById('close-sidebar');
-            const overlay = document.getElementById('sidebar-overlay');
-
-            function toggleSidebar() { if(sidebar && overlay) { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); } }
-            if(openBtn) openBtn.addEventListener('click', toggleSidebar);
-            if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
-            if(overlay) overlay.addEventListener('click', toggleSidebar);
-        });
-    </script>
 </body>
 </html>

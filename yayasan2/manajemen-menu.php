@@ -27,6 +27,9 @@ $defined_menus = [
         'ai_rpp' => 'AI Generator RPP',
         'jurnal_mengajar' => 'Jurnal Mengajar',
         'bank_nilai' => 'Bank Nilai Akademik',
+        'master_kelas' => 'Master Kelas',
+        'master_mapel' => 'Master Mapel',
+        'kitab_rujukan' => 'Master Kitab Rujukan',
     ],
     'Asrama' => [
         'dashboard_asrama' => 'Dashboard Asrama',

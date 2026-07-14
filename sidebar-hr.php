@@ -78,6 +78,9 @@ $menu_structure = [
         'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic', 'title' => 'AI Generator RPP'],
         'jurnal_mengajar' => ['href' => 'admin-pegawai-jurnal.php', 'icon' => 'fa-book-open', 'title' => 'Jurnal Mengajar'],
         'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt', 'title' => 'Bank Nilai (Input)'],
+        'master_kelas' => ['href' => 'admin-master-kelas.php', 'icon' => 'fa-school', 'title' => 'Master Kelas'],
+        'master_mapel' => ['href' => 'admin-master-mapel.php', 'icon' => 'fa-book', 'title' => 'Master Mapel'],
+        'kitab_rujukan' => ['href' => 'admin-kitab-rujukan.php', 'icon' => 'fa-book-open', 'title' => 'Master Kitab Rujukan'],
     ],
     'Asrama' => [
         'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user', 'title' => 'Dashboard Asrama'],
