@@ -101,7 +101,15 @@ $active_menu = 'asatidz';
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                         <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label><input type="text" name="nama" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: Ust. Ahmad"></div>
                         <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: ahmad123"></div>
-                        <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Password</label><input type="text" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '12345678' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Kata sandi..."></div>
+                        <div class="md:col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                            <div class="relative font-mono">
+                                <input type="password" id="input-password" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '12345678' ?>" required class="w-full pl-4 pr-10 py-2 border rounded-lg focus:ring-amber-500 focus:border-amber-500 text-sm" placeholder="Kata sandi...">
+                                <button type="button" onclick="togglePasswordVisibility('input-password', 'eye-icon-input')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-amber-500">
+                                    <i id="eye-icon-input" class="fas fa-eye-slash"></i>
+                                </button>
+                            </div>
+                        </div>
                         <div class="md:col-span-1">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Status Pegawai</label>
                             <select name="status_pegawai" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500">
@@ -213,7 +221,13 @@ $active_menu = 'asatidz';
                                     echo "<tr class='hover:bg-gray-50 text-xs'>
                                         <td class='px-4 py-3 font-bold text-gray-900'>".htmlspecialchars($row['nama'])."</td>
                                         <td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td>
-                                        <td class='px-4 py-3'><span class='text-gray-500 italic'>".htmlspecialchars($row['password'])."</span></td>
+                                        <td class='px-4 py-3 font-mono relative'>
+                                            <span id='pwd-text-{$row['id']}' style='display:none;'>".htmlspecialchars($row['password'])."</span>
+                                            <span id='pwd-masked-{$row['id']}'>••••••••</span>
+                                            <button type='button' onclick='toggleRowPassword({$row['id']})' class='text-gray-400 hover:text-amber-500 ml-1.5 focus:outline-none'>
+                                                <i id='pwd-icon-{$row['id']}' class='fas fa-eye text-[10px]'></i>
+                                            </button>
+                                        </td>
                                         <td class='px-4 py-3 font-mono font-bold text-gray-700'>".htmlspecialchars($row['whatsapp'] ?? '-')."</td>
                                         <td class='px-4 py-3'>$roles_display_html</td>
                                         <td class='px-4 py-3'><span class='inline-block px-2.5 py-0.5 rounded text-[10px] font-bold border $status_color'>$status_display</span></td>
@@ -237,6 +251,41 @@ $active_menu = 'asatidz';
             </div>
         </main>
     </div>
-    <script>document.getElementById('open-sidebar-yayasan2').addEventListener('click', () => { document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); }); document.getElementById('sidebar-overlay-yayasan2').addEventListener('click', () => { document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); });</script>
+    <script>
+        document.getElementById('open-sidebar-yayasan2').addEventListener('click', () => { 
+            document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); 
+            document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); 
+        }); 
+        document.getElementById('sidebar-overlay-yayasan2').addEventListener('click', () => { 
+            document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); 
+            document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); 
+        });
+
+        function togglePasswordVisibility(inputId, iconId) {
+            var input = document.getElementById(inputId);
+            var icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye-slash';
+            }
+        }
+        function toggleRowPassword(id) {
+            var txt = document.getElementById('pwd-text-' + id);
+            var msk = document.getElementById('pwd-masked-' + id);
+            var icon = document.getElementById('pwd-icon-' + id);
+            if (txt.style.display === 'none') {
+                txt.style.display = 'inline';
+                msk.style.display = 'none';
+                icon.className = 'fas fa-eye-slash text-[10px]';
+            } else {
+                txt.style.display = 'none';
+                msk.style.display = 'inline';
+                icon.className = 'fas fa-eye text-[10px]';
+            }
+        }
+    </script>
 </body>
 </html>
