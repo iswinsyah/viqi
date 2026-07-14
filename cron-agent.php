@@ -1697,4 +1697,176 @@ if (($current_time_hm === '20:30' || $force_hrd_mutabaah) && (!$hrd_mutabaah_don
     file_put_contents($hrd_mutabaah_log_file, "SUCCESS_$today\n", FILE_APPEND);
     logAgent("🎉 Agent HRD: Pengecekan Mutaba'ah Musyrif Selesai.");
 }
+
+// =========================================================================================
+// 5. AGENT HRD: LAPORAN RESUME AKTIFITAS PEGAWAI HARIAN (Pukul 21:00 WIB)
+// =========================================================================================
+$hrd_laporan_done = false;
+$hrd_laporan_log_file = __DIR__ . '/agent_hrd_laporan_log.txt';
+if (file_exists($hrd_laporan_log_file)) {
+    if (strpos(file_get_contents($hrd_laporan_log_file), "SUCCESS_$today") !== false) $hrd_laporan_done = true;
+}
+
+$force_hrd_laporan = ($force === 'hrd_laporan');
+if (($current_hour >= '21' || $force_hrd_laporan) && (!$hrd_laporan_done || $force_hrd_laporan)) {
+    logAgent("======= MEMULAI AGENT HRD: LAPORAN RESUME AKTIFITAS PEGAWAI HARIAN ($today) =======");
+    
+    pastikanKoneksiDb();
+    
+    // Ambil daftar seluruh pegawai aktif
+    $res_pegawai = $conn->query("SELECT id, nama, role FROM akun_ustadz WHERE status_pegawai = 'Aktif' ORDER BY nama ASC");
+    
+    if ($res_pegawai && $res_pegawai->num_rows > 0) {
+        $hari_indo = [
+            'Sunday' => 'Ahad', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
+            'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'
+        ];
+        $day_name_eng = date('l');
+        $day_name_indo = $hari_indo[$day_name_eng] ?? $day_name_eng;
+        $formatted_date = date('d-m-Y');
+        
+        $report_msg = "🤖 *LAPORAN HARIAN AKTIVITAS PEGAWAI*\n";
+        $report_msg .= "📅 Hari/Tanggal: $day_name_indo, $formatted_date\n";
+        $report_msg .= "⏰ Waktu Laporan: 21:00 WIB\n\n";
+        $report_msg .= "Berikut adalah resume aktivitas seluruh pegawai hari ini:\n\n";
+        
+        $total_pegawai = 0;
+        $total_hadir = 0;
+        $total_izin = 0;
+        $total_belum_absen = 0;
+        $total_kbm = 0;
+        $total_mutabaah = 0;
+        
+        $idx = 1;
+        while ($pegawai = $res_pegawai->fetch_assoc()) {
+            $peg_id = (int)$pegawai['id'];
+            $peg_nama = $pegawai['nama'];
+            $peg_role = $pegawai['role'] ?? '';
+            
+            // Parse role labels
+            $roles_arr = explode(',', $peg_role);
+            $roles_labeled = array_map(function($r) {
+                $r = trim($r);
+                return ucwords(str_replace('_', ' ', $r));
+            }, $roles_arr);
+            $roles_str = implode(', ', $roles_labeled);
+            
+            // 1. Absensi (jenis_absen = 'Pegawai')
+            $res_abs = $conn->query("SELECT waktu_absen, status_kehadiran, keterangan FROM absensi_pegawai WHERE ustadz_id = $peg_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' ORDER BY waktu_absen ASC");
+            
+            $check_in = '';
+            $check_out = '';
+            $status_kehadiran = 'Belum Absen';
+            $ket_izin = '';
+            
+            if ($res_abs && $res_abs->num_rows > 0) {
+                while ($abs = $res_abs->fetch_assoc()) {
+                    $status_k = $abs['status_kehadiran'];
+                    $waktu = date('H:i', strtotime($abs['waktu_absen']));
+                    
+                    if ($status_k === 'Masuk') {
+                        $check_in = $waktu;
+                        $status_kehadiran = 'Hadir';
+                    } elseif ($status_k === 'Pulang') {
+                        $check_out = $waktu;
+                    } elseif ($status_k === 'Izin') {
+                        $status_kehadiran = 'Izin';
+                        $ket_izin = $abs['keterangan'] ?? '';
+                    }
+                }
+            }
+            
+            // Format text absensi harian
+            $absen_text = '';
+            if ($status_kehadiran === 'Hadir') {
+                $absen_text = "Hadir (" . ($check_in ? "$check_in WIB" : "-");
+                $absen_text .= " s/d " . ($check_out ? "$check_out WIB" : "Belum Check-out");
+                $absen_text .= ")";
+                $total_hadir++;
+            } elseif ($status_kehadiran === 'Izin') {
+                $absen_text = "Izin" . ($ket_izin ? " ($ket_izin)" : "");
+                $total_izin++;
+            } else {
+                $absen_text = "Belum Absen / Alpha ⚠️";
+                $total_belum_absen++;
+            }
+            
+            // 2. KBM / Jurnal Mengajar
+            $res_kbm = $conn->query("SELECT kelas, mata_pelajaran, materi FROM jurnal_mengajar WHERE ustadz_id = $peg_id AND tanggal = '$today'");
+            $kbm_details = [];
+            if ($res_kbm && $res_kbm->num_rows > 0) {
+                while ($kbm = $res_kbm->fetch_assoc()) {
+                    $kbm_details[] = "{$kbm['kelas']} ({$kbm['mata_pelajaran']} - {$kbm['materi']})";
+                    $total_kbm++;
+                }
+            }
+            $kbm_text = !empty($kbm_details) ? implode(', ', $kbm_details) : '-';
+            
+            // 3. Mutaba'ah (Musyrif)
+            $res_mut = $conn->query("SELECT COUNT(id) as total FROM buku_mutabaah WHERE musyrif_id = $peg_id AND tanggal = '$today'");
+            $mut_count = 0;
+            if ($res_mut) {
+                $mut_row = $res_mut->fetch_assoc();
+                $mut_count = (int)$mut_row['total'];
+                $total_mutabaah += $mut_count;
+            }
+            
+            $mut_text = '-';
+            if (strpos($peg_role, 'musyrif') !== false) {
+                if ($mut_count > 0) {
+                    $mut_text = "$mut_count Santri (Divalidasi)";
+                } else {
+                    $mut_text = "Belum Input ⚠️";
+                }
+            }
+            
+            // Susun ke pesan laporan
+            $report_msg .= "$idx. *{$peg_nama}* (Role: {$roles_str})\n";
+            $report_msg .= "   - Absen: $absen_text\n";
+            $report_msg .= "   - KBM: $kbm_text\n";
+            $report_msg .= "   - Mutaba'ah: $mut_text\n\n";
+            
+            $total_pegawai++;
+            $idx++;
+        }
+        
+        $report_msg .= "------------------------------------------\n";
+        $report_msg .= "Total Pegawai Aktif: $total_pegawai Orang\n";
+        $report_msg .= "Hadir: $total_hadir | Izin: $total_izin | Belum Absen: $total_belum_absen\n";
+        $report_msg .= "KBM Terlaksana: $total_kbm Sesi\n";
+        $report_msg .= "Mutaba'ah Diinput: $total_mutabaah Santri";
+        
+        // Kirim WhatsApp ke Bos
+        $bos_wa = '6285196572223';
+        $waFd = ['target' => $bos_wa, 'message' => $report_msg];
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => "https://api.fonnte.com/send",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($waFd),
+            CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+            CURLOPT_TIMEOUT => 30
+        ]);
+        $response = curl_exec($ch);
+        $curl_error = curl_error($ch);
+        curl_close($ch);
+        
+        if ($curl_error) {
+            logAgent("-> Gagal mengirim Laporan Harian WA ke Bos ($bos_wa): " . $curl_error);
+        } else {
+            $res_obj = json_decode($response, true);
+            if (isset($res_obj['status']) && $res_obj['status'] == true) {
+                logAgent("-> Laporan Harian WA dilesatkan ke Bos ($bos_wa).");
+            } else {
+                logAgent("-> Fonnte menolak pengiriman Laporan Harian ke Bos ($bos_wa): " . ($res_obj['reason'] ?? $response));
+            }
+        }
+    } else {
+        logAgent("-> Tidak ada pegawai aktif untuk dilaporkan.");
+    }
+    
+    file_put_contents($hrd_laporan_log_file, "SUCCESS_$today\n", FILE_APPEND);
+    logAgent("🎉 Agent HRD: Laporan Resume Aktifitas Pegawai Harian Selesai.");
+}
 ?>

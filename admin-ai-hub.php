@@ -107,6 +107,9 @@ $last_log = $log_lines[count($log_lines)-1];
                         <button onclick="jalankanAgentManual('community')" id="btn-run-community" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition flex items-center">
                             <i class="fas fa-search-location mr-1.5 animate-pulse"></i> Cari Grup Komunitas
                         </button>
+                        <button onclick="jalankanAgentManual('hrd_laporan')" id="btn-run-hrd" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow transition flex items-center">
+                            <i class="fas fa-file-invoice mr-1.5 animate-pulse"></i> Kirim Laporan Harian (HRD)
+                        </button>
                     </div>
                     <p class="text-xs text-gray-500 mt-3">
                         Klik tombol di atas untuk memaksa AI Agent memproses data langsung hari ini tanpa menunggu jadwal.
@@ -179,11 +182,13 @@ $last_log = $log_lines[count($log_lines)-1];
             const btnSeo = document.getElementById('btn-run-seo');
             const btnBilling = document.getElementById('btn-run-billing');
             const btnCommunity = document.getElementById('btn-run-community');
+            const btnHrd = document.getElementById('btn-run-hrd');
             const logBox = document.getElementById('manual-run-log');
             
             if (btnSeo) btnSeo.disabled = true;
             if (btnBilling) btnBilling.disabled = true;
             if (btnCommunity) btnCommunity.disabled = true;
+            if (btnHrd) btnHrd.disabled = true;
             
             let originalText = '';
             let targetBtn = null;
@@ -197,6 +202,9 @@ $last_log = $log_lines[count($log_lines)-1];
             } else if (type === 'community') {
                 originalText = btnCommunity.innerHTML;
                 targetBtn = btnCommunity;
+            } else if (type === 'hrd_laporan') {
+                originalText = btnHrd.innerHTML;
+                targetBtn = btnHrd;
             }
             
             if (targetBtn) {
@@ -228,6 +236,7 @@ $last_log = $log_lines[count($log_lines)-1];
                             if (btnSeo) btnSeo.disabled = false;
                             if (btnBilling) btnBilling.disabled = false;
                             if (btnCommunity) btnCommunity.disabled = false;
+                            if (btnHrd) btnHrd.disabled = false;
                             if (targetBtn) targetBtn.innerHTML = originalText;
                             return;
                         }
@@ -242,6 +251,7 @@ $last_log = $log_lines[count($log_lines)-1];
                 if (btnSeo) btnSeo.disabled = false;
                 if (btnBilling) btnBilling.disabled = false;
                 if (btnCommunity) btnCommunity.disabled = false;
+                if (btnHrd) btnHrd.disabled = false;
                 if (targetBtn) targetBtn.innerHTML = originalText;
             });
         }
