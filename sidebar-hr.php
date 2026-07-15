@@ -6,11 +6,34 @@ if (session_status() === PHP_SESSION_NONE) {
 // Pastikan koneksi DB tersedia. Diasumsikan file yang meng-include sidebar ini sudah memanggil koneksi.php
 global $conn;
 
-// Ambil role user dari session
-$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+// Ambil role user dari database secara realtime agar perubahan langsung berefek tanpa logout-login
+$user_roles = [];
+if (isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
+    $ustadz_id = (int)$_SESSION['ustadz_id'];
+    if ($ustadz_id === 9999) {
+        $user_roles = ['super_admin'];
+    } else {
+        $res_u = $conn->query("SELECT role FROM akun_ustadz WHERE id = $ustadz_id LIMIT 1");
+        if ($res_u && $res_u->num_rows > 0) {
+            $row_u = $res_u->fetch_assoc();
+            $_SESSION['ustadz_role'] = $row_u['role']; // Sinkronisasikan ke sesi
+            $user_roles = !empty($row_u['role']) ? explode(',', $row_u['role']) : [];
+        }
+    }
+}
+if (empty($user_roles) && isset($_SESSION['ustadz_role'])) {
+    $user_roles = explode(',', $_SESSION['ustadz_role']);
+}
 
 // Super Admin dapat melihat semua menu
-$is_super_admin = in_array('super_admin', $user_roles);
+$is_super_admin = false;
+foreach ($user_roles as $role) {
+    $norm_r = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
+    if ($norm_r === 'super_admin') {
+        $is_super_admin = true;
+        break;
+    }
+}
 
 // Ambil semua hak akses menu dari database
 $menu_permissions = [];
@@ -45,8 +68,14 @@ function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) 
     if (in_array($menu_key, ['absensi_pegawai', 'perizinan_pegawai', 'ganti_password'])) return true;
     if (!isset($menu_permissions[$menu_key])) return false; // Default: sembunyikan jika belum diatur
 
+    // Normalisasi allowed roles dari database
+    $allowed_roles = array_map(function($r) {
+        return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+    }, $menu_permissions[$menu_key]);
+
     foreach ($user_roles as $role) {
-        if (in_array(trim($role), $menu_permissions[$menu_key])) {
+        $norm_role = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
+        if (in_array($norm_role, $allowed_roles)) {
             return true;
         }
     }

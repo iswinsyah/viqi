@@ -4,7 +4,6 @@ require_once 'koneksi.php';
 
 // Cek Otoritas Akses Menu
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-$is_super_admin = in_array('super_admin', $user_roles);
 
 // Ambil permission allowed_roles dari db
 $res_perm = $conn->query("SELECT allowed_roles FROM menu_permissions WHERE menu_key = 'master_mapel' LIMIT 1");
@@ -14,7 +13,16 @@ if ($res_perm && $res_perm->num_rows > 0) {
     $allowed_roles = !empty($row_p['allowed_roles']) ? explode(',', $row_p['allowed_roles']) : [];
 }
 
-if (!$is_super_admin && empty(array_intersect($allowed_roles, $user_roles))) {
+// Normalisasi untuk pencocokan tangguh
+$norm_user_roles = array_map(function($r) {
+    return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+}, $user_roles);
+$norm_allowed_roles = array_map(function($r) {
+    return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+}, $allowed_roles);
+$is_super_admin = in_array('super_admin', $norm_user_roles);
+
+if (!$is_super_admin && empty(array_intersect($norm_allowed_roles, $norm_user_roles))) {
     echo "<div style='color: red; padding: 20px; font-weight: bold; text-align: center; font-family: sans-serif; margin-top: 50px;'>
             Anda tidak memiliki hak akses untuk membuka halaman ini.
           </div>";
