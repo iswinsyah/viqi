@@ -19,9 +19,12 @@ $active_menu = 'gaji_asatidz';
 @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_asrama_a INT DEFAULT 1200000");
 @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_asrama_b INT DEFAULT 800000");
 @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_asrama_c INT DEFAULT 400000");
+@$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_admin_a INT DEFAULT 1000000");
+@$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_admin_b INT DEFAULT 700000");
+@$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_admin_c INT DEFAULT 400000");
 @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN insentif_kpi_muda INT DEFAULT 100000");
 @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN insentif_kpi_utama INT DEFAULT 500000");
-
+ 
 $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_gaji (
     id INT PRIMARY KEY DEFAULT 1, 
     gaji_grade_c INT DEFAULT 20000, 
@@ -38,11 +41,14 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_gaji (
     tunj_asrama_a INT DEFAULT 1200000,
     tunj_asrama_b INT DEFAULT 800000,
     tunj_asrama_c INT DEFAULT 400000,
+    tunj_admin_a INT DEFAULT 1000000,
+    tunj_admin_b INT DEFAULT 700000,
+    tunj_admin_c INT DEFAULT 400000,
     insentif_kpi_muda INT DEFAULT 100000,
     insentif_kpi_utama INT DEFAULT 500000
 )");
 $conn->query("INSERT IGNORE INTO pengaturan_gaji (id) VALUES (1)");
-
+ 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_gaji'])) {
     $gaji_c = (int)$_POST['gaji_grade_c'];
     $gaji_b = (int)$_POST['gaji_grade_b'];
@@ -64,41 +70,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_gaji'])) {
     $tunj_asrama_a = (int)$_POST['tunj_asrama_a'];
     $tunj_asrama_b = (int)$_POST['tunj_asrama_b'];
     $tunj_asrama_c = (int)$_POST['tunj_asrama_c'];
-
+ 
+    $tunj_admin_a = (int)$_POST['tunj_admin_a'];
+    $tunj_admin_b = (int)$_POST['tunj_admin_b'];
+    $tunj_admin_c = (int)$_POST['tunj_admin_c'];
+ 
     $conn->query("UPDATE pengaturan_gaji SET 
         gaji_grade_c=$gaji_c, gaji_grade_b=$gaji_b, gaji_grade_a=$gaji_a,
         gaji_pokok_muda=$gaji_muda, insentif_kpi_muda=$insentif_muda,
         gaji_pokok_utama=$gaji_utama, insentif_kpi_utama=$insentif_utama,
         tunj_kepsek_a=$tunj_kepsek_a, tunj_kepsek_b=$tunj_kepsek_b, tunj_kepsek_c=$tunj_kepsek_c,
         tunj_mahad_a=$tunj_mahad_a, tunj_mahad_b=$tunj_mahad_b, tunj_mahad_c=$tunj_mahad_c,
-        tunj_asrama_a=$tunj_asrama_a, tunj_asrama_b=$tunj_asrama_b, tunj_asrama_c=$tunj_asrama_c
+        tunj_asrama_a=$tunj_asrama_a, tunj_asrama_b=$tunj_asrama_b, tunj_asrama_c=$tunj_asrama_c,
+        tunj_admin_a=$tunj_admin_a, tunj_admin_b=$tunj_admin_b, tunj_admin_c=$tunj_admin_c
         WHERE id=1");
     $pesan_sukses = "Pengaturan Gaji & Tunjangan Pegawai berhasil diperbarui!";
 }
-
+ 
 $res_gaji = $conn->query("SELECT * FROM pengaturan_gaji WHERE id=1");
 $data_gaji = $res_gaji->fetch_assoc();
-
+ 
 $gaji_grade_c = $data_gaji['gaji_grade_c'] ?? 20000;
 $gaji_grade_b = $data_gaji['gaji_grade_b'] ?? 22500;
 $gaji_grade_a = $data_gaji['gaji_grade_a'] ?? 25000;
-
+ 
 $gaji_pokok_muda = $data_gaji['gaji_pokok_muda'] ?? 2500000;
 $insentif_kpi_muda = $data_gaji['insentif_kpi_muda'] ?? 100000;
 $gaji_pokok_utama = $data_gaji['gaji_pokok_utama'] ?? 3500000;
 $insentif_kpi_utama = $data_gaji['insentif_kpi_utama'] ?? 500000;
-
+ 
 $tunj_kepsek_a = $data_gaji['tunj_kepsek_a'] ?? 1500000;
 $tunj_kepsek_b = $data_gaji['tunj_kepsek_b'] ?? 1000000;
 $tunj_kepsek_c = $data_gaji['tunj_kepsek_c'] ?? 500000;
-
+ 
 $tunj_mahad_a = $data_gaji['tunj_mahad_a'] ?? 1500000;
 $tunj_mahad_b = $data_gaji['tunj_mahad_b'] ?? 1000000;
 $tunj_mahad_c = $data_gaji['tunj_mahad_c'] ?? 500000;
-
+ 
 $tunj_asrama_a = $data_gaji['tunj_asrama_a'] ?? 1200000;
 $tunj_asrama_b = $data_gaji['tunj_asrama_b'] ?? 800000;
 $tunj_asrama_c = $data_gaji['tunj_asrama_c'] ?? 400000;
+ 
+$tunj_admin_a = $data_gaji['tunj_admin_a'] ?? 1000000;
+$tunj_admin_b = $data_gaji['tunj_admin_b'] ?? 700000;
+$tunj_admin_c = $data_gaji['tunj_admin_c'] ?? 400000;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -264,6 +279,25 @@ $tunj_asrama_c = $data_gaji['tunj_asrama_c'] ?? 400000;
                                 <div>
                                     <label class="block text-[10px] font-bold text-gray-500 mb-1">Grade C Minimal (Rp)</label>
                                     <input type="number" name="tunj_asrama_c" value="<?= $tunj_asrama_c ?>" class="w-full px-3 py-1.5 border rounded-lg focus:ring-amber-500 text-xs" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Sekolah -->
+                        <div class="space-y-3.5 pt-4">
+                            <span class="text-xs font-bold text-gray-700 uppercase tracking-wide block"><i class="fas fa-user-shield mr-1 text-slate-500"></i> Admin Sekolah</span>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-500 mb-1">Grade A Max (Rp)</label>
+                                    <input type="number" name="tunj_admin_a" value="<?= $tunj_admin_a ?>" class="w-full px-3 py-1.5 border rounded-lg focus:ring-amber-500 text-xs" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-500 mb-1">Grade B Standar (Rp)</label>
+                                    <input type="number" name="tunj_admin_b" value="<?= $tunj_admin_b ?>" class="w-full px-3 py-1.5 border rounded-lg focus:ring-amber-500 text-xs" required>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-gray-500 mb-1">Grade C Minimal (Rp)</label>
+                                    <input type="number" name="tunj_admin_c" value="<?= $tunj_admin_c ?>" class="w-full px-3 py-1.5 border rounded-lg focus:ring-amber-500 text-xs" required>
                                 </div>
                             </div>
                         </div>

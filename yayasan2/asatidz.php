@@ -11,6 +11,7 @@ $gaji_pokok_utama = $data_gaji['gaji_pokok_utama'] ?? 3500000;
 $tunj_kepsek_a = $data_gaji['tunj_kepsek_a'] ?? 1500000;
 $tunj_mahad_a = $data_gaji['tunj_mahad_a'] ?? 1500000;
 $tunj_asrama_a = $data_gaji['tunj_asrama_a'] ?? 1200000;
+$tunj_admin_a = $data_gaji['tunj_admin_a'] ?? 1000000;
 
 @$conn->query("ALTER TABLE akun_ustadz MODIFY COLUMN role VARCHAR(255)");
 
@@ -206,6 +207,7 @@ $active_menu = 'asatidz';
                                             if ($r === 'kepala_sekolah') $tunjangan += $tunj_kepsek_a;
                                             elseif ($r === 'kepala_mahad') $tunjangan += $tunj_mahad_a;
                                             elseif ($r === 'kepala_asrama') $tunjangan += $tunj_asrama_a;
+                                            elseif ($r === 'admin_sekolah') $tunjangan += $tunj_admin_a;
                                         }
                                     }
 
