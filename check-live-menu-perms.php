@@ -1,13 +1,8 @@
 <?php
 require_once 'koneksi.php';
-echo "--- MENU PERMISSIONS ---\n";
-$r = $conn->query('SELECT * FROM menu_permissions');
+echo "--- DESCRIBE AKUN USTADZ ---\n";
+$r = $conn->query('DESCRIBE akun_ustadz');
 while($row = $r->fetch_assoc()) {
-    echo $row['menu_key'] . " => " . $row['allowed_roles'] . "\n";
+    print_r($row);
 }
-echo "\n--- AKUN USTADZ ROLES ---\n";
-$r = $conn->query('SELECT id, nama, role FROM akun_ustadz');
-while($row = $r->fetch_assoc()) {
-    echo $row['id'] . " | " . $row['nama'] . " | " . $row['role'] . "\n";
-}
-unlink(__FILE__); // Self-destruct
+unlink(__FILE__);
