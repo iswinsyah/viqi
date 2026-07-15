@@ -567,8 +567,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             },
             'asrama_nisa': {
                 nama: 'Gedung C (Asrama Nisa)',
-                lat: -7.9403686,
-                lon: 112.5754103
+                lat: -7.9405464,
+                lon: 112.5791353
             }
         };
 
