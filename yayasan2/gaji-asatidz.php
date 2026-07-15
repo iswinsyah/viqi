@@ -1,4 +1,5 @@
 <?php
+// Re-trigger deploy for Admin Sekolah tunjangan
 require_once 'auth.php';
 require_once '../koneksi.php';
 
