@@ -18,17 +18,13 @@ jobs:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
     
-    - name: 📂 Sync files to Hostinger via FTP
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+    - name: 📂 Sync files to Hostinger via SFTP
+      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
       with:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: './'
-        server-dir: './'
-        timeout: 300000
-        # Jika perlu, uncomment baris exclude berikut untuk mengecualikan file tertentu.
-        # exclude: |
-        #   **/.git*
-        #   **/.git*/**
-        #   **/README.md
+        port: 65002
+        local_path: './*'
+        remote_path: './'
+        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents --exclude=uploads'
