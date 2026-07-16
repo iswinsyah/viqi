@@ -26,5 +26,5 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         port: 65002
         local_path: './*'
-        remote_path: './'
+        remote_path: 'domains/villaquranindonesia.com/public_html'
         rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents --exclude=uploads'
