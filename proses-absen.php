@@ -21,7 +21,7 @@ $locations = [
     ],
     'asrama_rijal' => [
         'nama' => 'Gedung A (Asrama Rijal)',
-        'coords' => ['latitude' => -7.9480284, 'longitude' => 112.5796667],
+        'coords' => ['latitude' => -7.9480257, 'longitude' => 112.5822426],
     ],
     'asrama_nisa' => [
         'nama' => 'Gedung C (Asrama Nisa)',

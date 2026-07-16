@@ -563,8 +563,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             },
             'asrama_rijal': {
                 nama: 'Gedung A (Asrama Rijal)',
-                lat: -7.9480284,
-                lon: 112.5796667
+                lat: -7.9480257,
+                lon: 112.5822426
             },
             'asrama_nisa': {
                 nama: 'Gedung C (Asrama Nisa)',
