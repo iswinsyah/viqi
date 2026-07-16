@@ -1225,7 +1225,7 @@ if (file_exists($hrd_datang_log_file)) {
 }
 
 $force_hrd_datang = ($force === 'hrd_datang');
-if (($current_time_hm === '06:55' || $force_hrd_datang) && (!$hrd_datang_done || $force_hrd_datang)) {
+if ((($current_time_hm >= '06:45' && $current_time_hm <= '07:05') || $force_hrd_datang) && (!$hrd_datang_done || $force_hrd_datang)) {
     $day_num = (int)date('N');
     if ($day_num != 7 || $force_hrd_datang) { // Skip Minggu
         logAgent("======= MEMULAI AGENT HRD PREVENTIF: REMINDER ABSEN DATANG ($today) =======");
@@ -1284,7 +1284,7 @@ if (file_exists($hrd_pulang_log_file)) {
 }
 
 $force_hrd_pulang = ($force === 'hrd_pulang');
-if (($current_time_hm === '12:59' || $force_hrd_pulang) && (!$hrd_pulang_done || $force_hrd_pulang)) {
+if ((($current_time_hm >= '12:50' && $current_time_hm <= '13:10') || $force_hrd_pulang) && (!$hrd_pulang_done || $force_hrd_pulang)) {
     $day_num = (int)date('N');
     if ($day_num != 7 || $force_hrd_pulang) { // Skip Minggu
         logAgent("======= MEMULAI AGENT HRD PREVENTIF: REMINDER ABSEN PULANG ($today) =======");
@@ -1358,13 +1358,26 @@ $remind_slots = [
     '20:10' => ['jam_ke' => 13, 'start' => '20:15']
 ];
 
+$hrd_jurnal_log = "";
+if (file_exists($hrd_jurnal_log_file)) {
+    $hrd_jurnal_log = file_get_contents($hrd_jurnal_log_file);
+}
+
 $force_hrd_jurnal = ($force === 'hrd_jurnal');
 $slots_to_check = [];
 
-if (isset($remind_slots[$current_time_hm])) {
-    $slots_to_check[] = $remind_slots[$current_time_hm];
-} elseif ($force_hrd_jurnal) {
-    $slots_to_check = array_values($remind_slots);
+foreach ($remind_slots as $slot_time => $slot) {
+    $start_time = $slot['start'];
+    $start_epoch = strtotime("$today $start_time");
+    $current_epoch = strtotime("$today $current_time_hm");
+    
+    // Kirim pengingat 10 menit sebelum jam kelas dimulai
+    $is_in_window = ($current_epoch >= ($start_epoch - 600) && $current_epoch <= $start_epoch);
+    $slot_done = (strpos($hrd_jurnal_log, "SUCCESS_{$today}_{$slot['jam_ke']}") !== false);
+    
+    if (($is_in_window || $force_hrd_jurnal) && (!$slot_done || $force_hrd_jurnal)) {
+        $slots_to_check[] = $slot;
+    }
 }
 
 if (!empty($slots_to_check)) {
@@ -1449,6 +1462,9 @@ if (!empty($slots_to_check)) {
                 }
             }
         }
+        if (!$force_hrd_jurnal) {
+            file_put_contents($hrd_jurnal_log_file, "SUCCESS_{$today}_{$jk}\n", FILE_APPEND);
+        }
     }
     logAgent("🎉 Agent HRD: Pengecekan Jurnal & Absen Mengajar Selesai.");
 }
@@ -1461,7 +1477,7 @@ if (file_exists($hrd_mutabaah_log_file)) {
 }
 
 $force_hrd_mutabaah = ($force === 'hrd_mutabaah');
-if (($current_time_hm === '20:30' || $force_hrd_mutabaah) && (!$hrd_mutabaah_done || $force_hrd_mutabaah)) {
+if ((($current_time_hm >= '20:30' && $current_time_hm <= '21:00') || $force_hrd_mutabaah) && (!$hrd_mutabaah_done || $force_hrd_mutabaah)) {
     logAgent("======= MEMULAI AGENT HRD: PENGECEKAN VALIDASI MUTABAAH MUSYRIF ($today) =======");
     
     pastikanKoneksiDb();
