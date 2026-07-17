@@ -19,121 +19,164 @@ $active_menu = 'ai_agent_hrd';
             <div class="flex items-center"><button id="open-sidebar-yayasan2" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif Yayasan 2</h2></div>
         </header>
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-            <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-robot text-emerald-500 mr-2"></i>AI Agent HRD</h1></div>
+            <div class="mb-6 flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 rounded-lg bg-indigo-600 flex items-center justify-center text-white mr-4 shadow-sm">
+                        <i class="fas fa-robot text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">AI Agent HRD</h1>
+                        <p class="text-sm text-gray-500 mt-1">Monitoring dan prediksi kinerja pegawai menggunakan kecerdasan buatan</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-white">
-                    <h3 class="text-lg font-semibold text-gray-800">Monitoring Kinerja Pegawai</h3>
+                <div class="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 bg-white">
+                    <div class="flex flex-1 gap-2">
+                        <div class="relative w-full sm:max-w-xs">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                            <input type="text" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 p-2" placeholder="Cari pegawai...">
+                        </div>
+                        <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                            <option>Semua Departemen</option>
+                            <option>Pendidikan</option>
+                            <option>Pengasuhan</option>
+                            <option>Keuangan</option>
+                        </select>
+                        <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block p-2">
+                            <option>Semua Status</option>
+                            <option>Aktif</option>
+                            <option>Cuti</option>
+                        </select>
+                    </div>
                     <div class="flex space-x-2">
-                        <button class="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center border border-emerald-200">
-                            <i class="fas fa-file-excel mr-2"></i> Export
+                        <button class="bg-white text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center border border-gray-300 shadow-sm">
+                            <i class="fas fa-download mr-2"></i> Export Report
                         </button>
                         <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center shadow-sm">
-                            <i class="fas fa-sync-alt mr-2"></i> Refresh AI Analysis
+                            <i class="fas fa-magic mr-2"></i> Run AI Analysis
                         </button>
                     </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left text-gray-500">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                        <thead class="text-xs text-gray-500 uppercase bg-gray-50 border-b border-gray-200">
                             <tr>
-                                <th scope="col" class="px-6 py-4 w-12 text-center">No</th>
-                                <th scope="col" class="px-6 py-4">Nama Pegawai</th>
-                                <th scope="col" class="px-6 py-4 text-center">Tugas Aktif</th>
-                                <th scope="col" class="px-6 py-4 text-center">Tugas Selesai</th>
-                                <th scope="col" class="px-6 py-4 w-48">Progress</th>
-                                <th scope="col" class="px-6 py-4 text-center">Skor KPI</th>
-                                <th scope="col" class="px-6 py-4">Insights</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">PEGAWAI</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">DEPARTEMEN</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">KEHADIRAN</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">SKOR KPI</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">PREDIKSI AI</th>
+                                <th scope="col" class="px-6 py-4 font-semibold">AKSI</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                                <td class="px-6 py-4 text-center font-medium text-gray-900">1</td>
-                                <td class="px-6 py-4 font-semibold text-gray-800">Dr. Ahmad Fauzi, Lc., M.A.</td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">12</span>
-                                </td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">45</span>
-                                </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-emerald-500 h-2 rounded-full" style="width: 75%"></div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                                            AF
                                         </div>
-                                        <span class="text-xs font-semibold text-gray-700 min-w-[32px]">75%</span>
+                                        <div>
+                                            <div class="font-semibold text-gray-900">Dr. Ahmad Fauzi</div>
+                                            <div class="text-xs text-gray-500">NIP: 198203112005011001</div>
+                                        </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <span class="font-bold text-gray-900">92.5</span>
-                                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-emerald-100 text-emerald-700 font-bold text-xs">A</span>
+                                <td class="px-6 py-4 text-gray-700">Pendidikan</td>
+                                <td class="px-6 py-4">
+                                    <span class="text-emerald-600 font-medium flex items-center">
+                                        <i class="fas fa-arrow-up text-xs mr-1"></i> 98%
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="font-bold text-gray-900">92</span>
+                                        <div class="w-16 bg-gray-200 rounded-full h-1.5">
+                                            <div class="bg-emerald-500 h-1.5 rounded-full" style="width: 92%"></div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex flex-wrap gap-1">
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">Sangat Produktif</span>
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">Target Tercapai</span>
-                                    </div>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800">
+                                        Kandidat Promosi
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm transition-colors">Detail</button>
                                 </td>
                             </tr>
                             <tr class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                                <td class="px-6 py-4 text-center font-medium text-gray-900">2</td>
-                                <td class="px-6 py-4 font-semibold text-gray-800">Ustadz Budi Santoso</td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">8</span>
-                                </td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">32</span>
-                                </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-blue-500 h-2 rounded-full" style="width: 80%"></div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-sm">
+                                            BS
                                         </div>
-                                        <span class="text-xs font-semibold text-gray-700 min-w-[32px]">80%</span>
+                                        <div>
+                                            <div class="font-semibold text-gray-900">Budi Santoso</div>
+                                            <div class="text-xs text-gray-500">NIP: 198507222010011003</div>
+                                        </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <span class="font-bold text-gray-900">88.0</span>
-                                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-blue-100 text-blue-700 font-bold text-xs">B</span>
+                                <td class="px-6 py-4 text-gray-700">Pengasuhan</td>
+                                <td class="px-6 py-4">
+                                    <span class="text-rose-600 font-medium flex items-center">
+                                        <i class="fas fa-arrow-down text-xs mr-1"></i> 82%
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="font-bold text-gray-900">75</span>
+                                        <div class="w-16 bg-gray-200 rounded-full h-1.5">
+                                            <div class="bg-amber-500 h-1.5 rounded-full" style="width: 75%"></div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex flex-wrap gap-1">
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-200">Produktif</span>
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-medium bg-gray-100 text-gray-700 border border-gray-200">Stabil</span>
-                                    </div>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-rose-100 text-rose-800">
+                                        Beresiko Turun
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm transition-colors">Detail</button>
                                 </td>
                             </tr>
                             <tr class="bg-white border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
-                                <td class="px-6 py-4 text-center font-medium text-gray-900">3</td>
-                                <td class="px-6 py-4 font-semibold text-gray-800">Ustadzah Siti Aminah</td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">15</span>
-                                </td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">28</span>
-                                </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="bg-amber-400 h-2 rounded-full" style="width: 65%"></div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                                            SA
                                         </div>
-                                        <span class="text-xs font-semibold text-gray-700 min-w-[32px]">65%</span>
+                                        <div>
+                                            <div class="font-semibold text-gray-900">Siti Aminah</div>
+                                            <div class="text-xs text-gray-500">NIP: 199011052015042002</div>
+                                        </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <span class="font-bold text-gray-900">75.5</span>
-                                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-amber-100 text-amber-700 font-bold text-xs">C</span>
+                                <td class="px-6 py-4 text-gray-700">Keuangan</td>
+                                <td class="px-6 py-4">
+                                    <span class="text-gray-600 font-medium flex items-center">
+                                        <i class="fas fa-minus text-xs mr-1"></i> 95%
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col gap-1">
+                                        <span class="font-bold text-gray-900">88</span>
+                                        <div class="w-16 bg-gray-200 rounded-full h-1.5">
+                                            <div class="bg-blue-500 h-1.5 rounded-full" style="width: 88%"></div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex flex-wrap gap-1">
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-medium bg-amber-50 text-amber-700 border border-amber-200">Perlu Perhatian</span>
-                                        <span class="inline-flex items-center px-2 py-1 rounded text-[10px] font-medium bg-rose-50 text-rose-700 border border-rose-200">Kurang Fokus</span>
-                                    </div>
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800">
+                                        Kinerja Stabil
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button class="text-indigo-600 hover:text-indigo-900 font-medium text-sm transition-colors">Detail</button>
                                 </td>
                             </tr>
                         </tbody>
