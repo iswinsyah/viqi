@@ -21,70 +21,72 @@ $active_menu = 'ai_agent_hrd';
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900">AI Agent HRD</h1></div>
             
-            <!-- Tabel 1: 5 kolom 3 baris -->
-            <table border="1" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </table>
+            <div class="bg-white p-4">
+                <!-- Tabel 1: 5 kolom 3 baris -->
+                <table class="w-full border-collapse border border-gray-400 mb-8">
+                    <tr>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                    </tr>
+                    <tr>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                    </tr>
+                    <tr>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                    </tr>
+                </table>
 
-            <!-- Tabel 2: 10 kolom 3 baris -->
-            <table border="1" style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </table>
+                <!-- Tabel 2: 10 kolom 3 baris -->
+                <table class="w-full border-collapse border border-gray-400">
+                    <tr>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                    </tr>
+                    <tr>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                    </tr>
+                    <tr>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                        <td class="border border-gray-400 h-10"></td>
+                    </tr>
+                </table>
+            </div>
         </main>
     </div>
     <script>
