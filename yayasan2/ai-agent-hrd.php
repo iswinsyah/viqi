@@ -22,102 +22,93 @@ $active_menu = 'ai_agent_hrd';
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900">AI Agent HRD</h1></div>
             
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="p-4 border-b border-gray-100 flex justify-between items-center">
-                    <h2 class="text-lg font-semibold text-gray-800">Daftar Pegawai</h2>
-                    <div class="flex items-center space-x-2">
-                        <div class="relative">
-                            <input type="text" placeholder="Cari..." class="border border-gray-300 rounded-md pl-3 pr-10 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <i class="fas fa-search absolute right-3 top-2 text-gray-400 text-sm"></i>
-                        </div>
-                        <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-colors">
-                            <i class="fas fa-plus mr-1"></i> Tambah
-                        </button>
-                    </div>
+                <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                    <h2 class="text-lg font-semibold text-gray-800"><i class="fas fa-list mr-2 text-indigo-500"></i>Daftar Pegawai</h2>
                 </div>
                 
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left text-gray-600">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-100 border-b border-gray-200">
+                        <thead class="text-xs text-white uppercase bg-indigo-500">
                             <tr>
-                                <th scope="col" class="px-6 py-3 w-16 text-center">NO.</th>
-                                <th scope="col" class="px-6 py-3">NAMA PEGAWAI</th>
-                                <th scope="col" class="px-6 py-3">JABATAN</th>
-                                <th scope="col" class="px-6 py-3 text-center">NILAI KPI</th>
-                                <th scope="col" class="px-6 py-3 text-center">STATUS</th>
-                                <th scope="col" class="px-6 py-3 text-center">ACTION</th>
+                                <th scope="col" class="px-6 py-3 w-16 text-center border-r border-indigo-400">No</th>
+                                <th scope="col" class="px-6 py-3 border-r border-indigo-400">Nama Pegawai</th>
+                                <th scope="col" class="px-6 py-3 border-r border-indigo-400">Jabatan</th>
+                                <th scope="col" class="px-6 py-3 text-center border-r border-indigo-400">Nilai KPI</th>
+                                <th scope="col" class="px-6 py-3 text-center border-r border-indigo-400">Status</th>
+                                <th scope="col" class="px-6 py-3 text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="bg-white border-b border-gray-100 hover:bg-gray-50">
-                                <td class="px-6 py-4 text-center">1</td>
-                                <td class="px-6 py-4">Ustadz Ahmad</td>
-                                <td class="px-6 py-4">Guru Diniyah</td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50">
+                                <td class="px-6 py-4 text-center border-r border-gray-200">1</td>
+                                <td class="px-6 py-4 border-r border-gray-200 font-medium text-gray-900">Ustadz Ahmad</td>
+                                <td class="px-6 py-4 border-r border-gray-200">Guru Diniyah</td>
+                                <td class="px-6 py-4 text-center border-r border-gray-200">
+                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded text-xs font-bold bg-blue-100 text-blue-800">
                                         85 (Memuaskan)
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <td class="px-6 py-4 text-center border-r border-gray-200">
+                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded text-xs font-bold bg-green-100 text-green-800">
                                         Aktif
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">Detail</button>
+                                    <button class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"><i class="fas fa-eye mr-1"></i> Detail</button>
                                 </td>
                             </tr>
-                            <tr class="bg-white border-b border-gray-100 hover:bg-gray-50">
-                                <td class="px-6 py-4 text-center">2</td>
-                                <td class="px-6 py-4">Ustadz Budi</td>
-                                <td class="px-6 py-4">Musyrif Asrama</td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <tr class="bg-gray-50 border-b border-gray-200 hover:bg-gray-100">
+                                <td class="px-6 py-4 text-center border-r border-gray-200">2</td>
+                                <td class="px-6 py-4 border-r border-gray-200 font-medium text-gray-900">Ustadz Budi</td>
+                                <td class="px-6 py-4 border-r border-gray-200">Musyrif Asrama</td>
+                                <td class="px-6 py-4 text-center border-r border-gray-200">
+                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded text-xs font-bold bg-green-100 text-green-800">
                                         90 (Sangat Baik)
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <td class="px-6 py-4 text-center border-r border-gray-200">
+                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded text-xs font-bold bg-green-100 text-green-800">
                                         Aktif
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">Detail</button>
+                                    <button class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"><i class="fas fa-eye mr-1"></i> Detail</button>
                                 </td>
                             </tr>
-                            <tr class="bg-white border-b border-gray-100 hover:bg-gray-50">
-                                <td class="px-6 py-4 text-center">3</td>
-                                <td class="px-6 py-4">Ustadzah Fatimah</td>
-                                <td class="px-6 py-4">Guru Tahfidz</td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <tr class="bg-white border-b border-gray-200 hover:bg-gray-50">
+                                <td class="px-6 py-4 text-center border-r border-gray-200">3</td>
+                                <td class="px-6 py-4 border-r border-gray-200 font-medium text-gray-900">Ustadzah Fatimah</td>
+                                <td class="px-6 py-4 border-r border-gray-200">Guru Tahfidz</td>
+                                <td class="px-6 py-4 text-center border-r border-gray-200">
+                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded text-xs font-bold bg-yellow-100 text-yellow-800">
                                         75 (Cukup)
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <td class="px-6 py-4 text-center border-r border-gray-200">
+                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded text-xs font-bold bg-green-100 text-green-800">
                                         Aktif
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">Detail</button>
+                                    <button class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"><i class="fas fa-eye mr-1"></i> Detail</button>
                                 </td>
                             </tr>
-                            <tr class="bg-white hover:bg-gray-50">
-                                <td class="px-6 py-4 text-center">4</td>
-                                <td class="px-6 py-4">Ustadzah Aisyah</td>
-                                <td class="px-6 py-4">Admin</td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <tr class="bg-gray-50 hover:bg-gray-100">
+                                <td class="px-6 py-4 text-center border-r border-gray-200">4</td>
+                                <td class="px-6 py-4 border-r border-gray-200 font-medium text-gray-900">Ustadzah Aisyah</td>
+                                <td class="px-6 py-4 border-r border-gray-200">Admin</td>
+                                <td class="px-6 py-4 text-center border-r border-gray-200">
+                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded text-xs font-bold bg-red-100 text-red-800">
                                         60 (Kurang)
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-center">
-                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                <td class="px-6 py-4 text-center border-r border-gray-200">
+                                    <span class="inline-flex items-center justify-center px-3 py-1 rounded text-xs font-bold bg-red-100 text-red-800">
                                         Non-Aktif
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-center">
-                                    <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs transition-colors">Detail</button>
+                                    <button class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1.5 rounded text-xs font-medium transition-colors"><i class="fas fa-eye mr-1"></i> Detail</button>
                                 </td>
                             </tr>
                         </tbody>
