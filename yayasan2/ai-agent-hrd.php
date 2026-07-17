@@ -16,10 +16,11 @@ $active_menu = 'ai_agent_hrd';
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
             <div class="flex items-center"><button id="open-sidebar-yayasan2" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif Yayasan 2</h2></div>
         </header>
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-white p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-white">
             
-            <div class="w-full">
-                <h2 class="text-xl font-bold mb-2">Jam Pelajaran</h2>
+            <div class="w-full p-2">
+                <div class="mb-4 px-2 pt-4"><h1 class="text-2xl font-bold text-gray-900">AI Agent HRD</h1></div>
+                <h2 class="text-xl font-bold mb-2 px-2">Jam Pelajaran</h2>
                 <div class="overflow-x-auto mb-8">
                     <table class="w-full border-collapse text-sm">
                         <thead>
@@ -46,7 +47,7 @@ $active_menu = 'ai_agent_hrd';
                     </table>
                 </div>
 
-                <h2 class="text-xl font-bold mb-2">Absensi Pegawai</h2>
+                <h2 class="text-xl font-bold mb-2 px-2">Absensi Pegawai</h2>
                 <div class="overflow-x-auto">
                     <table class="w-full border-collapse text-sm text-center">
                         <thead>
