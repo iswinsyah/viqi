@@ -20,80 +20,69 @@ $active_menu = 'ai_agent_hrd';
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900">AI Agent HRD</h1></div>
             
             <div class="bg-white p-4">
-                <!-- Tabel 1: 5 kolom 3 baris -->
-                <h2 class="text-lg font-bold mb-2">Jam Pelajaran</h2>
-                <table class="w-full border-collapse border border-gray-400 mb-8 text-sm">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border border-gray-400 p-2 text-center w-12">No</th>
-                            <th class="border border-gray-400 p-2 text-left">Keterangan</th>
-                            <th class="border border-gray-400 p-2 text-center">Total</th>
-                            <th class="border border-gray-400 p-2 text-center">Terlaksana</th>
-                            <th class="border border-gray-400 p-2 text-center">Kosong</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                        </tr>
-                        <tr>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h2 class="text-xl font-bold mb-2">Jam Pelajaran</h2>
+                <div class="overflow-x-auto mb-8">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-black text-white">
+                                <th class="border border-gray-300 p-2 text-center w-12">No</th>
+                                <th class="border border-gray-300 p-2 text-left">Keterangan</th>
+                                <th class="border border-gray-300 p-2 text-center">Total</th>
+                                <th class="border border-gray-300 p-2 text-center">Terlaksana</th>
+                                <th class="border border-gray-300 p-2 text-center">Kosong</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="border border-gray-300 p-2 text-center font-bold bg-gray-100" colspan="5">Nama Pegawai</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-300 p-2 text-center">1</td>
+                                <td class="border border-gray-300 p-2">Mengajar Diniyah</td>
+                                <td class="border border-gray-300 p-2 text-center">36 JP</td>
+                                <td class="border border-gray-300 p-2 text-center">34 JP</td>
+                                <td class="border border-gray-300 p-2 text-center">2 JP</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                <!-- Tabel 2: 10 kolom 3 baris -->
-                <h2 class="text-lg font-bold mb-2">Absensi Pegawai</h2>
-                <table class="w-full border-collapse border border-gray-400 text-sm text-center">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border border-gray-400 p-2 w-12">No</th>
-                            <th class="border border-gray-400 p-2 text-left">Keterangan</th>
-                            <th class="border border-gray-400 p-2">Total</th>
-                            <th class="border border-gray-400 p-2">Hadir Tepat</th>
-                            <th class="border border-gray-400 p-2">Hadir Terlambat</th>
-                            <th class="border border-gray-400 p-2">Rata-rata Keterlambatan</th>
-                            <th class="border border-gray-400 p-2">Terlambat Max</th>
-                            <th class="border border-gray-400 p-2">Ijin</th>
-                            <th class="border border-gray-400 p-2">Sakit</th>
-                            <th class="border border-gray-400 p-2">Alfa</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                        </tr>
-                        <tr>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                            <td class="border border-gray-400 h-10"></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h2 class="text-xl font-bold mb-2">Absensi Pegawai</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-sm text-center">
+                        <thead>
+                            <tr class="bg-black text-white">
+                                <th class="border border-gray-300 p-2 w-12">No</th>
+                                <th class="border border-gray-300 p-2 text-left">Keterangan</th>
+                                <th class="border border-gray-300 p-2">Total</th>
+                                <th class="border border-gray-300 p-2">Hadir Tepat</th>
+                                <th class="border border-gray-300 p-2">Hadir Terlambat</th>
+                                <th class="border border-gray-300 p-2">Rata-rata Keterlambatan</th>
+                                <th class="border border-gray-300 p-2">Terlambat Max</th>
+                                <th class="border border-gray-300 p-2">Ijin</th>
+                                <th class="border border-gray-300 p-2">Sakit</th>
+                                <th class="border border-gray-300 p-2">Alfa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="border border-gray-300 p-2 text-center font-bold bg-gray-100" colspan="10">Nama Pegawai</td>
+                            </tr>
+                            <tr>
+                                <td class="border border-gray-300 p-2">1</td>
+                                <td class="border border-gray-300 p-2 text-left">Absensi Kehadiran</td>
+                                <td class="border border-gray-300 p-2">26</td>
+                                <td class="border border-gray-300 p-2">20</td>
+                                <td class="border border-gray-300 p-2">6</td>
+                                <td class="border border-gray-300 p-2">15 Menit</td>
+                                <td class="border border-gray-300 p-2">45 Menit</td>
+                                <td class="border border-gray-300 p-2">0</td>
+                                <td class="border border-gray-300 p-2">0</td>
+                                <td class="border border-gray-300 p-2">0</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </main>
     </div>
