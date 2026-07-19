@@ -14,6 +14,97 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_rapat (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 @$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN rapat_id INT DEFAULT NULL AFTER jenis_absen");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN peserta_terundang TEXT DEFAULT NULL AFTER pengundang");
+
+function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_rapat, $target_roles, $target_ids) {
+    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
+    if (file_exists(__DIR__ . '/config-key.php')) {
+        require_once __DIR__ . '/config-key.php';
+        if (defined('FONNTE_TOKEN')) {
+            $FONNTE_TOKEN = FONNTE_TOKEN;
+        }
+    }
+    
+    $res_pegawai = $conn->query("SELECT id, nama, role, whatsapp FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
+    if (!$res_pegawai || $res_pegawai->num_rows == 0) return;
+    
+    $days = ['Sunday'=>'Ahad', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'];
+    $day_name = $days[date('l', strtotime($waktu_rapat))] ?? date('l', strtotime($waktu_rapat));
+    $waktu_formatted = $day_name . ', ' . date('d M Y - H:i', strtotime($waktu_rapat)) . ' WIB';
+    
+    while ($p = $res_pegawai->fetch_assoc()) {
+        $p_id = (int)$p['id'];
+        $p_roles = array_map('trim', explode(',', $p['role'] ?? ''));
+        $no_wa = preg_replace('/[^0-9]/', '', $p['whatsapp']);
+        if (empty($no_wa)) continue;
+        if (substr($no_wa, 0, 1) === '0') {
+            $no_wa = '62' . substr($no_wa, 1);
+        } elseif (substr($no_wa, 0, 2) !== '62') {
+            $no_wa = '62' . $no_wa;
+        }
+        
+        $is_target = false;
+        
+        if (in_array($p_id, array_map('intval', $target_ids))) {
+            $is_target = true;
+        }
+        
+        if (!$is_target && !empty($target_roles)) {
+            if (in_array('semua_pegawai', $target_roles)) {
+                $is_target = true;
+            } else {
+                foreach ($target_roles as $tr) {
+                    if ($tr === 'musyrif' && (in_array('musyrif', $p_roles) || in_array('kepala_asrama', $p_roles))) {
+                        $is_target = true; break;
+                    }
+                    if ($tr === 'admin_sekolah' && (in_array('admin_sekolah', $p_roles) || in_array('sekretaris_sekolah', $p_roles) || in_array('bendahara_sekolah', $p_roles))) {
+                        $is_target = true; break;
+                    }
+                    if ($tr === 'kepala_sekolah' && in_array('kepala_sekolah', $p_roles)) {
+                        $is_target = true; break;
+                    }
+                    if ($tr === 'kepala_mahad' && in_array('kepala_mahad', $p_roles)) {
+                        $is_target = true; break;
+                    }
+                    if ($tr === 'ustadz_diknas' && in_array('ustadz', $p_roles)) {
+                        $check_d = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $p_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
+                        if ($check_d && $check_d->num_rows > 0) { $is_target = true; break; }
+                    }
+                    if ($tr === 'ustadz_diniyah' && in_array('ustadz', $p_roles)) {
+                        $check_dn = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $p_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
+                        if ($check_dn && $check_dn->num_rows > 0) { $is_target = true; break; }
+                    }
+                }
+            }
+        }
+        
+        if ($is_target) {
+            $pesan = "📢 *UNDANGAN RAPAT RESMI*\n"
+                   . "-- SIM Yayasan Villa Quran --\n\n"
+                   . "Kepada Yth. *" . $p['nama'] . "*\n\n"
+                   . "Anda diundang untuk menghadiri rapat berikut:\n"
+                   . "📌 *Agenda*: " . $agenda . "\n"
+                   . "👤 *Penyelenggara*: " . $pengundang_label . "\n"
+                   . "🕒 *Waktu Mulai*: " . $waktu_formatted . "\n\n"
+                   . "Diharapkan hadir tepat waktu dan melakukan absensi rapat melalui sistem:\n"
+                   . "🔗 https://villaquranindonesia.com/admin-absensi-pegawai.php\n\n"
+                   . "-- SIM Yayasan Villa Quran --";
+                   
+            $waFd = ['target' => $no_wa, 'message' => $pesan];
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => "https://api.fonnte.com/send",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => http_build_query($waFd),
+                CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                CURLOPT_TIMEOUT => 10
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
+        }
+    }
+}
 
 $active_menu = 'absensi_pegawai';
 $ustadz_id = $_SESSION['ustadz_id'];
@@ -31,6 +122,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     $waktu_rapat = $conn->real_escape_string($_POST['waktu_rapat']);
     $pengundang = $conn->real_escape_string($_POST['pengundang']);
     
+    $target_roles = $_POST['target_roles'] ?? [];
+    $target_ids = array_map('intval', $_POST['target_ids'] ?? []);
+    
+    $peserta_terundang = json_encode([
+        'roles' => $target_roles,
+        'ids' => $target_ids
+    ]);
+    $peserta_terundang_escaped = $conn->real_escape_string($peserta_terundang);
+    
     $is_authorized = false;
     if ($pengundang === 'kepala_sekolah' && in_array('kepala_sekolah', $user_roles)) $is_authorized = true;
     if ($pengundang === 'kepala_mahad' && in_array('kepala_mahad', $user_roles)) $is_authorized = true;
@@ -38,7 +138,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     if (in_array('super_admin', $user_roles)) $is_authorized = true; // Super Admin can do anything
 
     if ($is_authorized) {
-        $conn->query("INSERT INTO jadwal_rapat (agenda, pengundang, waktu_mulai, status, created_by) VALUES ('$agenda', '$pengundang', '$waktu_rapat', 'aktif', $ustadz_id)");
+        $conn->query("INSERT INTO jadwal_rapat (agenda, pengundang, peserta_terundang, waktu_mulai, status, created_by) VALUES ('$agenda', '$pengundang', '$peserta_terundang_escaped', '$waktu_rapat', 'aktif', $ustadz_id)");
+        
+        $lbl_peng = 'Ketua Yayasan';
+        if ($pengundang === 'kepala_sekolah') $lbl_peng = 'Kepala Sekolah';
+        elseif ($pengundang === 'kepala_mahad') $lbl_peng = "Kepala Ma'had";
+        
+        // Broadcast WA otomatis ke seluruh peserta yang diundang
+        broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $lbl_peng, $_POST['waktu_rapat'], $target_roles, $target_ids);
+        
         header("Location: admin-absensi-pegawai.php?sukses_rapat=1");
         exit;
     } else {
@@ -106,28 +214,66 @@ $rapat_btn_icon = 'fa-handshake';
 if ($rapat_aktif) {
     $rapat_id = $rapat_aktif['id'];
     $pengundang = $rapat_aktif['pengundang'];
+    $peserta_json = $rapat_aktif['peserta_terundang'] ?? null;
     
-    // Tentukan kelompok peserta wajib
-    if ($pengundang === 'kepala_sekolah') {
-        $is_admin_sekolah = in_array('admin_sekolah', $user_roles);
-        $is_ustadz = in_array('ustadz', $user_roles);
-        $is_ustadz_diknas = false;
-        if ($is_ustadz) {
-            $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
-            $is_ustadz_diknas = ($check_diknas && $check_diknas->num_rows > 0);
+    if (in_array('super_admin', $user_roles)) {
+        $is_invited_rapat = true;
+    } elseif (!empty($peserta_json)) {
+        $target_data = json_decode($peserta_json, true);
+        $t_roles = $target_data['roles'] ?? [];
+        $t_ids = array_map('intval', $target_data['ids'] ?? []);
+        
+        if (in_array((int)$ustadz_id, $t_ids)) {
+            $is_invited_rapat = true;
+        } elseif (in_array('semua_pegawai', $t_roles)) {
+            $is_invited_rapat = true;
+        } else {
+            foreach ($t_roles as $tr) {
+                if ($tr === 'musyrif' && (in_array('musyrif', $user_roles) || in_array('kepala_asrama', $user_roles))) {
+                    $is_invited_rapat = true; break;
+                }
+                if ($tr === 'admin_sekolah' && (in_array('admin_sekolah', $user_roles) || in_array('sekretaris_sekolah', $user_roles) || in_array('bendahara_sekolah', $user_roles))) {
+                    $is_invited_rapat = true; break;
+                }
+                if ($tr === 'kepala_sekolah' && in_array('kepala_sekolah', $user_roles)) {
+                    $is_invited_rapat = true; break;
+                }
+                if ($tr === 'kepala_mahad' && in_array('kepala_mahad', $user_roles)) {
+                    $is_invited_rapat = true; break;
+                }
+                if ($tr === 'ustadz_diknas' && in_array('ustadz', $user_roles)) {
+                    $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
+                    if ($check_diknas && $check_diknas->num_rows > 0) { $is_invited_rapat = true; break; }
+                }
+                if ($tr === 'ustadz_diniyah' && in_array('ustadz', $user_roles)) {
+                    $check_diniyah = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
+                    if ($check_diniyah && $check_diniyah->num_rows > 0) { $is_invited_rapat = true; break; }
+                }
+            }
         }
-        $is_invited_rapat = ($is_admin_sekolah || $is_ustadz_diknas || in_array('super_admin', $user_roles));
-    } elseif ($pengundang === 'kepala_mahad') {
-        $is_musyrif = in_array('musyrif', $user_roles);
-        $is_ustadz = in_array('ustadz', $user_roles);
-        $is_ustadz_diniyah = false;
-        if ($is_ustadz) {
-            $check_diniyah = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
-            $is_ustadz_diniyah = ($check_diniyah && $check_diniyah->num_rows > 0);
+    } else {
+        // Fallback aturan default lama
+        if ($pengundang === 'kepala_sekolah') {
+            $is_admin_sekolah = in_array('admin_sekolah', $user_roles);
+            $is_ustadz = in_array('ustadz', $user_roles);
+            $is_ustadz_diknas = false;
+            if ($is_ustadz) {
+                $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
+                $is_ustadz_diknas = ($check_diknas && $check_diknas->num_rows > 0);
+            }
+            $is_invited_rapat = ($is_admin_sekolah || $is_ustadz_diknas || in_array('super_admin', $user_roles));
+        } elseif ($pengundang === 'kepala_mahad') {
+            $is_musyrif = in_array('musyrif', $user_roles);
+            $is_ustadz = in_array('ustadz', $user_roles);
+            $is_ustadz_diniyah = false;
+            if ($is_ustadz) {
+                $check_diniyah = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
+                $is_ustadz_diniyah = ($check_diniyah && $check_diniyah->num_rows > 0);
+            }
+            $is_invited_rapat = ($is_musyrif || $is_ustadz_diniyah || in_array('super_admin', $user_roles));
+        } elseif ($pengundang === 'ketua_yayasan') {
+            $is_invited_rapat = true; // Siapa saja boleh
         }
-        $is_invited_rapat = ($is_musyrif || $is_ustadz_diniyah || in_array('super_admin', $user_roles));
-    } elseif ($pengundang === 'ketua_yayasan') {
-        $is_invited_rapat = true; // Siapa saja boleh
     }
     
     if ($is_invited_rapat) {
@@ -461,8 +607,52 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                     <label class="block text-xs font-semibold text-gray-600 mb-1">Waktu Mulai</label>
                                     <input type="datetime-local" name="waktu_rapat" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                                 </div>
-                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-md transition-all duration-200">
-                                    <i class="fas fa-save mr-1"></i> Publikasikan Rapat
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Tujuan Undangan (Grup / Role Wajib)</label>
+                                    <div class="space-y-1 bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-700">
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" name="target_roles[]" value="semua_pegawai" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span class="font-semibold text-indigo-900">Semua Pegawai & Asatidz</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" name="target_roles[]" value="admin_sekolah" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Manajemen & Admin Sekolah</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" name="target_roles[]" value="musyrif" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Musyrif / Musyrifah (Asrama)</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" name="target_roles[]" value="ustadz_diknas" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Ustadz & Pengajar Diknas</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" name="target_roles[]" value="ustadz_diniyah" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Ustadz & Pengajar Diniyah</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Atau Pilih Pegawai Spesifik (Opsional)</label>
+                                    <div class="max-h-36 overflow-y-auto border border-gray-200 rounded-lg p-2.5 bg-gray-50 space-y-1 text-xs text-gray-700">
+                                        <?php
+                                        $res_all_ustadz = $conn->query("SELECT id, nama, role FROM akun_ustadz ORDER BY nama ASC");
+                                        if ($res_all_ustadz && $res_all_ustadz->num_rows > 0):
+                                            while ($u = $res_all_ustadz->fetch_assoc()):
+                                        ?>
+                                                <label class="flex items-center space-x-2 hover:bg-gray-100 p-0.5 rounded cursor-pointer">
+                                                    <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                                    <span><?= htmlspecialchars($u['nama']) ?> <span class="text-[10px] text-gray-400">(<?= htmlspecialchars($u['role'] ?? 'pegawai') ?>)</span></span>
+                                                </label>
+                                        <?php
+                                            endwhile;
+                                        endif;
+                                        ?>
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 mt-1">* Notifikasi WhatsApp otomatis dikirimkan langsung ke peserta yang dipilih saat rapat dipublikasikan.</p>
+                                </div>
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow-md transition-all duration-200">
+                                    <i class="fas fa-paper-plane mr-1"></i> Publikasikan & Sebar Undangan WA
                                 </button>
                             </form>
                         </div>
@@ -476,6 +666,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                         <tr class="bg-gray-50 text-gray-500">
                                             <th class="px-3 py-2 text-left font-bold">Agenda</th>
                                             <th class="px-3 py-2 text-left font-bold">Penyelenggara</th>
+                                            <th class="px-3 py-2 text-left font-bold">Target Peserta</th>
                                             <th class="px-3 py-2 text-left font-bold">Waktu Mulai</th>
                                             <th class="px-3 py-2 text-center font-bold">Aksi</th>
                                         </tr>
@@ -489,10 +680,30 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                                 if ($r['pengundang'] === 'kepala_sekolah') $lbl_role = 'Kepala Sekolah';
                                                 elseif ($r['pengundang'] === 'kepala_mahad') $lbl_role = "Kepala Ma'had";
                                                 else $lbl_role = 'Ketua Yayasan';
+                                                
+                                                $peserta_desc = 'Wajib Default (' . $lbl_role . ')';
+                                                if (!empty($r['peserta_terundang'])) {
+                                                    $pj = json_decode($r['peserta_terundang'], true);
+                                                    $r_list = $pj['roles'] ?? [];
+                                                    $i_list = $pj['ids'] ?? [];
+                                                    $items = [];
+                                                    if (in_array('semua_pegawai', $r_list)) $items[] = 'Semua Pegawai';
+                                                    else {
+                                                        if (in_array('admin_sekolah', $r_list)) $items[] = 'Admin Sekolah';
+                                                        if (in_array('musyrif', $r_list)) $items[] = 'Musyrif';
+                                                        if (in_array('ustadz_diknas', $r_list)) $items[] = 'Ustadz Diknas';
+                                                        if (in_array('ustadz_diniyah', $r_list)) $items[] = 'Ustadz Diniyah';
+                                                    }
+                                                    if (!empty($i_list)) {
+                                                        $items[] = count($i_list) . ' Pegawai Spesifik';
+                                                    }
+                                                    if (!empty($items)) $peserta_desc = implode(', ', $items);
+                                                }
                                         ?>
                                                 <tr>
                                                     <td class="px-3 py-2 font-semibold text-gray-800"><?= htmlspecialchars($r['agenda']) ?></td>
                                                     <td class="px-3 py-2 text-gray-500"><?= $lbl_role ?></td>
+                                                    <td class="px-3 py-2 text-indigo-700 font-medium"><?= htmlspecialchars($peserta_desc) ?></td>
                                                     <td class="px-3 py-2 text-gray-500"><?= date('d M Y H:i', strtotime($r['waktu_mulai'])) ?> WIB</td>
                                                     <td class="px-3 py-2 text-center">
                                                         <?php if ($r['created_by'] == $ustadz_id || in_array('super_admin', $user_roles)): ?>
@@ -509,7 +720,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                         else:
                                         ?>
                                             <tr>
-                                                <td colspan="4" class="px-3 py-4 text-center text-gray-400">Tidak ada rapat aktif saat ini.</td>
+                                                <td colspan="5" class="px-3 py-4 text-center text-gray-400">Tidak ada rapat aktif saat ini.</td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>

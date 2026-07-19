@@ -145,28 +145,67 @@ if ($req_jenis_absen === 'Rapat') {
     }
     $rapat = $res_rpt->fetch_assoc();
     $pengundang = $rapat['pengundang'];
+    $peserta_json = $rapat['peserta_terundang'] ?? null;
     
     $is_invited = false;
-    if ($pengundang === 'kepala_sekolah') {
-        $is_admin_sekolah = in_array('admin_sekolah', $user_roles);
-        $is_ustadz = in_array('ustadz', $user_roles);
-        $is_ustadz_diknas = false;
-        if ($is_ustadz) {
-            $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
-            $is_ustadz_diknas = ($check_diknas && $check_diknas->num_rows > 0);
-        }
-        $is_invited = ($is_admin_sekolah || $is_ustadz_diknas || in_array('super_admin', $user_roles));
-    } elseif ($pengundang === 'kepala_mahad') {
-        $is_musyrif = in_array('musyrif', $user_roles);
-        $is_ustadz = in_array('ustadz', $user_roles);
-        $is_ustadz_diniyah = false;
-        if ($is_ustadz) {
-            $check_diniyah = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
-            $is_ustadz_diniyah = ($check_diniyah && $check_diniyah->num_rows > 0);
-        }
-        $is_invited = ($is_musyrif || $is_ustadz_diniyah || in_array('super_admin', $user_roles));
-    } elseif ($pengundang === 'ketua_yayasan') {
+    if (in_array('super_admin', $user_roles)) {
         $is_invited = true;
+    } elseif (!empty($peserta_json)) {
+        $target_data = json_decode($peserta_json, true);
+        $t_roles = $target_data['roles'] ?? [];
+        $t_ids = array_map('intval', $target_data['ids'] ?? []);
+        
+        if (in_array((int)$ustadz_id, $t_ids)) {
+            $is_invited = true;
+        } elseif (in_array('semua_pegawai', $t_roles)) {
+            $is_invited = true;
+        } else {
+            foreach ($t_roles as $tr) {
+                if ($tr === 'musyrif' && (in_array('musyrif', $user_roles) || in_array('kepala_asrama', $user_roles))) {
+                    $is_invited = true; break;
+                }
+                if ($tr === 'admin_sekolah' && (in_array('admin_sekolah', $user_roles) || in_array('sekretaris_sekolah', $user_roles) || in_array('bendahara_sekolah', $user_roles))) {
+                    $is_invited = true; break;
+                }
+                if ($tr === 'kepala_sekolah' && in_array('kepala_sekolah', $user_roles)) {
+                    $is_invited = true; break;
+                }
+                if ($tr === 'kepala_mahad' && in_array('kepala_mahad', $user_roles)) {
+                    $is_invited = true; break;
+                }
+                if ($tr === 'ustadz_diknas' && in_array('ustadz', $user_roles)) {
+                    $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
+                    if ($check_diknas && $check_diknas->num_rows > 0) { $is_invited = true; break; }
+                }
+                if ($tr === 'ustadz_diniyah' && in_array('ustadz', $user_roles)) {
+                    $check_diniyah = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
+                    if ($check_diniyah && $check_diniyah->num_rows > 0) { $is_invited = true; break; }
+                }
+            }
+        }
+    } else {
+        // Fallback default lama
+        if ($pengundang === 'kepala_sekolah') {
+            $is_admin_sekolah = in_array('admin_sekolah', $user_roles);
+            $is_ustadz = in_array('ustadz', $user_roles);
+            $is_ustadz_diknas = false;
+            if ($is_ustadz) {
+                $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
+                $is_ustadz_diknas = ($check_diknas && $check_diknas->num_rows > 0);
+            }
+            $is_invited = ($is_admin_sekolah || $is_ustadz_diknas || in_array('super_admin', $user_roles));
+        } elseif ($pengundang === 'kepala_mahad') {
+            $is_musyrif = in_array('musyrif', $user_roles);
+            $is_ustadz = in_array('ustadz', $user_roles);
+            $is_ustadz_diniyah = false;
+            if ($is_ustadz) {
+                $check_diniyah = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
+                $is_ustadz_diniyah = ($check_diniyah && $check_diniyah->num_rows > 0);
+            }
+            $is_invited = ($is_musyrif || $is_ustadz_diniyah || in_array('super_admin', $user_roles));
+        } elseif ($pengundang === 'ketua_yayasan') {
+            $is_invited = true;
+        }
     }
     
     if (!$is_invited) {
