@@ -15,8 +15,12 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_rapat (
 )");
 @$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN rapat_id INT DEFAULT NULL AFTER jenis_absen");
 @$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN peserta_terundang TEXT DEFAULT NULL AFTER pengundang");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN jenis_rutin VARCHAR(20) DEFAULT 'tidak_rutin' AFTER waktu_mulai");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN hari_rutin VARCHAR(20) DEFAULT NULL AFTER jenis_rutin");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN tanggal_rutin INT DEFAULT NULL AFTER hari_rutin");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN tgl_penyesuaian_libur DATE DEFAULT NULL AFTER tanggal_rutin");
 
-function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_rapat, $target_roles, $target_ids) {
+function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin = 'tidak_rutin', $hari_rutin = '', $tanggal_rutin = null, $tgl_penyesuaian_libur = null) {
     $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
     if (file_exists(__DIR__ . '/config-key.php')) {
         require_once __DIR__ . '/config-key.php';
@@ -31,6 +35,18 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
     $days = ['Sunday'=>'Ahad', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'];
     $day_name = $days[date('l', strtotime($waktu_rapat))] ?? date('l', strtotime($waktu_rapat));
     $waktu_formatted = $day_name . ', ' . date('d M Y - H:i', strtotime($waktu_rapat)) . ' WIB';
+    
+    $rutin_desc = "Tidak Rutin (Sekali Jalan)";
+    if ($jenis_rutin === 'pekanan') {
+        $rutin_desc = "Rutin Pekanan (Setiap Hari " . ucfirst($hari_rutin) . ")";
+    } elseif ($jenis_rutin === 'bulanan') {
+        $rutin_desc = "Rutin Bulanan (Setiap Tanggal " . $tanggal_rutin . ")";
+    }
+    
+    $libur_info = "";
+    if (!empty($tgl_penyesuaian_libur)) {
+        $libur_info = "\n⚠️ *Penyesuaian Hari Libur*: Tanggal dipindah ke *" . date('d M Y', strtotime($tgl_penyesuaian_libur)) . "*";
+    }
     
     while ($p = $res_pegawai->fetch_assoc()) {
         $p_id = (int)$p['id'];
@@ -85,7 +101,8 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
                    . "Anda diundang untuk menghadiri rapat berikut:\n"
                    . "📌 *Agenda*: " . $agenda . "\n"
                    . "👤 *Penyelenggara*: " . $pengundang_label . "\n"
-                   . "🕒 *Waktu Mulai*: " . $waktu_formatted . "\n\n"
+                   . "🔄 *Sifat Rapat*: " . $rutin_desc . "\n"
+                   . "🕒 *Waktu Pelaksanaan*: " . $waktu_formatted . $libur_info . "\n\n"
                    . "Diharapkan hadir tepat waktu dan melakukan absensi rapat melalui sistem:\n"
                    . "🔗 https://villaquranindonesia.com/admin-absensi-pegawai.php\n\n"
                    . "-- SIM Yayasan Villa Quran --";
@@ -122,6 +139,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     $waktu_rapat = $conn->real_escape_string($_POST['waktu_rapat']);
     $pengundang = $conn->real_escape_string($_POST['pengundang']);
     
+    $jenis_rutin = $conn->real_escape_string($_POST['jenis_rutin'] ?? 'tidak_rutin');
+    $hari_rutin = $conn->real_escape_string($_POST['hari_rutin'] ?? '');
+    $tanggal_rutin = !empty($_POST['tanggal_rutin']) ? (int)$_POST['tanggal_rutin'] : "NULL";
+    $tgl_penyesuaian_libur_val = !empty($_POST['tgl_penyesuaian_libur']) ? $_POST['tgl_penyesuaian_libur'] : null;
+    $tgl_penyesuaian_libur = !empty($tgl_penyesuaian_libur_val) ? "'" . $conn->real_escape_string($tgl_penyesuaian_libur_val) . "'" : "NULL";
+    
     $target_roles = $_POST['target_roles'] ?? [];
     $target_ids = array_map('intval', $_POST['target_ids'] ?? []);
     
@@ -138,14 +161,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     if (in_array('super_admin', $user_roles)) $is_authorized = true; // Super Admin can do anything
 
     if ($is_authorized) {
-        $conn->query("INSERT INTO jadwal_rapat (agenda, pengundang, peserta_terundang, waktu_mulai, status, created_by) VALUES ('$agenda', '$pengundang', '$peserta_terundang_escaped', '$waktu_rapat', 'aktif', $ustadz_id)");
+        $sql_ins = "INSERT INTO jadwal_rapat (agenda, pengundang, peserta_terundang, waktu_mulai, jenis_rutin, hari_rutin, tanggal_rutin, tgl_penyesuaian_libur, status, created_by) VALUES ('$agenda', '$pengundang', '$peserta_terundang_escaped', '$waktu_rapat', '$jenis_rutin', " . ($hari_rutin ? "'$hari_rutin'" : "NULL") . ", $tanggal_rutin, $tgl_penyesuaian_libur, 'aktif', $ustadz_id)";
+        $conn->query($sql_ins);
         
         $lbl_peng = 'Ketua Yayasan';
         if ($pengundang === 'kepala_sekolah') $lbl_peng = 'Kepala Sekolah';
         elseif ($pengundang === 'kepala_mahad') $lbl_peng = "Kepala Ma'had";
         
         // Broadcast WA otomatis ke seluruh peserta yang diundang
-        broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $lbl_peng, $_POST['waktu_rapat'], $target_roles, $target_ids);
+        broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $lbl_peng, $_POST['waktu_rapat'], $target_roles, $target_ids, $jenis_rutin, $hari_rutin, $_POST['tanggal_rutin'] ?? null, $tgl_penyesuaian_libur_val);
         
         header("Location: admin-absensi-pegawai.php?sukses_rapat=1");
         exit;
@@ -608,6 +632,39 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                     <input type="datetime-local" name="waktu_rapat" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Sifat Rapat / Frekuensi</label>
+                                    <select name="jenis_rutin" id="select_jenis_rutin" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                        <option value="tidak_rutin">Tidak Rutin (Sekali Jalan)</option>
+                                        <option value="pekanan">Rutin Pekanan (Mingguan)</option>
+                                        <option value="bulanan">Rutin Bulanan (Bulanan)</option>
+                                    </select>
+                                </div>
+                                <div id="wrapper_hari_rutin" class="hidden">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Acuan Hari Rutin (Pekanan)</label>
+                                    <select name="hari_rutin" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                        <option value="Senin">Senin</option>
+                                        <option value="Selasa">Selasa</option>
+                                        <option value="Rabu">Rabu</option>
+                                        <option value="Kamis">Kamis</option>
+                                        <option value="Jumat">Jumat</option>
+                                        <option value="Sabtu">Sabtu</option>
+                                        <option value="Ahad">Ahad</option>
+                                    </select>
+                                </div>
+                                <div id="wrapper_tanggal_rutin" class="hidden">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Acuan Tanggal Rutin (Bulanan)</label>
+                                    <select name="tanggal_rutin" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                        <?php for($t=1; $t<=31; $t++): ?>
+                                            <option value="<?= $t ?>">Tanggal <?= $t ?></option>
+                                        <?php endfor; ?>
+                                    </select>
+                                </div>
+                                <div id="wrapper_penyesuaian_libur" class="hidden">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Penyesuaian Hari Libur (Opsional)</label>
+                                    <input type="date" name="tgl_penyesuaian_libur" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                                    <p class="text-[10px] text-gray-400 mt-1">* Isi jika jadwal rutin bertepatan dengan libur dan perlu disetting ulang ke tanggal lain.</p>
+                                </div>
+                                <div>
                                     <label class="block text-xs font-semibold text-gray-600 mb-1">Tujuan Undangan (Grup / Role Wajib)</label>
                                     <div class="space-y-1 bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-700">
                                         <label class="flex items-center space-x-2 cursor-pointer">
@@ -666,6 +723,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                         <tr class="bg-gray-50 text-gray-500">
                                             <th class="px-3 py-2 text-left font-bold">Agenda</th>
                                             <th class="px-3 py-2 text-left font-bold">Penyelenggara</th>
+                                            <th class="px-3 py-2 text-left font-bold">Sifat Rapat</th>
                                             <th class="px-3 py-2 text-left font-bold">Target Peserta</th>
                                             <th class="px-3 py-2 text-left font-bold">Waktu Mulai</th>
                                             <th class="px-3 py-2 text-center font-bold">Aksi</th>
@@ -680,6 +738,17 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                                 if ($r['pengundang'] === 'kepala_sekolah') $lbl_role = 'Kepala Sekolah';
                                                 elseif ($r['pengundang'] === 'kepala_mahad') $lbl_role = "Kepala Ma'had";
                                                 else $lbl_role = 'Ketua Yayasan';
+                                                
+                                                $rutin_badge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">Sekali Jalan</span>';
+                                                if (($r['jenis_rutin'] ?? '') === 'pekanan') {
+                                                    $rutin_badge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">Pekanan (' . htmlspecialchars($r['hari_rutin']) . ')</span>';
+                                                } elseif (($r['jenis_rutin'] ?? '') === 'bulanan') {
+                                                    $rutin_badge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">Bulanan (Tgl ' . htmlspecialchars($r['tanggal_rutin']) . ')</span>';
+                                                }
+
+                                                if (!empty($r['tgl_penyesuaian_libur'])) {
+                                                    $rutin_badge .= '<div class="text-[10px] text-amber-600 font-semibold mt-0.5"><i class="fas fa-calendar-day mr-1"></i>Libur -> ' . date('d M Y', strtotime($r['tgl_penyesuaian_libur'])) . '</div>';
+                                                }
                                                 
                                                 $peserta_desc = 'Wajib Default (' . $lbl_role . ')';
                                                 if (!empty($r['peserta_terundang'])) {
@@ -703,6 +772,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                                 <tr>
                                                     <td class="px-3 py-2 font-semibold text-gray-800"><?= htmlspecialchars($r['agenda']) ?></td>
                                                     <td class="px-3 py-2 text-gray-500"><?= $lbl_role ?></td>
+                                                    <td class="px-3 py-2"><?= $rutin_badge ?></td>
                                                     <td class="px-3 py-2 text-indigo-700 font-medium"><?= htmlspecialchars($peserta_desc) ?></td>
                                                     <td class="px-3 py-2 text-gray-500"><?= date('d M Y H:i', strtotime($r['waktu_mulai'])) ?> WIB</td>
                                                     <td class="px-3 py-2 text-center">
@@ -720,7 +790,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                         else:
                                         ?>
                                             <tr>
-                                                <td colspan="5" class="px-3 py-4 text-center text-gray-400">Tidak ada rapat aktif saat ini.</td>
+                                                <td colspan="6" class="px-3 py-4 text-center text-gray-400">Tidak ada rapat aktif saat ini.</td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>
@@ -1032,6 +1102,31 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             e.preventDefault();
             updateGPSStatus();
         });
+
+        // Toggle input sifat rapat (Pekanan / Bulanan / Tidak Rutin)
+        const selectJenisRutin = document.getElementById('select_jenis_rutin');
+        if (selectJenisRutin) {
+            selectJenisRutin.addEventListener('change', function() {
+                const val = this.value;
+                const wHari = document.getElementById('wrapper_hari_rutin');
+                const wTgl = document.getElementById('wrapper_tanggal_rutin');
+                const wLibur = document.getElementById('wrapper_penyesuaian_libur');
+                
+                if (val === 'pekanan') {
+                    wHari?.classList.remove('hidden');
+                    wTgl?.classList.add('hidden');
+                    wLibur?.classList.remove('hidden');
+                } else if (val === 'bulanan') {
+                    wHari?.classList.add('hidden');
+                    wTgl?.classList.remove('hidden');
+                    wLibur?.classList.remove('hidden');
+                } else {
+                    wHari?.classList.add('hidden');
+                    wTgl?.classList.add('hidden');
+                    wLibur?.classList.add('hidden');
+                }
+            });
+        }
 
         // Jalankan deteksi GPS saat halaman dimuat
         updateGPSStatus();
