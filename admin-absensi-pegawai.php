@@ -3,6 +3,29 @@ date_default_timezone_set('Asia/Jakarta');
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
+// Handler AJAX Rincian Presensi Rapat Selesai
+if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'get_rapat_presensi') {
+    header('Content-Type: application/json');
+    $r_id = (int)($_GET['rapat_id'] ?? 0);
+    $q_r = $conn->query("SELECT * FROM jadwal_rapat WHERE id = $r_id LIMIT 1");
+    if (!$q_r || $q_r->num_rows == 0) {
+        echo json_encode(['status' => 'error', 'message' => 'Rapat tidak ditemukan.']);
+        exit;
+    }
+    $rapat = $q_r->fetch_assoc();
+    
+    $q_p = $conn->query("SELECT a.*, u.nama, u.role FROM absensi_pegawai a JOIN akun_ustadz u ON a.ustadz_id = u.id WHERE a.jenis_absen = 'Rapat' AND a.rapat_id = $r_id ORDER BY a.waktu_absen ASC");
+    $presensi = [];
+    if ($q_p) {
+        while ($row = $q_p->fetch_assoc()) {
+            $presensi[] = $row;
+        }
+    }
+    
+    echo json_encode(['status' => 'success', 'rapat' => $rapat, 'presensi' => $presensi]);
+    exit;
+}
+
 // A. Inisialisasi Database (Self-Healing Migrations)
 $conn->query("CREATE TABLE IF NOT EXISTS jadwal_rapat (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -798,12 +821,128 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                             </div>
                         </div>
                     </div>
+
+                    <!-- TABEL ARSIP & RIWAYAT RAPAT SELESAI -->
+                    <div class="mt-8 border-t border-gray-100 pt-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                    <i class="fas fa-box-archive text-amber-600"></i> Arsip & Riwayat Rapat Selesai
+                                </h3>
+                                <p class="text-[11px] text-gray-500">Daftar rapat yang telah diselesaikan beserta persentase kehadiran peserta.</p>
+                            </div>
+                            <span class="text-xs bg-amber-50 text-amber-800 font-semibold px-2.5 py-1 rounded-full border border-amber-200">
+                                Arsip Permanen
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-100 text-xs">
+                                <thead>
+                                    <tr class="bg-gray-50 text-gray-500">
+                                        <th class="px-3 py-2 text-left font-bold">Agenda Rapat</th>
+                                        <th class="px-3 py-2 text-left font-bold">Penyelenggara</th>
+                                        <th class="px-3 py-2 text-left font-bold">Sifat Rapat</th>
+                                        <th class="px-3 py-2 text-left font-bold">Waktu Mulai</th>
+                                        <th class="px-3 py-2 text-center font-bold">Peserta Hadir</th>
+                                        <th class="px-3 py-2 text-center font-bold">Rincian</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <?php
+                                    $res_finished = $conn->query("SELECT * FROM jadwal_rapat WHERE status = 'selesai' ORDER BY waktu_mulai DESC LIMIT 20");
+                                    if ($res_finished && $res_finished->num_rows > 0):
+                                        while ($fr = $res_finished->fetch_assoc()):
+                                            $fr_id = (int)$fr['id'];
+                                            $lbl_role = '';
+                                            if ($fr['pengundang'] === 'kepala_sekolah') $lbl_role = 'Kepala Sekolah';
+                                            elseif ($fr['pengundang'] === 'kepala_mahad') $lbl_role = "Kepala Ma'had";
+                                            else $lbl_role = 'Ketua Yayasan';
+
+                                            $fr_rutin = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">Sekali Jalan</span>';
+                                            if (($fr['jenis_rutin'] ?? '') === 'pekanan') {
+                                                $fr_rutin = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">Pekanan (' . htmlspecialchars($fr['hari_rutin']) . ')</span>';
+                                            } elseif (($fr['jenis_rutin'] ?? '') === 'bulanan') {
+                                                $fr_rutin = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">Bulanan (Tgl ' . htmlspecialchars($fr['tanggal_rutin']) . ')</span>';
+                                            }
+
+                                            $q_count_hadir = $conn->query("SELECT COUNT(DISTINCT ustadz_id) as jml FROM absensi_pegawai WHERE jenis_absen = 'Rapat' AND rapat_id = $fr_id AND status_kehadiran IN ('Masuk', 'Pulang', 'Hadir')");
+                                            $jml_hadir_rapat = $q_count_hadir ? (int)($q_count_hadir->fetch_assoc()['jml'] ?? 0) : 0;
+                                    ?>
+                                            <tr class="hover:bg-slate-50/50 transition">
+                                                <td class="px-3 py-2 font-semibold text-gray-800"><?= htmlspecialchars($fr['agenda']) ?></td>
+                                                <td class="px-3 py-2 text-gray-500"><?= $lbl_role ?></td>
+                                                <td class="px-3 py-2"><?= $fr_rutin ?></td>
+                                                <td class="px-3 py-2 text-gray-500"><?= date('d M Y H:i', strtotime($fr['waktu_mulai'])) ?> WIB</td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                        <i class="fas fa-users-check mr-1"></i><?= $jml_hadir_rapat ?> Hadir
+                                                    </span>
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <button type="button" onclick="showModalPresensiRapat(<?= $fr_id ?>, '<?= htmlspecialchars(addslashes($fr['agenda'])) ?>')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2.5 py-1 rounded text-[10px] transition shadow-sm border border-indigo-200">
+                                                        <i class="fas fa-list-check mr-1"></i> Lihat Presensi
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                    <?php
+                                        endwhile;
+                                    else:
+                                    ?>
+                                        <tr>
+                                            <td colspan="6" class="px-3 py-4 text-center text-gray-400">Belum ada riwayat rapat yang diselesaikan.</td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             <?php endif; ?>
 
             <!-- KOTAK HASIL/STATUS UTAMA -->
             <div id="scan-result" class="max-w-4xl mx-auto mb-8 text-center">
                 <!-- Status akan diisi secara dinamis -->
+            </div>
+
+            <!-- MODAL DETAIL RINCIAN PRESENSI RAPAT -->
+            <div id="modal-presensi-rapat" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title-presensi" role="dialog" aria-modal="true">
+                <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div id="overlay-presensi-rapat" class="fixed inset-0 bg-gray-900 bg-opacity-60 transition-opacity"></div>
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                    
+                    <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full p-6 relative">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold shadow-inner">
+                                    <i class="fas fa-clipboard-user"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold text-gray-900" id="modal-presensi-agenda">Detail Presensi Rapat</h3>
+                                    <p class="text-xs text-gray-500">Daftar kehadiran Asatidz & Pegawai pada rapat ini.</p>
+                                </div>
+                            </div>
+                            <button type="button" id="btn-close-modal-presensi" class="text-gray-400 hover:text-gray-600 text-xl font-bold p-1">
+                                &times;
+                            </button>
+                        </div>
+
+                        <div id="modal-presensi-content" class="max-h-96 overflow-y-auto">
+                            <!-- Konten AJAX presensi -->
+                            <div class="text-center py-8 text-gray-400">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2 text-indigo-500"></i>
+                                <p class="text-xs">Memuat data presensi...</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 text-right border-t border-gray-100 pt-3">
+                            <button type="button" id="btn-close-modal-presensi-2" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition">
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Custom Alert Modal -->
@@ -1127,6 +1266,80 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                 }
             });
         }
+
+        // Fungsi Tampilkan Modal Rincian Presensi Rapat Selesai
+        function showModalPresensiRapat(rapatId, agendaName) {
+            const modal = document.getElementById('modal-presensi-rapat');
+            const titleEl = document.getElementById('modal-presensi-agenda');
+            const contentEl = document.getElementById('modal-presensi-content');
+
+            titleEl.innerText = `Rincian Presensi: ${agendaName}`;
+            contentEl.innerHTML = `<div class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2 text-indigo-500"></i><p class="text-xs">Memuat data presensi...</p></div>`;
+            modal.classList.remove('hidden');
+
+            fetch(`admin-absensi-pegawai.php?ajax_action=get_rapat_presensi&rapat_id=${rapatId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (data.presensi.length === 0) {
+                        contentEl.innerHTML = `<div class="text-center py-8 text-gray-400 italic text-xs">Belum ada catatan presensi yang masuk untuk rapat ini.</div>`;
+                    } else {
+                        let html = `
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-100 text-gray-500">
+                                    <th class="p-2.5 text-center">No</th>
+                                    <th class="p-2.5">Nama Pegawai</th>
+                                    <th class="p-2.5 text-center">Waktu Absen</th>
+                                    <th class="p-2.5 text-center">Status Kehadiran</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                        `;
+                        data.presensi.forEach((p, idx) => {
+                            let badgeClass = 'bg-emerald-100 text-emerald-800';
+                            let statusText = p.status_kehadiran;
+                            if (p.keterangan && p.keterangan.includes('Terlambat')) {
+                                badgeClass = 'bg-amber-100 text-amber-800';
+                                statusText = p.keterangan;
+                            } else if (p.status_kehadiran.includes('Ditolak')) {
+                                badgeClass = 'bg-rose-100 text-rose-800';
+                            }
+                            
+                            html += `
+                            <tr class="hover:bg-gray-50/50">
+                                <td class="p-2.5 text-center font-semibold text-gray-400">${idx + 1}</td>
+                                <td class="p-2.5 font-bold text-gray-800">${p.nama} <span class="block text-[10px] text-gray-400 font-normal">${p.role || ''}</span></td>
+                                <td class="p-2.5 text-center text-gray-500 font-mono text-[11px]">${p.waktu_absen}</td>
+                                <td class="p-2.5 text-center">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeClass}">
+                                        ${statusText}
+                                    </span>
+                                </td>
+                            </tr>
+                            `;
+                        });
+                        html += `</tbody></table>`;
+                        contentEl.innerHTML = html;
+                    }
+                } else {
+                    contentEl.innerHTML = `<div class="text-center py-8 text-rose-500 italic text-xs">${data.message || 'Gagal memuat data presensi.'}</div>`;
+                }
+            })
+            .catch(err => {
+                contentEl.innerHTML = `<div class="text-center py-8 text-rose-500 italic text-xs">Terjadi kesalahan koneksi saat memuat data presensi.</div>`;
+            });
+        }
+
+        document.getElementById('btn-close-modal-presensi')?.addEventListener('click', () => {
+            document.getElementById('modal-presensi-rapat').classList.add('hidden');
+        });
+        document.getElementById('btn-close-modal-presensi-2')?.addEventListener('click', () => {
+            document.getElementById('modal-presensi-rapat').classList.add('hidden');
+        });
+        document.getElementById('overlay-presensi-rapat')?.addEventListener('click', () => {
+            document.getElementById('modal-presensi-rapat').classList.add('hidden');
+        });
 
         // Jalankan deteksi GPS saat halaman dimuat
         updateGPSStatus();

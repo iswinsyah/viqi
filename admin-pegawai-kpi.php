@@ -62,13 +62,40 @@ if ($is_daily_worker) {
     $skor_kehadiran = $total_teaching_days > 0 ? min(100, ($jml_hadir_mengajar / $total_teaching_days) * 100) : 100;
 }
 
-// Hitung kehadiran rapat dari tabel absensi_pegawai
-$res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $user_id AND jenis_absen = 'Rapat' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
-$jml_rapat = $res_rapat ? (int)($res_rapat->fetch_assoc()['jml'] ?? 0) : 0;
+// Hitung kehadiran rapat dari tabel absensi_pegawai dan jadwal_rapat (peserta terundang)
+$res_rapat_attended = $conn->query("SELECT COUNT(DISTINCT rapat_id) as jml FROM absensi_pegawai WHERE ustadz_id = $user_id AND jenis_absen = 'Rapat' AND status_kehadiran IN ('Masuk', 'Pulang', 'Hadir') AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+$jml_rapat = $res_rapat_attended ? (int)($res_rapat_attended->fetch_assoc()['jml'] ?? 0) : 0;
 
-$res_total_rapat = $conn->query("SELECT COUNT(*) as total FROM jadwal_rapat WHERE MONTH(waktu_mulai) = MONTH(CURRENT_DATE()) AND YEAR(waktu_mulai) = YEAR(CURRENT_DATE())");
-$total_rapat = $res_total_rapat ? (int)($res_total_rapat->fetch_assoc()['total'] ?? 0) : 0;
-$skor_kehadiran_rapat = $total_rapat > 0 ? min(100, ($jml_rapat / $total_rapat) * 100) : 100;
+$res_all_rapat_month = $conn->query("SELECT * FROM jadwal_rapat WHERE MONTH(waktu_mulai) = MONTH(CURRENT_DATE()) AND YEAR(waktu_mulai) = YEAR(CURRENT_DATE())");
+$total_rapat_invited = 0;
+if ($res_all_rapat_month && $res_all_rapat_month->num_rows > 0) {
+    while ($r = $res_all_rapat_month->fetch_assoc()) {
+        $p_json = $r['peserta_terundang'] ?? null;
+        $is_inv = false;
+        if (in_array('super_admin', $user_roles)) {
+            $is_inv = true;
+        } elseif (!empty($p_json)) {
+            $tg = json_decode($p_json, true);
+            $t_r = $tg['roles'] ?? [];
+            $t_i = array_map('intval', $tg['ids'] ?? []);
+            if (in_array((int)$user_id, $t_i) || in_array('semua_pegawai', $t_r)) {
+                $is_inv = true;
+            } else {
+                foreach ($t_r as $tr) {
+                    if ($tr === 'musyrif' && ($is_daily_worker || in_array('musyrif', $user_roles))) { $is_inv = true; break; }
+                    if ($tr === 'admin_sekolah' && in_array('admin_sekolah', $user_roles)) { $is_inv = true; break; }
+                    if ($tr === 'ustadz_diknas' && $is_teacher) { $is_inv = true; break; }
+                    if ($tr === 'ustadz_diniyah' && $is_teacher) { $is_inv = true; break; }
+                }
+            }
+        } else {
+            $is_inv = true;
+        }
+        if ($is_inv) $total_rapat_invited++;
+    }
+}
+
+$skor_kehadiran_rapat = $total_rapat_invited > 0 ? min(100, round(($jml_rapat / $total_rapat_invited) * 100)) : 100;
 
 $skor_administrasi = (($skor_jurnal * 0.4) + ($skor_kehadiran * 0.4) + ($skor_kehadiran_rapat * 0.2));
 
