@@ -10,7 +10,7 @@ header('Content-Type: application/json');
 // --- PENGATURAN ---
 define('ENCRYPTION_KEY', 'kunci-rahasia-absensi-viqi-2026');
 define('ENCRYPTION_IV', '1234567890123456');
-define('MAX_DISTANCE_METERS', 50); // Jarak toleransi dari titik QR (dalam meter)
+define('MAX_DISTANCE_METERS', 75); // Jarak toleransi dari titik QR (dalam meter)
 
 // PENGATURAN KOORDINAT MULTI-LOKASI
 // TODO: Pastikan koordinat di sini SAMA PERSIS dengan di admin-qr-display.php

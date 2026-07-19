@@ -573,7 +573,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             }
         };
 
-        const MAX_DISTANCE_METERS = 50;
+        const MAX_DISTANCE_METERS = 75;
 
         let userLatitude = null;
         let userLongitude = null;
