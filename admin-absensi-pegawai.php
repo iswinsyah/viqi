@@ -248,14 +248,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     $peserta_terundang_escaped = $conn->real_escape_string($peserta_terundang);
     
     $is_authorized = false;
-    if ($pengundang === 'kepala_sekolah') $is_authorized = true;
-    if (in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles)) $is_authorized = true;
+    if ($pengundang === 'kepala_sekolah' || $pengundang === 'kepala_mahad' || $pengundang === 'ketua_yayasan') $is_authorized = true;
+    if (in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('musyrif', $user_roles) || in_array('super_admin', $user_roles)) $is_authorized = true;
 
     if ($is_authorized) {
         $sql_ins = "INSERT INTO jadwal_rapat (agenda, pengundang, peserta_terundang, waktu_mulai, jenis_rutin, hari_rutin, tanggal_rutin, tgl_penyesuaian_libur, status, created_by) VALUES ('$agenda', '$pengundang', '$peserta_terundang_escaped', '$waktu_rapat', '$jenis_rutin', " . ($hari_rutin ? "'$hari_rutin'" : "NULL") . ", $tanggal_rutin, $tgl_penyesuaian_libur, 'aktif', $ustadz_id)";
         $conn->query($sql_ins);
         
-        $lbl_peng = 'Kepala Sekolah';
+        $lbl_peng = 'Ketua Yayasan';
+        if ($pengundang === 'kepala_sekolah') {
+            $lbl_peng = 'Kepala Sekolah';
+        } elseif ($pengundang === 'kepala_mahad') {
+            $lbl_peng = "Kepala Ma'had";
+        }
         
         // Broadcast WA otomatis ke seluruh peserta yang diundang
         broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $lbl_peng, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin, $hari_rutin, $tanggal_rutin, $tgl_penyesuaian_libur_val, $target_ortu_ids);
@@ -709,6 +714,11 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                 <i class="fas fa-mosque"></i> Form Rapat Ma'had
                             </button>
                         <?php endif; ?>
+                        <?php if (in_array('super_admin', $user_roles) || in_array('ketua_yayasan', $user_roles)): ?>
+                            <button id="tab-btn-yayasan" onclick="switchFormTab('yayasan')" type="button" class="py-2.5 px-4 font-bold text-xs rounded-t-lg <?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles) && !in_array('musyrif', $user_roles)) ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all flex items-center gap-2">
+                                <i class="fas fa-landmark"></i> Form Rapat Yayasan
+                            </button>
+                        <?php endif; ?>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -946,6 +956,153 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                     </div>
                                     <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow-md transition-all duration-200">
                                         <i class="fas fa-paper-plane mr-1"></i> Publikasikan Rapat Ma'had (WA)
+                                    </button>
+                                </form>
+                            </div>
+                            <?php endif; ?>
+
+                            <!-- 3. FORM RAPAT YAYASAN -->
+                            <?php if (in_array('super_admin', $user_roles) || in_array('ketua_yayasan', $user_roles)): ?>
+                            <div id="form-container-yayasan" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles) && !in_array('musyrif', $user_roles)) ? 'block' : 'hidden' ?>">
+                                <h3 class="text-sm font-bold text-amber-900 mb-4 pb-2 border-b border-amber-100 flex items-center"><i class="fas fa-landmark mr-2 text-amber-600"></i>Form Rapat Yayasan</h3>
+                                <form action="admin-absensi-pegawai.php" method="POST" class="space-y-4">
+                                    <input type="hidden" name="action" value="buat_rapat">
+                                    <input type="hidden" name="pengundang" value="ketua_yayasan">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Agenda / Nama Rapat</label>
+                                        <textarea name="agenda" required rows="3" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500" placeholder="Contoh: Rapat Pleno Koordinasi Lintas Unit & Pengurus Yayasan"></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Sifat Rapat</label>
+                                        <select name="jenis_rutin" id="select_jenis_rutin_yayasan" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                            <option value="pekanan">Pekanan</option>
+                                            <option value="bulanan">Bulanan</option>
+                                            <option value="insidental">Insidental</option>
+                                        </select>
+                                    </div>
+                                    <div id="wrapper_hari_yayasan" class="block">
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Hari</label>
+                                        <select name="hari_rutin" id="select_hari_yayasan" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                            <option value="Senin">Senin</option>
+                                            <option value="Selasa">Selasa</option>
+                                            <option value="Rabu">Rabu</option>
+                                            <option value="Kamis">Kamis</option>
+                                            <option value="Jumat">Jumat</option>
+                                            <option value="Sabtu">Sabtu</option>
+                                            <option value="Ahad">Ahad</option>
+                                        </select>
+                                    </div>
+                                    <div id="wrapper_tanggal_yayasan" class="hidden">
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tanggal</label>
+                                        <input type="date" name="tanggal_lengkap" id="input_tanggal_lengkap_yayasan" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                        <input type="hidden" name="tanggal_rutin" id="input_tanggal_rutin_yayasan" value="">
+                                    </div>
+                                    <div id="wrapper_jam_yayasan" class="block">
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Jam</label>
+                                        <input type="time" name="jam_rapat" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500" value="09:00">
+                                    </div>
+                                    <div id="wrapper_penyesuaian_libur_yayasan" class="hidden">
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Penyesuaian Hari Libur (Opsional)</label>
+                                        <input type="date" name="tgl_penyesuaian_libur" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500">
+                                        <p class="text-[10px] text-gray-400 mt-1">* Isi jika jadwal rutin bertepatan dengan libur dan perlu disetting ulang ke tanggal lain.</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tujuan Undangan (Role / Grup Wajib)</label>
+                                        <div class="space-y-1 bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-700">
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="semua_pegawai" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span class="font-semibold text-amber-900">Semua Pegawai & Asatidz</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="sekretaris_yayasan" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Sekretaris Yayasan</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="bendahara_yayasan" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Bendahara Yayasan</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="staff_ldu" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Staff LDU</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="kepala_sekolah" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Kepala Sekolah</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="admin_sekolah" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Admin Sekolah</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="tutor" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Tutor</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="kepala_mahad" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Kepala Ma'had</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="kepala_asrama" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Kepala Asrama</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="musyrif" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Musyrif</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="ustadz" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Ustadz</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="trainer" class="rounded text-amber-600 focus:ring-amber-500">
+                                                <span>Trainer</span>
+                                            </label>
+                                            <label class="flex items-center space-x-2 cursor-pointer">
+                                                <input type="checkbox" name="target_roles[]" value="orangtua" class="rounded text-purple-600 focus:ring-purple-500">
+                                                <span class="font-semibold text-purple-800"><i class="fas fa-users mr-1"></i> Orangtua / Walisantri</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Pegawai Spesifik (Seluruh Pegawai)</label>
+                                        <div class="max-h-28 overflow-y-auto border border-gray-200 rounded-lg p-2.5 bg-gray-50 space-y-1 text-xs text-gray-700 mb-3">
+                                            <?php
+                                            $res_all_y_ustadz = $conn->query("SELECT id, nama, role FROM akun_ustadz ORDER BY nama ASC");
+                                            if ($res_all_y_ustadz && $res_all_y_ustadz->num_rows > 0):
+                                                while ($u = $res_all_y_ustadz->fetch_assoc()):
+                                            ?>
+                                                    <label class="flex items-center space-x-2 hover:bg-amber-50 p-0.5 rounded cursor-pointer">
+                                                        <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-amber-600 focus:ring-amber-500">
+                                                        <span><?= htmlspecialchars($u['nama']) ?> <span class="text-[10px] text-amber-700 font-semibold">(<?= htmlspecialchars($u['role'] ?? 'pegawai') ?>)</span></span>
+                                                    </label>
+                                            <?php
+                                                endwhile;
+                                            endif;
+                                            ?>
+                                        </div>
+
+                                        <label class="block text-xs font-semibold text-gray-600 mb-1">Atau Pilih Orangtua / Walisantri Spesifik</label>
+                                        <div class="max-h-32 overflow-y-auto border border-purple-200 rounded-lg p-2.5 bg-purple-50/40 space-y-1 text-xs text-gray-700">
+                                            <?php
+                                            $res_all_ortu_y = $conn->query("SELECT id, nama_orangtua, no_whatsapp FROM akun_orangtua ORDER BY nama_orangtua ASC");
+                                            if ($res_all_ortu_y && $res_all_ortu_y->num_rows > 0):
+                                                while ($o = $res_all_ortu_y->fetch_assoc()):
+                                            ?>
+                                                    <label class="flex items-center space-x-2 hover:bg-purple-100/60 p-0.5 rounded cursor-pointer">
+                                                        <input type="checkbox" name="target_ortu_ids[]" value="<?= $o['id'] ?>" class="rounded text-purple-600 focus:ring-purple-500">
+                                                        <span><?= htmlspecialchars($o['nama_orangtua']) ?> <span class="text-[10px] text-purple-700 font-semibold">(Walisantri)</span></span>
+                                                    </label>
+                                            <?php
+                                                endwhile;
+                                            else:
+                                                echo '<p class="text-[10px] text-gray-400 italic">Belum ada data akun orang tua.</p>';
+                                            endif;
+                                            ?>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400 mt-1">* Notifikasi WhatsApp otomatis dikirimkan langsung ke peserta terundang saat rapat dipublikasikan.</p>
+                                    </div>
+                                    <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow-md transition-all duration-200">
+                                        <i class="fas fa-paper-plane mr-1"></i> Publikasikan Rapat Yayasan (WA)
                                     </button>
                                 </form>
                             </div>
@@ -1461,31 +1618,32 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             updateGPSStatus();
         });
 
-        // Function Switch Tab Form Rapat (Sekolah / Ma'had)
+        // Function Switch Tab Form Rapat (Sekolah / Ma'had / Yayasan)
         window.switchFormTab = function(tabName) {
             const formSekolah = document.getElementById('form-container-sekolah');
             const formMahad = document.getElementById('form-container-mahad');
+            const formYayasan = document.getElementById('form-container-yayasan');
             const btnSekolah = document.getElementById('tab-btn-sekolah');
             const btnMahad = document.getElementById('tab-btn-mahad');
+            const btnYayasan = document.getElementById('tab-btn-yayasan');
+
+            if (formSekolah) formSekolah.classList.add('hidden');
+            if (formMahad) formMahad.classList.add('hidden');
+            if (formYayasan) formYayasan.classList.add('hidden');
+
+            if (btnSekolah) btnSekolah.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all flex items-center gap-2';
+            if (btnMahad) btnMahad.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all flex items-center gap-2';
+            if (btnYayasan) btnYayasan.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all flex items-center gap-2';
 
             if (tabName === 'sekolah') {
                 if (formSekolah) formSekolah.classList.remove('hidden');
-                if (formMahad) formMahad.classList.add('hidden');
-                if (btnSekolah) {
-                    btnSekolah.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-indigo-600 text-white shadow-sm transition-all flex items-center gap-2';
-                }
-                if (btnMahad) {
-                    btnMahad.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all flex items-center gap-2';
-                }
+                if (btnSekolah) btnSekolah.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-indigo-600 text-white shadow-sm transition-all flex items-center gap-2';
             } else if (tabName === 'mahad') {
-                if (formSekolah) formSekolah.classList.add('hidden');
                 if (formMahad) formMahad.classList.remove('hidden');
-                if (btnMahad) {
-                    btnMahad.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-emerald-600 text-white shadow-sm transition-all flex items-center gap-2';
-                }
-                if (btnSekolah) {
-                    btnSekolah.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all flex items-center gap-2';
-                }
+                if (btnMahad) btnMahad.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-emerald-600 text-white shadow-sm transition-all flex items-center gap-2';
+            } else if (tabName === 'yayasan') {
+                if (formYayasan) formYayasan.classList.remove('hidden');
+                if (btnYayasan) btnYayasan.className = 'py-2.5 px-4 font-bold text-xs rounded-t-lg bg-amber-600 text-white shadow-sm transition-all flex items-center gap-2';
             }
         };
 
@@ -1569,6 +1727,49 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                     const daysIndo = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
                     const selectHari = document.getElementById('select_hari_mahad');
                     const inputTglRutin = document.getElementById('input_tanggal_rutin_mahad');
+                    if (selectHari) selectHari.value = daysIndo[dt.getDay()];
+                    if (inputTglRutin) inputTglRutin.value = dt.getDate();
+                }
+            });
+        }
+
+        // Toggle input sifat rapat (Yayasan)
+        const selectJenisRutinYayasan = document.getElementById('select_jenis_rutin_yayasan');
+        const inputTanggalYayasan = document.getElementById('input_tanggal_lengkap_yayasan');
+
+        function updateSifatFormYayasan() {
+            if (!selectJenisRutinYayasan) return;
+            const val = selectJenisRutinYayasan.value;
+            const wHari = document.getElementById('wrapper_hari_yayasan');
+            const wTgl = document.getElementById('wrapper_tanggal_yayasan');
+            const wLibur = document.getElementById('wrapper_penyesuaian_libur_yayasan');
+            
+            if (val === 'pekanan') {
+                wHari?.classList.remove('hidden');
+                wTgl?.classList.add('hidden');
+                wLibur?.classList.remove('hidden');
+                if (inputTanggalYayasan) inputTanggalYayasan.required = false;
+            } else if (val === 'bulanan' || val === 'insidental') {
+                wHari?.classList.remove('hidden');
+                wTgl?.classList.remove('hidden');
+                wLibur?.classList.remove('hidden');
+                if (inputTanggalYayasan) inputTanggalYayasan.required = true;
+            }
+        }
+
+        if (selectJenisRutinYayasan) {
+            selectJenisRutinYayasan.addEventListener('change', updateSifatFormYayasan);
+            updateSifatFormYayasan();
+        }
+
+        if (inputTanggalYayasan) {
+            inputTanggalYayasan.addEventListener('change', function() {
+                if (!this.value) return;
+                const dt = new Date(this.value);
+                if (!isNaN(dt.getTime())) {
+                    const daysIndo = ['Ahad', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                    const selectHari = document.getElementById('select_hari_yayasan');
+                    const inputTglRutin = document.getElementById('input_tanggal_rutin_yayasan');
                     if (selectHari) selectHari.value = daysIndo[dt.getDay()];
                     if (inputTglRutin) inputTglRutin.value = dt.getDate();
                 }
