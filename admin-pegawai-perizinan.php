@@ -166,6 +166,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
             
             $catatan_admin = isset($_POST['catatan_admin']) ? $conn->real_escape_string(trim($_POST['catatan_admin'])) : '';
 
+            // Hapus absensi izin lama jika sebelumnya pengajuan ini sudah pernah disetujui (untuk pembersihan & koreksi ulang)
+            if (in_array($izin['status'], ['Disetujui', 'Disetujui Sebagian'])) {
+                $old_start = !empty($izin['tanggal_disetujui_mulai']) ? $izin['tanggal_disetujui_mulai'] : $tgl_mulai_awal;
+                $old_end = !empty($izin['tanggal_disetujui_selesai']) ? $izin['tanggal_disetujui_selesai'] : $tgl_selesai_awal;
+                
+                $conn->query("DELETE FROM absensi_pegawai 
+                              WHERE ustadz_id = $emp_id 
+                              AND jenis_absen = 'Pegawai' 
+                              AND status_kehadiran = 'Izin' 
+                              AND DATE(waktu_absen) BETWEEN '$old_start' AND '$old_end'");
+            }
+
             if ($status_baru == 'Disetujui' || $status_baru == 'Disetujui Sebagian') {
                 $tgl_app_mulai = !empty($_POST['tanggal_disetujui_mulai']) ? $conn->real_escape_string($_POST['tanggal_disetujui_mulai']) : $tgl_mulai_awal;
                 $tgl_app_selesai = !empty($_POST['tanggal_disetujui_selesai']) ? $conn->real_escape_string($_POST['tanggal_disetujui_selesai']) : $tgl_selesai_awal;
@@ -215,7 +227,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                     $emp = $res_emp->fetch_assoc();
                     if (!empty($emp['whatsapp'])) {
                         $label_st = ($status_simpan === 'Disetujui Sebagian') ? 'DISETUJUI SEBAGIAN' : 'DISETUJUI';
-                        $pesan_wa = "📢 *STATUS PENGAJUAN IZIN PEGAWAI*\n\n"
+                        $pesan_wa = "📢 *KOREKSI / STATUS PENGAJUAN IZIN PEGAWAI*\n\n"
                                   . "Yth. *$emp[nama]*,\n"
                                   . "Pengajuan izin Anda telah *$label_st* oleh atasan.\n\n"
                                   . "• Kategori: *" . htmlspecialchars($izin['kategori']) . "*\n"
@@ -229,9 +241,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                     }
                 }
 
-                $pesan_sukses = "Status izin berhasil diubah menjadi '$status_simpan'!";
+                $pesan_sukses = "Koreksi status izin berhasil disimpan menjadi '$status_simpan'!";
             } else {
-                // Ditolak
+                // Ditolak / Dibatalkan
                 $conn->query("UPDATE kepegawaian_perizinan 
                               SET status = 'Ditolak', 
                                   catatan_admin = '$catatan_admin', 
@@ -243,18 +255,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                 if ($res_emp && $res_emp->num_rows > 0) {
                     $emp = $res_emp->fetch_assoc();
                     if (!empty($emp['whatsapp'])) {
-                        $pesan_wa = "❌ *STATUS PENGAJUAN IZIN PEGAWAI*\n\n"
+                        $pesan_wa = "❌ *PEMBATALAN / PENOLAKAN IZIN PEGAWAI*\n\n"
                                   . "Yth. *$emp[nama]*,\n"
-                                  . "Pengajuan izin Anda ( Periode " . date('d/m/Y', strtotime($tgl_mulai_awal)) . " s/d " . date('d/m/Y', strtotime($tgl_selesai_awal)) . " ) *DITOLAK* oleh atasan.\n";
+                                  . "Pengajuan izin Anda ( Periode " . date('d/m/Y', strtotime($tgl_mulai_awal)) . " s/d " . date('d/m/Y', strtotime($tgl_selesai_awal)) . " ) *DITOLAK / DIBATALKAN* oleh atasan.\n";
                         if (!empty($catatan_admin)) {
-                            $pesan_wa .= "• Alasan Penolakan: _\"$catatan_admin\"_\n";
+                            $pesan_wa .= "• Alasan Atasan: _\"$catatan_admin\"_\n";
                         }
                         $pesan_wa .= "\n-- SIM Yayasan Villa Quran --";
                         kirim_notifikasi_wa($emp['whatsapp'], $pesan_wa);
                     }
                 }
 
-                $pesan_sukses = "Pengajuan izin telah ditolak.";
+                $pesan_sukses = "Pengajuan izin telah ditolak / dibatalkan.";
             }
         } else {
             $pesan_error = "Data pengajuan izin tidak ditemukan.";
@@ -469,21 +481,34 @@ $active_menu = 'perizinan_pegawai';
                                     <td class="px-6 py-4 text-center">
                                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border <?= $badge ?>"><?= $st ?></span>
                                     </td>
-                                    <?php if ($is_admin): ?>
+                                    <?php if ($is_admin): 
+                                        $tgl_def_m = !empty($row['tanggal_disetujui_mulai']) ? $row['tanggal_disetujui_mulai'] : $row['tanggal_mulai'];
+                                        $tgl_def_s = !empty($row['tanggal_disetujui_selesai']) ? $row['tanggal_disetujui_selesai'] : $row['tanggal_selesai'];
+                                        $cat_adm = htmlspecialchars(addslashes($row['catatan_admin'] ?? ''), ENT_QUOTES);
+                                    ?>
                                     <td class="px-6 py-4 text-center space-x-1.5 whitespace-nowrap">
                                         <?php if ($st == 'Pending'): ?>
                                         <button type="button" 
-                                                onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= date('d/m/Y', strtotime($row['tanggal_mulai'])) ?> s/d <?= date('d/m/Y', strtotime($row['tanggal_selesai'])) ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $row['tanggal_mulai'] ?>', '<?= $row['tanggal_selesai'] ?>')" 
+                                                onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= date('d/m/Y', strtotime($row['tanggal_mulai'])) ?> s/d <?= date('d/m/Y', strtotime($row['tanggal_selesai'])) ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $tgl_def_m ?>', '<?= $tgl_def_s ?>', '<?= $cat_adm ?>')" 
                                                 class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded text-[10px] shadow-sm transition">
                                             <i class="fas fa-check mr-1"></i> Setujui / Ubah
                                         </button>
                                         <button type="button" 
-                                                onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>')" 
+                                                onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= $cat_adm ?>')" 
                                                 class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1 rounded text-[10px] shadow-sm transition">
                                             <i class="fas fa-times mr-1"></i> Tolak
                                         </button>
                                         <?php else: ?>
-                                        <span class="text-gray-400 font-medium italic text-[10px]">Selesai diproses</span>
+                                        <button type="button" 
+                                                onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= date('d/m/Y', strtotime($row['tanggal_mulai'])) ?> s/d <?= date('d/m/Y', strtotime($row['tanggal_selesai'])) ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $tgl_def_m ?>', '<?= $tgl_def_s ?>', '<?= $cat_adm ?>')" 
+                                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2.5 py-1 rounded text-[10px] shadow-sm transition" title="Koreksi Tanggal / Status">
+                                            <i class="fas fa-edit mr-1"></i> Koreksi Izin
+                                        </button>
+                                        <button type="button" 
+                                                onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= $cat_adm ?>')" 
+                                                class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded text-[10px] shadow-sm transition" title="Batalkan / Tolak Izin Ini">
+                                            <i class="fas fa-ban mr-1"></i> Batalkan
+                                        </button>
                                         <?php endif; ?>
                                     </td>
                                     <?php endif; ?>
@@ -502,7 +527,7 @@ $active_menu = 'perizinan_pegawai';
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
             <div class="flex justify-between items-center pb-3 border-b border-gray-100 mb-4">
                 <h3 class="font-bold text-gray-800 text-base flex items-center">
-                    <i class="fas fa-calendar-check text-emerald-600 mr-2"></i> Persetujuan / Modifikasi Izin
+                    <i class="fas fa-calendar-check text-emerald-600 mr-2"></i> Persetujuan / Koreksi Izin
                 </h3>
                 <button onclick="closeApproveModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
             </div>
@@ -531,30 +556,30 @@ $active_menu = 'perizinan_pegawai';
                             <input type="date" name="tanggal_disetujui_selesai" id="approve_tgl_selesai" required class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-cyan-500">
                         </div>
                     </div>
-                    <p class="text-[10px] text-amber-600 mt-1"><i class="fas fa-info-circle mr-1"></i>Ubah tanggal selesai jika hanya menyetujui sebagian hari (misal 2 dari 3 hari).</p>
+                    <p class="text-[10px] text-amber-600 mt-1"><i class="fas fa-info-circle mr-1"></i>Ubah tanggal selesai jika menyetujui sebagian hari saja (misal 2 dari 3 hari).</p>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Catatan / Alasan Atasan (Opsional)</label>
-                    <textarea name="catatan_admin" rows="2" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-cyan-500" placeholder="Misal: Disetujui 2 hari saja karena tanggal 22 ada rapat wali santri..."></textarea>
+                    <textarea name="catatan_admin" id="approve_catatan_admin" rows="2" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-cyan-500" placeholder="Misal: Koreksi izin disetujui 2 hari saja (20/07 s/d 21/07)..."></textarea>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
                     <button type="button" onclick="closeApproveModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-xs">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-sm">
-                        <i class="fas fa-check mr-1"></i> Simpan Persetujuan
+                        <i class="fas fa-check mr-1"></i> Simpan Persetujuan / Koreksi
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL TOLAK PERIZINAN -->
+    <!-- MODAL TOLAK / BATALKAN PERIZINAN -->
     <div id="modalReject" class="fixed inset-0 z-50 hidden bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100">
             <div class="flex justify-between items-center pb-3 border-b border-gray-100 mb-4">
                 <h3 class="font-bold text-gray-800 text-base flex items-center">
-                    <i class="fas fa-times-circle text-rose-600 mr-2"></i> Penolakan Pengajuan Izin
+                    <i class="fas fa-times-circle text-rose-600 mr-2"></i> Penolakan / Pembatalan Izin
                 </h3>
                 <button onclick="closeRejectModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
             </div>
@@ -569,14 +594,14 @@ $active_menu = 'perizinan_pegawai';
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Alasan Penolakan</label>
-                    <textarea name="catatan_admin" required rows="3" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-rose-500" placeholder="Jelaskan alasan penolakan pengajuan izin ini..."></textarea>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Alasan Penolakan / Pembatalan</label>
+                    <textarea name="catatan_admin" id="reject_catatan_admin" required rows="3" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-rose-500" placeholder="Jelaskan alasan penolakan/pembatalan pengajuan izin ini..."></textarea>
                 </div>
 
                 <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
                     <button type="button" onclick="closeRejectModal()" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg text-xs">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg text-xs shadow-sm">
-                        <i class="fas fa-times mr-1"></i> Konfirmasi Penolakan
+                        <i class="fas fa-times mr-1"></i> Konfirmasi Pembatalan
                     </button>
                 </div>
             </form>
@@ -584,7 +609,7 @@ $active_menu = 'perizinan_pegawai';
     </div>
 
     <script>
-    function openApproveModal(id, nama, kategori, periode, alasan, tglMulai, tglSelesai) {
+    function openApproveModal(id, nama, kategori, periode, alasan, tglMulai, tglSelesai, catatanAdmin = '') {
         document.getElementById('approve_izin_id').value = id;
         document.getElementById('approve_nama_pegawai').innerText = nama;
         document.getElementById('approve_kategori').innerText = kategori;
@@ -592,6 +617,7 @@ $active_menu = 'perizinan_pegawai';
         document.getElementById('approve_alasan').innerText = alasan;
         document.getElementById('approve_tgl_mulai').value = tglMulai;
         document.getElementById('approve_tgl_selesai').value = tglSelesai;
+        document.getElementById('approve_catatan_admin').value = catatanAdmin;
         document.getElementById('modalApprove').classList.remove('hidden');
     }
 
@@ -599,9 +625,10 @@ $active_menu = 'perizinan_pegawai';
         document.getElementById('modalApprove').classList.add('hidden');
     }
 
-    function openRejectModal(id, nama) {
+    function openRejectModal(id, nama, catatanAdmin = '') {
         document.getElementById('reject_izin_id').value = id;
         document.getElementById('reject_nama_pegawai').innerText = nama;
+        document.getElementById('reject_catatan_admin').value = catatanAdmin;
         document.getElementById('modalReject').classList.remove('hidden');
     }
 
