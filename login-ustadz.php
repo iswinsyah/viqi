@@ -29,11 +29,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    // Ambil juga kolom 'role' saat login
-    $res = $conn->query("SELECT id, nama, password, role FROM akun_ustadz WHERE username = '$username'");
+    // Ambil juga kolom 'role' dan 'status_pegawai' saat login
+    $res = $conn->query("SELECT id, nama, password, role, status_pegawai FROM akun_ustadz WHERE username = '$username'");
     if ($res && $res->num_rows > 0) {
         $user = $res->fetch_assoc();
-        if ($password === $user['password']) {
+        if (($user['status_pegawai'] ?? '') === 'Nonaktif') {
+            $error = '⛔ Akun Anda DIBLOKIR / DINONAKTIFKAN oleh sistem karena akumulasi pelanggaran presensi (Alpa). Harap hubungi Super Admin untuk pembukaan blokir.';
+        } elseif ($password === $user['password']) {
             $_SESSION['ustadz_logged_in'] = true;
             $_SESSION['ustadz_id'] = $user['id'];
             $_SESSION['ustadz_nama'] = $user['nama'];

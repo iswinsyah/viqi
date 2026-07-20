@@ -149,20 +149,9 @@ if ($res_pegawai_data) {
             }
         }
 
-        // Ambil data SP-1 ustadz jika ada
-        $q_sp1_cur = $conn->query("SELECT * FROM surat_peringatan_pegawai WHERE ustadz_id = $p_id AND semester = '$semester_str' AND jenis_sp = 'SP-1' LIMIT 1");
-        $sp1_data = ($q_sp1_cur && $q_sp1_cur->num_rows > 0) ? $q_sp1_cur->fetch_assoc() : null;
-
-        if ($sp1_data) {
-            $sp1_list_all[] = [
-                'nama' => $p['nama'],
-                'role' => $p['role'],
-                'alpa_sem' => $alpa_semester,
-                'tanggal_sp' => $sp1_data['tanggal_terbit'],
-                'status_sp' => $sp1_data['status'],
-                'alasan' => $sp1_data['alasan']
-            ];
-        }
+        // Ambil data SP-1, SP-2, atau BLOKIR ustadz jika ada
+        $q_sp_cur = $conn->query("SELECT * FROM surat_peringatan_pegawai WHERE ustadz_id = $p_id AND semester = '$semester_str' ORDER BY id DESC LIMIT 1");
+        $sp1_data = ($q_sp_cur && $q_sp_cur->num_rows > 0) ? $q_sp_cur->fetch_assoc() : null;
 
         $pegawai_summary[] = [
             'id' => $p['id'],
@@ -185,6 +174,19 @@ if ($res_pegawai_data) {
             'alpa_semester' => $alpa_semester,
             'sp1_data' => $sp1_data
         ];
+    }
+}
+
+// Ambil seluruh rekor Surat Peringatan & Blokir di semester ini
+$q_sp_all = $conn->query("SELECT sp.*, u.nama, u.role, u.status_pegawai 
+                          FROM surat_peringatan_pegawai sp 
+                          JOIN akun_ustadz u ON sp.ustadz_id = u.id 
+                          WHERE sp.semester = '$semester_str' 
+                          ORDER BY sp.id DESC");
+$sp1_list_all = [];
+if ($q_sp_all) {
+    while ($sp_r = $q_sp_all->fetch_assoc()) {
+        $sp1_list_all[] = $sp_r;
     }
 }
 
@@ -374,19 +376,24 @@ $tot_sp1_aktif = count($sp1_list_all);
                         <tbody class="divide-y divide-slate-100">
                             <?php if (!empty($sp1_list_all)): ?>
                                 <?php $no=1; foreach ($sp1_list_all as $sp): ?>
+                                    <?php 
+                                    $sp_t = $sp['jenis_sp'];
+                                    $b_class = ($sp_t === 'BLOKIR') ? 'bg-rose-950 text-white border-rose-900' : (($sp_t === 'SP-2') ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-rose-100 text-rose-800 border-rose-200');
+                                    $b_label = ($sp_t === 'BLOKIR') ? '⛔ DIBLOKIR' : (($sp_t === 'SP-2') ? '⚠️ SP-2 Aktif' : '⚠️ SP-1 Aktif');
+                                    ?>
                                     <tr class="hover:bg-rose-50/30 transition duration-150">
                                         <td class="px-4 py-3 text-center font-semibold text-slate-500"><?= $no++ ?></td>
                                         <td class="px-4 py-3 font-bold text-slate-800"><?= htmlspecialchars($sp['nama']) ?></td>
                                         <td class="px-4 py-3 text-slate-600 font-medium"><?= htmlspecialchars($sp['role'] ?: 'Pegawai') ?></td>
                                         <td class="px-4 py-3 text-center font-extrabold text-rose-600 bg-rose-50/50">
-                                            <?= $sp['alpa_sem'] ?> Hari Alpa
+                                            <?= $sp['jumlah_alpa'] ?> Hari Alpa
                                         </td>
                                         <td class="px-4 py-3 text-center font-mono text-slate-600">
-                                            <?= date('d M Y', strtotime($sp['tanggal_sp'])) ?>
+                                            <?= date('d M Y', strtotime($sp['tanggal_terbit'])) ?>
                                         </td>
                                         <td class="px-4 py-3 text-center">
-                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200">
-                                                ⚠️ SP-1 Aktif
+                                            <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold border <?= $b_class ?>">
+                                                <?= $b_label ?>
                                             </span>
                                         </td>
                                         <td class="px-4 py-3 text-slate-600 italic">
@@ -397,7 +404,7 @@ $tot_sp1_aktif = count($sp1_list_all);
                             <?php else: ?>
                                 <tr>
                                     <td colspan="7" class="px-4 py-6 text-center text-slate-400 italic">
-                                        <i class="fas fa-shield-check text-emerald-500 text-base mr-1"></i> Tidak ada pegawai yang terbit SP-1 pada Semester <?= $semester_str ?>. Seluruh kedisiplinan terjaga.
+                                        <i class="fas fa-shield-check text-emerald-500 text-base mr-1"></i> Tidak ada pegawai yang terbit SP/Blokir pada Semester <?= $semester_str ?>. Seluruh kedisiplinan terjaga.
                                     </td>
                                 </tr>
                             <?php endif; ?>

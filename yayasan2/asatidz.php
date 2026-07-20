@@ -37,6 +37,13 @@ if (isset($_GET['hapus_id'])) {
     exit;
 }
 
+if (isset($_GET['aktifkan_id'])) {
+    $id = (int)$_GET['aktifkan_id'];
+    $conn->query("UPDATE akun_ustadz SET status_pegawai = 'Aktif' WHERE id = $id");
+    header("Location: asatidz.php?sukses=" . urlencode("Akun berhasil diaktifkan kembali! Blokir dan akses presensi telah dipulihkan oleh Super Admin."));
+    exit;
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
     $nama = $conn->real_escape_string($_POST['nama']);
@@ -220,6 +227,11 @@ $active_menu = 'asatidz';
                                     // 4. Total Gaji
                                     $total_gaji = $gaji_pokok + $tunjangan + $honor;
 
+                                    $btn_aktifkan = "";
+                                    if (($row['status_pegawai'] ?? '') === 'Nonaktif') {
+                                        $btn_aktifkan = "<a href='?aktifkan_id={$row['id']}' onclick=\"return confirm('Buka blokir dan aktifkan kembali akun ini?')\" class='bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold px-2 py-1 rounded text-[10px] mr-2 inline-flex items-center gap-1 border border-emerald-300 shadow-sm'><i class='fas fa-unlock'></i> Aktifkan</a>";
+                                    }
+
                                     echo "<tr class='hover:bg-gray-50 text-xs'>
                                         <td class='px-4 py-3 font-bold text-gray-900'>".htmlspecialchars($row['nama'])."</td>
                                         <td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td>
@@ -238,6 +250,7 @@ $active_menu = 'asatidz';
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($honor, 0, ',', '.')." <span class='text-[9px] text-gray-400 block'>($total_pertemuan x)</span></td>
                                         <td class='px-4 py-3 text-right font-bold text-amber-600 bg-amber-50/20'>Rp ".number_format($total_gaji, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-center'>
+                                            {$btn_aktifkan}
                                             <a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-3'><i class='fas fa-edit'></i></a>
                                             <a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700'><i class='fas fa-trash'></i></a>
                                         </td>

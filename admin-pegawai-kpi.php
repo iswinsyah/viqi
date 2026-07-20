@@ -175,13 +175,13 @@ if ($res_riwayat) {
     }
 }
 
-// Cek status SP-1 pegawai di semester ini
+// Cek status SP pegawai di semester ini (SP-1, SP-2, BLOKIR)
 $cur_m = (int)date('m');
 $cur_y = (int)date('Y');
 $sem_kpi = ($cur_m >= 7) ? "$cur_y/" . ($cur_y+1) . "-Ganjil" : ($cur_y-1) . "/$cur_y-Genap";
 
-$res_sp_kpi = $conn->query("SELECT * FROM surat_peringatan_pegawai WHERE ustadz_id = $user_id AND semester = '$sem_kpi' AND jenis_sp = 'SP-1' LIMIT 1");
-$sp1_kpi = ($res_sp_kpi && $res_sp_kpi->num_rows > 0) ? $res_sp_kpi->fetch_assoc() : null;
+$res_sp_kpi = $conn->query("SELECT * FROM surat_peringatan_pegawai WHERE ustadz_id = $user_id AND semester = '$sem_kpi' ORDER BY id DESC LIMIT 1");
+$sp_kpi_latest = ($res_sp_kpi && $res_sp_kpi->num_rows > 0) ? $res_sp_kpi->fetch_assoc() : null;
 
 ?>
 <!DOCTYPE html>
@@ -210,22 +210,33 @@ $sp1_kpi = ($res_sp_kpi && $res_sp_kpi->num_rows > 0) ? $res_sp_kpi->fetch_assoc
                 </select>
             </div>
 
-            <?php if (!empty($sp1_kpi)): ?>
-                <div class="bg-rose-50 border-l-4 border-rose-600 p-4 rounded-r-xl shadow-sm mb-6 flex items-start justify-between">
+            <?php if (!empty($sp_kpi_latest)): ?>
+                <?php 
+                $sp_type = $sp_kpi_latest['jenis_sp'];
+                $bg_card = ($sp_type === 'BLOKIR') ? 'bg-rose-100 border-rose-700' : (($sp_type === 'SP-2') ? 'bg-amber-50 border-amber-600' : 'bg-rose-50 border-rose-500');
+                $txt_color = ($sp_type === 'BLOKIR') ? 'text-rose-950' : (($sp_type === 'SP-2') ? 'text-amber-950' : 'text-rose-900');
+                ?>
+                <div class="<?= $bg_card ?> border-l-4 p-4 rounded-r-xl shadow-sm mb-6 flex items-start justify-between">
                     <div class="flex items-start gap-3">
-                        <div class="p-2 bg-rose-100 text-rose-600 rounded-lg font-bold text-lg">
-                            <i class="fas fa-triangle-exclamation"></i>
+                        <div class="p-2 bg-white rounded-lg font-bold text-lg text-rose-600 shadow-sm">
+                            <i class="fas <?= ($sp_type === 'BLOKIR') ? 'fa-ban' : 'fa-triangle-exclamation' ?>"></i>
                         </div>
                         <div>
-                            <h4 class="font-bold text-rose-900 text-sm">SURAT PERINGATAN 1 (SP-1) DITERBITKAN</h4>
-                            <p class="text-xs text-rose-700 mt-0.5">
-                                Terdeteksi akumulasi <strong><?= $sp1_kpi['jumlah_alpa'] ?> Hari Alpa Tanpa Izin</strong> pada Semester <?= $sp1_kpi['semester'] ?> (Terbit: <?= date('d M Y', strtotime($sp1_kpi['tanggal_terbit'])) ?>).
-                                Harap meningkatkan kedisiplinan dan berkoordinasi dengan pihak Manajemen Yayasan.
+                            <h4 class="font-bold <?= $txt_color ?> text-sm">
+                                <?= ($sp_type === 'BLOKIR') ? 'AKUN DINONAKTIFKAN / DIBLOKIR' : 'SURAT PERINGATAN (' . htmlspecialchars($sp_type) . ') DITERBITKAN' ?>
+                            </h4>
+                            <p class="text-xs <?= $txt_color ?> opacity-90 mt-0.5">
+                                <?= htmlspecialchars($sp_kpi_latest['alasan']) ?> (Terbit: <?= date('d M Y', strtotime($sp_kpi_latest['tanggal_terbit'])) ?>).
+                                <?php if ($sp_type === 'BLOKIR'): ?>
+                                    Akun Anda tidak dapat digunakan untuk presensi dan hanya dapat diaktifkan kembali oleh Super Admin.
+                                <?php else: ?>
+                                    Harap meningkatkan kedisiplinan dan berkoordinasi dengan pihak Manajemen Yayasan.
+                                <?php endif; ?>
                             </p>
                         </div>
                     </div>
                     <span class="px-3 py-1 bg-rose-600 text-white font-extrabold text-[10px] rounded-full uppercase tracking-wider">
-                        SP-1 Aktif
+                        <?= htmlspecialchars($sp_type) ?>
                     </span>
                 </div>
             <?php endif; ?>
