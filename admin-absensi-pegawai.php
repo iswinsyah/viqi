@@ -697,6 +697,10 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                             <span>Bendahara Yayasan</span>
                                         </label>
                                         <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" name="target_roles[]" value="staff_ldu" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Staff LDU</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
                                             <input type="checkbox" name="target_roles[]" value="admin_sekolah" class="rounded text-indigo-600 focus:ring-indigo-500">
                                             <span>Manajemen & Admin Sekolah</span>
                                         </label>
@@ -785,6 +789,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                                     else {
                                                         if (in_array('sekretaris_yayasan', $r_list)) $items[] = 'Sekretaris Yayasan';
                                                         if (in_array('bendahara_yayasan', $r_list)) $items[] = 'Bendahara Yayasan';
+                                                        if (in_array('staff_ldu', $r_list)) $items[] = 'Staff LDU';
                                                         if (in_array('admin_sekolah', $r_list)) $items[] = 'Admin Sekolah';
                                                         if (in_array('musyrif', $r_list)) $items[] = 'Musyrif';
                                                         if (in_array('ustadz_diknas', $r_list)) $items[] = 'Ustadz Diknas';
