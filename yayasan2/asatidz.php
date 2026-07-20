@@ -119,10 +119,10 @@ $active_menu = 'asatidz';
                             </div>
                         </div>
                         <div class="md:col-span-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Status Pegawai</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                             <select name="status_pegawai" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500">
                                 <?php
-                                $statuses = ['Pengabdian', 'Honorer', 'Pegawai Muda', 'Pegawai Utama'];
+                                $statuses = ['Pengurus Yayasan', 'Pengabdian', 'Honorer', 'Pegawai Muda', 'Pegawai Utama'];
                                 foreach ($statuses as $s) {
                                     $sel = ($edit_mode && ($data_edit['status_pegawai'] ?? 'Pengabdian') === $s) ? 'selected' : '';
                                     echo "<option value='$s' $sel>$s</option>";
@@ -199,6 +199,7 @@ $active_menu = 'asatidz';
 
                                     $status_display = htmlspecialchars($row['status_pegawai'] ?? 'Pengabdian');
                                     $status_color = 'bg-gray-100 text-gray-800 border-gray-200';
+                                    if ($status_display === 'Pengurus Yayasan') $status_color = 'bg-indigo-50 text-indigo-700 border-indigo-200';
                                     if ($status_display === 'Pengabdian') $status_color = 'bg-blue-50 text-blue-700 border-blue-200';
                                     if ($status_display === 'Honorer') $status_color = 'bg-amber-50 text-amber-700 border-amber-200';
                                     if ($status_display === 'Pegawai Muda') $status_color = 'bg-emerald-50 text-emerald-700 border-emerald-200';
