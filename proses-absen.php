@@ -173,6 +173,15 @@ if ($req_jenis_absen === 'Rapat') {
                 if ($tr === 'kepala_mahad' && in_array('kepala_mahad', $user_roles)) {
                     $is_invited = true; break;
                 }
+                if ($tr === 'tutor' && in_array('tutor', $user_roles)) {
+                    $is_invited = true; break;
+                }
+                if ($tr === 'ustadz' && in_array('ustadz', $user_roles)) {
+                    $is_invited = true; break;
+                }
+                if ($tr === 'trainer' && in_array('trainer', $user_roles)) {
+                    $is_invited = true; break;
+                }
                 if ($tr === 'ustadz_diknas' && in_array('ustadz', $user_roles)) {
                     $check_diknas = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $ustadz_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
                     if ($check_diknas && $check_diknas->num_rows > 0) { $is_invited = true; break; }

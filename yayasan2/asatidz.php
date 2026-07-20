@@ -146,7 +146,9 @@ $active_menu = 'asatidz';
                                     'kepala_mahad' => "Kepala Ma'had",
                                     'kepala_asrama' => 'Kepala Asrama', 
                                     'musyrif' => 'Musyrif', 
-                                    'ustadz' => 'Ustadz'
+                                    'ustadz' => 'Ustadz',
+                                    'tutor' => 'Tutor',
+                                    'trainer' => 'Trainer'
                                 ];
                                 $user_roles = $edit_mode && !empty($data_edit['role']) ? explode(',', $data_edit['role']) : [];
                                 foreach ($all_roles as $value => $label) {

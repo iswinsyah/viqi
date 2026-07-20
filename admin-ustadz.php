@@ -134,6 +134,8 @@ if ($view === 'dashboard_asrama') {
         'kepala_asrama' => ['kepala asrama', 'mudir', 'ka asrama'],
         'musyrif' => ['musyrif', 'musyrifah'],
         'ustadz' => ['ustadz', 'guru pengampu', 'pengajar', 'guru'],
+        'tutor' => ['tutor', 'tentor', 'pendamping'],
+        'trainer' => ['trainer', 'pelatih', 'instruktur'],
         'super_admin' => ['']
     ];
 
@@ -198,7 +200,9 @@ if ($view === 'dashboard_asrama') {
         'kepala_mahad' => "Kepala Ma'had",
         'kepala_asrama' => 'Kepala Asrama',
         'musyrif' => 'Musyrif',
-        'ustadz' => 'Ustadz'
+        'ustadz' => 'Ustadz',
+        'tutor' => 'Tutor',
+        'trainer' => 'Trainer'
     ];
 
     // Ambil konten amanah per role dari DB

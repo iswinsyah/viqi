@@ -57,6 +57,8 @@ $defined_roles = [
     'kepala_asrama' => 'Kepala Asrama',
     'musyrif' => 'Musyrif',
     'ustadz' => 'Ustadz',
+    'tutor' => 'Tutor',
+    'trainer' => 'Trainer',
 ];
 
 // 2. Buat tabel permissions jika belum ada
