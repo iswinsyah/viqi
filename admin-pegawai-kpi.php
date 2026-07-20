@@ -175,6 +175,14 @@ if ($res_riwayat) {
     }
 }
 
+// Cek status SP-1 pegawai di semester ini
+$cur_m = (int)date('m');
+$cur_y = (int)date('Y');
+$sem_kpi = ($cur_m >= 7) ? "$cur_y/" . ($cur_y+1) . "-Ganjil" : ($cur_y-1) . "/$cur_y-Genap";
+
+$res_sp_kpi = $conn->query("SELECT * FROM surat_peringatan_pegawai WHERE ustadz_id = $user_id AND semester = '$sem_kpi' AND jenis_sp = 'SP-1' LIMIT 1");
+$sp1_kpi = ($res_sp_kpi && $res_sp_kpi->num_rows > 0) ? $res_sp_kpi->fetch_assoc() : null;
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -201,6 +209,26 @@ if ($res_riwayat) {
                     <option>Periode: April 2026</option>
                 </select>
             </div>
+
+            <?php if (!empty($sp1_kpi)): ?>
+                <div class="bg-rose-50 border-l-4 border-rose-600 p-4 rounded-r-xl shadow-sm mb-6 flex items-start justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="p-2 bg-rose-100 text-rose-600 rounded-lg font-bold text-lg">
+                            <i class="fas fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-rose-900 text-sm">SURAT PERINGATAN 1 (SP-1) DITERBITKAN</h4>
+                            <p class="text-xs text-rose-700 mt-0.5">
+                                Terdeteksi akumulasi <strong><?= $sp1_kpi['jumlah_alpa'] ?> Hari Alpa Tanpa Izin</strong> pada Semester <?= $sp1_kpi['semester'] ?> (Terbit: <?= date('d M Y', strtotime($sp1_kpi['tanggal_terbit'])) ?>).
+                                Harap meningkatkan kedisiplinan dan berkoordinasi dengan pihak Manajemen Yayasan.
+                            </p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-rose-600 text-white font-extrabold text-[10px] rounded-full uppercase tracking-wider">
+                        SP-1 Aktif
+                    </span>
+                </div>
+            <?php endif; ?>
 
             <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
 

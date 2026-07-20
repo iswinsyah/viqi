@@ -58,6 +58,144 @@ pastikanKoneksiDb();
 @$conn->query("ALTER TABLE artikel ADD COLUMN published_at DATETIME NULL AFTER status");
 @$conn->query("ALTER TABLE artikel ADD COLUMN meta_title VARCHAR(255) AFTER published_at");
 @$conn->query("ALTER TABLE artikel ADD COLUMN meta_description TEXT AFTER meta_title");
+
+// Self-healing migration: Tabel Surat Peringatan Pegawai (SP-1)
+@$conn->query("CREATE TABLE IF NOT EXISTS surat_peringatan_pegawai (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ustadz_id INT NOT NULL,
+    jenis_sp VARCHAR(20) DEFAULT 'SP-1',
+    alasan TEXT NOT NULL,
+    jumlah_alpa INT DEFAULT 3,
+    semester VARCHAR(30) NOT NULL,
+    tanggal_terbit DATE NOT NULL,
+    status VARCHAR(20) DEFAULT 'Aktif',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY (ustadz_id),
+    KEY (semester)
+)");
+
+/**
+ * Pemindai Otomatis Penerbitan SP-1 untuk Pegawai Alpa >= 3 Hari dalam 1 Semester
+ */
+function periksa_dan_terbitkan_sp1_pegawai($conn) {
+    pastikanKoneksiDb();
+    
+    // Tentukan semester & rentang tanggal
+    $current_month = (int)date('m');
+    $current_year = (int)date('Y');
+    
+    if ($current_month >= 7) {
+        $semester_str = $current_year . '/' . ($current_year + 1) . '-Ganjil';
+        $start_date = "$current_year-07-01";
+        $end_date = "$current_year-12-31";
+    } else {
+        $semester_str = ($current_year - 1) . '/' . $current_year . '-Genap';
+        $start_date = "$current_year-01-01";
+        $end_date = "$current_year-06-30";
+    }
+
+    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
+    $BOS_WA = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223';
+
+    $res_staf = $conn->query("SELECT id, nama, role, whatsapp FROM akun_ustadz WHERE (status_pegawai IS NULL OR status_pegawai != 'Nonaktif') ORDER BY nama ASC");
+    if (!$res_staf || $res_staf->num_rows == 0) return [];
+
+    $sp1_issued = [];
+
+    while ($p = $res_staf->fetch_assoc()) {
+        $p_id = (int)$p['id'];
+        $p_nama = $p['nama'];
+        $p_role = $p['role'] ?? 'Pegawai';
+        $p_wa = $p['whatsapp'] ?? '';
+
+        // Hitung total Alpa dalam semester ini dari absensi_pegawai
+        $q_alpa = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as total_alpa 
+                                FROM absensi_pegawai 
+                                WHERE ustadz_id = $p_id 
+                                AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date' 
+                                AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')");
+        $total_alpa = $q_alpa ? (int)($q_alpa->fetch_assoc()['total_alpa'] ?? 0) : 0;
+
+        // Jika akumulasi Alpa sudah >= 3 Hari
+        if ($total_alpa >= 3) {
+            // Cek apakah SP-1 sudah pernah diterbitkan di semester ini
+            $q_check_sp = $conn->query("SELECT id FROM surat_peringatan_pegawai WHERE ustadz_id = $p_id AND semester = '$semester_str' AND jenis_sp = 'SP-1' LIMIT 1");
+            if ($q_check_sp && $q_check_sp->num_rows == 0) {
+                // Terbitkan SP-1
+                $alasan_msg = "Terdeteksi tidak masuk kerja tanpa izin (Alpa) sebanyak $total_alpa hari dalam semester $semester_str";
+                $conn->query("INSERT INTO surat_peringatan_pegawai (ustadz_id, jenis_sp, alasan, jumlah_alpa, semester, tanggal_terbit, status) 
+                              VALUES ($p_id, 'SP-1', '" . $conn->real_escape_string($alasan_msg) . "', $total_alpa, '$semester_str', CURRENT_DATE(), 'Aktif')");
+                
+                // Format role label
+                $roles_arr = explode(',', $p_role);
+                $roles_labeled = array_map(function($r) { return ucwords(str_replace('_', ' ', trim($r))); }, $roles_arr);
+                $roles_str = implode(', ', $roles_labeled);
+
+                // Kirim WA Notifikasi ke Pegawai
+                if (!empty($p_wa)) {
+                    $wa_target = preg_replace('/[^0-9]/', '', $p_wa);
+                    if (strpos($wa_target, '0') === 0) $wa_target = '62' . substr($wa_target, 1);
+
+                    $msg_pegawai = "⚠️ *SURAT PERINGATAN 1 (SP-1)*\n";
+                    $msg_pegawai .= "Villa Quran Indonesia\n\n";
+                    $msg_pegawai .= "Kepada Yth: *{$p_nama}*\n";
+                    $msg_pegawai .= "Role/Jabatan: *{$roles_str}*\n\n";
+                    $msg_pegawai .= "Berdasarkan evaluasi rekap presensi semester *{$semester_str}*, Anda tercatat tidak masuk kerja tanpa izin (Alpa) sebanyak *{$total_alpa} Hari* (baik berturut-turut maupun terpisah).\n\n";
+                    $msg_pegawai .= "Dengan ini Yayasan menerbitkan *Surat Peringatan 1 (SP-1)*. Mohon agar senantiasa meningkatkan kedisiplinan serta berkoordinasi dengan pihak Manajemen bila terdapat perizinan.\n\n";
+                    $msg_pegawai .= "_Pesan ini dikirimkan otomatis oleh AI HRD System Pesantren._";
+
+                    $waFd = ['target' => $wa_target, 'message' => $msg_pegawai];
+                    $ch = curl_init();
+                    curl_setopt_array($ch, [
+                        CURLOPT_URL => "https://api.fonnte.com/send",
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST => true,
+                        CURLOPT_POSTFIELDS => http_build_query($waFd),
+                        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                        CURLOPT_TIMEOUT => 15
+                    ]);
+                    curl_exec($ch);
+                    curl_close($ch);
+                }
+
+                // Kirim WA Notifikasi Tembusan ke Bos
+                $msg_bos = "🚨 *NOTIFIKASI YAYASAN: PENERBITAN SP-1*\n\n";
+                $msg_bos .= "Sistem AI Agent HRD telah secara otomatis menerbitkan *Surat Peringatan 1 (SP-1)* kepada:\n\n";
+                $msg_bos .= "👤 *{$p_nama}*\n";
+                $msg_bos .= "💼 Role: *{$roles_str}*\n";
+                $msg_bos .= "📅 Semester: *{$semester_str}*\n";
+                $msg_bos .= "⚠️ Alasan: *Akumulasi {$total_alpa} Hari Alpa Tanpa Izin*\n\n";
+                $msg_bos .= "Surat peringatan telah tercatat di sistem dan notifikasi telah dikirimkan ke Ybs.";
+
+                $waFd2 = ['target' => $BOS_WA, 'message' => $msg_bos];
+                $ch2 = curl_init();
+                curl_setopt_array($ch2, [
+                    CURLOPT_URL => "https://api.fonnte.com/send",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => http_build_query($waFd2),
+                    CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                    CURLOPT_TIMEOUT => 15
+                ]);
+                curl_exec($ch2);
+                curl_close($ch2);
+
+                if (function_exists('logAgent')) {
+                    logAgent("🚨 SP-1 OTOMATIS DITERBITKAN: $p_nama (Alpa: $total_alpa Hari, Semester: $semester_str)");
+                }
+
+                $sp1_issued[] = [
+                    'nama' => $p_nama,
+                    'role' => $roles_str,
+                    'alpa' => $total_alpa,
+                    'semester' => $semester_str
+                ];
+            }
+        }
+    }
+
+    return $sp1_issued;
+}
 @$conn->query("ALTER TABLE artikel ADD COLUMN meta_keywords VARCHAR(255) AFTER meta_description");
 @$conn->query("ALTER TABLE artikel ADD COLUMN copywriting_promo TEXT AFTER meta_keywords");
 
@@ -1728,6 +1866,9 @@ if (($current_hour >= '21' || $force_hrd_laporan) && (!$hrd_laporan_done || $for
     logAgent("======= MEMULAI AGENT HRD: LAPORAN RESUME AKTIFITAS PEGAWAI HARIAN ($today) =======");
     
     pastikanKoneksiDb();
+    
+    // Pemindaian Otomatis Penerbitan SP-1 Pegawai (Alpa 3 Hari per Semester)
+    periksa_dan_terbitkan_sp1_pegawai($conn);
     
     // Ambil daftar seluruh pegawai aktif (Aktif/Pengabdian/Kosong, bukan Nonaktif)
     $res_pegawai = $conn->query("SELECT id, nama, role FROM akun_ustadz WHERE (status_pegawai IS NULL OR status_pegawai != 'Nonaktif') ORDER BY nama ASC");
