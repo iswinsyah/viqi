@@ -226,14 +226,8 @@ if ($res_pegawai) {
 }
 
 // E. Cek Otoritas Role untuk Absensi Pegawai (Harian)
-$eligible_roles = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
-$is_eligible_pegawai = false;
-foreach ($user_roles as $role) {
-    if (in_array(trim($role), $eligible_roles)) {
-        $is_eligible_pegawai = true;
-        break;
-    }
-}
+// Semua ustadz / pegawai / staf yang terdaftar dan login berhak melakukan Absensi Pegawai
+$is_eligible_pegawai = true;
 
 // F. Persiapan Teks, Icon, & Class Tombol Pegawai
 $pegawai_btn_text = '';
