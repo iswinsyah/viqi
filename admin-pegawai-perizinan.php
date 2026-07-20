@@ -166,17 +166,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
             
             $catatan_admin = isset($_POST['catatan_admin']) ? $conn->real_escape_string(trim($_POST['catatan_admin'])) : '';
 
-            // Hapus absensi izin lama jika sebelumnya pengajuan ini sudah pernah disetujui (untuk pembersihan & koreksi ulang)
-            if (in_array($izin['status'], ['Disetujui', 'Disetujui Sebagian'])) {
-                $old_start = !empty($izin['tanggal_disetujui_mulai']) ? $izin['tanggal_disetujui_mulai'] : $tgl_mulai_awal;
-                $old_end = !empty($izin['tanggal_disetujui_selesai']) ? $izin['tanggal_disetujui_selesai'] : $tgl_selesai_awal;
-                
-                $conn->query("DELETE FROM absensi_pegawai 
-                              WHERE ustadz_id = $emp_id 
-                              AND jenis_absen = 'Pegawai' 
-                              AND status_kehadiran = 'Izin' 
-                              AND DATE(waktu_absen) BETWEEN '$old_start' AND '$old_end'");
-            }
+            // Hapus absensi izin/alpa lama untuk rentang ini agar dapat disinkronkan ulang secara bersih
+            $conn->query("DELETE FROM absensi_pegawai 
+                          WHERE ustadz_id = $emp_id 
+                          AND jenis_absen = 'Pegawai' 
+                          AND (DATE(waktu_absen) BETWEEN '$tgl_mulai_awal' AND '$tgl_selesai_awal')");
 
             if ($status_baru == 'Disetujui' || $status_baru == 'Disetujui Sebagian') {
                 $tgl_app_mulai = !empty($_POST['tanggal_disetujui_mulai']) ? $conn->real_escape_string($_POST['tanggal_disetujui_mulai']) : $tgl_mulai_awal;
@@ -202,22 +196,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                                   disetujui_oleh = $ustadz_id_aktif 
                               WHERE id = $izin_id");
 
-                // Auto input ke tabel absensi_pegawai HANYA untuk rentang tanggal yang disetujui
-                $begin = new DateTime($tgl_app_mulai);
-                $end = new DateTime($tgl_app_selesai);
-                $end = $end->modify('+1 day'); // inclusive
+                // Loop seluruh tanggal pengajuan awal:
+                // 1. Jika masuk rentang disetujui -> input 'Izin'
+                // 2. Jika di luar rentang disetujui & tanggal <= hari ini -> input 'Alpa'
+                $begin_all = new DateTime($tgl_mulai_awal);
+                $end_all = new DateTime($tgl_selesai_awal);
+                $end_all->modify('+1 day');
+                $period_all = new DatePeriod($begin_all, new DateInterval('P1D'), $end_all);
 
-                $interval = new DateInterval('P1D');
-                $daterange = new DatePeriod($begin, $interval, $end);
-
-                foreach ($daterange as $date) {
+                foreach ($period_all as $date) {
                     $tgl = $date->format("Y-m-d");
-                    $waktu_absen = $tgl . " 08:00:00"; // Default waktu ijin masuk pagi
-                    
-                    // Cek duplikasi absensi pada hari itu
-                    $check = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $emp_id AND DATE(waktu_absen) = '$tgl' AND jenis_absen = 'Pegawai'");
-                    if ($check && $check->num_rows == 0) {
-                        $conn->query("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, keterangan) VALUES ($emp_id, '$waktu_absen', 'Pegawai', 'Izin', '$status_simpan: $ket')");
+                    $waktu_absen = $tgl . " 08:00:00";
+
+                    $is_approved_day = (strtotime($tgl) >= strtotime($tgl_app_mulai) && strtotime($tgl) <= strtotime($tgl_app_selesai));
+
+                    if ($is_approved_day) {
+                        $conn->query("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, keterangan) 
+                                      VALUES ($emp_id, '$waktu_absen', 'Pegawai', 'Izin', '$status_simpan: $ket')");
+                    } elseif ($tgl <= date('Y-m-d')) {
+                        $conn->query("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, keterangan) 
+                                      VALUES ($emp_id, '$waktu_absen', 'Pegawai', 'Alpa', 'Alpa (Izin Tidak Disetujui Atasan)')");
                     }
                 }
 
@@ -249,6 +247,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                                   catatan_admin = '$catatan_admin', 
                                   disetujui_oleh = $ustadz_id_aktif 
                               WHERE id = $izin_id");
+
+                // Untuk semua tanggal yang ditolak & <= hari ini, input Alpa ke absensi_pegawai
+                $begin_all = new DateTime($tgl_mulai_awal);
+                $end_all = new DateTime($tgl_selesai_awal);
+                $end_all->modify('+1 day');
+                $period_all = new DatePeriod($begin_all, new DateInterval('P1D'), $end_all);
+
+                foreach ($period_all as $date) {
+                    $tgl = $date->format("Y-m-d");
+                    if ($tgl <= date('Y-m-d')) {
+                        $waktu_absen = $tgl . " 08:00:00";
+                        $conn->query("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, keterangan) 
+                                      VALUES ($emp_id, '$waktu_absen', 'Pegawai', 'Alpa', 'Alpa (Izin Ditolak Atasan)')");
+                    }
+                }
 
                 // Kirim Notifikasi Penolakan ke Pegawai via WA
                 $res_emp = $conn->query("SELECT whatsapp, nama FROM akun_ustadz WHERE id = $emp_id LIMIT 1");

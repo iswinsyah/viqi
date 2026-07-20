@@ -19,6 +19,44 @@ $active_menu = 'ai_agent_hrd';
     KEY (semester)
 )");
 
+// Self-healing: Sinkronisasikan Alpa dari perizinan yang disetujui sebagian / ditolak ke absensi_pegawai
+$res_past_rejections = $conn->query("SELECT * FROM kepegawaian_perizinan WHERE status IN ('Disetujui Sebagian', 'Ditolak')");
+if ($res_past_rejections) {
+    while ($p_rej = $res_past_rejections->fetch_assoc()) {
+        $p_emp = (int)$p_rej['ustadz_id'];
+        $p_m = $p_rej['tanggal_mulai'];
+        $p_s = $p_rej['tanggal_selesai'];
+        $p_app_m = $p_rej['tanggal_disetujui_mulai'];
+        $p_app_s = $p_rej['tanggal_disetujui_selesai'];
+        $p_st = $p_rej['status'];
+
+        $b_date = new DateTime($p_m);
+        $e_date = new DateTime($p_s);
+        $e_date->modify('+1 day');
+        $period = new DatePeriod($b_date, new DateInterval('P1D'), $e_date);
+
+        foreach ($period as $dt) {
+            $check_tgl = $dt->format('Y-m-d');
+            if ($check_tgl <= date('Y-m-d')) {
+                $is_approved_day = false;
+                if ($p_st === 'Disetujui Sebagian' && !empty($p_app_m) && !empty($p_app_s)) {
+                    if (strtotime($check_tgl) >= strtotime($p_app_m) && strtotime($check_tgl) <= strtotime($p_app_s)) {
+                        $is_approved_day = true;
+                    }
+                }
+                
+                if (!$is_approved_day) {
+                    $chk_abs = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $p_emp AND DATE(waktu_absen) = '$check_tgl' AND jenis_absen = 'Pegawai'");
+                    if ($chk_abs && $chk_abs->num_rows == 0) {
+                        $w_abs = $check_tgl . " 08:00:00";
+                        $conn->query("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, keterangan) VALUES ($p_emp, '$w_abs', 'Pegawai', 'Alpa', 'Alpa (Izin Tidak Disetujui / Ditolak Atasan)')");
+                    }
+                }
+            }
+        }
+    }
+}
+
 // Filter Bulan & Tahun
 $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
