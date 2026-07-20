@@ -43,7 +43,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_rapat (
 @$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN tanggal_rutin INT DEFAULT NULL AFTER hari_rutin");
 @$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN tgl_penyesuaian_libur DATE DEFAULT NULL AFTER tanggal_rutin");
 
-function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin = 'tidak_rutin', $hari_rutin = '', $tanggal_rutin = null, $tgl_penyesuaian_libur = null) {
+function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin = 'tidak_rutin', $hari_rutin = '', $tanggal_rutin = null, $tgl_penyesuaian_libur = null, $target_ortu_ids = []) {
     $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
     if (file_exists(__DIR__ . '/config-key.php')) {
         require_once __DIR__ . '/config-key.php';
@@ -51,9 +51,6 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
             $FONNTE_TOKEN = FONNTE_TOKEN;
         }
     }
-    
-    $res_pegawai = $conn->query("SELECT id, nama, role, whatsapp FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
-    if (!$res_pegawai || $res_pegawai->num_rows == 0) return;
     
     $days = ['Sunday'=>'Ahad', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'];
     $day_name = $days[date('l', strtotime($waktu_rapat))] ?? date('l', strtotime($waktu_rapat));
@@ -71,41 +68,38 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
         $libur_info = "\n⚠️ *Penyesuaian Hari Libur*: Tanggal dipindah ke *" . date('d M Y', strtotime($tgl_penyesuaian_libur)) . "*";
     }
     
-    while ($p = $res_pegawai->fetch_assoc()) {
-        $p_id = (int)$p['id'];
-        $p_roles = array_map('trim', explode(',', $p['role'] ?? ''));
-        $no_wa = preg_replace('/[^0-9]/', '', $p['whatsapp']);
-        if (empty($no_wa)) continue;
-        if (substr($no_wa, 0, 1) === '0') {
-            $no_wa = '62' . substr($no_wa, 1);
-        } elseif (substr($no_wa, 0, 2) !== '62') {
-            $no_wa = '62' . $no_wa;
-        }
-        
-        $is_target = false;
-        
-        if (in_array($p_id, array_map('intval', $target_ids))) {
-            $is_target = true;
-        }
-        
-        if (!$is_target && !empty($target_roles)) {
-            if (in_array('semua_pegawai', $target_roles)) {
+    // 1. Broadcast WA ke Pegawai & Asatidz terundang
+    $res_pegawai = $conn->query("SELECT id, nama, role, whatsapp FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
+    if ($res_pegawai && $res_pegawai->num_rows > 0) {
+        while ($p = $res_pegawai->fetch_assoc()) {
+            $p_id = (int)$p['id'];
+            $p_roles = array_map('trim', explode(',', $p['role'] ?? ''));
+            $no_wa = preg_replace('/[^0-9]/', '', $p['whatsapp']);
+            if (empty($no_wa)) continue;
+            if (substr($no_wa, 0, 1) === '0') {
+                $no_wa = '62' . substr($no_wa, 1);
+            } elseif (substr($no_wa, 0, 2) !== '62') {
+                $no_wa = '62' . $no_wa;
+            }
+            
+            $is_target = false;
+            
+            if (in_array($p_id, array_map('intval', $target_ids))) {
                 $is_target = true;
-            } else {
+            }
+            
+            if (!$is_target && !empty($target_roles)) {
                 foreach ($target_roles as $tr) {
-                    if ($tr === 'musyrif' && (in_array('musyrif', $p_roles) || in_array('kepala_asrama', $p_roles))) {
+                    if ($tr === 'admin_sekolah' && (in_array('admin_sekolah', $p_roles) || in_array('sekretaris_sekolah', $p_roles) || in_array('bendahara_sekolah', $p_roles))) {
                         $is_target = true; break;
                     }
-                    if ($tr === 'admin_sekolah' && (in_array('admin_sekolah', $p_roles) || in_array('sekretaris_sekolah', $p_roles) || in_array('bendahara_sekolah', $p_roles))) {
+                    if ($tr === 'tutor' && in_array('tutor', $p_roles)) {
                         $is_target = true; break;
                     }
                     if ($tr === 'kepala_sekolah' && in_array('kepala_sekolah', $p_roles)) {
                         $is_target = true; break;
                     }
-                    if ($tr === 'kepala_mahad' && in_array('kepala_mahad', $p_roles)) {
-                        $is_target = true; break;
-                    }
-                    if ($tr === 'tutor' && in_array('tutor', $p_roles)) {
+                    if ($tr === 'musyrif' && (in_array('musyrif', $p_roles) || in_array('kepala_asrama', $p_roles))) {
                         $is_target = true; break;
                     }
                     if ($tr === 'ustadz' && in_array('ustadz', $p_roles)) {
@@ -114,43 +108,84 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
                     if ($tr === 'trainer' && in_array('trainer', $p_roles)) {
                         $is_target = true; break;
                     }
-                    if ($tr === 'ustadz_diknas' && in_array('ustadz', $p_roles)) {
-                        $check_d = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $p_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
-                        if ($check_d && $check_d->num_rows > 0) { $is_target = true; break; }
-                    }
-                    if ($tr === 'ustadz_diniyah' && in_array('ustadz', $p_roles)) {
-                        $check_dn = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $p_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
-                        if ($check_dn && $check_dn->num_rows > 0) { $is_target = true; break; }
-                    }
                 }
             }
+            
+            if ($is_target) {
+                $pesan = "📢 *UNDANGAN RAPAT RESMI*\n"
+                       . "-- SIM Yayasan Villa Quran --\n\n"
+                       . "Kepada Yth. *" . $p['nama'] . "*\n\n"
+                       . "Anda diundang untuk menghadiri rapat sekolah berikut:\n"
+                       . "📌 *Agenda*: " . $agenda . "\n"
+                       . "👤 *Penyelenggara*: " . $pengundang_label . "\n"
+                       . "🔄 *Sifat Rapat*: " . $rutin_desc . "\n"
+                       . "🕒 *Waktu Pelaksanaan*: " . $waktu_formatted . $libur_info . "\n\n"
+                       . "Diharapkan hadir tepat waktu.\n\n"
+                       . "-- SIM Yayasan Villa Quran --";
+                       
+                $waFd = ['target' => $no_wa, 'message' => $pesan];
+                $ch = curl_init();
+                curl_setopt_array($ch, [
+                    CURLOPT_URL => "https://api.fonnte.com/send",
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => http_build_query($waFd),
+                    CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                    CURLOPT_TIMEOUT => 10
+                ]);
+                curl_exec($ch);
+                curl_close($ch);
+            }
         }
-        
-        if ($is_target) {
-            $pesan = "📢 *UNDANGAN RAPAT RESMI*\n"
-                   . "-- SIM Yayasan Villa Quran --\n\n"
-                   . "Kepada Yth. *" . $p['nama'] . "*\n\n"
-                   . "Anda diundang untuk menghadiri rapat berikut:\n"
-                   . "📌 *Agenda*: " . $agenda . "\n"
-                   . "👤 *Penyelenggara*: " . $pengundang_label . "\n"
-                   . "🔄 *Sifat Rapat*: " . $rutin_desc . "\n"
-                   . "🕒 *Waktu Pelaksanaan*: " . $waktu_formatted . $libur_info . "\n\n"
-                   . "Diharapkan hadir tepat waktu dan melakukan absensi rapat melalui sistem:\n"
-                   . "🔗 https://villaquranindonesia.com/admin-absensi-pegawai.php\n\n"
-                   . "-- SIM Yayasan Villa Quran --";
-                   
-            $waFd = ['target' => $no_wa, 'message' => $pesan];
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => "https://api.fonnte.com/send",
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => http_build_query($waFd),
-                CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
-                CURLOPT_TIMEOUT => 10
-            ]);
-            curl_exec($ch);
-            curl_close($ch);
+    }
+
+    // 2. Broadcast WA ke Orangtua / Walisantri
+    if (in_array('orangtua', $target_roles) || in_array('walisantri', $target_roles) || !empty($target_ortu_ids)) {
+        $res_ortu = $conn->query("SELECT id, nama_orangtua, no_whatsapp FROM akun_orangtua WHERE no_whatsapp IS NOT NULL AND no_whatsapp != ''");
+        if ($res_ortu && $res_ortu->num_rows > 0) {
+            while ($o = $res_ortu->fetch_assoc()) {
+                $o_id = (int)$o['id'];
+                $no_wa = preg_replace('/[^0-9]/', '', $o['no_whatsapp']);
+                if (empty($no_wa)) continue;
+                if (substr($no_wa, 0, 1) === '0') {
+                    $no_wa = '62' . substr($no_wa, 1);
+                } elseif (substr($no_wa, 0, 2) !== '62') {
+                    $no_wa = '62' . $no_wa;
+                }
+                
+                $is_target_ortu = false;
+                if (in_array('orangtua', $target_roles) || in_array('walisantri', $target_roles)) {
+                    $is_target_ortu = true;
+                } elseif (in_array($o_id, array_map('intval', $target_ortu_ids))) {
+                    $is_target_ortu = true;
+                }
+                
+                if ($is_target_ortu) {
+                    $pesan_ortu = "📢 *UNDANGAN RAPAT ORANG TUA / WALISANTRI*\n"
+                               . "-- SIM Yayasan Villa Quran --\n\n"
+                               . "Kepada Yth. Bapak/Ibu *" . $o['nama_orangtua'] . "* (Walisantri)\n\n"
+                               . "Bapak/Ibu diundang untuk menghadiri rapat sekolah berikut:\n"
+                               . "📌 *Agenda*: " . $agenda . "\n"
+                               . "👤 *Penyelenggara*: " . $pengundang_label . "\n"
+                               . "🔄 *Sifat Rapat*: " . $rutin_desc . "\n"
+                               . "🕒 *Waktu Pelaksanaan*: " . $waktu_formatted . $libur_info . "\n\n"
+                               . "Kehadiran Bapak/Ibu sangat diharapkan demi kelancaran kegiatan belajar mengajar ananda.\n\n"
+                               . "-- SIM Yayasan Villa Quran --";
+                               
+                    $waFd = ['target' => $no_wa, 'message' => $pesan_ortu];
+                    $ch = curl_init();
+                    curl_setopt_array($ch, [
+                        CURLOPT_URL => "https://api.fonnte.com/send",
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST => true,
+                        CURLOPT_POSTFIELDS => http_build_query($waFd),
+                        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                        CURLOPT_TIMEOUT => 10
+                    ]);
+                    curl_exec($ch);
+                    curl_close($ch);
+                }
+            }
         }
     }
 }
@@ -203,10 +238,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     
     $target_roles = $_POST['target_roles'] ?? [];
     $target_ids = array_map('intval', $_POST['target_ids'] ?? []);
+    $target_ortu_ids = array_map('intval', $_POST['target_ortu_ids'] ?? []);
     
     $peserta_terundang = json_encode([
         'roles' => $target_roles,
-        'ids' => $target_ids
+        'ids' => $target_ids,
+        'ortu_ids' => $target_ortu_ids
     ]);
     $peserta_terundang_escaped = $conn->real_escape_string($peserta_terundang);
     
@@ -221,7 +258,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
         $lbl_peng = 'Kepala Sekolah';
         
         // Broadcast WA otomatis ke seluruh peserta yang diundang
-        broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $lbl_peng, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin, $hari_rutin, $tanggal_rutin, $tgl_penyesuaian_libur_val);
+        broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $lbl_peng, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin, $hari_rutin, $tanggal_rutin, $tgl_penyesuaian_libur_val, $target_ortu_ids);
         
         header("Location: admin-absensi-pegawai.php?sukses_rapat=1");
         exit;
@@ -715,14 +752,14 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                             <span class="font-semibold text-gray-800">Tutor</span>
                                         </label>
                                         <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="semua_pegawai" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span class="text-gray-600">Semua Pegawai & Asatidz</span>
+                                            <input type="checkbox" name="target_roles[]" value="orangtua" class="rounded text-purple-600 focus:ring-purple-500">
+                                            <span class="font-semibold text-purple-800"><i class="fas fa-users mr-1"></i> Semua Orangtua / Walisantri</span>
                                         </label>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Pegawai Spesifik (Role Admin & Tutor)</label>
-                                    <div class="max-h-36 overflow-y-auto border border-gray-200 rounded-lg p-2.5 bg-gray-50 space-y-1 text-xs text-gray-700">
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Pegawai Spesifik (Admin & Tutor)</label>
+                                    <div class="max-h-28 overflow-y-auto border border-gray-200 rounded-lg p-2.5 bg-gray-50 space-y-1 text-xs text-gray-700 mb-3">
                                         <?php
                                         $res_all_ustadz = $conn->query("SELECT id, nama, role FROM akun_ustadz ORDER BY nama ASC");
                                         if ($res_all_ustadz && $res_all_ustadz->num_rows > 0):
@@ -746,7 +783,26 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                         endif;
                                         ?>
                                     </div>
-                                    <p class="text-[10px] text-gray-400 mt-1">* Notifikasi WhatsApp otomatis dikirimkan langsung ke peserta yang dipilih saat rapat dipublikasikan.</p>
+
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Atau Pilih Orangtua / Walisantri Spesifik</label>
+                                    <div class="max-h-32 overflow-y-auto border border-purple-200 rounded-lg p-2.5 bg-purple-50/40 space-y-1 text-xs text-gray-700">
+                                        <?php
+                                        $res_all_ortu = $conn->query("SELECT id, nama_orangtua, no_whatsapp FROM akun_orangtua ORDER BY nama_orangtua ASC");
+                                        if ($res_all_ortu && $res_all_ortu->num_rows > 0):
+                                            while ($o = $res_all_ortu->fetch_assoc()):
+                                        ?>
+                                                <label class="flex items-center space-x-2 hover:bg-purple-100/60 p-0.5 rounded cursor-pointer">
+                                                    <input type="checkbox" name="target_ortu_ids[]" value="<?= $o['id'] ?>" class="rounded text-purple-600 focus:ring-purple-500">
+                                                    <span><?= htmlspecialchars($o['nama_orangtua']) ?> <span class="text-[10px] text-purple-700 font-semibold">(Walisantri)</span></span>
+                                                </label>
+                                        <?php
+                                            endwhile;
+                                        else:
+                                            echo '<p class="text-[10px] text-gray-400 italic">Belum ada data akun orang tua.</p>';
+                                        endif;
+                                        ?>
+                                    </div>
+                                    <p class="text-[10px] text-gray-400 mt-1">* Notifikasi WhatsApp otomatis dikirimkan langsung ke peserta terundang saat rapat dipublikasikan.</p>
                                 </div>
                                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-lg text-xs shadow-md transition-all duration-200">
                                     <i class="fas fa-paper-plane mr-1"></i> Publikasikan & Sebar Undangan WA
