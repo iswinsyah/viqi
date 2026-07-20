@@ -75,7 +75,7 @@ function kirim_notifikasi_wa($target, $pesan) {
 $pesan_sukses = "";
 $pesan_error = "";
 
-// 2. Handler Input Pengajuan Izin Baru (Untuk Pegawai)
+// 2. Handler Input Pengajuan Izin Baru (Untuk Pegawai & Admin)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'tambah_perizinan') {
     $tanggal_mulai = $conn->real_escape_string($_POST['tanggal_mulai']);
     $tanggal_selesai = $conn->real_escape_string($_POST['tanggal_selesai']);
@@ -83,15 +83,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     $ditujukan_ke = $conn->real_escape_string($_POST['ditujukan_ke'] ?? 'kepala_sekolah');
     $keterangan = $conn->real_escape_string(trim($_POST['keterangan']));
 
+    $target_ustadz_id = $ustadz_id_aktif;
+    $target_ustadz_nama = $ustadz_nama;
+
+    if ($is_admin && !empty($_POST['ustadz_id_target'])) {
+        $uid = (int)$_POST['ustadz_id_target'];
+        $res_u = $conn->query("SELECT nama FROM akun_ustadz WHERE id = $uid LIMIT 1");
+        if ($res_u && $res_u->num_rows > 0) {
+            $target_ustadz_id = $uid;
+            $target_ustadz_nama = $res_u->fetch_assoc()['nama'];
+        }
+    }
+
     if (empty($tanggal_mulai) || empty($tanggal_selesai) || empty($kategori) || empty($ditujukan_ke) || empty($keterangan)) {
         $pesan_error = "Harap lengkapi semua kolom pengajuan!";
     } elseif (strtotime($tanggal_mulai) > strtotime($tanggal_selesai)) {
         $pesan_error = "Tanggal mulai tidak boleh melebihi tanggal selesai!";
     } else {
         $stmt = $conn->prepare("INSERT INTO kepegawaian_perizinan (ustadz_id, tanggal_mulai, tanggal_selesai, kategori, ditujukan_ke, keterangan) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("isssss", $ustadz_id_aktif, $tanggal_mulai, $tanggal_selesai, $kategori, $ditujukan_ke, $keterangan);
+        $stmt->bind_param("isssss", $target_ustadz_id, $tanggal_mulai, $tanggal_selesai, $kategori, $ditujukan_ke, $keterangan);
         if ($stmt->execute()) {
-            $pesan_sukses = "Pengajuan izin berhasil diajukan dan sedang menunggu persetujuan!";
+            $pesan_sukses = "Pengajuan izin berhasil diajukan untuk $target_ustadz_nama dan sedang menunggu persetujuan!";
             
             // Logika Notifikasi WhatsApp
             $no_tujuan = "";
@@ -361,13 +373,30 @@ $active_menu = 'perizinan_pegawai';
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- FORM PENGAJUAN (Hanya Tampil untuk Pegawai / Non-Admin) -->
-                <?php if (!$is_admin): ?>
+                <!-- FORM PENGAJUAN (Tampil untuk Seluruh Pegawai & Admin) -->
                 <div class="bg-white rounded-xl border border-gray-150 shadow-sm p-6 lg:col-span-1 h-fit">
                     <h2 class="font-bold text-gray-800 text-sm mb-4 pb-2 border-b border-gray-100"><i class="fas fa-edit text-cyan-600 mr-1.5"></i> Formulir Pengajuan</h2>
                     <form action="" method="POST" class="space-y-4">
                         <input type="hidden" name="action" value="tambah_perizinan">
                         
+                        <?php if ($is_admin): ?>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Pengaju Izin (Pegawai)</label>
+                            <select name="ustadz_id_target" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-cyan-500 bg-white">
+                                <option value="<?= $ustadz_id_aktif ?>">-- Diri Sendiri (<?= htmlspecialchars($ustadz_nama) ?>) --</option>
+                                <?php
+                                $res_all_u = $conn->query("SELECT id, nama FROM akun_ustadz ORDER BY nama ASC");
+                                if ($res_all_u) {
+                                    while ($u_opt = $res_all_u->fetch_assoc()) {
+                                        if ($u_opt['id'] == $ustadz_id_aktif) continue;
+                                        echo "<option value='{$u_opt['id']}'>".htmlspecialchars($u_opt['nama'])."</option>";
+                                    }
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <?php endif; ?>
+
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Kategori Izin</label>
                             <select name="kategori" required class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-cyan-500 bg-white">
@@ -410,10 +439,9 @@ $active_menu = 'perizinan_pegawai';
                         </button>
                     </form>
                 </div>
-                <?php endif; ?>
 
                 <!-- DAFTAR PENGAJUAN / HISTORI -->
-                <div class="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden <?= !$is_admin ? 'lg:col-span-2' : 'lg:col-span-3' ?>">
+                <div class="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden lg:col-span-2">
                     <div class="px-6 py-4 bg-gray-50 border-b border-gray-150 flex justify-between items-center">
                         <h2 class="font-bold text-gray-800 text-sm"><i class="fas fa-history text-cyan-600 mr-1.5"></i> <?= $is_admin ? 'Daftar Pengajuan Seluruh Pegawai' : 'Riwayat Pengajuan Cuti Anda' ?></h2>
                         <span class="bg-cyan-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full"><?= count($list_perizinan) ?> Pengajuan</span>
