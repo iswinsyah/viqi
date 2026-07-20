@@ -692,30 +692,30 @@ $has_schedule_today = !empty($jadwal_hari_ini);
 
             </div>
 
-            <?php if (in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('musyrif', $user_roles) || in_array('super_admin', $user_roles)): ?>
+            <?php if (in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
                 <!-- PANEL MANAJEMEN RAPAT -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 max-w-4xl mx-auto mb-8 text-left">
                     <div class="border-b border-gray-100 pb-3 mb-6 flex items-center justify-between">
                         <div>
                             <h2 class="text-lg font-bold text-gray-800"><i class="fas fa-calendar-plus text-indigo-600 mr-2"></i>Panel Pembuatan Jadwal Rapat</h2>
-                            <p class="text-xs text-gray-500 mt-1">Pilih form rapat sesuai unit manajemen (Sekolah / Ma'had) untuk menentukan agenda dan target undangan.</p>
+                            <p class="text-xs text-gray-500 mt-1">Pilih form rapat sesuai wewenang role Anda untuk menentukan agenda dan target undangan.</p>
                         </div>
                     </div>
 
                     <!-- Tab Switcher -->
                     <div class="flex border-b border-gray-200 mb-6 space-x-2">
-                        <?php if (in_array('kepala_sekolah', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                        <?php if (in_array('kepala_sekolah', $user_roles) || in_array('super_admin', $user_roles)): ?>
                             <button id="tab-btn-sekolah" onclick="switchFormTab('sekolah')" type="button" class="py-2.5 px-4 font-bold text-xs rounded-t-lg bg-indigo-600 text-white shadow-sm transition-all flex items-center gap-2">
                                 <i class="fas fa-school"></i> Form Rapat Sekolah
                             </button>
                         <?php endif; ?>
-                        <?php if (in_array('kepala_mahad', $user_roles) || in_array('musyrif', $user_roles) || in_array('super_admin', $user_roles)): ?>
-                            <button id="tab-btn-mahad" onclick="switchFormTab('mahad')" type="button" class="py-2.5 px-4 font-bold text-xs rounded-t-lg <?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('super_admin', $user_roles)) ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all flex items-center gap-2">
+                        <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                            <button id="tab-btn-mahad" onclick="switchFormTab('mahad')" type="button" class="py-2.5 px-4 font-bold text-xs rounded-t-lg <?= (!in_array('kepala_sekolah', $user_roles) && !in_array('super_admin', $user_roles)) ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all flex items-center gap-2">
                                 <i class="fas fa-mosque"></i> Form Rapat Ma'had
                             </button>
                         <?php endif; ?>
-                        <?php if (in_array('super_admin', $user_roles) || in_array('ketua_yayasan', $user_roles)): ?>
-                            <button id="tab-btn-yayasan" onclick="switchFormTab('yayasan')" type="button" class="py-2.5 px-4 font-bold text-xs rounded-t-lg <?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles) && !in_array('musyrif', $user_roles)) ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all flex items-center gap-2">
+                        <?php if (in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                            <button id="tab-btn-yayasan" onclick="switchFormTab('yayasan')" type="button" class="py-2.5 px-4 font-bold text-xs rounded-t-lg <?= (!in_array('kepala_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles) && !in_array('super_admin', $user_roles)) ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all flex items-center gap-2">
                                 <i class="fas fa-landmark"></i> Form Rapat Yayasan
                             </button>
                         <?php endif; ?>
@@ -726,7 +726,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                         <div class="md:col-span-1 border-r border-gray-100 pr-0 md:pr-6">
                             
                             <!-- 1. FORM RAPAT SEKOLAH -->
-                            <?php if (in_array('kepala_sekolah', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                            <?php if (in_array('kepala_sekolah', $user_roles) || in_array('super_admin', $user_roles)): ?>
                             <div id="form-container-sekolah" class="block">
                                 <h3 class="text-sm font-bold text-indigo-900 mb-4 pb-2 border-b border-indigo-100 flex items-center"><i class="fas fa-school mr-2 text-indigo-600"></i>Form Rapat Sekolah</h3>
                                 <form action="admin-absensi-pegawai.php" method="POST" class="space-y-4">
@@ -842,8 +842,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                             <?php endif; ?>
 
                             <!-- 2. FORM RAPAT MA'HAD -->
-                            <?php if (in_array('kepala_mahad', $user_roles) || in_array('musyrif', $user_roles) || in_array('super_admin', $user_roles)): ?>
-                            <div id="form-container-mahad" class="<?= (in_array('kepala_sekolah', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles)) ? 'hidden' : 'block' ?>">
+                            <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                            <div id="form-container-mahad" class="<?= (in_array('kepala_sekolah', $user_roles) || in_array('super_admin', $user_roles)) ? 'hidden' : 'block' ?>">
                                 <h3 class="text-sm font-bold text-emerald-900 mb-4 pb-2 border-b border-emerald-100 flex items-center"><i class="fas fa-mosque mr-2 text-emerald-600"></i>Form Rapat Ma'had</h3>
                                 <form action="admin-absensi-pegawai.php" method="POST" class="space-y-4">
                                     <input type="hidden" name="action" value="buat_rapat">
@@ -963,7 +963,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
 
                             <!-- 3. FORM RAPAT YAYASAN -->
                             <?php if (in_array('super_admin', $user_roles) || in_array('ketua_yayasan', $user_roles)): ?>
-                            <div id="form-container-yayasan" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles) && !in_array('musyrif', $user_roles)) ? 'block' : 'hidden' ?>">
+                            <div id="form-container-yayasan" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles)) ? 'block' : 'hidden' ?>">
                                 <h3 class="text-sm font-bold text-amber-900 mb-4 pb-2 border-b border-amber-100 flex items-center"><i class="fas fa-landmark mr-2 text-amber-600"></i>Form Rapat Yayasan</h3>
                                 <form action="admin-absensi-pegawai.php" method="POST" class="space-y-4">
                                     <input type="hidden" name="action" value="buat_rapat">
