@@ -689,6 +689,14 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                             <span class="font-semibold text-indigo-900">Semua Pegawai & Asatidz</span>
                                         </label>
                                         <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" name="target_roles[]" value="sekretaris_yayasan" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Sekretaris Yayasan</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
+                                            <input type="checkbox" name="target_roles[]" value="bendahara_yayasan" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Bendahara Yayasan</span>
+                                        </label>
+                                        <label class="flex items-center space-x-2 cursor-pointer">
                                             <input type="checkbox" name="target_roles[]" value="admin_sekolah" class="rounded text-indigo-600 focus:ring-indigo-500">
                                             <span>Manajemen & Admin Sekolah</span>
                                         </label>
@@ -775,6 +783,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                                     $items = [];
                                                     if (in_array('semua_pegawai', $r_list)) $items[] = 'Semua Pegawai';
                                                     else {
+                                                        if (in_array('sekretaris_yayasan', $r_list)) $items[] = 'Sekretaris Yayasan';
+                                                        if (in_array('bendahara_yayasan', $r_list)) $items[] = 'Bendahara Yayasan';
                                                         if (in_array('admin_sekolah', $r_list)) $items[] = 'Admin Sekolah';
                                                         if (in_array('musyrif', $r_list)) $items[] = 'Musyrif';
                                                         if (in_array('ustadz_diknas', $r_list)) $items[] = 'Ustadz Diknas';

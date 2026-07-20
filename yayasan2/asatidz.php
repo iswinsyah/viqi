@@ -136,10 +136,16 @@ $active_menu = 'asatidz';
                             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 border p-4 rounded-lg bg-gray-50">
                                 <?php
                                 $all_roles = [
-                                    'kepala_sekolah' => 'Kepala Sekolah', 'sekretaris_sekolah' => 'Sekretaris Sekolah',
-                                    'bendahara_sekolah' => 'Bendahara Sekolah', 'admin_sekolah' => 'Admin Sekolah',
+                                    'sekretaris_yayasan' => 'Sekretaris Yayasan',
+                                    'bendahara_yayasan' => 'Bendahara Yayasan',
+                                    'kepala_sekolah' => 'Kepala Sekolah', 
+                                    'sekretaris_sekolah' => 'Sekretaris Sekolah',
+                                    'bendahara_sekolah' => 'Bendahara Sekolah', 
+                                    'admin_sekolah' => 'Admin Sekolah',
                                     'kepala_mahad' => "Kepala Ma'had",
-                                    'kepala_asrama' => 'Kepala Asrama', 'musyrif' => 'Musyrif', 'ustadz' => 'Ustadz'
+                                    'kepala_asrama' => 'Kepala Asrama', 
+                                    'musyrif' => 'Musyrif', 
+                                    'ustadz' => 'Ustadz'
                                 ];
                                 $user_roles = $edit_mode && !empty($data_edit['role']) ? explode(',', $data_edit['role']) : [];
                                 foreach ($all_roles as $value => $label) {

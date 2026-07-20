@@ -152,6 +152,12 @@ if ($req_jenis_absen === 'Rapat') {
             $is_invited = true;
         } else {
             foreach ($t_roles as $tr) {
+                if ($tr === 'sekretaris_yayasan' && in_array('sekretaris_yayasan', $user_roles)) {
+                    $is_invited = true; break;
+                }
+                if ($tr === 'bendahara_yayasan' && in_array('bendahara_yayasan', $user_roles)) {
+                    $is_invited = true; break;
+                }
                 if ($tr === 'musyrif' && (in_array('musyrif', $user_roles) || in_array('kepala_asrama', $user_roles))) {
                     $is_invited = true; break;
                 }
