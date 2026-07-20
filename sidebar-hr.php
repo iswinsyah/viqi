@@ -182,6 +182,23 @@ $menu_structure = [
     </div>
 </aside>
 
+<?php if (isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === true): ?>
+<div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 text-white px-4 py-2 text-xs shadow-2xl flex items-center justify-between border-b border-purple-400">
+    <div class="flex items-center space-x-2">
+        <span class="animate-pulse text-amber-300 font-extrabold text-sm"><i class="fas fa-user-secret"></i> MODE IMPERSONASI</span>
+        <span class="hidden sm:inline text-purple-200">|</span>
+        <span class="text-purple-100">Anda sedang mengakses sistem sebagai: <strong class="text-amber-200 underline font-bold"><?= htmlspecialchars($_SESSION['ustadz_nama'] ?? '') ?></strong></span>
+    </div>
+    <a href="switch-back-admin.php" class="bg-amber-400 hover:bg-amber-300 text-purple-950 font-extrabold px-3.5 py-1 rounded-full text-[11px] shadow transition flex items-center gap-1.5 whitespace-nowrap">
+        <i class="fas fa-undo"></i> Kembali ke Super Admin
+    </a>
+</div>
+<style>
+/* Geser layout sedikit jika banner impersonasi aktif */
+body { padding-top: 36px !important; }
+</style>
+<?php endif; ?>
+
 <script>
 document.addEventListener('click', function(event) {
     const openBtn = event.target.closest('#open-sidebar-hr');

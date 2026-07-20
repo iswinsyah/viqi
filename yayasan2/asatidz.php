@@ -260,10 +260,11 @@ $active_menu = 'asatidz';
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($tunjangan, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($honor, 0, ',', '.')." <span class='text-[9px] text-gray-400 block'>($total_pertemuan x)</span></td>
                                         <td class='px-4 py-3 text-right font-bold text-amber-600 bg-amber-50/20'>Rp ".number_format($total_gaji, 0, ',', '.')."</td>
-                                        <td class='px-4 py-3 text-center'>
+                                        <td class='px-4 py-3 text-center whitespace-nowrap'>
                                             {$btn_aktifkan}
-                                            <a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-3'><i class='fas fa-edit'></i></a>
-                                            <a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700'><i class='fas fa-trash'></i></a>
+                                            <a href='../login-as.php?id={$row['id']}' class='bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2 py-1 rounded text-[10px] mr-2 inline-flex items-center gap-1 border border-purple-300 shadow-sm' title='Login sebagai user ini untuk inspeksi error'><i class='fas fa-user-secret'></i> Login As</a>
+                                            <a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-2' title='Edit Akun'><i class='fas fa-edit'></i></a>
+                                            <a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700' title='Hapus Akun'><i class='fas fa-trash'></i></a>
                                         </td>
                                     </tr>"; 
                                 } 
