@@ -704,12 +704,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                     <p class="text-[10px] text-gray-400 mt-1">* Isi jika jadwal rutin bertepatan dengan libur dan perlu disetting ulang ke tanggal lain.</p>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Tujuan Undangan (Grup / Role Wajib)</label>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Tujuan Undangan (Role / Grup Wajib)</label>
                                     <div class="space-y-1 bg-gray-50 border border-gray-200 rounded-lg p-2.5 text-xs text-gray-700">
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="semua_pegawai" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span class="font-semibold text-indigo-900">Semua Pegawai & Asatidz</span>
-                                        </label>
                                         <label class="flex items-center space-x-2 cursor-pointer">
                                             <input type="checkbox" name="target_roles[]" value="admin_sekolah" class="rounded text-indigo-600 focus:ring-indigo-500">
                                             <span class="font-semibold text-gray-800">Admin Sekolah</span>
@@ -719,50 +715,31 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                             <span class="font-semibold text-gray-800">Tutor</span>
                                         </label>
                                         <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="ustadz" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span class="font-semibold text-gray-800">Ustadz</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="trainer" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span class="font-semibold text-gray-800">Trainer</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="sekretaris_yayasan" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Sekretaris Yayasan</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="bendahara_yayasan" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Bendahara Yayasan</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="staff_ldu" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Staff LDU</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="musyrif" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Musyrif / Musyrifah (Asrama)</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="ustadz_diknas" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Ustadz & Pengajar Diknas</span>
-                                        </label>
-                                        <label class="flex items-center space-x-2 cursor-pointer">
-                                            <input type="checkbox" name="target_roles[]" value="ustadz_diniyah" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Ustadz & Pengajar Diniyah</span>
+                                            <input type="checkbox" name="target_roles[]" value="semua_pegawai" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span class="text-gray-600">Semua Pegawai & Asatidz</span>
                                         </label>
                                     </div>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Atau Pilih Pegawai Spesifik (Opsional)</label>
+                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Pegawai Spesifik (Role Admin & Tutor)</label>
                                     <div class="max-h-36 overflow-y-auto border border-gray-200 rounded-lg p-2.5 bg-gray-50 space-y-1 text-xs text-gray-700">
                                         <?php
                                         $res_all_ustadz = $conn->query("SELECT id, nama, role FROM akun_ustadz ORDER BY nama ASC");
                                         if ($res_all_ustadz && $res_all_ustadz->num_rows > 0):
                                             while ($u = $res_all_ustadz->fetch_assoc()):
+                                                $r_list = array_map('trim', explode(',', strtolower($u['role'] ?? '')));
+                                                $is_admin_or_tutor = false;
+                                                foreach ($r_list as $r) {
+                                                    if ($r === 'tutor' || str_contains($r, 'admin')) {
+                                                        $is_admin_or_tutor = true;
+                                                        break;
+                                                    }
+                                                }
+                                                if (!$is_admin_or_tutor) continue;
                                         ?>
                                                 <label class="flex items-center space-x-2 hover:bg-gray-100 p-0.5 rounded cursor-pointer">
                                                     <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                                    <span><?= htmlspecialchars($u['nama']) ?> <span class="text-[10px] text-gray-400">(<?= htmlspecialchars($u['role'] ?? 'pegawai') ?>)</span></span>
+                                                    <span><?= htmlspecialchars($u['nama']) ?> <span class="text-[10px] text-indigo-600 font-semibold">(<?= htmlspecialchars($u['role'] ?? 'pegawai') ?>)</span></span>
                                                 </label>
                                         <?php
                                             endwhile;
