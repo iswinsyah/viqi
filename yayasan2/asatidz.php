@@ -138,6 +138,7 @@ $active_menu = 'asatidz';
                                 $all_roles = [
                                     'sekretaris_yayasan' => 'Sekretaris Yayasan',
                                     'bendahara_yayasan' => 'Bendahara Yayasan',
+                                    'kepala_ldu' => 'Kepala LDU',
                                     'staff_ldu' => 'Staff LDU',
                                     'kepala_sekolah' => 'Kepala Sekolah', 
                                     'sekretaris_sekolah' => 'Sekretaris Sekolah',

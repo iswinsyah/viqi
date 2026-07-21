@@ -416,8 +416,9 @@ $active_menu = 'perizinan_pegawai';
                                 <option value="Admin Sekolah">Admin Sekolah</option>
                                 <option value="Kepala Ma'had">Kepala Ma'had</option>
                                 <option value="Kepala Asrama">Kepala Asrama</option>
-                                <option value="Musyrif">Musyrif</option>
+                                <option value="Kepala LDU">Kepala LDU</option>
                                 <option value="Staff LDU">Staff LDU</option>
+                                <option value="Musyrif">Musyrif</option>
                                 <option value="Ustadz / Guru">Ustadz / Guru</option>
                             </select>
                         </div>
