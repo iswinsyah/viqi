@@ -122,38 +122,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         if ($stmt->execute()) {
             $pesan_sukses = "Pengajuan izin berhasil diajukan untuk $target_ustadz_nama (sebagai $peran_pengaju) dan sedang menunggu persetujuan!";
             
-            // Logika Notifikasi WhatsApp Tembusan
-            $no_tujuan = "";
-            $nama_tujuan = "";
+            // 1. Kirim Notifikasi Utama Permohonan Izin ke Ketua Yayasan (62895808626677)
+            $no_yayasan = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '62895808626677';
+            if (empty($no_yayasan) || strlen($no_yayasan) < 10) {
+                $no_yayasan = '62895808626677';
+            }
+
+            $pesan_yayasan = "🔔 *PENGAJUAN IZIN PEGAWAI BARU (KEPADA YAYASAN)*\n\n"
+                           . "Yth. *Ketua Yayasan*,\n"
+                           . "Berikut permohonan izin resmi dari pegawai (Akad Kerja Yayasan):\n\n"
+                           . "• Pegawai: *$target_ustadz_nama*\n"
+                           . "• Sebagai: *$peran_pengaju*\n"
+                           . "• Kategori: *$kategori*\n"
+                           . "• Waktu: " . date('d/m/Y H:i', strtotime($tanggal_mulai)) . " s/d " . date('d/m/Y H:i', strtotime($tanggal_selesai)) . "\n"
+                           . "• Alasan: _\"$keterangan\"_\n\n"
+                           . "Silakan login ke SIM Yayasan untuk meninjau dan memberikan persetujuan.\n"
+                           . "-- SIM Yayasan Villa Quran --";
+            
+            kirim_notifikasi_wa($no_yayasan, $pesan_yayasan);
+
+            // 2. Kirim Notifikasi Tembusan ke Atasan (Sesuai Isian Form ditujukan_ke)
+            $no_tembusan = "";
+            $nama_tembusan = "";
             if ($ditujukan_ke === 'kepala_sekolah') {
                 $res_sup = $conn->query("SELECT whatsapp, nama FROM akun_ustadz WHERE role LIKE '%kepala_sekolah%' AND whatsapp IS NOT NULL AND whatsapp != '' LIMIT 1");
                 $sup = ($res_sup && $res_sup->num_rows > 0) ? $res_sup->fetch_assoc() : null;
-                $no_tujuan = $sup ? $sup['whatsapp'] : '';
-                $nama_tujuan = $sup ? $sup['nama'] : 'Kepala Sekolah';
+                $no_tembusan = $sup ? $sup['whatsapp'] : '';
+                $nama_tembusan = $sup ? $sup['nama'] : 'Kepala Sekolah';
             } elseif ($ditujukan_ke === 'kepala_mahad') {
                 $res_sup = $conn->query("SELECT whatsapp, nama FROM akun_ustadz WHERE role LIKE '%kepala_mahad%' AND whatsapp IS NOT NULL AND whatsapp != '' LIMIT 1");
                 $sup = ($res_sup && $res_sup->num_rows > 0) ? $res_sup->fetch_assoc() : null;
-                $no_tujuan = $sup ? $sup['whatsapp'] : '';
-                $nama_tujuan = $sup ? $sup['nama'] : "Kepala Ma'had";
+                $no_tembusan = $sup ? $sup['whatsapp'] : '';
+                $nama_tembusan = $sup ? $sup['nama'] : "Kepala Ma'had";
             } elseif ($ditujukan_ke === 'ketua_yayasan') {
-                $no_tujuan = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223';
-                $nama_tujuan = 'Ketua Yayasan';
+                $no_tembusan = $no_yayasan;
+                $nama_tembusan = 'Ketua Yayasan';
             }
-            
-            // Format Pesan WA Tembusan
-            $pesan_wa = "📢 *TEMBUSAN PENGAJUAN IZIN PEGAWAI*\n\n"
-                      . "Yth. *$nama_tujuan*,\n"
-                      . "Pemberitahuan tembusan pengajuan izin pegawai (Akad kerja ke Yayasan) untuk koordinasi backup tugas:\n\n"
-                      . "• Pegawai: *$target_ustadz_nama*\n"
-                      . "• Sebagai: *$peran_pengaju*\n"
-                      . "• Kategori: *$kategori*\n"
-                      . "• Waktu: " . date('d/m/Y H:i', strtotime($tanggal_mulai)) . " s/d " . date('d/m/Y H:i', strtotime($tanggal_selesai)) . "\n"
-                      . "• Alasan: _\"$keterangan\"_\n\n"
-                      . "Silakan login ke SIM Yayasan untuk koordinasi.\n"
-                      . "-- SIM Yayasan Villa Quran --";
-            
-            if (!empty($no_tujuan)) {
-                kirim_notifikasi_wa($no_tujuan, $pesan_wa);
+
+            // Kirim tembusan jika nomor tembusan ada dan belum menerima pesan di atas
+            if (!empty($no_tembusan) && preg_replace('/[^0-9]/', '', $no_tembusan) !== preg_replace('/[^0-9]/', '', $no_yayasan)) {
+                $pesan_tembusan = "📢 *TEMBUSAN PENGAJUAN IZIN PEGAWAI*\n\n"
+                                . "Yth. *$nama_tembusan*,\n"
+                                . "Pemberitahuan tembusan pengajuan izin pegawai untuk koordinasi backup tugas di unit kerja Anda:\n\n"
+                                . "• Pegawai: *$target_ustadz_nama*\n"
+                                . "• Sebagai: *$peran_pengaju*\n"
+                                . "• Kategori: *$kategori*\n"
+                                . "• Waktu: " . date('d/m/Y H:i', strtotime($tanggal_mulai)) . " s/d " . date('d/m/Y H:i', strtotime($tanggal_selesai)) . "\n"
+                                . "• Alasan: _\"$keterangan\"_\n\n"
+                                . "Silakan berkoordinasi dengan tim di unit Anda.\n"
+                                . "-- SIM Yayasan Villa Quran --";
+                kirim_notifikasi_wa($no_tembusan, $pesan_tembusan);
             }
         } else {
             $pesan_error = "Gagal mengajukan izin: " . $conn->error;
