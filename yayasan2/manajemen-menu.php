@@ -37,7 +37,6 @@ $defined_menus = [
     ],
     'Musyrif' => [
         'mutabaah' => 'Buku Mutaba\'ah Santri',
-        'setor_hafalan' => 'Setoran Hafalan',
         'jurnal_pagi_musyrif' => 'Jurnal Piket Pagi (07.00-13.00)',
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'laporan_adab' => 'Laporan Kedisiplinan',

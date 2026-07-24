@@ -14,6 +14,32 @@ $waktu_sekarang = date('H:i:s');
 $pesan_sukses = "";
 $pesan_error = "";
 
+// KONFIGURASI TELEGRAM BOT (MOHON DIISI OLEH BOS)
+$telegram_bot_token = "ISI_BOT_TOKEN_DI_SINI";
+$telegram_chat_id = "ISI_CHAT_ID_DI_SINI";
+
+function kirim_foto_ke_telegram($file_tmp, $caption, $bot_token, $chat_id) {
+    if ($bot_token === "ISI_BOT_TOKEN_DI_SINI" || empty($bot_token)) {
+        return false; // Skip jika belum diisi
+    }
+    $url = "https://api.telegram.org/bot" . $bot_token . "/sendPhoto";
+    $ch = curl_init();
+    $cfile = new CURLFile($file_tmp);
+    $data = [
+        'chat_id' => $chat_id,
+        'photo' => $cfile,
+        'caption' => $caption
+    ];
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $result = curl_exec($ch);
+    curl_close($ch);
+    $response = json_decode($result, true);
+    return isset($response['ok']) && $response['ok'] === true;
+}
+
 // Buat Tabel Jurnal Piket Pagi jika belum ada
 $conn->query("CREATE TABLE IF NOT EXISTS jurnal_piket_pagi (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -48,21 +74,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $status_keamanan = $conn->real_escape_string($_POST['status_keamanan']);
             $keterangan_keamanan = $conn->real_escape_string($_POST['keterangan_keamanan']);
             
-            // Proses Upload Foto (hanya menerima file gambar)
-            $foto_kamar = $jurnal['foto_kamar'];
+            $foto_kamar = "Terkirim ke Telegram"; // Hanya menyimpan status teks
+            
             if (isset($_FILES['foto_kamar']) && $_FILES['foto_kamar']['error'] === UPLOAD_ERR_OK) {
                 $file_tmp = $_FILES['foto_kamar']['tmp_name'];
-                $file_name = time() . '_' . rand(100, 999) . '_' . $_FILES['foto_kamar']['name'];
-                $upload_dir = 'uploads/jurnal/';
-                if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-                if (move_uploaded_file($file_tmp, $upload_dir . $file_name)) {
-                    $foto_kamar = $upload_dir . $file_name;
-                }
+                
+                // Susun caption untuk Telegram
+                $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Musyrif';
+                $caption = "🛡 *LAPORAN STERILISASI ASRAMA*\n";
+                $caption .= "👤 Petugas: " . $ustadz_nama . "\n";
+                $caption .= "⏰ Waktu: " . $waktu_sekarang . " WIB\n";
+                $caption .= "📊 Status: " . $status_keamanan . "\n";
+                $caption .= "📝 Catatan: " . $keterangan_keamanan;
+                
+                // Kirim ke Telegram tanpa simpan file di server lokal
+                kirim_foto_ke_telegram($file_tmp, $caption, $telegram_bot_token, $telegram_chat_id);
             }
             
             $sql = "UPDATE jurnal_piket_pagi SET waktu_sterilisasi = '$waktu_sekarang', foto_kamar = '$foto_kamar', status_keamanan = '$status_keamanan', keterangan_keamanan = '$keterangan_keamanan' WHERE ustadz_id = $ustadz_id AND tanggal = '$hari_ini'";
             if ($conn->query($sql)) {
-                $pesan_sukses = "Laporan Sterilisasi dan Keamanan berhasil disimpan!";
+                $pesan_sukses = "Laporan Keamanan berhasil dikirim (Foto diteruskan ke Telegram)!";
                 $jurnal['waktu_sterilisasi'] = $waktu_sekarang;
                 $jurnal['foto_kamar'] = $foto_kamar;
                 $jurnal['status_keamanan'] = $status_keamanan;
@@ -77,24 +108,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $santri_id = (int)$_POST['santri_id'];
             $quote_text = $conn->real_escape_string($_POST['quote_text']);
             
-            // Proses Upload Foto
-            $foto_mentah = null;
             if (isset($_FILES['foto_santri']) && $_FILES['foto_santri']['error'] === UPLOAD_ERR_OK) {
                 $file_tmp = $_FILES['foto_santri']['tmp_name'];
-                $file_name = time() . '_santri_' . rand(100, 999) . '.jpg';
-                $upload_dir = 'uploads/sosmed/';
-                if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-                if (move_uploaded_file($file_tmp, $upload_dir . $file_name)) {
-                    $foto_mentah = $upload_dir . $file_name;
-                }
-            }
-            
-            if ($foto_mentah) {
+                
+                // Dapatkan nama santri
+                $res_s = $conn->query("SELECT nama_lengkap FROM buku_induk_santri WHERE id = $santri_id");
+                $nama_santri = ($res_s && $res_s->num_rows > 0) ? $res_s->fetch_assoc()['nama_lengkap'] : 'Santri';
+                
+                // Susun caption untuk Telegram
+                $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Musyrif';
+                $caption = "📸 *KABAR SANTRI HARI INI*\n";
+                $caption .= "👦 Santri: " . $nama_santri . "\n";
+                $caption .= "👤 Pelapor: " . $ustadz_nama . "\n";
+                $caption .= "💬 Kabar: " . $_POST['quote_text'];
+                
+                // Kirim ke Telegram tanpa simpan file di server lokal
+                kirim_foto_ke_telegram($file_tmp, $caption, $telegram_bot_token, $telegram_chat_id);
+                
+                $foto_mentah = "Terkirim ke Telegram"; // Hanya menyimpan status teks
+                
                 $sql = "INSERT INTO sosmed_campaign (tanggal, santri_id, pilar_konten, tema_foto, foto_mentah, quote_text, status_proses) VALUES ('$hari_ini', $santri_id, 'Kabar Santri', 'Kabar Harian', '$foto_mentah', '$quote_text', 'menunggu_foto')";
                 if ($conn->query($sql)) {
-                    $pesan_sukses = "Kabar 1 Hari 1 Santri berhasil dikirim!";
+                    $pesan_sukses = "Kabar 1 Hari 1 Santri berhasil dikirim (Foto diteruskan ke Telegram)!";
                 } else {
-                    $pesan_error = "Gagal menyimpan kabar santri.";
+                    $pesan_error = "Gagal menyimpan kabar santri ke database.";
                 }
             } else {
                 $pesan_error = "Harap ambil foto/upload foto santri.";

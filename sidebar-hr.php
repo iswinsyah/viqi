@@ -117,7 +117,6 @@ $menu_structure = [
     ],
     'Musyrif' => [
         'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'title' => 'Buku Mutaba\'ah Santri'],
-        'setor_hafalan' => ['href' => 'admin-ustadz.php?view=setor_hafalan', 'icon' => 'fa-quran', 'title' => 'Setoran Hafalan'],
         'jurnal_pagi_musyrif' => ['href' => 'admin-jurnal-pagi-musyrif.php', 'icon' => 'fa-sun', 'title' => 'Jurnal Piket Pagi (07.00-13.00)'],
         'jurnal_musyrif' => ['href' => 'admin-pegawai-jurnal-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'Jurnal Kegiatan Musyrif'],
         'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'title' => 'Laporan Kedisiplinan'],
