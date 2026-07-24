@@ -135,6 +135,18 @@ if ($req_jenis_absen === 'Rapat') {
         json_response('error', 'Rapat tidak aktif atau telah diselesaikan.');
     }
     $rapat = $res_rpt->fetch_assoc();
+    
+    $waktu_rapat_start = strtotime($rapat['waktu_mulai']);
+    $waktu_sekarang = time();
+    $diff_minutes = round(($waktu_sekarang - $waktu_rapat_start) / 60);
+
+    if (date('Y-m-d') !== date('Y-m-d', $waktu_rapat_start)) {
+        json_response('error', 'Absensi rapat hanya bisa dilakukan pada hari rapat (' . date('d-m-Y', $waktu_rapat_start) . ').');
+    }
+    if ($diff_minutes < -60) {
+        json_response('error', 'Absensi rapat belum dibuka. Silakan absen maksimal 60 menit sebelum rapat dimulai.');
+    }
+    
     $pengundang = $rapat['pengundang'];
     $peserta_json = $rapat['peserta_terundang'] ?? null;
     
@@ -316,6 +328,10 @@ if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
 }
 
 if ($qr_jenis_absen === 'Mengajar') {
+    $current_time = date('H:i');
+    if ($current_time < '04:30' || $current_time > '20:00') {
+        json_response('error', 'Absen Mengajar hanya dibuka antara pukul 04:30 s/d 20:00 WIB.');
+    }
     $keterangan = 'Mengajar';
 }
 
