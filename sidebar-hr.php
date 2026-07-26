@@ -52,6 +52,7 @@ if ($conn) {
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
                   VALUES ('jadwal_pelajaran', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')
                   ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz'");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kurikulum_solopreneur_trainer', 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin')");
 
     $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
     if ($res_perms) {
@@ -125,6 +126,9 @@ $menu_structure = [
     ],
     'Keuangan Santri' => [
         'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet', 'title' => 'Rekap Uang Saku Santri'],
+    ],
+    'Solopreneur & AI' => [
+        'kurikulum_solopreneur_trainer' => ['href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fa-rocket', 'title' => 'Inkubator Solopreneur (AI)'],
     ]
 ];
 

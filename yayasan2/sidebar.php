@@ -78,6 +78,9 @@
             <a href="admin-peraturan.php" class="<?= (isset($active_menu) && $active_menu == 'admin_peraturan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-gavel w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'admin_peraturan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> SOP & Peraturan
             </a>
+            <a href="kurikulum-solopreneur.php" class="<?= (isset($active_menu) && $active_menu == 'kurikulum_solopreneur') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-rocket w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kurikulum_solopreneur') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Kurikulum Solopreneur (AI)
+            </a>
         </nav>
     </div>
 
