@@ -7,6 +7,7 @@ $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_r
 $is_super_admin = (
     (isset($_SESSION['ustadz_id']) && (int)$_SESSION['ustadz_id'] === 9999) ||
     (isset($_SESSION['yayasan_logged_in']) && $_SESSION['yayasan_logged_in'] === true) ||
+    (isset($_SESSION['yayasan2_logged_in']) && $_SESSION['yayasan2_logged_in'] === true) ||
     in_array('super_admin', $user_roles) ||
     (isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === true)
 );
@@ -27,6 +28,8 @@ if ($target_id > 0) {
             $_SESSION['impersonator_admin_id'] = $_SESSION['ustadz_id'] ?? 9999;
             $_SESSION['impersonator_admin_nama'] = $_SESSION['ustadz_nama'] ?? 'Super Admin';
             $_SESSION['impersonator_yayasan_logged'] = $_SESSION['yayasan_logged_in'] ?? true;
+            $_SESSION['impersonator_yayasan2_logged'] = $_SESSION['yayasan2_logged_in'] ?? true;
+            $_SESSION['impersonator_from'] = $_SERVER['HTTP_REFERER'] ?? 'yayasan2/login-as.php';
         }
 
         // Aktifkan flag impersonasi
@@ -44,7 +47,7 @@ if ($target_id > 0) {
         die("User tidak ditemukan.");
     }
 } else {
-    header("Location: yayasan2/asatidz.php");
+    header("Location: yayasan2/login-as.php");
     exit;
 }
 ?>
