@@ -144,30 +144,9 @@ if (isset($_GET['action'])) {
                   "4. **AI Toolkit & Prompt Cheat-Sheet untuk Trainer/Guru:** Kumpulan prompt siap pakai dan rekomendasi tools AI (No-code / Low-code / ChatGPT / Claude / Make / Zapier / Chatbot WA) yang harus diajarkan Trainer.\n" .
                   "5. **Skema Evaluasi & Demo Day (PSB Booster):** Panduan penyelenggaraan 'Solopreneur Demo Day' di akhir tahun sebagai pameran bisnis santri di depan Orang Tua Wali Murid untuk mendongkrak pendaftaran siswa baru (PSB).";
 
-        // Call api-gemini.php
-        $apiUrl = 'http://' . $_SERVER['HTTP_HOST'] . str_replace(basename($_SERVER['PHP_SELF']), '', $_SERVER['PHP_SELF']) . '../api-gemini.php';
-        
-        $ch = curl_init($apiUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['prompt' => $prompt]));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-        
-        $response = curl_exec($ch);
-        $err = curl_error($ch);
-        curl_close($ch);
-
-        if ($err) {
-            echo json_encode(['status' => 'error', 'message' => 'Error koneksi ke AI Engine: ' . $err]);
-        } else {
-            $result = json_decode($response, true);
-            if (isset($result['status']) && $result['status'] === 'success') {
-                echo json_encode(['status' => 'success', 'result' => $result['result']]);
-            } else {
-                echo json_encode(['status' => 'error', 'message' => $result['message'] ?? 'Gagal menghasilkan kurikulum dari AI.']);
-            }
-        }
+        // Panggil api-gemini.php secara internal untuk menghindari masalah loopback/CORS di server hosting
+        $_POST['prompt'] = $prompt;
+        include __DIR__ . '/../api-gemini.php';
         exit;
     }
 }
