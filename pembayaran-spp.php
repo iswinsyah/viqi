@@ -82,6 +82,39 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($success_count > 0) {
         $pesan_sukses = "$success_count rincian pembayaran berhasil dikirim dan menunggu verifikasi bendahara.";
+        
+        // --- KIRIM NOTIFIKASI WHATSAPP KE PENGURUS ---
+        $nama_ortu = $_SESSION['orangtua_nama'] ?? 'Wali Santri';
+        $total_nominal_wa = 0;
+        foreach($jumlahs as $jml_str) {
+            $total_nominal_wa += (int)str_replace('.', '', $jml_str);
+        }
+        
+        $pesan_wa = "*Notifikasi Transaksi Baru (SADIGS 4.0)*\n\n"
+                  . "Terdapat konfirmasi pembayaran baru dari orang tua wali (*$nama_ortu*) sejumlah *$success_count rincian* tagihan.\n"
+                  . "Total nominal transfer: *Rp " . number_format($total_nominal_wa, 0, ',', '.') . "* (terlampir struk).\n\n"
+                  . "Mohon Bendahara Yayasan untuk segera melakukan pengecekan rekening dan verifikasi di menu *Pembukuan Yayasan*.\n\n"
+                  . "Terima kasih.";
+        
+        $target_numbers = "62895808626677,6281235449303,6282299626697";
+        
+        if (file_exists('config-key.php')) require_once 'config-key.php';
+        $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
+        
+        $waFd = ['target' => $target_numbers, 'message' => $pesan_wa];
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => "https://api.fonnte.com/send",
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($waFd),
+            CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+            CURLOPT_SSL_VERIFYPEER => false // Localhost support
+        ]);
+        curl_exec($ch);
+        curl_close($ch);
+        // ----------------------------------------------
+
     } else {
         $pesan_error = "Gagal mengirim konfirmasi. " . $error_msg;
     }
