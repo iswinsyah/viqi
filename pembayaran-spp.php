@@ -70,7 +70,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $jml = (int)str_replace('.', '', $jumlahs[$i]); // Remove any dot formatting
 
         if ($sid > 0 && $jml > 0) {
-            $sql = "INSERT INTO pembayaran_spp (santri_id, jenis_pembayaran, keterangan_lainnya, bulan, tahun, jumlah_bayar, tanggal_bayar, bukti_transfer, status) 
+            $sql = "INSERT INTO pembayaran_spp (santri_id, jenis_pembayaran, keterangan_lainnya, bulan, tahun, jumlah, tanggal_bayar, bukti_transfer, status) 
                     VALUES ($sid, '$jenis', '$ket', '$bln', '$thn', $jml, '$tanggal_bayar', '$bukti_name', 'Menunggu Verifikasi')";
             if ($conn->query($sql)) {
                 $success_count++;
