@@ -35,6 +35,10 @@ if ($target_id > 0) {
         // Aktifkan flag impersonasi
         $_SESSION['is_impersonating'] = true;
 
+        // Nonaktifkan sementara flag sesi Yayasan/Super Admin agar sistem menganggap murni login sebagai pegawai
+        unset($_SESSION['yayasan_logged_in']);
+        unset($_SESSION['yayasan2_logged_in']);
+
         // Switch sesi ke target user
         $_SESSION['ustadz_logged_in'] = true;
         $_SESSION['ustadz_id'] = $user['id'];

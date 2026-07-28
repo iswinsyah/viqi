@@ -10,11 +10,13 @@ $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Pegawai';
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
 
 // Cek Otoritas Admin (untuk menyetujui/menolak izin)
-$admin_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'ketua_yayasan', 'yayasan', 'hrd'];
+$admin_roles = ['super_admin', 'ketua_yayasan'];
 $is_admin = false;
-if ($ustadz_id_aktif == 9999 || isset($_SESSION['yayasan2_logged_in']) || isset($_SESSION['yayasan_logged_in'])) {
+$is_impersonating = isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === true;
+
+if (!$is_impersonating && ($ustadz_id_aktif == 9999 || isset($_SESSION['yayasan2_logged_in']) || isset($_SESSION['yayasan_logged_in']))) {
     $is_admin = true;
-} else {
+} else if (!$is_impersonating) {
     foreach ($user_roles as $role) {
         if (in_array(trim($role), $admin_roles)) {
             $is_admin = true;
@@ -83,6 +85,8 @@ function kirim_notifikasi_wa($target, $pesan) {
         CURLOPT_POST => true,
         CURLOPT_POSTFIELDS => http_build_query($waFd),
         CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => false,
         CURLOPT_TIMEOUT => 15
     ]);
     curl_exec($ch);
@@ -126,10 +130,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
         if ($stmt->execute()) {
             $pesan_sukses = "Pengajuan izin berhasil diajukan untuk $target_ustadz_nama (sebagai $peran_pengaju) dan sedang menunggu persetujuan!";
             
-            // 1. Kirim Notifikasi Utama Permohonan Izin ke Ketua Yayasan (62895808626677)
-            $no_yayasan = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '62895808626677';
+            // 1. Kirim Notifikasi Utama Permohonan Izin ke Ketua Yayasan (6285189918115)
+            $no_yayasan = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285189918115';
             if (empty($no_yayasan) || strlen($no_yayasan) < 10) {
-                $no_yayasan = '62895808626677';
+                $no_yayasan = '6285189918115';
             }
 
             $pesan_yayasan = "🔔 *PENGAJUAN IZIN PEGAWAI BARU (KEPADA YAYASAN)*\n\n"
