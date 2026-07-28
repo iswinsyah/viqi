@@ -23,7 +23,7 @@ $santri_list = [];
 if ($orangtua_id == 9999) {
     $res_s = $conn->query("SELECT id, nama_lengkap FROM buku_induk_santri WHERE status_santri = 'Aktif' LIMIT 15");
 } else {
-    $res_s = $conn->query("SELECT id, nama_lengkap FROM buku_induk_santri WHERE id_orangtua = $orangtua_id");
+    $res_s = $conn->query("SELECT s.id, s.nama_lengkap FROM buku_induk_santri s JOIN santri_orangtua_link sol ON s.id = sol.santri_id WHERE sol.orangtua_id = $orangtua_id");
 }
 if ($res_s) while($r = $res_s->fetch_assoc()) $santri_list[] = $r;
 
@@ -55,7 +55,8 @@ if ($orangtua_id == 9999) {
 } else {
     $sql_h = "SELECT u.*, s.nama_lengkap FROM uang_saku u 
               JOIN buku_induk_santri s ON u.santri_id = s.id 
-              WHERE s.id_orangtua = $orangtua_id ORDER BY u.created_at DESC";
+              JOIN santri_orangtua_link sol ON s.id = sol.santri_id
+              WHERE sol.orangtua_id = $orangtua_id ORDER BY u.created_at DESC";
 }
 $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
 ?>

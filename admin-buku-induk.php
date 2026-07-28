@@ -83,6 +83,19 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
 @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN alamat_wali TEXT AFTER pekerjaan_wali");
 @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN no_whatsapp_wali VARCHAR(20) AFTER alamat_wali");
 
+// 5. Tabel Relasi Many-to-Many Santri & Orangtua
+$conn->query("CREATE TABLE IF NOT EXISTS santri_orangtua_link (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    santri_id INT NOT NULL,
+    orangtua_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_santri_ortu (santri_id, orangtua_id),
+    FOREIGN KEY (santri_id) REFERENCES buku_induk_santri(id) ON DELETE CASCADE,
+    FOREIGN KEY (orangtua_id) REFERENCES akun_orangtua(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+// Migrasi data otomatis jika belum ada (self-healing)
+$conn->query("INSERT IGNORE INTO santri_orangtua_link (santri_id, orangtua_id) SELECT id, id_orangtua FROM buku_induk_santri WHERE id_orangtua IS NOT NULL");
+
 // CRUD LOGIC
 // Hapus Data
 if (isset($_GET['hapus_id'])) {
@@ -98,7 +111,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $fields = [
             'nama_lengkap', 'nis', 'nisn', 'nik', 'tempat_lahir', 'tanggal_lahir', 
             'username', 'password', 'jenis_kelamin', 'alamat_lengkap', 'foto_santri', 'tanggal_masuk', 
-            'id_orangtua',
             'asal_sekolah', 'status_santri', 'kelas_sekarang', 'kamar_asrama', 
             'nama_ayah', 'pekerjaan_ayah', 'nama_ibu', 'pekerjaan_ibu', 
             'no_whatsapp_ayah', 'alamat_ayah', 'no_whatsapp_ibu', 'alamat_ibu',
@@ -130,7 +142,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
             // Handle kolom unik (seperti NIS/NISN) dan kolom tanggal/foreign key yang boleh kosong
-            if (in_array($field, ['nis', 'nisn', 'nik', 'tanggal_lahir', 'tanggal_masuk', 'id_orangtua']) && trim($value) === '') {
+            if (in_array($field, ['nis', 'nisn', 'nik', 'tanggal_lahir', 'tanggal_masuk']) && trim($value) === '') {
                 $set_clause[] = "$field = NULL";
             } else {
                 $set_clause[] = "$field = '" . $conn->real_escape_string($value) . "'";
@@ -146,6 +158,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
         if (!$conn->query($sql)) {
             $pesan_error = "Gagal menyimpan data: " . $conn->error;
+        } else {
+            $santri_id = ($id > 0) ? $id : $conn->insert_id;
+            // Update relasi orangtua
+            $conn->query("DELETE FROM santri_orangtua_link WHERE santri_id = $santri_id");
+            if (!empty($_POST['id_orangtua']) && is_array($_POST['id_orangtua'])) {
+                foreach($_POST['id_orangtua'] as $oid) {
+                    $oid = (int)$oid;
+                    if ($oid > 0) {
+                        $conn->query("INSERT INTO santri_orangtua_link (santri_id, orangtua_id) VALUES ($santri_id, $oid)");
+                    }
+                }
+            }
         }
     }
 }
@@ -157,7 +181,16 @@ if (isset($_GET['edit_id'])) {
     $edit_mode = true;
     $id = (int)$_GET['edit_id'];
     $res = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $id");
-    if ($res) $data_edit = $res->fetch_assoc();
+    if ($res) {
+        $data_edit = $res->fetch_assoc();
+        $data_edit['id_orangtua_array'] = [];
+        $res_link = $conn->query("SELECT orangtua_id FROM santri_orangtua_link WHERE santri_id = $id");
+        if ($res_link) {
+            while($rl = $res_link->fetch_assoc()){
+                $data_edit['id_orangtua_array'][] = $rl['orangtua_id'];
+            }
+        }
+    }
 }
 
 // Ambil data akun orang tua untuk dropdown
@@ -258,11 +291,10 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
                     <div class="mb-6 border border-gray-200 rounded-lg p-5 bg-gray-50/50">
                         <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">III. Data Orang Tua / Wali</h3>
                         <div class="mb-4 bg-blue-50 border border-blue-200 p-3 rounded-lg">
-                            <label class="text-sm font-medium text-blue-800">Hubungkan ke Akun Orang Tua</label>
-                            <select name="id_orangtua" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-cyan-500">
-                                <option value="">-- Tidak Dihubungkan --</option>
+                            <label class="text-sm font-medium text-blue-800">Hubungkan ke Akun Orang Tua (Bisa lebih dari 1, tekan CTRL untuk multi-select)</label>
+                            <select name="id_orangtua[]" multiple class="w-full mt-1 px-3 py-2 border rounded-lg text-sm focus:ring-cyan-500 h-32">
                                 <?php foreach($akun_orangtua as $ortu): ?>
-                                    <option value="<?= $ortu['id'] ?>" <?= ($edit_mode && isset($data_edit['id_orangtua']) && $data_edit['id_orangtua'] == $ortu['id']) ? 'selected' : '' ?>>
+                                    <option value="<?= $ortu['id'] ?>" <?= ($edit_mode && isset($data_edit['id_orangtua_array']) && in_array($ortu['id'], $data_edit['id_orangtua_array'])) ? 'selected' : '' ?>>
                                         <?= htmlspecialchars($ortu['nama_orangtua']) ?> (<?= htmlspecialchars($ortu['username']) ?>)
                                     </option>
                                 <?php endforeach; ?>
@@ -310,7 +342,15 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php
-                            $res = $conn->query("SELECT b.*, o.nama_orangtua FROM buku_induk_santri b LEFT JOIN akun_orangtua o ON b.id_orangtua = o.id ORDER BY b.nama_lengkap ASC");
+                            $res = $conn->query("
+                                SELECT b.*, 
+                                    GROUP_CONCAT(DISTINCT o.nama_orangtua SEPARATOR ', ') as daftar_ortu
+                                FROM buku_induk_santri b 
+                                LEFT JOIN santri_orangtua_link sol ON b.id = sol.santri_id
+                                LEFT JOIN akun_orangtua o ON sol.orangtua_id = o.id 
+                                GROUP BY b.id
+                                ORDER BY b.nama_lengkap ASC
+                            ");
                             if ($res && $res->num_rows > 0) {
                                 while($row = $res->fetch_assoc()) { 
                                     $badge_color = 'bg-green-100 text-green-800';
@@ -322,7 +362,7 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
                                             <img src="<?= !empty($row['foto_santri']) ? htmlspecialchars($row['foto_santri']) : 'https://via.placeholder.com/100' ?>" class="w-10 h-10 rounded-full object-cover mr-3 shadow-sm flex-shrink-0" alt="Foto">
                                             <div>
                                                 <span class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_lengkap']) ?></span>
-                                                <?php if(!empty($row['nama_orangtua'])): ?><div class="text-xs text-gray-500 mt-1"><i class="fas fa-user-shield text-cyan-600 mr-1"></i> Wali: <?= htmlspecialchars($row['nama_orangtua']) ?></div><?php endif; ?>
+                                                <?php if(!empty($row['daftar_ortu'])): ?><div class="text-xs text-gray-500 mt-1"><i class="fas fa-users text-cyan-600 mr-1"></i> Terhubung dgn: <span class="font-semibold text-gray-700"><?= htmlspecialchars($row['daftar_ortu']) ?></span></div><?php else: ?><div class="text-xs text-red-400 mt-1"><i class="fas fa-exclamation-triangle mr-1"></i> Belum ada akun orangtua</div><?php endif; ?>
                                             </div>
                                         </div>
                                     </td>

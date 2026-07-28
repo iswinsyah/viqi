@@ -8,7 +8,7 @@ $active_menu = 'dashboard_orangtua';
 
 // 1. Keamanan
 if ($orangtua_id != 9999) {
-    $check = $conn->query("SELECT id FROM buku_induk_santri WHERE id = $santri_id AND id_orangtua = $orangtua_id");
+    $check = $conn->query("SELECT s.id FROM buku_induk_santri s JOIN santri_orangtua_link sol ON s.id = sol.santri_id WHERE s.id = $santri_id AND sol.orangtua_id = $orangtua_id");
     if (!$check || $check->num_rows == 0) die("Akses Ditolak.");
 }
 

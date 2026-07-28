@@ -12,7 +12,12 @@ if ($orangtua_id == 9999) {
     $res = $conn->query("SELECT * FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY created_at DESC LIMIT 12");
 } else {
     // Jika Orang Tua asli, tampilkan anak-anak mereka saja
-    $res = $conn->query("SELECT * FROM buku_induk_santri WHERE id_orangtua = $orangtua_id");
+    $res = $conn->query("
+        SELECT s.* 
+        FROM buku_induk_santri s 
+        JOIN santri_orangtua_link sol ON s.id = sol.santri_id 
+        WHERE sol.orangtua_id = $orangtua_id
+    ");
 }
 if ($res) while($r = $res->fetch_assoc()) $santri_list[] = $r;
 ?>

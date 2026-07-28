@@ -1189,16 +1189,18 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
     // 1. Query Santri Aktif yang memiliki kewajiban (belum bayar SPP bulan ini ATAU memiliki sisa cicilan uang masuk > 0)
     $sql_santri = "
         SELECT s.id, s.nama_lengkap, s.kelas_sekarang, s.sisa_uang_masuk, p.id as spp_bayar_id,
-               COALESCE(s.no_whatsapp_ayah, s.no_whatsapp_ibu, s.no_whatsapp_wali, o.no_whatsapp) as no_wa,
-               COALESCE(s.nama_ayah, s.nama_ibu, s.nama_wali, o.nama_orangtua) as nama_ortu
+               COALESCE(s.no_whatsapp_ayah, s.no_whatsapp_ibu, s.no_whatsapp_wali, MAX(o.no_whatsapp)) as no_wa,
+               COALESCE(s.nama_ayah, s.nama_ibu, s.nama_wali, GROUP_CONCAT(DISTINCT o.nama_orangtua)) as nama_ortu
         FROM buku_induk_santri s
-        LEFT JOIN akun_orangtua o ON s.id_orangtua = o.id
+        LEFT JOIN santri_orangtua_link sol ON s.id = sol.santri_id
+        LEFT JOIN akun_orangtua o ON sol.orangtua_id = o.id
         LEFT JOIN pembayaran_spp p ON s.id = p.santri_id 
             AND p.bulan = '$bulan_sekarang' 
             AND p.tahun = '$tahun_sekarang' 
             AND p.status = 'Berhasil'
         WHERE s.status_santri = 'Aktif' 
           AND (p.id IS NULL OR s.sisa_uang_masuk > 0)
+        GROUP BY s.id
         ORDER BY s.id ASC";
         
     pastikanKoneksiDb();
