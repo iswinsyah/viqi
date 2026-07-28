@@ -188,6 +188,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     }
 }
 
+// Handler Hapus Izin
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'hapus_perizinan') {
+    $izin_id = (int)$_POST['izin_id'];
+    // Validasi: pastikan data ada dan hanya boleh dihapus oleh pemiliknya, atau oleh admin kapan saja
+    $res_izin = $conn->query("SELECT * FROM kepegawaian_perizinan WHERE id = $izin_id LIMIT 1");
+    if ($res_izin && $res_izin->num_rows > 0) {
+        $izin = $res_izin->fetch_assoc();
+        if ($is_admin || $izin['ustadz_id'] == $ustadz_id_aktif) {
+            $conn->query("DELETE FROM kepegawaian_perizinan WHERE id = $izin_id");
+            $pesan_sukses = "Data pengajuan izin berhasil dihapus.";
+        } else {
+            $pesan_error = "Anda tidak berhak menghapus pengajuan izin ini.";
+        }
+    }
+}
+
 // 3. Handler Persetujuan/Penolakan Izin (Untuk Admin/Atasan)
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'update_status_perizinan' && $is_admin) {
     $izin_id = (int)$_POST['izin_id'];
@@ -553,12 +569,13 @@ $active_menu = 'perizinan_pegawai';
                                     <th class="px-6 py-3 text-left">Periode & Jam Izin</th>
                                     <th class="px-6 py-3 text-left">Alasan/Keterangan</th>
                                     <th class="px-6 py-3 text-center">Status</th>
+                                    <th class="px-6 py-3 text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
                                 <?php if (empty($list_perizinan_saya)): ?>
                                 <tr>
-                                    <td colspan="5" class="py-12 text-gray-400 italic text-center">Belum ada pengajuan izin/cuti yang terdaftar.</td>
+                                    <td colspan="6" class="py-12 text-gray-400 italic text-center">Belum ada pengajuan izin/cuti yang terdaftar.</td>
                                 </tr>
                                 <?php else: foreach ($list_perizinan_saya as $row): 
                                     $st = $row['status'];
@@ -616,6 +633,15 @@ $active_menu = 'perizinan_pegawai';
                                     </td>
                                     <td class="px-6 py-4 text-center">
                                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border <?= $badge ?>"><?= $st ?></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <form method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus riwayat izin ini?');">
+                                            <input type="hidden" name="action" value="hapus_perizinan">
+                                            <input type="hidden" name="izin_id" value="<?= $row['id'] ?>">
+                                            <button type="submit" class="bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white px-2.5 py-1.5 rounded-md text-[11px] font-bold transition inline-flex items-center gap-1 shadow-sm border border-rose-100 hover:border-rose-500" title="Hapus Pengajuan">
+                                                <i class="fas fa-trash-alt"></i> Hapus
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                                 <?php endforeach; endif; ?>
@@ -743,6 +769,13 @@ $active_menu = 'perizinan_pegawai';
                                             <i class="fas fa-ban mr-1"></i> Batalkan
                                         </button>
                                         <?php endif; ?>
+                                        <form method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengajuan izin ini secara permanen?');">
+                                            <input type="hidden" name="action" value="hapus_perizinan">
+                                            <input type="hidden" name="izin_id" value="<?= $row['id'] ?>">
+                                            <button type="submit" class="bg-gray-100 hover:bg-rose-600 text-gray-500 hover:text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm border border-gray-200 hover:border-rose-600 transition inline-flex items-center gap-1" title="Hapus Permanen">
+                                                <i class="fas fa-trash-alt"></i> Hapus
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                                 <?php endforeach; endif; ?>
