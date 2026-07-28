@@ -195,7 +195,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && $is_valid && $santri) {
 
         <!-- Footer watermark -->
         <div class="bg-gray-50 border-t border-gray-100 py-3 text-center text-[10px] text-gray-400">
-            &copy; <?= date('Y') ?> SIM Keuangan - Yayasan Villa Quran Indonesia
+            &copy; <?= date('Y') ?> SADIGS 4.0 Keuangan - Yayasan Villa Quran Indonesia
         </div>
     </div>
 

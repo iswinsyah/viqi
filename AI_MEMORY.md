@@ -1,5 +1,5 @@
 # 🧠 AI MEMORY & MANUAL PENGEMBANGAN PROJEK
-**Projek:** Sistem Informasi Manajemen (SIM) & Hub Marketing AI - Villa Quran Indonesia
+**Projek:** Sistem Administrasi Digital Sekolah (SADIGS 4.0) & Hub Marketing AI - Villa Quran Indonesia
 **Platform:** PHP Native, MySQL, Tailwind CSS, JavaScript (Fetch API)
 **Integrasi Utama:** Google Gemini 2.5 Flash (via Google Apps Script loopback), Fonnte API (WhatsApp Gateway), Pixabay API (Cover Otomatis)
 

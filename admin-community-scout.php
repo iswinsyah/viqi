@@ -236,7 +236,7 @@ if ($res_age) {
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
             <div class="flex items-center">
                 <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button>
-                <h2 class="font-bold text-gray-800">Sistem Informasi Manajemen (SIM)</h2>
+                <h2 class="font-bold text-gray-800">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
             </div>
             <div class="h-8 w-8 rounded-full bg-rose-500 flex items-center justify-center text-white font-bold shadow-sm">C</div>
         </header>

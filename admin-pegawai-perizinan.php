@@ -144,8 +144,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                            . "• Kategori: *$kategori*\n"
                            . "• Waktu: " . date('d/m/Y H:i', strtotime($tanggal_mulai)) . " s/d " . date('d/m/Y H:i', strtotime($tanggal_selesai)) . "\n"
                            . "• Alasan: _\"$keterangan\"_\n\n"
-                           . "Silakan login ke SIM Yayasan untuk meninjau dan memberikan persetujuan.\n"
-                           . "-- SIM Yayasan Villa Quran --";
+                           . "Silakan login ke SADIGS 4.0 untuk meninjau dan memberikan persetujuan.\n"
+                           . "-- SADIGS 4.0 Villa Quran --";
             
             kirim_notifikasi_wa($no_yayasan, $pesan_yayasan);
 
@@ -178,7 +178,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                                 . "• Waktu: " . date('d/m/Y H:i', strtotime($tanggal_mulai)) . " s/d " . date('d/m/Y H:i', strtotime($tanggal_selesai)) . "\n"
                                 . "• Alasan: _\"$keterangan\"_\n\n"
                                 . "Silakan berkoordinasi dengan tim di unit Anda.\n"
-                                . "-- SIM Yayasan Villa Quran --";
+                                . "-- SADIGS 4.0 Villa Quran --";
                 kirim_notifikasi_wa($no_tembusan, $pesan_tembusan);
             }
         } else {
@@ -311,7 +311,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                             $pesan_wa .= "• Catatan / Arahan Atasan: _\"$catatan_admin\"_\n";
                         }
                         $pesan_wa .= "\nHarap mematuhi durasi dan jadwal resmi yang telah disetujui di atas.\n"
-                                  . "-- SIM Yayasan Villa Quran --";
+                                  . "-- SADIGS 4.0 Villa Quran --";
                         kirim_notifikasi_wa($emp['whatsapp'], $pesan_wa);
                     }
                 }
@@ -359,7 +359,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                             $pesan_wa .= "• Alasan Penolakan: _\"$catatan_admin\"_\n\n";
                         }
                         $pesan_wa .= "Harap tetap melaksanakan tugas dan tanggung jawab sesuai jadwal operasional yang berlaku.\n"
-                                  . "-- SIM Yayasan Villa Quran --";
+                                  . "-- SADIGS 4.0 Villa Quran --";
                         kirim_notifikasi_wa($emp['whatsapp'], $pesan_wa);
                     }
                 }

@@ -59,7 +59,7 @@ if($q_pendaftar) { while($r = $q_pendaftar->fetch_assoc()) { $pendaftar_terbaru[
                     <i class="fas fa-bars text-xl"></i>
                 </button>
                 <div class="hidden sm:block">
-                    <h2 class="font-bold text-gray-800">Sistem Informasi Manajemen (SIM)</h2>
+                    <h2 class="font-bold text-gray-800">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
                 </div>
             </div>
             

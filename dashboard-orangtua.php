@@ -32,7 +32,7 @@ if ($res) while($r = $res->fetch_assoc()) $santri_list[] = $r;
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
             <div class="flex items-center">
                 <button id="open-sidebar-orangtua" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button>
-                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2>
+                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
             </div>
             <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-600 hidden md:block">Selamat Datang, <b><?= htmlspecialchars($_SESSION['orangtua_nama']) ?></b></span>

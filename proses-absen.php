@@ -411,7 +411,7 @@ if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
               . "Status: *DITOLAK (Di luar jangkauan)*\n"
               . "Jarak: " . round($distance) . " meter dari $target_location_name\n"
               . "Koordinat: `$user_lat, $user_lon`\n\n"
-              . "-- SIM Yayasan Villa Quran --";
+              . "-- SADIGS 4.0 Villa Quran --";
     kirim_notifikasi_wa_yayasan($pesan_wa);
 
     // Kirim response khusus
@@ -444,7 +444,7 @@ if ($stmt->execute()) {
               . "Lokasi: $target_location_name (Jarak: " . round($distance) . "m)\n"
               . ($warning_msg ? "Catatan: _" . strip_tags($warning_msg) . "_\n" : "")
               . "Koordinat: `$user_lat, $user_lon`\n\n"
-              . "-- SIM Yayasan Villa Quran --";
+              . "-- SADIGS 4.0 Villa Quran --";
     kirim_notifikasi_wa_yayasan($pesan_wa);
 
     json_response('success', "Absensi $status_kehadiran berhasil dicatat!", $res_data);

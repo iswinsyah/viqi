@@ -73,7 +73,7 @@ $active_menu = 'galeri';
     <?php include 'sidebar.php'; ?>
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
-            <h2 class="font-bold text-gray-800">Sistem Informasi Manajemen (SIM)</h2>
+            <h2 class="font-bold text-gray-800">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
             <a href="index.html#galeri" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium"><i class="fas fa-external-link-alt mr-1"></i> Lihat Web</a>
         </header>
 

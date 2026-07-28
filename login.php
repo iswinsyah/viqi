@@ -40,7 +40,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="text-center mb-8">
             <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4"><i class="fas fa-user-shield"></i></div>
             <h1 class="text-2xl font-bold text-gray-900">Ruang Web</h1>
-            <p class="text-sm text-gray-500 mt-1">Sistem Informasi Manajemen Terpadu</p>
+            <p class="text-sm text-gray-500 mt-1">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</p>
         </div>
 
         <?php if($error): ?><div class="bg-red-50 text-red-600 border border-red-200 text-sm px-4 py-3 rounded-lg mb-6 flex items-center"><i class="fas fa-exclamation-triangle mr-2"></i> <?= $error ?></div><?php endif; ?>

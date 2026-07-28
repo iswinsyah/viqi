@@ -113,7 +113,7 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
             
             if ($is_target) {
                 $pesan = "📢 *UNDANGAN RAPAT RESMI*\n"
-                       . "-- SIM Yayasan Villa Quran --\n\n"
+                       . "-- SADIGS 4.0 Villa Quran --\n\n"
                        . "Kepada Yth. *" . $p['nama'] . "*\n\n"
                        . "Anda diundang untuk menghadiri rapat sekolah berikut:\n"
                        . "📌 *Agenda*: " . $agenda . "\n"
@@ -121,7 +121,7 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
                        . "🔄 *Sifat Rapat*: " . $rutin_desc . "\n"
                        . "🕒 *Waktu Pelaksanaan*: " . $waktu_formatted . $libur_info . "\n\n"
                        . "Diharapkan hadir tepat waktu.\n\n"
-                       . "-- SIM Yayasan Villa Quran --";
+                       . "-- SADIGS 4.0 Villa Quran --";
                        
                 $waFd = ['target' => $no_wa, 'message' => $pesan];
                 $ch = curl_init();
@@ -162,7 +162,7 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
                 
                 if ($is_target_ortu) {
                     $pesan_ortu = "📢 *UNDANGAN RAPAT ORANG TUA / WALISANTRI*\n"
-                               . "-- SIM Yayasan Villa Quran --\n\n"
+                               . "-- SADIGS 4.0 Villa Quran --\n\n"
                                . "Kepada Yth. Bapak/Ibu *" . $o['nama_orangtua'] . "* (Walisantri)\n\n"
                                . "Bapak/Ibu diundang untuk menghadiri rapat sekolah berikut:\n"
                                . "📌 *Agenda*: " . $agenda . "\n"
@@ -170,7 +170,7 @@ function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_r
                                . "🔄 *Sifat Rapat*: " . $rutin_desc . "\n"
                                . "🕒 *Waktu Pelaksanaan*: " . $waktu_formatted . $libur_info . "\n\n"
                                . "Kehadiran Bapak/Ibu sangat diharapkan demi kelancaran kegiatan belajar mengajar ananda.\n\n"
-                               . "-- SIM Yayasan Villa Quran --";
+                               . "-- SADIGS 4.0 Villa Quran --";
                                
                     $waFd = ['target' => $no_wa, 'message' => $pesan_ortu];
                     $ch = curl_init();
@@ -488,7 +488,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
     <?php include 'sidebar-hr.php'; ?>
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
-            <div class="flex items-center"><button id="open-sidebar-hr" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Sistem Informasi Manajemen (SIM)</h2></div>
+            <div class="flex items-center"><button id="open-sidebar-hr" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2></div>
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
