@@ -96,7 +96,18 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
             <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
             <?php if(isset($pesan_error)) echo "<div class='bg-rose-100 text-rose-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-exclamation-circle mr-2'></i> $pesan_error</div>"; ?>
 
+            <!-- TAB NAVIGATION -->
+            <div class="flex border-b border-gray-200 gap-3 mb-6 bg-white px-6 pt-4 rounded-xl shadow-sm">
+                <button onclick="switchTab('form')" id="btn-tab-form" class="pb-3 px-4 text-sm font-bold border-b-2 border-purple-600 text-purple-600 flex items-center gap-2 transition">
+                    <i class="fas fa-file-invoice-dollar text-purple-500"></i> Form Konfirmasi
+                </button>
+                <button onclick="switchTab('riwayat')" id="btn-tab-riwayat" class="pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 flex items-center gap-2 transition">
+                    <i class="fas fa-history text-gray-400"></i> Riwayat Pembayaran
+                </button>
+            </div>
+
             <!-- FORMULIR KONFIRMASI -->
+            <div id="tab-content-form" class="block">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
                 <div class="px-6 py-4 bg-purple-50 border-b border-purple-100"><h2 class="font-bold text-purple-800"><i class="fas fa-file-invoice-dollar mr-2"></i>Konfirmasi Pembayaran Keuangan</h2></div>
                 <form action="" method="POST" enctype="multipart/form-data" class="p-6">
@@ -150,8 +161,11 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                 </form>
             </div>
 
+            </div> <!-- End Tab Form -->
+
             <!-- TABEL RIWAYAT -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div id="tab-content-riwayat" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Riwayat Pembayaran</h2></div>
                 <div class="overflow-x-auto p-4">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -185,16 +199,9 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                     </table>
                 </div>
             </div>
+            </div> <!-- End Tab Riwayat -->
         </main>
     </div>
-    <script>
-    function toggleLainnya(val) {
-        const div = document.getElementById('div_lainnya');
-        const input = document.getElementById('input_lainnya');
-        if(val === 'lainnya') {
-            div.classList.remove('hidden');
-            input.setAttribute('required', 'required');
-        } else {
     <script>
     function toggleLainnya(val) {
         const div = document.getElementById('div_lainnya');
@@ -207,30 +214,34 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
             input.removeAttribute('required');
         }
     }
-    </script>
-                                    <td class="px-4 py-3 text-xs">
-                                        <div class="font-semibold"><?= htmlspecialchars($r['jenis_pembayaran'] ?? 'Infaq Bulanan (SPP)') ?></div>
-                                        <?php if(($r['jenis_pembayaran'] ?? '') == 'lainnya'): ?><div class="text-gray-500 italic"><?= htmlspecialchars($r['keterangan_lainnya']) ?></div><?php endif; ?>
-                                    </td>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Jenis</th>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Pembayaran</label>
-                            <select name="jenis_pembayaran" id="jenis_pembayaran" required onchange="toggleLainnya(this.value)" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500">
-                                <option value="Infaq Bulanan (SPP)">Infaq Bulanan (SPP)</option>
-                                <option value="Wakaf Pesantren">Wakaf Pesantren</option>
-                                <option value="Uang Kegiatan">Uang Kegiatan</option>
-                                <option value="Uang Asrama">Uang Asrama</option>
-                                <option value="Uang Seragam">Uang Seragam</option>
-                                <option value="Uang Buku">Uang Buku</option>
-                                <option value="lainnya">lainnya</option>
-                            </select>
-                        </div>
-                        <div id="div_lainnya" class="hidden lg:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Penjelasan Lainnya</label>
-                            <input type="text" name="keterangan_lainnya" id="input_lainnya" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-purple-500" placeholder="Sebutkan jenis pembayaran...">
-                        </div>
-            div.classList.add('hidden');
-            input.removeAttribute('required');
+
+    function switchTab(tabName) {
+        const btnForm = document.getElementById('btn-tab-form');
+        const btnRiwayat = document.getElementById('btn-tab-riwayat');
+        const contentForm = document.getElementById('tab-content-form');
+        const contentRiwayat = document.getElementById('tab-content-riwayat');
+
+        const activeClass = "pb-3 px-4 text-sm font-bold border-b-2 border-purple-600 text-purple-600 flex items-center gap-2 transition";
+        const inactiveClass = "pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 flex items-center gap-2 transition";
+
+        if (tabName === 'form') {
+            btnForm.className = activeClass;
+            btnForm.querySelector('i').className = "fas fa-file-invoice-dollar text-purple-500";
+            btnRiwayat.className = inactiveClass;
+            btnRiwayat.querySelector('i').className = "fas fa-history text-gray-400";
+            contentForm.classList.remove('hidden');
+            contentForm.classList.add('block');
+            contentRiwayat.classList.remove('block');
+            contentRiwayat.classList.add('hidden');
+        } else {
+            btnRiwayat.className = activeClass;
+            btnRiwayat.querySelector('i').className = "fas fa-history text-purple-500";
+            btnForm.className = inactiveClass;
+            btnForm.querySelector('i').className = "fas fa-file-invoice-dollar text-gray-400";
+            contentRiwayat.classList.remove('hidden');
+            contentRiwayat.classList.add('block');
+            contentForm.classList.remove('block');
+            contentForm.classList.add('hidden');
         }
     }
     </script>
