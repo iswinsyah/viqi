@@ -40,14 +40,6 @@ if ($res_s) while($r = $res_s->fetch_assoc()) $santri_list[] = $r;
 
 // 3. Proses Simpan Konfirmasi
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $santri_id_post = (int)$_POST['santri_id'];
-    $jenis_pembayaran = $conn->real_escape_string($_POST['jenis_pembayaran']);
-    $keterangan_lainnya = $conn->real_escape_string($_POST['keterangan_lainnya']);
-    $jenis_pembayaran = $conn->real_escape_string($_POST['jenis_pembayaran']);
-    $keterangan_lainnya = $conn->real_escape_string($_POST['keterangan_lainnya']);
-    $bulan = $conn->real_escape_string($_POST['bulan']);
-    $tahun = $conn->real_escape_string($_POST['tahun']);
-    $jumlah = (int)$_POST['jumlah'];
     $tanggal_bayar = $conn->real_escape_string($_POST['tanggal_bayar']);
     
     $bukti_name = '';
@@ -59,11 +51,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         move_uploaded_file($_FILES['bukti_transfer']['tmp_name'], $upload_dir . $bukti_name);
     }
 
-    $sql = "INSERT INTO pembayaran_spp (santri_id, jenis_pembayaran, keterangan_lainnya, bulan, tahun, jumlah, tanggal_bayar, bukti_transfer) 
-            VALUES ($santri_id_post, '$jenis_pembayaran', '$keterangan_lainnya', '$bulan', '$tahun', $jumlah, '$tanggal_bayar', '$bukti_name')";
-    
-    if ($conn->query($sql)) $pesan_sukses = "Konfirmasi pembayaran berhasil dikirim!";
-    else $pesan_error = "Gagal mengirim konfirmasi: " . $conn->error;
+    $santri_ids = $_POST['santri_id'] ?? [];
+    $jenis_pembayarans = $_POST['jenis_pembayaran'] ?? [];
+    $keterangans = $_POST['keterangan_lainnya'] ?? [];
+    $bulans = $_POST['bulan'] ?? [];
+    $tahuns = $_POST['tahun'] ?? [];
+    $jumlahs = $_POST['jumlah'] ?? [];
+
+    $success_count = 0;
+    $error_msg = "";
+
+    for ($i = 0; $i < count($santri_ids); $i++) {
+        $sid = (int)$santri_ids[$i];
+        $jenis = $conn->real_escape_string($jenis_pembayarans[$i]);
+        $ket = $conn->real_escape_string($keterangans[$i] ?? '');
+        $bln = $conn->real_escape_string($bulans[$i]);
+        $thn = $conn->real_escape_string($tahuns[$i]);
+        $jml = (int)str_replace('.', '', $jumlahs[$i]); // Remove any dot formatting
+
+        if ($sid > 0 && $jml > 0) {
+            $sql = "INSERT INTO pembayaran_spp (santri_id, jenis_pembayaran, keterangan_lainnya, bulan, tahun, jumlah_bayar, tanggal_bayar, bukti_transfer, status) 
+                    VALUES ($sid, '$jenis', '$ket', '$bln', '$thn', $jml, '$tanggal_bayar', '$bukti_name', 'Menunggu Verifikasi')";
+            if ($conn->query($sql)) {
+                $success_count++;
+            } else {
+                $error_msg = $conn->error;
+            }
+        }
+    }
+
+    if ($success_count > 0) {
+        $pesan_sukses = "$success_count rincian pembayaran berhasil dikirim dan menunggu verifikasi bendahara.";
+    } else {
+        $pesan_error = "Gagal mengirim konfirmasi. " . $error_msg;
+    }
 }
 
 // 4. Ambil Riwayat
@@ -112,50 +133,65 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
                 <div class="px-6 py-4 bg-purple-50 border-b border-purple-100"><h2 class="font-bold text-purple-800"><i class="fas fa-file-invoice-dollar mr-2"></i>Konfirmasi Pembayaran Keuangan</h2></div>
                 <form action="" method="POST" enctype="multipart/form-data" class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Pilih Ananda</label>
-                            <select name="santri_id" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500">
-                                <?php foreach($santri_list as $s): ?><option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['nama_lengkap']) ?></option><?php endforeach; ?>
-                            </select>
+                    <div id="rincian-container" class="space-y-4 mb-6">
+                        <!-- Baris Rincian 1 -->
+                        <div class="rincian-row relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
+                            <div class="lg:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Pilih Ananda</label>
+                                <select name="santri_id[]" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500">
+                                    <?php foreach($santri_list as $s): ?><option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['nama_lengkap']) ?></option><?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="lg:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Jenis Pembayaran</label>
+                                <select name="jenis_pembayaran[]" required onchange="toggleLainnyaRow(this)" class="jenis-select w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500">
+                                    <option value="Infaq Bulanan (SPP)">Infaq Bulanan (SPP)</option>
+                                    <option value="Wakaf Pesantren">Wakaf Pesantren</option>
+                                    <option value="Uang Kegiatan">Uang Kegiatan</option>
+                                    <option value="Uang Asrama">Uang Asrama</option>
+                                    <option value="Uang Seragam">Uang Seragam</option>
+                                    <option value="Uang Buku">Uang Buku</option>
+                                    <option value="lainnya">Lainnya...</option>
+                                </select>
+                                <input type="text" name="keterangan_lainnya[]" class="keterangan-input hidden w-full mt-2 px-3 py-2 border rounded-lg text-sm focus:ring-purple-500" placeholder="Sebutkan...">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Bulan</label>
+                                <select name="bulan[]" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500">
+                                    <?php $bln=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; foreach($bln as $b): echo "<option value='$b' ".(date('F')==$b?'selected':'').">$b</option>"; endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Tahun</label>
+                                <input type="number" name="tahun[]" value="<?= date('Y') ?>" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500">
+                            </div>
+                            <div class="lg:col-span-2">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Jumlah Bayar (Rp)</label>
+                                <input type="text" name="jumlah[]" required oninput="formatRupiah(this); hitungTotal();" class="jumlah-input w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500" placeholder="Contoh: 500.000">
+                            </div>
+                            <!-- Hapus Button for additional rows -->
+                            <div class="lg:col-span-4 flex items-end justify-end">
+                                <button type="button" onclick="hapusBaris(this)" class="btn-hapus hidden text-red-500 hover:text-red-700 text-sm font-semibold"><i class="fas fa-trash mr-1"></i> Hapus Rincian</button>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Jenis Pembayaran</label>
-                            <select name="jenis_pembayaran" id="jenis_pembayaran" required onchange="toggleLainnya(this.value)" class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500">
-                                <option value="Infaq Bulanan (SPP)">Infaq Bulanan (SPP)</option>
-                                <option value="Wakaf Pesantren">Wakaf Pesantren</option>
-                                <option value="Uang Kegiatan">Uang Kegiatan</option>
-                                <option value="Uang Asrama">Uang Asrama</option>
-                                <option value="Uang Seragam">Uang Seragam</option>
-                                <option value="Uang Buku">Uang Buku</option>
-                                <option value="lainnya">lainnya</option>
-                            </select>
+                    </div>
+                    
+                    <div class="mb-8 flex justify-between items-center border-b pb-4">
+                        <button type="button" onclick="tambahBaris()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-semibold py-2 px-4 rounded-lg transition"><i class="fas fa-plus mr-1"></i> Tambah Rincian Lain</button>
+                        <div class="text-right">
+                            <span class="text-gray-500 text-sm">Total Keseluruhan:</span>
+                            <div class="text-2xl font-bold text-purple-700">Rp <span id="total_tagihan">0</span></div>
                         </div>
-                        <div id="div_lainnya" class="hidden lg:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Penjelasan Lainnya</label>
-                            <input type="text" name="keterangan_lainnya" id="input_lainnya" class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500" placeholder="Sebutkan jenis pembayaran...">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Untuk Bulan</label>
-                            <select name="bulan" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500">
-                                <?php $bln=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; foreach($bln as $b): echo "<option value='$b' ".(date('F')==$b?'selected':'').">$b</option>"; endforeach; ?>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Tahun</label>
-                            <input type="number" name="tahun" value="<?= date('Y') ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Jumlah Bayar (Rp)</label>
-                            <input type="number" name="jumlah" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500" placeholder="Contoh: 500000">
-                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 bg-purple-50/50 p-5 rounded-lg border border-purple-100">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Transfer</label>
                             <input type="date" name="tanggal_bayar" value="<?= date('Y-m-d') ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Upload Bukti Transfer</label>
-                            <input type="file" name="bukti_transfer" accept="image/*" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Upload Bukti Transfer (Satu untuk semua rincian di atas)</label>
+                            <input type="file" name="bukti_transfer" accept="image/*" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700">
                         </div>
                     </div>
                     <div class="text-right"><button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition"><i class="fas fa-paper-plane mr-2"></i> Kirim Konfirmasi</button></div>
@@ -204,15 +240,80 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
         </main>
     </div>
     <script>
-    function toggleLainnya(val) {
-        const div = document.getElementById('div_lainnya');
-        const input = document.getElementById('input_lainnya');
-        if(val === 'lainnya') {
-            div.classList.remove('hidden');
-            input.setAttribute('required', 'required');
+    function toggleLainnyaRow(selectElement) {
+        const inputLainnya = selectElement.nextElementSibling;
+        if (selectElement.value === 'lainnya') {
+            inputLainnya.classList.remove('hidden');
+            inputLainnya.setAttribute('required', 'required');
         } else {
-            div.classList.add('hidden');
-            input.removeAttribute('required');
+            inputLainnya.classList.add('hidden');
+            inputLainnya.removeAttribute('required');
+            inputLainnya.value = '';
+        }
+    }
+
+    function tambahBaris() {
+        const container = document.getElementById('rincian-container');
+        const firstRow = container.querySelector('.rincian-row');
+        const newRow = firstRow.cloneNode(true);
+        
+        // Reset values
+        const inputs = newRow.querySelectorAll('input[type="text"], input[type="number"]');
+        inputs.forEach(input => {
+            if(input.name === 'tahun[]') input.value = '<?= date('Y') ?>';
+            else input.value = '';
+        });
+        
+        // Reset select "lainnya"
+        const inputLainnya = newRow.querySelector('.keterangan-input');
+        inputLainnya.classList.add('hidden');
+        inputLainnya.removeAttribute('required');
+        
+        // Show hapus button
+        const btnHapus = newRow.querySelector('.btn-hapus');
+        btnHapus.classList.remove('hidden');
+        
+        container.appendChild(newRow);
+        hitungTotal();
+    }
+
+    function hapusBaris(button) {
+        const row = button.closest('.rincian-row');
+        row.remove();
+        hitungTotal();
+    }
+
+    function formatRupiah(angka){
+        let number_string = angka.value.replace(/[^,\d]/g, '').toString(),
+        split   		= number_string.split(','),
+        sisa     		= split[0].length % 3,
+        rupiah     		= split[0].substr(0, sisa),
+        ribuan     		= split[0].substr(sisa).match(/\d{3}/gi);
+
+        if(ribuan){
+            separator = sisa ? '.' : '';
+            rupiah += separator + ribuan.join('.');
+        }
+
+        rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+        angka.value = rupiah;
+    }
+
+    function hitungTotal() {
+        const inputs = document.querySelectorAll('.jumlah-input');
+        let total = 0;
+        inputs.forEach(input => {
+            let val = input.value.replace(/\./g, '');
+            if(val) total += parseInt(val);
+        });
+        
+        if (total > 0) {
+            let reverse = total.toString().split('').reverse().join(''),
+                ribuan  = reverse.match(/\d{1,3}/g);
+            let formatted = ribuan.join('.').split('').reverse().join('');
+            document.getElementById('total_tagihan').innerText = formatted;
+        } else {
+            document.getElementById('total_tagihan').innerText = '0';
         }
     }
 
