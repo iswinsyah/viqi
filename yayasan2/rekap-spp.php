@@ -18,6 +18,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['update_status'])) {
     }
 }
 
+// 1.5 Proses Hapus Pembayaran (Khusus Super Admin/Testing)
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['hapus_pembayaran'])) {
+    $id = (int)$_POST['id'];
+    $sql_del = "DELETE FROM pembayaran_spp WHERE id = $id";
+    if ($conn->query($sql_del)) {
+        $pesan_sukses = "Data transaksi pembayaran berhasil dihapus dari database!";
+    } else {
+        $pesan_error = "Gagal menghapus transaksi: " . $conn->error;
+    }
+}
+
 // 2. Ambil Seluruh Data Pembayaran
 $sql = "SELECT p.*, s.nama_lengkap, s.kelas_sekarang 
         FROM pembayaran_spp p 
@@ -78,16 +89,24 @@ $data_spp = ($result) ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                     <td class="px-4 py-3 text-center"><?php if($r['bukti_transfer']): ?><a href="../uploads/spp/<?= $r['bukti_transfer'] ?>" target="_blank" class="text-amber-600 hover:text-amber-800"><i class="fas fa-image text-lg"></i></a><?php else: ?>-<?php endif; ?></td>
                                     <td class="px-4 py-3 font-bold <?= $clr ?>"><?= $r['status'] ?></td>
                                     <td class="px-4 py-3">
-                                        <form action="" method="POST" class="flex items-center gap-2">
-                                            <input type="hidden" name="id" value="<?= $r['id'] ?>">
-                                            <select name="status" class="text-xs border rounded p-1 focus:ring-amber-500">
-                                                <option value="Menunggu Verifikasi" <?= $r['status']=='Menunggu Verifikasi'?'selected':'' ?>>Pending</option>
-                                                <option value="Berhasil" <?= $r['status']=='Berhasil'?'selected':'' ?>>Berhasil</option>
-                                                <option value="Ditolak" <?= $r['status']=='Ditolak'?'selected':'' ?>>Tolak</option>
-                                            </select>
-                                            <input type="text" name="catatan_admin" value="<?= htmlspecialchars($r['catatan_admin'] ?? '') ?>" placeholder="Catatan..." class="text-xs border rounded p-1 w-24">
-                                            <button type="submit" name="update_status" class="bg-amber-500 text-white p-1.5 rounded hover:bg-amber-600" title="Simpan Validasi"><i class="fas fa-save"></i></button>
-                                        </form>
+                                        <div class="flex items-center gap-2">
+                                            <form action="" method="POST" class="flex items-center gap-2">
+                                                <input type="hidden" name="id" value="<?= $r['id'] ?>">
+                                                <select name="status" class="text-xs border rounded p-1 focus:ring-amber-500">
+                                                    <option value="Menunggu Verifikasi" <?= $r['status']=='Menunggu Verifikasi'?'selected':'' ?>>Pending</option>
+                                                    <option value="Berhasil" <?= $r['status']=='Berhasil'?'selected':'' ?>>Berhasil</option>
+                                                    <option value="Ditolak" <?= $r['status']=='Ditolak'?'selected':'' ?>>Tolak</option>
+                                                </select>
+                                                <input type="text" name="catatan_admin" value="<?= htmlspecialchars($r['catatan_admin'] ?? '') ?>" placeholder="Catatan..." class="text-xs border rounded p-1 w-24">
+                                                <button type="submit" name="update_status" class="bg-amber-500 text-white p-1.5 rounded hover:bg-amber-600" title="Simpan Validasi"><i class="fas fa-save"></i></button>
+                                            </form>
+                                            
+                                            <!-- Tombol Hapus Khusus Bos -->
+                                            <form action="" method="POST" onsubmit="return confirm('PERINGATAN: Yakin ingin MENGHAPUS data transaksi ini secara permanen dari database?');">
+                                                <input type="hidden" name="id" value="<?= $r['id'] ?>">
+                                                <button type="submit" name="hapus_pembayaran" class="bg-rose-500 text-white p-1.5 rounded hover:bg-rose-600" title="Hapus Permanen (Test Only)"><i class="fas fa-trash-alt"></i></button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             <?php endforeach; endif; ?>
