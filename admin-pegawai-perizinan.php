@@ -10,12 +10,16 @@ $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Pegawai';
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
 
 // Cek Otoritas Admin (untuk menyetujui/menolak izin)
-$admin_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah'];
+$admin_roles = ['super_admin', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'ketua_yayasan', 'yayasan', 'hrd'];
 $is_admin = false;
-foreach ($user_roles as $role) {
-    if (in_array(trim($role), $admin_roles)) {
-        $is_admin = true;
-        break;
+if ($ustadz_id_aktif == 9999 || isset($_SESSION['yayasan2_logged_in']) || isset($_SESSION['yayasan_logged_in'])) {
+    $is_admin = true;
+} else {
+    foreach ($user_roles as $role) {
+        if (in_array(trim($role), $admin_roles)) {
+            $is_admin = true;
+            break;
+        }
     }
 }
 
@@ -266,17 +270,28 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                 if ($res_emp && $res_emp->num_rows > 0) {
                     $emp = $res_emp->fetch_assoc();
                     if (!empty($emp['whatsapp'])) {
-                        $label_st = ($status_simpan === 'Disetujui Sebagian') ? 'DISETUJUI SEBAGIAN' : 'DISETUJUI';
-                        $pesan_wa = "📢 *KOREKSI / STATUS PENGAJUAN IZIN PEGAWAI*\n\n"
+                        $durasi_detik = max(0, strtotime($tgl_app_selesai) - strtotime($tgl_app_mulai));
+                        $durasi_hari = round($durasi_detik / (60 * 60 * 24), 1);
+                        if ($durasi_hari <= 0) $durasi_hari = 1;
+                        
+                        $label_st = ($status_simpan === 'Disetujui Sebagian') ? 'DIIZINKAN DENGAN KOREKSI DURASI' : 'DIIZINKAN';
+                        $emoji_st = ($status_simpan === 'Disetujui Sebagian') ? '🟡' : '🟢';
+                        
+                        $pesan_wa = "$emoji_st *PEMBERITAHUAN KEPUTUSAN IZIN / CUTI*\n\n"
                                   . "Yth. *$emp[nama]*,\n"
-                                  . "Pengajuan izin Anda telah *$label_st* oleh atasan.\n\n"
+                                  . "Keputusan dari Ketua Yayasan / Atasan atas pengajuan izin/cuti Anda telah terbit dengan status: *$label_st*.\n\n"
+                                  . "📋 *Detail Pengajuan Awal:*\n"
                                   . "• Kategori: *" . htmlspecialchars($izin['kategori']) . "*\n"
-                                  . "• Diajukan: " . date('d/m/Y H:i', strtotime($tgl_mulai_awal)) . " s/d " . date('d/m/Y H:i', strtotime($tgl_selesai_awal)) . "\n"
-                                  . "• Disetujui: *" . date('d/m/Y H:i', strtotime($tgl_app_mulai)) . " s/d " . date('d/m/Y H:i', strtotime($tgl_app_selesai)) . "*\n";
+                                  . "• Diajukan: " . date('d/m/Y H:i', strtotime($tgl_mulai_awal)) . " s/d " . date('d/m/Y H:i', strtotime($tgl_selesai_awal)) . "\n\n"
+                                  . "✅ *Keputusan Resmi Atasan (Yang Diizinkan):*\n"
+                                  . "• Mulai Diizinkan: *" . date('d/m/Y H:i', strtotime($tgl_app_mulai)) . "*\n"
+                                  . "• Akhir Diizinkan: *" . date('d/m/Y H:i', strtotime($tgl_app_selesai)) . "*\n"
+                                  . "• Durasi Diizinkan: *" . $durasi_hari . " Hari*\n";
                         if (!empty($catatan_admin)) {
-                            $pesan_wa .= "• Catatan Atasan: _\"$catatan_admin\"_\n";
+                            $pesan_wa .= "• Catatan / Arahan Atasan: _\"$catatan_admin\"_\n";
                         }
-                        $pesan_wa .= "\n-- SIM Yayasan Villa Quran --";
+                        $pesan_wa .= "\nHarap mematuhi durasi dan jadwal resmi yang telah disetujui di atas.\n"
+                                  . "-- SIM Yayasan Villa Quran --";
                         kirim_notifikasi_wa($emp['whatsapp'], $pesan_wa);
                     }
                 }
@@ -310,13 +325,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                 if ($res_emp && $res_emp->num_rows > 0) {
                     $emp = $res_emp->fetch_assoc();
                     if (!empty($emp['whatsapp'])) {
-                        $pesan_wa = "❌ *PEMBATALAN / PENOLAKAN IZIN PEGAWAI*\n\n"
+                        $durasi_detik = max(0, strtotime($tgl_selesai_awal) - strtotime($tgl_mulai_awal));
+                        $durasi_hari = round($durasi_detik / (60 * 60 * 24), 1);
+                        if ($durasi_hari <= 0) $durasi_hari = 1;
+                        
+                        $pesan_wa = "🔴 *PEMBERITAHUAN KEPUTUSAN IZIN / CUTI*\n\n"
                                   . "Yth. *$emp[nama]*,\n"
-                                  . "Pengajuan izin Anda ( Periode " . date('d/m/Y', strtotime($tgl_mulai_awal)) . " s/d " . date('d/m/Y', strtotime($tgl_selesai_awal)) . " ) *DITOLAK / DIBATALKAN* oleh atasan.\n";
+                                  . "Keputusan dari Ketua Yayasan / Atasan atas pengajuan izin/cuti Anda telah terbit dengan status: *TIDAK DIIZINKAN / DITOLAK*.\n\n"
+                                  . "📋 *Detail Pengajuan:*\n"
+                                  . "• Kategori: *" . htmlspecialchars($izin['kategori']) . "*\n"
+                                  . "• Waktu Diajukan: *" . date('d/m/Y H:i', strtotime($tgl_mulai_awal)) . "* s/d *" . date('d/m/Y H:i', strtotime($tgl_selesai_awal)) . "* (" . $durasi_hari . " Hari)\n\n";
                         if (!empty($catatan_admin)) {
-                            $pesan_wa .= "• Alasan Atasan: _\"$catatan_admin\"_\n";
+                            $pesan_wa .= "• Alasan Penolakan: _\"$catatan_admin\"_\n\n";
                         }
-                        $pesan_wa .= "\n-- SIM Yayasan Villa Quran --";
+                        $pesan_wa .= "Harap tetap melaksanakan tugas dan tanggung jawab sesuai jadwal operasional yang berlaku.\n"
+                                  . "-- SIM Yayasan Villa Quran --";
                         kirim_notifikasi_wa($emp['whatsapp'], $pesan_wa);
                     }
                 }
@@ -330,20 +353,22 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
 }
 
 // 4. Load Data Izin
+$query_saya = "SELECT p.*, '$ustadz_nama' as nama_pegawai 
+               FROM kepegawaian_perizinan p 
+               WHERE p.ustadz_id = $ustadz_id_aktif 
+               ORDER BY p.id DESC";
+$list_perizinan_saya = $conn->query($query_saya)->fetch_all(MYSQLI_ASSOC);
+
+$list_perizinan_admin = [];
 if ($is_admin) {
-    // Admin melihat semua pengajuan dari seluruh pegawai
-    $query_izin = "SELECT p.*, u.nama as nama_pegawai 
-                   FROM kepegawaian_perizinan p 
-                   JOIN akun_ustadz u ON p.ustadz_id = u.id 
-                   ORDER BY p.id DESC";
-} else {
-    // Pegawai biasa hanya melihat history milik sendiri
-    $query_izin = "SELECT p.*, '$ustadz_nama' as nama_pegawai 
-                   FROM kepegawaian_perizinan p 
-                   WHERE p.ustadz_id = $ustadz_id_aktif 
-                   ORDER BY p.id DESC";
+    $query_admin = "SELECT p.*, u.nama as nama_pegawai, u.whatsapp 
+                    FROM kepegawaian_perizinan p 
+                    JOIN akun_ustadz u ON p.ustadz_id = u.id 
+                    ORDER BY p.id DESC";
+    $list_perizinan_admin = $conn->query($query_admin)->fetch_all(MYSQLI_ASSOC);
 }
-$list_perizinan = $conn->query($query_izin)->fetch_all(MYSQLI_ASSOC);
+$list_perizinan = $is_admin ? $list_perizinan_admin : $list_perizinan_saya;
+
 
 $active_menu = 'perizinan_pegawai';
 ?>
@@ -402,6 +427,28 @@ $active_menu = 'perizinan_pegawai';
                 <p class="text-sm text-gray-500 mt-1">Mengelola cuti, sakit, dan izin pegawai dengan sinkronisasi langsung ke sistem absensi.</p>
             </div>
 
+            <?php if ($is_admin): ?>
+            <!-- TAB NAVIGATION PERIZINAN (KHUSUS ADMIN / KETUA YAYASAN) -->
+            <div class="flex border-b border-gray-200 gap-3 mb-6 bg-white px-6 pt-4 rounded-xl shadow-sm">
+                <button onclick="switchTabPerizinan('form_riwayat')" id="btn-tab-form_riwayat" class="pb-3 px-4 text-sm font-bold border-b-2 border-cyan-600 text-cyan-600 flex items-center gap-2 transition">
+                    <i class="fas fa-edit text-cyan-500"></i> Form Pengajuan & Riwayat Saya
+                </button>
+                <button onclick="switchTabPerizinan('approval')" id="btn-tab-approval" class="pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 flex items-center gap-2 transition relative">
+                    <i class="fas fa-user-shield text-amber-500"></i> Persetujuan Izin Seluruh Pegawai
+                    <?php 
+                    $pending_adm_cnt = 0;
+                    foreach ($list_perizinan_admin as $lpa) { if ($lpa['status'] == 'Pending') $pending_adm_cnt++; }
+                    if ($pending_adm_cnt > 0): 
+                    ?>
+                    <span class="bg-rose-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full animate-pulse shadow-sm">
+                        <?= $pending_adm_cnt ?> Baru
+                    </span>
+                    <?php endif; ?>
+                </button>
+            </div>
+            <?php endif; ?>
+
+            <div id="tab-content-form" class="block">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- FORM PENGAJUAN (Tampil untuk Seluruh Pegawai & Admin) -->
                 <div class="bg-white rounded-xl border border-gray-150 shadow-sm p-6 lg:col-span-1 h-fit">
@@ -489,33 +536,27 @@ $active_menu = 'perizinan_pegawai';
                 <!-- DAFTAR PENGAJUAN / HISTORI -->
                 <div class="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden lg:col-span-2">
                     <div class="px-6 py-4 bg-gray-50 border-b border-gray-150 flex justify-between items-center">
-                        <h2 class="font-bold text-gray-800 text-sm"><i class="fas fa-history text-cyan-600 mr-1.5"></i> <?= $is_admin ? 'Daftar Pengajuan Seluruh Pegawai' : 'Riwayat Pengajuan Cuti Anda' ?></h2>
-                        <span class="bg-cyan-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full"><?= count($list_perizinan) ?> Pengajuan</span>
+                        <h2 class="font-bold text-gray-800 text-sm"><i class="fas fa-history text-cyan-600 mr-1.5"></i> Riwayat Pengajuan Cuti Anda</h2>
+                        <span class="bg-cyan-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full"><?= count($list_perizinan_saya) ?> Pengajuan</span>
                     </div>
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-150">
                             <thead class="bg-gray-50/50 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
                                 <tr>
-                                    <?php if ($is_admin): ?>
-                                    <th class="px-6 py-3 text-left">Nama Pegawai</th>
-                                    <?php endif; ?>
                                     <th class="px-6 py-3 text-left">Kategori & Peran</th>
                                     <th class="px-6 py-3 text-left">Tembusan Ke</th>
                                     <th class="px-6 py-3 text-left">Periode & Jam Izin</th>
                                     <th class="px-6 py-3 text-left">Alasan/Keterangan</th>
                                     <th class="px-6 py-3 text-center">Status</th>
-                                    <?php if ($is_admin): ?>
-                                    <th class="px-6 py-3 text-center">Aksi</th>
-                                    <?php endif; ?>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100 text-xs text-gray-700">
-                                <?php if (empty($list_perizinan)): ?>
+                                <?php if (empty($list_perizinan_saya)): ?>
                                 <tr>
-                                    <td colspan="7" class="py-12 text-gray-400 italic text-center">Belum ada pengajuan izin/cuti yang terdaftar.</td>
+                                    <td colspan="5" class="py-12 text-gray-400 italic text-center">Belum ada pengajuan izin/cuti yang terdaftar.</td>
                                 </tr>
-                                <?php else: foreach ($list_perizinan as $row): 
+                                <?php else: foreach ($list_perizinan_saya as $row): 
                                     $st = $row['status'];
                                     if ($st == 'Pending') {
                                         $badge = 'bg-amber-50 text-amber-700 border-amber-200';
@@ -528,9 +569,6 @@ $active_menu = 'perizinan_pegawai';
                                     }
                                 ?>
                                 <tr class="hover:bg-gray-50/50 transition-colors">
-                                    <?php if ($is_admin): ?>
-                                    <td class="px-6 py-4 font-bold text-gray-900"><?= htmlspecialchars($row['nama_pegawai']) ?></td>
-                                    <?php endif; ?>
                                     <td class="px-6 py-4 font-semibold text-slate-800">
                                         <div><?= htmlspecialchars($row['kategori']) ?></div>
                                         <?php if (!empty($row['peran_pengaju'])): ?>
@@ -575,38 +613,6 @@ $active_menu = 'perizinan_pegawai';
                                     <td class="px-6 py-4 text-center">
                                         <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border <?= $badge ?>"><?= $st ?></span>
                                     </td>
-                                    <?php if ($is_admin): 
-                                        $tgl_def_m_str = date('Y-m-d\TH:i', strtotime(!empty($row['tanggal_disetujui_mulai']) ? $row['tanggal_disetujui_mulai'] : $row['tanggal_mulai']));
-                                        $tgl_def_s_str = date('Y-m-d\TH:i', strtotime(!empty($row['tanggal_disetujui_selesai']) ? $row['tanggal_disetujui_selesai'] : $row['tanggal_selesai']));
-                                        $cat_adm = htmlspecialchars(addslashes($row['catatan_admin'] ?? ''), ENT_QUOTES);
-                                        $periode_label = date('d/m/Y H:i', strtotime($row['tanggal_mulai'])) . ' s/d ' . date('d/m/Y H:i', strtotime($row['tanggal_selesai']));
-                                    ?>
-                                    <td class="px-6 py-4 text-center space-x-1.5 whitespace-nowrap">
-                                        <?php if ($st == 'Pending'): ?>
-                                        <button type="button" 
-                                                onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= $periode_label ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $tgl_def_m_str ?>', '<?= $tgl_def_s_str ?>', '<?= $cat_adm ?>')" 
-                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1 rounded text-[10px] shadow-sm transition">
-                                            <i class="fas fa-check mr-1"></i> Setujui / Ubah
-                                        </button>
-                                        <button type="button" 
-                                                onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= $cat_adm ?>')" 
-                                                class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1 rounded text-[10px] shadow-sm transition">
-                                            <i class="fas fa-times mr-1"></i> Tolak
-                                        </button>
-                                        <?php else: ?>
-                                        <button type="button" 
-                                                onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= $periode_label ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $tgl_def_m_str ?>', '<?= $tgl_def_s_str ?>', '<?= $cat_adm ?>')" 
-                                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2.5 py-1 rounded text-[10px] shadow-sm transition" title="Koreksi Waktu / Status">
-                                            <i class="fas fa-edit mr-1"></i> Koreksi Izin
-                                        </button>
-                                        <button type="button" 
-                                                onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= $cat_adm ?>')" 
-                                                class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded text-[10px] shadow-sm transition" title="Batalkan / Tolak Izin Ini">
-                                            <i class="fas fa-ban mr-1"></i> Batalkan
-                                        </button>
-                                        <?php endif; ?>
-                                    </td>
-                                    <?php endif; ?>
                                 </tr>
                                 <?php endforeach; endif; ?>
                             </tbody>
@@ -614,6 +620,134 @@ $active_menu = 'perizinan_pegawai';
                     </div>
                 </div>
             </div>
+            </div> <!-- End Tab Content Form -->
+
+            <?php if ($is_admin): ?>
+            <!-- TAB CONTENT 2: PERSETUJUAN IZIN SELURUH PEGAWAI -->
+            <div id="tab-content-approval" class="hidden">
+                <div class="bg-white rounded-xl border border-gray-150 shadow-sm overflow-hidden">
+                    <div class="px-6 py-5 bg-gradient-to-r from-slate-900 via-amber-950 to-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-amber-500/20">
+                        <div>
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-1">
+                                <i class="fas fa-lock"></i> Akses Khusus Eksekutif & Admin
+                            </div>
+                            <h2 class="font-extrabold text-base sm:text-lg flex items-center gap-2">
+                                <i class="fas fa-calendar-check text-amber-400"></i> Panel Persetujuan Izin & Cuti Seluruh Pegawai
+                            </h2>
+                            <p class="text-xs text-slate-300 mt-0.5">Kelola persetujuan atau koreksi durasi izin. Sistem otomatis mengirimkan notifikasi WhatsApp keputusan ke pegawai beserta penjelasan.</p>
+                        </div>
+                        <span class="bg-amber-500 text-slate-950 text-xs font-extrabold px-3.5 py-1.5 rounded-xl shadow-md whitespace-nowrap self-start sm:self-center">
+                            <?= count($list_perizinan_admin) ?> Total Pengajuan
+                        </span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-150">
+                            <thead class="bg-gray-50/50 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-3.5 text-left">Nama Pegawai & Peran</th>
+                                    <th class="px-6 py-3.5 text-left">Kategori & Tembusan</th>
+                                    <th class="px-6 py-3.5 text-left">Periode & Durasi</th>
+                                    <th class="px-6 py-3.5 text-left">Alasan / Keterangan</th>
+                                    <th class="px-6 py-3.5 text-center">Status</th>
+                                    <th class="px-6 py-3.5 text-center">Aksi Eksekutif</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-150 text-xs">
+                                <?php if (empty($list_perizinan_admin)): ?>
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">Belum ada pengajuan izin dari pegawai.</td>
+                                </tr>
+                                <?php else: foreach ($list_perizinan_admin as $row): 
+                                    $st = $row['status'];
+                                    $badge = ($st == 'Pending') ? 'bg-amber-100 text-amber-800 border-amber-300 font-bold animate-pulse' :
+                                             (($st == 'Disetujui') ? 'bg-emerald-100 text-emerald-800 border-emerald-300 font-bold' :
+                                             (($st == 'Disetujui Sebagian') ? 'bg-indigo-100 text-indigo-800 border-indigo-300 font-bold' : 'bg-rose-100 text-rose-800 border-rose-300 font-bold'));
+                                    
+                                    $durasi_dtk = max(0, strtotime($row['tanggal_selesai']) - strtotime($row['tanggal_mulai']));
+                                    $durasi_hr = round($durasi_dtk / (60 * 60 * 24), 1);
+                                    if ($durasi_hr <= 0) $durasi_hr = 1;
+
+                                    $durasi_app_hr = $durasi_hr;
+                                    if (!empty($row['tanggal_disetujui_mulai']) && !empty($row['tanggal_disetujui_selesai'])) {
+                                        $durasi_app_dtk = max(0, strtotime($row['tanggal_disetujui_selesai']) - strtotime($row['tanggal_disetujui_mulai']));
+                                        $durasi_app_hr = round($durasi_app_dtk / (60 * 60 * 24), 1);
+                                        if ($durasi_app_hr <= 0) $durasi_app_hr = 1;
+                                    }
+
+                                    $tgl_def_m_str = date('Y-m-d\TH:i', strtotime(!empty($row['tanggal_disetujui_mulai']) ? $row['tanggal_disetujui_mulai'] : $row['tanggal_mulai']));
+                                    $tgl_def_s_str = date('Y-m-d\TH:i', strtotime(!empty($row['tanggal_disetujui_selesai']) ? $row['tanggal_disetujui_selesai'] : $row['tanggal_selesai']));
+                                    $cat_adm = htmlspecialchars(addslashes($row['catatan_admin'] ?? ''), ENT_QUOTES);
+                                    $periode_label = date('d/m/Y H:i', strtotime($row['tanggal_mulai'])) . ' s/d ' . date('d/m/Y H:i', strtotime($row['tanggal_selesai']));
+                                ?>
+                                <tr class="hover:bg-gray-50/80 transition">
+                                    <td class="px-6 py-4">
+                                        <div class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_pegawai']) ?></div>
+                                        <div class="text-[11px] text-gray-500"><?= htmlspecialchars($row['peran_pengaju'] ?: ($row['role_pegawai'] ?: 'Pegawai')) ?></div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <span class="inline-block px-2.5 py-1 bg-gray-100 text-gray-800 rounded-md font-bold border border-gray-200 mb-1"><?= htmlspecialchars($row['kategori']) ?></span>
+                                        <div class="text-[10px] text-gray-500">Tembusan: <span class="font-semibold text-gray-700"><?= ucwords(str_replace('_', ' ', $row['ditujukan_ke'])) ?></span></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="font-semibold text-gray-800"><i class="far fa-calendar-alt text-amber-600 mr-1.5"></i><?= date('d/m/Y H:i', strtotime($row['tanggal_mulai'])) ?></div>
+                                        <div class="text-gray-500"><i class="far fa-clock text-gray-400 mr-1.5"></i>s/d <?= date('d/m/Y H:i', strtotime($row['tanggal_selesai'])) ?></div>
+                                        <div class="mt-1 inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200 font-bold">
+                                            Durasi Awal: <?= $durasi_hr ?> Hari
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 max-w-xs">
+                                        <div class="text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-150 italic line-clamp-3">
+                                            "<?= htmlspecialchars($row['keterangan']) ?>"
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        <span class="inline-block px-3 py-1 rounded-full text-[11px] border <?= $badge ?>"><?= $st ?></span>
+                                        <?php if ($st == 'Disetujui' || $st == 'Disetujui Sebagian'): ?>
+                                            <div class="text-[10px] text-emerald-700 mt-1.5 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200/60 inline-block">
+                                                ✅ Diizinkan: <?= $durasi_app_hr ?> Hari<br>
+                                                <span class="text-[9px] font-normal text-emerald-600"><?= date('d/m/y H:i', strtotime($row['tanggal_disetujui_mulai'])) ?> - <?= date('d/m/y H:i', strtotime($row['tanggal_disetujui_selesai'])) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($row['catatan_admin'])): ?>
+                                            <div class="text-[10px] text-gray-600 mt-1 italic max-w-[150px] mx-auto">
+                                                "<?= htmlspecialchars($row['catatan_admin']) ?>"
+                                            </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-6 py-4 text-center space-x-1.5 whitespace-nowrap">
+                                        <?php if ($st == 'Pending'): ?>
+                                        <button type="button" 
+                                                onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= $periode_label ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $tgl_def_m_str ?>', '<?= $tgl_def_s_str ?>', '<?= $cat_adm ?>')" 
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm transition flex items-center gap-1 inline-flex">
+                                            <i class="fas fa-check-circle mr-1"></i> Setujui / Ubah
+                                        </button>
+                                        <button type="button" 
+                                                onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= $cat_adm ?>')" 
+                                                class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm transition flex items-center gap-1 inline-flex">
+                                            <i class="fas fa-times-circle mr-1"></i> Tolak
+                                        </button>
+                                        <?php else: ?>
+                                        <button type="button" 
+                                                onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= $periode_label ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $tgl_def_m_str ?>', '<?= $tgl_def_s_str ?>', '<?= $cat_adm ?>')" 
+                                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm transition inline-flex items-center gap-1" title="Koreksi Waktu / Status">
+                                            <i class="fas fa-edit mr-1"></i> Koreksi Izin
+                                        </button>
+                                        <button type="button" 
+                                                onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= $cat_adm ?>')" 
+                                                class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm transition inline-flex items-center gap-1" title="Batalkan / Tolak Izin Ini">
+                                            <i class="fas fa-ban mr-1"></i> Batalkan
+                                        </button>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
         </main>
     </div>
 
@@ -704,6 +838,26 @@ $active_menu = 'perizinan_pegawai';
     </div>
 
     <script>
+    function switchTabPerizinan(tab) {
+        document.getElementById('btn-tab-form_riwayat')?.classList.remove('border-cyan-600', 'text-cyan-600');
+        document.getElementById('btn-tab-form_riwayat')?.classList.add('border-transparent', 'text-gray-500');
+        document.getElementById('btn-tab-approval')?.classList.remove('border-amber-600', 'text-amber-600');
+        document.getElementById('btn-tab-approval')?.classList.add('border-transparent', 'text-gray-500');
+
+        document.getElementById('tab-content-form')?.classList.add('hidden');
+        document.getElementById('tab-content-approval')?.classList.add('hidden');
+
+        if (tab === 'form_riwayat') {
+            document.getElementById('btn-tab-form_riwayat')?.classList.remove('border-transparent', 'text-gray-500');
+            document.getElementById('btn-tab-form_riwayat')?.classList.add('border-cyan-600', 'text-cyan-600');
+            document.getElementById('tab-content-form')?.classList.remove('hidden');
+        } else if (tab === 'approval') {
+            document.getElementById('btn-tab-approval')?.classList.remove('border-transparent', 'text-gray-500');
+            document.getElementById('btn-tab-approval')?.classList.add('border-amber-600', 'text-amber-600');
+            document.getElementById('tab-content-approval')?.classList.remove('hidden');
+        }
+    }
+
     function openApproveModal(id, nama, kategori, periode, alasan, tglMulai, tglSelesai, catatanAdmin = '') {
         document.getElementById('approve_izin_id').value = id;
         document.getElementById('approve_nama_pegawai').innerText = nama;

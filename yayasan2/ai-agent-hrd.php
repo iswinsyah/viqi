@@ -99,7 +99,6 @@ $sp1_list_all = [];
 if ($res_pegawai_data) {
     while ($p = $res_pegawai_data->fetch_assoc()) {
         $p_id = (int)$p['id'];
-
         // --- A. ANALISIS JAM PELAJARAN (JP) ---
         $q_jurnal = $conn->query("SELECT j.*, m.kategori_mapel 
                                   FROM jurnal_mengajar j 
