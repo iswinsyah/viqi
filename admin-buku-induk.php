@@ -232,8 +232,8 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-book-user text-cyan-600 mr-2"></i>Buku Induk Santri</h1></div>
             
-            <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
-            <?php if(isset($pesan_error)) echo "<div class='bg-rose-100 text-rose-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-exclamation-circle mr-2'></i> $pesan_error</div>"; ?>
+            <?php if(!empty($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
+            <?php if(!empty($pesan_error)) echo "<div class='bg-rose-100 text-rose-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-exclamation-circle mr-2'></i> $pesan_error</div>"; ?>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
                 <div class="px-6 py-4 bg-slate-50 border-b border-gray-100"><h2 class="font-bold text-slate-800"><i class="fas <?= $edit_mode ? 'fa-user-edit' : 'fa-user-plus' ?> mr-2"></i><?= $edit_mode ? 'Edit Data Santri' : 'Input Santri Baru' ?></h2></div>
