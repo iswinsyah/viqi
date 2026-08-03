@@ -252,7 +252,14 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
                             <div><label class="text-sm font-medium">Password Login <span class="text-red-500">*</span></label><input type="text" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password'] ?? '') : '' ?>" <?= !$edit_mode ? 'required' : '' ?> class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="<?= $edit_mode ? 'Password saat ini (hapus & ganti jika ingin merubah)' : 'Wajib diisi saat buat baru' ?>"></div>
                             <div><label class="text-sm font-medium">Tempat Lahir</label><input type="text" name="tempat_lahir" value="<?= $edit_mode ? htmlspecialchars($data_edit['tempat_lahir'] ?? '') : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                             <div><label class="text-sm font-medium">Tanggal Lahir</label><input type="date" name="tanggal_lahir" value="<?= $edit_mode ? $data_edit['tanggal_lahir'] : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
-                            <div><label class="text-sm font-medium">Jenis Kelamin</label><select name="jenis_kelamin" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><option value="Laki-laki" <?= ($edit_mode && $data_edit['jenis_kelamin'] == 'Laki-laki') ? 'selected' : '' ?>>Laki-laki</option><option value="Perempuan" <?= ($edit_mode && $data_edit['jenis_kelamin'] == 'Perempuan') ? 'selected' : '' ?>>Perempuan</option></select></div>
+                            <div>
+                                <label class="text-sm font-medium text-gray-700">Jenis Kelamin <span class="text-red-500">*</span></label>
+                                <select name="jenis_kelamin" required class="w-full mt-1 px-3 py-2 border rounded-lg text-sm bg-white focus:ring-2 focus:ring-cyan-500">
+                                    <option value="">-- Pilih Jenis Kelamin --</option>
+                                    <option value="Laki-laki" <?= ($edit_mode && ($data_edit['jenis_kelamin'] ?? '') == 'Laki-laki') ? 'selected' : '' ?>>Laki-laki</option>
+                                    <option value="Perempuan" <?= ($edit_mode && ($data_edit['jenis_kelamin'] ?? '') == 'Perempuan') ? 'selected' : '' ?>>Perempuan</option>
+                                </select>
+                            </div>
                             <div class="md:col-span-2"><label class="text-sm font-medium">Alamat Lengkap</label><input type="text" name="alamat_lengkap" value="<?= $edit_mode ? htmlspecialchars($data_edit['alamat_lengkap'] ?? '') : '' ?>" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
                         </div>
                     </div>
@@ -357,15 +364,25 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
                                     if ($row['status_santri'] !== 'Aktif') $badge_color = 'bg-gray-200 text-gray-700';
                                 ?>
                                 <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3">
-                                        <div class="flex items-center">
-                                            <img src="<?= !empty($row['foto_santri']) ? htmlspecialchars($row['foto_santri'] ?? '') : 'https://via.placeholder.com/100' ?>" class="w-10 h-10 rounded-full object-cover mr-3 shadow-sm flex-shrink-0" alt="Foto">
-                                            <div>
-                                                <span class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_lengkap'] ?? '') ?></span>
-                                                <?php if(!empty($row['daftar_ortu'])): ?><div class="text-xs text-gray-500 mt-1"><i class="fas fa-users text-cyan-600 mr-1"></i> Terhubung dgn: <span class="font-semibold text-gray-700"><?= htmlspecialchars($row['daftar_ortu'] ?? '') ?></span></div><?php else: ?><div class="text-xs text-red-400 mt-1"><i class="fas fa-exclamation-triangle mr-1"></i> Belum ada akun orangtua</div><?php endif; ?>
-                                            </div>
-                                        </div>
-                                    </td>
+                                     <td class="px-4 py-3">
+                                         <div class="flex items-center">
+                                             <img src="<?= !empty($row['foto_santri']) ? htmlspecialchars($row['foto_santri'] ?? '') : 'https://via.placeholder.com/100' ?>" class="w-10 h-10 rounded-full object-cover mr-3 shadow-sm flex-shrink-0" alt="Foto">
+                                             <div>
+                                                 <div class="flex items-center flex-wrap gap-1">
+                                                     <span class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_lengkap'] ?? '') ?></span>
+                                                     <?php 
+                                                     $jk = $row['jenis_kelamin'] ?? '';
+                                                     if ($jk === 'Laki-laki') {
+                                                         echo '<span class="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-full font-extrabold flex items-center gap-1"><i class="fas fa-mars"></i>Laki-laki</span>';
+                                                     } elseif ($jk === 'Perempuan') {
+                                                         echo '<span class="bg-pink-100 text-pink-800 text-[10px] px-2 py-0.5 rounded-full font-extrabold flex items-center gap-1"><i class="fas fa-venus"></i>Perempuan</span>';
+                                                     }
+                                                     ?>
+                                                 </div>
+                                                 <?php if(!empty($row['daftar_ortu'])): ?><div class="text-xs text-gray-500 mt-1"><i class="fas fa-users text-cyan-600 mr-1"></i> Terhubung dgn: <span class="font-semibold text-gray-700"><?= htmlspecialchars($row['daftar_ortu'] ?? '') ?></span></div><?php else: ?><div class="text-xs text-red-400 mt-1"><i class="fas fa-exclamation-triangle mr-1"></i> Belum ada akun orangtua</div><?php endif; ?>
+                                             </div>
+                                         </div>
+                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-600 font-mono">
                                         <div>NIS: <?= htmlspecialchars($row['nis'] ?? '') ?></div>
                                         <div>NISN: <?= htmlspecialchars($row['nisn'] ?? '') ?></div>
