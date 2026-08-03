@@ -24,9 +24,63 @@ $conn->query("CREATE TABLE IF NOT EXISTS raport_pkbm_catatan (
     UNIQUE KEY uq_raport_santri (santri_id, kelas, tahun_ajaran, semester)
 )");
 
-// Fetch filter options
+// Check user role for binaan scoping
+$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+$ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
+$is_super_admin = ($ustadz_id === 9999);
+
+$norm_roles = array_map(function($r) {
+    return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+}, $user_roles);
+
+$is_admin_or_kepala = $is_super_admin || !empty(array_intersect($norm_roles, ['super_admin', 'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah']));
+
+$is_musyrif_only = false;
+$is_musyrifah_only = false;
+
+if (!$is_admin_or_kepala) {
+    if (in_array('musyrif', $norm_roles) || in_array('kepala_asrama_rijal', $norm_roles) || in_array('kepala_asrama', $norm_roles)) {
+        $is_musyrif_only = true;
+    }
+    if (in_array('musyrifah', $norm_roles) || in_array('kepala_asrama_nisa', $norm_roles)) {
+        $is_musyrifah_only = true;
+    }
+}
+
+// Fetch santri binaan IDs if scoped
+$santri_binaan_ids = [];
+if (!$is_admin_or_kepala) {
+    $gender_filter_sql = "";
+    if ($is_musyrif_only && !$is_musyrifah_only) {
+        $gender_filter_sql = " AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)";
+    } elseif ($is_musyrifah_only && !$is_musyrif_only) {
+        $gender_filter_sql = " AND s.jenis_kelamin = 'Perempuan'";
+    }
+
+    $res_sb = $conn->query("
+        SELECT DISTINCT s.id 
+        FROM buku_induk_santri s 
+        JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        JOIN halaqoh_grup g ON a.grup_id = g.id 
+        WHERE g.musyrif_id = $ustadz_id $gender_filter_sql
+    ");
+    if ($res_sb) {
+        while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
+    }
+}
+
+// Fetch filter options (Kelas)
 $opsi_kelas = [];
-$res_k = $conn->query("SELECT DISTINCT kelas_sekarang FROM buku_induk_santri WHERE status_santri = 'Aktif' AND kelas_sekarang IS NOT NULL AND kelas_sekarang != '' ORDER BY kelas_sekarang ASC");
+if ($is_admin_or_kepala) {
+    $res_k = $conn->query("SELECT DISTINCT kelas_sekarang FROM buku_induk_santri WHERE status_santri = 'Aktif' AND kelas_sekarang IS NOT NULL AND kelas_sekarang != '' ORDER BY kelas_sekarang ASC");
+} else {
+    if (!empty($santri_binaan_ids)) {
+        $sb_str = implode(',', $santri_binaan_ids);
+        $res_k = $conn->query("SELECT DISTINCT kelas_sekarang FROM buku_induk_santri WHERE id IN ($sb_str) AND status_santri = 'Aktif' AND kelas_sekarang IS NOT NULL AND kelas_sekarang != '' ORDER BY kelas_sekarang ASC");
+    } else {
+        $res_k = false;
+    }
+}
 if ($res_k) {
     while ($r = $res_k->fetch_assoc()) $opsi_kelas[] = $r['kelas_sekarang'];
 }
@@ -78,7 +132,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_catatan_rapot'
 $santri_list = [];
 if (!empty($filters['kelas'])) {
     $k_esc = $conn->real_escape_string($filters['kelas']);
-    $res_s = $conn->query("SELECT id, nama_lengkap, nis, nisn, kelas_sekarang, jenis_kelamin FROM buku_induk_santri WHERE kelas_sekarang = '$k_esc' ORDER BY nama_lengkap ASC");
+    if ($is_admin_or_kepala) {
+        $res_s = $conn->query("SELECT id, nama_lengkap, nis, nisn, kelas_sekarang, jenis_kelamin FROM buku_induk_santri WHERE kelas_sekarang = '$k_esc' ORDER BY nama_lengkap ASC");
+    } else {
+        if (!empty($santri_binaan_ids)) {
+            $sb_str = implode(',', $santri_binaan_ids);
+            $res_s = $conn->query("SELECT id, nama_lengkap, nis, nisn, kelas_sekarang, jenis_kelamin FROM buku_induk_santri WHERE kelas_sekarang = '$k_esc' AND id IN ($sb_str) ORDER BY nama_lengkap ASC");
+        } else {
+            $res_s = false;
+        }
+    }
     if ($res_s) {
         while ($r = $res_s->fetch_assoc()) $santri_list[] = $r;
     }
@@ -91,8 +154,14 @@ if ($filters['santri_id'] == 0 && !empty($santri_list)) {
 // Data Selected Santri
 $selected_santri = null;
 if ($filters['santri_id'] > 0) {
-    $res_sel = $conn->query("SELECT * FROM buku_induk_santri WHERE id = " . $filters['santri_id']);
-    if ($res_sel) $selected_santri = $res_sel->fetch_assoc();
+    // Security check for non-admin
+    if (!$is_admin_or_kepala && !in_array($filters['santri_id'], $santri_binaan_ids)) {
+        $selected_santri = null;
+        $pesan_error = "Akses Ditolak: Anda hanya dapat mengakses Raport Diknas untuk santri binaan Anda di Manajemen Halaqoh.";
+    } else {
+        $res_sel = $conn->query("SELECT * FROM buku_induk_santri WHERE id = " . $filters['santri_id']);
+        if ($res_sel) $selected_santri = $res_sel->fetch_assoc();
+    }
 }
 
 // Determine Paket B vs Paket C
