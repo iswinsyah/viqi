@@ -9,17 +9,26 @@ $user_roles = [];
 if (isset($_SESSION['ustadz_role'])) {
     $user_roles = explode(',', $_SESSION['ustadz_role']);
 }
+$ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
+
 $is_authorized = false;
-if (isset($_SESSION['ustadz_id']) && (int)$_SESSION['ustadz_id'] === 9999) {
+$is_super_admin = false;
+
+if ($ustadz_id === 9999) {
     $is_authorized = true;
+    $is_super_admin = true;
 }
 foreach ($user_roles as $role) {
     $norm_role = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
-    if ($norm_role === 'musyrif' || $norm_role === 'super_admin') {
+    if ($norm_role === 'super_admin') {
         $is_authorized = true;
-        break;
+        $is_super_admin = true;
+    }
+    if ($norm_role === 'musyrif') {
+        $is_authorized = true;
     }
 }
+
 if (!$is_authorized) {
     die('Akses ditolak. Hanya Musyrif dan Super Admin yang dapat mengakses halaman ini.');
 }
@@ -83,12 +92,46 @@ if ($res_stat2) $total_today = $res_stat2->fetch_assoc()['total'];
 $res_stat3 = $conn->query("SELECT COUNT(*) as total FROM laporan_setoran_hafalan WHERE grade LIKE '%Mumtaz%' OR grade = 'A+' OR grade = 'A'");
 if ($res_stat3) $total_mumtaz = $res_stat3->fetch_assoc()['total'];
 
-// Fetch santri list for datalist
-$santri_options = [];
-$res_santri = $conn->query("SELECT nama_lengkap FROM buku_induk_santri ORDER BY nama_lengkap ASC");
-if ($res_santri && $res_santri->num_rows > 0) {
-    while ($r = $res_santri->fetch_assoc()) {
-        $santri_options[] = $r['nama_lengkap'];
+// FETCH SANTRI BINAAN MUSYRIF FROM MANAJEMEN HALAQOH
+$santri_binaan = [];
+$nama_halaqoh_user = [];
+
+if ($is_super_admin) {
+    // Super admin fetches all active santri + their halaqoh info
+    $res_santri = $conn->query("SELECT s.id, s.nama_lengkap, g.nama_grup 
+        FROM buku_induk_santri s 
+        LEFT JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        LEFT JOIN halaqoh_grup g ON a.grup_id = g.id 
+        ORDER BY s.nama_lengkap ASC");
+    if ($res_santri && $res_santri->num_rows > 0) {
+        while ($r = $res_santri->fetch_assoc()) {
+            $santri_binaan[] = $r;
+        }
+    }
+} else {
+    // Musyrif mode: Fetch santri assigned to this Musyrif in halaqoh_grup
+    $res_santri = $conn->query("SELECT DISTINCT s.id, s.nama_lengkap, g.nama_grup 
+        FROM buku_induk_santri s 
+        JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        JOIN halaqoh_grup g ON a.grup_id = g.id 
+        WHERE g.musyrif_id = $ustadz_id 
+        ORDER BY s.nama_lengkap ASC");
+    
+    if ($res_santri && $res_santri->num_rows > 0) {
+        while ($r = $res_santri->fetch_assoc()) {
+            $santri_binaan[] = $r;
+            if (!empty($r['nama_grup']) && !in_array($r['nama_grup'], $nama_halaqoh_user)) {
+                $nama_halaqoh_user[] = $r['nama_grup'];
+            }
+        }
+    } else {
+        // Fallback if no halaqoh assignment yet for this musyrif
+        $res_all = $conn->query("SELECT id, nama_lengkap, NULL as nama_grup FROM buku_induk_santri ORDER BY nama_lengkap ASC");
+        if ($res_all && $res_all->num_rows > 0) {
+            while ($r = $res_all->fetch_assoc()) {
+                $santri_binaan[] = $r;
+            }
+        }
     }
 }
 
@@ -161,7 +204,7 @@ $active_menu = 'laporan_setoran_hafalan';
                         </div>
                         <span>Laporan Setoran Hafalan Santri</span>
                     </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Pencatatan dan Pemantauan Kinerja Setoran Hafalan Al-Qur'an Santri Real-Time</p>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Pencatatan dan Pemantauan Kinerja Setoran Hafalan Al-Qur'an Santri Binaan Musyrif</p>
                 </div>
             </div>
 
@@ -203,21 +246,27 @@ $active_menu = 'laporan_setoran_hafalan';
 
             <!-- FORM CARD -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mb-8">
-                <div class="px-6 py-4 bg-gradient-to-r from-emerald-800 to-teal-700 text-white flex items-center justify-between">
+                <div class="px-6 py-4 bg-gradient-to-r from-emerald-800 to-teal-700 text-white flex flex-wrap items-center justify-between gap-2">
                     <h2 class="font-bold text-base flex items-center gap-2">
                         <i class="fas fa-plus-circle text-emerald-300"></i>
                         <span>Input Setoran Hafalan Baru</span>
                     </h2>
-                    <span class="text-xs bg-emerald-900/60 px-3 py-1 rounded-full text-emerald-200 font-medium">Khusus Musyrif</span>
+                    <?php if ($is_super_admin): ?>
+                        <span class="text-xs bg-purple-900/80 border border-purple-400/40 px-3 py-1 rounded-full text-purple-200 font-semibold">
+                            <i class="fas fa-user-shield mr-1"></i>Super Admin (Seluruh Santri)
+                        </span>
+                    <?php elseif (!empty($nama_halaqoh_user)): ?>
+                        <span class="text-xs bg-emerald-900/80 border border-emerald-400/40 px-3 py-1 rounded-full text-emerald-200 font-semibold">
+                            <i class="fas fa-layer-group mr-1"></i>Halaqoh: <?= htmlspecialchars(implode(', ', $nama_halaqoh_user)) ?>
+                        </span>
+                    <?php else: ?>
+                        <span class="text-xs bg-amber-900/80 border border-amber-400/40 px-3 py-1 rounded-full text-amber-200 font-semibold">
+                            <i class="fas fa-info-circle mr-1"></i>Menampilkan Seluruh Santri (Belum Ada Halaqoh)
+                        </span>
+                    <?php endif; ?>
                 </div>
 
                 <form method="POST" class="p-6">
-                    <!-- DATALISTS -->
-                    <datalist id="santri_list">
-                        <?php foreach($santri_options as $opt): ?>
-                            <option value="<?= htmlspecialchars($opt) ?>"></option>
-                        <?php endforeach; ?>
-                    </datalist>
 
                     <datalist id="surah_list">
                         <?php foreach($surah_list as $s): ?>
@@ -226,15 +275,23 @@ $active_menu = 'laporan_setoran_hafalan';
                     </datalist>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <!-- NAMA SANTRI -->
+                        <!-- NAMA SANTRI (BINAAN MUSYRIF HALAQOH) -->
                         <div>
                             <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                                <i class="fas fa-user-graduate text-emerald-600 mr-1.5"></i>Nama Santri <span class="text-rose-500">*</span>
+                                <i class="fas fa-user-graduate text-emerald-600 mr-1.5"></i>Nama Santri Binaan <span class="text-rose-500">*</span>
                             </label>
-                            <input type="text" name="nama_santri" list="santri_list" required 
-                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition placeholder-slate-400" 
-                                placeholder="Ketik atau pilih nama santri...">
-                            <p class="text-[11px] text-slate-400 mt-1">Dapat memilih dari database santri atau mengetik manual.</p>
+                            <select name="nama_santri" required 
+                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition">
+                                <option value="">-- Pilih Santri Binaan --</option>
+                                <?php if (!empty($santri_binaan)): ?>
+                                    <?php foreach ($santri_binaan as $sb): ?>
+                                        <option value="<?= htmlspecialchars($sb['nama_lengkap']) ?>">
+                                            <?= htmlspecialchars($sb['nama_lengkap']) ?> <?= !empty($sb['nama_grup']) ? '('.htmlspecialchars($sb['nama_grup']).')' : '' ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                            <p class="text-[11px] text-slate-400 mt-1">Daftar santri sesuai pembagian Manajemen Halaqoh oleh Kepala Asrama.</p>
                         </div>
 
                         <!-- NAMA SURAT -->
