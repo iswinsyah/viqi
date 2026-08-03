@@ -55,6 +55,8 @@ if ($conn) {
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kurikulum_solopreneur_trainer', 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_ustadz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
 $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_hafalan', 'musyrif,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,super_admin'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_rijal', 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif'");
     $conn->query("DELETE FROM menu_permissions WHERE menu_key = 'kpi_musyrif'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('sekolah_pembukuan', 'kepala_sekolah,admin_sekolah')");
 
@@ -120,6 +122,8 @@ $menu_structure = [
     'Asrama' => [
         'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user', 'title' => 'Dashboard Asrama'],
         'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group', 'title' => 'Manajemen Halaqoh'],
+        'laporan_setoran_rijal' => ['href' => 'admin-laporan-setoran-rijal.php', 'icon' => 'fa-mars', 'title' => 'Rekap Setoran Rijal'],
+        'laporan_setoran_nisa' => ['href' => 'admin-laporan-setoran-nisa.php', 'icon' => 'fa-venus', 'title' => 'Rekap Setoran Nisa'],
     ],
     'Musyrif' => [
         'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'title' => 'Buku Mutaba\'ah Santri'],

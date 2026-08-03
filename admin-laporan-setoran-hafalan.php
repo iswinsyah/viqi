@@ -36,6 +36,7 @@ if (!$is_authorized) {
 // Create table if not exists (Self-Healing)
 $create_sql = "CREATE TABLE IF NOT EXISTS laporan_setoran_hafalan (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    santri_id INT NULL,
     nama_santri VARCHAR(150) NOT NULL,
     nama_surat VARCHAR(150) NOT NULL,
     ayat_mulai INT NOT NULL,
@@ -46,6 +47,7 @@ $create_sql = "CREATE TABLE IF NOT EXISTS laporan_setoran_hafalan (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 $conn->query($create_sql);
+@$conn->query("ALTER TABLE laporan_setoran_hafalan ADD COLUMN santri_id INT NULL AFTER id");
 
 // Hapus Data
 if (isset($_GET['action']) && $_GET['action'] === 'hapus' && isset($_GET['id'])) {
@@ -69,8 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
     $juz = (int)($_POST['juz'] ?? 0);
     $grade = $conn->real_escape_string($_POST['grade'] ?? '');
 
-    $sql = "INSERT INTO laporan_setoran_hafalan (nama_santri, nama_surat, ayat_mulai, ayat_sampai, halaman, juz, grade)
-            VALUES ('$nama_santri', '$nama_surat', $ayat_mulai, $ayat_sampai, '$halaman', $juz, '$grade')";
+    // Lookup santri_id from buku_induk_santri
+    $res_sid = $conn->query("SELECT id FROM buku_induk_santri WHERE nama_lengkap = '$nama_santri' LIMIT 1");
+    $santri_id_val = ($res_sid && $res_sid->num_rows > 0) ? (int)$res_sid->fetch_assoc()['id'] : "NULL";
+
+    $sql = "INSERT INTO laporan_setoran_hafalan (santri_id, nama_santri, nama_surat, ayat_mulai, ayat_sampai, halaman, juz, grade)
+            VALUES ($santri_id_val, '$nama_santri', '$nama_surat', $ayat_mulai, $ayat_sampai, '$halaman', $juz, '$grade')";
     if ($conn->query($sql) === TRUE) {
         $message = '<div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 p-4 rounded-r-xl shadow-sm mb-6 flex items-center justify-between"><div class="flex items-center"><i class="fas fa-check-circle mr-3 text-lg text-emerald-500"></i><span>Laporan setoran hafalan <b>' . htmlspecialchars($nama_santri) . '</b> berhasil disimpan!</span></div><button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600"><i class="fas fa-times"></i></button></div>';
     } else {

@@ -23,6 +23,9 @@
             <a href="ruang-santri.php?view=ibadah_harian" class="<?= (isset($active_menu) && $active_menu == 'ibadah_harian') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-mosque w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ibadah_harian') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Ibadah Harian
             </a>
+            <a href="santri-laporan-hafalan.php" class="<?= (isset($active_menu) && $active_menu == 'santri_hafalan') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-quran w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'santri_hafalan') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Setoran Hafalan Saya
+            </a>
             <a href="santri-rapot.php" class="<?= (isset($active_menu) && $active_menu == 'rapot_akademik') ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-graduation-cap w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'rapot_akademik') ? 'text-amber-400' : 'text-indigo-300 group-hover:text-white' ?>"></i> Rapor Akademik
             </a>
