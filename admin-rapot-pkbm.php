@@ -193,10 +193,12 @@ if ($selected_santri) {
     $sem_esc = $conn->real_escape_string($filters['semester']);
 
     $sql_nilai = "
-        SELECT l.*, m.nama_mapel, m.kode_mapel, m.kategori_mapel 
+        SELECT m.id as mapel_id, m.nama_mapel, m.kode_mapel, m.kategori_mapel, 
+               ROUND(AVG(l.nilai), 0) as nilai
         FROM leger_nilai l 
         JOIN master_mapel m ON l.mapel_id = m.id 
         WHERE l.santri_id = $s_id AND l.tahun_ajaran = '$ta_esc' AND l.semester = '$sem_esc' 
+        GROUP BY m.id
         ORDER BY m.kategori_mapel ASC, m.nama_mapel ASC
     ";
     $res_n = $conn->query($sql_nilai);
