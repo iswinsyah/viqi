@@ -7,9 +7,22 @@ header("Pragma: no-cache");
 require_once 'auth-ustadz.php'; // Proteksi session ustadz
 require_once 'koneksi.php';
 
-// Tentukan hak akses edit (dikembalikan agar semua asatidz bisa menginput)
+// Tentukan hak akses edit (HANYA Kepala Sekolah, Admin Sekolah, Kepala Ma'had, dan Super Admin)
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-$can_edit = true;
+$ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
+
+$can_edit = false;
+if ($ustadz_id === 9999) {
+    $can_edit = true;
+} else {
+    foreach ($user_roles as $r) {
+        $norm_r = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+        if (in_array($norm_r, ['kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'super_admin'])) {
+            $can_edit = true;
+            break;
+        }
+    }
+}
 
 // Helper to get distinct soft pastel colors for subjects
 function dapatkan_warna_mapel($mapel_name) {
@@ -230,14 +243,20 @@ $active_menu = 'jadwal_pelajaran';
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-calendar-alt text-emerald-600 mr-2"></i>Jadwal Pelajaran</h1>
-                    <p class="text-xs text-gray-500 mt-1">Pengaturan jadwal harian santri untuk asrama dan Diniyah.</p>
+                    <p class="text-xs text-gray-500 mt-1">Jadwal harian pelajaran & kegiatan santri Ma'had Tahfidz.</p>
                 </div>
-                <div class="mt-4 sm:mt-0 text-xs text-gray-400 font-semibold italic bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg border border-emerald-100 flex items-center">
-                    <i class="fas fa-info-circle mr-1.5 text-sm"></i> Klik pada kotak jam pelajaran untuk menambah/mengubah jadwal.
-                </div>
+                <?php if ($can_edit): ?>
+                    <div class="mt-4 sm:mt-0 text-xs font-bold bg-emerald-50 text-emerald-800 px-3.5 py-2 rounded-xl border border-emerald-300 flex items-center shadow-sm">
+                        <i class="fas fa-user-shield text-emerald-600 mr-2 text-sm"></i> Hak Akses Pengaturan (Klik slot untuk ubah/tambah)
+                    </div>
+                <?php else: ?>
+                    <div class="mt-4 sm:mt-0 text-xs font-semibold bg-blue-50 text-blue-800 px-3.5 py-2 rounded-xl border border-blue-200 flex items-center shadow-sm">
+                        <i class="fas fa-eye text-blue-600 mr-2 text-sm"></i> Mode Lihat Jadwal (Pengaturan khusus Kepala Sekolah, Admin Sekolah, & Kepala Ma'had)
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Pesan Notifikasi -->
