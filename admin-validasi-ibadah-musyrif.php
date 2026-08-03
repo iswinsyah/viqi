@@ -14,18 +14,39 @@ $ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
 $is_authorized = false;
 $is_super_admin = ($ustadz_id === 9999);
 
+$is_musyrif = false;
+$is_musyrifah = false;
+$is_kepala_asrama_rijal = false;
+$is_kepala_asrama_nisa = false;
+
 if ($is_super_admin) {
     $is_authorized = true;
 }
 foreach ($user_roles as $role) {
     $norm_role = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
-    if ($norm_role === 'musyrif' || $norm_role === 'super_admin' || $norm_role === 'kepala_asrama') {
+    if (in_array($norm_role, ['super_admin', 'kepala_mahad'])) {
         $is_authorized = true;
+    }
+    if ($norm_role === 'musyrif') {
+        $is_authorized = true;
+        $is_musyrif = true;
+    }
+    if ($norm_role === 'musyrifah') {
+        $is_authorized = true;
+        $is_musyrifah = true;
+    }
+    if ($norm_role === 'kepala_asrama' || $norm_role === 'kepala_asrama_rijal') {
+        $is_authorized = true;
+        $is_kepala_asrama_rijal = true;
+    }
+    if ($norm_role === 'kepala_asrama_nisa') {
+        $is_authorized = true;
+        $is_kepala_asrama_nisa = true;
     }
 }
 
 if (!$is_authorized) {
-    die('Akses ditolak. Halaman ini khusus untuk Musyrif dan Kepala Asrama.');
+    die('Akses ditolak. Halaman ini khusus untuk Musyrif/Musyrifah dan Pengurus Asrama.');
 }
 
 $message = '';
@@ -54,10 +75,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Query Santri Binaan Musyrif
+// Gender filter condition
+$gender_filter_sql = "";
+if (!$is_super_admin) {
+    if ($is_musyrif && !$is_musyrifah) {
+        $gender_filter_sql = " AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)";
+    } elseif ($is_musyrifah && !$is_musyrif) {
+        $gender_filter_sql = " AND s.jenis_kelamin = 'Perempuan'";
+    } elseif ($is_kepala_asrama_rijal && !$is_kepala_asrama_nisa) {
+        $gender_filter_sql = " AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)";
+    } elseif ($is_kepala_asrama_nisa && !$is_kepala_asrama_rijal) {
+        $gender_filter_sql = " AND s.jenis_kelamin = 'Perempuan'";
+    }
+}
+
+// Query Santri Binaan Musyrif / Musyrifah from Manajemen Halaqoh
 $santri_binaan_ids = [];
 if (!$is_super_admin) {
-    $res_sb = $conn->query("SELECT DISTINCT s.id FROM buku_induk_santri s JOIN halaqoh_anggota a ON s.id = a.santri_id JOIN halaqoh_grup g ON a.grup_id = g.id WHERE g.musyrif_id = $ustadz_id");
+    $res_sb = $conn->query("
+        SELECT DISTINCT s.id 
+        FROM buku_induk_santri s 
+        JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        JOIN halaqoh_grup g ON a.grup_id = g.id 
+        WHERE g.musyrif_id = $ustadz_id $gender_filter_sql
+    ");
     if ($res_sb) {
         while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
     }
@@ -65,30 +106,38 @@ if (!$is_super_admin) {
 
 // Build SQL Query for Ibadah Harian Records
 $where_clause = "WHERE 1=1";
-if (!$is_super_admin && !empty($santri_binaan_ids)) {
-    $sb_str = implode(',', $santri_binaan_ids);
-    $where_clause .= " AND i.santri_id IN ($sb_str)";
+if (!$is_super_admin) {
+    if (!empty($santri_binaan_ids)) {
+        $sb_str = implode(',', $santri_binaan_ids);
+        $where_clause .= " AND i.santri_id IN ($sb_str)";
+    } else {
+        $where_clause .= " AND 1=0"; // Prevent unassigned students from leaking
+    }
+}
+if (!empty($gender_filter_sql)) {
+    $where_clause .= $gender_filter_sql;
 }
 
 $status_filter = $_GET['status'] ?? 'Pending';
+$query_status = "";
 if (in_array($status_filter, ['Pending', 'Disetujui', 'Ditolak'])) {
-    $where_clause .= " AND i.status_validasi = '$status_filter'";
+    $query_status = " AND i.status_validasi = '$status_filter'";
 }
 
 $query = "
     SELECT i.*, s.nama_lengkap, s.kelas_sekarang, s.jenis_kelamin 
     FROM ibadah_harian_santri i 
     JOIN buku_induk_santri s ON i.santri_id = s.id 
-    $where_clause 
+    $where_clause $query_status
     ORDER BY i.tanggal DESC, i.created_at DESC
 ";
 $res_data = $conn->query($query);
 
 // Stats
-$res_p = $conn->query("SELECT COUNT(*) as total FROM ibadah_harian_santri i " . ($is_super_admin ? "" : (!empty($santri_binaan_ids) ? "WHERE i.santri_id IN (".implode(',', $santri_binaan_ids).") AND i.status_validasi='Pending'" : "WHERE 1=0")));
+$res_p = $conn->query("SELECT COUNT(*) as total FROM ibadah_harian_santri i JOIN buku_induk_santri s ON i.santri_id = s.id $where_clause AND i.status_validasi='Pending'");
 $total_pending = ($res_p) ? $res_p->fetch_assoc()['total'] : 0;
 
-$res_a = $conn->query("SELECT COUNT(*) as total FROM ibadah_harian_santri i " . ($is_super_admin ? "" : (!empty($santri_binaan_ids) ? "WHERE i.santri_id IN (".implode(',', $santri_binaan_ids).") AND i.status_validasi='Disetujui'" : "WHERE 1=0")));
+$res_a = $conn->query("SELECT COUNT(*) as total FROM ibadah_harian_santri i JOIN buku_induk_santri s ON i.santri_id = s.id $where_clause AND i.status_validasi='Disetujui'");
 $total_disetujui = ($res_a) ? $res_a->fetch_assoc()['total'] : 0;
 
 $active_menu = 'validasi_ibadah_musyrif';
