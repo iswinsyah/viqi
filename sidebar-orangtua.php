@@ -24,6 +24,9 @@
             <a href="orangtua-hafalan.php" class="<?= (isset($active_menu) && $active_menu == 'orangtua_hafalan') ? 'bg-purple-800 text-white' : 'text-purple-100 hover:bg-purple-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-book-quran w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'orangtua_hafalan') ? 'text-amber-400' : 'text-purple-300 group-hover:text-white' ?>"></i> Setoran Hafalan Ananda
             </a>
+            <a href="orangtua-ibadah-harian.php" class="<?= (isset($active_menu) && $active_menu == 'orangtua_ibadah_harian') ? 'bg-purple-800 text-white' : 'text-purple-100 hover:bg-purple-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-mosque w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'orangtua_ibadah_harian') ? 'text-amber-400' : 'text-purple-300 group-hover:text-white' ?>"></i> Ibadah Harian Ananda
+            </a>
             <a href="pembayaran-spp.php" class="<?= (isset($active_menu) && $active_menu == 'pembayaran_keuangan') ? 'bg-purple-800 text-white' : 'text-purple-100 hover:bg-purple-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-money-bill-wave w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'pembayaran_keuangan') ? 'text-amber-400' : 'text-purple-300 group-hover:text-white' ?>"></i> Pembayaran Keuangan
             </a>

@@ -57,6 +57,10 @@ if ($conn) {
 $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_hafalan', 'musyrif,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,super_admin'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_rijal', 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('validasi_ibadah_musyrif', 'musyrif,kepala_asrama,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,kepala_asrama,super_admin'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_rijal', 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_mahad', 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif'");
     $conn->query("DELETE FROM menu_permissions WHERE menu_key = 'kpi_musyrif'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('sekolah_pembukuan', 'kepala_sekolah,admin_sekolah')");
 
@@ -124,8 +128,12 @@ $menu_structure = [
         'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group', 'title' => 'Manajemen Halaqoh'],
         'laporan_setoran_rijal' => ['href' => 'admin-laporan-setoran-rijal.php', 'icon' => 'fa-mars', 'title' => 'Rekap Setoran Rijal'],
         'laporan_setoran_nisa' => ['href' => 'admin-laporan-setoran-nisa.php', 'icon' => 'fa-venus', 'title' => 'Rekap Setoran Nisa'],
+        'rekap_ibadah_rijal' => ['href' => 'admin-ibadah-rijal.php', 'icon' => 'fa-mosque', 'title' => 'Rekap Ibadah Rijal'],
+        'rekap_ibadah_nisa' => ['href' => 'admin-ibadah-nisa.php', 'icon' => 'fa-kaaba', 'title' => 'Rekap Ibadah Nisa'],
+        'rekap_ibadah_mahad' => ['href' => 'admin-ibadah-mahad.php', 'icon' => 'fa-clipboard-check', 'title' => 'Rekap Ibadah Ma\'had'],
     ],
     'Musyrif' => [
+        'validasi_ibadah_musyrif' => ['href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fa-tasks', 'title' => 'Validasi Ibadah Santri'],
         'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'title' => 'Buku Mutaba\'ah Santri'],
         'jurnal_pagi_musyrif' => ['href' => 'admin-jurnal-pagi-musyrif.php', 'icon' => 'fa-sun', 'title' => 'Jurnal Piket Pagi (07.00-13.00)'],
         'jurnal_musyrif' => ['href' => 'admin-pegawai-jurnal-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'Jurnal Kegiatan Musyrif'],

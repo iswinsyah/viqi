@@ -37,6 +37,12 @@ $conn->query("CREATE TABLE IF NOT EXISTS ibadah_harian_santri (
 @$conn->query("ALTER TABLE ibadah_harian_santri DROP COLUMN setor_ayat_dari");
 @$conn->query("ALTER TABLE ibadah_harian_santri DROP COLUMN setor_ayat_sampai");
 
+// Self-healing migrations for Validation
+@$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN status_validasi ENUM('Pending', 'Disetujui', 'Ditolak') DEFAULT 'Pending' AFTER puasa_kamis");
+@$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN catatan_musyrif TEXT NULL AFTER status_validasi");
+@$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN validated_by INT NULL AFTER catatan_musyrif");
+@$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN validated_at DATETIME NULL AFTER validated_by");
+
 // --- LOGIC FOR IBADAH HARIAN VIEW ---
 if ($view === 'ibadah_harian') {
     $active_menu = 'ibadah_harian';
@@ -76,17 +82,17 @@ if ($view === 'ibadah_harian') {
                     sholat_subuh='$sholat_subuh', sholat_dhuhur='$sholat_dhuhur', sholat_ashar='$sholat_ashar', sholat_maghrib='$sholat_maghrib', sholat_isya='$sholat_isya',
                     sholat_tahajud=$sholat_tahajud, sholat_witir=$sholat_witir, sholat_qobliyah_subuh=$sholat_qobliyah_subuh, sholat_dhuha=$sholat_dhuha, sholat_qobli_dhuhur=$sholat_qobli_dhuhur,
                     sholat_bakdiyah_dhuhur=$sholat_bakdiyah_dhuhur, sholat_qobliyah_ashar=$sholat_qobliyah_ashar, sholat_bakdiyah_maghrib=$sholat_bakdiyah_maghrib, sholat_qobliyah_isya=$sholat_qobliyah_isya, sholat_bakdiyah_isya=$sholat_bakdiyah_isya,
-                    puasa_senin=$puasa_senin, puasa_kamis=$puasa_kamis
+                    puasa_senin=$puasa_senin, puasa_kamis=$puasa_kamis, status_validasi='Pending'
                     WHERE id = $existing_id";
-            $pesan_sukses = "Laporan ibadah harian tanggal $tanggal berhasil diperbarui!";
+            $pesan_sukses = "Laporan ibadah harian tanggal $tanggal berhasil diperbarui! Menunggu validasi Musyrif.";
         } else {
             $sql = "INSERT INTO ibadah_harian_santri (santri_id, tanggal, sholat_subuh, sholat_dhuhur, sholat_ashar, sholat_maghrib, sholat_isya,
                     sholat_tahajud, sholat_witir, sholat_qobliyah_subuh, sholat_dhuha, sholat_qobli_dhuhur, sholat_bakdiyah_dhuhur, sholat_qobliyah_ashar, sholat_bakdiyah_maghrib, sholat_qobliyah_isya, sholat_bakdiyah_isya,
-                    puasa_senin, puasa_kamis) VALUES (
+                    puasa_senin, puasa_kamis, status_validasi) VALUES (
                     $santri_id, '$tanggal', '$sholat_subuh', '$sholat_dhuhur', '$sholat_ashar', '$sholat_maghrib', '$sholat_isya',
                     $sholat_tahajud, $sholat_witir, $sholat_qobliyah_subuh, $sholat_dhuha, $sholat_qobli_dhuhur, $sholat_bakdiyah_dhuhur, $sholat_qobliyah_ashar, $sholat_bakdiyah_maghrib, $sholat_qobliyah_isya, $sholat_bakdiyah_isya,
-                    $puasa_senin, $puasa_kamis)";
-            $pesan_sukses = "Laporan ibadah harian tanggal $tanggal berhasil disimpan!";
+                    $puasa_senin, $puasa_kamis, 'Pending')";
+            $pesan_sukses = "Laporan ibadah harian tanggal $tanggal berhasil disimpan! Menunggu validasi Musyrif.";
         }
 
         if (!$conn->query($sql)) {
