@@ -53,7 +53,8 @@ if ($conn) {
                   VALUES ('jadwal_pelajaran', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')
                   ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kurikulum_solopreneur_trainer', 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_ustadz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_ustadz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz');
+$conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_hafalan', 'musyrif');");
     $conn->query("DELETE FROM menu_permissions WHERE menu_key = 'kpi_musyrif'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('sekolah_pembukuan', 'kepala_sekolah,admin_sekolah')");
 
@@ -126,6 +127,7 @@ $menu_structure = [
         'jurnal_musyrif' => ['href' => 'admin-pegawai-jurnal-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'Jurnal Kegiatan Musyrif'],
         'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'title' => 'Laporan Kedisiplinan'],
         'penilaian_adab' => ['href' => 'admin-penilaian-adab.php', 'icon' => 'fa-heart-circle-check', 'title' => 'Penilaian Adab (Rapor)'],
+        'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt', 'title' => 'Laporan Setoran Hafalan'],
     ],
     'Keuangan Santri' => [
         'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet', 'title' => 'Rekap Uang Saku Santri'],
