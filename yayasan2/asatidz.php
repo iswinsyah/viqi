@@ -145,9 +145,12 @@ $active_menu = 'asatidz';
                                     'bendahara_sekolah' => 'Bendahara Sekolah', 
                                     'admin_sekolah' => 'Admin Sekolah',
                                     'kepala_mahad' => "Kepala Ma'had",
-                                    'kepala_asrama' => 'Kepala Asrama', 
-                                    'musyrif' => 'Musyrif', 
+                                    'kepala_asrama_rijal' => 'Kepala Asrama Rijal',
+                                    'kepala_asrama_nisa' => 'Kepala Asrama Nisa', 
+                                    'musyrif' => 'Musyrif',
+                                    'musyrifah' => 'Musyrifah', 
                                     'ustadz' => 'Ustadz',
+                                    'ustadzah' => 'Ustadzah',
                                     'tutor' => 'Tutor',
                                     'trainer' => 'Trainer'
                                 ];

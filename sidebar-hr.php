@@ -54,13 +54,13 @@ if ($conn) {
                   ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kurikulum_solopreneur_trainer', 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_ustadz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_hafalan', 'musyrif,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,super_admin'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_hafalan', 'musyrif,musyrifah,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,musyrifah,super_admin'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_rijal', 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif'");
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif'");
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('validasi_ibadah_musyrif', 'musyrif,kepala_asrama,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,kepala_asrama,super_admin'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrifah,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrifah,musyrif'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('validasi_ibadah_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_rijal', 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif'");
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif'");
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_mahad', 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrifah,musyrif') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrifah,musyrif'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_mahad', 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah'");
     $conn->query("DELETE FROM menu_permissions WHERE menu_key = 'kpi_musyrif'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('sekolah_pembukuan', 'kepala_sekolah,admin_sekolah')");
 
@@ -86,6 +86,7 @@ function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) 
 
     foreach ($user_roles as $role) {
         $norm_role = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
+        if ($norm_role === 'kepala_asrama') $norm_role = 'kepala_asrama_rijal';
         if (in_array($norm_role, $allowed_roles)) {
             return true;
         }
