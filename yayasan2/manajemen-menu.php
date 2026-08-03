@@ -18,6 +18,7 @@ $defined_menus = [
         'counseling_karir' => 'Pemetaan Karir & PTN (AI)',
         'rekap_keuangan' => 'Rekap Pembayaran Keuangan',
         'rekap_uang_saku' => 'Rekap Uang Saku',
+        'sekolah_pembukuan' => 'Buku Kas Sekolah',
     ],
     'Asatidz' => [
         'kesediaan_mengajar' => 'Kesediaan Mengajar',
@@ -34,16 +35,26 @@ $defined_menus = [
     'Asrama' => [
         'dashboard_asrama' => 'Dashboard Asrama',
         'manajemen_halaqoh' => 'Manajemen Halaqoh',
+        'laporan_setoran_rijal' => 'Rekap Setoran Rijal',
+        'laporan_setoran_nisa' => 'Rekap Setoran Nisa',
+        'rekap_ibadah_rijal' => 'Rekap Ibadah Rijal',
+        'rekap_ibadah_nisa' => 'Rekap Ibadah Nisa',
+        'rekap_ibadah_mahad' => 'Rekap Ibadah Ma\'had',
     ],
     'Musyrif' => [
+        'validasi_ibadah_musyrif' => 'Validasi Ibadah Santri',
         'mutabaah' => 'Buku Mutaba\'ah Santri',
         'jurnal_pagi_musyrif' => 'Jurnal Piket Pagi (07.00-13.00)',
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'laporan_adab' => 'Laporan Kedisiplinan',
         'penilaian_adab' => 'Penilaian Adab (Rapor)',
+        'laporan_setoran_hafalan' => 'Laporan Setoran Hafalan',
     ],
     'Keuangan Santri' => [
         'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
+    ],
+    'Solopreneur & AI' => [
+        'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)',
     ]
 ];
 
@@ -60,12 +71,15 @@ $defined_roles = [
     'trainer' => 'Trainer',
 ];
 
-// 2. Buat tabel permissions jika belum ada
+// 2. Buat tabel permissions jika belum ada & seed default
 $conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     menu_key VARCHAR(100) UNIQUE NOT NULL,
     allowed_roles TEXT
 )");
+
+// Seed default permissions for Jadwal Pelajaran if not present
+$conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('jadwal_pelajaran', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
 
 // 3. Proses penyimpanan data
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['permissions'])) {
@@ -132,8 +146,16 @@ $active_menu = 'manajemen_menu';
                                         <td colspan="<?= count($defined_roles) + 1 ?>" class="px-6 py-2 text-sm font-bold text-gray-600 uppercase"><?= $group ?></td>
                                     </tr>
                                     <?php foreach ($menus as $key => $title): ?>
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10"><?= $title ?></td>
+                                     <tr class="hover:bg-gray-50 <?= ($key === 'jadwal_pelajaran') ? 'bg-amber-50/50' : '' ?>">
+                                         <td class="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10">
+                                             <?php if ($key === 'jadwal_pelajaran'): ?>
+                                                 <span class="inline-flex items-center text-amber-800 font-bold bg-amber-100/80 px-2.5 py-1 rounded-md border border-amber-300">
+                                                     <i class="fas fa-calendar-alt text-amber-600 mr-1.5"></i> <?= $title ?>
+                                                 </span>
+                                             <?php else: ?>
+                                                 <?= $title ?>
+                                             <?php endif; ?>
+                                         </td>
                                         <?php foreach ($defined_roles as $role_key => $role_label): 
                                             $checked = isset($permissions[$key]) && in_array($role_key, $permissions[$key]) ? 'checked' : '';
                                         ?>
