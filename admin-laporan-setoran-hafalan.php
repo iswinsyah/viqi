@@ -4,20 +4,24 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once 'koneksi.php'; // DB connection
 
-// Only allow musyrif role
+// Allow musyrif and super_admin role
 $user_roles = [];
 if (isset($_SESSION['ustadz_role'])) {
     $user_roles = explode(',', $_SESSION['ustadz_role']);
 }
-$is_musyrif = false;
+$is_authorized = false;
+if (isset($_SESSION['ustadz_id']) && (int)$_SESSION['ustadz_id'] === 9999) {
+    $is_authorized = true;
+}
 foreach ($user_roles as $role) {
-    if (trim(strtolower($role)) === 'musyrif') {
-        $is_musyrif = true;
+    $norm_role = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
+    if ($norm_role === 'musyrif' || $norm_role === 'super_admin') {
+        $is_authorized = true;
         break;
     }
 }
-if (!$is_musyrif) {
-    die('Akses ditolak. Hanya Musyrif yang dapat mengakses halaman ini.');
+if (!$is_authorized) {
+    die('Akses ditolak. Hanya Musyrif dan Super Admin yang dapat mengakses halaman ini.');
 }
 
 // Create table if not exists

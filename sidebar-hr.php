@@ -54,7 +54,7 @@ if ($conn) {
                   ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kurikulum_solopreneur_trainer', 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_ustadz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-$conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_hafalan', 'musyrif');");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_hafalan', 'musyrif,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,super_admin'");
     $conn->query("DELETE FROM menu_permissions WHERE menu_key = 'kpi_musyrif'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('sekolah_pembukuan', 'kepala_sekolah,admin_sekolah')");
 
