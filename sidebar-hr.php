@@ -63,6 +63,7 @@ $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('la
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_mahad', 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah'");
     $conn->query("DELETE FROM menu_permissions WHERE menu_key = 'kpi_musyrif'");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('sekolah_pembukuan', 'kepala_sekolah,admin_sekolah')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rapot_pkbm', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin'");
 
     $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
     if ($res_perms) {
@@ -107,6 +108,7 @@ $menu_structure = [
         'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user', 'title' => 'Buku Induk Santri'],
         'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users', 'title' => 'Akun Orang Tua'],
         'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader', 'title' => 'Leger Nilai Digital'],
+        'rapot_pkbm' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice', 'title' => 'Raport Diknas PKBM (B & C)'],
         'counseling_karir' => ['href' => 'admin-counseling-karir.php', 'icon' => 'fa-graduation-cap', 'title' => 'Pemetaan Karir & PTN (AI)'],
         'rekap_keuangan' => ['href' => 'admin-rekap-spp.php', 'icon' => 'fa-file-invoice-dollar', 'title' => 'Rekap Pembayaran Keuangan'],
         'rekap_uang_saku' => ['href' => 'admin-rekap-uang-saku.php', 'icon' => 'fa-wallet', 'title' => 'Rekap Data Uang Saku'],

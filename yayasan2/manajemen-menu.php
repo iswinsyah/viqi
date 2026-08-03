@@ -19,6 +19,7 @@ $defined_menus = [
         'rekap_keuangan' => 'Rekap Pembayaran Keuangan',
         'rekap_uang_saku' => 'Rekap Uang Saku',
         'sekolah_pembukuan' => 'Buku Kas Sekolah',
+        'rapot_pkbm' => 'Raport Diknas PKBM (B & C)',
     ],
     'Asatidz' => [
         'kesediaan_mengajar' => 'Kesediaan Mengajar',
