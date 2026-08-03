@@ -89,7 +89,7 @@ if ($res_stat1) $total_setoran = $res_stat1->fetch_assoc()['total'];
 $res_stat2 = $conn->query("SELECT COUNT(*) as total FROM laporan_setoran_hafalan WHERE DATE(created_at) = CURDATE()");
 if ($res_stat2) $total_today = $res_stat2->fetch_assoc()['total'];
 
-$res_stat3 = $conn->query("SELECT COUNT(*) as total FROM laporan_setoran_hafalan WHERE grade LIKE '%Mumtaz%' OR grade = 'A+' OR grade = 'A'");
+$res_stat3 = $conn->query("SELECT COUNT(*) as total FROM laporan_setoran_hafalan WHERE grade LIKE '%Mumtaz%'");
 if ($res_stat3) $total_mumtaz = $res_stat3->fetch_assoc()['total'];
 
 // FETCH SANTRI BINAAN MUSYRIF FROM MANAJEMEN HALAQOH
@@ -358,12 +358,11 @@ $active_menu = 'laporan_setoran_hafalan';
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
                             <i class="fas fa-star text-amber-500 mr-1.5"></i>Grade / Kualitas Hafalan
                         </label>
-                        <select name="grade" class="w-full md:w-1/2 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition">
-                            <option value="A+ (Mumtaz)">A+ (Mumtaz / Sempurna)</option>
-                            <option value="A (Jayyid Jiddan)">A (Jayyid Jiddan / Sangat Baik)</option>
-                            <option value="B+ (Jayyid)">B+ (Jayyid / Baik)</option>
-                            <option value="B (Maqbul)">B (Maqbul / Cukup)</option>
-                            <option value="C (Rasib / Mengulang)">C (Rasib / Perlu Mengulang)</option>
+                        <select name="grade" required class="w-full md:w-1/2 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition">
+                            <option value="Mumtaz">Mumtaz (Sangat Baik / Istimewa)</option>
+                            <option value="Jayid">Jayid (Baik)</option>
+                            <option value="Aadiy">Aadiy (Biasa / Cukup)</option>
+                            <option value="Aslaha">Aslaha (Perlu Perbaikan / Mengulang)</option>
                         </select>
                     </div>
 
@@ -410,15 +409,13 @@ $active_menu = 'laporan_setoran_hafalan';
                                 while ($row = $res_data->fetch_assoc()):
                                     $g = htmlspecialchars($row['grade']);
                                     $badge_class = "bg-slate-100 text-slate-700 border-slate-300";
-                                    if (str_contains($g, 'Mumtaz') || str_contains($g, 'A+')) {
+                                    if (str_contains($g, 'Mumtaz')) {
                                         $badge_class = "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold";
-                                    } else if (str_contains($g, 'Jayyid Jiddan') || $g === 'A') {
+                                    } else if (str_contains($g, 'Jayid') || str_contains($g, 'Jayyid')) {
                                         $badge_class = "bg-teal-100 text-teal-800 border-teal-300 font-semibold";
-                                    } else if (str_contains($g, 'Jayyid') || str_contains($g, 'B+')) {
-                                        $badge_class = "bg-blue-100 text-blue-800 border-blue-300";
-                                    } else if (str_contains($g, 'Maqbul') || $g === 'B') {
-                                        $badge_class = "bg-amber-100 text-amber-800 border-amber-300";
-                                    } else if (str_contains($g, 'Rasib') || $g === 'C') {
+                                    } else if (str_contains($g, 'Aadiy')) {
+                                        $badge_class = "bg-amber-100 text-amber-800 border-amber-300 font-medium";
+                                    } else if (str_contains($g, 'Aslaha')) {
                                         $badge_class = "bg-rose-100 text-rose-800 border-rose-300 font-semibold";
                                     }
                             ?>
