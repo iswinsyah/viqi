@@ -95,7 +95,7 @@ if ($res_stat1) $total_setoran = $res_stat1->fetch_assoc()['total'];
 $res_stat2 = $conn->query("SELECT COUNT(*) as total FROM laporan_setoran_hafalan WHERE DATE(created_at) = CURDATE()");
 if ($res_stat2) $total_today = $res_stat2->fetch_assoc()['total'];
 
-$res_stat3 = $conn->query("SELECT COUNT(*) as total FROM laporan_setoran_hafalan WHERE grade LIKE '%Mumtaz%'");
+$res_stat3 = $conn->query("SELECT COUNT(*) as total FROM laporan_setoran_hafalan WHERE grade LIKE '%Mutqin%'");
 if ($res_stat3) $total_mumtaz = $res_stat3->fetch_assoc()['total'];
 
 // FETCH SANTRI BINAAN MUSYRIF FROM MANAJEMEN HALAQOH
@@ -237,12 +237,12 @@ $active_menu = 'laporan_setoran_hafalan';
                 </div>
 
                 <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4 hover:shadow-md transition">
-                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold">
                         <i class="fas fa-award"></i>
                     </div>
                     <div>
                         <div class="text-2xl font-black text-slate-800"><?= number_format($total_mumtaz) ?></div>
-                        <div class="text-xs font-semibold text-slate-500">Grade Mumtaz / Excellent</div>
+                        <div class="text-xs font-semibold text-slate-500">Total Capaian Mutqin</div>
                     </div>
                 </div>
             </div>
@@ -365,10 +365,9 @@ $active_menu = 'laporan_setoran_hafalan';
                             <i class="fas fa-star text-amber-500 mr-1.5"></i>Grade / Kualitas Hafalan
                         </label>
                         <select name="grade" required class="w-full md:w-1/2 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition">
-                            <option value="Mumtaz">Mumtaz (Sangat Baik / Istimewa)</option>
-                            <option value="Jayid">Jayid (Baik)</option>
-                            <option value="Aadiy">Aadiy (Biasa / Cukup)</option>
-                            <option value="Aslaha">Aslaha (Perlu Perbaikan / Mengulang)</option>
+                            <option value="Mutqin">1. Mutqin (Benar-benar Hafal)</option>
+                            <option value="Ziyadah">2. Ziyadah (Hafal)</option>
+                            <option value="Aslaha">3. Aslaha (Wajib Diperbaiki)</option>
                         </select>
                     </div>
 
@@ -415,14 +414,12 @@ $active_menu = 'laporan_setoran_hafalan';
                                 while ($row = $res_data->fetch_assoc()):
                                     $g = htmlspecialchars($row['grade']);
                                     $badge_class = "bg-slate-100 text-slate-700 border-slate-300";
-                                    if (str_contains($g, 'Mumtaz')) {
+                                    if (str_contains($g, 'Mutqin')) {
                                         $badge_class = "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold";
-                                    } else if (str_contains($g, 'Jayid') || str_contains($g, 'Jayyid')) {
+                                    } else if (str_contains($g, 'Ziyadah') || str_contains($g, 'Jayid') || str_contains($g, 'Jayyid')) {
                                         $badge_class = "bg-teal-100 text-teal-800 border-teal-300 font-semibold";
-                                    } else if (str_contains($g, 'Aadiy')) {
-                                        $badge_class = "bg-amber-100 text-amber-800 border-amber-300 font-medium";
                                     } else if (str_contains($g, 'Aslaha')) {
-                                        $badge_class = "bg-rose-100 text-rose-800 border-rose-300 font-semibold";
+                                        $badge_class = "bg-rose-100 text-rose-800 border-rose-300 font-bold";
                                     }
                             ?>
                                     <tr class="hover:bg-slate-50/80 transition">

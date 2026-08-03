@@ -153,10 +153,9 @@ $active_menu = 'laporan_setoran_yayasan';
                                     $is_nisa = ($jk === 'Perempuan');
                                     $g = htmlspecialchars($row['grade']);
                                     $badge_class = "bg-slate-100 text-slate-700 border-slate-300";
-                                    if (str_contains($g, 'Mumtaz')) $badge_class = "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold";
-                                    else if (str_contains($g, 'Jayid')) $badge_class = "bg-teal-100 text-teal-800 border-teal-300 font-semibold";
-                                    else if (str_contains($g, 'Aadiy')) $badge_class = "bg-amber-100 text-amber-800 border-amber-300";
-                                    else if (str_contains($g, 'Aslaha')) $badge_class = "bg-rose-100 text-rose-800 border-rose-300 font-semibold";
+                                    if (str_contains($g, 'Mutqin')) $badge_class = "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold";
+                                    else if (str_contains($g, 'Ziyadah') || str_contains($g, 'Jayid')) $badge_class = "bg-teal-100 text-teal-800 border-teal-300 font-semibold";
+                                    else if (str_contains($g, 'Aslaha')) $badge_class = "bg-rose-100 text-rose-800 border-rose-300 font-bold";
                             ?>
                                     <tr class="hover:bg-amber-50/40 transition">
                                         <td class="py-3.5 px-6 align-top">

@@ -57,7 +57,7 @@ $res_stat3 = $conn->query("
     SELECT COUNT(*) as total 
     FROM laporan_setoran_hafalan l 
     LEFT JOIN buku_induk_santri s ON (l.santri_id = s.id OR l.nama_santri = s.nama_lengkap) 
-    WHERE (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL) AND l.grade = 'Mumtaz'
+    WHERE (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL) AND l.grade LIKE '%Mutqin%'
 ");
 $total_mumtaz = ($res_stat3) ? $res_stat3->fetch_assoc()['total'] : 0;
 
@@ -139,7 +139,7 @@ $active_menu = 'laporan_setoran_rijal';
                     </div>
                     <div>
                         <div class="text-2xl font-black text-slate-800"><?= number_format($total_mumtaz) ?></div>
-                        <div class="text-xs font-semibold text-slate-500">Mumtaz Rijal</div>
+                        <div class="text-xs font-semibold text-slate-500">Capaian Mutqin Rijal</div>
                     </div>
                 </div>
             </div>
@@ -171,10 +171,9 @@ $active_menu = 'laporan_setoran_rijal';
                                 <?php while ($row = $res_data->fetch_assoc()): 
                                     $g = htmlspecialchars($row['grade']);
                                     $badge_class = "bg-slate-100 text-slate-700 border-slate-300";
-                                    if (str_contains($g, 'Mumtaz')) $badge_class = "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold";
-                                    else if (str_contains($g, 'Jayid')) $badge_class = "bg-teal-100 text-teal-800 border-teal-300 font-semibold";
-                                    else if (str_contains($g, 'Aadiy')) $badge_class = "bg-amber-100 text-amber-800 border-amber-300";
-                                    else if (str_contains($g, 'Aslaha')) $badge_class = "bg-rose-100 text-rose-800 border-rose-300 font-semibold";
+                                    if (str_contains($g, 'Mutqin')) $badge_class = "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold";
+                                    else if (str_contains($g, 'Ziyadah') || str_contains($g, 'Jayid')) $badge_class = "bg-teal-100 text-teal-800 border-teal-300 font-semibold";
+                                    else if (str_contains($g, 'Aslaha')) $badge_class = "bg-rose-100 text-rose-800 border-rose-300 font-bold";
                                 ?>
                                     <tr class="hover:bg-slate-50 transition">
                                         <td class="py-3.5 px-6 align-top">
