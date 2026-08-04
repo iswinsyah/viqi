@@ -45,6 +45,7 @@ $defined_menus = [
     'Musyrif' => [
         'validasi_ibadah_musyrif' => 'Validasi Ibadah Santri',
         'cek_belajar_mandiri' => 'Cek Santri Belajar Mandiri',
+        'cek_kesehatan_santri' => 'Cek Kesehatan & Surat Izin Sakit',
         'rapot_pkbm_musyrif' => 'Raport Diknas Santri Binaan',
         'mutabaah' => 'Buku Mutaba\'ah Santri',
         'jurnal_pagi_musyrif' => 'Jurnal Piket Pagi (07.00-13.00)',

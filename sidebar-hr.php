@@ -66,6 +66,7 @@ $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('la
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rapot_pkbm', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rapot_pkbm_musyrif', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_asrama,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_asrama,super_admin'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('cek_belajar_mandiri', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('cek_kesehatan_santri', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin'");
 
     $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
     if ($res_perms) {
@@ -140,6 +141,7 @@ $menu_structure = [
     'Musyrif' => [
         'validasi_ibadah_musyrif' => ['href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fa-tasks', 'title' => 'Validasi Ibadah Santri'],
         'cek_belajar_mandiri' => ['href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fa-book-reader', 'title' => 'Cek Santri Belajar Mandiri'],
+        'cek_kesehatan_santri' => ['href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fa-notes-medical', 'title' => 'Cek Kesehatan & Surat Izin Sakit'],
         'rapot_pkbm_musyrif' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice', 'title' => 'Raport Diknas Santri Binaan'],
         'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'title' => 'Buku Mutaba\'ah Santri'],
         'jurnal_pagi_musyrif' => ['href' => 'admin-jurnal-pagi-musyrif.php', 'icon' => 'fa-sun', 'title' => 'Jurnal Piket Pagi (07.00-13.00)'],
