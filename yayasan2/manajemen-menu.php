@@ -45,6 +45,7 @@ $defined_menus = [
     ],
     'Musyrif' => [
         'validasi_ibadah_musyrif' => 'Validasi Ibadah Santri',
+        'kontak_orangtua' => 'Kontak Orang Tua / Wali',
         'cek_belajar_mandiri' => 'Cek Santri Belajar Mandiri',
         'cek_kesehatan_santri' => 'Cek Kesehatan & Surat Izin Sakit',
         'rapot_pkbm_musyrif' => 'Raport Diknas Santri Binaan',
