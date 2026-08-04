@@ -67,6 +67,8 @@ $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('la
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('rapot_pkbm_musyrif', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_asrama,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_asrama,super_admin'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('cek_belajar_mandiri', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('cek_kesehatan_santri', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('santri_tidak_masuk', 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('santri_tidak_masuk_asatidz', 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin') ON DUPLICATE KEY UPDATE allowed_roles = 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin'");
 
     $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
     if ($res_perms) {
@@ -109,6 +111,7 @@ $menu_structure = [
     ],
     'Administrasi' => [
         'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user', 'title' => 'Buku Induk Santri'],
+        'santri_tidak_masuk' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash', 'title' => 'Daftar Santri Tidak Masuk'],
         'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users', 'title' => 'Akun Orang Tua'],
         'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader', 'title' => 'Leger Nilai Digital'],
         'rapot_pkbm' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice', 'title' => 'Raport Diknas PKBM (B & C)'],
@@ -121,6 +124,7 @@ $menu_structure = [
         'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock', 'title' => 'Kesediaan Mengajar'],
         'kalender_akademik' => ['href' => 'kalender-akademik.php', 'icon' => 'fa-calendar-alt', 'title' => 'Kalender Akademik'],
         'jadwal_pelajaran' => ['href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fa-calendar-alt', 'title' => 'Jadwal Pelajaran'],
+        'santri_tidak_masuk_asatidz' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash', 'title' => 'Daftar Santri Tidak Masuk'],
         'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader', 'title' => 'Master Silabus & CP'],
         'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic', 'title' => 'AI Generator RPP'],
         'jurnal_mengajar' => ['href' => 'admin-pegawai-jurnal.php', 'icon' => 'fa-book-open', 'title' => 'Jurnal Mengajar'],
