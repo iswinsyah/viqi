@@ -2,7 +2,7 @@
 <div id="sidebar-overlay-yayasan2" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden md:hidden transition-opacity"></div>
 
 <!-- SIDEBAR KHUSUS YAYASAN -->
-<aside id="sidebar-yayasan2" class="bg-amber-900 text-white w-64 flex-shrink-0 hidden md:flex flex-col z-30 transition-all duration-300 absolute md:relative h-full shadow-2xl">
+<aside id="sidebar-yayasan2" class="bg-amber-900 text-white w-64 flex-shrink-0 hidden flex md:flex flex-col z-30 transition-all duration-300 absolute md:relative h-full shadow-2xl">
     <div class="h-16 flex items-center justify-between px-6 border-b border-amber-800 bg-amber-950">
         <h1 class="font-extrabold text-lg tracking-wider flex items-center text-amber-300">
             <i class="fas fa-building mr-2"></i> RUANG YAYASAN
