@@ -4,33 +4,27 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once 'koneksi.php'; // DB connection
 
-// Allow musyrif and super_admin role
+// Allow musyrif, musyrifah, kepala_asrama and super_admin role
 $user_roles = [];
 if (isset($_SESSION['ustadz_role'])) {
     $user_roles = explode(',', $_SESSION['ustadz_role']);
 }
 $ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
 
-$is_authorized = false;
-$is_super_admin = false;
+$norm_roles = array_map(function($r) {
+    return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+}, $user_roles);
 
-if ($ustadz_id === 9999) {
-    $is_authorized = true;
-    $is_super_admin = true;
-}
-foreach ($user_roles as $role) {
-    $norm_role = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
-    if ($norm_role === 'super_admin') {
-        $is_authorized = true;
-        $is_super_admin = true;
-    }
-    if ($norm_role === 'musyrif') {
-        $is_authorized = true;
-    }
-}
+$is_admin_or_kepala = ($ustadz_id === 9999) || !empty(array_intersect($norm_roles, ['super_admin', 'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah']));
+$is_ka_rijal = !empty(array_intersect($norm_roles, ['kepala_asrama', 'kepala_asrama_rijal']));
+$is_ka_nisa = !empty(array_intersect($norm_roles, ['kepala_asrama_nisa']));
+$is_musyrif = in_array('musyrif', $norm_roles);
+$is_musyrifah = in_array('musyrifah', $norm_roles);
+
+$is_authorized = $is_admin_or_kepala || $is_ka_rijal || $is_ka_nisa || $is_musyrif || $is_musyrifah;
 
 if (!$is_authorized) {
-    die('Akses ditolak. Hanya Musyrif dan Super Admin yang dapat mengakses halaman ini.');
+    die('Akses ditolak. Hanya Musyrif/Musyrifah, Pengurus Asrama, dan Admin/Yayasan yang dapat mengakses halaman ini.');
 }
 
 // Create table if not exists (Self-Healing)
@@ -102,12 +96,39 @@ if ($res_stat3) $total_mumtaz = $res_stat3->fetch_assoc()['total'];
 $santri_binaan = [];
 $nama_halaqoh_user = [];
 
-if ($is_super_admin) {
-    // Super admin fetches all active santri + their halaqoh info
+if ($is_admin_or_kepala) {
+    // Admin / Super Admin can see all active santri
     $res_santri = $conn->query("SELECT s.id, s.nama_lengkap, g.nama_grup 
         FROM buku_induk_santri s 
         LEFT JOIN halaqoh_anggota a ON s.id = a.santri_id 
         LEFT JOIN halaqoh_grup g ON a.grup_id = g.id 
+        WHERE s.status_santri = 'Aktif'
+        ORDER BY s.nama_lengkap ASC");
+    if ($res_santri && $res_santri->num_rows > 0) {
+        while ($r = $res_santri->fetch_assoc()) {
+            $santri_binaan[] = $r;
+        }
+    }
+} elseif ($is_ka_rijal) {
+    // Kepala Asrama Rijal: can see all active male santri
+    $res_santri = $conn->query("SELECT s.id, s.nama_lengkap, g.nama_grup 
+        FROM buku_induk_santri s 
+        LEFT JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        LEFT JOIN halaqoh_grup g ON a.grup_id = g.id 
+        WHERE s.status_santri = 'Aktif' AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)
+        ORDER BY s.nama_lengkap ASC");
+    if ($res_santri && $res_santri->num_rows > 0) {
+        while ($r = $res_santri->fetch_assoc()) {
+            $santri_binaan[] = $r;
+        }
+    }
+} elseif ($is_ka_nisa) {
+    // Kepala Asrama Nisa: can see all active female santri
+    $res_santri = $conn->query("SELECT s.id, s.nama_lengkap, g.nama_grup 
+        FROM buku_induk_santri s 
+        LEFT JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        LEFT JOIN halaqoh_grup g ON a.grup_id = g.id 
+        WHERE s.status_santri = 'Aktif' AND s.jenis_kelamin = 'Perempuan'
         ORDER BY s.nama_lengkap ASC");
     if ($res_santri && $res_santri->num_rows > 0) {
         while ($r = $res_santri->fetch_assoc()) {
@@ -115,12 +136,12 @@ if ($is_super_admin) {
         }
     }
 } else {
-    // Musyrif mode: Fetch santri assigned to this Musyrif in halaqoh_grup
+    // Musyrif / Musyrifah: see only their assigned halaqoh group members
     $res_santri = $conn->query("SELECT DISTINCT s.id, s.nama_lengkap, g.nama_grup 
         FROM buku_induk_santri s 
         JOIN halaqoh_anggota a ON s.id = a.santri_id 
         JOIN halaqoh_grup g ON a.grup_id = g.id 
-        WHERE g.musyrif_id = $ustadz_id 
+        WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
         ORDER BY s.nama_lengkap ASC");
     
     if ($res_santri && $res_santri->num_rows > 0) {
@@ -132,7 +153,7 @@ if ($is_super_admin) {
         }
     } else {
         // Fallback if no halaqoh assignment yet for this musyrif
-        $res_all = $conn->query("SELECT id, nama_lengkap, NULL as nama_grup FROM buku_induk_santri ORDER BY nama_lengkap ASC");
+        $res_all = $conn->query("SELECT id, nama_lengkap, NULL as nama_grup FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC");
         if ($res_all && $res_all->num_rows > 0) {
             while ($r = $res_all->fetch_assoc()) {
                 $santri_binaan[] = $r;

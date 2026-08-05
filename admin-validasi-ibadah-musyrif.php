@@ -75,38 +75,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Gender filter condition
-$gender_filter_sql = "";
-if (!$is_super_admin) {
-    if ($is_musyrif && !$is_musyrifah) {
-        $gender_filter_sql = " AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)";
-    } elseif ($is_musyrifah && !$is_musyrif) {
-        $gender_filter_sql = " AND s.jenis_kelamin = 'Perempuan'";
-    } elseif ($is_kepala_asrama_rijal && !$is_kepala_asrama_nisa) {
-        $gender_filter_sql = " AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)";
-    } elseif ($is_kepala_asrama_nisa && !$is_kepala_asrama_rijal) {
-        $gender_filter_sql = " AND s.jenis_kelamin = 'Perempuan'";
-    }
-}
-
 // Query Santri Binaan Musyrif / Musyrifah from Manajemen Halaqoh
+$norm_roles = array_map(function($r) {
+    return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+}, $user_roles);
+$is_admin_or_kepala = $is_super_admin || !empty(array_intersect($norm_roles, ['super_admin', 'kepala_mahad']));
+
 $santri_binaan_ids = [];
-if (!$is_super_admin) {
-    $res_sb = $conn->query("
-        SELECT DISTINCT s.id 
-        FROM buku_induk_santri s 
-        JOIN halaqoh_anggota a ON s.id = a.santri_id 
-        JOIN halaqoh_grup g ON a.grup_id = g.id 
-        WHERE g.musyrif_id = $ustadz_id $gender_filter_sql
-    ");
-    if ($res_sb) {
-        while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
+$gender_filter_sql = "";
+
+if (!$is_admin_or_kepala) {
+    if ($is_kepala_asrama_rijal) {
+        $gender_filter_sql = " AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)";
+        $res_sb = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif'");
+        if ($res_sb) {
+            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
+        }
+    } elseif ($is_kepala_asrama_nisa) {
+        $gender_filter_sql = " AND s.jenis_kelamin = 'Perempuan'";
+        $res_sb = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif'");
+        if ($res_sb) {
+            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
+        }
+    } else {
+        // Musyrif / Musyrifah
+        $res_sb = $conn->query("
+            SELECT DISTINCT s.id 
+            FROM buku_induk_santri s 
+            JOIN halaqoh_anggota a ON s.id = a.santri_id 
+            JOIN halaqoh_grup g ON a.grup_id = g.id 
+            WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
+        ");
+        if ($res_sb) {
+            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
+        }
     }
 }
 
 // Build SQL Query for Ibadah Harian Records
 $where_clause = "WHERE 1=1";
-if (!$is_super_admin) {
+if (!$is_admin_or_kepala) {
     if (!empty($santri_binaan_ids)) {
         $sb_str = implode(',', $santri_binaan_ids);
         $where_clause .= " AND i.santri_id IN ($sb_str)";

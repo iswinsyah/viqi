@@ -40,44 +40,40 @@ $norm_roles = array_map(function($r) {
     return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
 }, $user_roles);
 
-$is_admin_or_kepala = $is_super_admin || !empty(array_intersect($norm_roles, ['super_admin', 'kepala_sekolah', 'admin_sekolah', 'kepala_mahad']));
-
-$is_musyrif_only = false;
-$is_musyrifah_only = false;
-
-if (!$is_admin_or_kepala) {
-    if (in_array('musyrif', $norm_roles) || in_array('kepala_asrama_rijal', $norm_roles) || in_array('kepala_asrama', $norm_roles)) {
-        $is_musyrif_only = true;
-    }
-    if (in_array('musyrifah', $norm_roles) || in_array('kepala_asrama_nisa', $norm_roles)) {
-        $is_musyrifah_only = true;
-    }
-}
+$is_admin_or_kepala = $is_super_admin || !empty(array_intersect($norm_roles, ['super_admin', 'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah']));
+$is_ka_rijal = !empty(array_intersect($norm_roles, ['kepala_asrama', 'kepala_asrama_rijal']));
+$is_ka_nisa = !empty(array_intersect($norm_roles, ['kepala_asrama_nisa']));
 
 // Fetch santri binaan
 $santri_binaan = [];
-$gender_filter_sql = "";
-if (!$is_admin_or_kepala) {
-    if ($is_musyrif_only && !$is_musyrifah_only) {
-        $gender_filter_sql = " AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)";
-    } elseif ($is_musyrifah_only && !$is_musyrif_only) {
-        $gender_filter_sql = " AND s.jenis_kelamin = 'Perempuan'";
+if ($is_admin_or_kepala) {
+    // Admin / Super Admin can see all active santri
+    $res_sb = $conn->query("SELECT id, nama_lengkap, nis, kelas_sekarang, jenis_kelamin FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC");
+    if ($res_sb) {
+        while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
     }
-    
+} elseif ($is_ka_rijal) {
+    // Kepala Asrama Rijal: can see all active male santri
+    $res_sb = $conn->query("SELECT id, nama_lengkap, nis, kelas_sekarang, jenis_kelamin FROM buku_induk_santri WHERE status_santri = 'Aktif' AND (jenis_kelamin = 'Laki-laki' OR jenis_kelamin IS NULL) ORDER BY nama_lengkap ASC");
+    if ($res_sb) {
+        while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
+    }
+} elseif ($is_ka_nisa) {
+    // Kepala Asrama Nisa: can see all active female santri
+    $res_sb = $conn->query("SELECT id, nama_lengkap, nis, kelas_sekarang, jenis_kelamin FROM buku_induk_santri WHERE status_santri = 'Aktif' AND jenis_kelamin = 'Perempuan' ORDER BY nama_lengkap ASC");
+    if ($res_sb) {
+        while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
+    }
+} else {
+    // Musyrif / Musyrifah: see only their assigned halaqoh group members
     $res_sb = $conn->query("
         SELECT DISTINCT s.id, s.nama_lengkap, s.nis, s.kelas_sekarang, s.jenis_kelamin 
         FROM buku_induk_santri s 
         JOIN halaqoh_anggota a ON s.id = a.santri_id 
         JOIN halaqoh_grup g ON a.grup_id = g.id 
-        WHERE g.musyrif_id = $ustadz_id $gender_filter_sql AND s.status_santri = 'Aktif'
+        WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
         ORDER BY s.nama_lengkap ASC
     ");
-    if ($res_sb) {
-        while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
-    }
-} else {
-    // Admin / Super Admin can see all active santri
-    $res_sb = $conn->query("SELECT id, nama_lengkap, nis, kelas_sekarang, jenis_kelamin FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC");
     if ($res_sb) {
         while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
     }
