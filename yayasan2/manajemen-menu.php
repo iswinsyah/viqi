@@ -53,7 +53,6 @@ $defined_menus = [
         'jurnal_pagi_musyrif' => 'Jurnal Piket Pagi (07.00-13.00)',
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'laporan_adab' => 'Laporan Kedisiplinan',
-        'penilaian_adab' => 'Penilaian Adab (Rapor)',
         'laporan_setoran_hafalan' => 'Setoran Hafalan',
     ],
     'Keuangan Santri' => [

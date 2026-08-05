@@ -153,7 +153,6 @@ $menu_structure = [
         'jurnal_pagi_musyrif' => ['href' => 'admin-jurnal-pagi-musyrif.php', 'icon' => 'fa-sun', 'title' => 'Jurnal Piket Pagi (07.00-13.00)'],
         'jurnal_musyrif' => ['href' => 'admin-pegawai-jurnal-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'Jurnal Kegiatan Musyrif'],
         'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'title' => 'Laporan Kedisiplinan'],
-        'penilaian_adab' => ['href' => 'admin-penilaian-adab.php', 'icon' => 'fa-heart-circle-check', 'title' => 'Penilaian Adab (Rapor)'],
         'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt', 'title' => 'Setoran Hafalan'],
     ],
     'Keuangan Santri' => [
