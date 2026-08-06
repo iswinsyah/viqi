@@ -230,6 +230,220 @@ if ($view === 'dashboard_asrama') {
         if (isset($defined_roles[$ur])) { $active_tab = $ur; break; }
     }
 
+} elseif ($view === 'kpi_musyrif') {
+    $active_menu = 'kpi_musyrif';
+    
+    // Tentukan bulan dan tahun
+    $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
+    $selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
+    
+    // Ambil detail ustadz yang sedang login
+    $selected_musyrif_id = $ustadz_id;
+    $staf = null;
+    $res_det = $conn->query("SELECT * FROM akun_ustadz WHERE id = $selected_musyrif_id LIMIT 1");
+    if ($res_det) $staf = $res_det->fetch_assoc();
+    
+    $predikat = "Belum Ternilai";
+    $predikat_class = "bg-slate-100 text-slate-700";
+    $total_kpi = 0;
+    
+    $skor_validasi_ibadah = 100;
+    $skor_kontak_walisantri = 100;
+    $skor_belajar_mandiri = 100;
+    $skor_kesehatan = 100;
+    $skor_setoran_hafalan = 100;
+    $skor_mutabaah = 100;
+    $skor_absensi_kerja = 100;
+    $skor_absensi_rapat = 100;
+    
+    $details = [];
+    
+    if ($staf) {
+        $months = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        // Get Santri Binaan IDs in halaqoh group
+        $santri_ids = [];
+        $res_sb = $conn->query("
+            SELECT DISTINCT s.id 
+            FROM buku_induk_santri s 
+            JOIN halaqoh_anggota a ON s.id = a.santri_id 
+            JOIN halaqoh_grup g ON a.grup_id = g.id 
+            WHERE g.musyrif_id = $selected_musyrif_id AND s.status_santri = 'Aktif'
+        ");
+        if ($res_sb) {
+            while ($r = $res_sb->fetch_assoc()) $santri_ids[] = (int)$r['id'];
+        }
+        $total_santri_binaan = count($santri_ids);
+        $santri_list_str = !empty($santri_ids) ? implode(',', $santri_ids) : '0';
+    
+        // 1. Validasi Ibadah (Bobot: 15%)
+        if ($total_santri_binaan > 0) {
+            $res_ib = $conn->query("
+                SELECT COUNT(*) as total, 
+                       SUM(CASE WHEN status_validasi IN ('Disetujui', 'Ditolak') THEN 1 ELSE 0 END) as divalidasi
+                FROM ibadah_harian_santri
+                WHERE santri_id IN ($santri_list_str) 
+                  AND MONTH(tanggal) = $selected_month 
+                  AND YEAR(tanggal) = $selected_year
+            ");
+            $row_ib = $res_ib ? $res_ib->fetch_assoc() : ['total' => 0, 'divalidasi' => 0];
+            $total_ib = (int)($row_ib['total'] ?? 0);
+            $dival_ib = (int)($row_ib['divalidasi'] ?? 0);
+            $skor_validasi_ibadah = $total_ib > 0 ? ($dival_ib / $total_ib) * 100 : 100;
+            $details['validasi_ibadah'] = "$dival_ib dari $total_ib laporan divalidasi";
+        } else {
+            $details['validasi_ibadah'] = "Tidak ada santri binaan";
+        }
+    
+        // 2. Kontak Walisantri (Bobot: 15%)
+        if ($total_santri_binaan > 0) {
+            $res_kon = $conn->query("
+                SELECT COUNT(DISTINCT santri_id) as total_kontak
+                FROM jurnal_kontak_orangtua
+                WHERE ustadz_id = $selected_musyrif_id 
+                  AND santri_id IN ($santri_list_str)
+                  AND MONTH(tanggal) = $selected_month 
+                  AND YEAR(tanggal) = $selected_year
+            ");
+            $kontak_cnt = $res_kon ? (int)($res_kon->fetch_assoc()['total_kontak'] ?? 0) : 0;
+            $skor_kontak_walisantri = min(100, ($kontak_cnt / $total_santri_binaan) * 100);
+            $details['kontak_walisantri'] = "$kontak_cnt dari $total_santri_binaan walisantri dihubungi";
+        } else {
+            $details['kontak_walisantri'] = "Tidak ada santri binaan";
+        }
+    
+        // 3. Chek Belajar Mandiri (Bobot: 10%)
+        $res_bel = $conn->query("
+            SELECT COUNT(*) as total 
+            FROM jurnal_belajar_mandiri
+            WHERE ustadz_id = $selected_musyrif_id 
+              AND MONTH(tanggal) = $selected_month 
+              AND YEAR(tanggal) = $selected_year
+        ");
+        $total_bel = $res_bel ? (int)($res_bel->fetch_assoc()['total'] ?? 0) : 0;
+        $skor_belajar_mandiri = min(100, ($total_bel / 20) * 100);
+        $details['belajar_mandiri'] = "$total_bel kali pengisian jurnal belajar";
+    
+        // 4. Chek Kesehatan (Bobot: 10%)
+        if ($total_santri_binaan > 0) {
+            $res_kes = $conn->query("
+                SELECT COUNT(*) as total,
+                       SUM(CASE WHEN status_kesehatan = 'Sehat / Sembuh' OR status_izin_sekolah = 'Selesai / Sembuh' THEN 1 ELSE 0 END) as sembuh
+                FROM jurnal_kesehatan_santri
+                WHERE santri_id IN ($santri_list_str)
+                  AND MONTH(tanggal) = $selected_month 
+                  AND YEAR(tanggal) = $selected_year
+            ");
+            $row_kes = $res_kes ? $res_kes->fetch_assoc() : ['total' => 0, 'sembuh' => 0];
+            $total_kes = (int)($row_kes['total'] ?? 0);
+            $sembuh_kes = (int)($row_kes['sembuh'] ?? 0);
+            $skor_kesehatan = $total_kes > 0 ? ($sembuh_kes / $total_kes) * 100 : 100;
+            $details['kesehatan'] = "$sembuh_kes dari $total_kes kasus sakit diselesaikan";
+        } else {
+            $details['kesehatan'] = "Tidak ada santri binaan";
+        }
+    
+        // 5. Setoran Hafalan (Bobot: 15%)
+        if ($total_santri_binaan > 0) {
+            $res_haf = $conn->query("
+                SELECT COUNT(*) as total 
+                FROM laporan_setoran_hafalan
+                WHERE santri_id IN ($santri_list_str)
+                  AND MONTH(created_at) = $selected_month 
+                  AND YEAR(created_at) = $selected_year
+            ");
+            $total_haf = $res_haf ? (int)($res_haf->fetch_assoc()['total'] ?? 0) : 0;
+            $target_haf = $total_santri_binaan * 4;
+            $skor_setoran_hafalan = $target_haf > 0 ? min(100, ($total_haf / $target_haf) * 100) : 100;
+            $details['setoran_hafalan'] = "$total_haf kali setoran diinput (Target: $target_haf)";
+        } else {
+            $details['setoran_hafalan'] = "Tidak ada santri binaan";
+        }
+    
+        // 6. Buku Mutabaah Santri (Bobot: 15%)
+        if ($total_santri_binaan > 0) {
+            $res_mut = $conn->query("
+                SELECT COUNT(*) as total 
+                FROM buku_mutabaah
+                WHERE musyrif_id = $selected_musyrif_id 
+                  AND MONTH(tanggal) = $selected_month 
+                  AND YEAR(tanggal) = $selected_year
+            ");
+            $total_mut = $res_mut ? (int)($res_mut->fetch_assoc()['total'] ?? 0) : 0;
+            $target_mut = $total_santri_binaan * 2;
+            $skor_mutabaah = $target_mut > 0 ? min(100, ($total_mut / $target_mut) * 100) : 100;
+            $details['mutabaah'] = "$total_mut laporan mental diinput (Target: $target_mut)";
+        } else {
+            $details['mutabaah'] = "Tidak ada santri binaan";
+        }
+    
+        // 7. Absensi Jam Kerja (Bobot: 10%)
+        $res_abs = $conn->query("
+            SELECT COUNT(DISTINCT DATE(waktu_absen)) as total_absen
+            FROM absensi_pegawai
+            WHERE ustadz_id = $selected_musyrif_id 
+              AND jenis_absen IN ('Pegawai', 'Harian')
+              AND MONTH(waktu_absen) = $selected_month 
+              AND YEAR(waktu_absen) = $selected_year
+              AND status_kehadiran = 'Masuk'
+        ");
+        $total_absen = $res_abs ? (int)($res_abs->fetch_assoc()['total_absen'] ?? 0) : 0;
+        $skor_absensi_kerja = min(100, ($total_absen / 26) * 100);
+        $details['absensi_kerja'] = "$total_absen hari hadir kerja (Target: 26)";
+    
+        // 8. Absensi Kehadiran Rapat (Bobot: 10%)
+        $res_rpt_hadir = $conn->query("
+            SELECT COUNT(DISTINCT rapat_id) as total_hadir
+            FROM absensi_pegawai
+            WHERE ustadz_id = $selected_musyrif_id 
+              AND jenis_absen = 'Rapat'
+              AND MONTH(waktu_absen) = $selected_month 
+              AND YEAR(waktu_absen) = $selected_year
+              AND status_kehadiran = 'Masuk'
+        ");
+        $hadir_rapat = $res_rpt_hadir ? (int)$res_rpt_hadir->fetch_assoc()['total_hadir'] : 0;
+    
+        $res_tot_rapat = $conn->query("
+            SELECT COUNT(*) as total 
+            FROM jadwal_rapat 
+            WHERE MONTH(waktu_mulai) = $selected_month 
+              AND YEAR(waktu_mulai) = $selected_year
+        ");
+        $total_rapat_bln = $res_tot_rapat ? (int)$res_tot_rapat->fetch_assoc()['total'] : 0;
+        $skor_absensi_rapat = $total_rapat_bln > 0 ? min(100, ($hadir_rapat / $total_rapat_bln) * 100) : 100;
+        $details['absensi_rapat'] = "$hadir_rapat dari $total_rapat_bln rapat dihadiri";
+    
+        // Total KPI Score
+        $total_kpi = ($skor_validasi_ibadah * 0.15) + 
+                     ($skor_kontak_walisantri * 0.15) + 
+                     ($skor_belajar_mandiri * 0.10) + 
+                     ($skor_kesehatan * 0.10) + 
+                     ($skor_setoran_hafalan * 0.15) + 
+                     ($skor_mutabaah * 0.15) + 
+                     ($skor_absensi_kerja * 0.10) + 
+                     ($skor_absensi_rapat * 0.10);
+    
+        // Hitung Predikat
+        if ($total_kpi >= 90) {
+            $predikat = "Mumtaz (Grade A)";
+            $predikat_class = "bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-sm";
+        } elseif ($total_kpi >= 80) {
+            $predikat = "Jayyid Jiddan (Grade B)";
+            $predikat_class = "bg-cyan-100 text-cyan-800 border border-cyan-200 shadow-sm";
+        } elseif ($total_kpi >= 70) {
+            $predikat = "Jayyid (Grade C)";
+            $predikat_class = "bg-amber-100 text-amber-800 border border-amber-200 shadow-sm";
+        } elseif ($total_kpi >= 60) {
+            $predikat = "Maqbul (Grade D)";
+            $predikat_class = "bg-orange-100 text-orange-800 border border-orange-200 shadow-sm";
+        } else {
+            $predikat = "Dhaif (Grade E)";
+            $predikat_class = "bg-rose-100 text-rose-800 border border-rose-200 shadow-sm animate-pulse";
+        }
+    }
 } else { // default view
     header("Location: admin-absensi-pegawai.php");
     exit;
@@ -247,7 +461,7 @@ if ($view === 'dashboard_asrama') {
     <?php if ($view === 'dashboard_asrama'): ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <?php endif; ?>
-    <?php if ($view === 'amanah' || $view === 'peraturan_role'): ?>
+    <?php if ($view === 'amanah' || $view === 'peraturan_role' || $view === 'kpi_musyrif'): ?>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         .font-outfit {
@@ -678,6 +892,158 @@ if ($view === 'dashboard_asrama') {
                     });
                 </script>
             </div>
+
+            <?php elseif ($view === 'kpi_musyrif'): ?>
+            <!-- ================================================== -->
+            <!-- TAMPILAN MONITORING KPI BULANAN MUSYRIF            -->
+            <!-- ================================================== -->
+            <div class="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-chart-line text-cyan-600"></i>Capaian Raport KPI Anda</h1>
+                    <p class="text-gray-500 text-xs mt-1">Hasil evaluasi kepatuhan pengisian data santri binaan dan kehadiran Anda.</p>
+                </div>
+                <!-- Filter Bulan & Tahun -->
+                <form action="admin-ustadz.php" method="GET" class="flex gap-2">
+                    <input type="hidden" name="view" value="kpi_musyrif">
+                    <select name="bulan" class="px-3 py-1.5 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-cyan-500">
+                        <?php
+                        foreach ($months as $num => $name) {
+                            $sel = ($selected_month == $num) ? 'selected' : '';
+                            echo "<option value=\"$num\" $sel>$name</option>";
+                        }
+                        ?>
+                    </select>
+                    <select name="tahun" class="px-3 py-1.5 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-cyan-500">
+                        <?php
+                        $curr_yr = (int)date('Y');
+                        for ($y = $curr_yr - 2; $y <= $curr_yr + 1; $y++) {
+                            $sel = ($selected_year == $y) ? 'selected' : '';
+                            echo "<option value=\"$y\" $sel>$y</option>";
+                        }
+                        ?>
+                    </select>
+                    <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-4 py-1.5 rounded-xl text-xs transition">Filter</button>
+                </form>
+            </div>
+
+            <?php if ($staf): ?>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 font-outfit">
+                    <!-- Skor Akhir Card -->
+                    <div class="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6 flex flex-col items-center justify-center text-center">
+                        <div class="w-20 h-20 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600 mb-4 border shadow-inner">
+                            <i class="fas fa-award text-3xl"></i>
+                        </div>
+                        <h2 class="font-bold text-slate-800 text-base"><?= htmlspecialchars($staf['nama']) ?></h2>
+                        <span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-4 border">
+                            <?= htmlspecialchars(str_replace('_', ' ', $staf['role'])) ?>
+                        </span>
+
+                        <div class="w-full py-4 border-t border-b border-slate-100 mb-4">
+                            <span class="text-4xl font-extrabold text-slate-900"><?= number_format($total_kpi, 1) ?></span>
+                            <span class="text-[10px] text-slate-400 block mt-0.5">Skor Akhir KPI Anda</span>
+                        </div>
+
+                        <span class="px-4 py-1.5 rounded-xl text-xs font-bold <?= $predikat_class ?>">
+                            <?= $predikat ?>
+                        </span>
+                    </div>
+
+                    <!-- Progress Bars -->
+                    <div class="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6 lg:col-span-2 space-y-4">
+                        <h3 class="font-bold text-slate-800 text-xs pb-2 border-b uppercase tracking-wider"><i class="fas fa-tasks mr-2 text-cyan-600"></i>Capaian 8 Indikator Kepatuhan Anda</h3>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span>1. Validasi Ibadah (15%)</span>
+                                    <span class="text-cyan-600"><?= number_format($skor_validasi_ibadah, 0) ?>%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-cyan-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_validasi_ibadah ?>%"></div>
+                                </div>
+                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['validasi_ibadah'] ?></span>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span>2. Kontak Walisantri (15%)</span>
+                                    <span class="text-emerald-600"><?= number_format($skor_kontak_walisantri, 0) ?>%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-emerald-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_kontak_walisantri ?>%"></div>
+                                </div>
+                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['kontak_walisantri'] ?></span>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span>3. Chek Belajar Mandiri (10%)</span>
+                                    <span class="text-cyan-600"><?= number_format($skor_belajar_mandiri, 0) ?>%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-cyan-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_belajar_mandiri ?>%"></div>
+                                </div>
+                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['belajar_mandiri'] ?></span>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span>4. Chek Kesehatan (10%)</span>
+                                    <span class="text-rose-600"><?= number_format($skor_kesehatan, 0) ?>%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-rose-500 h-full rounded-full transition-all duration-500" style="width: <?= $skor_kesehatan ?>%"></div>
+                                </div>
+                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['kesehatan'] ?></span>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span>5. Setoran Hafalan (15%)</span>
+                                    <span class="text-amber-600"><?= number_format($skor_setoran_hafalan, 0) ?>%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: <?= $skor_setoran_hafalan ?>%"></div>
+                                </div>
+                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['setoran_hafalan'] ?></span>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span>6. Buku Mutabaah Santri (15%)</span>
+                                    <span class="text-teal-600"><?= number_format($skor_mutabaah, 0) ?>%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-teal-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_mutabaah ?>%"></div>
+                                </div>
+                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['mutabaah'] ?></span>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span>7. Absensi Kerja (10%)</span>
+                                    <span class="text-pink-600"><?= number_format($skor_absensi_kerja, 0) ?>%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-pink-500 h-full rounded-full transition-all duration-500" style="width: <?= $skor_absensi_kerja ?>%"></div>
+                                </div>
+                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['absensi_kerja'] ?></span>
+                            </div>
+
+                            <div>
+                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span>8. Kehadiran Rapat (10%)</span>
+                                    <span class="text-violet-600"><?= number_format($skor_absensi_rapat, 0) ?>%</span>
+                                </div>
+                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div class="bg-violet-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_absensi_rapat ?>%"></div>
+                                </div>
+                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['absensi_rapat'] ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <?php else: ?>
             <!-- ================================================== -->

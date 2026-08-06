@@ -54,6 +54,7 @@ $defined_menus = [
         'jurnal_musyrif' => 'Jurnal Kegiatan Musyrif',
         'laporan_adab' => 'Laporan Kedisiplinan',
         'laporan_setoran_hafalan' => 'Setoran Hafalan',
+        'kpi_musyrif' => 'KPI Musyrif',
     ],
     'Keuangan Santri' => [
         'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',

@@ -154,6 +154,7 @@ $menu_structure = [
         'jurnal_musyrif' => ['href' => 'admin-pegawai-jurnal-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'Jurnal Kegiatan Musyrif'],
         'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'title' => 'Laporan Kedisiplinan'],
         'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt', 'title' => 'Setoran Hafalan'],
+        'kpi_musyrif' => ['href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fa-chart-line', 'title' => 'KPI Musyrif'],
     ],
     'Keuangan Santri' => [
         'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet', 'title' => 'Rekap Uang Saku Santri'],
