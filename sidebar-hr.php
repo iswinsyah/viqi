@@ -77,6 +77,17 @@ if ($conn) {
     }
 }
 
+// Load custom menu labels from database
+$custom_menu_labels = [];
+if ($conn) {
+    $res_custom_lbls = $conn->query("SELECT menu_key, custom_label FROM menu_custom_labels");
+    if ($res_custom_lbls) {
+        while ($row = $res_custom_lbls->fetch_assoc()) {
+            $custom_menu_labels[$row['menu_key']] = $row['custom_label'];
+        }
+    }
+}
+
 // Fungsi helper untuk mengecek hak akses
 function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) {
     if ($is_super_admin) return true;
@@ -161,6 +172,16 @@ $menu_structure = [
         'kurikulum_solopreneur_trainer' => ['href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fa-rocket', 'title' => 'Inkubator Solopreneur (AI)'],
     ]
 ];
+
+// Apply custom menu labels dynamically
+foreach ($menu_structure as $group_title => &$menus) {
+    foreach ($menus as $key => &$menu) {
+        if (isset($custom_menu_labels[$key])) {
+            $menu['title'] = $custom_menu_labels[$key];
+        }
+    }
+}
+unset($menu); // Clean reference
 
 ?>
 <!-- SIDEBAR OVERLAY -->

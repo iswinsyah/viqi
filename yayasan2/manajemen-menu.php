@@ -80,18 +80,39 @@ $defined_roles = [
     'trainer' => 'Trainer',
 ];
 
-// 2. Buat tabel permissions jika belum ada & seed default
+// 2. Buat tabel permissions & custom labels jika belum ada & seed default
 $conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     menu_key VARCHAR(100) UNIQUE NOT NULL,
     allowed_roles TEXT
 )");
 
+$conn->query("CREATE TABLE IF NOT EXISTS menu_custom_labels (
+    menu_key VARCHAR(100) PRIMARY KEY,
+    custom_label VARCHAR(255) NOT NULL
+)");
+
 // Seed default permissions for Jadwal Pelajaran if not present
 $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('jadwal_pelajaran', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
 
 // 3. Proses penyimpanan data
-if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['permissions'])) {
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    // A. Simpan Custom Labels
+    if (isset($_POST['custom_labels']) && is_array($_POST['custom_labels'])) {
+        $stmt_lbl = $conn->prepare("INSERT INTO menu_custom_labels (menu_key, custom_label) VALUES (?, ?) ON DUPLICATE KEY UPDATE custom_label = ?");
+        foreach ($_POST['custom_labels'] as $key => $lbl) {
+            $lbl = trim($lbl);
+            if ($lbl !== '') {
+                $stmt_lbl->bind_param("sss", $key, $lbl, $lbl);
+                $stmt_lbl->execute();
+            } else {
+                $conn->query("DELETE FROM menu_custom_labels WHERE menu_key = '" . $conn->real_escape_string($key) . "'");
+            }
+        }
+        $stmt_lbl->close();
+    }
+
+    // B. Simpan Permissions
     foreach ($defined_menus as $group => $menus) {
         foreach ($menus as $key => $title) {
             $allowed_roles = isset($_POST['permissions'][$key]) ? implode(',', $_POST['permissions'][$key]) : '';
@@ -101,10 +122,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['permissions'])) {
             $stmt->execute();
         }
     }
-    $pesan_sukses = "Pengaturan hak akses menu berhasil disimpan!";
+    $pesan_sukses = "Pengaturan menu dan hak akses berhasil disimpan!";
 }
 
-// 4. Ambil data permissions yang sudah ada
+// 4. Ambil data custom labels & permissions yang sudah ada
+$custom_labels = [];
+$res_lbls = $conn->query("SELECT * FROM menu_custom_labels");
+if ($res_lbls) {
+    while ($row = $res_lbls->fetch_assoc()) {
+        $custom_labels[$row['menu_key']] = $row['custom_label'];
+    }
+}
+
 $permissions = [];
 $res = $conn->query("SELECT * FROM menu_permissions");
 if ($res) {
@@ -138,12 +167,23 @@ $active_menu = 'manajemen_menu';
             <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
             
             <form action="manajemen-menu.php" method="POST">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="overflow-x-auto overflow-y-auto max-h-[70vh]">
+                <div class="relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    
+                    <!-- Floating Left Scroll Button (Sticky on top of content) -->
+                    <button type="button" onclick="scrollMenuTable(-300)" class="absolute left-[260px] top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-gray-955 w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-30 transition-all opacity-85 hover:opacity-100 no-print border border-amber-300">
+                        <i class="fas fa-chevron-left text-lg"></i>
+                    </button>
+                    
+                    <!-- Floating Right Scroll Button -->
+                    <button type="button" onclick="scrollMenuTable(300)" class="absolute right-4 top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-gray-955 w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-30 transition-all opacity-85 hover:opacity-100 no-print border border-amber-300">
+                        <i class="fas fa-chevron-right text-lg"></i>
+                    </button>
+
+                    <div id="menu-table-wrapper" class="overflow-x-auto overflow-y-auto max-h-[70vh] scroll-smooth">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase sticky top-0 left-0 bg-gray-50 z-20">Nama Menu</th>
+                                    <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase sticky top-0 left-0 bg-gray-50 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[250px] min-w-[250px]">Nama Menu</th>
                                     <?php foreach ($defined_roles as $role_key => $role_label): ?>
                                         <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase sticky top-0 bg-gray-50 z-10"><?= $role_label ?></th>
                                     <?php endforeach; ?>
@@ -152,18 +192,17 @@ $active_menu = 'manajemen_menu';
                             <tbody class="bg-white divide-y divide-gray-200">
                                 <?php foreach ($defined_menus as $group => $menus): ?>
                                     <tr class="bg-gray-100">
-                                        <td colspan="<?= count($defined_roles) + 1 ?>" class="px-6 py-2 text-sm font-bold text-gray-600 uppercase"><?= $group ?></td>
+                                        <td colspan="<?= count($defined_roles) + 1 ?>" class="px-6 py-2 text-sm font-bold text-gray-600 uppercase sticky left-0 z-10 bg-gray-100 border-r border-gray-200"><?= $group ?></td>
                                     </tr>
-                                    <?php foreach ($menus as $key => $title): ?>
+                                    <?php foreach ($menus as $key => $title): 
+                                        $display_title = isset($custom_labels[$key]) ? $custom_labels[$key] : $title;
+                                    ?>
                                      <tr class="hover:bg-gray-50 <?= ($key === 'jadwal_pelajaran') ? 'bg-amber-50/50' : '' ?>">
-                                         <td class="px-6 py-4 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10">
-                                             <?php if ($key === 'jadwal_pelajaran'): ?>
-                                                 <span class="inline-flex items-center text-amber-800 font-bold bg-amber-100/80 px-2.5 py-1 rounded-md border border-amber-300">
-                                                     <i class="fas fa-calendar-alt text-amber-600 mr-1.5"></i> <?= $title ?>
-                                                 </span>
-                                             <?php else: ?>
-                                                 <?= $title ?>
-                                             <?php endif; ?>
+                                         <td class="px-4 py-3 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-150 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] w-[250px] min-w-[250px]">
+                                             <div class="flex flex-col gap-1">
+                                                 <input type="text" name="custom_labels[<?= $key ?>]" value="<?= htmlspecialchars($display_title) ?>" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs w-full focus:ring-2 focus:ring-amber-500 font-semibold" placeholder="<?= htmlspecialchars($title) ?>">
+                                                 <span class="text-[9px] text-gray-400 font-normal">Default: <?= htmlspecialchars($title) ?></span>
+                                             </div>
                                          </td>
                                         <?php foreach ($defined_roles as $role_key => $role_label): 
                                             $checked = isset($permissions[$key]) && in_array($role_key, $permissions[$key]) ? 'checked' : '';
@@ -172,19 +211,36 @@ $active_menu = 'manajemen_menu';
                                                 <input type="checkbox" name="permissions[<?= $key ?>][]" value="<?= $role_key ?>" <?= $checked ?> class="w-5 h-5 text-amber-600 border-gray-300 rounded focus:ring-amber-500">
                                             </td>
                                         <?php endforeach; ?>
-                                    </tr>
-                                    <?php endforeach; ?>
+                                     </tr>
+                                     <?php endforeach; ?>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
                     </div>
                     <div class="p-6 bg-gray-50 border-t border-gray-200 flex justify-end">
-                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-md transition"><i class="fas fa-save mr-2"></i> Simpan Pengaturan Akses</button>
+                        <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-md transition"><i class="fas fa-save mr-2"></i> Simpan Pengaturan Menu</button>
                     </div>
                 </div>
             </form>
         </main>
     </div>
-    <script>document.getElementById('open-sidebar-yayasan2').addEventListener('click', () => { document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); }); document.getElementById('sidebar-overlay-yayasan2').addEventListener('click', () => { document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); });</script>
+    
+    <script>
+        document.getElementById('open-sidebar-yayasan2').addEventListener('click', () => { 
+            document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); 
+            document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); 
+        }); 
+        document.getElementById('sidebar-overlay-yayasan2').addEventListener('click', () => { 
+            document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); 
+            document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); 
+        });
+
+        function scrollMenuTable(amount) {
+            const wrapper = document.getElementById('menu-table-wrapper');
+            if (wrapper) {
+                wrapper.scrollBy({ left: amount, behavior: 'smooth' });
+            }
+        }
+    </script>
 </body>
-</html>
+</html>
