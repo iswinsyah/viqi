@@ -1366,6 +1366,11 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                 nama: 'Gedung C (Asrama Nisa)',
                 lat: -7.9405464,
                 lon: 112.5791353
+            },
+            'masjid_taqwa': {
+                nama: 'Masjid At Taqwa VBT',
+                lat: -7.9464649,
+                lon: 112.5822123
             }
         };
 

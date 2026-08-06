@@ -27,6 +27,10 @@ $locations = [
         'nama' => 'Gedung C (Asrama Nisa)',
         'coords' => ['latitude' => -7.9405464, 'longitude' => 112.5791353],
     ],
+    'masjid_taqwa' => [
+        'nama' => 'Masjid At Taqwa VBT',
+        'coords' => ['latitude' => -7.9464649, 'longitude' => 112.5822123],
+    ],
 ];
 
 // --- BUAT TABEL OTOMATIS ---
