@@ -4,6 +4,7 @@ require_once 'koneksi.php';
 
 $view = $_GET['view'] ?? 'default';
 $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Ustadz';
+$ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
 $allowed_peraturan_roles = ['super_admin','kepala_sekolah','sekretaris_sekolah','bendahara_sekolah','admin_sekolah','kepala_mahad','kepala_asrama','musyrif','ustadz'];
 $has_peraturan_menu = false;
@@ -233,6 +234,11 @@ if ($view === 'dashboard_asrama') {
 } elseif ($view === 'kpi_musyrif') {
     $active_menu = 'kpi_musyrif';
     
+    $months = [
+        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+        7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+    ];
+    
     // Tentukan bulan dan tahun
     $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
     $selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
@@ -259,10 +265,6 @@ if ($view === 'dashboard_asrama') {
     $details = [];
     
     if ($staf) {
-        $months = [
-            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
-            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-        ];
 
         // Get Santri Binaan IDs in halaqoh group
         $santri_ids = [];
