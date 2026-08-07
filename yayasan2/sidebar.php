@@ -64,6 +64,9 @@
             <a href="kpi-musyrif.php" class="<?= (isset($active_menu) && $active_menu == 'kpi_musyrif') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-chart-line w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kpi_musyrif') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> KPI Musyrif Asrama
             </a>
+            <a href="kpi-kepala-sekolah.php" class="<?= (isset($active_menu) && $active_menu == 'kpi_kepsek') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-chart-pie w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kpi_kepsek') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> KPI Kepala Sekolah
+            </a>
             <a href="gaji-asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-id-card-clip w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Pegawai
             </a>
