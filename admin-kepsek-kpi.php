@@ -83,58 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_laporan_kepsek']
     }
 }
 
-// --- HANDLE SUPERVISI LOG FORM SUBMISSION ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_supervisi_log'])) {
-    $supervised_ustadz_id = (int)$_POST['supervised_ustadz_id'];
-    $tanggal_supervisi = $conn->real_escape_string($_POST['tanggal_supervisi']);
-    $skor = (int)$_POST['skor'];
-    $catatan = $conn->real_escape_string($_POST['catatan'] ?? '');
-    
-    if ($supervised_ustadz_id > 0 && !empty($tanggal_supervisi) && $skor >= 0 && $skor <= 100) {
-        $sql = "INSERT INTO supervisi_mengajar (user_id, tanggal_supervisi, skor, catatan, supervisor_id) 
-                VALUES ($supervised_ustadz_id, '$tanggal_supervisi', $skor, '$catatan', $current_ustadz_id)";
-        if ($conn->query($sql)) {
-            $pesan_sukses = "Log supervisi pengajaran berhasil disimpan!";
-        } else {
-            $pesan_error = "Gagal menyimpan log supervisi: " . $conn->error;
-        }
-    } else {
-        $pesan_error = "Semua field supervisi wajib diisi dengan benar!";
-    }
-}
 
-// --- HANDLE DELETING SUPERVISI LOG ---
-if (isset($_GET['action']) && $_GET['action'] === 'delete_supervisi' && isset($_GET['sup_id'])) {
-    $sup_id = (int)$_GET['sup_id'];
-    $sql_del = "DELETE FROM supervisi_mengajar WHERE id = $sup_id AND (supervisor_id = $current_ustadz_id OR $is_super_admin)";
-    if ($conn->query($sql_del)) {
-        $pesan_sukses = "Log supervisi berhasil dihapus.";
-        header("Location: admin-kepsek-kpi.php?periode=$selected_period");
-        exit;
-    }
-}
-
-// Fetch all staff members that have the 'ustadz' or 'ustadzah' role
-$res_guru = $conn->query("SELECT id, nama FROM akun_ustadz WHERE role LIKE '%ustadz%' OR role LIKE '%ustadzah%' OR role LIKE '%guru%' ORDER BY nama ASC");
-$guru_list = [];
-if ($res_guru) {
-    while ($row = $res_guru->fetch_assoc()) {
-        $guru_list[] = $row;
-    }
-}
-
-// Fetch supervisions conducted by selected Principal in selected month
-$res_sup_list = $conn->query("SELECT s.*, u.nama as nama_guru 
-    FROM supervisi_mengajar s 
-    JOIN akun_ustadz u ON s.user_id = u.id 
-    WHERE s.supervisor_id = $selected_kepsek_id AND MONTH(s.tanggal_supervisi) = $selected_month AND YEAR(s.tanggal_supervisi) = $selected_year 
-    ORDER BY s.tanggal_supervisi DESC");
-$supervisi_history = [];
-if ($res_sup_list) {
-    while ($row = $res_sup_list->fetch_assoc()) {
-        $supervisi_history[] = $row;
-    }
-}
 
 // --- FETCH CURRENT REPORT DETAILS ---
 $report_data = null;
@@ -469,83 +418,6 @@ if ($selected_kepsek_id > 0) {
                         <div class="text-right flex flex-col justify-center min-w-[80px]">
                             <span class="text-2xl font-bold text-slate-800"><?= number_format($score_nilai, 1) ?></span>
                             <span class="text-[10px] text-slate-400 uppercase tracking-wider block">Skor Aspek</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- LOG SUPERVISI PENGAJARAN (DILAKUKAN KEPALA SEKOLAH) -->
-                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mt-8 text-left">
-                    <!-- Form Input Log Supervisi -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 xl:col-span-1">
-                        <h2 class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5 border-b pb-2">
-                            <i class="fas fa-clipboard-check text-emerald-600"></i>
-                            <span>Input Supervisi Pengajaran Baru</span>
-                        </h2>
-                        <form method="POST" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 mb-1">Ustadz/Ustadzah yang Disupervisi</label>
-                                <select name="supervised_ustadz_id" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500" required>
-                                    <option value="">-- Pilih Guru --</option>
-                                    <?php foreach ($guru_list as $g): ?>
-                                        <option value="<?= $g['id'] ?>"><?= htmlspecialchars($g['nama']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 mb-1">Tanggal Supervisi</label>
-                                <input type="date" name="tanggal_supervisi" value="<?= date('Y-m-d') ?>" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500" required>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 mb-1">Skor Kinerja KBM (0 - 100)</label>
-                                <input type="number" name="skor" min="0" max="100" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500" required placeholder="Contoh: 85">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-600 mb-1">Catatan Evaluasi / Rekomendasi</label>
-                                <textarea name="catatan" rows="3" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500" placeholder="Tulis masukan untuk guru di sini..."></textarea>
-                            </div>
-                            <button type="submit" name="save_supervisi_log" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 shadow-sm">
-                                <i class="fas fa-plus"></i> Simpan Hasil Supervisi
-                            </button>
-                        </form>
-                    </div>
-
-                    <!-- Tabel Riwayat Supervisi Bulan Ini -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 xl:col-span-2">
-                        <h2 class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-1.5 border-b pb-2">
-                            <i class="fas fa-history text-emerald-600"></i>
-                            <span>Daftar Supervisi yang Dilakukan Bulan Ini</span>
-                        </h2>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead>
-                                    <tr class="border-b text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-                                        <th class="px-4 py-3">Nama Ustadz/ah</th>
-                                        <th class="px-4 py-3">Tanggal</th>
-                                        <th class="px-4 py-3 text-center">Skor</th>
-                                        <th class="px-4 py-3">Catatan/Evaluasi</th>
-                                        <th class="px-4 py-3 text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php if (!empty($supervisi_history)): ?>
-                                        <?php foreach ($supervisi_history as $sh): ?>
-                                            <tr class="border-b hover:bg-slate-50/50">
-                                                <td class="px-4 py-3 font-semibold text-slate-700"><?= htmlspecialchars($sh['nama_guru']) ?></td>
-                                                <td class="px-4 py-3 text-slate-500 whitespace-nowrap"><?= date('d M Y', strtotime($sh['tanggal_supervisi'])) ?></td>
-                                                <td class="px-4 py-3 text-center font-bold text-emerald-600"><?= $sh['skor'] ?></td>
-                                                <td class="px-4 py-3 text-slate-500 text-[11px] max-w-[200px] truncate" title="<?= htmlspecialchars($sh['catatan']) ?>"><?= htmlspecialchars($sh['catatan'] ?: '-') ?></td>
-                                                <td class="px-4 py-3 text-center whitespace-nowrap">
-                                                    <a href="?periode=<?= $selected_period ?>&action=delete_supervisi&sup_id=<?= $sh['id'] ?>" onclick="return confirm('Hapus log supervisi ini?')" class="text-rose-500 hover:text-rose-700 font-bold" title="Hapus Log"><i class="fas fa-trash"></i></a>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <tr>
-                                            <td colspan="5" class="text-center py-6 text-slate-400 italic">Belum ada supervisi yang dilakukan pada periode ini.</td>
-                                        </tr>
-                                    <?php endif; ?>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>

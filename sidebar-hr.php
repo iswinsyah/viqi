@@ -76,6 +76,7 @@ if ($conn) {
         }
     }
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_kepsek', 'kepala_sekolah,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('supervisi_mengajar', 'kepala_sekolah,kepala_mahad,super_admin')");
 }
 
 // Load custom menu labels from database
@@ -119,6 +120,7 @@ $menu_structure = [
         'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract', 'title' => 'Peraturan Pegawai'],
         'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher', 'title' => 'KPI Pegawai'],
         'kpi_kepsek' => ['href' => 'admin-kepsek-kpi.php', 'icon' => 'fa-chart-pie', 'title' => 'KPI Kepala Sekolah'],
+        'supervisi_mengajar' => ['href' => 'admin-supervisi-mengajar.php', 'icon' => 'fa-clipboard-check', 'title' => 'Supervisi Mengajar'],
         'ganti_password' => ['href' => 'ganti-password-ustadz.php', 'icon' => 'fa-key', 'title' => 'Ganti Password'],
     ],
     'Administrasi' => [
