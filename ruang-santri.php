@@ -49,28 +49,57 @@ if ($view === 'ibadah_harian') {
     $pesan_sukses = '';
     $pesan_error = '';
 
+    // Ambil jenis kelamin santri untuk toleransi haid
+    $res_jk = $conn->query("SELECT jenis_kelamin FROM buku_induk_santri WHERE id = $santri_id LIMIT 1");
+    $jenis_kelamin = ($res_jk && $res_jk->num_rows > 0) ? $res_jk->fetch_assoc()['jenis_kelamin'] : 'Laki-laki';
+    $is_female = (strcasecmp($jenis_kelamin, 'Perempuan') === 0);
+
     // Handle Form Submission
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $tanggal = $conn->real_escape_string($_POST['tanggal']);
-        $sholat_subuh = $conn->real_escape_string($_POST['sholat_subuh']);
-        $sholat_dhuhur = $conn->real_escape_string($_POST['sholat_dhuhur']);
-        $sholat_ashar = $conn->real_escape_string($_POST['sholat_ashar']);
-        $sholat_maghrib = $conn->real_escape_string($_POST['sholat_maghrib']);
-        $sholat_isya = $conn->real_escape_string($_POST['sholat_isya']);
+        $is_haid = (isset($_POST['is_haid']) && $is_female) ? 1 : 0;
         
-        $sholat_tahajud = isset($_POST['sholat_tahajud']) ? 1 : 0;
-        $sholat_witir = isset($_POST['sholat_witir']) ? 1 : 0;
-        $sholat_qobliyah_subuh = isset($_POST['sholat_qobliyah_subuh']) ? 1 : 0;
-        $sholat_dhuha = isset($_POST['sholat_dhuha']) ? 1 : 0;
-        $sholat_qobli_dhuhur = isset($_POST['sholat_qobli_dhuhur']) ? 1 : 0;
-        $sholat_bakdiyah_dhuhur = isset($_POST['sholat_bakdiyah_dhuhur']) ? 1 : 0;
-        $sholat_qobliyah_ashar = isset($_POST['sholat_qobliyah_ashar']) ? 1 : 0;
-        $sholat_bakdiyah_maghrib = isset($_POST['sholat_bakdiyah_maghrib']) ? 1 : 0;
-        $sholat_qobliyah_isya = isset($_POST['sholat_qobliyah_isya']) ? 1 : 0;
-        $sholat_bakdiyah_isya = isset($_POST['sholat_bakdiyah_isya']) ? 1 : 0;
+        if ($is_haid) {
+            $sholat_subuh = 'Udzur Syar\'i';
+            $sholat_dhuhur = 'Udzur Syar\'i';
+            $sholat_ashar = 'Udzur Syar\'i';
+            $sholat_maghrib = 'Udzur Syar\'i';
+            $sholat_isya = 'Udzur Syar\'i';
+            
+            $sholat_tahajud = 0;
+            $sholat_witir = 0;
+            $sholat_qobliyah_subuh = 0;
+            $sholat_dhuha = 0;
+            $sholat_qobli_dhuhur = 0;
+            $sholat_bakdiyah_dhuhur = 0;
+            $sholat_qobliyah_ashar = 0;
+            $sholat_bakdiyah_maghrib = 0;
+            $sholat_qobliyah_isya = 0;
+            $sholat_bakdiyah_isya = 0;
+            
+            $puasa_senin = 0;
+            $puasa_kamis = 0;
+        } else {
+            $sholat_subuh = $conn->real_escape_string($_POST['sholat_subuh']);
+            $sholat_dhuhur = $conn->real_escape_string($_POST['sholat_dhuhur']);
+            $sholat_ashar = $conn->real_escape_string($_POST['sholat_ashar']);
+            $sholat_maghrib = $conn->real_escape_string($_POST['sholat_maghrib']);
+            $sholat_isya = $conn->real_escape_string($_POST['sholat_isya']);
+            
+            $sholat_tahajud = isset($_POST['sholat_tahajud']) ? 1 : 0;
+            $sholat_witir = isset($_POST['sholat_witir']) ? 1 : 0;
+            $sholat_qobliyah_subuh = isset($_POST['sholat_qobliyah_subuh']) ? 1 : 0;
+            $sholat_dhuha = isset($_POST['sholat_dhuha']) ? 1 : 0;
+            $sholat_qobli_dhuhur = isset($_POST['sholat_qobli_dhuhur']) ? 1 : 0;
+            $sholat_bakdiyah_dhuhur = isset($_POST['sholat_bakdiyah_dhuhur']) ? 1 : 0;
+            $sholat_qobliyah_ashar = isset($_POST['sholat_qobliyah_ashar']) ? 1 : 0;
+            $sholat_bakdiyah_maghrib = isset($_POST['sholat_bakdiyah_maghrib']) ? 1 : 0;
+            $sholat_qobliyah_isya = isset($_POST['sholat_qobliyah_isya']) ? 1 : 0;
+            $sholat_bakdiyah_isya = isset($_POST['sholat_bakdiyah_isya']) ? 1 : 0;
 
-        $puasa_senin = isset($_POST['puasa_senin']) ? 1 : 0;
-        $puasa_kamis = isset($_POST['puasa_kamis']) ? 1 : 0;
+            $puasa_senin = isset($_POST['puasa_senin']) ? 1 : 0;
+            $puasa_kamis = isset($_POST['puasa_kamis']) ? 1 : 0;
+        }
 
         // Check if entry for this date already exists
         $check_sql = "SELECT id FROM ibadah_harian_santri WHERE santri_id = $santri_id AND tanggal = '$tanggal'";
@@ -82,16 +111,16 @@ if ($view === 'ibadah_harian') {
                     sholat_subuh='$sholat_subuh', sholat_dhuhur='$sholat_dhuhur', sholat_ashar='$sholat_ashar', sholat_maghrib='$sholat_maghrib', sholat_isya='$sholat_isya',
                     sholat_tahajud=$sholat_tahajud, sholat_witir=$sholat_witir, sholat_qobliyah_subuh=$sholat_qobliyah_subuh, sholat_dhuha=$sholat_dhuha, sholat_qobli_dhuhur=$sholat_qobli_dhuhur,
                     sholat_bakdiyah_dhuhur=$sholat_bakdiyah_dhuhur, sholat_qobliyah_ashar=$sholat_qobliyah_ashar, sholat_bakdiyah_maghrib=$sholat_bakdiyah_maghrib, sholat_qobliyah_isya=$sholat_qobliyah_isya, sholat_bakdiyah_isya=$sholat_bakdiyah_isya,
-                    puasa_senin=$puasa_senin, puasa_kamis=$puasa_kamis, status_validasi='Pending'
+                    puasa_senin=$puasa_senin, puasa_kamis=$puasa_kamis, is_haid=$is_haid, status_validasi='Pending'
                     WHERE id = $existing_id";
             $pesan_sukses = "Laporan ibadah harian tanggal $tanggal berhasil diperbarui! Menunggu validasi Musyrif.";
         } else {
             $sql = "INSERT INTO ibadah_harian_santri (santri_id, tanggal, sholat_subuh, sholat_dhuhur, sholat_ashar, sholat_maghrib, sholat_isya,
                     sholat_tahajud, sholat_witir, sholat_qobliyah_subuh, sholat_dhuha, sholat_qobli_dhuhur, sholat_bakdiyah_dhuhur, sholat_qobliyah_ashar, sholat_bakdiyah_maghrib, sholat_qobliyah_isya, sholat_bakdiyah_isya,
-                    puasa_senin, puasa_kamis, status_validasi) VALUES (
+                    puasa_senin, puasa_kamis, is_haid, status_validasi) VALUES (
                     $santri_id, '$tanggal', '$sholat_subuh', '$sholat_dhuhur', '$sholat_ashar', '$sholat_maghrib', '$sholat_isya',
                     $sholat_tahajud, $sholat_witir, $sholat_qobliyah_subuh, $sholat_dhuha, $sholat_qobli_dhuhur, $sholat_bakdiyah_dhuhur, $sholat_qobliyah_ashar, $sholat_bakdiyah_maghrib, $sholat_qobliyah_isya, $sholat_bakdiyah_isya,
-                    $puasa_senin, $puasa_kamis, 'Pending')";
+                    $puasa_senin, $puasa_kamis, $is_haid, 'Pending')";
             $pesan_sukses = "Laporan ibadah harian tanggal $tanggal berhasil disimpan! Menunggu validasi Musyrif.";
         }
 
@@ -169,53 +198,74 @@ if ($view === 'ibadah_harian') {
                 <form action="ruang-santri.php?view=ibadah_harian" method="POST" class="space-y-6">
                     <input type="hidden" name="tanggal" value="<?= date('Y-m-d') ?>">
 
-                    <!-- Sholat Wajib -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Sholat Wajib</label>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <?php 
-                            $sholat_wajib_opts = ['Jamaah di Masjid', 'Jamaah di Mushola Asrama', 'Munfarid', 'Udzur Syar\'i'];
-                            $sholat_names = ['subuh', 'dhuhur', 'ashar', 'maghrib', 'isya'];
-                            foreach($sholat_names as $s_name): ?>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Sholat <?= ucfirst($s_name) ?></label>
-                                <select name="sholat_<?= $s_name ?>" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-indigo-500">
-                                    <?php foreach($sholat_wajib_opts as $opt): ?>
-                                        <option value="<?= $opt ?>" <?= ($current_report && $current_report['sholat_'.$s_name] == $opt) ? 'selected' : '' ?>><?= $opt ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                    <?php if ($is_female): ?>
+                    <!-- Uzur Syar'i (Haid) Toggle -->
+                    <div class="bg-pink-50 border border-pink-100 rounded-xl p-4 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="h-10 w-10 bg-pink-100 rounded-full flex items-center justify-center text-pink-600">
+                                <i class="fas fa-venus text-lg"></i>
                             </div>
-                            <?php endforeach; ?>
+                            <div>
+                                <h3 class="text-sm font-bold text-pink-800">Sedang Haid / Uzur Bulanan</h3>
+                                <p class="text-xs text-pink-600">Aktifkan jika sedang dalam masa uzur sholat bulanan.</p>
+                            </div>
                         </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="is_haid_toggle" name="is_haid" value="1" <?= ($current_report && $current_report['is_haid'] == 1) ? 'checked' : '' ?> class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
+                        </label>
                     </div>
+                    <?php endif; ?>
 
-                    <!-- Sholat Sunnah -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Sholat Sunnah</label>
-                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                            <?php 
-                            $sholat_sunnah_names = ['tahajud', 'witir', 'qobliyah_subuh', 'dhuha', 'qobli_dhuhur', 'bakdiyah_dhuhur', 'qobliyah_ashar', 'bakdiyah_maghrib', 'qobliyah_isya', 'bakdiyah_isya'];
-                            foreach($sholat_sunnah_names as $ss_name): ?>
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" name="sholat_<?= $ss_name ?>" value="1" <?= ($current_report && $current_report['sholat_'.$ss_name] == 1) ? 'checked' : '' ?> class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-                                <span class="text-sm text-gray-700"><?= ucwords(str_replace('_', ' ', $ss_name)) ?></span>
-                            </label>
-                            <?php endforeach; ?>
+                    <div id="ibadah_fields_container" class="space-y-6">
+                        <!-- Sholat Wajib -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Sholat Wajib</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <?php 
+                                $sholat_wajib_opts = ['Jamaah di Masjid', 'Jamaah di Mushola Asrama', 'Munfarid', 'Udzur Syar\'i'];
+                                $sholat_names = ['subuh', 'dhuhur', 'ashar', 'maghrib', 'isya'];
+                                foreach($sholat_names as $s_name): ?>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Sholat <?= ucfirst($s_name) ?></label>
+                                    <select name="sholat_<?= $s_name ?>" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-indigo-500">
+                                        <?php foreach($sholat_wajib_opts as $opt): ?>
+                                            <option value="<?= $opt ?>" <?= ($current_report && $current_report['sholat_'.$s_name] == $opt) ? 'selected' : '' ?>><?= $opt ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Puasa Sunnah -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">Puasa Sunnah</label>
-                        <div class="flex flex-wrap gap-4">
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" name="puasa_senin" value="1" <?= ($current_report && $current_report['puasa_senin'] == 1) ? 'checked' : '' ?> class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-                                <span class="text-sm text-gray-700">Senin</span>
-                            </label>
-                            <label class="flex items-center space-x-2">
-                                <input type="checkbox" name="puasa_kamis" value="1" <?= ($current_report && $current_report['puasa_kamis'] == 1) ? 'checked' : '' ?> class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
-                                <span class="text-sm text-gray-700">Kamis</span>
-                            </label>
+                        <!-- Sholat Sunnah -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Sholat Sunnah</label>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                <?php 
+                                $sholat_sunnah_names = ['tahajud', 'witir', 'qobliyah_subuh', 'dhuha', 'qobli_dhuhur', 'bakdiyah_dhuhur', 'qobliyah_ashar', 'bakdiyah_maghrib', 'qobliyah_isya', 'bakdiyah_isya'];
+                                foreach($sholat_sunnah_names as $ss_name): ?>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" name="sholat_<?= $ss_name ?>" value="1" <?= ($current_report && $current_report['sholat_'.$ss_name] == 1) ? 'checked' : '' ?> class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                    <span class="text-sm text-gray-700"><?= ucwords(str_replace('_', ' ', $ss_name)) ?></span>
+                                </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+
+                        <!-- Puasa Sunnah -->
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-2">Puasa Sunnah</label>
+                            <div class="flex flex-wrap gap-4">
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" name="puasa_senin" value="1" <?= ($current_report && $current_report['puasa_senin'] == 1) ? 'checked' : '' ?> class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                    <span class="text-sm text-gray-700">Senin</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" name="puasa_kamis" value="1" <?= ($current_report && $current_report['puasa_kamis'] == 1) ? 'checked' : '' ?> class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+                                    <span class="text-sm text-gray-700">Kamis</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -225,6 +275,24 @@ if ($view === 'ibadah_harian') {
                         </button>
                     </div>
                 </form>
+
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {
+                        const toggle = document.getElementById('is_haid_toggle');
+                        const container = document.getElementById('ibadah_fields_container');
+                        if (toggle && container) {
+                            function handleToggle() {
+                                if (toggle.checked) {
+                                    container.style.display = 'none';
+                                } else {
+                                    container.style.display = 'block';
+                                }
+                            }
+                            toggle.addEventListener('change', handleToggle);
+                            handleToggle();
+                        }
+                    });
+                </script>
             </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

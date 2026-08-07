@@ -294,8 +294,30 @@ if ($view === 'dashboard_asrama') {
             $row_ib = $res_ib ? $res_ib->fetch_assoc() : ['total' => 0, 'divalidasi' => 0];
             $total_ib = (int)($row_ib['total'] ?? 0);
             $dival_ib = (int)($row_ib['divalidasi'] ?? 0);
-            $skor_validasi_ibadah = $total_ib > 0 ? ($dival_ib / $total_ib) * 100 : 100;
-            $details['validasi_ibadah'] = "$dival_ib dari $total_ib laporan divalidasi";
+            
+            $kepatuhan_klik = $total_ib > 0 ? ($dival_ib / $total_ib) * 100 : 100;
+            
+            // Hitung bimbingan aktif (santri malas ibadah / munfarid & non-haid)
+            $res_bim = $conn->query("
+                SELECT COUNT(*) as total_perlu,
+                       SUM(CASE WHEN catatan_musyrif IS NOT NULL AND TRIM(catatan_musyrif) != '' THEN 1 ELSE 0 END) as dibimbing
+                FROM ibadah_harian_santri
+                WHERE santri_id IN ($santri_list_str)
+                  AND MONTH(tanggal) = $selected_month 
+                  AND YEAR(tanggal) = $selected_year
+                  AND is_haid = 0
+                  AND (sholat_subuh = 'Munfarid' OR sholat_dhuhur = 'Munfarid' OR sholat_ashar = 'Munfarid' OR sholat_maghrib = 'Munfarid' OR sholat_isya = 'Munfarid')
+            ");
+            $row_bim = $res_bim ? $res_bim->fetch_assoc() : ['total_perlu' => 0, 'dibimbing' => 0];
+            $total_perlu_bim = (int)($row_bim['total_perlu'] ?? 0);
+            $total_dibimbing = (int)($row_bim['dibimbing'] ?? 0);
+            
+            $kepatuhan_bimbingan = $total_perlu_bim > 0 ? ($total_dibimbing / $total_perlu_bim) * 100 : 100;
+            
+            // Gabungan: 80% Kepatuhan Klik Validasi + 20% Kepatuhan Bimbingan Aktif
+            $skor_validasi_ibadah = (0.8 * $kepatuhan_klik) + (0.2 * $kepatuhan_bimbingan);
+            
+            $details['validasi_ibadah'] = "$dival_ib dari $total_ib divalidasi (" . number_format($kepatuhan_klik, 0) . "%), bimbingan: $total_dibimbing dari $total_perlu_bim diisi";
         } else {
             $details['validasi_ibadah'] = "Tidak ada santri binaan";
         }
