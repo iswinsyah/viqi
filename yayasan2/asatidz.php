@@ -342,16 +342,16 @@ $active_menu = 'asatidz';
                                     $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr);
                                     $is_utama_or_muda = ($status_display === 'Pegawai Utama' || $status_display === 'Pegawai Muda');
                                     
-                                    if ($is_utama_or_muda && $has_ustadz_role) {
-                                        // Wajib mengajar 6 jam pelajaran. Hanya dibayar kelebihannya.
-                                        $kelebihan_jam = max(0, $total_pertemuan - 6);
-                                        $honor = $kelebihan_jam * $active_rate;
-                                        $honor_note = "Kelebihan: {$kelebihan_jam}x (Grade {$active_grade})";
-                                    } else {
-                                        // Pegawai biasa / honorer / pengabdian dibayar seluruh jam mengajarnya
-                                        $honor = $total_pertemuan * $active_rate;
-                                        $honor_note = "{$total_pertemuan}x (Grade {$active_grade})";
-                                    }
+                                     if ($is_utama_or_muda && $has_ustadz_role) {
+                                         // Wajib mengajar 6 jam pelajaran per minggu (total 24 jam per bulan). Hanya dibayar kelebihannya.
+                                         $kelebihan_jam = max(0, $total_pertemuan - 24);
+                                         $honor = $kelebihan_jam * $active_rate;
+                                         $honor_note = "Kelebihan: {$kelebihan_jam}x (Grade {$active_grade})";
+                                     } else {
+                                         // Pegawai biasa / honorer / pengabdian dibayar seluruh jam mengajarnya
+                                         $honor = $total_pertemuan * $active_rate;
+                                         $honor_note = "{$total_pertemuan}x (Grade {$active_grade})";
+                                     }
 
                                     // 4. Total Gaji
                                     $total_gaji = $gaji_pokok + $tunjangan + $honor;
