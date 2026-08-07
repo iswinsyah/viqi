@@ -5,13 +5,111 @@ require_once '../koneksi.php';
 // Pastikan kolom 'role' ada di tabel akun_ustadz (sudah ditambahkan via login-ustadz.php, tapi jaga-jaga)
 $res_gaji = $conn->query("SELECT * FROM pengaturan_gaji WHERE id=1");
 $data_gaji = $res_gaji ? $res_gaji->fetch_assoc() : [];
+$gaji_grade_a = $data_gaji['gaji_grade_a'] ?? 25000;
 $gaji_grade_b = $data_gaji['gaji_grade_b'] ?? 22500;
+$gaji_grade_c = $data_gaji['gaji_grade_c'] ?? 20000;
 $gaji_pokok_muda = $data_gaji['gaji_pokok_muda'] ?? 2500000;
 $gaji_pokok_utama = $data_gaji['gaji_pokok_utama'] ?? 3500000;
 $tunj_kepsek_a = $data_gaji['tunj_kepsek_a'] ?? 1500000;
 $tunj_mahad_a = $data_gaji['tunj_mahad_a'] ?? 1500000;
 $tunj_asrama_a = $data_gaji['tunj_asrama_a'] ?? 1200000;
 $tunj_admin_a = $data_gaji['tunj_admin_a'] ?? 1000000;
+
+function getUstadzGradeRate($conn, $ust_id, $role_str, $gaji_grade_a, $gaji_grade_b, $gaji_grade_c) {
+    $user_roles = !empty($role_str) ? explode(',', $role_str) : [];
+    $is_teacher = in_array('ustadz', $user_roles) || in_array('guru', $user_roles);
+    $eligible_roles_pegawai = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
+    $is_daily_worker = !empty(array_intersect($eligible_roles_pegawai, $user_roles));
+
+    // A. Jurnal Bulan Ini
+    $res_jurnal = $conn->query("SELECT 
+        COUNT(*) as total_jurnal, 
+        SUM(CASE WHEN DATE(created_at) = tanggal THEN 1 ELSE 0 END) as tepat_waktu 
+        FROM jurnal_mengajar 
+        WHERE ustadz_id = $ust_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
+    $data_jurnal = $res_jurnal ? $res_jurnal->fetch_assoc() : ['total_jurnal' => 0, 'tepat_waktu' => 0];
+    $jumlah_pertemuan = (int)($data_jurnal['total_jurnal'] ?? 0);
+    $tepat_waktu = (int)($data_jurnal['tepat_waktu'] ?? 0);
+
+    // B. Hitung skor jurnal
+    if ($is_teacher) {
+        $skor_jurnal = $jumlah_pertemuan > 0 ? ($tepat_waktu / $jumlah_pertemuan) * 100 : 100;
+    } else {
+        $skor_jurnal = 100;
+    }
+
+    // C. Kehadiran Harian/Pegawai (Bulan ini)
+    $res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen IN ('Pegawai', 'Harian') AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+    $jml_hadir = $res_hadir ? (int)($res_hadir->fetch_assoc()['jml'] ?? 0) : 0;
+
+    if ($is_daily_worker) {
+        $skor_kehadiran = $jml_hadir > 0 ? min(100, ($jml_hadir / 20) * 100) : 0;
+    } else {
+        // Jika ustadz honorer saja
+        $res_hadir_mengajar = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+        $jml_hadir_mengajar = $res_hadir_mengajar ? (int)($res_hadir_mengajar->fetch_assoc()['jml'] ?? 0) : 0;
+        
+        $res_total_teaching_days = $conn->query("SELECT COUNT(DISTINCT tanggal) as total_days FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
+        $total_teaching_days = $res_total_teaching_days ? (int)($res_total_teaching_days->fetch_assoc()['total_days'] ?? 0) : 0;
+        
+        $skor_kehadiran = $total_teaching_days > 0 ? min(100, ($jml_hadir_mengajar / $total_teaching_days) * 100) : 100;
+    }
+
+    // D. Kehadiran Rapat (Bulan ini)
+    $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Rapat' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+    $jml_rapat = $res_rapat ? (int)($res_rapat->fetch_assoc()['jml'] ?? 0) : 0;
+
+    $res_total_rapat = $conn->query("SELECT COUNT(*) as total FROM jadwal_rapat WHERE MONTH(waktu_mulai) = MONTH(CURRENT_DATE()) AND YEAR(waktu_mulai) = YEAR(CURRENT_DATE())");
+    $total_rapat = $res_total_rapat ? (int)($res_total_rapat->fetch_assoc()['total'] ?? 0) : 0;
+    $skor_kehadiran_rapat = $total_rapat > 0 ? min(100, ($jml_rapat / $total_rapat) * 100) : 100;
+
+    $skor_administrasi = (($skor_jurnal * 0.4) + ($skor_kehadiran * 0.4) + ($skor_kehadiran_rapat * 0.2));
+
+    // E. Kualitas Pengajaran
+    $res_ai = $conn->query("SELECT COUNT(*) as pemakaian FROM log_aktivitas_ai WHERE user_id = $ust_id AND MONTH(created_at) = MONTH(CURRENT_DATE()) AND YEAR(created_at) = YEAR(CURRENT_DATE())");
+    $jumlah_pakai_ai = $res_ai ? (int)($res_ai->fetch_assoc()['pemakaian'] ?? 0) : 0;
+    $skor_penggunaan_ai = $jumlah_pakai_ai >= 5 ? 100 : ($jumlah_pakai_ai > 0 ? 85 : 70);
+
+    if ($is_teacher) {
+        $res_sup = $conn->query("SELECT skor FROM supervisi_mengajar WHERE user_id = $ust_id ORDER BY tanggal_supervisi DESC LIMIT 1");
+        $skor_supervisi = $res_sup && $res_sup->num_rows > 0 ? (int)($res_sup->fetch_assoc()['skor']) : 85;
+    } else {
+        $skor_supervisi = 100;
+    }
+    $skor_kualitas_pengajaran = (($skor_penggunaan_ai * 0.4) + ($skor_supervisi * 0.6));
+
+    // F. Capaian Santri
+    if ($is_teacher) {
+        $res_nilai = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE ustadz_id = $ust_id");
+        $rata_rata_db = $res_nilai ? (float)($res_nilai->fetch_assoc()['rata_rata'] ?? 0) : 0;
+        $skor_rata_nilai = $rata_rata_db > 0 ? $rata_rata_db : 80;
+        
+        $res_uts = $conn->query("SELECT AVG(nilai) as rata_uts FROM leger_nilai WHERE ustadz_id = $ust_id AND jenis_ujian = 'Ujian Tengah Semester (UTS)'");
+        $rata_uts = $res_uts ? (float)($res_uts->fetch_assoc()['rata_uts'] ?? 0) : 0;
+        $res_uas = $conn->query("SELECT AVG(nilai) as rata_uas FROM leger_nilai WHERE ustadz_id = $ust_id AND jenis_ujian = 'Ujian Akhir Semester (UAS)'");
+        $rata_uas = $res_uas ? (float)($res_uas->fetch_assoc()['rata_uas'] ?? 0) : 0;
+        $skor_pertumbuhan = ($rata_uts > 0 && $rata_uas > 0) ? (($rata_uas >= $rata_uts) ? 100 : 75) : 85;
+    } else {
+        $skor_rata_nilai = 100;
+        $skor_pertumbuhan = 100;
+    }
+    $skor_capaian_santri = (($skor_rata_nilai * 0.6) + ($skor_pertumbuhan * 0.4));
+
+    // G. Pengembangan Diri
+    $skor_kontribusi_silabus = $jumlah_pakai_ai > 0 ? 100 : 70;
+    $skor_pengembangan_diri = $skor_kontribusi_silabus;
+
+    // Total KPI
+    $total_skor_kpi = ($skor_administrasi * 0.20) + ($skor_kualitas_pengajaran * 0.40) + ($skor_capaian_santri * 0.30) + ($skor_pengembangan_diri * 0.10);
+
+    if ($total_skor_kpi >= 90) {
+        return [$gaji_grade_a, 'A', $total_skor_kpi];
+    } elseif ($total_skor_kpi >= 80) {
+        return [$gaji_grade_b, 'B', $total_skor_kpi];
+    } else {
+        return [$gaji_grade_c, 'C', $total_skor_kpi];
+    }
+}
 
 @$conn->query("ALTER TABLE akun_ustadz MODIFY COLUMN role VARCHAR(255)");
 
@@ -233,11 +331,27 @@ $active_menu = 'asatidz';
                                         }
                                     }
 
-                                    // 3. Honor Mengajar (Jurnal bulan berjalan * tarif Grade B)
+                                    // 3. Honor Mengajar (Berdasarkan Grade Bulanan & kewajiban 6 jam untuk Pegawai Utama/Muda)
                                     $ust_id = (int)$row['id'];
                                     $res_jurnal = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
                                     $total_pertemuan = $res_jurnal ? (int)$res_jurnal->fetch_assoc()['total'] : 0;
-                                    $honor = $total_pertemuan * $gaji_grade_b;
+                                    
+                                    list($active_rate, $active_grade, $kpi_score) = getUstadzGradeRate($conn, $ust_id, $row['role'], $gaji_grade_a, $gaji_grade_b, $gaji_grade_c);
+
+                                    $roles_arr = !empty($row['role']) ? explode(',', $row['role']) : [];
+                                    $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr);
+                                    $is_utama_or_muda = ($status_display === 'Pegawai Utama' || $status_display === 'Pegawai Muda');
+                                    
+                                    if ($is_utama_or_muda && $has_ustadz_role) {
+                                        // Wajib mengajar 6 jam pelajaran. Hanya dibayar kelebihannya.
+                                        $kelebihan_jam = max(0, $total_pertemuan - 6);
+                                        $honor = $kelebihan_jam * $active_rate;
+                                        $honor_note = "Kelebihan: {$kelebihan_jam}x (Grade {$active_grade})";
+                                    } else {
+                                        // Pegawai biasa / honorer / pengabdian dibayar seluruh jam mengajarnya
+                                        $honor = $total_pertemuan * $active_rate;
+                                        $honor_note = "{$total_pertemuan}x (Grade {$active_grade})";
+                                    }
 
                                     // 4. Total Gaji
                                     $total_gaji = $gaji_pokok + $tunjangan + $honor;
@@ -262,7 +376,7 @@ $active_menu = 'asatidz';
                                         <td class='px-4 py-3'><span class='inline-block px-2.5 py-0.5 rounded text-[10px] font-bold border $status_color'>$status_display</span></td>
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($gaji_pokok, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($tunjangan, 0, ',', '.')."</td>
-                                        <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($honor, 0, ',', '.')." <span class='text-[9px] text-gray-400 block'>($total_pertemuan x)</span></td>
+                                        <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($honor, 0, ',', '.')." <span class='text-[9px] text-gray-400 block'>($honor_note)</span></td>
                                         <td class='px-4 py-3 text-right font-bold text-amber-600 bg-amber-50/20'>Rp ".number_format($total_gaji, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-center whitespace-nowrap'>
                                             {$btn_aktifkan}
