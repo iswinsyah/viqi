@@ -34,23 +34,14 @@ $norm_roles = array_map(function($r) {
 }, $user_roles);
 
 $is_admin_or_kepala = $is_super_admin || !empty(array_intersect($norm_roles, ['super_admin', 'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah']));
+$is_musyrif_or_musyrifah = !empty(array_intersect($norm_roles, ['musyrif', 'musyrifah']));
 $is_ka_rijal = !empty(array_intersect($norm_roles, ['kepala_asrama', 'kepala_asrama_rijal']));
 $is_ka_nisa = !empty(array_intersect($norm_roles, ['kepala_asrama_nisa']));
 
 // Fetch santri binaan IDs if scoped
 $santri_binaan_ids = [];
 if (!$is_admin_or_kepala) {
-    if ($is_ka_rijal) {
-        $res_sb = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif' AND (jenis_kelamin = 'Laki-laki' OR jenis_kelamin IS NULL)");
-        if ($res_sb) {
-            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
-        }
-    } elseif ($is_ka_nisa) {
-        $res_sb = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif' AND jenis_kelamin = 'Perempuan'");
-        if ($res_sb) {
-            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
-        }
-    } else {
+    if ($is_musyrif_or_musyrifah) {
         // Musyrif / Musyrifah
         $res_sb = $conn->query("
             SELECT DISTINCT s.id 
@@ -59,6 +50,16 @@ if (!$is_admin_or_kepala) {
             JOIN halaqoh_grup g ON a.grup_id = g.id 
             WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
         ");
+        if ($res_sb) {
+            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
+        }
+    } elseif ($is_ka_rijal) {
+        $res_sb = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif' AND (jenis_kelamin = 'Laki-laki' OR jenis_kelamin IS NULL)");
+        if ($res_sb) {
+            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
+        }
+    } elseif ($is_ka_nisa) {
+        $res_sb = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif' AND jenis_kelamin = 'Perempuan'");
         if ($res_sb) {
             while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
         }

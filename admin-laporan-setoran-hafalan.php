@@ -109,6 +109,23 @@ if ($is_admin_or_kepala) {
             $santri_binaan[] = $r;
         }
     }
+} elseif ($is_musyrif || $is_musyrifah) {
+    // Musyrif / Musyrifah: see only their assigned halaqoh group members
+    $res_santri = $conn->query("SELECT DISTINCT s.id, s.nama_lengkap, g.nama_grup 
+        FROM buku_induk_santri s 
+        JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        JOIN halaqoh_grup g ON a.grup_id = g.id 
+        WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
+        ORDER BY s.nama_lengkap ASC");
+    
+    if ($res_santri && $res_santri->num_rows > 0) {
+        while ($r = $res_santri->fetch_assoc()) {
+            $santri_binaan[] = $r;
+            if (!empty($r['nama_grup']) && !in_array($r['nama_grup'], $nama_halaqoh_user)) {
+                $nama_halaqoh_user[] = $r['nama_grup'];
+            }
+        }
+    }
 } elseif ($is_ka_rijal) {
     // Kepala Asrama Rijal: can see all active male santri
     $res_santri = $conn->query("SELECT s.id, s.nama_lengkap, g.nama_grup 

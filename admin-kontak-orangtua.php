@@ -34,6 +34,7 @@ $norm_roles = array_map(function($r) {
 }, $user_roles);
 
 $is_admin_or_kepala = $is_super_admin || !empty(array_intersect($norm_roles, ['super_admin', 'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah']));
+$is_musyrif_or_musyrifah = !empty(array_intersect($norm_roles, ['musyrif', 'musyrifah']));
 $is_ka_rijal = !empty(array_intersect($norm_roles, ['kepala_asrama', 'kepala_asrama_rijal']));
 $is_ka_nisa = !empty(array_intersect($norm_roles, ['kepala_asrama_nisa']));
 
@@ -42,6 +43,19 @@ $santri_binaan = [];
 if ($is_admin_or_kepala) {
     // Admin / Super Admin can see all active santri
     $res_sb = $conn->query("SELECT id, nama_lengkap, nis, kelas_sekarang, jenis_kelamin, nama_ayah, nama_ibu, no_hp_ortu FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC");
+    if ($res_sb) {
+        while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
+    }
+} elseif ($is_musyrif_or_musyrifah) {
+    // Musyrif / Musyrifah: see only their assigned halaqoh group members
+    $res_sb = $conn->query("
+        SELECT DISTINCT s.id, s.nama_lengkap, s.nis, s.kelas_sekarang, s.jenis_kelamin, s.nama_ayah, s.nama_ibu, s.no_hp_ortu 
+        FROM buku_induk_santri s 
+        JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        JOIN halaqoh_grup g ON a.grup_id = g.id 
+        WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
+        ORDER BY s.nama_lengkap ASC
+    ");
     if ($res_sb) {
         while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
     }
@@ -54,19 +68,6 @@ if ($is_admin_or_kepala) {
 } elseif ($is_ka_nisa) {
     // Kepala Asrama Nisa: can see all active female santri
     $res_sb = $conn->query("SELECT id, nama_lengkap, nis, kelas_sekarang, jenis_kelamin, nama_ayah, nama_ibu, no_hp_ortu FROM buku_induk_santri WHERE status_santri = 'Aktif' AND jenis_kelamin = 'Perempuan' ORDER BY nama_lengkap ASC");
-    if ($res_sb) {
-        while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
-    }
-} else {
-    // Musyrif / Musyrifah: see only their assigned halaqoh group members
-    $res_sb = $conn->query("
-        SELECT DISTINCT s.id, s.nama_lengkap, s.nis, s.kelas_sekarang, s.jenis_kelamin, s.nama_ayah, s.nama_ibu, s.no_hp_ortu 
-        FROM buku_induk_santri s 
-        JOIN halaqoh_anggota a ON s.id = a.santri_id 
-        JOIN halaqoh_grup g ON a.grup_id = g.id 
-        WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
-        ORDER BY s.nama_lengkap ASC
-    ");
     if ($res_sb) {
         while ($r = $res_sb->fetch_assoc()) $santri_binaan[] = $r;
     }

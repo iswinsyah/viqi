@@ -85,7 +85,19 @@ $santri_binaan_ids = [];
 $gender_filter_sql = "";
 
 if (!$is_admin_or_kepala) {
-    if ($is_kepala_asrama_rijal) {
+    if ($is_musyrif || $is_musyrifah) {
+        // Musyrif / Musyrifah: see only their assigned halaqoh group members
+        $res_sb = $conn->query("
+            SELECT DISTINCT s.id 
+            FROM buku_induk_santri s 
+            JOIN halaqoh_anggota a ON s.id = a.santri_id 
+            JOIN halaqoh_grup g ON a.grup_id = g.id 
+            WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
+        ");
+        if ($res_sb) {
+            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
+        }
+    } elseif ($is_kepala_asrama_rijal) {
         $gender_filter_sql = " AND (s.jenis_kelamin = 'Laki-laki' OR s.jenis_kelamin IS NULL)";
         $res_sb = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif'");
         if ($res_sb) {
@@ -94,18 +106,6 @@ if (!$is_admin_or_kepala) {
     } elseif ($is_kepala_asrama_nisa) {
         $gender_filter_sql = " AND s.jenis_kelamin = 'Perempuan'";
         $res_sb = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif'");
-        if ($res_sb) {
-            while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
-        }
-    } else {
-        // Musyrif / Musyrifah
-        $res_sb = $conn->query("
-            SELECT DISTINCT s.id 
-            FROM buku_induk_santri s 
-            JOIN halaqoh_anggota a ON s.id = a.santri_id 
-            JOIN halaqoh_grup g ON a.grup_id = g.id 
-            WHERE g.musyrif_id = $ustadz_id AND s.status_santri = 'Aktif'
-        ");
         if ($res_sb) {
             while ($r = $res_sb->fetch_assoc()) $santri_binaan_ids[] = $r['id'];
         }
