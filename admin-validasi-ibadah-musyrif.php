@@ -346,12 +346,7 @@ $active_menu = 'validasi_ibadah_musyrif';
                 </div>
 
                 <div class="mb-6">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600">Catatan Musyrif (Bimbingan / Solusi)</label>
-                        <button type="button" id="ai-suggestion-btn" onclick="getAISuggestion()" class="text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2 py-1 rounded-lg flex items-center gap-1.5 transition">
-                            <i class="fas fa-magic text-amber-600"></i> Tanya AI Syariah
-                        </button>
-                    </div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Catatan Musyrif (Bimbingan / Solusi)</label>
                     <textarea name="catatan_musyrif" id="modal_catatan_musyrif" rows="3" class="w-full px-4 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Tambahkan bimbingan, motivasi, atau solusi untuk santri..."></textarea>
                 </div>
 
@@ -389,44 +384,6 @@ $active_menu = 'validasi_ibadah_musyrif';
             document.getElementById('validasiModal').classList.add('hidden');
         }
 
-        let isFetchingAI = false;
-
-        function getAISuggestion() {
-            if (isFetchingAI) return;
-            const namaSantri = document.getElementById('modal_santri_nama').textContent;
-            const btn = document.getElementById('ai-suggestion-btn');
-            const textarea = document.getElementById('modal_catatan_musyrif');
-            
-            isFetchingAI = true;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin text-amber-600 mr-1.5"></i> Berpikir...';
-            btn.disabled = true;
-
-            fetch('api-gemini.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: `Kamu adalah konselor asrama/musyrif senior di Pondok Pesantren Tahfidz Al-Qur'an. Berikan saran bimbingan praktis, nasihat santun, dan penuh kasih sayang untuk memotivasi santri bernama ${namaSantri} yang sedang malas/kurang konsisten dalam beribadah shalat harian agar kembali bersemangat shalat jamaah. Sebutkan juga 1 referensi dalil (Al-Qur'an atau Hadits) yang relevan secara singkat. Jawab langsung secara santun dan ramah maksimal 100 kata.`
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    textarea.value = data.result;
-                } else {
-                    alert('Gagal mendapatkan respon AI: ' + data.message);
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Terjadi kesalahan koneksi ke server.');
-            })
-            .finally(() => {
-                isFetchingAI = false;
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            });
-        }
     </script>
 </body>
 </html>
