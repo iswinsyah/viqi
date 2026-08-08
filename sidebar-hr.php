@@ -112,70 +112,180 @@ function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) 
     return false;
 }
 
-// Definisikan struktur menu untuk iterasi
-$menu_structure = [
-    'Menu Utama' => [
-        'absensi_pegawai' => ['href' => 'admin-absensi-pegawai.php', 'icon' => 'fa-qrcode', 'title' => 'Absensi Kehadiran'],
-        'perizinan_pegawai' => ['href' => 'admin-pegawai-perizinan.php', 'icon' => 'fa-calendar-check', 'title' => 'Pengajuan Izin / Cuti'],
-        'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract', 'title' => 'Peraturan Pegawai'],
-        'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher', 'title' => 'KPI Pegawai'],
-        'kpi_kepsek' => ['href' => 'admin-kepsek-kpi.php', 'icon' => 'fa-chart-pie', 'title' => 'KPI Kepala Sekolah'],
-        'supervisi_mengajar' => ['href' => 'admin-supervisi-mengajar.php', 'icon' => 'fa-clipboard-check', 'title' => 'Supervisi Mengajar'],
-        'ganti_password' => ['href' => 'ganti-password-ustadz.php', 'icon' => 'fa-key', 'title' => 'Ganti Password'],
-    ],
-    'Administrasi' => [
-        'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user', 'title' => 'Buku Induk Santri'],
-        'santri_tidak_masuk' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash', 'title' => 'Daftar Santri Tidak Masuk'],
-        'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users', 'title' => 'Akun Orang Tua'],
-        'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader', 'title' => 'Leger Nilai Digital'],
-        'rapot_pkbm' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice', 'title' => 'Raport Diknas PKBM (B & C)'],
-        'counseling_karir' => ['href' => 'admin-counseling-karir.php', 'icon' => 'fa-graduation-cap', 'title' => 'Pemetaan Karir & PTN (AI)'],
-        'rekap_keuangan' => ['href' => 'admin-rekap-spp.php', 'icon' => 'fa-file-invoice-dollar', 'title' => 'Rekap Pembayaran Keuangan'],
-        'rekap_uang_saku' => ['href' => 'admin-rekap-uang-saku.php', 'icon' => 'fa-wallet', 'title' => 'Rekap Data Uang Saku'],
-        'sekolah_pembukuan' => ['href' => 'sekolah-pembukuan.php', 'icon' => 'fa-book', 'title' => 'Buku Kas Sekolah'],
-    ],
-    'Asatidz' => [
-        'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock', 'title' => 'Kesediaan Mengajar'],
-        'kalender_akademik' => ['href' => 'kalender-akademik.php', 'icon' => 'fa-calendar-alt', 'title' => 'Kalender Akademik'],
-        'jadwal_pelajaran' => ['href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fa-calendar-alt', 'title' => 'Jadwal Pelajaran'],
-        'santri_tidak_masuk_asatidz' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash', 'title' => 'Daftar Santri Tidak Masuk'],
-        'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader', 'title' => 'Master Silabus & CP'],
-        'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic', 'title' => 'AI Generator RPP'],
-        'jurnal_mengajar' => ['href' => 'admin-pegawai-jurnal.php', 'icon' => 'fa-book-open', 'title' => 'Jurnal Mengajar'],
-        'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt', 'title' => 'Bank Nilai (Input)'],
-        'master_kelas' => ['href' => 'admin-master-kelas.php', 'icon' => 'fa-school', 'title' => 'Master Kelas'],
-        'master_mapel' => ['href' => 'admin-master-mapel.php', 'icon' => 'fa-book', 'title' => 'Master Mapel'],
-        'kitab_rujukan' => ['href' => 'admin-kitab-rujukan.php', 'icon' => 'fa-book-open', 'title' => 'Master Kitab Rujukan'],
-    ],
-    'Asrama' => [
-        'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user', 'title' => 'Dashboard Asrama'],
-        'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group', 'title' => 'Manajemen Halaqoh'],
-        'laporan_setoran_rijal' => ['href' => 'admin-laporan-setoran-rijal.php', 'icon' => 'fa-mars', 'title' => 'Rekap Setoran Rijal'],
-        'laporan_setoran_nisa' => ['href' => 'admin-laporan-setoran-nisa.php', 'icon' => 'fa-venus', 'title' => 'Rekap Setoran Nisa'],
-        'rekap_ibadah_rijal' => ['href' => 'admin-ibadah-rijal.php', 'icon' => 'fa-mosque', 'title' => 'Rekap Ibadah Rijal'],
-        'rekap_ibadah_nisa' => ['href' => 'admin-ibadah-nisa.php', 'icon' => 'fa-kaaba', 'title' => 'Rekap Ibadah Nisa'],
-        'rekap_ibadah_mahad' => ['href' => 'admin-ibadah-mahad.php', 'icon' => 'fa-clipboard-check', 'title' => 'Rekap Ibadah Ma\'had'],
-    ],
-    'Musyrif' => [
-        'validasi_ibadah_musyrif' => ['href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fa-tasks', 'title' => 'Validasi Ibadah'],
-        'kontak_orangtua' => ['href' => 'admin-kontak-orangtua.php', 'icon' => 'fa-comments', 'title' => 'Kontak Walisantri'],
-        'cek_belajar_mandiri' => ['href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fa-book-reader', 'title' => 'Chek Belajar Mandiri'],
-        'cek_kesehatan_santri' => ['href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fa-notes-medical', 'title' => 'Chek Kesehatan'],
-        'rapot_pkbm_musyrif' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice', 'title' => 'Raport Diknas Santri Binaan'],
-        'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'title' => 'Buku Mutaba\'ah Santri'],
-        'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'title' => 'Laporan Kedisiplinan'],
-        'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt', 'title' => 'Setoran Hafalan'],
-        'kpi_musyrif' => ['href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fa-chart-line', 'title' => 'KPI Musyrif'],
-    ],
-    'Keuangan Santri' => [
-        'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet', 'title' => 'Rekap Uang Saku Santri'],
-    ],
-    'Solopreneur & AI' => [
-        'kurikulum_solopreneur_trainer' => ['href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fa-rocket', 'title' => 'Inkubator Solopreneur (AI)'],
-    ]
+// Definisikan urutan grup default agar urutannya konsisten
+$group_order = [
+    'Menu Utama' => 1,
+    'Administrasi' => 2,
+    'Asatidz' => 3,
+    'Asrama' => 4,
+    'Musyrif' => 5,
+    'Keuangan Santri' => 6,
+    'Solopreneur & AI' => 7
 ];
 
-// Apply custom menu labels dynamically
+$menu_structure = [];
+
+// Pastikan tabel menu_structure dibuat dan di-seed jika kosong (Self-Healing)
+$conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    menu_group VARCHAR(100) NOT NULL,
+    menu_key VARCHAR(100) UNIQUE NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    icon VARCHAR(100) NOT NULL,
+    href VARCHAR(255) NOT NULL
+)");
+
+// Cek apakah data sudah ada
+$res_cnt = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure");
+$count_struct = $res_cnt ? (int)$res_cnt->fetch_assoc()['cnt'] : 0;
+if ($count_struct === 0) {
+    // Seed data awal jika kosong
+    $default_structure = [
+        'Menu Utama' => [
+            'absensi_pegawai' => ['href' => 'admin-absensi-pegawai.php', 'icon' => 'fa-qrcode'],
+            'perizinan_pegawai' => ['href' => 'admin-pegawai-perizinan.php', 'icon' => 'fa-calendar-check'],
+            'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract'],
+            'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher'],
+            'kpi_kepsek' => ['href' => 'admin-kepsek-kpi.php', 'icon' => 'fa-chart-pie'],
+            'supervisi_mengajar' => ['href' => 'admin-supervisi-mengajar.php', 'icon' => 'fa-clipboard-check'],
+            'ganti_password' => ['href' => 'ganti-password-ustadz.php', 'icon' => 'fa-key'],
+        ],
+        'Administrasi' => [
+            'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user'],
+            'santri_tidak_masuk' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash'],
+            'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users'],
+            'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader'],
+            'rapot_pkbm' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice'],
+            'counseling_karir' => ['href' => 'admin-counseling-karir.php', 'icon' => 'fa-graduation-cap'],
+            'rekap_keuangan' => ['href' => 'admin-rekap-spp.php', 'icon' => 'fa-file-invoice-dollar'],
+            'rekap_uang_saku' => ['href' => 'admin-rekap-uang-saku.php', 'icon' => 'fa-wallet'],
+            'sekolah_pembukuan' => ['href' => 'sekolah-pembukuan.php', 'icon' => 'fa-book'],
+        ],
+        'Asatidz' => [
+            'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock'],
+            'kalender_akademik' => ['href' => 'kalender-akademik.php', 'icon' => 'fa-calendar-alt'],
+            'jadwal_pelajaran' => ['href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fa-calendar-alt'],
+            'santri_tidak_masuk_asatidz' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash'],
+            'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader'],
+            'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic'],
+            'jurnal_mengajar' => ['href' => 'admin-pegawai-jurnal.php', 'icon' => 'fa-book-open'],
+            'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt'],
+            'master_kelas' => ['href' => 'admin-master-kelas.php', 'icon' => 'fa-school'],
+            'master_mapel' => ['href' => 'admin-master-mapel.php', 'icon' => 'fa-book'],
+            'kitab_rujukan' => ['href' => 'admin-kitab-rujukan.php', 'icon' => 'fa-book-open'],
+        ],
+        'Asrama' => [
+            'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user'],
+            'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group'],
+            'laporan_setoran_rijal' => ['href' => 'admin-laporan-setoran-rijal.php', 'icon' => 'fa-mars'],
+            'laporan_setoran_nisa' => ['href' => 'admin-laporan-setoran-nisa.php', 'icon' => 'fa-venus'],
+            'rekap_ibadah_rijal' => ['href' => 'admin-ibadah-rijal.php', 'icon' => 'fa-mosque'],
+            'rekap_ibadah_nisa' => ['href' => 'admin-ibadah-nisa.php', 'icon' => 'fa-kaaba'],
+            'rekap_ibadah_mahad' => ['href' => 'admin-ibadah-mahad.php', 'icon' => 'fa-clipboard-check'],
+        ],
+        'Musyrif' => [
+            'validasi_ibadah_musyrif' => ['href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fa-tasks'],
+            'kontak_orangtua' => ['href' => 'admin-kontak-orangtua.php', 'icon' => 'fa-comments'],
+            'cek_belajar_mandiri' => ['href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fa-book-reader'],
+            'cek_kesehatan_santri' => ['href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fa-notes-medical'],
+            'rapot_pkbm_musyrif' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice'],
+            'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list'],
+            'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale'],
+            'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt'],
+            'kpi_musyrif' => ['href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fa-chart-line'],
+        ],
+        'Keuangan Santri' => [
+            'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet'],
+        ],
+        'Solopreneur & AI' => [
+            'kurikulum_solopreneur_trainer' => ['href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fa-rocket']
+        ]
+    ];
+    
+    $order = 0;
+    foreach ($default_structure as $group => $menus) {
+        foreach ($menus as $key => $meta) {
+            $href = $conn->real_escape_string($meta['href']);
+            $icon = $conn->real_escape_string($meta['icon']);
+            $conn->query("INSERT IGNORE INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('$group', '$key', $order, '$icon', '$href')");
+            $order++;
+        }
+    }
+}
+
+// Ambil struktur menu dari database
+$res_db_struct = $conn->query("SELECT * FROM menu_structure ORDER BY sort_order ASC");
+if ($res_db_struct) {
+    while ($row = $res_db_struct->fetch_assoc()) {
+        $group = $row['menu_group'];
+        $key = $row['menu_key'];
+        
+        $default_titles = [
+            'absensi_pegawai' => 'Absensi Kehadiran',
+            'perizinan_pegawai' => 'Pengajuan Izin / Cuti',
+            'peraturan_role' => 'Peraturan Pegawai',
+            'kpi_ustadz' => 'KPI Pegawai',
+            'kpi_kepsek' => 'KPI Kepala Sekolah',
+            'supervisi_mengajar' => 'Supervisi Mengajar',
+            'ganti_password' => 'Ganti Password',
+            'buku_induk' => 'Buku Induk Santri',
+            'santri_tidak_masuk' => 'Daftar Santri Tidak Masuk',
+            'akun_orangtua' => 'Akun Orang Tua',
+            'leger_nilai' => 'Leger Nilai Digital',
+            'rapot_pkbm' => 'Raport Diknas PKBM (B & C)',
+            'counseling_karir' => 'Pemetaan Karir & PTN (AI)',
+            'rekap_keuangan' => 'Rekap Pembayaran Keuangan',
+            'rekap_uang_saku' => 'Rekap Data Uang Saku',
+            'sekolah_pembukuan' => 'Buku Kas Sekolah',
+            'kesediaan_mengajar' => 'Kesediaan Mengajar',
+            'kalender_akademik' => 'Kalender Akademik',
+            'jadwal_pelajaran' => 'Jadwal Pelajaran',
+            'santri_tidak_masuk_asatidz' => 'Daftar Santri Tidak Masuk',
+            'master_silabus' => 'Master Silabus & CP',
+            'ai_rpp' => 'AI Generator RPP',
+            'jurnal_mengajar' => 'Jurnal Mengajar',
+            'bank_nilai' => 'Bank Nilai (Input)',
+            'master_kelas' => 'Master Kelas',
+            'master_mapel' => 'Master Mapel',
+            'kitab_rujukan' => 'Master Kitab Rujukan',
+            'dashboard_asrama' => 'Dashboard Asrama',
+            'manajemen_halaqoh' => 'Manajemen Halaqoh',
+            'laporan_setoran_rijal' => 'Rekap Setoran Rijal',
+            'laporan_setoran_nisa' => 'Rekap Setoran Nisa',
+            'rekap_ibadah_rijal' => 'Rekap Ibadah Rijal',
+            'rekap_ibadah_nisa' => 'Rekap Ibadah Nisa',
+            'rekap_ibadah_mahad' => 'Rekap Ibadah Ma\'had',
+            'validasi_ibadah_musyrif' => 'Validasi Ibadah',
+            'kontak_orangtua' => 'Kontak Walisantri',
+            'cek_belajar_mandiri' => 'Chek Belajar Mandiri',
+            'cek_kesehatan_santri' => 'Chek Kesehatan',
+            'rapot_pkbm_musyrif' => 'Raport Diknas Santri Binaan',
+            'mutabaah' => 'Buku Mutaba\'ah Santri',
+            'laporan_adab' => 'Laporan Kedisiplinan',
+            'laporan_setoran_hafalan' => 'Setoran Hafalan',
+            'kpi_musyrif' => 'KPI Musyrif',
+            'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
+            'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)'
+        ];
+        
+        $title = $default_titles[$key] ?? ucwords(str_replace('_', ' ', $key));
+        
+        $menu_structure[$group][$key] = [
+            'href' => $row['href'],
+            'icon' => $row['icon'],
+            'title' => $title
+        ];
+    }
+}
+
+// Urutkan grup sesuai $group_order
+uksort($menu_structure, function($a, $b) use ($group_order) {
+    $order_a = $group_order[$a] ?? 99;
+    $order_b = $group_order[$b] ?? 99;
+    return $order_a <=> $order_b;
+});
+
+// Terapkan label kustom secara dinamis
 foreach ($menu_structure as $group_title => &$menus) {
     foreach ($menus as $key => &$menu) {
         if (isset($custom_menu_labels[$key])) {
@@ -183,7 +293,7 @@ foreach ($menu_structure as $group_title => &$menus) {
         }
     }
 }
-unset($menu); // Clean reference
+unset($menu); // Bersihkan referensi
 
 ?>
 <!-- SIDEBAR OVERLAY -->
