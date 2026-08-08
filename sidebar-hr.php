@@ -9,6 +9,9 @@ global $conn;
 // Ambil role user dari database secara realtime agar perubahan langsung berefek tanpa logout-login
 $user_roles = [];
 if (isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
+    // Self-healing icon for buku_induk
+    @$conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
+    
     $ustadz_id = (int)$_SESSION['ustadz_id'];
     if ($ustadz_id === 9999) {
         $user_roles = ['super_admin'];

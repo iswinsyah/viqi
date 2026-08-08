@@ -15,6 +15,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
 
 // Cek dan seed jika kosong
 $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal_mengajar', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+$conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
 
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
@@ -48,7 +49,7 @@ if ($count_struct === 0) {
             'akunku' => ['href' => 'akunku.php', 'icon' => 'fa-user-cog'],
         ],
         'Administrasi' => [
-            'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user'],
+            'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-address-book'],
             'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users'],
             'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader'],
             'rapot_pkbm' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice'],
