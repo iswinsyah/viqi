@@ -87,12 +87,20 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
     ];
 }
 
-// Ambil daftar mapel dari Master Mapel (Ruang Yayasan)
-$daftar_mapel = [];
-$res_mapel = $conn->query("SELECT nama_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
-if ($res_mapel && $res_mapel->num_rows > 0) {
-    while($row = $res_mapel->fetch_assoc()) {
-        $daftar_mapel[] = $row['nama_mapel'];
+// Query santri tidak masuk hari ini
+$daftar_santri_tidak_masuk_hari_ini = [];
+$query_santri_absen = "
+    SELECT k.*, s.nama_lengkap, s.nis, s.kelas_sekarang, s.kamar_asrama, s.jenis_kelamin, u.nama as nama_musyrif, u.no_whatsapp 
+    FROM jurnal_kesehatan_santri k 
+    JOIN buku_induk_santri s ON k.santri_id = s.id 
+    LEFT JOIN akun_ustadz u ON k.ustadz_id = u.id 
+    WHERE k.tanggal = '$today' 
+    ORDER BY s.kelas_sekarang ASC, s.nama_lengkap ASC
+";
+$res_santri_absen = $conn->query($query_santri_absen);
+if ($res_santri_absen) {
+    while ($r = $res_santri_absen->fetch_assoc()) {
+        $daftar_santri_tidak_masuk_hari_ini[] = $r;
     }
 }
 
@@ -591,6 +599,67 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                 ?>
                                     <tr>
                                         <td colspan="5" class="px-3 py-4 text-center text-gray-400 italic">Belum ada riwayat jurnal mengajar.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 3. DAFTAR SANTRI TIDAK MASUK HARI INI -->
+                <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 text-left">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b pb-2">
+                        <i class="fas fa-user-slash text-rose-600"></i> Daftar Santri Tidak Masuk Sekolah Hari Ini
+                    </h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-150 text-xs">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500">
+                                    <th class="px-3 py-2 text-center font-bold w-10">No</th>
+                                    <th class="px-3 py-2 text-left font-bold">Nama Santri</th>
+                                    <th class="px-3 py-2 text-left font-bold">Kelas & Kamar</th>
+                                    <th class="px-3 py-2 text-left font-bold">Keluhan Sakit</th>
+                                    <th class="px-3 py-2 text-left font-bold">Musyrif PJ</th>
+                                    <th class="px-3 py-2 text-center font-bold">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <?php if (!empty($daftar_santri_tidak_masuk_hari_ini)): ?>
+                                    <?php $no = 1; foreach ($daftar_santri_tidak_masuk_hari_ini as $st): ?>
+                                        <tr class="hover:bg-slate-50/55 transition">
+                                            <td class="px-3 py-3 text-center font-bold text-slate-500"><?= $no++ ?></td>
+                                            <td class="px-3 py-3">
+                                                <span class="font-bold text-slate-800 block"><?= htmlspecialchars($st['nama_lengkap']) ?></span>
+                                                <span class="text-gray-500 text-[10px]"><?= htmlspecialchars($st['jenis_kelamin'] === 'Laki-laki' ? 'Laki-laki' : 'Perempuan') ?></span>
+                                            </td>
+                                            <td class="px-3 py-3 font-semibold text-slate-800">
+                                                <div>Kelas: <span class="text-rose-800 font-bold"><?= htmlspecialchars($st['kelas_sekarang']) ?></span></div>
+                                                <div class="text-[10px] text-gray-500">Kamar: <?= htmlspecialchars($st['kamar_asrama'] ?? 'Asrama') ?></div>
+                                            </td>
+                                            <td class="px-3 py-3">
+                                                <div class="font-bold text-rose-800"><?= htmlspecialchars($st['gejala_keluhan']) ?></div>
+                                                <div class="text-[10px] text-amber-700 font-medium"><?= htmlspecialchars($st['status_kesehatan']) ?></div>
+                                            </td>
+                                            <td class="px-3 py-3 font-semibold text-slate-700">
+                                                <div><?= htmlspecialchars($st['nama_musyrif'] ?? 'Musyrif') ?></div>
+                                                <?php if (!empty($st['no_whatsapp'])): ?>
+                                                    <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $st['no_whatsapp']) ?>" target="_blank" class="text-[10px] text-emerald-600 font-bold hover:underline flex items-center gap-0.5 mt-0.5">
+                                                        <i class="fab fa-whatsapp"></i> WA Musyrif
+                                                    </a>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td class="px-3 py-3 text-center whitespace-nowrap">
+                                                <a href="admin-cek-kesehatan-santri.php?print_surat_id=<?= $st['id'] ?>" target="_blank" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[10px] transition inline-flex items-center gap-1 shadow-sm">
+                                                    <i class="fas fa-file-invoice text-[10px]"></i>
+                                                    <span>Surat Sakit</span>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="6" class="px-3 py-4 text-center text-gray-400 italic">Alhamdulillah, tidak ada catatan santri sakit/izin tidak masuk hari ini.</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>

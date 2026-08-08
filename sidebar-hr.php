@@ -135,8 +135,8 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
     href VARCHAR(255) NOT NULL
 )");
 
-// Pembersihan paksa untuk penggabungan menu KPI & Akunku serta Jurnal Mengajar
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal_mengajar')");
+// Pembersihan paksa untuk penggabungan menu KPI, Akunku, Jurnal Mengajar & Santri Tidak Masuk
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal_mengajar', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
 
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
@@ -173,7 +173,6 @@ if ($count_struct === 0) {
         ],
         'Administrasi' => [
             'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user'],
-            'santri_tidak_masuk' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash'],
             'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users'],
             'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader'],
             'rapot_pkbm' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice'],
@@ -186,7 +185,6 @@ if ($count_struct === 0) {
             'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock'],
             'kalender_akademik' => ['href' => 'kalender-akademik.php', 'icon' => 'fa-calendar-alt'],
             'jadwal_pelajaran' => ['href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fa-calendar-alt'],
-            'santri_tidak_masuk_asatidz' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash'],
             'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader'],
             'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic'],
             'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt'],
@@ -249,7 +247,6 @@ if ($res_db_struct) {
             'jadwal_rapat' => 'Jadwal Rapat',
             'akunku' => 'Akunku',
             'buku_induk' => 'Buku Induk Santri',
-            'santri_tidak_masuk' => 'Daftar Santri Tidak Masuk',
             'akun_orangtua' => 'Akun Orang Tua',
             'leger_nilai' => 'Leger Nilai Digital',
             'rapot_pkbm' => 'Raport Diknas PKBM (B & C)',
@@ -260,7 +257,6 @@ if ($res_db_struct) {
             'kesediaan_mengajar' => 'Kesediaan Mengajar',
             'kalender_akademik' => 'Kalender Akademik',
             'jadwal_pelajaran' => 'Jadwal Pelajaran',
-            'santri_tidak_masuk_asatidz' => 'Daftar Santri Tidak Masuk',
             'master_silabus' => 'Master Silabus & CP',
             'ai_rpp' => 'AI Generator RPP',
             'bank_nilai' => 'Bank Nilai (Input)',
