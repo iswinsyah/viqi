@@ -135,8 +135,8 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
     href VARCHAR(255) NOT NULL
 )");
 
-// Pembersihan paksa untuk penggabungan menu KPI
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif')");
+// Pembersihan paksa untuk penggabungan menu KPI & Akunku
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password')");
 
 // Cek apakah data sudah ada
 $res_cnt = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure");
@@ -150,7 +150,7 @@ if ($count_struct === 0) {
             'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract'],
             'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher'],
             'supervisi_mengajar' => ['href' => 'admin-supervisi-mengajar.php', 'icon' => 'fa-clipboard-check'],
-            'ganti_password' => ['href' => 'ganti-password-ustadz.php', 'icon' => 'fa-key'],
+            'akunku' => ['href' => 'akunku.php', 'icon' => 'fa-user-cog'],
         ],
         'Administrasi' => [
             'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user'],
@@ -228,7 +228,7 @@ if ($res_db_struct) {
             'kpi_ustadz' => 'KPI Pegawai',
             'kpi_kepsek' => 'KPI Kepala Sekolah',
             'supervisi_mengajar' => 'Supervisi Mengajar',
-            'ganti_password' => 'Ganti Password',
+            'akunku' => 'Akunku',
             'buku_induk' => 'Buku Induk Santri',
             'santri_tidak_masuk' => 'Daftar Santri Tidak Masuk',
             'akun_orangtua' => 'Akun Orang Tua',
