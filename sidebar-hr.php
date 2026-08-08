@@ -8,7 +8,7 @@ global $conn;
 
 // Ambil role user dari database secara realtime agar perubahan langsung berefek tanpa logout-login
 $user_roles = [];
-if (isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
+if (isset($conn) && $conn) {
     // Self-healing icon for buku_induk
     @$conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
     
@@ -30,7 +30,9 @@ if (isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
         $new_ord = $max_ord + 1;
         $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'rekap_setoran_santri', $new_ord, 'fa-file-alt', 'admin-laporan-setoran-hafalan.php')");
     }
-    
+}
+
+if (isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
     $ustadz_id = (int)$_SESSION['ustadz_id'];
     if ($ustadz_id === 9999) {
         $user_roles = ['super_admin'];
@@ -213,11 +215,7 @@ if ($count_struct === 0) {
         'Asrama' => [
             'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user'],
             'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group'],
-            'laporan_setoran_rijal' => ['href' => 'admin-laporan-setoran-rijal.php', 'icon' => 'fa-mars'],
-            'laporan_setoran_nisa' => ['href' => 'admin-laporan-setoran-nisa.php', 'icon' => 'fa-venus'],
-            'rekap_ibadah_rijal' => ['href' => 'admin-ibadah-rijal.php', 'icon' => 'fa-mosque'],
-            'rekap_ibadah_nisa' => ['href' => 'admin-ibadah-nisa.php', 'icon' => 'fa-kaaba'],
-            'rekap_ibadah_mahad' => ['href' => 'admin-ibadah-mahad.php', 'icon' => 'fa-clipboard-check'],
+            'rekap_ibadah_santri' => ['href' => 'admin-ibadah-santri.php', 'icon' => 'fa-mosque'],
         ],
         'Musyrif' => [
             'validasi_ibadah_musyrif' => ['href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fa-tasks'],
@@ -227,7 +225,7 @@ if ($count_struct === 0) {
             'rapot_pkbm_musyrif' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice'],
             'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list'],
             'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale'],
-            'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt'],
+            'rekap_setoran_santri' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt'],
         ],
         'Keuangan Santri' => [
             'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet'],
