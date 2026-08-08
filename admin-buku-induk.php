@@ -349,6 +349,14 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php
+                            $user_roles_check = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+                            $is_authorized_to_impersonate = (
+                                (isset($_SESSION['ustadz_id']) && (int)$_SESSION['ustadz_id'] === 9999) ||
+                                (isset($_SESSION['yayasan_logged_in']) && $_SESSION['yayasan_logged_in'] === true) ||
+                                (isset($_SESSION['yayasan2_logged_in']) && $_SESSION['yayasan2_logged_in'] === true) ||
+                                in_array('super_admin', $user_roles_check)
+                            );
+
                             $res = $conn->query("
                                 SELECT b.*, 
                                     GROUP_CONCAT(DISTINCT o.nama_orangtua SEPARATOR ', ') as daftar_ortu
@@ -393,6 +401,9 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
                                     </td>
                                     <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-bold rounded-full <?= $badge_color ?>"><?= htmlspecialchars($row['status_santri'] ?? '') ?></span></td>
                                     <td class="px-4 py-3 text-center">
+                                        <?php if ($is_authorized_to_impersonate): ?>
+                                            <a href="login-as-santri.php?id=<?= $row['id'] ?>" target="_blank" class="text-emerald-600 hover:text-emerald-800 mr-3" title="Login Sebagai Santri"><i class="fas fa-sign-in-alt"></i></a>
+                                        <?php endif; ?>
                                         <a href="?edit_id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
                                         <a href="?hapus_id=<?= $row['id'] ?>" onclick="return confirm('Hapus data santri ini?')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></a>
                                     </td>

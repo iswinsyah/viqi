@@ -20,6 +20,11 @@ if (isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === tr
     unset($_SESSION['impersonator_yayasan_logged']);
     unset($_SESSION['impersonator_yayasan2_logged']);
 
+    // Bersihkan sesi santri jika ada
+    unset($_SESSION['santri_logged_in']);
+    unset($_SESSION['santri_id']);
+    unset($_SESSION['santri_nama']);
+
     $redirect_url = 'yayasan2/login-as.php';
     if (isset($_SESSION['impersonator_from']) && !empty($_SESSION['impersonator_from'])) {
         $redirect_url = $_SESSION['impersonator_from'];
