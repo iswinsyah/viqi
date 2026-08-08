@@ -163,8 +163,6 @@ $menu_structure = [
         'cek_kesehatan_santri' => ['href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fa-notes-medical', 'title' => 'Chek Kesehatan'],
         'rapot_pkbm_musyrif' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice', 'title' => 'Raport Diknas Santri Binaan'],
         'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'title' => 'Buku Mutaba\'ah Santri'],
-        'jurnal_pagi_musyrif' => ['href' => 'admin-jurnal-pagi-musyrif.php', 'icon' => 'fa-sun', 'title' => 'Jurnal Piket Pagi (07.00-13.00)'],
-        'jurnal_musyrif' => ['href' => 'admin-pegawai-jurnal-musyrif.php', 'icon' => 'fa-user-shield', 'title' => 'Jurnal Kegiatan Musyrif'],
         'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'title' => 'Laporan Kedisiplinan'],
         'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt', 'title' => 'Setoran Hafalan'],
         'kpi_musyrif' => ['href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fa-chart-line', 'title' => 'KPI Musyrif'],
