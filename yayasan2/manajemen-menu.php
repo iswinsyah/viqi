@@ -34,6 +34,14 @@ if ($res_chk_set && $res_chk_set->num_rows === 0) {
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'rekap_setoran_santri', $new_ord, 'fa-file-alt', 'admin-laporan-setoran-hafalan.php')");
 }
 
+$res_chk_setin = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'setoran_hafalan_santri'");
+if ($res_chk_setin && $res_chk_setin->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'setoran_hafalan_santri', $new_ord, 'fa-quran', 'admin-setoran-hafalan-santri.php')");
+}
+
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
 if ($res_chk_akunku && $res_chk_akunku->num_rows === 0) {
@@ -99,6 +107,7 @@ if ($count_struct === 0) {
             'rapot_pkbm_musyrif' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice'],
             'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list'],
             'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale'],
+            'setoran_hafalan_santri' => ['href' => 'admin-setoran-hafalan-santri.php', 'icon' => 'fa-quran'],
             'rekap_setoran_santri' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt'],
         ],
         'Keuangan Santri' => [
@@ -157,6 +166,7 @@ if ($res_db_menus) {
             'dashboard_asrama' => 'Dashboard Asrama',
             'manajemen_halaqoh' => 'Manajemen Halaqoh',
             'rekap_ibadah_santri' => 'Rekap Ibadah Santri',
+            'setoran_hafalan_santri' => 'Setoran Hafalan Santri',
             'rekap_setoran_santri' => 'Rekap Setoran Santri',
             'validasi_ibadah_musyrif' => 'Validasi Ibadah',
             'kontak_orangtua' => 'Kontak Walisantri',

@@ -56,27 +56,7 @@ if (isset($_GET['status']) && $_GET['status'] === 'deleted') {
     $message = '<div class="bg-rose-50 border-l-4 border-rose-500 text-rose-800 p-4 rounded-r-xl shadow-sm mb-6 flex items-center justify-between"><div class="flex items-center"><i class="fas fa-trash-alt mr-3 text-lg text-rose-500"></i><span>Data setoran hafalan berhasil dihapus.</span></div><button onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600"><i class="fas fa-times"></i></button></div>';
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit'])) {
-    $nama_santri = $conn->real_escape_string($_POST['nama_santri'] ?? '');
-    $nama_surat = $conn->real_escape_string($_POST['nama_surat'] ?? '');
-    $ayat_mulai = (int)($_POST['ayat_mulai'] ?? 0);
-    $ayat_sampai = (int)($_POST['ayat_sampai'] ?? 0);
-    $halaman = $conn->real_escape_string($_POST['halaman'] ?? '');
-    $juz = (int)($_POST['juz'] ?? 0);
-    $grade = $conn->real_escape_string($_POST['grade'] ?? '');
-
-    // Lookup santri_id from buku_induk_santri
-    $res_sid = $conn->query("SELECT id FROM buku_induk_santri WHERE nama_lengkap = '$nama_santri' LIMIT 1");
-    $santri_id_val = ($res_sid && $res_sid->num_rows > 0) ? (int)$res_sid->fetch_assoc()['id'] : "NULL";
-
-    $sql = "INSERT INTO laporan_setoran_hafalan (santri_id, nama_santri, nama_surat, ayat_mulai, ayat_sampai, halaman, juz, grade)
-            VALUES ($santri_id_val, '$nama_santri', '$nama_surat', $ayat_mulai, $ayat_sampai, '$halaman', $juz, '$grade')";
-    if ($conn->query($sql) === TRUE) {
-        $message = '<div class="bg-emerald-50 border-l-4 border-emerald-500 text-emerald-800 p-4 rounded-r-xl shadow-sm mb-6 flex items-center justify-between"><div class="flex items-center"><i class="fas fa-check-circle mr-3 text-lg text-emerald-500"></i><span>Laporan setoran hafalan <b>' . htmlspecialchars($nama_santri) . '</b> berhasil disimpan!</span></div><button onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-600"><i class="fas fa-times"></i></button></div>';
-    } else {
-        $message = '<div class="bg-rose-50 border-l-4 border-rose-500 text-rose-800 p-4 rounded-r-xl shadow-sm mb-6 flex items-center justify-between"><div class="flex items-center"><i class="fas fa-exclamation-triangle mr-3 text-lg text-rose-500"></i><span>Gagal menyimpan data: ' . htmlspecialchars($conn->error) . '</span></div><button onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-600"><i class="fas fa-times"></i></button></div>';
-    }
-}
+// POST handler removed (moved to admin-setoran-hafalan-santri.php)
 
 // Fetch stats
 $total_setoran = 0;
@@ -246,9 +226,15 @@ $active_menu = 'rekap_setoran_santri';
                         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-200">
                             <i class="fas fa-quran text-lg"></i>
                         </div>
-                        <span>Laporan Setoran Hafalan Santri</span>
+                        <span>Rekap Setoran Hafalan Santri</span>
                     </h1>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Pencatatan dan Pemantauan Kinerja Setoran Hafalan Al-Qur'an Santri Binaan Musyrif</p>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Pemantauan Kinerja Setoran Hafalan Al-Qur'an Seluruh Santri</p>
+                </div>
+                <div>
+                    <a href="admin-setoran-hafalan-santri.php" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-md shadow-emerald-200 transition">
+                        <i class="fas fa-plus"></i>
+                        <span>Input Setoran Baru</span>
+                    </a>
                 </div>
             </div>
 
@@ -287,136 +273,6 @@ $active_menu = 'rekap_setoran_santri';
 
             <!-- NOTIFICATION MESSAGE -->
             <?= $message ?>
-
-            <!-- FORM CARD -->
-            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden mb-8">
-                <div class="px-6 py-4 bg-gradient-to-r from-emerald-800 to-teal-700 text-white flex flex-wrap items-center justify-between gap-2">
-                    <h2 class="font-bold text-base flex items-center gap-2">
-                        <i class="fas fa-plus-circle text-emerald-300"></i>
-                        <span>Input Setoran Hafalan Baru</span>
-                    </h2>
-                    <?php if ($is_super_admin): ?>
-                        <span class="text-xs bg-purple-900/80 border border-purple-400/40 px-3 py-1 rounded-full text-purple-200 font-semibold">
-                            <i class="fas fa-user-shield mr-1"></i>Super Admin (Seluruh Santri)
-                        </span>
-                    <?php elseif (!empty($nama_halaqoh_user)): ?>
-                        <span class="text-xs bg-emerald-900/80 border border-emerald-400/40 px-3 py-1 rounded-full text-emerald-200 font-semibold">
-                            <i class="fas fa-layer-group mr-1"></i>Halaqoh: <?= htmlspecialchars(implode(', ', $nama_halaqoh_user)) ?>
-                        </span>
-                    <?php else: ?>
-                        <span class="text-xs bg-amber-900/80 border border-amber-400/40 px-3 py-1 rounded-full text-amber-200 font-semibold">
-                            <i class="fas fa-info-circle mr-1"></i>Menampilkan Seluruh Santri (Belum Ada Halaqoh)
-                        </span>
-                    <?php endif; ?>
-                </div>
-
-                <form method="POST" class="p-6">
-
-                    <datalist id="surah_list">
-                        <?php foreach($surah_list as $s): ?>
-                            <option value="<?= htmlspecialchars($s) ?>"></option>
-                        <?php endforeach; ?>
-                    </datalist>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <!-- NAMA SANTRI (BINAAN MUSYRIF HALAQOH) -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                                <i class="fas fa-user-graduate text-emerald-600 mr-1.5"></i>Nama Santri Binaan <span class="text-rose-500">*</span>
-                            </label>
-                            <select name="nama_santri" required 
-                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition">
-                                <option value="">-- Pilih Santri Binaan --</option>
-                                <?php if (!empty($santri_binaan)): ?>
-                                    <?php foreach ($santri_binaan as $sb): ?>
-                                        <option value="<?= htmlspecialchars($sb['nama_lengkap']) ?>">
-                                            <?= htmlspecialchars($sb['nama_lengkap']) ?> <?= !empty($sb['nama_grup']) ? '('.htmlspecialchars($sb['nama_grup']).')' : '' ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </select>
-                            <p class="text-[11px] text-slate-400 mt-1">Daftar santri sesuai pembagian Manajemen Halaqoh oleh Kepala Asrama.</p>
-                        </div>
-
-                        <!-- NAMA SURAT -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                                <i class="fas fa-book-quran text-emerald-600 mr-1.5"></i>Nama Surat <span class="text-rose-500">*</span>
-                            </label>
-                            <input type="text" name="nama_surat" list="surah_list" required 
-                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition placeholder-slate-400" 
-                                placeholder="Contoh: Al-Baqarah, An-Naba', dll...">
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-                        <!-- MULAI AYAT -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                                Mulai Ayat <span class="text-rose-500">*</span>
-                            </label>
-                            <div class="relative">
-                                <input type="number" name="ayat_mulai" min="1" required 
-                                    class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition" 
-                                    placeholder="1">
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-xs text-slate-400">Ayat</div>
-                            </div>
-                        </div>
-
-                        <!-- SAMPAI AYAT -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                                Sampai Ayat <span class="text-rose-500">*</span>
-                            </label>
-                            <div class="relative">
-                                <input type="number" name="ayat_sampai" min="1" required 
-                                    class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition" 
-                                    placeholder="10">
-                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-xs text-slate-400">Ayat</div>
-                            </div>
-                        </div>
-
-                        <!-- HALAMAN -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                                Halaman
-                            </label>
-                            <input type="text" name="halaman" 
-                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition placeholder-slate-400" 
-                                placeholder="Contoh: 12 atau Hlm 1-2">
-                        </div>
-
-                        <!-- JUZ KE -->
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                                Juz ke-
-                            </label>
-                            <input type="number" name="juz" min="1" max="30" 
-                                class="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition placeholder-slate-400" 
-                                placeholder="1 - 30">
-                        </div>
-                    </div>
-
-                    <div class="mb-6">
-                        <!-- GRADE -->
-                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                            <i class="fas fa-star text-amber-500 mr-1.5"></i>Grade / Kualitas Hafalan
-                        </label>
-                        <select name="grade" required class="w-full md:w-1/2 px-4 py-2.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-slate-50/50 transition">
-                            <option value="Mutqin">1. Mutqin (Benar-benar Hafal)</option>
-                            <option value="Ziyadah">2. Ziyadah (Hafal)</option>
-                            <option value="Aslaha">3. Aslaha (Wajib Diperbaiki)</option>
-                        </select>
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-100 text-right">
-                        <button type="submit" name="submit" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-emerald-200 transition-all duration-200 transform hover:-translate-y-0.5">
-                            <i class="fas fa-paper-plane"></i>
-                            <span>Simpan Laporan Setoran</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
 
             <!-- HISTORY DATA TABLE -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
