@@ -14,6 +14,8 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
 )");
 
 // Cek dan seed jika kosong
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif')");
+
 $res_cnt = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure");
 $count_struct = $res_cnt ? (int)$res_cnt->fetch_assoc()['cnt'] : 0;
 if ($count_struct === 0) {
@@ -23,7 +25,6 @@ if ($count_struct === 0) {
             'perizinan_pegawai' => ['href' => 'admin-pegawai-perizinan.php', 'icon' => 'fa-calendar-check'],
             'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract'],
             'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher'],
-            'kpi_kepsek' => ['href' => 'admin-kepsek-kpi.php', 'icon' => 'fa-chart-pie'],
             'supervisi_mengajar' => ['href' => 'admin-supervisi-mengajar.php', 'icon' => 'fa-clipboard-check'],
             'ganti_password' => ['href' => 'ganti-password-ustadz.php', 'icon' => 'fa-key'],
         ],
@@ -69,7 +70,6 @@ if ($count_struct === 0) {
             'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list'],
             'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale'],
             'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt'],
-            'kpi_musyrif' => ['href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fa-chart-line'],
         ],
         'Keuangan Santri' => [
             'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet'],
