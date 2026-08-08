@@ -102,6 +102,7 @@ if ($res_santri_absen) {
     while ($r = $res_santri_absen->fetch_assoc()) {
         $daftar_santri_tidak_masuk_hari_ini[] = $r;
     }
+}
 // Query update aplikasi terbaru
 $res_latest_update = $conn->query("SELECT * FROM app_updates ORDER BY created_at DESC LIMIT 1");
 $latest_update = $res_latest_update ? $res_latest_update->fetch_assoc() : null;
