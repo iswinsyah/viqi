@@ -102,7 +102,9 @@ if ($res_santri_absen) {
     while ($r = $res_santri_absen->fetch_assoc()) {
         $daftar_santri_tidak_masuk_hari_ini[] = $r;
     }
-}
+// Query update aplikasi terbaru
+$res_latest_update = $conn->query("SELECT * FROM app_updates ORDER BY created_at DESC LIMIT 1");
+$latest_update = $res_latest_update ? $res_latest_update->fetch_assoc() : null;
 
 // D. Cek absensi pegawai (harian kerja) hari ini
 $res_pegawai = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
@@ -332,6 +334,43 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                     <i class="fas fa-circle-exclamation mr-2 text-lg flex-shrink-0"></i> 
                     <span>Gagal: Anda tidak memiliki wewenang untuk membuat rapat dengan pengundang tersebut.</span>
                 </div>
+            <?php endif; ?>
+
+            <?php if ($latest_update): ?>
+                <!-- BANNER UPDATE APLIKASI -->
+                <div id="app-update-banner" class="hidden bg-gradient-to-r from-red-500 to-rose-600 rounded-2xl shadow-md p-5 mb-6 max-w-4xl mx-auto text-white relative transition-all duration-350">
+                    <div class="flex items-start gap-4 pr-8 text-left">
+                        <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl flex-shrink-0">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="bg-white/30 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full tracking-wider">Update Fitur Baru</span>
+                                <span class="text-[10px] text-white/80 font-mono"><?= date('d F Y', strtotime($latest_update['created_at'])) ?></span>
+                            </div>
+                            <h3 class="font-bold text-sm sm:text-base mt-1.5"><?= htmlspecialchars($latest_update['judul']) ?></h3>
+                            <p class="text-xs text-white/90 mt-1 leading-relaxed whitespace-pre-wrap"><?= htmlspecialchars($latest_update['konten']) ?></p>
+                        </div>
+                    </div>
+                    <button onclick="dismissUpdateBanner(<?= $latest_update['id'] ?>)" class="absolute top-4 right-4 text-white/70 hover:text-white hover:bg-white/10 w-8 h-8 rounded-full flex items-center justify-center transition" title="Tutup & Jangan tampilkan lagi">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+
+                <script>
+                    document.addEventListener("DOMContentLoaded", function() {
+                        const latestUpdateId = <?= $latest_update['id'] ?>;
+                        const dismissedId = localStorage.getItem('dismissed_update_id');
+                        if (dismissedId !== String(latestUpdateId)) {
+                            document.getElementById('app-update-banner').classList.remove('hidden');
+                        }
+                    });
+
+                    function dismissUpdateBanner(id) {
+                        localStorage.setItem('dismissed_update_id', String(id));
+                        document.getElementById('app-update-banner').classList.add('hidden');
+                    }
+                </script>
             <?php endif; ?>
 
             <!-- Tampilan Status GPS (Global) -->
