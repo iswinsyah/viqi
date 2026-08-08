@@ -13,6 +13,89 @@ if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
     }
 }
 
+// --- Jurnal Mengajar Table Initialization ---
+$conn->query("CREATE TABLE IF NOT EXISTS jurnal_mengajar (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    ustadz_id INT NULL,
+    tanggal DATE,
+    kelas VARCHAR(50),
+    mata_pelajaran VARCHAR(100),
+    materi TEXT,
+    absensi TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+@$conn->query("ALTER TABLE jurnal_mengajar ADD COLUMN ustadz_id INT NULL AFTER id");
+
+// --- Handler Hapus Jurnal ---
+if (isset($_GET['hapus_jurnal_id'])) {
+    $id = (int)$_GET['hapus_jurnal_id'];
+    $conn->query("DELETE FROM jurnal_mengajar WHERE id = $id AND ustadz_id = $ustadz_id");
+    header("Location: admin-absensi-pegawai.php?sukses_jurnal=deleted");
+    exit;
+}
+
+// --- Handler Simpan / Update Jurnal ---
+$pesan_jurnal_sukses = "";
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] === 'simpan_jurnal') {
+    $id = !empty($_POST['jurnal_id']) ? (int)$_POST['jurnal_id'] : 0;
+    $tanggal = $conn->real_escape_string($_POST['tanggal']);
+    $kelas = $conn->real_escape_string($_POST['kelas']);
+    $mata_pelajaran = $conn->real_escape_string($_POST['mata_pelajaran']);
+    $materi = $conn->real_escape_string($_POST['materi']);
+    $absensi_notes = $conn->real_escape_string($_POST['absensi_notes']);
+
+    if ($id > 0) {
+        $sql = "UPDATE jurnal_mengajar SET tanggal='$tanggal', kelas='$kelas', mata_pelajaran='$mata_pelajaran', materi='$materi', absensi='$absensi_notes' WHERE id=$id AND ustadz_id=$ustadz_id";
+        $conn->query($sql);
+        header("Location: admin-absensi-pegawai.php?sukses_jurnal=updated");
+        exit;
+    } else {
+        $sql = "INSERT INTO jurnal_mengajar (ustadz_id, tanggal, kelas, mata_pelajaran, materi, absensi) VALUES ($ustadz_id, '$tanggal', '$kelas', '$mata_pelajaran', '$materi', '$absensi_notes')";
+        $conn->query($sql);
+        header("Location: admin-absensi-pegawai.php?sukses_jurnal=created");
+        exit;
+    }
+}
+
+$edit_jurnal_mode = false;
+$jurnal_edit_data = null;
+if (isset($_GET['edit_jurnal_id'])) {
+    $edit_jurnal_mode = true;
+    $id = (int)$_GET['edit_jurnal_id'];
+    $res = $conn->query("SELECT * FROM jurnal_mengajar WHERE id = $id AND ustadz_id = $ustadz_id");
+    if ($res) $jurnal_edit_data = $res->fetch_assoc();
+}
+
+if (isset($_GET['sukses_jurnal'])) {
+    if ($_GET['sukses_jurnal'] === 'created') $pesan_jurnal_sukses = "Jurnal baru berhasil disimpan!";
+    elseif ($_GET['sukses_jurnal'] === 'updated') $pesan_jurnal_sukses = "Jurnal berhasil diupdate!";
+    elseif ($_GET['sukses_jurnal'] === 'deleted') $pesan_jurnal_sukses = "Jurnal berhasil dihapus!";
+}
+
+// Ambil daftar kelas dari Master Kelas (Ruang Yayasan)
+$daftar_kelas = [];
+$res_kelas = $conn->query("SELECT nama_kelas FROM master_kelas ORDER BY nama_kelas ASC");
+if ($res_kelas && $res_kelas->num_rows > 0) {
+    while($row = $res_kelas->fetch_assoc()) {
+        $daftar_kelas[] = $row['nama_kelas'];
+    }
+} else {
+    $daftar_kelas = [
+        'Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12',
+        'Kelas A', 'Kelas B', 'Kelas C',
+        'Kelas Rijal', 'Kelas Nisa'
+    ];
+}
+
+// Ambil daftar mapel dari Master Mapel (Ruang Yayasan)
+$daftar_mapel = [];
+$res_mapel = $conn->query("SELECT nama_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
+if ($res_mapel && $res_mapel->num_rows > 0) {
+    while($row = $res_mapel->fetch_assoc()) {
+        $daftar_mapel[] = $row['nama_mapel'];
+    }
+}
+
 // D. Cek absensi pegawai (harian kerja) hari ini
 $res_pegawai = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
 $pegawai_status = 'belum_absen';
@@ -207,7 +290,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absensi Kehadiran | Ruang Asatidz</title>
+    <title>Absensi & Jurnal KBM | Ruang Asatidz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Library untuk scan QR Code -->
@@ -222,8 +305,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-map-marker-alt text-cyan-600 mr-2"></i>Absensi Kehadiran Pegawai</h1>
-                <p class="text-gray-500 mt-1">Verifikasi lokasi GPS Anda untuk melakukan absensi harian maupun kehadiran rapat.</p>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-calendar-check text-cyan-600 mr-2"></i>Absensi & Jurnal KBM</h1>
+                <p class="text-gray-500 mt-1">Verifikasi lokasi GPS Anda untuk melakukan absensi harian/KBM serta lengkapi jurnal mengajar Anda.</p>
             </div>
 
             <?php if (isset($_GET['sukses_rapat']) && $_GET['sukses_rapat'] == 1): ?>
@@ -361,6 +444,173 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             <!-- KOTAK HASIL/STATUS UTAMA -->
             <div id="scan-result" class="max-w-4xl mx-auto mb-8 text-center">
                 <!-- Status akan diisi secara dinamis -->
+            </div>
+
+            <!-- NOTIFIKASI JURNAL -->
+            <?php if (!empty($pesan_jurnal_sukses)): ?>
+                <div class="bg-emerald-50 border border-emerald-200 text-emerald-850 px-4 py-3 rounded-xl mb-6 shadow-sm max-w-4xl mx-auto flex items-center text-xs">
+                    <i class="fas fa-check-circle mr-2 text-sm text-emerald-600"></i>
+                    <span><?= $pesan_jurnal_sukses ?></span>
+                </div>
+            <?php endif; ?>
+
+            <!-- JURNAL MENGAJAR SECTION -->
+            <div class="max-w-4xl mx-auto space-y-6 mb-8">
+                
+                <!-- 1. FORM INPUT/EDIT JURNAL -->
+                <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 text-left">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b pb-2">
+                        <i class="fas <?= $edit_jurnal_mode ? 'fa-edit' : 'fa-plus' ?> text-cyan-600"></i>
+                        <?= $edit_jurnal_mode ? 'Edit Jurnal Mengajar' : 'Isi Jurnal Mengajar Baru' ?>
+                    </h3>
+                    
+                    <form action="admin-absensi-pegawai.php" method="POST" class="space-y-4">
+                        <input type="hidden" name="action" value="simpan_jurnal">
+                        <input type="hidden" name="jurnal_id" value="<?= $edit_jurnal_mode ? $jurnal_edit_data['id'] : '' ?>">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Tanggal KBM</label>
+                                <input type="date" name="tanggal" value="<?= $edit_jurnal_mode ? $jurnal_edit_data['tanggal'] : date('Y-m-d') ?>" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Kelas / Rombel</label>
+                                <div class="flex gap-1.5">
+                                    <select name="kelas" id="input-kelas-jurnal" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500 bg-white">
+                                        <option value="">-- Pilih Kelas --</option>
+                                        <?php
+                                        $kelas_tersimpan = $edit_jurnal_mode ? $jurnal_edit_data['kelas'] : '';
+                                        $ada_di_list = false;
+                                        foreach ($daftar_kelas as $nama_kelas) {
+                                            $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
+                                            if ($sel) $ada_di_list = true;
+                                            echo "<option value=\"".htmlspecialchars($nama_kelas)."\" $sel>".htmlspecialchars($nama_kelas)."</option>";
+                                        }
+                                        if ($edit_jurnal_mode && !$ada_di_list && !empty($kelas_tersimpan)) {
+                                            echo "<option value=\"".htmlspecialchars($kelas_tersimpan)."\" selected>".htmlspecialchars($kelas_tersimpan)." (Data Lama)</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                    <button type="button" onclick="bukaScannerKelas()" class="bg-cyan-50 text-cyan-700 hover:bg-cyan-100 px-3 py-2 rounded-xl border border-cyan-200 transition flex items-center justify-center" title="Scan QR Kelas">
+                                        <i class="fas fa-qrcode text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Mata Pelajaran</label>
+                                <select name="mata_pelajaran" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500 bg-white">
+                                    <option value="">-- Pilih Mapel --</option>
+                                    <?php
+                                    $mapel_tersimpan = $edit_jurnal_mode ? $jurnal_edit_data['mata_pelajaran'] : '';
+                                    $mapel_ada = false;
+                                    foreach ($daftar_mapel as $nama_mapel) {
+                                        $sel = ($mapel_tersimpan == $nama_mapel) ? 'selected' : '';
+                                        if ($sel) $mapel_ada = true;
+                                        echo "<option value=\"".htmlspecialchars($nama_mapel)."\" $sel>".htmlspecialchars($nama_mapel)."</option>";
+                                    }
+                                    if ($edit_jurnal_mode && !$mapel_ada && !empty($mapel_tersimpan)) {
+                                        echo "<option value=\"".htmlspecialchars($mapel_tersimpan)."\" selected>".htmlspecialchars($mapel_tersimpan)." (Data Lama)</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Materi / Bahasan Pembelajaran</label>
+                                <textarea name="materi" rows="3" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Tulis ringkasan materi/kompetensi yang diajarkan hari ini..."><?= $edit_jurnal_mode ? htmlspecialchars($jurnal_edit_data['materi']) : '' ?></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Catatan Absensi Siswa / Kendala Kelas</label>
+                                <textarea name="absensi_notes" rows="3" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Contoh: Ahmad (sakit), Budi (izin), kondisi kelas kondusif..."><?= $edit_jurnal_mode ? htmlspecialchars($jurnal_edit_data['absensi']) : '' ?></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end gap-2 pt-2">
+                            <?php if ($edit_jurnal_mode): ?>
+                                <a href="admin-absensi-pegawai.php" class="bg-gray-100 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition hover:bg-gray-200">
+                                    Batal
+                                </a>
+                            <?php endif; ?>
+                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-5 py-2.5 rounded-xl transition text-xs shadow-md flex items-center gap-1.5">
+                                <i class="fas fa-save text-xs"></i>
+                                <span><?= $edit_jurnal_mode ? 'Update Jurnal' : 'Simpan Jurnal' ?></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <!-- 2. RIWAYAT JURNAL -->
+                <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 text-left">
+                    <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b pb-2">
+                        <i class="fas fa-history text-cyan-600"></i> Riwayat Jurnal Mengajar
+                    </h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-150 text-xs">
+                            <thead>
+                                <tr class="bg-gray-50 text-gray-500">
+                                    <th class="px-3 py-2 text-left font-bold">Tanggal</th>
+                                    <th class="px-3 py-2 text-left font-bold">Kelas & Mapel</th>
+                                    <th class="px-3 py-2 text-left font-bold">Materi</th>
+                                    <th class="px-3 py-2 text-left font-bold">Absensi/Kendala</th>
+                                    <th class="px-3 py-2 text-center font-bold">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <?php
+                                $res_jurnal = $conn->query("SELECT * FROM jurnal_mengajar WHERE ustadz_id = $ustadz_id ORDER BY tanggal DESC, id DESC");
+                                if ($res_jurnal && $res_jurnal->num_rows > 0):
+                                    while ($row = $res_jurnal->fetch_assoc()):
+                                ?>
+                                        <tr class="hover:bg-slate-50/55 transition">
+                                            <td class="px-3 py-3 text-gray-700 font-medium whitespace-nowrap">
+                                                <?= date('d M Y', strtotime($row['tanggal'])) ?>
+                                            </td>
+                                            <td class="px-3 py-3">
+                                                <span class="font-bold text-cyan-700 block"><?= htmlspecialchars($row['kelas']) ?></span>
+                                                <span class="text-gray-500 text-[10px] font-medium"><?= htmlspecialchars($row['mata_pelajaran']) ?></span>
+                                            </td>
+                                            <td class="px-3 py-3 text-gray-600 font-medium max-w-xs truncate" title="<?= htmlspecialchars($row['materi']) ?>">
+                                                <?= htmlspecialchars($row['materi']) ?>
+                                            </td>
+                                            <td class="px-3 py-3 text-rose-500 font-medium max-w-xs truncate" title="<?= htmlspecialchars($row['absensi'] ?? '') ?>">
+                                                <?= empty($row['absensi']) ? 'Nihil' : htmlspecialchars($row['absensi']) ?>
+                                            </td>
+                                            <td class="px-3 py-3 text-center whitespace-nowrap">
+                                                <a href="admin-absensi-pegawai.php?edit_jurnal_id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700 mr-2.5" title="Edit"><i class="fas fa-edit"></i></a>
+                                                <a href="admin-absensi-pegawai.php?hapus_jurnal_id=<?= $row['id'] ?>" onclick="return confirm('Hapus jurnal ini?')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></a>
+                                            </td>
+                                        </tr>
+                                <?php
+                                    endwhile;
+                                else:
+                                ?>
+                                    <tr>
+                                        <td colspan="5" class="px-3 py-4 text-center text-gray-400 italic">Belum ada riwayat jurnal mengajar.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODAL SCANNER QR RUANG KELAS -->
+            <div id="qr-modal-jurnal" class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-gray-100">
+                    <div class="px-6 py-4 border-b flex justify-between items-center bg-gray-50">
+                        <h3 class="font-bold text-gray-800 text-xs uppercase tracking-wider flex items-center gap-1.5"><i class="fas fa-qrcode text-emerald-600"></i> Scan QR Ruang Kelas</h3>
+                        <button type="button" onclick="tutupScannerKelas()" class="text-gray-400 hover:text-red-500 text-lg">&times;</button>
+                    </div>
+                    <div class="p-6 text-center">
+                        <p class="text-xs text-gray-500 mb-4">Arahkan kamera ke stiker QR Code yang tertempel di dinding kelas.</p>
+                        <div id="reader-jurnal" class="w-full bg-black rounded-xl overflow-hidden min-h-[300px] shadow-inner"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- Custom Alert Modal -->
@@ -650,6 +900,44 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             e.preventDefault();
             updateGPSStatus();
         });
+
+        // ==========================================
+        // FUNGSI SCANNER QR CODE UNTUK KELAS JURNAL
+        // ==========================================
+        let html5QrcodeScannerJurnal = null;
+
+        window.bukaScannerKelas = function() {
+            document.getElementById('qr-modal-jurnal').classList.remove('hidden');
+            html5QrcodeScannerJurnal = new Html5QrcodeScanner(
+                "reader-jurnal", { fps: 10, qrbox: {width: 250, height: 250} }, false
+            );
+            html5QrcodeScannerJurnal.render(onScanSuccessJurnal);
+        }
+
+        window.tutupScannerKelas = function() {
+            document.getElementById('qr-modal-jurnal').classList.add('hidden');
+            if (html5QrcodeScannerJurnal) {
+                html5QrcodeScannerJurnal.clear().catch(error => console.error("Gagal mematikan scanner.", error));
+            }
+        }
+
+        function onScanSuccessJurnal(decodedText, decodedResult) {
+            const selectKelas = document.getElementById('input-kelas-jurnal');
+            let found = false;
+            
+            for (let i = 0; i < selectKelas.options.length; i++) {
+                if (selectKelas.options[i].value === decodedText) {
+                    selectKelas.selectedIndex = i;
+                    found = true; break;
+                }
+            }
+            tutupScannerKelas();
+            if (found) {
+                alert("Berhasil! Kamera mendeteksi Anda berada di kelas " + decodedText);
+            } else {
+                alert("QR Code (" + decodedText + ") tidak dikenali oleh sistem kelas. Pastikan Anda men-scan QR yang benar.");
+            }
+        }
 
         // Jalankan deteksi GPS saat halaman dimuat
         updateGPSStatus();

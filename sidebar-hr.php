@@ -135,8 +135,8 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
     href VARCHAR(255) NOT NULL
 )");
 
-// Pembersihan paksa untuk penggabungan menu KPI & Akunku
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password')");
+// Pembersihan paksa untuk penggabungan menu KPI & Akunku serta Jurnal Mengajar
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal_mengajar')");
 
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
@@ -189,7 +189,6 @@ if ($count_struct === 0) {
             'santri_tidak_masuk_asatidz' => ['href' => 'admin-santri-tidak-masuk.php', 'icon' => 'fa-user-slash'],
             'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader'],
             'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic'],
-            'jurnal_mengajar' => ['href' => 'admin-pegawai-jurnal.php', 'icon' => 'fa-book-open'],
             'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt'],
             'master_kelas' => ['href' => 'admin-master-kelas.php', 'icon' => 'fa-school'],
             'master_mapel' => ['href' => 'admin-master-mapel.php', 'icon' => 'fa-book'],
@@ -241,7 +240,7 @@ if ($res_db_struct) {
         $key = $row['menu_key'];
         
         $default_titles = [
-            'absensi_pegawai' => 'Absensi Kehadiran',
+            'absensi_pegawai' => 'Absensi & Jurnal KBM',
             'perizinan_pegawai' => 'Pengajuan Izin / Cuti',
             'peraturan_role' => 'Peraturan Pegawai',
             'kpi_ustadz' => 'KPI Pegawai',
@@ -264,7 +263,6 @@ if ($res_db_struct) {
             'santri_tidak_masuk_asatidz' => 'Daftar Santri Tidak Masuk',
             'master_silabus' => 'Master Silabus & CP',
             'ai_rpp' => 'AI Generator RPP',
-            'jurnal_mengajar' => 'Jurnal Mengajar',
             'bank_nilai' => 'Bank Nilai (Input)',
             'master_kelas' => 'Master Kelas',
             'master_mapel' => 'Master Mapel',
