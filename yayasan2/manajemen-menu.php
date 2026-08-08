@@ -72,11 +72,7 @@ if ($count_struct === 0) {
         'Asrama' => [
             'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user'],
             'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group'],
-            'laporan_setoran_rijal' => ['href' => 'admin-laporan-setoran-rijal.php', 'icon' => 'fa-mars'],
-            'laporan_setoran_nisa' => ['href' => 'admin-laporan-setoran-nisa.php', 'icon' => 'fa-venus'],
-            'rekap_ibadah_rijal' => ['href' => 'admin-ibadah-rijal.php', 'icon' => 'fa-mosque'],
-            'rekap_ibadah_nisa' => ['href' => 'admin-ibadah-nisa.php', 'icon' => 'fa-kaaba'],
-            'rekap_ibadah_mahad' => ['href' => 'admin-ibadah-mahad.php', 'icon' => 'fa-clipboard-check'],
+            'rekap_ibadah_santri' => ['href' => 'admin-ibadah-santri.php', 'icon' => 'fa-mosque'],
         ],
         'Musyrif' => [
             'validasi_ibadah_musyrif' => ['href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fa-tasks'],
@@ -86,7 +82,7 @@ if ($count_struct === 0) {
             'rapot_pkbm_musyrif' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice'],
             'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list'],
             'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale'],
-            'laporan_setoran_hafalan' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt'],
+            'rekap_setoran_santri' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt'],
         ],
         'Keuangan Santri' => [
             'rekap_uang_saku_musyrif' => ['href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fa-wallet'],
@@ -143,11 +139,8 @@ if ($res_db_menus) {
             'kitab_rujukan' => 'Master Kitab Rujukan',
             'dashboard_asrama' => 'Dashboard Asrama',
             'manajemen_halaqoh' => 'Manajemen Halaqoh',
-            'laporan_setoran_rijal' => 'Rekap Setoran Rijal',
-            'laporan_setoran_nisa' => 'Rekap Setoran Nisa',
-            'rekap_ibadah_rijal' => 'Rekap Ibadah Rijal',
-            'rekap_ibadah_nisa' => 'Rekap Ibadah Nisa',
-            'rekap_ibadah_mahad' => 'Rekap Ibadah Ma\'had',
+            'rekap_ibadah_santri' => 'Rekap Ibadah Santri',
+            'rekap_setoran_santri' => 'Rekap Setoran Santri',
             'validasi_ibadah_musyrif' => 'Validasi Ibadah',
             'kontak_orangtua' => 'Kontak Walisantri',
             'cek_belajar_mandiri' => 'Chek Belajar Mandiri',
@@ -155,7 +148,6 @@ if ($res_db_menus) {
             'rapot_pkbm_musyrif' => 'Raport Diknas Santri Binaan',
             'mutabaah' => 'Buku Mutaba\'ah Santri',
             'laporan_adab' => 'Laporan Kedisiplinan',
-            'laporan_setoran_hafalan' => 'Setoran Hafalan',
             'kpi_musyrif' => 'KPI Musyrif',
             'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
             'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)'

@@ -12,6 +12,25 @@ if (isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
     // Self-healing icon for buku_induk
     @$conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
     
+    // Self-healing database cleanup and setup for consolidated menus
+    $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('rekap_ibadah_rijal', 'rekap_ibadah_nisa', 'rekap_ibadah_mahad', 'laporan_setoran_rijal', 'laporan_setoran_nisa', 'laporan_setoran_hafalan')");
+    
+    $res_chk_ib = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'rekap_ibadah_santri'");
+    if ($res_chk_ib && $res_chk_ib->num_rows === 0) {
+        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+        $new_ord = $max_ord + 1;
+        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asrama', 'rekap_ibadah_santri', $new_ord, 'fa-mosque', 'admin-ibadah-santri.php')");
+    }
+    
+    $res_chk_set = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'rekap_setoran_santri'");
+    if ($res_chk_set && $res_chk_set->num_rows === 0) {
+        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+        $new_ord = $max_ord + 1;
+        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'rekap_setoran_santri', $new_ord, 'fa-file-alt', 'admin-laporan-setoran-hafalan.php')");
+    }
+    
     $ustadz_id = (int)$_SESSION['ustadz_id'];
     if ($ustadz_id === 9999) {
         $user_roles = ['super_admin'];
@@ -55,13 +74,9 @@ if ($conn) {
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('jadwal_pelajaran', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kurikulum_solopreneur_trainer', 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_ustadz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_hafalan', 'musyrif,musyrifah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_rijal', 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('laporan_setoran_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrifah,musyrif')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('validasi_ibadah_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_rijal', 'kepala_asrama,kepala_asrama_rijal,kepala_mahad,super_admin,musyrif')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_nisa', 'kepala_asrama,kepala_asrama_nisa,kepala_mahad,super_admin,musyrifah,musyrif')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_mahad', 'kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_santri', 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_setoran_santri', 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif,musyrifah')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('sekolah_pembukuan', 'kepala_sekolah,admin_sekolah')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rapot_pkbm', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin')");
@@ -268,11 +283,8 @@ if ($res_db_struct) {
             'kitab_rujukan' => 'Master Kitab Rujukan',
             'dashboard_asrama' => 'Dashboard Asrama',
             'manajemen_halaqoh' => 'Manajemen Halaqoh',
-            'laporan_setoran_rijal' => 'Rekap Setoran Rijal',
-            'laporan_setoran_nisa' => 'Rekap Setoran Nisa',
-            'rekap_ibadah_rijal' => 'Rekap Ibadah Rijal',
-            'rekap_ibadah_nisa' => 'Rekap Ibadah Nisa',
-            'rekap_ibadah_mahad' => 'Rekap Ibadah Ma\'had',
+            'rekap_ibadah_santri' => 'Rekap Ibadah Santri',
+            'rekap_setoran_santri' => 'Rekap Setoran Santri',
             'validasi_ibadah_musyrif' => 'Validasi Ibadah',
             'kontak_orangtua' => 'Kontak Walisantri',
             'cek_belajar_mandiri' => 'Chek Belajar Mandiri',
@@ -280,7 +292,6 @@ if ($res_db_struct) {
             'rapot_pkbm_musyrif' => 'Raport Diknas Santri Binaan',
             'mutabaah' => 'Buku Mutaba\'ah Santri',
             'laporan_adab' => 'Laporan Kedisiplinan',
-            'laporan_setoran_hafalan' => 'Setoran Hafalan',
             'kpi_musyrif' => 'KPI Musyrif',
             'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
             'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)'
