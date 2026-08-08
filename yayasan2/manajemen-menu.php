@@ -25,6 +25,15 @@ if ($res_chk_akunku && $res_chk_akunku->num_rows === 0) {
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'akunku', $new_ord, 'fa-user-cog', 'akunku.php')");
 }
 
+// Pastikan menu 'jadwal_rapat' terdaftar jika belum ada (Self-Healing)
+$res_chk_rapat = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'jadwal_rapat'");
+if ($res_chk_rapat && $res_chk_rapat->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'jadwal_rapat', $new_ord, 'fa-handshake', 'admin-jadwal-rapat.php')");
+}
+
 $res_cnt = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure");
 $count_struct = $res_cnt ? (int)$res_cnt->fetch_assoc()['cnt'] : 0;
 if ($count_struct === 0) {
@@ -35,6 +44,7 @@ if ($count_struct === 0) {
             'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract'],
             'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher'],
             'supervisi_mengajar' => ['href' => 'admin-supervisi-mengajar.php', 'icon' => 'fa-clipboard-check'],
+            'jadwal_rapat' => ['href' => 'admin-jadwal-rapat.php', 'icon' => 'fa-handshake'],
             'akunku' => ['href' => 'akunku.php', 'icon' => 'fa-user-cog'],
         ],
         'Administrasi' => [
@@ -114,6 +124,7 @@ if ($res_db_menus) {
             'kpi_ustadz' => 'KPI Pegawai',
             'kpi_kepsek' => 'KPI Kepala Sekolah',
             'supervisi_mengajar' => 'Supervisi Mengajar',
+            'jadwal_rapat' => 'Jadwal Rapat',
             'akunku' => 'Akunku',
             'buku_induk' => 'Buku Induk Santri',
             'santri_tidak_masuk' => 'Daftar Santri Tidak Masuk',
