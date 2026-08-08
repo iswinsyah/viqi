@@ -14,6 +14,9 @@ if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
 }
 $user_roles = array_map('trim', $user_roles);
 
+// Self-healing migration untuk tempat_rapat
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN tempat_rapat VARCHAR(100) DEFAULT NULL AFTER agenda");
+
 // Handler AJAX Rincian Presensi Rapat Selesai
 if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'get_rapat_presensi') {
     header('Content-Type: application/json');
@@ -35,6 +38,98 @@ if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'get_rapat_presensi'
     
     echo json_encode(['status' => 'success', 'rapat' => $rapat, 'presensi' => $presensi]);
     exit;
+}
+
+// Fungsi Broadcast WA Undangan Rapat Resmi
+function broadcast_undangan_rapat_wa($conn, $agenda, $tempat_rapat, $pengundang_label, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin = 'tidak_rutin', $hari_rutin = '', $tanggal_rutin = null, $tgl_penyesuaian_libur = null, $target_ortu_ids = []) {
+    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
+    if (file_exists(__DIR__ . '/config-key.php')) {
+        require_once __DIR__ . '/config-key.php';
+        if (defined('FONNTE_TOKEN')) {
+            $FONNTE_TOKEN = FONNTE_TOKEN;
+        }
+    }
+    
+    $res_pegawai = $conn->query("SELECT id, nama, role, whatsapp FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
+    if (!$res_pegawai || $res_pegawai->num_rows == 0) return;
+    
+    $days = ['Sunday'=>'Ahad', 'Monday'=>'Senin', 'Tuesday'=>'Selasa', 'Wednesday'=>'Rabu', 'Thursday'=>'Kamis', 'Friday'=>'Jumat', 'Saturday'=>'Sabtu'];
+    $day_name = $days[date('l', strtotime($waktu_rapat))] ?? date('l', strtotime($waktu_rapat));
+    $waktu_formatted = $day_name . ', ' . date('d M Y - H:i', strtotime($waktu_rapat)) . ' WIB';
+    
+    while ($p = $res_pegawai->fetch_assoc()) {
+        $p_id = (int)$p['id'];
+        $p_roles = array_map('trim', explode(',', $p['role'] ?? ''));
+        $no_wa = preg_replace('/[^0-9]/', '', $p['whatsapp']);
+        if (empty($no_wa)) continue;
+        if (substr($no_wa, 0, 1) === '0') {
+            $no_wa = '62' . substr($no_wa, 1);
+        } elseif (substr($no_wa, 0, 2) !== '62') {
+            $no_wa = '62' . $no_wa;
+        }
+        
+        $is_target = false;
+        
+        if (in_array($p_id, array_map('intval', $target_ids))) {
+            $is_target = true;
+        }
+        
+        if (!$is_target && !empty($target_roles)) {
+            if (in_array('semua_pegawai', $target_roles)) {
+                $is_target = true;
+            } else {
+                foreach ($target_roles as $tr) {
+                    if ($tr === 'musyrif' && (in_array('musyrif', $p_roles) || in_array('kepala_asrama', $p_roles))) {
+                        $is_target = true; break;
+                    }
+                    if ($tr === 'admin_sekolah' && (in_array('admin_sekolah', $p_roles) || in_array('sekretaris_sekolah', $p_roles) || in_array('bendahara_sekolah', $p_roles))) {
+                        $is_target = true; break;
+                    }
+                    if ($tr === 'kepala_sekolah' && in_array('kepala_sekolah', $p_roles)) {
+                        $is_target = true; break;
+                    }
+                    if ($tr === 'kepala_mahad' && in_array('kepala_mahad', $p_roles)) {
+                        $is_target = true; break;
+                    }
+                    if ($tr === 'ustadz_diknas' && in_array('ustadz', $p_roles)) {
+                        $check_d = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $p_id AND m.kategori_mapel = 'Diknas' LIMIT 1");
+                        if ($check_d && $check_d->num_rows > 0) { $is_target = true; break; }
+                    }
+                    if ($tr === 'ustadz_diniyah' && in_array('ustadz', $p_roles)) {
+                        $check_dn = $conn->query("SELECT m.id FROM master_mapel m WHERE m.pengampu_id = $p_id AND m.kategori_mapel = 'Diniyah' LIMIT 1");
+                        if ($check_dn && $check_dn->num_rows > 0) { $is_target = true; break; }
+                    }
+                }
+            }
+        }
+        
+        if ($is_target) {
+            $pesan = "📢 *UNDANGAN RAPAT RESMI*\n"
+                   . "-- SIM Yayasan Villa Quran --\n\n"
+                   . "Kepada Yth. *" . $p['nama'] . "*\n\n"
+                   . "Anda diundang untuk menghadiri rapat berikut:\n"
+                   . "📌 *Agenda*: " . $agenda . "\n"
+                   . "📍 *Tempat*: " . $tempat_rapat . "\n"
+                   . "👤 *Penyelenggara*: " . $pengundang_label . "\n"
+                   . "🕒 *Waktu Mulai*: " . $waktu_formatted . "\n\n"
+                   . "Diharapkan hadir tepat waktu dan melakukan absensi rapat melalui sistem:\n"
+                   . "🔗 https://villaquranindonesia.com/admin-absensi-pegawai.php\n\n"
+                   . "-- SIM Yayasan Villa Quran --";
+                   
+            $waFd = ['target' => $no_wa, 'message' => $pesan];
+            $ch = curl_init();
+            curl_setopt_array($ch, [
+                CURLOPT_URL => "https://api.fonnte.com/send",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => http_build_query($waFd),
+                CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                CURLOPT_TIMEOUT => 10
+            ]);
+            curl_exec($ch);
+            curl_close($ch);
+        }
+    }
 }
 
 // Handler Pembuatan Rapat Baru
@@ -88,15 +183,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     if (in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('musyrif', $user_roles) || in_array('super_admin', $user_roles)) $is_authorized = true;
 
     if ($is_authorized) {
-        // Broadcast WA function (copied)
-        require_once 'admin-absensi-pegawai.php'; // For reuse of broadcast_undangan_rapat_wa if declared there
-        if (!function_exists('broadcast_undangan_rapat_wa')) {
-            function broadcast_undangan_rapat_wa($conn, $agenda, $pengundang_label, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin = 'tidak_rutin', $hari_rutin = '', $tanggal_rutin = null, $tgl_penyesuaian_libur = null, $target_ortu_ids = []) {
-                // Dummy fallback if needed, but normally handled.
-            }
-        }
+        $tempat_rapat = $conn->real_escape_string($_POST['tempat_rapat'] ?? '');
         
-        $sql_ins = "INSERT INTO jadwal_rapat (agenda, pengundang, peserta_terundang, waktu_mulai, jenis_rutin, hari_rutin, tanggal_rutin, tgl_penyesuaian_libur, status, created_by) VALUES ('$agenda', '$pengundang', '$peserta_terundang_escaped', '$waktu_rapat', '$jenis_rutin', " . ($hari_rutin ? "'$hari_rutin'" : "NULL") . ", $tanggal_rutin, $tgl_penyesuaian_libur, 'aktif', $ustadz_id)";
+        $sql_ins = "INSERT INTO jadwal_rapat (agenda, tempat_rapat, pengundang, peserta_terundang, waktu_mulai, jenis_rutin, hari_rutin, tanggal_rutin, tgl_penyesuaian_libur, status, created_by) VALUES ('$agenda', " . ($tempat_rapat ? "'$tempat_rapat'" : "NULL") . ", '$pengundang', '$peserta_terundang_escaped', '$waktu_rapat', '$jenis_rutin', " . ($hari_rutin ? "'$hari_rutin'" : "NULL") . ", $tanggal_rutin, $tgl_penyesuaian_libur, 'aktif', $ustadz_id)";
         $conn->query($sql_ins);
         
         $lbl_peng = 'Ketua Yayasan';
@@ -106,7 +195,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             $lbl_peng = "Kepala Ma'had";
         }
         
-        broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $lbl_peng, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin, $hari_rutin, $tanggal_rutin, $tgl_penyesuaian_libur_val, $target_ortu_ids);
+        broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $tempat_rapat, $lbl_peng, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin, $hari_rutin, $tanggal_rutin, $tgl_penyesuaian_libur_val, $target_ortu_ids);
         
         header("Location: admin-jadwal-rapat.php?sukses_rapat=1");
         exit;
@@ -284,6 +373,7 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                 <div class="text-left bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-6 text-xs text-indigo-900 leading-relaxed">
                                     <p class="font-bold text-xs text-indigo-950 mb-1"><i class="fas fa-bullhorn mr-1 text-cyan-600"></i> <?= htmlspecialchars($rapat_aktif['agenda']) ?></p>
                                     <p class="mb-0.5"><span class="font-semibold text-indigo-700">Penyelenggara:</span> <?= $lbl_peng ?></p>
+                                    <p class="mb-0.5"><span class="font-semibold text-indigo-700">Tempat:</span> <span class="text-amber-800 font-bold"><?= empty($rapat_aktif['tempat_rapat']) ? '-' : htmlspecialchars($rapat_aktif['tempat_rapat']) ?></span></p>
                                     <p><span class="font-semibold text-indigo-700">Waktu:</span> <?= date('H:i', strtotime($rapat_aktif['waktu_mulai'])) ?> WIB</p>
                                 </div>
                                 <p class="text-xs text-gray-500 mb-6">
@@ -368,6 +458,16 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                             </select>
                                         </div>
                                         <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Rapat</label>
+                                            <select name="tempat_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500 bg-white font-semibold">
+                                                <option value="">-- Pilih Tempat Rapat --</option>
+                                                <option value="Gedung A">Gedung A</option>
+                                                <option value="Gedung B">Gedung B</option>
+                                                <option value="Gedung C">Gedung C</option>
+                                                <option value="Masjid Taqwa">Masjid Taqwa</option>
+                                            </select>
+                                        </div>
+                                        <div>
                                             <label class="block text-xs font-bold text-gray-700 mb-1">Jam Mulai</label>
                                             <input type="time" name="jam_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" value="08:00">
                                         </div>
@@ -445,6 +545,16 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                             </select>
                                         </div>
                                         <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Rapat</label>
+                                            <select name="tempat_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 bg-white font-semibold">
+                                                <option value="">-- Pilih Tempat Rapat --</option>
+                                                <option value="Gedung A">Gedung A</option>
+                                                <option value="Gedung B">Gedung B</option>
+                                                <option value="Gedung C">Gedung C</option>
+                                                <option value="Masjid Taqwa">Masjid Taqwa</option>
+                                            </select>
+                                        </div>
+                                        <div>
                                             <label class="block text-xs font-bold text-gray-700 mb-1">Jam Mulai</label>
                                             <input type="time" name="jam_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-500" value="08:00">
                                         </div>
@@ -518,6 +628,16 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                             </select>
                                         </div>
                                         <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Rapat</label>
+                                            <select name="tempat_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-amber-500 bg-white font-semibold">
+                                                <option value="">-- Pilih Tempat Rapat --</option>
+                                                <option value="Gedung A">Gedung A</option>
+                                                <option value="Gedung B">Gedung B</option>
+                                                <option value="Gedung C">Gedung C</option>
+                                                <option value="Masjid Taqwa">Masjid Taqwa</option>
+                                            </select>
+                                        </div>
+                                        <div>
                                             <label class="block text-xs font-bold text-gray-700 mb-1">Jam Mulai</label>
                                             <input type="time" name="jam_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-amber-500" value="09:00">
                                         </div>
@@ -580,6 +700,7 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                     <tr class="bg-gray-50 text-gray-500">
                                         <th class="px-3 py-2 text-left font-bold">Agenda</th>
                                         <th class="px-3 py-2 text-left font-bold">Penyelenggara</th>
+                                        <th class="px-3 py-2 text-left font-bold">Tempat</th>
                                         <th class="px-3 py-2 text-left font-bold">Waktu Mulai</th>
                                         <th class="px-3 py-2 text-center font-bold">Aksi</th>
                                     </tr>
@@ -597,6 +718,7 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                             <tr class="hover:bg-slate-50/55 transition">
                                                 <td class="px-3 py-3 font-semibold text-gray-800"><?= htmlspecialchars($r['agenda']) ?></td>
                                                 <td class="px-3 py-3 text-gray-500 font-medium"><?= $lbl_role ?></td>
+                                                <td class="px-3 py-3 text-amber-700 font-bold"><?= empty($r['tempat_rapat']) ? '-' : htmlspecialchars($r['tempat_rapat']) ?></td>
                                                 <td class="px-3 py-3 text-gray-500"><?= date('d M Y H:i', strtotime($r['waktu_mulai'])) ?> WIB</td>
                                                 <td class="px-3 py-3 text-center">
                                                     <?php if ($r['created_by'] == $ustadz_id || in_array('super_admin', $user_roles)): ?>
@@ -628,10 +750,10 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                         </h3>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-150 text-xs">
-                                <thead>
-                                    <tr class="bg-gray-50 text-gray-500">
+                                                          <tr class="bg-gray-50 text-gray-500">
                                         <th class="px-3 py-2 text-left font-bold">Agenda</th>
                                         <th class="px-3 py-2 text-left font-bold">Penyelenggara</th>
+                                        <th class="px-3 py-2 text-left font-bold">Tempat</th>
                                         <th class="px-3 py-2 text-left font-bold">Waktu Mulai</th>
                                         <th class="px-3 py-2 text-center font-bold">Hadir</th>
                                         <th class="px-3 py-2 text-center font-bold">Aksi</th>
@@ -647,13 +769,14 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                             if ($fr['pengundang'] === 'kepala_sekolah') $lbl_role = 'Kepala Sekolah';
                                             elseif ($fr['pengundang'] === 'kepala_mahad') $lbl_role = "Kepala Ma'had";
                                             else $lbl_role = 'Ketua Yayasan';
-
+ 
                                             $q_count_hadir = $conn->query("SELECT COUNT(DISTINCT ustadz_id) as jml FROM absensi_pegawai WHERE jenis_absen = 'Rapat' AND rapat_id = $fr_id AND status_kehadiran IN ('Masuk', 'Pulang', 'Hadir')");
                                             $jml_hadir_rapat = $q_count_hadir ? (int)($q_count_hadir->fetch_assoc()['jml'] ?? 0) : 0;
                                     ?>
                                             <tr class="hover:bg-slate-50/55 transition">
                                                 <td class="px-3 py-3 font-semibold text-gray-800"><?= htmlspecialchars($fr['agenda']) ?></td>
                                                 <td class="px-3 py-3 text-gray-500 font-medium"><?= $lbl_role ?></td>
+                                                <td class="px-3 py-3 text-amber-700 font-bold"><?= empty($fr['tempat_rapat']) ? '-' : htmlspecialchars($fr['tempat_rapat']) ?></td>
                                                 <td class="px-3 py-3 text-gray-500"><?= date('d M Y H:i', strtotime($fr['waktu_mulai'])) ?> WIB</td>
                                                 <td class="px-3 py-3 text-center">
                                                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
