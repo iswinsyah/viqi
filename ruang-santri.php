@@ -27,6 +27,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS ibadah_harian_santri (
     sholat_bakdiyah_isya TINYINT(1) DEFAULT 0,
     puasa_senin TINYINT(1) DEFAULT 0,
     puasa_kamis TINYINT(1) DEFAULT 0,
+    is_haid TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY (santri_id, tanggal)
@@ -37,8 +38,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS ibadah_harian_santri (
 @$conn->query("ALTER TABLE ibadah_harian_santri DROP COLUMN setor_ayat_dari");
 @$conn->query("ALTER TABLE ibadah_harian_santri DROP COLUMN setor_ayat_sampai");
 
-// Self-healing migrations for Validation
-@$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN status_validasi ENUM('Pending', 'Disetujui', 'Ditolak') DEFAULT 'Pending' AFTER puasa_kamis");
+// Self-healing migrations for Validation & Haid
+@$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN is_haid TINYINT(1) DEFAULT 0 AFTER puasa_kamis");
+@$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN status_validasi ENUM('Pending', 'Disetujui', 'Ditolak') DEFAULT 'Pending' AFTER is_haid");
 @$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN catatan_musyrif TEXT NULL AFTER status_validasi");
 @$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN validated_by INT NULL AFTER catatan_musyrif");
 @$conn->query("ALTER TABLE ibadah_harian_santri ADD COLUMN validated_at DATETIME NULL AFTER validated_by");
