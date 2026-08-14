@@ -87,6 +87,20 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
     ];
 }
 
+// Ambil daftar mapel dari Master Mapel
+$daftar_mapel = [];
+$res_mapel = $conn->query("SELECT nama_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
+if ($res_mapel && $res_mapel->num_rows > 0) {
+    while($row = $res_mapel->fetch_assoc()) {
+        $daftar_mapel[] = $row['nama_mapel'];
+    }
+} else {
+    $daftar_mapel = [
+        'Tahfidz Al-Qur\'an', 'Aqidah Akhlak', 'Fiqih', 'Hadits', 'Bahasa Arab',
+        'Matematika', 'Bahasa Indonesia', 'IPA', 'IPS', 'Bahasa Inggris', 'PKn'
+    ];
+}
+
 // Query santri tidak masuk hari ini
 $daftar_santri_tidak_masuk_hari_ini = [];
 $query_santri_absen = "
