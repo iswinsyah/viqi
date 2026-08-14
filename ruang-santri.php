@@ -62,11 +62,11 @@ if ($view === 'ibadah_harian') {
         $is_haid = (isset($_POST['is_haid']) && $is_female) ? 1 : 0;
         
         if ($is_haid) {
-            $sholat_subuh = 'Udzur Syar\'i';
-            $sholat_dhuhur = 'Udzur Syar\'i';
-            $sholat_ashar = 'Udzur Syar\'i';
-            $sholat_maghrib = 'Udzur Syar\'i';
-            $sholat_isya = 'Udzur Syar\'i';
+            $sholat_subuh = $conn->real_escape_string("Udzur Syar'i");
+            $sholat_dhuhur = $conn->real_escape_string("Udzur Syar'i");
+            $sholat_ashar = $conn->real_escape_string("Udzur Syar'i");
+            $sholat_maghrib = $conn->real_escape_string("Udzur Syar'i");
+            $sholat_isya = $conn->real_escape_string("Udzur Syar'i");
             
             $sholat_tahajud = 0;
             $sholat_witir = 0;
