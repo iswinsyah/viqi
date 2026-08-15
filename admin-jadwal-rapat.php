@@ -14,8 +14,11 @@ if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
 }
 $user_roles = array_map('trim', $user_roles);
 
-// Self-healing migration untuk tempat_rapat
+// Self-healing migration untuk tempat_rapat dan notulensi
 @$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN tempat_rapat VARCHAR(100) DEFAULT NULL AFTER agenda");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN notulensi TEXT DEFAULT NULL AFTER tempat_rapat");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN notulensi_updated_at DATETIME DEFAULT NULL AFTER notulensi");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN notulensi_by INT DEFAULT NULL AFTER notulensi_updated_at");
 
 // Handler AJAX Rincian Presensi Rapat Selesai
 if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'get_rapat_presensi') {
@@ -216,6 +219,28 @@ if (isset($_GET['selesaikan_rapat_id'])) {
     }
 }
 
+// Handler Simpan Notulensi Rapat
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['simpan_notulensi'])) {
+    $r_id = (int)($_POST['rapat_id'] ?? 0);
+    $notulensi = $conn->real_escape_string($_POST['notulensi'] ?? '');
+    
+    $check_r = $conn->query("SELECT created_by FROM jadwal_rapat WHERE id = $r_id")->fetch_assoc();
+    $is_admin = in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles);
+    
+    if ($check_r && ($check_r['created_by'] == $ustadz_id || $is_admin)) {
+        $conn->query("UPDATE jadwal_rapat SET 
+            notulensi = '$notulensi', 
+            notulensi_updated_at = NOW(), 
+            notulensi_by = $ustadz_id 
+            WHERE id = $r_id");
+        header("Location: admin-jadwal-rapat.php?sukses_notulensi=1");
+        exit;
+    } else {
+        header("Location: admin-jadwal-rapat.php?gagal_notulensi=1");
+        exit;
+    }
+}
+
 // Pengecekan Rapat Aktif
 $res_rapat_aktif = $conn->query("SELECT * FROM jadwal_rapat WHERE status = 'aktif' ORDER BY waktu_mulai DESC LIMIT 1");
 $rapat_aktif = ($res_rapat_aktif && $res_rapat_aktif->num_rows > 0) ? $res_rapat_aktif->fetch_assoc() : null;
@@ -317,6 +342,16 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
             </div>
 
             <!-- NOTIFICATION MESSAGES -->
+            <?php if (isset($_GET['sukses_notulensi'])): ?>
+                <div class="bg-emerald-50 border border-emerald-200 text-emerald-850 px-4 py-3 rounded-xl mb-6 shadow-sm flex items-center text-xs">
+                    <i class="fas fa-check-circle mr-2 text-sm text-emerald-600"></i> Notulensi rapat berhasil disimpan!
+                </div>
+            <?php endif; ?>
+            <?php if (isset($_GET['gagal_notulensi'])): ?>
+                <div class="bg-rose-50 border border-rose-200 text-rose-850 px-4 py-3 rounded-xl mb-6 shadow-sm flex items-center text-xs">
+                    <i class="fas fa-exclamation-circle mr-2 text-sm text-rose-600"></i> Gagal menyimpan notulensi. Anda tidak memiliki akses wewenang.
+                </div>
+            <?php endif; ?>
             <?php if (isset($_GET['sukses_rapat']) && $_GET['sukses_rapat'] == 1): ?>
                 <div class="bg-emerald-50 border border-emerald-200 text-emerald-850 px-4 py-3 rounded-xl mb-6 shadow-sm flex items-center text-xs">
                     <i class="fas fa-check-circle mr-2 text-sm text-emerald-600"></i> Jadwal rapat berhasil dibuat dan broadcast undangan WhatsApp telah dikirim!
@@ -830,6 +865,35 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                 </tbody>
                             </table>
                         </div>
+                        
+                        <!-- NOTULENSI SECTION -->
+                        <div id="modal-notulensi-section" class="mt-4 pt-4 border-t border-gray-150 text-xs">
+                            <!-- Form Edit Notulensi (Khusus Admin / Pembuat Rapat) -->
+                            <div id="notulensi-form-container" class="hidden">
+                                <h4 class="font-bold text-gray-800 mb-2 flex items-center gap-1.5">
+                                    <i class="fas fa-edit text-cyan-600"></i>
+                                    <span>Tulis / Edit Notulensi Rapat</span>
+                                </h4>
+                                <form method="POST" action="admin-jadwal-rapat.php">
+                                    <input type="hidden" name="rapat_id" id="notulensi-rapat-id">
+                                    <textarea name="notulensi" id="notulensi-text" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs focus:ring-2 focus:ring-cyan-500 mb-2 focus:border-cyan-500" placeholder="Tulis hasil keputusan rapat, saran, dan langkah berikutnya di sini..."></textarea>
+                                    <div class="text-right">
+                                        <button type="submit" name="simpan_notulensi" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-3 py-1.5 rounded-lg transition text-[10px] shadow">
+                                            Simpan Notulensi
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Tampilan Static Notulensi (Untuk Peserta Lain) -->
+                            <div id="notulensi-static-container" class="hidden">
+                                <h4 class="font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
+                                    <i class="fas fa-file-invoice text-cyan-600"></i>
+                                    <span>Notulensi Hasil Rapat</span>
+                                </h4>
+                                <div id="notulensi-static-text" class="bg-gray-50 p-3 rounded-xl border border-gray-100 text-gray-700 leading-relaxed whitespace-pre-wrap italic"></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -971,10 +1035,17 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
             }
         }
 
+        const currentUstadzId = <?= (int)$ustadz_id ?>;
+        const isAdmin = <?= json_encode(in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles)) ?>;
+
         window.showModalPresensiRapat = function(rapatId, agenda) {
             document.getElementById('modal-title-agenda').innerText = "Rincian Kehadiran: " + agenda;
             const body = document.getElementById('modal-body-presensi');
             body.innerHTML = '<tr><td colspan="3" class="px-3 py-4 text-center text-gray-400"><i class="fas fa-spinner fa-spin mr-1"></i> Memuat data...</td></tr>';
+            
+            // Hide notulensi containers initially
+            document.getElementById('notulensi-form-container').classList.add('hidden');
+            document.getElementById('notulensi-static-container').classList.add('hidden');
             
             document.getElementById('modal-presensi-rapat').classList.remove('hidden');
             
@@ -994,6 +1065,19 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                             </tr>`;
                         });
                         body.innerHTML = html;
+                    }
+                    
+                    // Render Notulensi
+                    const canEdit = isAdmin || (data.rapat.created_by == currentUstadzId);
+                    const notulensiText = data.rapat.notulensi || '';
+                    
+                    if (canEdit) {
+                        document.getElementById('notulensi-rapat-id').value = rapatId;
+                        document.getElementById('notulensi-text').value = notulensiText;
+                        document.getElementById('notulensi-form-container').classList.remove('hidden');
+                    } else {
+                        document.getElementById('notulensi-static-text').innerText = notulensiText || 'Belum ada notulensi hasil rapat yang diisi.';
+                        document.getElementById('notulensi-static-container').classList.remove('hidden');
                     }
                 } else {
                     body.innerHTML = `<tr><td colspan="3" class="px-3 py-4 text-center text-rose-500 font-semibold">${data.message}</td></tr>`;

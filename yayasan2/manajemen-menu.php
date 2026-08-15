@@ -42,6 +42,22 @@ if ($res_chk_setin && $res_chk_setin->num_rows === 0) {
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'setoran_hafalan_santri', $new_ord, 'fa-quran', 'admin-setoran-hafalan-santri.php')");
 }
 
+$res_chk_jk = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kontrol_jam_kosong'");
+if ($res_chk_jk && $res_chk_jk->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'kontrol_jam_kosong', $new_ord, 'fa-calendar-times', 'admin-kontrol-jam-kosong.php')");
+}
+
+$res_chk_pspp = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'penagihan_spp'");
+if ($res_chk_pspp && $res_chk_pspp->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'penagihan_spp', $new_ord, 'fa-comment-dollar', 'admin-penagihan-spp.php')");
+}
+
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
 if ($res_chk_akunku && $res_chk_akunku->num_rows === 0) {
@@ -80,8 +96,10 @@ if ($count_struct === 0) {
             'rapot_pkbm' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice'],
             'counseling_karir' => ['href' => 'admin-counseling-karir.php', 'icon' => 'fa-graduation-cap'],
             'rekap_keuangan' => ['href' => 'admin-rekap-spp.php', 'icon' => 'fa-file-invoice-dollar'],
+            'penagihan_spp' => ['href' => 'admin-penagihan-spp.php', 'icon' => 'fa-comment-dollar'],
             'rekap_uang_saku' => ['href' => 'admin-rekap-uang-saku.php', 'icon' => 'fa-wallet'],
             'sekolah_pembukuan' => ['href' => 'sekolah-pembukuan.php', 'icon' => 'fa-book'],
+            'kontrol_jam_kosong' => ['href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fa-calendar-times'],
         ],
         'Asatidz' => [
             'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock'],
@@ -152,8 +170,10 @@ if ($res_db_menus) {
             'rapot_pkbm' => 'Raport Diknas PKBM (B & C)',
             'counseling_karir' => 'Pemetaan Karir & PTN (AI)',
             'rekap_keuangan' => 'Rekap Pembayaran Keuangan',
+            'penagihan_spp' => 'Penagihan SPP',
             'rekap_uang_saku' => 'Rekap Data Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
+            'kontrol_jam_kosong' => 'Kontrol Jam Kosong',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',
             'kalender_akademik' => 'Kalender Akademik',
             'jadwal_pelajaran' => 'Jadwal Pelajaran',

@@ -14,11 +14,14 @@ $is_super_admin = ($user_id === 9999);
 $can_see_pegawai = true;
 $can_see_musyrif = in_array('musyrif', $user_roles_trimmed) || in_array('musyrifah', $user_roles_trimmed) || $is_super_admin;
 $can_see_kepsek = in_array('kepala_sekolah', $user_roles_trimmed) || $is_super_admin;
+$can_see_admin_sekolah = in_array('admin_sekolah', $user_roles_trimmed) || $is_super_admin;
 
 // Default view selection
 $default_view = 'pegawai';
 if (in_array('kepala_sekolah', $user_roles_trimmed)) {
     $default_view = 'kepsek';
+} elseif (in_array('admin_sekolah', $user_roles_trimmed)) {
+    $default_view = 'admin_sekolah';
 } elseif (in_array('musyrif', $user_roles_trimmed) || in_array('musyrifah', $user_roles_trimmed)) {
     $default_view = 'musyrif';
 }
@@ -27,6 +30,8 @@ $view = $_GET['view'] ?? $default_view;
 
 // Enforce view authorization
 if ($view === 'kepsek' && !$can_see_kepsek) {
+    $view = 'pegawai';
+} elseif ($view === 'admin_sekolah' && !$can_see_admin_sekolah) {
     $view = 'pegawai';
 } elseif ($view === 'musyrif' && !$can_see_musyrif) {
     $view = 'pegawai';
@@ -263,6 +268,103 @@ if ($view === 'kepsek') {
         $ikon_evaluasi = "fa-exclamation-triangle text-rose-500";
     }
 
+} elseif ($view === 'admin_sekolah') {
+    // --- ADMIN SEKOLAH KPI LOGIC ---
+    // 1. Kehadiran Absensi (Bobot 10%)
+    $sql_pres = "SELECT 
+        COUNT(*) as total_hari,
+        SUM(CASE WHEN status_kehadiran IN ('Masuk', 'Pulang', 'Hadir') THEN 1 ELSE 0 END) as total_hadir
+        FROM absensi_pegawai 
+        WHERE ustadz_id = $user_id 
+          AND MONTH(waktu_absen) = $selected_month 
+          AND YEAR(waktu_absen) = $selected_year
+          AND jenis_absen = 'Harian'";
+    $res_pres = $conn->query($sql_pres);
+    $data_pres = $res_pres ? $res_pres->fetch_assoc() : ['total_hari' => 0, 'total_hadir' => 0];
+    
+    $total_hari = (int)$data_pres['total_hari'];
+    $total_hadir = (int)$data_pres['total_hadir'];
+    $skor_kehadiran = 100;
+    if ($total_hari > 0) {
+        $skor_kehadiran = ($total_hadir / $total_hari) * 100;
+    }
+    
+    // 2. Administrasi Rapat (Bobot 25%)
+    $sql_rpt = "SELECT 
+        COUNT(*) as total_rapat,
+        SUM(CASE WHEN notulensi IS NOT NULL AND TRIM(notulensi) != '' THEN 1 ELSE 0 END) as rapat_bernotulen
+        FROM jadwal_rapat 
+        WHERE MONTH(waktu_mulai) = $selected_month 
+          AND YEAR(waktu_mulai) = $selected_year
+          AND status = 'selesai'";
+    $res_rpt = $conn->query($sql_rpt);
+    $data_rpt = $res_rpt ? $res_rpt->fetch_assoc() : ['total_rapat' => 0, 'rapat_bernotulen' => 0];
+    
+    $total_rapat = (int)$data_rpt['total_rapat'];
+    $rapat_bernotulen = (int)$data_rpt['rapat_bernotulen'];
+    $skor_rapat = 100;
+    if ($total_rapat > 0) {
+        $skor_rapat = ($rapat_bernotulen / $total_rapat) * 100;
+    }
+    
+    // 3. Kontrol Jam Pelajaran Kosong (Bobot 35%)
+    $sql_jk = "SELECT 
+        COUNT(*) as total_jam_kosong,
+        SUM(CASE WHEN status_kontrol = 'Terisi' THEN 1 ELSE 0 END) as terisi
+        FROM kontrol_jam_kosong
+        WHERE MONTH(tanggal) = $selected_month 
+          AND YEAR(tanggal) = $selected_year";
+    $res_jk = $conn->query($sql_jk);
+    $data_jk = $res_jk ? $res_jk->fetch_assoc() : ['total_jam_kosong' => 0, 'terisi' => 0];
+    
+    $total_jam_kosong = (int)$data_jk['total_jam_kosong'];
+    $jam_kosong_terisi = (int)$data_jk['terisi'];
+    $skor_jam_kosong = 100;
+    if ($total_jam_kosong > 0) {
+        $skor_jam_kosong = ($jam_kosong_terisi / $total_jam_kosong) * 100;
+    }
+    
+    // 4. Prestasi Penarikan SPP (Bobot 30%)
+    $sql_spp_tagih = "SELECT 
+        COUNT(DISTINCT l.santri_id) as total_ditagih,
+        COUNT(DISTINCT p.santri_id) as total_lunas
+        FROM log_penagihan_spp l
+        LEFT JOIN pembayaran_spp p ON l.santri_id = p.santri_id 
+          AND p.bulan = l.bulan 
+          AND p.tahun = l.tahun 
+          AND p.status = 'Berhasil'
+        WHERE MONTH(l.created_at) = $selected_month 
+          AND YEAR(l.created_at) = $selected_year";
+    $res_spp_tagih = $conn->query($sql_spp_tagih);
+    $data_spp_tagih = $res_spp_tagih ? $res_spp_tagih->fetch_assoc() : ['total_ditagih' => 0, 'total_lunas' => 0];
+    
+    $total_ditagih = (int)$data_spp_tagih['total_ditagih'];
+    $total_lunas = (int)$data_spp_tagih['total_lunas'];
+    $skor_penagihan = 100;
+    if ($total_ditagih > 0) {
+        $skor_penagihan = ($total_lunas / $total_ditagih) * 100;
+    }
+    
+    // Total Skor KPI
+    $total_skor_kpi = ($skor_kehadiran * 0.10) + 
+                      ($skor_rapat * 0.25) + 
+                      ($skor_jam_kosong * 0.35) + 
+                      ($skor_penagihan * 0.30);
+                      
+    if ($total_skor_kpi >= 90) {
+        $predikat = "Mumtaz (Grade A)";
+        $pesan_evaluasi = "Luar biasa! Koordinasi notulensi rapat, penanganan jam pelajaran kosong, dan penagihan SPP berjalan sangat efektif.";
+        $ikon_evaluasi = "fa-star text-amber-400";
+    } elseif ($total_skor_kpi >= 80) {
+        $predikat = "Jayid (Grade B)";
+        $pesan_evaluasi = "Kinerja administrasi sekolah sudah cukup baik. Mari kita optimalkan notulensi rapat tepat waktu dan persentase lunas SPP.";
+        $ikon_evaluasi = "fa-thumbs-up text-blue-500";
+    } else {
+        $predikat = "Aslha (Grade C)";
+        $pesan_evaluasi = "Performa administrasi sekolah perlu perhatian khusus. Mohon pastikan segera menugaskan guru pengganti dan menindaklanjuti tunggakan walisantri.";
+        $ikon_evaluasi = "fa-exclamation-triangle text-rose-500";
+    }
+
 } else {
     // --- STANDARD EMPLOYEE / USTADZ KPI LOGIC ---
     $res_gaji = $conn->query("SELECT * FROM pengaturan_gaji WHERE id=1");
@@ -407,6 +509,7 @@ $available_views = [];
 if ($can_see_pegawai) $available_views['pegawai'] = ['title' => 'KPI Pegawai / Ustadz', 'icon' => 'fa-chalkboard-teacher'];
 if ($can_see_musyrif) $available_views['musyrif'] = ['title' => 'KPI Musyrif Asrama', 'icon' => 'fa-home-user'];
 if ($can_see_kepsek) $available_views['kepsek'] = ['title' => 'KPI Kepala Sekolah', 'icon' => 'fa-user-tie'];
+if ($can_see_admin_sekolah) $available_views['admin_sekolah'] = ['title' => 'KPI Admin Sekolah', 'icon' => 'fa-laptop-code'];
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -675,6 +778,112 @@ if ($can_see_kepsek) $available_views['kepsek'] = ['title' => 'KPI Kepala Sekola
                         </div>
                         <div class="text-right flex flex-col justify-center min-w-[80px]">
                             <span class="text-2xl font-bold text-gray-800"><?= number_format($score_nilai, 1) ?></span>
+                            <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Skor Aspek</span>
+                        </div>
+                    </div>
+                </div>
+
+            <?php elseif ($view === 'admin_sekolah'): ?>
+                <!-- ============================================== -->
+                <!-- TAMPILAN KPI ADMIN SEKOLAH                     -->
+                <!-- ============================================== -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    <!-- KPI Summary Card -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col items-center justify-center text-center lg:col-span-1">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Total Nilai KPI Admin Sekolah</span>
+                        <div class="text-5xl font-black text-cyan-600 mb-2"><?= number_format($total_skor_kpi, 1) ?><span class="text-lg text-gray-400">/100</span></div>
+                        <span class="px-3 py-1 text-xs font-bold rounded-full border border-cyan-200 bg-cyan-50 text-cyan-800 mb-4"><?= $predikat ?></span>
+                        <p class="text-[10px] text-gray-400 font-medium">Periode: <b><?= $months[$selected_month] ?> <?= $selected_year ?></b><br>Admin: <b><?= htmlspecialchars($user_data['nama'] ?? '') ?></b></p>
+                    </div>
+
+                    <!-- KOTAK EVALUASI ADMIN -->
+                    <div class="bg-cyan-50 rounded-2xl shadow-sm border border-cyan-100 p-6 lg:col-span-2 flex items-start">
+                        <div class="bg-white p-3 rounded-full shadow-sm mr-4 flex-shrink-0">
+                            <i class="fas <?= $ikon_evaluasi ?> text-2xl text-cyan-600"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-cyan-900 mb-1">Catatan Evaluasi Kinerja (Auto-Generated)</h3>
+                            <p class="text-sm text-cyan-800 leading-relaxed"><?= $pesan_evaluasi ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Detail Component Cards -->
+                <div class="space-y-4">
+                    <h2 class="font-bold text-gray-800 text-base mb-2"><i class="fas fa-list-check text-cyan-600 mr-1.5"></i>Rincian 4 Aspek Penilaian KPI Admin</h2>
+                    
+                    <!-- 1. Kehadiran Absensi Kerja -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                <span class="bg-cyan-100 text-cyan-800 text-[10px] font-black px-2 py-0.5 rounded">1</span>
+                                Kehadiran Absensi Kerja (Bobot 10%)
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-1">Mengukur rasio kedisiplinan kehadiran fisik harian Admin Sekolah di kantor administrasi.</p>
+                            <div class="w-full bg-gray-100 h-2.5 rounded-full mt-3 overflow-hidden">
+                                <div class="bg-cyan-600 h-2.5 rounded-full" style="width: <?= min(100, $skor_kehadiran) ?>%"></div>
+                            </div>
+                            <span class="text-[10px] text-gray-400 block mt-1">Hadir: <b><?= $total_hadir ?></b> dari <b><?= $total_hari ?></b> hari kerja terjurnal</span>
+                        </div>
+                        <div class="text-right flex flex-col justify-center min-w-[80px]">
+                            <span class="text-2xl font-bold text-gray-800"><?= number_format($skor_kehadiran, 1) ?></span>
+                            <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Skor Aspek</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Administrasi Rapat -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                <span class="bg-cyan-100 text-cyan-800 text-[10px] font-black px-2 py-0.5 rounded">2</span>
+                                Kelengkapan Notulensi Rapat (Bobot 25%)
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-1">Mengukur kerapian administrasi dalam mencatat hasil/notulensi dari rapat-rapat koordinasi yang telah selesai diadakan.</p>
+                            <div class="w-full bg-gray-100 h-2.5 rounded-full mt-3 overflow-hidden">
+                                <div class="bg-cyan-600 h-2.5 rounded-full" style="width: <?= min(100, $skor_rapat) ?>%"></div>
+                            </div>
+                            <span class="text-[10px] text-gray-400 block mt-1">Rapat Selesai Bernotulen: <b><?= $rapat_bernotulen ?></b> dari <b><?= $total_rapat ?></b> total rapat selesai</span>
+                        </div>
+                        <div class="text-right flex flex-col justify-center min-w-[80px]">
+                            <span class="text-2xl font-bold text-gray-800"><?= number_format($skor_rapat, 1) ?></span>
+                            <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Skor Aspek</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Kontrol Jam Pelajaran Kosong -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                <span class="bg-cyan-100 text-cyan-800 text-[10px] font-black px-2 py-0.5 rounded">3</span>
+                                Penanganan Jam Pelajaran Kosong / Guru Inval (Bobot 35%)
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-1">Mengukur responsivitas admin dalam mencarikan dan menugaskan guru pengganti (inval) untuk kelas-kelas yang gurunya berhalangan hadir.</p>
+                            <div class="w-full bg-gray-100 h-2.5 rounded-full mt-3 overflow-hidden">
+                                <div class="bg-cyan-600 h-2.5 rounded-full" style="width: <?= min(100, $skor_jam_kosong) ?>%"></div>
+                            </div>
+                            <span class="text-[10px] text-gray-400 block mt-1">Jam Kosong Terisi Pengganti: <b><?= $jam_kosong_terisi ?></b> dari <b><?= $total_jam_kosong ?></b> laporan jam kosong</span>
+                        </div>
+                        <div class="text-right flex flex-col justify-center min-w-[80px]">
+                            <span class="text-2xl font-bold text-gray-800"><?= number_format($skor_jam_kosong, 1) ?></span>
+                            <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Skor Aspek</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. Penarikan SPP -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-900 text-sm flex items-center gap-2">
+                                <span class="bg-cyan-100 text-cyan-800 text-[10px] font-black px-2 py-0.5 rounded">4</span>
+                                Efektivitas Penagihan Tunggakan SPP (Bobot 30%)
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-1">Mengukur kesuksesan penarikan dana SPP dari walisantri penunggak yang telah dikirimi pengingat WhatsApp oleh Admin Sekolah.</p>
+                            <div class="w-full bg-gray-100 h-2.5 rounded-full mt-3 overflow-hidden">
+                                <div class="bg-cyan-600 h-2.5 rounded-full" style="width: <?= min(100, $skor_penagihan) ?>%"></div>
+                            </div>
+                            <span class="text-[10px] text-gray-400 block mt-1">Tagihan Berhasil Lunas: <b><?= $total_lunas ?></b> dari <b><?= $total_ditagih ?></b> walisantri ditagih bulan ini</span>
+                        </div>
+                        <div class="text-right flex flex-col justify-center min-w-[80px]">
+                            <span class="text-2xl font-bold text-gray-800"><?= number_format($skor_penagihan, 1) ?></span>
                             <span class="text-[10px] text-gray-400 uppercase tracking-wider block">Skor Aspek</span>
                         </div>
                     </div>
