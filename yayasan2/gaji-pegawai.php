@@ -147,7 +147,7 @@ if ($res_pegawai && $res_pegawai->num_rows > 0) {
             foreach ($role_list as $r) {
                 if ($r === 'kepala_sekolah') $tunjangan += $tunj_kepsek_a;
                 elseif ($r === 'kepala_mahad') $tunjangan += $tunj_mahad_a;
-                elseif ($r === 'kepala_asrama') $tunjangan += $tunj_asrama_a;
+                elseif ($r === 'kepala_asrama' || $r === 'kepala_asrama_rijal' || $r === 'kepala_asrama_nisa') $tunjangan += $tunj_asrama_a;
                 elseif ($r === 'admin_sekolah') $tunjangan += $tunj_admin_a;
             }
         }
@@ -159,11 +159,11 @@ if ($res_pegawai && $res_pegawai->num_rows > 0) {
         list($active_rate, $active_grade, $kpi_score) = getUstadzGradeRateForPeriod($conn, $ust_id, $row['role'], $gaji_grade_a, $gaji_grade_b, $gaji_grade_c, $start_date, $end_date);
 
         $roles_arr = !empty($row['role']) ? explode(',', $row['role']) : [];
-        $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr);
+        $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr) || in_array('tutor', $roles_arr);
         $is_utama_or_muda = ($status_display === 'Pegawai Utama' || $status_display === 'Pegawai Muda');
         
         if ($is_utama_or_muda && $has_ustadz_role) {
-            $kelebihan_jam = max(0, $total_pertemuan - 24);
+            $kelebihan_jam = max(0, $total_pertemuan - 12);
             $honor = $kelebihan_jam * $active_rate;
             $honor_note = "Kelebihan: {$kelebihan_jam}x (Grade {$active_grade})";
         } else {

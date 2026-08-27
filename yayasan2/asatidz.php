@@ -15,6 +15,17 @@ $tunj_mahad_a = $data_gaji['tunj_mahad_a'] ?? 1500000;
 $tunj_asrama_a = $data_gaji['tunj_asrama_a'] ?? 1200000;
 $tunj_admin_a = $data_gaji['tunj_admin_a'] ?? 1000000;
 
+$current_day = (int)date('d');
+if ($current_day >= 27) {
+    $selected_month = (int)date('m', strtotime('+1 month'));
+    $selected_year  = (int)date('Y', strtotime('+1 month'));
+} else {
+    $selected_month = (int)date('m');
+    $selected_year  = (int)date('Y');
+}
+$start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
+$end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
+
 function getUstadzGradeRate($conn, $ust_id, $role_str, $gaji_grade_a, $gaji_grade_b, $gaji_grade_c) {
     $user_roles = !empty($role_str) ? explode(',', $role_str) : [];
     $is_teacher = in_array('ustadz', $user_roles) || in_array('guru', $user_roles);
@@ -337,25 +348,25 @@ $active_menu = 'asatidz';
                                         foreach ($role_list as $r) {
                                             if ($r === 'kepala_sekolah') $tunjangan += $tunj_kepsek_a;
                                             elseif ($r === 'kepala_mahad') $tunjangan += $tunj_mahad_a;
-                                            elseif ($r === 'kepala_asrama') $tunjangan += $tunj_asrama_a;
+                                            elseif ($r === 'kepala_asrama' || $r === 'kepala_asrama_rijal' || $r === 'kepala_asrama_nisa') $tunjangan += $tunj_asrama_a;
                                             elseif ($r === 'admin_sekolah') $tunjangan += $tunj_admin_a;
                                         }
                                     }
 
-                                    // 3. Honor Mengajar (Berdasarkan Grade Bulanan & kewajiban 6 jam untuk Pegawai Utama/Muda)
+                                    // 3. Honor Mengajar (Berdasarkan Grade Bulanan & kewajiban 3 jam perpekan = 12 jam sebulan untuk Pegawai Utama/Muda)
                                     $ust_id = (int)$row['id'];
-                                    $res_jurnal = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
+                                    $res_jurnal = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
                                     $total_pertemuan = $res_jurnal ? (int)$res_jurnal->fetch_assoc()['total'] : 0;
                                     
                                     list($active_rate, $active_grade, $kpi_score) = getUstadzGradeRate($conn, $ust_id, $row['role'], $gaji_grade_a, $gaji_grade_b, $gaji_grade_c);
 
                                     $roles_arr = !empty($row['role']) ? explode(',', $row['role']) : [];
-                                    $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr);
+                                    $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr) || in_array('tutor', $roles_arr);
                                     $is_utama_or_muda = ($status_display === 'Pegawai Utama' || $status_display === 'Pegawai Muda');
                                     
                                      if ($is_utama_or_muda && $has_ustadz_role) {
-                                         // Wajib mengajar 6 jam pelajaran per minggu (total 24 jam per bulan). Hanya dibayar kelebihannya.
-                                         $kelebihan_jam = max(0, $total_pertemuan - 24);
+                                         // Wajib mengajar 3 jam pelajaran per minggu (total 12 jam per bulan). Hanya dibayar kelebihannya.
+                                         $kelebihan_jam = max(0, $total_pertemuan - 12);
                                          $honor = $kelebihan_jam * $active_rate;
                                          $honor_note = "Kelebihan: {$kelebihan_jam}x (Grade {$active_grade})";
                                      } else {
