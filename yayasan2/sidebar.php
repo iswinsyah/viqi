@@ -70,8 +70,11 @@
             <a href="../admin-supervisi-mengajar.php" class="<?= (isset($active_menu) && $active_menu == 'supervisi_mengajar') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-clipboard-check w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'supervisi_mengajar') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Supervisi Mengajar
             </a>
+            <a href="gaji-pegawai.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_pegawai') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-coins w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_pegawai') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Rekap Gaji (Payroll)
+            </a>
             <a href="gaji-asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                <i class="fas fa-id-card-clip w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Gaji Pegawai
+                <i class="fas fa-sliders w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'gaji_asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Pengaturan Gaji
             </a>
             <a href="ai-agent-hrd.php" class="<?= (isset($active_menu) && $active_menu == 'ai_agent_hrd') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-robot w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'ai_agent_hrd') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> AI Agent HRD
