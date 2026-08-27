@@ -675,18 +675,18 @@ $active_menu = 'perizinan_pegawai';
                         <table class="min-w-full divide-y divide-gray-150">
                             <thead class="bg-gray-50/50 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
                                 <tr>
-                                    <th class="px-6 py-3.5 text-left">Nama Pegawai & Peran</th>
-                                    <th class="px-6 py-3.5 text-left">Kategori & Tembusan</th>
-                                    <th class="px-6 py-3.5 text-left">Periode & Durasi</th>
-                                    <th class="px-6 py-3.5 text-left">Alasan / Keterangan</th>
-                                    <th class="px-6 py-3.5 text-center">Status</th>
-                                    <th class="px-6 py-3.5 text-center">Aksi Eksekutif</th>
+                                    <th class="px-4 py-3.5 text-left">Nama Pegawai & Peran</th>
+                                    <th class="px-4 py-3.5 text-left">Kategori & Tembusan</th>
+                                    <th class="px-4 py-3.5 text-left">Periode & Durasi</th>
+                                    <th class="px-4 py-3.5 text-left">Alasan / Keterangan</th>
+                                    <th class="px-4 py-3.5 text-center">Status</th>
+                                    <th class="px-4 py-3.5 text-center">Aksi Eksekutif</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-150 text-xs">
                                 <?php if (empty($list_perizinan_admin)): ?>
                                 <tr>
-                                    <td colspan="6" class="px-6 py-12 text-center text-gray-400 italic">Belum ada pengajuan izin dari pegawai.</td>
+                                    <td colspan="6" class="px-4 py-12 text-center text-gray-400 italic">Belum ada pengajuan izin dari pegawai.</td>
                                 </tr>
                                 <?php else: foreach ($list_perizinan_admin as $row): 
                                     $st = $row['status'];
@@ -711,27 +711,27 @@ $active_menu = 'perizinan_pegawai';
                                     $periode_label = date('d/m/Y H:i', strtotime($row['tanggal_mulai'])) . ' s/d ' . date('d/m/Y H:i', strtotime($row['tanggal_selesai']));
                                 ?>
                                 <tr class="hover:bg-gray-50/80 transition">
-                                    <td class="px-6 py-4">
+                                    <td class="px-4 py-3">
                                         <div class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_pegawai']) ?></div>
                                         <div class="text-[11px] text-gray-500"><?= htmlspecialchars($row['peran_pengaju'] ?: ($row['role_pegawai'] ?: 'Pegawai')) ?></div>
                                     </td>
-                                    <td class="px-6 py-4">
+                                    <td class="px-4 py-3">
                                         <span class="inline-block px-2.5 py-1 bg-gray-100 text-gray-800 rounded-md font-bold border border-gray-200 mb-1"><?= htmlspecialchars($row['kategori']) ?></span>
                                         <div class="text-[10px] text-gray-500">Tembusan: <span class="font-semibold text-gray-700"><?= ucwords(str_replace('_', ' ', $row['ditujukan_ke'])) ?></span></div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-4 py-3 whitespace-nowrap">
                                         <div class="font-semibold text-gray-800"><i class="far fa-calendar-alt text-amber-600 mr-1.5"></i><?= date('d/m/Y H:i', strtotime($row['tanggal_mulai'])) ?></div>
                                         <div class="text-gray-500"><i class="far fa-clock text-gray-400 mr-1.5"></i>s/d <?= date('d/m/Y H:i', strtotime($row['tanggal_selesai'])) ?></div>
                                         <div class="mt-1 inline-flex items-center gap-1 text-[10px] bg-amber-50 text-amber-800 px-2 py-0.5 rounded border border-amber-200 font-bold">
                                             Durasi Awal: <?= $durasi_hr ?> Hari
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 max-w-xs">
-                                        <div class="text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-150 italic line-clamp-3">
+                                    <td class="px-4 py-3 max-w-[180px]">
+                                        <div class="text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-150 italic line-clamp-3" title="<?= htmlspecialchars($row['keterangan']) ?>">
                                             "<?= htmlspecialchars($row['keterangan']) ?>"
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 text-center">
+                                    <td class="px-4 py-3 text-center">
                                         <span class="inline-block px-3 py-1 rounded-full text-[11px] border <?= $badge ?>"><?= $st ?></span>
                                         <?php if ($st == 'Disetujui' || $st == 'Disetujui Sebagian'): ?>
                                             <div class="text-[10px] text-emerald-700 mt-1.5 font-bold bg-emerald-50 px-2 py-1 rounded border border-emerald-200/60 inline-block">
@@ -745,34 +745,34 @@ $active_menu = 'perizinan_pegawai';
                                             </div>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="px-6 py-4 text-center space-x-1.5 whitespace-nowrap">
+                                    <td class="px-4 py-3 text-center space-x-1.5 whitespace-nowrap">
                                         <?php if ($st == 'Pending'): ?>
                                         <button type="button" 
                                                 onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= $periode_label ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $tgl_def_m_str ?>', '<?= $tgl_def_s_str ?>', '<?= $cat_adm ?>')" 
-                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm transition flex items-center gap-1 inline-flex">
-                                            <i class="fas fa-check-circle mr-1"></i> Setujui / Ubah
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1 rounded-lg text-[10px] shadow-sm transition flex items-center gap-1 inline-flex">
+                                            <i class="fas fa-check-circle"></i> Setujui / Ubah
                                         </button>
                                         <button type="button" 
                                                 onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= $cat_adm ?>')" 
-                                                class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm transition flex items-center gap-1 inline-flex">
-                                            <i class="fas fa-times-circle mr-1"></i> Tolak
+                                                class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2 py-1 rounded-lg text-[10px] shadow-sm transition flex items-center gap-1 inline-flex">
+                                            <i class="fas fa-times-circle"></i> Tolak
                                         </button>
                                         <?php else: ?>
                                         <button type="button" 
                                                 onclick="openApproveModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= htmlspecialchars(addslashes($row['kategori']), ENT_QUOTES) ?>', '<?= $periode_label ?>', '<?= htmlspecialchars(addslashes($row['keterangan']), ENT_QUOTES) ?>', '<?= $tgl_def_m_str ?>', '<?= $tgl_def_s_str ?>', '<?= $cat_adm ?>')" 
-                                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm transition inline-flex items-center gap-1" title="Koreksi Waktu / Status">
-                                            <i class="fas fa-edit mr-1"></i> Koreksi Izin
+                                                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-2 py-1 rounded-lg text-[10px] shadow-sm transition inline-flex items-center gap-1" title="Koreksi Waktu / Status">
+                                            <i class="fas fa-edit"></i> Koreksi
                                         </button>
                                         <button type="button" 
                                                 onclick="openRejectModal(<?= $row['id'] ?>, '<?= htmlspecialchars(addslashes($row['nama_pegawai']), ENT_QUOTES) ?>', '<?= $cat_adm ?>')" 
-                                                class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm transition inline-flex items-center gap-1" title="Batalkan / Tolak Izin Ini">
-                                            <i class="fas fa-ban mr-1"></i> Batalkan
+                                                class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-2 py-1 rounded-lg text-[10px] shadow-sm transition inline-flex items-center gap-1" title="Batalkan / Tolak Izin Ini">
+                                            <i class="fas fa-ban"></i> Batal
                                         </button>
                                         <?php endif; ?>
                                         <form method="POST" class="inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengajuan izin ini secara permanen?');">
                                             <input type="hidden" name="action" value="hapus_perizinan">
                                             <input type="hidden" name="izin_id" value="<?= $row['id'] ?>">
-                                            <button type="submit" class="bg-gray-100 hover:bg-rose-600 text-gray-500 hover:text-white font-bold px-2.5 py-1.5 rounded-lg text-[11px] shadow-sm border border-gray-200 hover:border-rose-600 transition inline-flex items-center gap-1" title="Hapus Permanen">
+                                            <button type="submit" class="bg-gray-100 hover:bg-rose-600 text-gray-500 hover:text-white font-bold px-2 py-1 rounded-lg text-[10px] shadow-sm border border-gray-200 hover:border-rose-600 transition inline-flex items-center gap-1" title="Hapus Permanen">
                                                 <i class="fas fa-trash-alt"></i> Hapus
                                             </button>
                                         </form>
