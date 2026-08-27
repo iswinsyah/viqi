@@ -58,6 +58,17 @@ if ($selected_staf_id > 0) {
     if ($res_detail) $staf = $res_detail->fetch_assoc();
 }
 
+$current_day = (int)date('d');
+if ($current_day >= 27) {
+    $selected_month = (int)date('m', strtotime('+1 month'));
+    $selected_year  = (int)date('Y', strtotime('+1 month'));
+} else {
+    $selected_month = (int)date('m');
+    $selected_year  = (int)date('Y');
+}
+$start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
+$end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
+
 $kpi_data = [];
 if ($staf) {
     $user_roles = !empty($staf['role']) ? explode(',', $staf['role']) : [];
@@ -65,12 +76,12 @@ if ($staf) {
     $eligible_roles_pegawai = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
     $is_daily_worker = !empty(array_intersect($eligible_roles_pegawai, $user_roles));
 
-    // A. Jurnal Bulan Ini
+    // A. Jurnal Bulan Ini (Periode Kustom)
     $res_jurnal = $conn->query("SELECT 
         COUNT(*) as total_jurnal, 
         SUM(CASE WHEN DATE(created_at) = tanggal THEN 1 ELSE 0 END) as tepat_waktu 
         FROM jurnal_mengajar 
-        WHERE ustadz_id = $selected_staf_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
+        WHERE ustadz_id = $selected_staf_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
     $data_jurnal = $res_jurnal ? $res_jurnal->fetch_assoc() : ['total_jurnal' => 0, 'tepat_waktu' => 0];
     $jumlah_pertemuan = (int)($data_jurnal['total_jurnal'] ?? 0);
     $tepat_waktu = (int)($data_jurnal['tepat_waktu'] ?? 0);
@@ -82,28 +93,28 @@ if ($staf) {
         $skor_jurnal = 100; // non-teacher gets 100
     }
 
-    // C. Kehadiran Harian/Pegawai (Bulan ini)
-    $res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $selected_staf_id AND jenis_absen IN ('Pegawai', 'Harian') AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+    // C. Kehadiran Harian/Pegawai (Periode Kustom)
+    $res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $selected_staf_id AND jenis_absen IN ('Pegawai', 'Harian') AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
     $jml_hadir = $res_hadir ? (int)($res_hadir->fetch_assoc()['jml'] ?? 0) : 0;
 
     if ($is_daily_worker) {
         $skor_kehadiran = $jml_hadir > 0 ? min(100, ($jml_hadir / 20) * 100) : 0;
     } else {
         // Jika ustadz honorer saja
-        $res_hadir_mengajar = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $selected_staf_id AND jenis_absen = 'Mengajar' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+        $res_hadir_mengajar = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $selected_staf_id AND jenis_absen = 'Mengajar' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
         $jml_hadir_mengajar = $res_hadir_mengajar ? (int)($res_hadir_mengajar->fetch_assoc()['jml'] ?? 0) : 0;
         
-        $res_total_teaching_days = $conn->query("SELECT COUNT(DISTINCT tanggal) as total_days FROM jurnal_mengajar WHERE ustadz_id = $selected_staf_id AND MONTH(tanggal) = MONTH(CURRENT_DATE()) AND YEAR(tanggal) = YEAR(CURRENT_DATE())");
+        $res_total_teaching_days = $conn->query("SELECT COUNT(DISTINCT tanggal) as total_days FROM jurnal_mengajar WHERE ustadz_id = $selected_staf_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
         $total_teaching_days = $res_total_teaching_days ? (int)($res_total_teaching_days->fetch_assoc()['total_days'] ?? 0) : 0;
         
         $skor_kehadiran = $total_teaching_days > 0 ? min(100, ($jml_hadir_mengajar / $total_teaching_days) * 100) : 100;
     }
 
-    // D. Kehadiran Rapat (Bulan ini)
-    $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $selected_staf_id AND jenis_absen = 'Rapat' AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE())");
+    // D. Kehadiran Rapat (Periode Kustom)
+    $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $selected_staf_id AND jenis_absen = 'Rapat' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
     $jml_rapat = $res_rapat ? (int)($res_rapat->fetch_assoc()['jml'] ?? 0) : 0;
 
-    $res_total_rapat = $conn->query("SELECT COUNT(*) as total FROM jadwal_rapat WHERE MONTH(waktu_mulai) = MONTH(CURRENT_DATE()) AND YEAR(waktu_mulai) = YEAR(CURRENT_DATE())");
+    $res_total_rapat = $conn->query("SELECT COUNT(*) as total FROM jadwal_rapat WHERE DATE(waktu_mulai) BETWEEN '$start_date' AND '$end_date'");
     $total_rapat = $res_total_rapat ? (int)($res_total_rapat->fetch_assoc()['total'] ?? 0) : 0;
     $skor_kehadiran_rapat = $total_rapat > 0 ? min(100, ($jml_rapat / $total_rapat) * 100) : 100;
 
@@ -158,7 +169,7 @@ if ($staf) {
     }
 
     // Riwayat Kehadiran (Bulan Ini)
-    $res_riwayat = $conn->query("SELECT waktu_absen, jenis_absen, status_kehadiran, keterangan FROM absensi_pegawai WHERE ustadz_id = $selected_staf_id AND MONTH(waktu_absen) = MONTH(CURRENT_DATE()) AND YEAR(waktu_absen) = YEAR(CURRENT_DATE()) ORDER BY waktu_absen DESC LIMIT 15");
+    $res_riwayat = $conn->query("SELECT waktu_absen, jenis_absen, status_kehadiran, keterangan FROM absensi_pegawai WHERE ustadz_id = $selected_staf_id AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date' ORDER BY waktu_absen DESC LIMIT 15");
     $riwayat = [];
     if ($res_riwayat) {
         while ($row = $res_riwayat->fetch_assoc()) {

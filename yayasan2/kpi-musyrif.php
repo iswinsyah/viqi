@@ -33,6 +33,9 @@ $selected_musyrif_id = isset($_GET['musyrif_id']) ? (int)$_GET['musyrif_id'] : (
 $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 
+$start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
+$end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
+
 // Fetch Musyrif Detail
 $staf = null;
 if ($selected_musyrif_id > 0) {
@@ -79,8 +82,7 @@ if ($staf) {
                    SUM(CASE WHEN status_validasi IN ('Disetujui', 'Ditolak') THEN 1 ELSE 0 END) as divalidasi
             FROM ibadah_harian_santri
             WHERE santri_id IN ($santri_list_str) 
-              AND MONTH(tanggal) = $selected_month 
-              AND YEAR(tanggal) = $selected_year
+              AND tanggal BETWEEN '$start_date' AND '$end_date'
         ");
         $row_ib = $res_ib ? $res_ib->fetch_assoc() : ['total' => 0, 'divalidasi' => 0];
         $total_ib = (int)($row_ib['total'] ?? 0);
@@ -94,8 +96,7 @@ if ($staf) {
                    SUM(CASE WHEN catatan_musyrif IS NOT NULL AND TRIM(catatan_musyrif) != '' THEN 1 ELSE 0 END) as dibimbing
             FROM ibadah_harian_santri
             WHERE santri_id IN ($santri_list_str)
-              AND MONTH(tanggal) = $selected_month 
-              AND YEAR(tanggal) = $selected_year
+              AND tanggal BETWEEN '$start_date' AND '$end_date'
               AND is_haid = 0
               AND (sholat_subuh = 'Munfarid' OR sholat_dhuhur = 'Munfarid' OR sholat_ashar = 'Munfarid' OR sholat_maghrib = 'Munfarid' OR sholat_isya = 'Munfarid')
         ");
@@ -120,8 +121,7 @@ if ($staf) {
             FROM jurnal_kontak_orangtua
             WHERE ustadz_id = $selected_musyrif_id 
               AND santri_id IN ($santri_list_str)
-              AND MONTH(tanggal) = $selected_month 
-              AND YEAR(tanggal) = $selected_year
+              AND tanggal BETWEEN '$start_date' AND '$end_date'
         ");
         $kontak_cnt = $res_kon ? (int)($res_kon->fetch_assoc()['total_kontak'] ?? 0) : 0;
         $skor_kontak_walisantri = min(100, ($kontak_cnt / $total_santri_binaan) * 100);
@@ -135,8 +135,7 @@ if ($staf) {
         SELECT COUNT(*) as total 
         FROM jurnal_belajar_mandiri
         WHERE ustadz_id = $selected_musyrif_id 
-          AND MONTH(tanggal) = $selected_month 
-          AND YEAR(tanggal) = $selected_year
+          AND tanggal BETWEEN '$start_date' AND '$end_date'
     ");
     $total_bel = $res_bel ? (int)($res_bel->fetch_assoc()['total'] ?? 0) : 0;
     $skor_belajar_mandiri = min(100, ($total_bel / 20) * 100);
@@ -149,8 +148,7 @@ if ($staf) {
                    SUM(CASE WHEN status_kesehatan = 'Sehat / Sembuh' OR status_izin_sekolah = 'Selesai / Sembuh' THEN 1 ELSE 0 END) as sembuh
             FROM jurnal_kesehatan_santri
             WHERE santri_id IN ($santri_list_str)
-              AND MONTH(tanggal) = $selected_month 
-              AND YEAR(tanggal) = $selected_year
+              AND tanggal BETWEEN '$start_date' AND '$end_date'
         ");
         $row_kes = $res_kes ? $res_kes->fetch_assoc() : ['total' => 0, 'sembuh' => 0];
         $total_kes = (int)($row_kes['total'] ?? 0);
@@ -167,8 +165,7 @@ if ($staf) {
             SELECT COUNT(*) as total 
             FROM laporan_setoran_hafalan
             WHERE santri_id IN ($santri_list_str)
-              AND MONTH(created_at) = $selected_month 
-              AND YEAR(created_at) = $selected_year
+              AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'
         ");
         $total_haf = $res_haf ? (int)($res_haf->fetch_assoc()['total'] ?? 0) : 0;
         $target_haf = $total_santri_binaan * 4;
@@ -184,8 +181,7 @@ if ($staf) {
             SELECT COUNT(*) as total 
             FROM buku_mutabaah
             WHERE musyrif_id = $selected_musyrif_id 
-              AND MONTH(tanggal) = $selected_month 
-              AND YEAR(tanggal) = $selected_year
+              AND tanggal BETWEEN '$start_date' AND '$end_date'
         ");
         $total_mut = $res_mut ? (int)($res_mut->fetch_assoc()['total'] ?? 0) : 0;
         $target_mut = $total_santri_binaan * 2;
@@ -201,8 +197,7 @@ if ($staf) {
         FROM absensi_pegawai
         WHERE ustadz_id = $selected_musyrif_id 
           AND jenis_absen IN ('Pegawai', 'Harian')
-          AND MONTH(waktu_absen) = $selected_month 
-          AND YEAR(waktu_absen) = $selected_year
+          AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'
           AND status_kehadiran = 'Masuk'
     ");
     $total_absen = $res_abs ? (int)($res_abs->fetch_assoc()['total_absen'] ?? 0) : 0;
@@ -215,8 +210,7 @@ if ($staf) {
         FROM absensi_pegawai
         WHERE ustadz_id = $selected_musyrif_id 
           AND jenis_absen = 'Rapat'
-          AND MONTH(waktu_absen) = $selected_month 
-          AND YEAR(waktu_absen) = $selected_year
+          AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'
           AND status_kehadiran = 'Masuk'
     ");
     $hadir_rapat = $res_rpt_hadir ? (int)$res_rpt_hadir->fetch_assoc()['total_hadir'] : 0;
@@ -224,8 +218,7 @@ if ($staf) {
     $res_tot_rapat = $conn->query("
         SELECT COUNT(*) as total 
         FROM jadwal_rapat 
-        WHERE MONTH(waktu_mulai) = $selected_month 
-          AND YEAR(waktu_mulai) = $selected_year
+        WHERE DATE(waktu_mulai) BETWEEN '$start_date' AND '$end_date'
     ");
     $total_rapat_bln = $res_tot_rapat ? (int)$res_tot_rapat->fetch_assoc()['total'] : 0;
     $skor_absensi_rapat = $total_rapat_bln > 0 ? min(100, ($hadir_rapat / $total_rapat_bln) * 100) : 100;

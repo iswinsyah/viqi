@@ -62,6 +62,9 @@ $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 $selected_staf_id = isset($_GET['staf_id']) ? (int)$_GET['staf_id'] : 0; // 0 = Semua Pegawai
 
+$start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
+$end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
+
 // Hitung Semester Berjalan
 if ($selected_month >= 7) {
     $semester_str = $selected_year . '/' . ($selected_year + 1) . '-Ganjil';
@@ -104,8 +107,7 @@ if ($res_pegawai_data) {
                                   FROM jurnal_mengajar j 
                                   LEFT JOIN master_mapel m ON j.mapel_id = m.id 
                                   WHERE j.ustadz_id = $p_id 
-                                  AND MONTH(j.tanggal) = $selected_month 
-                                  AND YEAR(j.tanggal) = $selected_year");
+                                  AND j.tanggal BETWEEN '$start_date' AND '$end_date'");
         
         $jp_diniyah_terlaksana = 0;
         $jp_diknas_terlaksana = 0;
@@ -133,8 +135,8 @@ if ($res_pegawai_data) {
         $is_daily_worker = !empty(array_intersect($eligible_roles, $u_roles_trimmed));
         
         if ($is_daily_worker) {
-            $start_date_str = "$selected_year-$selected_month-01";
-            $end_date_str = date('Y-m-t', strtotime($start_date_str));
+            $start_date_str = $start_date;
+            $end_date_str = $end_date;
             if (strtotime($end_date_str) > time()) {
                 $end_date_str = date('Y-m-d');
             }
@@ -166,8 +168,7 @@ if ($res_pegawai_data) {
         // --- B. ANALISIS ABSENSI BULAN INI ---
         $q_absen = $conn->query("SELECT * FROM absensi_pegawai 
                                  WHERE ustadz_id = $p_id 
-                                 AND MONTH(waktu_absen) = $selected_month 
-                                 AND YEAR(waktu_absen) = $selected_year");
+                                 AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
         
         $total_absen = 0;
         $hadir_tepat = 0;

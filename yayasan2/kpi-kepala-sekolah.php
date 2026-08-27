@@ -46,6 +46,9 @@ list($selected_year, $selected_month) = explode('-', $selected_period);
 $selected_month = (int)$selected_month;
 $selected_year = (int)$selected_year;
 
+$start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
+$end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
+
 $pesan_sukses = '';
 $pesan_error = '';
 
@@ -117,7 +120,7 @@ if ($kbm_terjadwal > 0) {
 // Target: minimal 2 kali supervisi per bulan
 $total_supervisi = 0;
 if ($selected_kepsek_id > 0) {
-    $res_sup = $conn->query("SELECT COUNT(*) as total FROM supervisi_mengajar WHERE supervisor_id = $selected_kepsek_id AND MONTH(tanggal_supervisi) = $selected_month AND YEAR(tanggal_supervisi) = $selected_year");
+    $res_sup = $conn->query("SELECT COUNT(*) as total FROM supervisi_mengajar WHERE supervisor_id = $selected_kepsek_id AND DATE(tanggal_supervisi) BETWEEN '$start_date' AND '$end_date'");
     $total_supervisi = $res_sup ? (int)$res_sup->fetch_assoc()['total'] : 0;
 }
 $score_supervisi = min(100, ($total_supervisi / 2) * 100);
@@ -134,7 +137,7 @@ if ($rpp_total > 0) {
 // Target: 2 kali rapat koordinasi 2-pekanan per bulan
 $total_rapat_hadir = 0;
 if ($selected_kepsek_id > 0) {
-    $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as total FROM absensi_pegawai WHERE ustadz_id = $selected_kepsek_id AND jenis_absen = 'Rapat' AND MONTH(waktu_absen) = $selected_month AND YEAR(waktu_absen) = $selected_year AND status_kehadiran = 'Masuk'");
+    $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as total FROM absensi_pegawai WHERE ustadz_id = $selected_kepsek_id AND jenis_absen = 'Rapat' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date' AND status_kehadiran = 'Masuk'");
     $total_rapat_hadir = $res_rapat ? (int)$res_rapat->fetch_assoc()['total'] : 0;
 }
 $score_rapat = min(100, ($total_rapat_hadir / 2) * 100);
@@ -145,7 +148,7 @@ $is_exam_month = in_array($selected_month, [3, 6, 10, 12]);
 $avg_nilai = 0;
 
 if ($is_exam_month) {
-    $res_nilai = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE MONTH(created_at) = $selected_month AND YEAR(created_at) = $selected_year");
+    $res_nilai = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE DATE(created_at) BETWEEN '$start_date' AND '$end_date'");
     $avg_nilai = $res_nilai ? (float)($res_nilai->fetch_assoc()['rata_rata'] ?? 0) : 0;
     
     // Fallback to overall database average if no records found in this specific month/year
