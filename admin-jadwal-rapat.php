@@ -321,6 +321,22 @@ if ($res_u) {
     }
 }
 
+// Filtered pegawai lists per tab
+$ustadz_sekolah = array_filter($all_ustadz, function($u) {
+    $roles = array_map('trim', array_map('strtolower', explode(',', $u['role'] ?? '')));
+    return !empty(array_intersect($roles, ['admin_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'tutor']));
+});
+
+$ustadz_mahad = array_filter($all_ustadz, function($u) {
+    $roles = array_map('trim', array_map('strtolower', explode(',', $u['role'] ?? '')));
+    return !empty(array_intersect($roles, ['ustadz', 'ustadzah', 'kepala_asrama', 'kepala_asrama_rijal', 'kepala_asrama_nisa', 'musyrif', 'musyrifah']));
+});
+
+$ustadz_ldu = array_filter($all_ustadz, function($u) {
+    $roles = array_map('trim', array_map('strtolower', explode(',', $u['role'] ?? '')));
+    return !empty(array_intersect($roles, ['staff_ldu', 'kepala_ldu', 'direktur_ldu']));
+});
+
 $all_ortu = [];
 $res_o = $conn->query("SELECT id, nama_orangtua FROM akun_orangtua ORDER BY nama_orangtua ASC");
 if ($res_o) {
@@ -574,13 +590,17 @@ if ($res_o) {
                                                     <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                                 </label>
                                                 <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
-                                                    <?php foreach ($all_ustadz as $u): ?>
-                                                        <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
-                                                            <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-cyan-600 focus:ring-cyan-500">
-                                                            <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
-                                                            <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
-                                                        </label>
-                                                    <?php endforeach; ?>
+                                                    <?php if (empty($ustadz_sekolah)): ?>
+                                                        <p class="text-[10px] text-gray-400 italic">Belum ada admin/tutor terdaftar.</p>
+                                                    <?php else: ?>
+                                                        <?php foreach ($ustadz_sekolah as $u): ?>
+                                                            <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                                <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-cyan-600 focus:ring-cyan-500">
+                                                                <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
+                                                                <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
+                                                            </label>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                             <div>
@@ -698,13 +718,17 @@ if ($res_o) {
                                                     <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                                 </label>
                                                 <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
-                                                    <?php foreach ($all_ustadz as $u): ?>
-                                                        <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
-                                                            <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-emerald-600 focus:ring-emerald-500">
-                                                            <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
-                                                            <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
-                                                        </label>
-                                                    <?php endforeach; ?>
+                                                    <?php if (empty($ustadz_mahad)): ?>
+                                                        <p class="text-[10px] text-gray-400 italic">Belum ada pegawai Ma'had terdaftar.</p>
+                                                    <?php else: ?>
+                                                        <?php foreach ($ustadz_mahad as $u): ?>
+                                                            <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                                <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                                                <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
+                                                                <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
+                                                            </label>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
                                                 </div>
                                             </div>
                                             <div>
@@ -925,14 +949,18 @@ if ($res_o) {
                                                 <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                             </label>
                                             <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
-                                                <?php foreach ($all_ustadz as $u): ?>
-                                                    <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
-                                                        <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                                        <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
-                                                        <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
-                                                    </label>
-                                                <?php endforeach; ?>
-                                            </div>
+                                                <?php if (empty($ustadz_ldu)): ?>
+                                                     <p class="text-[10px] text-gray-400 italic">Belum ada staff LDU terdaftar.</p>
+                                                 <?php else: ?>
+                                                     <?php foreach ($ustadz_ldu as $u): ?>
+                                                         <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                             <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                                             <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
+                                                             <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
+                                                         </label>
+                                                     <?php endforeach; ?>
+                                                 <?php endif; ?>
+                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex justify-end pt-2">
