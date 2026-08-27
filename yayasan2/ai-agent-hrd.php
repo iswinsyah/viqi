@@ -465,6 +465,24 @@ $tot_sp1_aktif = count($sp1_list_all);
                                     $sp_t = $sp['jenis_sp'];
                                     $b_class = ($sp_t === 'BLOKIR') ? 'bg-rose-950 text-white border-rose-900' : (($sp_t === 'SP-2') ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-rose-100 text-rose-800 border-rose-200');
                                     $b_label = ($sp_t === 'BLOKIR') ? '⛔ DIBLOKIR' : (($sp_t === 'SP-2') ? '⚠️ SP-2 Aktif' : '⚠️ SP-1 Aktif');
+                                    
+                                    // Query specific alpa dates for this employee in this semester
+                                    $sp_ustadz_id = (int)$sp['ustadz_id'];
+                                    $q_alpa_dates = $conn->query("
+                                        SELECT DISTINCT DATE(waktu_absen) as tgl_alpa 
+                                        FROM absensi_pegawai 
+                                        WHERE ustadz_id = $sp_ustadz_id 
+                                          AND DATE(waktu_absen) BETWEEN '$start_sem_date' AND '$end_sem_date' 
+                                          AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
+                                        ORDER BY waktu_absen ASC
+                                    ");
+                                    $alpa_dates_arr = [];
+                                    if ($q_alpa_dates) {
+                                        while ($ad_row = $q_alpa_dates->fetch_assoc()) {
+                                            $alpa_dates_arr[] = date('d/m/Y', strtotime($ad_row['tgl_alpa']));
+                                        }
+                                    }
+                                    $alpa_dates_str = !empty($alpa_dates_arr) ? implode(', ', $alpa_dates_arr) : 'Tidak terdeteksi';
                                     ?>
                                     <tr class="hover:bg-rose-50/30 transition duration-150">
                                         <td class="px-4 py-3 text-center font-semibold text-slate-500"><?= $no++ ?></td>
@@ -481,8 +499,13 @@ $tot_sp1_aktif = count($sp1_list_all);
                                                 <?= $b_label ?>
                                             </span>
                                         </td>
-                                        <td class="px-4 py-3 text-slate-600 italic">
-                                            <?= htmlspecialchars($sp['alasan']) ?>
+                                        <td class="px-4 py-3 text-slate-600">
+                                            <div class="italic">
+                                                <?= htmlspecialchars($sp['alasan']) ?>
+                                            </div>
+                                            <div class="text-[10px] text-rose-600 font-bold mt-1.5 flex items-center gap-1">
+                                                <i class="fas fa-calendar-times"></i> Tanggal Alpa: <span class="bg-rose-50 px-2 py-0.5 rounded border border-rose-100"><?= $alpa_dates_str ?></span>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
