@@ -566,29 +566,40 @@ if ($res_o) {
                                             </div>
                                         </div>
 
-                                        <!-- Undangan Khusus Per Nama -->
+                                        <!-- Undangan Khusus Per Nama (Checkbox List) -->
                                         <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
                                             <div>
-                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                                    <i class="fas fa-user-check text-cyan-600 mr-1"></i> Undangan Khusus Tutor / Pegawai (Per Nama)
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                                                    <span><i class="fas fa-user-check text-cyan-600 mr-1"></i> Undangan Khusus Tutor / Pegawai</span>
+                                                    <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                                 </label>
-                                                <select name="target_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-cyan-500 h-24 bg-white">
+                                                <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
                                                     <?php foreach ($all_ustadz as $u): ?>
-                                                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= htmlspecialchars($u['role']) ?>)</option>
+                                                        <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                            <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-cyan-600 focus:ring-cyan-500">
+                                                            <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
+                                                            <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
+                                                        </label>
                                                     <?php endforeach; ?>
-                                                </select>
-                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                                </div>
                                             </div>
                                             <div>
-                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                                    <i class="fas fa-users text-cyan-600 mr-1"></i> Undangan Khusus Orangtua (Per Nama)
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                                                    <span><i class="fas fa-users text-cyan-600 mr-1"></i> Undangan Khusus Orangtua</span>
+                                                    <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                                 </label>
-                                                <select name="target_ortu_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-cyan-500 h-24 bg-white">
-                                                    <?php foreach ($all_ortu as $o): ?>
-                                                        <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nama_orangtua']) ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                                <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
+                                                    <?php if (empty($all_ortu)): ?>
+                                                        <p class="text-[10px] text-gray-400 italic">Belum ada akun orangtua.</p>
+                                                    <?php else: ?>
+                                                        <?php foreach ($all_ortu as $o): ?>
+                                                            <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                                <input type="checkbox" name="target_ortu_ids[]" value="<?= $o['id'] ?>" class="rounded text-cyan-600 focus:ring-cyan-500">
+                                                                <span class="text-gray-700 font-medium"><?= htmlspecialchars($o['nama_orangtua']) ?></span>
+                                                            </label>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -679,29 +690,40 @@ if ($res_o) {
                                             </div>
                                         </div>
 
-                                        <!-- Undangan Khusus Per Nama -->
+                                        <!-- Undangan Khusus Per Nama (Checkbox List) -->
                                         <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
                                             <div>
-                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                                    <i class="fas fa-user-check text-emerald-600 mr-1"></i> Undangan Khusus Ustadz, Ustadzah, Musyrif & Musyrifah (Per Nama)
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                                                    <span><i class="fas fa-user-check text-emerald-600 mr-1"></i> Undangan Khusus Ustadz/ah & Musyrif/ah</span>
+                                                    <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                                 </label>
-                                                <select name="target_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 h-24 bg-white">
+                                                <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
                                                     <?php foreach ($all_ustadz as $u): ?>
-                                                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= htmlspecialchars($u['role']) ?>)</option>
+                                                        <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                            <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                                            <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
+                                                            <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
+                                                        </label>
                                                     <?php endforeach; ?>
-                                                </select>
-                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                                </div>
                                             </div>
                                             <div>
-                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                                    <i class="fas fa-users text-emerald-600 mr-1"></i> Undangan Khusus Orangtua (Per Nama)
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                                                    <span><i class="fas fa-users text-emerald-600 mr-1"></i> Undangan Khusus Orangtua</span>
+                                                    <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                                 </label>
-                                                <select name="target_ortu_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 h-24 bg-white">
-                                                    <?php foreach ($all_ortu as $o): ?>
-                                                        <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nama_orangtua']) ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                                <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
+                                                    <?php if (empty($all_ortu)): ?>
+                                                        <p class="text-[10px] text-gray-400 italic">Belum ada akun orangtua.</p>
+                                                    <?php else: ?>
+                                                        <?php foreach ($all_ortu as $o): ?>
+                                                            <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                                <input type="checkbox" name="target_ortu_ids[]" value="<?= $o['id'] ?>" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                                                <span class="text-gray-700 font-medium"><?= htmlspecialchars($o['nama_orangtua']) ?></span>
+                                                            </label>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -788,29 +810,40 @@ if ($res_o) {
                                             </div>
                                         </div>
 
-                                        <!-- Undangan Khusus Per Nama -->
+                                        <!-- Undangan Khusus Per Nama (Checkbox List) -->
                                         <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
                                             <div>
-                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                                    <i class="fas fa-user-check text-amber-600 mr-1"></i> Undangan Khusus Semua Pegawai (Per Nama)
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                                                    <span><i class="fas fa-user-check text-amber-600 mr-1"></i> Undangan Khusus Pegawai</span>
+                                                    <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                                 </label>
-                                                <select name="target_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-amber-500 h-24 bg-white">
+                                                <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
                                                     <?php foreach ($all_ustadz as $u): ?>
-                                                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= htmlspecialchars($u['role']) ?>)</option>
+                                                        <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                            <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-amber-600 focus:ring-amber-500">
+                                                            <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
+                                                            <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
+                                                        </label>
                                                     <?php endforeach; ?>
-                                                </select>
-                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                                </div>
                                             </div>
                                             <div>
-                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                                    <i class="fas fa-users text-amber-600 mr-1"></i> Undangan Khusus Orangtua (Per Nama)
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                                                    <span><i class="fas fa-users text-amber-600 mr-1"></i> Undangan Khusus Orangtua</span>
+                                                    <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                                 </label>
-                                                <select name="target_ortu_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-amber-500 h-24 bg-white">
-                                                    <?php foreach ($all_ortu as $o): ?>
-                                                        <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nama_orangtua']) ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                                <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
+                                                    <?php if (empty($all_ortu)): ?>
+                                                        <p class="text-[10px] text-gray-400 italic">Belum ada akun orangtua.</p>
+                                                    <?php else: ?>
+                                                        <?php foreach ($all_ortu as $o): ?>
+                                                            <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                                <input type="checkbox" name="target_ortu_ids[]" value="<?= $o['id'] ?>" class="rounded text-amber-600 focus:ring-amber-500">
+                                                                <span class="text-gray-700 font-medium"><?= htmlspecialchars($o['nama_orangtua']) ?></span>
+                                                            </label>
+                                                        <?php endforeach; ?>
+                                                    <?php endif; ?>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -885,17 +918,21 @@ if ($res_o) {
                                             </div>
                                         </div>
 
-                                        <!-- Undangan Khusus Per Nama -->
+                                        <!-- Undangan Khusus Per Nama (Checkbox List) -->
                                         <div class="md:col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                                            <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                                <i class="fas fa-user-check text-indigo-600 mr-1"></i> Undangan Khusus Staff LDU / Pegawai (Per Nama)
+                                            <label class="block text-[11px] font-bold text-gray-700 mb-1.5 flex items-center justify-between">
+                                                <span><i class="fas fa-user-check text-indigo-600 mr-1"></i> Undangan Khusus Staff LDU / Pegawai</span>
+                                                <span class="text-[9px] text-gray-400 font-normal">Centang nama yang diundang</span>
                                             </label>
-                                            <select name="target_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 h-24 bg-white">
+                                            <div class="max-h-36 overflow-y-auto bg-white border border-gray-200 rounded-lg p-2 space-y-1 divide-y divide-gray-50">
                                                 <?php foreach ($all_ustadz as $u): ?>
-                                                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= htmlspecialchars($u['role']) ?>)</option>
+                                                    <label class="flex items-center space-x-2 pt-1 first:pt-0 cursor-pointer hover:bg-slate-50 p-0.5 rounded text-xs">
+                                                        <input type="checkbox" name="target_ids[]" value="<?= $u['id'] ?>" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                                        <span class="text-gray-700 font-medium"><?= htmlspecialchars($u['nama']) ?></span>
+                                                        <span class="text-[9px] text-gray-400"> (<?= htmlspecialchars($u['role']) ?>)</span>
+                                                    </label>
                                                 <?php endforeach; ?>
-                                            </select>
-                                            <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="flex justify-end pt-2">
