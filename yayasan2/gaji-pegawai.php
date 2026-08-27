@@ -41,9 +41,9 @@ $months = [
 ];
 
 function getUstadzGradeRateForPeriod($conn, $ust_id, $role_str, $gaji_grade_a, $gaji_grade_b, $gaji_grade_c, $start_date, $end_date) {
-    $user_roles = !empty($role_str) ? explode(',', $role_str) : [];
-    $is_teacher = in_array('ustadz', $user_roles) || in_array('guru', $user_roles);
-    $eligible_roles_pegawai = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
+    $user_roles = !empty($role_str) ? array_map('trim', array_map('strtolower', explode(',', $role_str))) : [];
+    $is_teacher = in_array('ustadz', $user_roles) || in_array('ustadzah', $user_roles) || in_array('guru', $user_roles) || in_array('tutor', $user_roles);
+    $eligible_roles_pegawai = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'kepala_asrama_rijal', 'kepala_asrama_nisa', 'musyrif'];
     $is_daily_worker = !empty(array_intersect($eligible_roles_pegawai, $user_roles));
 
     // A. Jurnal Periode Ini

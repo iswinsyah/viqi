@@ -38,9 +38,9 @@ $start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_y
 $end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
 
 function getUstadzGradeRate($conn, $ust_id, $role_str, $gaji_grade_a, $gaji_grade_b, $gaji_grade_c) {
-    $user_roles = !empty($role_str) ? explode(',', $role_str) : [];
-    $is_teacher = in_array('ustadz', $user_roles) || in_array('guru', $user_roles);
-    $eligible_roles_pegawai = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
+    $user_roles = !empty($role_str) ? array_map('trim', array_map('strtolower', explode(',', $role_str))) : [];
+    $is_teacher = in_array('ustadz', $user_roles) || in_array('ustadzah', $user_roles) || in_array('guru', $user_roles) || in_array('tutor', $user_roles);
+    $eligible_roles_pegawai = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'kepala_asrama_rijal', 'kepala_asrama_nisa', 'musyrif'];
     $is_daily_worker = !empty(array_intersect($eligible_roles_pegawai, $user_roles));
 
     $current_day = (int)date('d');
