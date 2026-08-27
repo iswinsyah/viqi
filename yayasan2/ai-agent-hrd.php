@@ -178,11 +178,30 @@ if ($res_pegawai_data) {
         $alpa = 0;
         $array_menit_terlambat = [];
 
+        $absen_per_hari = [];
         if ($q_absen) {
             while ($ab = $q_absen->fetch_assoc()) {
-                $total_absen++;
-                $st_kehadiran = $ab['status_kehadiran'] ?? '';
-                $ket = $ab['keterangan'] ?? '';
+                $tgl = date('Y-m-d', strtotime($ab['waktu_absen']));
+                if (!isset($absen_per_hari[$tgl])) {
+                    $absen_per_hari[$tgl] = [];
+                }
+                $absen_per_hari[$tgl][] = $ab;
+            }
+        }
+
+        if (!empty($absen_per_hari)) {
+            foreach ($absen_per_hari as $tgl => $rows) {
+                // Tentukan record utama untuk hari ini (utamakan check-in 'Masuk')
+                $primary = $rows[0];
+                foreach ($rows as $r) {
+                    if (($r['status_kehadiran'] ?? '') === 'Masuk') {
+                        $primary = $r;
+                        break;
+                    }
+                }
+                
+                $st_kehadiran = $primary['status_kehadiran'] ?? '';
+                $ket = $primary['keterangan'] ?? '';
 
                 if ($st_kehadiran === 'Alpa' || strpos($st_kehadiran, 'Alpa') !== false) {
                     $alpa++;
@@ -202,6 +221,7 @@ if ($res_pegawai_data) {
                     $sakit++;
                 } elseif (strpos($ket, 'Terlambat') !== false) {
                     $hadir_terlambat++;
+                    $total_absen++;
                     if (preg_match('/Terlambat:\s*(\d+)\s*menit/i', $ket, $matches)) {
                         $array_menit_terlambat[] = (int)$matches[1];
                     } else {
@@ -209,6 +229,7 @@ if ($res_pegawai_data) {
                     }
                 } else {
                     $hadir_tepat++;
+                    $total_absen++;
                 }
             }
         }
