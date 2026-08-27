@@ -46,7 +46,7 @@ if ($res_past_rejections) {
                 }
                 
                 if (!$is_approved_day) {
-                    $chk_abs = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $p_emp AND DATE(waktu_absen) = '$check_tgl' AND jenis_absen = 'Pegawai'");
+                    $chk_abs = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $p_emp AND DATE(waktu_absen) = '$check_tgl' AND jenis_absen IN ('Pegawai', 'Harian', 'Mengajar')");
                     if ($chk_abs && $chk_abs->num_rows == 0) {
                         $w_abs = $check_tgl . " 08:00:00";
                         $conn->query("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, keterangan) VALUES ($p_emp, '$w_abs', 'Pegawai', 'Alpa', 'Alpa (Izin Tidak Disetujui / Ditolak Atasan)')");
