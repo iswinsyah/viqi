@@ -1619,6 +1619,133 @@ if (!empty($slots_to_check)) {
     logAgent("🎉 Agent HRD: Pengecekan Jurnal & Absen Mengajar Selesai.");
 }
 
+// 4. REMINDER RAPAT (10 Menit Sebelum Rapat Dimulai)
+$hrd_rapat_log_file = __DIR__ . '/agent_hrd_rapat_log.txt';
+$hrd_rapat_log = file_exists($hrd_rapat_log_file) ? file_get_contents($hrd_rapat_log_file) : "";
+
+$res_rapat_mendatang = $conn->query("SELECT * FROM jadwal_rapat WHERE status = 'aktif' AND DATE(waktu_mulai) = '$today'");
+if ($res_rapat_mendatang && $res_rapat_mendatang->num_rows > 0) {
+    while ($rapat = $res_rapat_mendatang->fetch_assoc()) {
+        $rapat_id = (int)$rapat['id'];
+        $waktu_rapat_str = $rapat['waktu_mulai'];
+        $rapat_epoch = strtotime($waktu_rapat_str);
+        $current_epoch = strtotime("$today $current_time_hm");
+        
+        // Window 10 menit sebelum rapat dimulai (sampai saat rapat dimulai)
+        $is_in_window = ($current_epoch >= ($rapat_epoch - 600) && $current_epoch <= $rapat_epoch);
+        $already_reminded = (strpos($hrd_rapat_log, "REMINDED_{$today}_rapat_{$rapat_id}") !== false);
+        $force_rapat = ($force === 'hrd_rapat');
+        
+        if (($is_in_window || $force_rapat) && (!$already_reminded || $force_rapat)) {
+            logAgent("⏰ Menjalankan Reminder WA Rapat 10 Menit Sebelum Dimulai - Agenda: {$rapat['agenda']}");
+            
+            $target_data = json_decode($rapat['peserta_terundang'] ?? '', true) ?: [];
+            $target_roles = $target_data['roles'] ?? [];
+            $target_ids = $target_data['ids'] ?? [];
+            $target_ortu_ids = $target_data['ortu_ids'] ?? [];
+            
+            $agenda = $rapat['agenda'];
+            $tempat = $rapat['tempat_rapat'] ?: 'Ruang Rapat Utama';
+            $jam_mulai = date('H:i', strtotime($waktu_rapat_str));
+            
+            // 1. Send WA Reminder to target employees
+            $res_peg = $conn->query("SELECT id, nama, role, whatsapp FROM akun_ustadz WHERE whatsapp IS NOT NULL AND whatsapp != ''");
+            if ($res_peg && $res_peg->num_rows > 0) {
+                while ($p = $res_peg->fetch_assoc()) {
+                    $p_id = (int)$p['id'];
+                    $p_roles = array_map('trim', explode(',', $p['role'] ?? ''));
+                    $no_wa = preg_replace('/[^0-9]/', '', $p['whatsapp']);
+                    if (empty($no_wa)) continue;
+                    if (substr($no_wa, 0, 1) === '0') $no_wa = '62' . substr($no_wa, 1);
+                    elseif (substr($no_wa, 0, 2) !== '62') $no_wa = '62' . $no_wa;
+                    
+                    $is_target = in_array($p_id, array_map('intval', $target_ids)) || in_array('semua_pegawai', $target_roles);
+                    if (!$is_target && !empty($target_roles)) {
+                        foreach ($target_roles as $tr) {
+                            if (in_array($tr, $p_roles)) { $is_target = true; break; }
+                        }
+                    }
+                    
+                    if ($is_target) {
+                        // Skip if already present in this meeting
+                        $res_abs = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $p_id AND jenis_absen = 'Rapat' AND rapat_id = $rapat_id LIMIT 1");
+                        if ($res_abs && $res_abs->num_rows > 0) continue;
+                        
+                        $pesan = "⏰ *PENGINGAT RAPAT (10 MENIT LAGI)*\n\n"
+                               . "Assalamu'alaikum Wr. Wb. Yth. *{$p['nama']}* 🙏\n\n"
+                               . "Mengingatkan bahwa 10 menit lagi Rapat akan segera dimulai:\n"
+                               . "📌 *Agenda*: {$agenda}\n"
+                               . "📍 *Tempat*: {$tempat}\n"
+                               . "⏰ *Waktu*: Pukul {$jam_mulai} WIB\n\n"
+                               . "Mohon untuk segera menuju ke lokasi rapat dan melakukan Presensi Absen Rapat di Ruang Asatidz.\n\n"
+                               . "-- Panitia / Pengurus Rapat --";
+                        
+                        $waFd = ['target' => $no_wa, 'message' => $pesan];
+                        $ch = curl_init();
+                        curl_setopt_array($ch, [
+                            CURLOPT_URL => "https://api.fonnte.com/send",
+                            CURLOPT_RETURNTRANSFER => true,
+                            CURLOPT_POST => true,
+                            CURLOPT_POSTFIELDS => http_build_query($waFd),
+                            CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                            CURLOPT_TIMEOUT => 15
+                        ]);
+                        curl_exec($ch);
+                        curl_close($ch);
+                        
+                        logAgent("-> WA Reminder Rapat dikirim ke: {$p['nama']} ($no_wa)");
+                        sleep(1);
+                    }
+                }
+            }
+            
+            // 2. Send WA Reminder to target parents
+            if (!empty($target_ortu_ids)) {
+                $ortu_id_str = implode(',', array_map('intval', $target_ortu_ids));
+                $res_ortu = $conn->query("SELECT id, nama_orangtua, whatsapp FROM akun_orangtua WHERE id IN ($ortu_id_str) AND whatsapp IS NOT NULL AND whatsapp != ''");
+                if ($res_ortu && $res_ortu->num_rows > 0) {
+                    while ($o = $res_ortu->fetch_assoc()) {
+                        $no_wa = preg_replace('/[^0-9]/', '', $o['whatsapp']);
+                        if (empty($no_wa)) continue;
+                        if (substr($no_wa, 0, 1) === '0') $no_wa = '62' . substr($no_wa, 1);
+                        elseif (substr($no_wa, 0, 2) !== '62') $no_wa = '62' . $no_wa;
+                        
+                        $pesan = "⏰ *PENGINGAT RAPAT (10 MENIT LAGI)*\n\n"
+                               . "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu *{$o['nama_orangtua']}* 🙏\n\n"
+                               . "Mengingatkan bahwa 10 menit lagi Rapat Walisantri akan segera dimulai:\n"
+                               . "📌 *Agenda*: {$agenda}\n"
+                               . "📍 *Tempat*: {$tempat}\n"
+                               . "⏰ *Waktu*: Pukul {$jam_mulai} WIB\n\n"
+                               . "Mohon untuk segera bersiap dan mempresensikan kehadiran Anda.\n\n"
+                               . "-- Panitia / Pengurus Rapat --";
+                        
+                        $waFd = ['target' => $no_wa, 'message' => $pesan];
+                        $ch = curl_init();
+                        curl_setopt_array($ch, [
+                            CURLOPT_URL => "https://api.fonnte.com/send",
+                            CURLOPT_RETURNTRANSFER => true,
+                            CURLOPT_POST => true,
+                            CURLOPT_POSTFIELDS => http_build_query($waFd),
+                            CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
+                            CURLOPT_TIMEOUT => 15
+                        ]);
+                        curl_exec($ch);
+                        curl_close($ch);
+                        
+                        logAgent("-> WA Reminder Rapat dikirim ke Orangtua: {$o['nama_orangtua']} ($no_wa)");
+                        sleep(1);
+                    }
+                }
+            }
+            
+            if (!$force_rapat) {
+                file_put_contents($hrd_rapat_log_file, "REMINDED_{$today}_rapat_{$rapat_id}\n", FILE_APPEND);
+            }
+            logAgent("🎉 Agent HRD: Pengiriman Reminder WA Rapat ID {$rapat_id} Selesai.");
+        }
+    }
+}
+
 // 4. CHECKER VALIDASI MUTABAAH MUSYRIF (Pukul 20:30 WIB)
 $hrd_mutabaah_done = false;
 $hrd_mutabaah_log_file = __DIR__ . '/agent_hrd_mutabaah_log.txt';
