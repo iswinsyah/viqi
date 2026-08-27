@@ -126,6 +126,43 @@ if ($res_pegawai_data) {
         $jp_terlaksana = $jp_diniyah_terlaksana + $jp_diknas_terlaksana;
         $jp_kosong = max(0, $jp_total_target - $jp_terlaksana);
 
+        // Auto-detect missing check-in (Alpa Tanpa Keterangan) for daily workers
+        $u_roles = explode(',', $p['role'] ?? '');
+        $u_roles_trimmed = array_map('trim', $u_roles);
+        $eligible_roles = ['kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
+        $is_daily_worker = !empty(array_intersect($eligible_roles, $u_roles_trimmed));
+        
+        if ($is_daily_worker) {
+            $start_date_str = "$selected_year-$selected_month-01";
+            $end_date_str = date('Y-m-t', strtotime($start_date_str));
+            if (strtotime($end_date_str) > time()) {
+                $end_date_str = date('Y-m-d');
+            }
+            
+            $b_d = new DateTime($start_date_str);
+            $e_d = new DateTime($end_date_str);
+            $e_d->modify('+1 day');
+            $p_days = new DatePeriod($b_d, new DateInterval('P1D'), $e_d);
+            
+            foreach ($p_days as $date_obj) {
+                $tgl_check = $date_obj->format('Y-m-d');
+                $day_of_week = (int)$date_obj->format('N');
+                
+                if ($day_of_week !== 7) { // Skip Sundays
+                    // Check if there is any attendance record (Pegawai, Harian, Mengajar, Rapat) on this day
+                    $chk_exist = $conn->query("SELECT id FROM absensi_pegawai 
+                                               WHERE ustadz_id = $p_id 
+                                                 AND DATE(waktu_absen) = '$tgl_check'");
+                    if ($chk_exist && $chk_exist->num_rows === 0) {
+                        // Insert Alpa record
+                        $w_abs_alpa = $tgl_check . " 08:00:00";
+                        $conn->query("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, keterangan) 
+                                      VALUES ($p_id, '$w_abs_alpa', 'Pegawai', 'Alpa', 'Alpa (Tanpa Keterangan)')");
+                    }
+                }
+            }
+        }
+
         // --- B. ANALISIS ABSENSI BULAN INI ---
         $q_absen = $conn->query("SELECT * FROM absensi_pegawai 
                                  WHERE ustadz_id = $p_id 
