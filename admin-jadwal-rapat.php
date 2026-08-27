@@ -310,7 +310,24 @@ if ($rapat_aktif) {
 }
 
 // Otoritas membuat rapat
-$can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles) || in_array('ketua_yayasan', $user_roles);
+$can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles) || in_array('ketua_yayasan', $user_roles) || in_array('kepala_ldu', $user_roles) || in_array('direktur_ldu', $user_roles) || in_array('staff_ldu', $user_roles) || in_array('musyrif', $user_roles) || in_array('musyrifah', $user_roles);
+
+// Fetch List Ustadz/Pegawai & Orangtua untuk Undangan Khusus
+$all_ustadz = [];
+$res_u = $conn->query("SELECT id, nama, role FROM akun_ustadz WHERE status_pegawai != 'Nonaktif' ORDER BY nama ASC");
+if ($res_u) {
+    while ($row = $res_u->fetch_assoc()) {
+        $all_ustadz[] = $row;
+    }
+}
+
+$all_ortu = [];
+$res_o = $conn->query("SELECT id, nama_orangtua FROM akun_orangtua ORDER BY nama_orangtua ASC");
+if ($res_o) {
+    while ($row = $res_o->fetch_assoc()) {
+        $all_ortu[] = $row;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -459,15 +476,18 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                     <i class="fas fa-calendar-plus text-cyan-600"></i> Buat Jadwal Rapat Baru
                                 </h3>
                                 <!-- Form Selector tabs based on user roles -->
-                                <div class="flex gap-1.5">
+                                <div class="flex gap-1.5 flex-wrap">
                                     <?php if (in_array('kepala_sekolah', $user_roles) || in_array('super_admin', $user_roles) || in_array('admin_sekolah', $user_roles)): ?>
                                         <button onclick="switchFormTab('sekolah')" id="tab-btn-sekolah" class="py-1 px-2.5 font-bold text-[10px] rounded-lg bg-cyan-600 text-white shadow-sm transition-all">Sekolah</button>
                                     <?php endif; ?>
-                                    <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles) || in_array('musyrif', $user_roles)): ?>
-                                        <button onclick="switchFormTab('mahad')" id="tab-btn-mahad" class="py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all">Ma'had</button>
+                                    <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles) || in_array('musyrif', $user_roles) || in_array('musyrifah', $user_roles)): ?>
+                                        <button onclick="switchFormTab('mahad')" id="tab-btn-mahad" class="py-1 px-2.5 font-bold text-[10px] rounded-lg <?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('super_admin', $user_roles)) ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all">Ma'had</button>
                                     <?php endif; ?>
                                     <?php if (in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
                                         <button onclick="switchFormTab('yayasan')" id="tab-btn-yayasan" class="py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all">Yayasan</button>
+                                    <?php endif; ?>
+                                    <?php if (in_array('kepala_ldu', $user_roles) || in_array('direktur_ldu', $user_roles) || in_array('staff_ldu', $user_roles) || in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                                        <button onclick="switchFormTab('ldu')" id="tab-btn-ldu" class="py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all">LDU</button>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -527,26 +547,48 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                             <input type="date" name="tgl_penyesuaian_libur" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500">
                                         </div>
                                         
-                                        <!-- Target Peserta -->
+                                        <!-- Target Peserta Roles -->
                                         <div class="md:col-span-2 border-t pt-3">
                                             <label class="block text-xs font-bold text-gray-700 mb-2">Target Peserta (Berdasarkan Jabatan)</label>
                                             <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs">
-                                                <label class="flex items-center space-x-1.5 cursor-pointer">
-                                                    <input type="checkbox" name="target_roles[]" value="semua_pegawai" class="rounded text-cyan-600 focus:ring-cyan-500">
-                                                    <span>Semua Pegawai</span>
-                                                </label>
-                                                <label class="flex items-center space-x-1.5 cursor-pointer">
-                                                    <input type="checkbox" name="target_roles[]" value="kepala_sekolah" class="rounded text-cyan-600 focus:ring-cyan-500">
-                                                    <span>Kepala Sekolah</span>
-                                                </label>
                                                 <label class="flex items-center space-x-1.5 cursor-pointer">
                                                     <input type="checkbox" name="target_roles[]" value="admin_sekolah" class="rounded text-cyan-600 focus:ring-cyan-500">
                                                     <span>Admin Sekolah</span>
                                                 </label>
                                                 <label class="flex items-center space-x-1.5 cursor-pointer">
-                                                    <input type="checkbox" name="target_roles[]" value="ustadz" class="rounded text-cyan-600 focus:ring-cyan-500">
-                                                    <span>Ustadz / Guru</span>
+                                                    <input type="checkbox" name="target_roles[]" value="tutor" class="rounded text-cyan-600 focus:ring-cyan-500">
+                                                    <span>Tutor</span>
                                                 </label>
+                                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                                    <input type="checkbox" name="target_roles[]" value="orang_tua" class="rounded text-cyan-600 focus:ring-cyan-500">
+                                                    <span>Orangtua / Walisantri</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Undangan Khusus Per Nama -->
+                                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                                    <i class="fas fa-user-check text-cyan-600 mr-1"></i> Undangan Khusus Tutor / Pegawai (Per Nama)
+                                                </label>
+                                                <select name="target_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-cyan-500 h-24 bg-white">
+                                                    <?php foreach ($all_ustadz as $u): ?>
+                                                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= htmlspecialchars($u['role']) ?>)</option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                                    <i class="fas fa-users text-cyan-600 mr-1"></i> Undangan Khusus Orangtua (Per Nama)
+                                                </label>
+                                                <select name="target_ortu_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-cyan-500 h-24 bg-white">
+                                                    <?php foreach ($all_ortu as $o): ?>
+                                                        <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nama_orangtua']) ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
                                             </div>
                                         </div>
                                     </div>
@@ -560,8 +602,8 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                             <?php endif; ?>
 
                             <!-- 2. FORM RAPAT MA'HAD -->
-                            <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles) || in_array('musyrif', $user_roles)): ?>
-                            <div id="form-container-mahad" class="<?= (!in_array('kepala_sekolah', $user_roles)) ? 'block' : 'hidden' ?>">
+                            <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles) || in_array('musyrif', $user_roles) || in_array('musyrifah', $user_roles)): ?>
+                            <div id="form-container-mahad" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles)) ? 'block' : 'hidden' ?>">
                                 <form action="admin-jadwal-rapat.php" method="POST" class="space-y-4">
                                     <input type="hidden" name="action" value="buat_rapat">
                                     <input type="hidden" name="pengundang" value="kepala_mahad">
@@ -610,18 +652,10 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                             <input type="date" name="tanggal_lengkap" id="input_tanggal_lengkap_mahad" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-500" value="<?= date('Y-m-d') ?>">
                                         </div>
                                         
-                                        <!-- Target Peserta -->
+                                        <!-- Target Peserta Roles -->
                                         <div class="md:col-span-2 border-t pt-3">
                                             <label class="block text-xs font-bold text-gray-700 mb-2">Target Peserta (Berdasarkan Jabatan)</label>
                                             <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs">
-                                                <label class="flex items-center space-x-1.5 cursor-pointer">
-                                                    <input type="checkbox" name="target_roles[]" value="semua_pegawai" class="rounded text-emerald-600 focus:ring-emerald-500">
-                                                    <span>Semua Pegawai</span>
-                                                </label>
-                                                <label class="flex items-center space-x-1.5 cursor-pointer">
-                                                    <input type="checkbox" name="target_roles[]" value="kepala_mahad" class="rounded text-emerald-600 focus:ring-emerald-500">
-                                                    <span>Kepala Ma'had</span>
-                                                </label>
                                                 <label class="flex items-center space-x-1.5 cursor-pointer">
                                                     <input type="checkbox" name="target_roles[]" value="kepala_asrama" class="rounded text-emerald-600 focus:ring-emerald-500">
                                                     <span>Kepala Asrama</span>
@@ -630,6 +664,44 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                                     <input type="checkbox" name="target_roles[]" value="musyrif" class="rounded text-emerald-600 focus:ring-emerald-500">
                                                     <span>Musyrif</span>
                                                 </label>
+                                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                                    <input type="checkbox" name="target_roles[]" value="musyrifah" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                                    <span>Musyrifah</span>
+                                                </label>
+                                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                                    <input type="checkbox" name="target_roles[]" value="ustadzah" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                                    <span>Ustadzah</span>
+                                                </label>
+                                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                                    <input type="checkbox" name="target_roles[]" value="orang_tua" class="rounded text-emerald-600 focus:ring-emerald-500">
+                                                    <span>Orangtua / Walisantri</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Undangan Khusus Per Nama -->
+                                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                                    <i class="fas fa-user-check text-emerald-600 mr-1"></i> Undangan Khusus Ustadz, Ustadzah, Musyrif & Musyrifah (Per Nama)
+                                                </label>
+                                                <select name="target_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 h-24 bg-white">
+                                                    <?php foreach ($all_ustadz as $u): ?>
+                                                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= htmlspecialchars($u['role']) ?>)</option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                                    <i class="fas fa-users text-emerald-600 mr-1"></i> Undangan Khusus Orangtua (Per Nama)
+                                                </label>
+                                                <select name="target_ortu_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-emerald-500 h-24 bg-white">
+                                                    <?php foreach ($all_ortu as $o): ?>
+                                                        <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nama_orangtua']) ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
                                             </div>
                                         </div>
                                     </div>
@@ -644,7 +716,7 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
 
                             <!-- 3. FORM RAPAT YAYASAN -->
                             <?php if (in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
-                            <div id="form-container-yayasan" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles)) ? 'block' : 'hidden' ?>">
+                            <div id="form-container-yayasan" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles)) ? 'block' : 'hidden' ?>">
                                 <form action="admin-jadwal-rapat.php" method="POST" class="space-y-4">
                                     <input type="hidden" name="action" value="buat_rapat">
                                     <input type="hidden" name="pengundang" value="ketua_yayasan">
@@ -693,7 +765,7 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                             <input type="date" name="tanggal_lengkap" id="input_tanggal_lengkap_yayasan" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-amber-500" value="<?= date('Y-m-d') ?>">
                                         </div>
                                         
-                                        <!-- Target Peserta -->
+                                        <!-- Target Peserta Roles -->
                                         <div class="md:col-span-2 border-t pt-3">
                                             <label class="block text-xs font-bold text-gray-700 mb-2">Target Peserta (Berdasarkan Jabatan)</label>
                                             <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs">
@@ -702,19 +774,133 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
                                                     <span>Semua Pegawai & Asatidz</span>
                                                 </label>
                                                 <label class="flex items-center space-x-1.5 cursor-pointer">
+                                                    <input type="checkbox" name="target_roles[]" value="kepala_mahad" class="rounded text-amber-600 focus:ring-amber-500">
+                                                    <span>Kepala Ma'had</span>
+                                                </label>
+                                                <label class="flex items-center space-x-1.5 cursor-pointer">
                                                     <input type="checkbox" name="target_roles[]" value="kepala_sekolah" class="rounded text-amber-600 focus:ring-amber-500">
                                                     <span>Kepala Sekolah</span>
                                                 </label>
                                                 <label class="flex items-center space-x-1.5 cursor-pointer">
-                                                    <input type="checkbox" name="target_roles[]" value="kepala_mahad" class="rounded text-amber-600 focus:ring-amber-500">
-                                                    <span>Kepala Ma'had</span>
+                                                    <input type="checkbox" name="target_roles[]" value="kepala_ldu" class="rounded text-amber-600 focus:ring-amber-500">
+                                                    <span>Kepala LDU</span>
                                                 </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Undangan Khusus Per Nama -->
+                                        <div class="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                                    <i class="fas fa-user-check text-amber-600 mr-1"></i> Undangan Khusus Semua Pegawai (Per Nama)
+                                                </label>
+                                                <select name="target_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-amber-500 h-24 bg-white">
+                                                    <?php foreach ($all_ustadz as $u): ?>
+                                                        <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= htmlspecialchars($u['role']) ?>)</option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                                    <i class="fas fa-users text-amber-600 mr-1"></i> Undangan Khusus Orangtua (Per Nama)
+                                                </label>
+                                                <select name="target_ortu_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-amber-500 h-24 bg-white">
+                                                    <?php foreach ($all_ortu as $o): ?>
+                                                        <option value="<?= $o['id'] ?>"><?= htmlspecialchars($o['nama_orangtua']) ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="flex justify-end pt-2">
                                         <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-5 py-2.5 rounded-xl transition text-xs shadow-md flex items-center gap-1.5">
                                             <i class="fas fa-paper-plane text-xs"></i> Publikasikan Rapat Yayasan
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            <?php endif; ?>
+
+                            <!-- 4. FORM RAPAT LDU (BARU) -->
+                            <?php if (in_array('kepala_ldu', $user_roles) || in_array('direktur_ldu', $user_roles) || in_array('staff_ldu', $user_roles) || in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
+                            <div id="form-container-ldu" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles) && !in_array('ketua_yayasan', $user_roles)) ? 'block' : 'hidden' ?>">
+                                <form action="admin-jadwal-rapat.php" method="POST" class="space-y-4">
+                                    <input type="hidden" name="action" value="buat_rapat">
+                                    <input type="hidden" name="pengundang" value="kepala_ldu">
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Agenda / Nama Rapat</label>
+                                            <textarea name="agenda" required rows="2" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-indigo-500" placeholder="Contoh: Rapat Koordinasi Program LDU Bulanan"></textarea>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Sifat Rapat</label>
+                                            <select name="jenis_rutin" id="select_jenis_rutin_ldu" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-indigo-500">
+                                                <option value="pekanan">Pekanan</option>
+                                                <option value="bulanan">Bulanan</option>
+                                                <option value="insidental" selected>Insidental (Sekali Jalan)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Rapat</label>
+                                            <select name="tempat_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 bg-white font-semibold">
+                                                <option value="">-- Pilih Tempat Rapat --</option>
+                                                <option value="Gedung A">Gedung A</option>
+                                                <option value="Gedung B">Gedung B</option>
+                                                <option value="Gedung C">Gedung C</option>
+                                                <option value="Masjid Taqwa">Masjid Taqwa</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Jam Mulai</label>
+                                            <input type="time" name="jam_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-indigo-500" value="08:30">
+                                        </div>
+                                        <div id="wrapper_hari_ldu" class="hidden">
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Hari Rutin</label>
+                                            <select name="hari_rutin" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-indigo-500">
+                                                <option value="Senin">Senin</option>
+                                                <option value="Selasa">Selasa</option>
+                                                <option value="Rabu">Rabu</option>
+                                                <option value="Kamis">Kamis</option>
+                                                <option value="Jumat">Jumat</option>
+                                                <option value="Sabtu">Sabtu</option>
+                                                <option value="Ahad">Ahad</option>
+                                            </select>
+                                        </div>
+                                        <div id="wrapper_tanggal_ldu" class="block md:col-span-2">
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Pilih Tanggal</label>
+                                            <input type="date" name="tanggal_lengkap" id="input_tanggal_lengkap_ldu" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-indigo-500" value="<?= date('Y-m-d') ?>">
+                                        </div>
+                                        
+                                        <!-- Target Peserta Roles -->
+                                        <div class="md:col-span-2 border-t pt-3">
+                                            <label class="block text-xs font-bold text-gray-700 mb-2">Target Peserta (Berdasarkan Jabatan)</label>
+                                            <div class="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+                                                <label class="flex items-center space-x-1.5 cursor-pointer">
+                                                    <input type="checkbox" name="target_roles[]" value="staff_ldu" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                                    <span>Staff LDU</span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <!-- Undangan Khusus Per Nama -->
+                                        <div class="md:col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                                            <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                                <i class="fas fa-user-check text-indigo-600 mr-1"></i> Undangan Khusus Staff LDU / Pegawai (Per Nama)
+                                            </label>
+                                            <select name="target_ids[]" multiple class="w-full px-2.5 py-1.5 border rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 h-24 bg-white">
+                                                <?php foreach ($all_ustadz as $u): ?>
+                                                    <option value="<?= $u['id'] ?>"><?= htmlspecialchars($u['nama']) ?> (<?= htmlspecialchars($u['role']) ?>)</option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                            <span class="text-[9px] text-gray-400 block mt-0.5">*Tahan Ctrl / Cmd untuk memilih beberapa nama</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end pt-2">
+                                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl transition text-xs shadow-md flex items-center gap-1.5">
+                                            <i class="fas fa-paper-plane text-xs"></i> Publikasikan Rapat LDU
                                         </button>
                                     </div>
                                 </form>
@@ -1097,27 +1283,36 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
             const formSekolah = document.getElementById('form-container-sekolah');
             const formMahad = document.getElementById('form-container-mahad');
             const formYayasan = document.getElementById('form-container-yayasan');
+            const formLdu = document.getElementById('form-container-ldu');
+
             const btnSekolah = document.getElementById('tab-btn-sekolah');
             const btnMahad = document.getElementById('tab-btn-mahad');
             const btnYayasan = document.getElementById('tab-btn-yayasan');
+            const btnLdu = document.getElementById('tab-btn-ldu');
 
             if (formSekolah) formSekolah.classList.add('hidden');
             if (formMahad) formMahad.classList.add('hidden');
             if (formYayasan) formYayasan.classList.add('hidden');
+            if (formLdu) formLdu.classList.add('hidden');
 
-            if (btnSekolah) btnSekolah.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all';
-            if (btnMahad) btnMahad.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all';
-            if (btnYayasan) btnYayasan.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all';
+            const defaultClass = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all';
+            if (btnSekolah) btnSekolah.className = defaultClass;
+            if (btnMahad) btnMahad.className = defaultClass;
+            if (btnYayasan) btnYayasan.className = defaultClass;
+            if (btnLdu) btnLdu.className = defaultClass;
 
             if (tabName === 'sekolah' && formSekolah) {
                 formSekolah.classList.remove('hidden');
-                btnSekolah.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-cyan-600 text-white shadow-sm transition-all';
+                if (btnSekolah) btnSekolah.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-cyan-600 text-white shadow-sm transition-all';
             } else if (tabName === 'mahad' && formMahad) {
                 formMahad.classList.remove('hidden');
-                btnMahad.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-emerald-600 text-white shadow-sm transition-all';
+                if (btnMahad) btnMahad.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-emerald-600 text-white shadow-sm transition-all';
             } else if (tabName === 'yayasan' && formYayasan) {
                 formYayasan.classList.remove('hidden');
-                btnYayasan.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-amber-600 text-white shadow-sm transition-all';
+                if (btnYayasan) btnYayasan.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-amber-600 text-white shadow-sm transition-all';
+            } else if (tabName === 'ldu' && formLdu) {
+                formLdu.classList.remove('hidden');
+                if (btnLdu) btnLdu.className = 'py-1 px-2.5 font-bold text-[10px] rounded-lg bg-indigo-600 text-white shadow-sm transition-all';
             }
         }
 
@@ -1142,6 +1337,13 @@ $can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_
             selYayasan.addEventListener('change', function() {
                 const isRutin = this.value !== 'insidental';
                 document.getElementById('wrapper_hari_yayasan').style.display = isRutin ? 'block' : 'none';
+            });
+        }
+        const selLdu = document.getElementById('select_jenis_rutin_ldu');
+        if (selLdu) {
+            selLdu.addEventListener('change', function() {
+                const isRutin = this.value !== 'insidental';
+                document.getElementById('wrapper_hari_ldu').style.display = isRutin ? 'block' : 'none';
             });
         }
     </script>
