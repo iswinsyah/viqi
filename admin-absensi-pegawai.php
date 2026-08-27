@@ -297,11 +297,12 @@ $days_id = [
     'Saturday' => 'Sabtu'
 ];
 $hari_ini = $days_id[date('l')] ?? 'Senin';
-$q_jadwal = $conn->query("SELECT jp.id, mk.nama_kelas, mm.nama_mapel 
+$q_jadwal = $conn->query("SELECT jp.id, jp.jam_ke, mk.nama_kelas, mm.nama_mapel 
                           FROM jadwal_pelajaran jp 
                           JOIN master_kelas mk ON jp.kelas_id = mk.id 
                           JOIN master_mapel mm ON jp.mapel_id = mm.id 
-                          WHERE jp.ustadz_id = $ustadz_id AND jp.hari = '$hari_ini'");
+                          WHERE jp.ustadz_id = $ustadz_id AND jp.hari = '$hari_ini'
+                          ORDER BY jp.jam_ke ASC");
 $jadwal_hari_ini = [];
 if ($q_jadwal) {
     while ($r = $q_jadwal->fetch_assoc()) {
@@ -1064,6 +1065,188 @@ $has_schedule_today = !empty($jadwal_hari_ini);
 
         // Jalankan deteksi GPS saat halaman dimuat
         updateGPSStatus();
+    </script>
+
+    <!-- Modal Alarm Absen Mengajar & Selesai Mengajar -->
+    <div id="alarm-mengajar-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6 text-center transform transition-all scale-100 relative overflow-hidden mx-4">
+            <div id="alarm-header-bar" class="absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-emerald-500 to-teal-600"></div>
+            
+            <div id="alarm-icon-box" class="mx-auto w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl mb-4 shadow-inner">
+                <i id="alarm-icon" class="fas fa-bell"></i>
+            </div>
+            
+            <h3 id="alarm-title" class="text-xl font-black text-gray-900 mb-1">⏰ Waktunya Absen Mengajar!</h3>
+            <p id="alarm-subtitle" class="text-xs text-gray-500 mb-4">Anda memiliki jadwal mengajar hari ini:</p>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 mb-5 text-left space-y-1.5 text-xs">
+                <div class="flex justify-between text-gray-600">
+                    <span class="font-medium"><i class="fas fa-book text-emerald-600 mr-1"></i> Mata Pelajaran:</span>
+                    <span id="alarm-mapel" class="font-bold text-gray-900"></span>
+                </div>
+                <div class="flex justify-between text-gray-600">
+                    <span class="font-medium"><i class="fas fa-door-open text-emerald-600 mr-1"></i> Kelas:</span>
+                    <span id="alarm-kelas" class="font-bold text-gray-900"></span>
+                </div>
+                <div class="flex justify-between text-gray-600">
+                    <span class="font-medium"><i class="fas fa-clock text-emerald-600 mr-1"></i> Jam Ke / Waktu:</span>
+                    <span id="alarm-waktu" class="font-bold text-emerald-600"></span>
+                </div>
+            </div>
+
+            <div class="flex gap-2 justify-center">
+                <button id="alarm-btn-action" onclick="handleAlarmClick()" class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center gap-2">
+                    <i id="alarm-btn-icon" class="fas fa-qrcode text-sm"></i> <span id="alarm-btn-text">Absen Mengajar Sekarang</span>
+                </button>
+                <button onclick="closeAlarmModal()" class="py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-xs transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // SMART ALARM ABSEN MENGAJAR & JURNAL KBM
+        // ==========================================
+        const userSchedules = <?= json_encode($jadwal_hari_ini) ?>;
+        const slotTimes = {
+            1: { start: "05:00", end: "05:45" },
+            2: { start: "05:45", end: "06:30" },
+            3: { start: "07:30", end: "08:15" },
+            4: { start: "08:15", end: "09:00" },
+            5: { start: "09:00", end: "09:45" },
+            6: { start: "09:45", end: "10:30" },
+            7: { start: "10:30", end: "11:15" },
+            8: { start: "11:15", end: "12:00" },
+            9: { start: "16:00", end: "16:45" },
+            10: { start: "16:45", end: "17:30" },
+            12: { start: "19:30", end: "20:15" },
+            13: { start: "20:15", end: "21:00" }
+        };
+
+        let currentAlarmType = null;
+        let firedAlarms = {};
+
+        // Web Audio Synthesizer Alarm Chime
+        function playAlarmSound(type) {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                const ctx = new AudioCtx();
+                const frequencies = type === 'start' ? [523.25, 659.25, 783.99, 1046.50] : [1046.50, 783.99, 659.25, 523.25];
+                
+                frequencies.forEach((freq, i) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.22);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.22 + 0.5);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(ctx.currentTime + i * 0.22);
+                    osc.stop(ctx.currentTime + i * 0.22 + 0.5);
+                });
+            } catch(e) { console.error("Web Audio alarm fail", e); }
+        }
+
+        // Web Notification API
+        if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+
+        function sendWebPushNotification(title, body) {
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(title, {
+                    body: body,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/3602/3602145.png'
+                });
+            }
+        }
+
+        function triggerAlarm(type, sched, slot) {
+            currentAlarmType = type;
+            playAlarmSound(type);
+
+            const modal = document.getElementById('alarm-mengajar-modal');
+            const headerBar = document.getElementById('alarm-header-bar');
+            const iconBox = document.getElementById('alarm-icon-box');
+            const icon = document.getElementById('alarm-icon');
+            const title = document.getElementById('alarm-title');
+            const mapel = document.getElementById('alarm-mapel');
+            const kelas = document.getElementById('alarm-kelas');
+            const waktu = document.getElementById('alarm-waktu');
+            const btnAction = document.getElementById('alarm-btn-action');
+            const btnIcon = document.getElementById('alarm-btn-icon');
+            const btnText = document.getElementById('alarm-btn-text');
+
+            mapel.innerText = sched.nama_mapel || 'Mata Pelajaran';
+            kelas.innerText = sched.nama_kelas || '-';
+            waktu.innerText = `Jam ke-${sched.jam_ke} (${slot.start} - ${slot.end} WIB)`;
+
+            if (type === 'start') {
+                headerBar.className = 'absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-emerald-500 to-teal-600';
+                iconBox.className = 'mx-auto w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl mb-4 shadow-inner animate-bounce';
+                icon.className = 'fas fa-bell';
+                title.innerText = '⏰ Waktunya Absen Mengajar!';
+                btnAction.className = 'w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center gap-2';
+                btnIcon.className = 'fas fa-qrcode text-sm';
+                btnText.innerText = 'Absen Mengajar Sekarang';
+                sendWebPushNotification("⏰ Waktunya Absen Mengajar!", `Mapel: ${sched.nama_mapel} (${sched.nama_kelas}) jam ke-${sched.jam_ke}`);
+            } else {
+                headerBar.className = 'absolute top-0 left-0 right-0 h-3 bg-gradient-to-r from-amber-500 to-orange-600';
+                iconBox.className = 'mx-auto w-16 h-16 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-3xl mb-4 shadow-inner animate-pulse';
+                icon.className = 'fas fa-flag-checkered';
+                title.innerText = '🔔 Jam Mengajar Telah Selesai!';
+                btnAction.className = 'w-full py-3 px-4 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs shadow-lg transition-all flex items-center justify-center gap-2';
+                btnIcon.className = 'fas fa-pen-to-square text-sm';
+                btnText.innerText = 'Isi Jurnal & Selesai Mengajar';
+                sendWebPushNotification("🔔 Jam Mengajar Selesai!", `Segera isi Jurnal Mengajar untuk kelas ${sched.nama_kelas}`);
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        window.closeAlarmModal = function() {
+            document.getElementById('alarm-mengajar-modal').classList.add('hidden');
+        }
+
+        window.handleAlarmClick = function() {
+            closeAlarmModal();
+            if (currentAlarmType === 'start') {
+                const qrBox = document.getElementById('qr-scanner-section') || document.querySelector('form');
+                if (qrBox) qrBox.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                const jurnalForm = document.getElementById('form-jurnal-kbm') || document.querySelector('form[action*="jurnal"]');
+                if (jurnalForm) jurnalForm.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        // Loop checker setiap 10 detik
+        setInterval(() => {
+            if (!userSchedules || userSchedules.length === 0) return;
+            const now = new Date();
+            const currentHM = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+            const todayStr = now.toISOString().split('T')[0];
+
+            userSchedules.forEach(sched => {
+                const slot = slotTimes[sched.jam_ke];
+                if (!slot) return;
+
+                const startKey = `${todayStr}_start_${sched.id}_${slot.start}`;
+                if (currentHM === slot.start && !firedAlarms[startKey]) {
+                    firedAlarms[startKey] = true;
+                    triggerAlarm('start', sched, slot);
+                }
+
+                const endKey = `${todayStr}_end_${sched.id}_${slot.end}`;
+                if (currentHM === slot.end && !firedAlarms[endKey]) {
+                    firedAlarms[endKey] = true;
+                    triggerAlarm('end', sched, slot);
+                }
+            });
+        }, 10000);
     </script>
 </body>
 </html>
