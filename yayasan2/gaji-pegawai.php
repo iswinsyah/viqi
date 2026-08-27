@@ -13,9 +13,20 @@ $gaji_grade_c = $data_gaji['gaji_grade_c'] ?? 20000;
 $gaji_pokok_muda = $data_gaji['gaji_pokok_muda'] ?? 2500000;
 $gaji_pokok_utama = $data_gaji['gaji_pokok_utama'] ?? 3500000;
 $tunj_kepsek_a = $data_gaji['tunj_kepsek_a'] ?? 1500000;
+$tunj_kepsek_b = $data_gaji['tunj_kepsek_b'] ?? 1000000;
+$tunj_kepsek_c = $data_gaji['tunj_kepsek_c'] ?? 500000;
+
 $tunj_mahad_a = $data_gaji['tunj_mahad_a'] ?? 1500000;
+$tunj_mahad_b = $data_gaji['tunj_mahad_b'] ?? 1000000;
+$tunj_mahad_c = $data_gaji['tunj_mahad_c'] ?? 500000;
+
 $tunj_asrama_a = $data_gaji['tunj_asrama_a'] ?? 1200000;
+$tunj_asrama_b = $data_gaji['tunj_asrama_b'] ?? 800000;
+$tunj_asrama_c = $data_gaji['tunj_asrama_c'] ?? 400000;
+
 $tunj_admin_a = $data_gaji['tunj_admin_a'] ?? 1000000;
+$tunj_admin_b = $data_gaji['tunj_admin_b'] ?? 700000;
+$tunj_admin_c = $data_gaji['tunj_admin_c'] ?? 400000;
 
 // --- PERIOD SELECTION ---
 $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
@@ -140,18 +151,6 @@ if ($res_pegawai && $res_pegawai->num_rows > 0) {
             $gaji_pokok = $gaji_pokok_utama;
         }
 
-        // 2. Tunjangan
-        $tunjangan = 0;
-        if (!empty($row['role'])) {
-            $role_list = explode(',', $row['role']);
-            foreach ($role_list as $r) {
-                if ($r === 'kepala_sekolah') $tunjangan += $tunj_kepsek_a;
-                elseif ($r === 'kepala_mahad') $tunjangan += $tunj_mahad_a;
-                elseif ($r === 'kepala_asrama' || $r === 'kepala_asrama_rijal' || $r === 'kepala_asrama_nisa') $tunjangan += $tunj_asrama_a;
-                elseif ($r === 'admin_sekolah') $tunjangan += $tunj_admin_a;
-            }
-        }
-
         // 3. Honor Mengajar
         $res_jurnal = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
         $total_pertemuan = $res_jurnal ? (int)$res_jurnal->fetch_assoc()['total'] : 0;
@@ -169,6 +168,34 @@ if ($res_pegawai && $res_pegawai->num_rows > 0) {
         } else {
             $honor = $total_pertemuan * $active_rate;
             $honor_note = "{$total_pertemuan}x (Grade {$active_grade})";
+        }
+
+        // 2. Tunjangan (Disesuaikan dengan KPI Grade bulan ini)
+        $tunjangan = 0;
+        if (!empty($row['role'])) {
+            $role_list = explode(',', $row['role']);
+            foreach ($role_list as $r) {
+                if ($r === 'kepala_sekolah') {
+                    if ($active_grade === 'A') $tunjangan += $tunj_kepsek_a;
+                    elseif ($active_grade === 'B') $tunjangan += $tunj_kepsek_b;
+                    else $tunjangan += $tunj_kepsek_c;
+                }
+                elseif ($r === 'kepala_mahad') {
+                    if ($active_grade === 'A') $tunjangan += $tunj_mahad_a;
+                    elseif ($active_grade === 'B') $tunjangan += $tunj_mahad_b;
+                    else $tunjangan += $tunj_mahad_c;
+                }
+                elseif ($r === 'kepala_asrama' || $r === 'kepala_asrama_rijal' || $r === 'kepala_asrama_nisa') {
+                    if ($active_grade === 'A') $tunjangan += $tunj_asrama_a;
+                    elseif ($active_grade === 'B') $tunjangan += $tunj_asrama_b;
+                    else $tunjangan += $tunj_asrama_c;
+                }
+                elseif ($r === 'admin_sekolah') {
+                    if ($active_grade === 'A') $tunjangan += $tunj_admin_a;
+                    elseif ($active_grade === 'B') $tunjangan += $tunj_admin_b;
+                    else $tunjangan += $tunj_admin_c;
+                }
+            }
         }
 
         $total_thp = $gaji_pokok + $tunjangan + $honor;
