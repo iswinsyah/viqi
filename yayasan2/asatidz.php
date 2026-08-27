@@ -352,15 +352,20 @@ $active_menu = 'asatidz';
                                         $gaji_pokok = $gaji_pokok_utama;
                                     }
 
-                                    // 3. Honor Mengajar & KPI Grade
+                                    // 3. Honor Mengajar & KPI Grade (Kombinasi Jurnal Mengajar & Absensi QR Mengajar)
                                     $ust_id = (int)$row['id'];
                                     $res_jurnal = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
-                                    $total_pertemuan = $res_jurnal ? (int)$res_jurnal->fetch_assoc()['total'] : 0;
+                                    $cnt_jurnal = $res_jurnal ? (int)$res_jurnal->fetch_assoc()['total'] : 0;
+                                    
+                                    $res_abs = $conn->query("SELECT COUNT(*) as total FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
+                                    $cnt_abs = $res_abs ? (int)$res_abs->fetch_assoc()['total'] : 0;
+
+                                    $total_pertemuan = max($cnt_jurnal, $cnt_abs);
                                     
                                     list($active_rate, $active_grade, $kpi_score) = getUstadzGradeRate($conn, $ust_id, $row['role'], $gaji_grade_a, $gaji_grade_b, $gaji_grade_c);
 
-                                    $roles_arr = !empty($row['role']) ? explode(',', $row['role']) : [];
-                                    $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr) || in_array('tutor', $roles_arr);
+                                    $roles_arr = !empty($row['role']) ? array_map('trim', array_map('strtolower', explode(',', $row['role']))) : [];
+                                    $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr) || in_array('tutor', $roles_arr) || in_array('guru', $roles_arr);
                                     $is_utama_or_muda = ($status_display === 'Pegawai Utama' || $status_display === 'Pegawai Muda');
                                     
                                      if ($is_utama_or_muda && $has_ustadz_role) {
