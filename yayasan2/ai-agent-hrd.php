@@ -30,8 +30,8 @@ if ($res_past_rejections) {
         $p_app_s = $p_rej['tanggal_disetujui_selesai'];
         $p_st = $p_rej['status'];
 
-        $b_date = new DateTime($p_m);
-        $e_date = new DateTime($p_s);
+        $b_date = new DateTime(date('Y-m-d', strtotime($p_m)));
+        $e_date = new DateTime(date('Y-m-d', strtotime($p_s)));
         $e_date->modify('+1 day');
         $period = new DatePeriod($b_date, new DateInterval('P1D'), $e_date);
 
@@ -146,12 +146,22 @@ if ($res_pegawai_data) {
                 $st_kehadiran = $ab['status_kehadiran'] ?? '';
                 $ket = $ab['keterangan'] ?? '';
 
-                if (strpos($st_kehadiran, 'Izin') !== false || strpos($ket, 'Izin') !== false) {
-                    $izin++;
-                } elseif (strpos($st_kehadiran, 'Sakit') !== false || strpos($ket, 'Sakit') !== false) {
-                    $sakit++;
-                } elseif (strpos($st_kehadiran, 'Alpa') !== false || strpos($ket, 'Alpa') !== false || strpos($ket, 'Tanpa Keterangan') !== false) {
+                if ($st_kehadiran === 'Alpa' || strpos($st_kehadiran, 'Alpa') !== false) {
                     $alpa++;
+                } elseif ($st_kehadiran === 'Izin' || strpos($st_kehadiran, 'Izin') !== false) {
+                    $izin++;
+                } elseif ($st_kehadiran === 'Sakit' || strpos($st_kehadiran, 'Sakit') !== false) {
+                    $sakit++;
+                } elseif (strpos($ket, 'Alpa') !== false || strpos($ket, 'Tanpa Keterangan') !== false) {
+                    $alpa++;
+                } elseif (strpos($ket, 'Izin') !== false) {
+                    if (strpos($ket, 'Ditolak') === false && strpos($ket, 'Tidak Disetujui') === false) {
+                        $izin++;
+                    } else {
+                        $alpa++;
+                    }
+                } elseif (strpos($ket, 'Sakit') !== false) {
+                    $sakit++;
                 } elseif (strpos($ket, 'Terlambat') !== false) {
                     $hadir_terlambat++;
                     if (preg_match('/Terlambat:\s*(\d+)\s*menit/i', $ket, $matches)) {

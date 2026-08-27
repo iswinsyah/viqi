@@ -326,8 +326,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
                               WHERE id = $izin_id");
 
                 // Untuk semua tanggal yang ditolak & <= hari ini, input Alpa ke absensi_pegawai
-                $begin_all = new DateTime($tgl_mulai_awal);
-                $end_all = new DateTime($tgl_selesai_awal);
+                $begin_all = new DateTime($date_start_clean);
+                $end_all = new DateTime($date_end_clean);
                 $end_all->modify('+1 day');
                 $period_all = new DatePeriod($begin_all, new DateInterval('P1D'), $end_all);
 
