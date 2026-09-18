@@ -400,13 +400,13 @@ if ($edit_bab_id > 0) {
                                     </div>
                                 </div>
 
-                                <!-- 1. URL E-MODUL PDF NEGARA -->
+                                <!-- 1. URL E-MODUL RESMI KEMENDIKDASMEN -->
                                 <div class="bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
                                     <label class="block text-xs font-extrabold uppercase text-rose-900 mb-1 flex items-center gap-1.5">
-                                        <i class="fas fa-file-pdf text-rose-600"></i> Link E-Modul PDF Resmi Negara (Kemdikbud/Kemenag)
+                                        <i class="fas fa-file-pdf text-rose-600"></i> Link E-Modul Resmi Pemerintah (https://emodul.kemendikdasmen.go.id/)
                                     </label>
-                                    <p class="text-[11px] text-rose-700 mb-2">Tempelkan link file PDF modul resmi dari repositori Kemdikbud atau Google Drive.</p>
-                                    <input type="url" name="pdf_url" value="<?= htmlspecialchars($edit_data['pdf_url'] ?? '') ?>" placeholder="https://repositori.kemdikbud.go.id/.../modul.pdf" class="w-full px-3 py-2 border border-rose-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-rose-500">
+                                    <p class="text-[11px] text-rose-700 mb-2">Tempelkan link dari portal resmi Kemendikdasmen atau link PDF modul resmi.</p>
+                                    <input type="url" name="pdf_url" value="<?= htmlspecialchars($edit_data['pdf_url'] ?? '') ?>" placeholder="https://emodul.kemendikdasmen.go.id/... atau link PDF" class="w-full px-3 py-2 border border-rose-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-rose-500">
                                 </div>
 
                                 <!-- 2. URL VIDEO YOUTUBE -->

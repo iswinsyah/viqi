@@ -631,13 +631,13 @@ $stmt_b->close();
                     </div>
                 </div>
 
-                <!-- E-MODUL PDF NEGARA -->
+                <!-- E-MODUL RESMI KEMENDIKDASMEN -->
                 <div class="p-3.5 bg-rose-50/70 border border-rose-200 rounded-2xl">
                     <label class="block text-xs font-black text-rose-900 mb-1 flex items-center gap-1.5">
-                        <i class="fas fa-file-pdf text-rose-600"></i> URL E-Modul PDF Resmi Negara (Kemdikbud/Kemenag)
+                        <i class="fas fa-file-pdf text-rose-600"></i> URL E-Modul Resmi Pemerintah (https://emodul.kemendikdasmen.go.id/)
                     </label>
-                    <input type="url" name="pdf_url" id="manualPdfUrl" placeholder="https://repositori.kemdikbud.go.id/.../modul.pdf" class="w-full px-3 py-2 bg-white border border-rose-200 rounded-xl text-xs font-mono text-slate-800">
-                    <p class="text-[10px] text-rose-700 mt-1">E-Modul ini akan disematkan langsung di atas video pembelajaran.</p>
+                    <input type="url" name="pdf_url" id="manualPdfUrl" placeholder="https://emodul.kemendikdasmen.go.id/... atau link PDF resmi" class="w-full px-3 py-2 bg-white border border-rose-200 rounded-xl text-xs font-mono text-slate-800">
+                    <p class="text-[10px] text-rose-700 mt-1">E-Modul dari portal resmi Kemendikdasmen RI akan disematkan langsung di atas video pembelajaran.</p>
                 </div>
 
                 <!-- 3 - 5 URL VIDEO YOUTUBE -->
@@ -778,7 +778,7 @@ $stmt_b->close();
             statusText.innerHTML = '<i class="fas fa-brain text-amber-400"></i> Menyusun Silabus & Peta Konsep Kurikulum Merdeka...';
             subStatus.innerText = 'Menganalisis capaian pembelajaran resmi Kemdikbud...';
 
-            const prompt = `Anda adalah Ahli Kurikulum Kemdikbud dan Guru Ahli Mata Pelajaran Indonesia.
+            const prompt = `Anda adalah Ahli Kurikulum Kemendikdasmen dan Guru Ahli Mata Pelajaran Indonesia.
 Susunlah kurikulum dan modul belajar digital lengkap untuk mata pelajaran: "${mapel}" pada jenjang "${jenjang}" sebanyak ${jumlahBab} Bab pembelajaran.
 
 Untuk SETIAP BAB, sediakan:
@@ -786,7 +786,7 @@ Untuk SETIAP BAB, sediakan:
 2. judul_bab (Judul bab lengkap, misal: "Bab 1: Pengenalan Sosiologi & Interaksi Sosial")
 3. subjudul (Ringkasan sub-topik)
 4. durasi_menit ("20 Menit")
-5. pdf_url (Gunakan link modul PDF resmi Kemdikbud atau link repositori terbuka BSE yang relevan, jika tidak tahu pasti gunakan URL valid seperti "https://repositori.kemdikbud.go.id/21800/1/X_Sosiologi_KD-3.1_Final.pdf" yang disesuaikan mapel)
+5. pdf_url (WAJIB prioritaskan link URL e-modul resmi pemerintah dari portal https://emodul.kemendikdasmen.go.id/ atau link modul PDF Kemendikdasmen RI yang relevan dengan jenjang dan mapel tersebut, contoh: "https://emodul.kemendikdasmen.go.id/" atau tautan modul digital resmi yang valid).
 6. video_urls (Array berisi 3 sampai 5 URL YouTube edukasi nyata yang sangat relevan dengan topik bab ini, dari channel seperti Rumah Belajar Kemdikbud, Quipper, Ruangguru, Zenius, Kok Bisa, atau Guru Edukasi).
 7. ringkasan_materi (Objek JSON atau teks terstruktur dengan poin-poin penjelasan teori, analogi mudah, dan contoh nyata).
 8. lks_judul (Judul Lembar Kerja Santri Mandiri)

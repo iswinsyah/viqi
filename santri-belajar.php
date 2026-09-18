@@ -61,9 +61,20 @@ if ($materi_aktif && !empty($materi_aktif['ringkasan_materi'])) {
     }
 }
 
-// Format Embed PDF (Google Docs Viewer / Native)
+// Format Embed PDF / Web E-Modul (Kemendikdasmen / Google Docs Viewer / Native)
 function getPdfViewerUrl($pdfUrl) {
     if (empty($pdfUrl)) return '';
+    $pdfUrl = trim($pdfUrl);
+    // Jika link langsung dari emodul.kemendikdasmen.go.id atau viewer web
+    if (strpos($pdfUrl, 'emodul.kemendikdasmen.go.id') !== false) {
+        if (strpos($pdfUrl, '.pdf') !== false) {
+            return "https://docs.google.com/viewer?url=" . urlencode($pdfUrl) . "&embedded=true";
+        }
+        return $pdfUrl;
+    }
+    if (strpos($pdfUrl, 'docs.google.com/viewer') !== false) {
+        return $pdfUrl;
+    }
     return "https://docs.google.com/viewer?url=" . urlencode($pdfUrl) . "&embedded=true";
 }
 
@@ -190,20 +201,20 @@ if ($materi_aktif) {
                         </div>
                     </div>
 
-                    <!-- 3. E-MODUL PDF RESMI NEGARA (KEMDIKBUD) - EMBED SEBELUM VIDEO YOUTUBE -->
+                    <!-- 3. E-MODUL RESMI KEMENDIKDASMEN RI - EMBED SEBELUM VIDEO YOUTUBE -->
                     <?php if (!empty($materi_aktif['pdf_url'])): ?>
                     <div class="mb-6">
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                                <i class="fas fa-book-reader text-rose-600 text-sm"></i> 1. E-Modul PDF Resmi Negara (Kemdikbud/Kemenag)
+                                <i class="fas fa-book-reader text-rose-600 text-sm"></i> 1. E-Modul Resmi Kemendikdasmen RI
                             </h3>
                             <a href="<?= htmlspecialchars($materi_aktif['pdf_url']) ?>" target="_blank" class="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 flex items-center gap-1">
-                                <span>Buka Fullscreen</span> <i class="fas fa-external-link-alt text-[10px]"></i>
+                                <span>Buka Portal E-Modul</span> <i class="fas fa-external-link-alt text-[10px]"></i>
                             </a>
                         </div>
                         
                         <div class="w-full h-[480px] sm:h-[580px] rounded-2xl overflow-hidden border-2 border-rose-100 shadow-md bg-slate-100 relative">
-                            <iframe src="<?= getPdfViewerUrl($materi_aktif['pdf_url']) ?>" class="w-full h-full border-0" title="E-Modul PDF Negara"></iframe>
+                            <iframe src="<?= getPdfViewerUrl($materi_aktif['pdf_url']) ?>" class="w-full h-full border-0" title="E-Modul Resmi Kemendikdasmen"></iframe>
                         </div>
                     </div>
                     <?php endif; ?>
