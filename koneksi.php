@@ -13,13 +13,13 @@ $database = "u829486010_viqi";
 mysqli_report(MYSQLI_REPORT_OFF);
 
 // Membuat koneksi ke database
-$conn = new mysqli($host, $username, $password, $database);
+$conn = @new mysqli($host, $username, $password, $database);
 
 // Memeriksa koneksi
 if ($conn->connect_error) {
     if ($host === 'localhost' || $host === '127.0.0.1') {
         // Fallback untuk local development di XAMPP
-        $conn = new mysqli($host, 'root', '', $database);
+        $conn = @new mysqli($host, 'root', '', $database);
         if ($conn->connect_error) {
             die("Koneksi database gagal (termasuk fallback local): " . $conn->connect_error);
         }

@@ -1,6 +1,13 @@
 <?php
-require_once 'auth.php';
-require_once '../koneksi.php';
+ob_start();
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/../koneksi.php';
+
+if (isset($_POST['action']) && in_array($_POST['action'], ['generate_ai_curriculum', 'save_ai_curriculum'])) {
+    ini_set('display_errors', 0);
+    error_reporting(0);
+    if (ob_get_length()) ob_clean();
+}
 
 $active_menu = 'elearning_yayasan';
 $pesan_sukses = '';
@@ -49,7 +56,141 @@ $conn->query("CREATE TABLE IF NOT EXISTS elearning_kuis (
 )");
 
 // ==========================================
-// 2. PROSES AJAX BATCH SAVE DARI AI GENERATOR
+// 2. PROSES GENERATE AI CURRICULUM (BACKEND)
+// ==========================================
+if (isset($_POST['action']) && $_POST['action'] === 'generate_ai_curriculum') {
+    // Matikan error output agar JSON selalu murni
+    ini_set('display_errors', 0);
+    error_reporting(0);
+    header('Content-Type: application/json');
+
+    $mapel = trim($_POST['mapel_nama'] ?? '');
+    $jenjang = trim($_POST['jenjang_kelas'] ?? 'SMA Kelas 10 (Fase E)');
+    $jumlahBab = (int)($_POST['jumlah_bab'] ?? 4);
+
+    if (empty($mapel)) {
+        echo json_encode(['status' => 'error', 'message' => 'Nama mata pelajaran tidak boleh kosong.']);
+        exit;
+    }
+
+    $prompt = "Anda adalah Ahli Kurikulum Kemendikdasmen dan Guru Ahli Mata Pelajaran Indonesia.\n" .
+              "Susunlah kurikulum dan modul belajar digital lengkap untuk mata pelajaran: \"$mapel\" pada jenjang \"$jenjang\" sebanyak $jumlahBab Bab pembelajaran.\n\n" .
+              "Untuk SETIAP BAB, sediakan:\n" .
+              "1. nomor_bab (angka 1, 2, dst)\n" .
+              "2. judul_bab (Judul bab lengkap, misal: \"Bab 1: Pengenalan Sosiologi & Konsep Dasar\")\n" .
+              "3. subjudul (Ringkasan sub-topik)\n" .
+              "4. durasi_menit (\"20 Menit\")\n" .
+              "5. pdf_url (Tautkan URL modul resmi Kemendikdasmen dari portal https://emodul.kemendikdasmen.go.id/ atau link modul PDF Kemendikdasmen RI yang relevan).\n" .
+              "6. video_urls (Array berisi 3 sampai 5 URL YouTube edukasi nyata yang sangat relevan dengan topik bab ini, dari channel seperti Rumah Belajar Kemdikbud, Quipper, Ruangguru, Zenius, Kok Bisa, atau Guru Edukasi).\n" .
+              "7. ringkasan_materi (Objek JSON dengan intisari dan poin-poin penjelasan teori, analogi mudah, dan contoh nyata).\n" .
+              "8. lks_judul (Judul Lembar Kerja Santri Mandiri)\n" .
+              "9. lks_tugas (Tugas observasi/analisis kasus mandiri untuk santri)\n" .
+              "10. kuis (Array berisi 5 soal pilihan ganda HOTS, dengan format: soal, opsi_a, opsi_b, opsi_c, opsi_d, kunci_jawaban: \"A\"|\"B\"|\"C\"|\"D\", dan pembahasan).\n\n" .
+              "KEMBALIKAN HANYA FORMAT JSON MURNI TANPA BACKTICKS ATAU MARKDOWN TAMBAHAN BERIKUT INI:\n" .
+              "[\n  {\n    \"nomor_bab\": 1,\n    \"judul_bab\": \"...\",\n    \"subjudul\": \"...\",\n    \"durasi_menit\": \"20 Menit\",\n    \"pdf_url\": \"https://emodul.kemendikdasmen.go.id/...\",\n    \"video_urls\": [\"https://www.youtube.com/watch?v=...\", \"https://www.youtube.com/watch?v=...\", \"https://www.youtube.com/watch?v=...\"],\n    \"ringkasan_materi\": { \"Intisari\": \"...\", \"Poin Penting\": \"...\" },\n    \"lks_judul\": \"...\",\n    \"lks_tugas\": \"...\",\n    \"kuis\": [\n      {\n        \"soal\": \"...\",\n        \"opsi_a\": \"...\",\n        \"opsi_b\": \"...\",\n        \"opsi_c\": \"...\",\n        \"opsi_d\": \"...\",\n        \"kunci_jawaban\": \"A\",\n        \"pembahasan\": \"...\"\n      }\n    ]\n  }\n]";
+
+    if (file_exists(__DIR__ . '/../config-key.php')) {
+        require_once __DIR__ . '/../config-key.php';
+    }
+    
+    $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+    $rawResponse = '';
+
+    if (!empty($apiKey)) {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+        $payload = [
+            "contents" => [
+                [
+                    "parts" => [
+                        ["text" => $prompt]
+                    ]
+                ]
+            ]
+        ];
+        
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+        
+        $res = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlErr = curl_error($ch);
+        curl_close($ch);
+        
+        if (!$curlErr && $httpCode === 200) {
+            $parsedRes = json_decode($res, true);
+            $rawResponse = $parsedRes['candidates'][0]['content']['parts'][0]['text'] ?? '';
+        }
+    }
+
+    if (empty($rawResponse) && defined('GEMINI_GAS_URL') && !empty(GEMINI_GAS_URL)) {
+        $ch = curl_init(GEMINI_GAS_URL);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+            'prompt' => $prompt,
+            'apiKey' => $apiKey
+        ]));
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        
+        $resGas = curl_exec($ch);
+        $httpGas = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpGas === 200) {
+            $parsedGas = json_decode($resGas, true);
+            if (isset($parsedGas['result'])) {
+                $rawResponse = $parsedGas['result'];
+            } elseif (isset($parsedGas['candidates'][0]['content']['parts'][0]['text'])) {
+                $rawResponse = $parsedGas['candidates'][0]['content']['parts'][0]['text'];
+            } elseif (is_string($parsedGas)) {
+                $rawResponse = $parsedGas;
+            }
+        }
+    }
+
+    if (empty($rawResponse)) {
+        echo json_encode(['status' => 'error', 'message' => 'Gagal mendapatkan respon dari AI Gemini. Pastikan koneksi internet server aktif.']);
+        exit;
+    }
+
+    // Bersihkan format markdown jika AI menambahkan ```json ... ```
+    $cleanJson = preg_replace('/^```(?:json)?\s*/i', '', trim($rawResponse));
+    $cleanJson = preg_replace('/\s*```$/i', '', trim($cleanJson));
+    $cleanJson = trim($cleanJson);
+
+    $chaptersData = json_decode($cleanJson, true);
+    if (!is_array($chaptersData)) {
+        if (preg_match('/\[\s*\{.*\}\s*\]/s', $cleanJson, $mJson)) {
+            $chaptersData = json_decode($mJson[0], true);
+        }
+    }
+
+    if (!is_array($chaptersData) || count($chaptersData) === 0) {
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'Format respon AI bukan JSON kurikulum yang valid.',
+            'raw' => substr($rawResponse, 0, 300)
+        ]);
+        exit;
+    }
+
+    echo json_encode([
+        'status' => 'success',
+        'data' => $chaptersData
+    ]);
+    exit;
+}
+
+// ==========================================
+// 3. PROSES AJAX BATCH SAVE DARI AI GENERATOR
 // ==========================================
 if (isset($_POST['action']) && $_POST['action'] === 'save_ai_curriculum') {
     header('Content-Type: application/json');
@@ -772,97 +913,49 @@ $stmt_b->close();
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Sedang Merancang...</span>';
 
-            // Update step 1
             percent.innerText = '25%';
             bar.style.width = '25%';
-            statusText.innerHTML = '<i class="fas fa-brain text-amber-400"></i> Menyusun Silabus & Peta Konsep Kurikulum Merdeka...';
-            subStatus.innerText = 'Menganalisis capaian pembelajaran resmi Kemdikbud...';
-
-            const prompt = `Anda adalah Ahli Kurikulum Kemendikdasmen dan Guru Ahli Mata Pelajaran Indonesia.
-Susunlah kurikulum dan modul belajar digital lengkap untuk mata pelajaran: "${mapel}" pada jenjang "${jenjang}" sebanyak ${jumlahBab} Bab pembelajaran.
-
-Untuk SETIAP BAB, sediakan:
-1. nomor_bab (angka 1, 2, dst)
-2. judul_bab (Judul bab lengkap, misal: "Bab 1: Pengenalan Sosiologi & Interaksi Sosial")
-3. subjudul (Ringkasan sub-topik)
-4. durasi_menit ("20 Menit")
-5. pdf_url (WAJIB prioritaskan link URL e-modul resmi pemerintah dari portal https://emodul.kemendikdasmen.go.id/ atau link modul PDF Kemendikdasmen RI yang relevan dengan jenjang dan mapel tersebut, contoh: "https://emodul.kemendikdasmen.go.id/" atau tautan modul digital resmi yang valid).
-6. video_urls (Array berisi 3 sampai 5 URL YouTube edukasi nyata yang sangat relevan dengan topik bab ini, dari channel seperti Rumah Belajar Kemdikbud, Quipper, Ruangguru, Zenius, Kok Bisa, atau Guru Edukasi).
-7. ringkasan_materi (Objek JSON atau teks terstruktur dengan poin-poin penjelasan teori, analogi mudah, dan contoh nyata).
-8. lks_judul (Judul Lembar Kerja Santri Mandiri)
-9. lks_tugas (Tugas observasi/analisis kasus mandiri untuk santri)
-10. kuis (Array berisi 5 soal pilihan ganda HOTS, dengan format: soal, opsi_a, opsi_b, opsi_c, opsi_d, kunci_jawaban: "A"|"B"|"C"|"D", dan pembahasan).
-
-KEMBALIKAN HANYA FORMAT JSON MURNI TANPA BACKTICKS ATAU MARKDOWN TAMBAHAN BERIKUT INI:
-[
-  {
-    "nomor_bab": 1,
-    "judul_bab": "...",
-    "subjudul": "...",
-    "durasi_menit": "20 Menit",
-    "pdf_url": "...",
-    "video_urls": ["https://www.youtube.com/watch?v=...", "https://www.youtube.com/watch?v=...", "https://www.youtube.com/watch?v=..."],
-    "ringkasan_materi": { "Intisari": "...", "Poin Penting": "..." },
-    "lks_judul": "...",
-    "lks_tugas": "...",
-    "kuis": [
-      {
-        "soal": "...",
-        "opsi_a": "...",
-        "opsi_b": "...",
-        "opsi_c": "...",
-        "opsi_d": "...",
-        "kunci_jawaban": "A",
-        "pembahasan": "..."
-      }
-    ]
-  }
-]`;
+            statusText.innerHTML = '<i class="fas fa-brain text-amber-400"></i> AI sedang menganalisis kurikulum & portal Kemendikdasmen...';
+            subStatus.innerText = 'Menyusun silabus, 3-5 video embed, dan bank soal...';
 
             try {
+                const formData = new FormData();
+                formData.append('action', 'generate_ai_curriculum');
+                formData.append('mapel_nama', mapel);
+                formData.append('jenjang_kelas', jenjang);
+                formData.append('jumlah_bab', jumlahBab);
+
                 percent.innerText = '60%';
                 bar.style.width = '60%';
-                statusText.innerHTML = '<i class="fas fa-robot text-amber-400"></i> Mengkurasi 3-5 Video YouTube & Bank Soal Kuis...';
-                subStatus.innerText = 'Menyusun latihan interaktif dan rangkuman mendalam...';
 
-                const response = await fetch('../api-gemini.php', {
+                const response = await fetch('elearning-yayasan.php', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
+                    body: formData
                 });
 
                 const data = await response.json();
-                
-                let rawText = '';
-                if (data.status === 'success' && data.result) {
-                    rawText = data.result;
-                } else if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
-                    rawText = data.candidates[0].content.parts[0].text;
-                } else if (typeof data === 'string') {
-                    rawText = data;
-                } else {
-                    throw new Error(data.message || 'Gagal menerima respon valid dari AI.');
+
+                if (data.status !== 'success' || !data.data) {
+                    throw new Error(data.message || 'Gagal merancang kurikulum.');
                 }
 
-                // Bersihkan markdown json jika ada
-                rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-                const chaptersData = JSON.parse(rawText);
+                const chaptersData = data.data;
 
-                percent.innerText = '90%';
-                bar.style.width = '90%';
+                percent.innerText = '85%';
+                bar.style.width = '85%';
                 statusText.innerHTML = '<i class="fas fa-save text-amber-400"></i> Menyimpan ke Database E-Learning...';
                 subStatus.innerText = 'Menyinkronkan bab, multi-video, dan bank soal...';
 
                 // Simpan ke database via AJAX
-                const formData = new FormData();
-                formData.append('action', 'save_ai_curriculum');
-                formData.append('mapel_nama', mapel);
-                formData.append('chapters_json', JSON.stringify(chaptersData));
-                formData.append('replace_existing', '1');
+                const saveFormData = new FormData();
+                saveFormData.append('action', 'save_ai_curriculum');
+                saveFormData.append('mapel_nama', mapel);
+                saveFormData.append('chapters_json', JSON.stringify(chaptersData));
+                saveFormData.append('replace_existing', '1');
 
                 const saveRes = await fetch('elearning-yayasan.php', {
                     method: 'POST',
-                    body: formData
+                    body: saveFormData
                 });
                 const saveResult = await saveRes.json();
 
@@ -873,7 +966,7 @@ KEMBALIKAN HANYA FORMAT JSON MURNI TANPA BACKTICKS ATAU MARKDOWN TAMBAHAN BERIKU
                     subStatus.innerText = saveResult.message;
                     setTimeout(() => {
                         window.location.href = 'elearning-yayasan.php?mapel=' + encodeURIComponent(mapel);
-                    }, 1200);
+                    }, 1000);
                 } else {
                     throw new Error(saveResult.message || 'Gagal menyimpan ke database.');
                 }
