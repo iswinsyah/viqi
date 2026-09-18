@@ -54,6 +54,14 @@ if (isset($conn) && $conn) {
         $new_ord = $max_ord + 1;
         $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'penagihan_spp', $new_ord, 'fa-comment-dollar', 'admin-penagihan-spp.php')");
     }
+
+    $res_chk_el = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'manajemen_elearning'");
+    if ($res_chk_el && $res_chk_el->num_rows === 0) {
+        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+        $new_ord = $max_ord + 1;
+        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'manajemen_elearning', $new_ord, 'fa-laptop-code', 'admin-elearning.php')");
+    }
 }
 
 if (isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
@@ -115,6 +123,7 @@ if ($conn) {
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('santri_tidak_masuk', 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('santri_tidak_masuk_asatidz', 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontak_orangtua', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('manajemen_elearning', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin')");
 
     $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
     if ($res_perms) {

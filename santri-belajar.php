@@ -8,140 +8,71 @@ $active_menu = 'dashboard_santri';
 
 // Tangkap nama mata pelajaran (Default: Sosiologi)
 $mapel = $_GET['mapel'] ?? 'Sosiologi';
-$bab_id = (int)($_GET['bab'] ?? 1);
+$mapel_esc = $conn->real_escape_string($mapel);
+$bab_no = (int)($_GET['bab'] ?? 1);
 
 // Data Profil Santri
 $res_s = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $santri_id LIMIT 1");
 $data_santri = ($res_s && $res_s->num_rows > 0) ? $res_s->fetch_assoc() : null;
-$kelas_santri = $data_santri['kelas_sekarang'] ?? 'Kelas 10 SMA IPS';
+$kelas_santri = $data_santri['kelas_sekarang'] ?? 'Santri';
 
-// Kurikulum & Modul Sosiologi (Prototype E-Learning SADIGS)
-$kurikulum_sosiologi = [
-    1 => [
-        'id' => 1,
-        'judul' => 'Bab 1: Sosiologi Sebagai Ilmu & Objek Kajian',
-        'subjudul' => 'Hakikat, Objek, dan Ciri-Ciri Utama Ilmu Sosiologi',
-        'video_url' => 'https://www.youtube.com/embed/5v6kS6uHkPQ', // Video Edukasi Sosiologi Dasar
-        'durasi' => '12 Menit',
-        'ringkasan' => [
-            'Pengertian Dasar' => 'Sosiologi berasal dari bahasa Latin <i>Socius</i> (kawan/masyarakat) dan bahasa Yunani <i>Logos</i> (ilmu/bicara). Pertama kali dicetuskan oleh <b>Auguste Comte</b> (Bapak Sosiologi Dunia).',
-            '4 Ciri Utama Sosiologi' => [
-                '<b>Empiris:</b> Didasarkan pada observasi kenyataan dan akal sehat, bukan spekulasi.',
-                '<b>Teoritis:</b> Menyusun abstraksi dari hasil pengamatan untuk menjelaskan hubungan sebab-akibat.',
-                '<b>Kumulatif:</b> Teori dibangun atas dasar teori yang sudah ada sebelumnya, kemudian diperbaiki dan diperluas.',
-                '<b>Non-Etis:</b> Tidak mempersoalkan baik atau buruknya suatu fakta sosial, melainkan menjelaskan fakta tersebut secara analitis dan objektif.'
-            ],
-            'Objek Kajian' => 'Masyarakat yang mencakup hubungan antarmanusia, proses interaksi sosial, serta gejala dan perubahan sosial dalam kehidupan bersama.'
-        ],
-        'lks' => [
-            'judul' => 'LKS 1: Analisis Gejala Sosial di Lingkungan Pondok/Sekolah',
-            'tugas' => 'Amati satu fenomena sosial di sekitarmu (misal: tradisi gotong royong/ro\'an, antrean makan, atau interaksi santri baru). Jelaskan mengapa fenomena tersebut memenuhi ciri <b>Empiris</b> dan <b>Non-Etis</b> dalam Sosiologi!'
-        ],
-        'kuis' => [
-            [
-                'soal' => 'Siapakah tokoh yang pertama kali memperkenalkan istilah Sosiologi dan dikenal sebagai Bapak Sosiologi Dunia?',
-                'opsi' => ['Emile Durkheim', 'Auguste Comte', 'Max Weber', 'Karl Marx'],
-                'jawaban' => 1,
-                'pembahasan' => 'Auguste Comte adalah tokoh asal Prancis yang pertama kali menggunakan istilah Sosiologi pada bukunya Cours de Philosophie Positive (1838).'
-            ],
-            [
-                'soal' => 'Sosiologi tidak menilai apakah suatu tindakan kriminal itu secara moral baik atau buruk, melainkan menjelaskan penyebab dan dampak sosialnya. Hal ini mencerminkan ciri...',
-                'opsi' => ['Empiris', 'Teoritis', 'Kumulatif', 'Non-Etis'],
-                'jawaban' => 3,
-                'pembahasan' => 'Ciri Non-Etis berarti sosiologi bertugas mengkaji fakta apa adanya tanpa menghakimi status moral baik atau buruk.'
-            ],
-            [
-                'soal' => 'Teori sosiologi saat ini menyempurnakan teori-teori klasik terdahulu sesuai perkembangan zaman modern. Karakteristik ini disebut...',
-                'opsi' => ['Kumulatif', 'Spekulatif', 'Normatif', 'Empiris'],
-                'jawaban' => 0,
-                'pembahasan' => 'Kumulatif berarti teori sosiologi saling melengkapi, memperluas, dan memperbaiki teori yang sudah ada sebelumnya.'
-            ]
-        ]
-    ],
-    2 => [
-        'id' => 2,
-        'judul' => 'Bab 2: Interaksi Sosial & Dinamika Kelompok',
-        'subjudul' => 'Syarat, Bentuk Asosiatif, dan Disosiatif Interaksi Sosial',
-        'video_url' => 'https://www.youtube.com/embed/n33wY8GjSGo',
-        'durasi' => '15 Menit',
-        'ringkasan' => [
-            '2 Syarat Interaksi Sosial' => [
-                '<b>Kontak Sosial:</b> Hubungan awal antar individu/kelompok (Primer: tatap muka; Sekunder: melalui perantara HP/surat).',
-                '<b>Komunikasi:</b> Proses penyampaian pesan dari komunikator ke komunikan disertai penafsiran makna.'
-            ],
-            'Bentuk Interaksi Asosiatif (Menyatukan)' => [
-                '<b>Kerjasama (Cooperation):</b> Usaha bersama mencapai tujuan bersama.',
-                '<b>Akomodasi:</b> Upaya meredakan konflik (Mediasi, Kompromi, Arbitrase, Konsiliasi).',
-                '<b>Asimilasi:</b> Peleburan dua kebudayaan menjadi kebudayaan baru tanpa sisa kebudayaan lama.',
-                '<b>Akulturasi:</b> Perpaduan dua kebudayaan tanpa menghilangkan identitas kebudayaan asli.'
-            ],
-            'Bentuk Interaksi Disosiatif (Memisahkan)' => [
-                '<b>Persaingan (Kompetisi):</b> Berlomba mencapai tujuan yang terbatas tanpa kekerasan.',
-                '<b>Kontravensi:</b> Sikap tersembunyi seperti rasa ragu, dengki, atau penolakan terselubung.',
-                '<b>Pertentangan (Konflik):</b> Usaha mencapai tujuan dengan cara menentang pihak lawan disertai ancaman/kekerasan.'
-            ]
-        ],
-        'lks' => [
-            'judul' => 'LKS 2: Studi Kasus Penyelesaian Perselisihan Santri',
-            'tugas' => 'Jelaskan perbedaan antara <b>Mediasi</b> (dengan bantuan penengah yang netral) dan <b>Arbitrase</b> (penengah memiliki wewenang memutuskan) saat terjadi perbedaan pendapat di asrama!'
-        ],
-        'kuis' => [
-            [
-                'soal' => 'Dua syarat mutlak terjadinya interaksi sosial menurut Sosiologi adalah...',
-                'opsi' => ['Kontak sosial dan komunikasi', 'Kerjasama dan simpati', 'Imitasi dan identifikasi', 'Status dan peranan'],
-                'jawaban' => 0,
-                'pembahasan' => 'Tanpa kontak sosial dan proses komunikasi timbal balik, interaksi sosial tidak dapat terwujud.'
-            ],
-            [
-                'soal' => 'Perpaduan antara musik gambus Arab dengan instrumen modern Indonesia tanpa menghilangkan ciri khas aslinya merupakan contoh dari...',
-                'opsi' => ['Asimilasi', 'Akulturasi', 'Kontravensi', 'Akomodasi'],
-                'jawaban' => 1,
-                'pembahasan' => 'Akulturasi adalah percampuran budaya yang tidak menghilangkan unsur kebudayaan aslinya.'
-            ]
-        ]
-    ],
-    3 => [
-        'id' => 3,
-        'judul' => 'Bab 3: Nilai, Norma, & Keteraturan Sosial',
-        'subjudul' => 'Tingkatan Norma: Cara, Kebiasaan, Tata Kelakuan, dan Adat Istiadat',
-        'video_url' => 'https://www.youtube.com/embed/6XvM28P4K8o',
-        'durasi' => '10 Menit',
-        'ringkasan' => [
-            'Pengertian Nilai & Norma' => 'Nilai adalah konsepsi tentang apa yang dianggap baik dan berharga oleh masyarakat. Norma adalah aturan konkret atau pedoman bertingkah laku yang disertai sanksi.',
-            '4 Tingkatan Norma Berdasarkan Kekuatan Mengikatnya' => [
-                '<b>1. Cara (Usage):</b> Penyimpangan hanya mendapat celaan ringan (misal: bersendawa saat makan).',
-                '<b>2. Kebiasaan (Folkways):</b> Perbuatan yang diulang-ulang karena disukai (misal: mencium tangan orang tua/guru).',
-                '<b>3. Tata Kelakuan (Mores):</b> Norma yang menjadi pengatur perbuatan moral anggota masyarakat (misal: larangan berbohong/mencuri).',
-                '<b>4. Adat Istiadat (Custom):</b> Aturan turun-temurun dengan sanksi adat yang sangat tegas dan berat.'
-            ]
-        ],
-        'lks' => [
-            'judul' => 'LKS 3: Klasifikasi Tata Tertib Pesantren',
-            'tugas' => 'Tuliskan 3 contoh aturan di lingkungan pesantren dan klasifikasikan ke dalam tingkatan norma: Usage, Folkways, atau Mores!'
-        ],
-        'kuis' => [
-            [
-                'soal' => 'Sanksi terhadap pelanggaran norma cara (usage) umumnya berupa...',
-                'opsi' => ['Hukuman penjara', 'Teguran atau celaan ringan', 'Pengusiran dari masyarakat', 'Denda materiil'],
-                'jawaban' => 1,
-                'pembahasan' => 'Usage memiliki daya ikat paling lemah sehingga sanksinya hanya berupa teguran, cemoohan, atau celaan ringan.'
-            ]
-        ]
-    ]
-];
+// ==========================================
+// 1. QUERY BAB DARI DATABASE (ELEARNING_BAB)
+// ==========================================
+$res_babs = $conn->query("SELECT * FROM elearning_bab WHERE mapel_nama = '$mapel_esc' ORDER BY nomor_bab ASC, id ASC");
+$list_bab = ($res_babs && $res_babs->num_rows > 0) ? $res_babs->fetch_all(MYSQLI_ASSOC) : [];
 
-// Pastikan bab yang dipilih valid
-if (!isset($kurikulum_sosiologi[$bab_id])) {
-    $bab_id = 1;
+$materi_aktif = null;
+if (count($list_bab) > 0) {
+    // Cari bab berdasarkan nomor_bab
+    foreach ($list_bab as $b) {
+        if ((int)$b['nomor_bab'] === $bab_no) {
+            $materi_aktif = $b;
+            break;
+        }
+    }
+    // Jika tidak ketemu, pakai bab pertama
+    if (!$materi_aktif) {
+        $materi_aktif = $list_bab[0];
+        $bab_no = (int)$materi_aktif['nomor_bab'];
+    }
 }
-$materi_aktif = $kurikulum_sosiologi[$bab_id];
+
+// ==========================================
+// 2. QUERY KUIS DARI DATABASE (ELEARNING_KUIS)
+// ==========================================
+$list_kuis = [];
+if ($materi_aktif && isset($materi_aktif['id'])) {
+    $b_id = (int)$materi_aktif['id'];
+    $res_k = $conn->query("SELECT * FROM elearning_kuis WHERE bab_id = $b_id ORDER BY id ASC");
+    if ($res_k) {
+        $list_kuis = $res_k->fetch_all(MYSQLI_ASSOC);
+    }
+}
+
+// Decode ringkasan materi jika format JSON
+$ringkasan_data = [];
+if ($materi_aktif && !empty($materi_aktif['ringkasan_materi'])) {
+    $decoded = json_decode($materi_aktif['ringkasan_materi'], true);
+    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+        $ringkasan_data = $decoded;
+    } else {
+        $ringkasan_data = ['Intisari Pembelajaran' => $materi_aktif['ringkasan_materi']];
+    }
+}
+
+// Format Embed PDF (Google Docs Viewer / Native)
+function getPdfViewerUrl($pdfUrl) {
+    if (empty($pdfUrl)) return '';
+    return "https://docs.google.com/viewer?url=" . urlencode($pdfUrl) . "&embedded=true";
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-Learning Sosiologi | SADIGS 4.0</title>
+    <title>E-Learning <?= htmlspecialchars($mapel) ?> | SADIGS 4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -159,7 +90,7 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         
-        <!-- HEADER KELAS SOSIOLOGI -->
+        <!-- HEADER KELAS E-LEARNING -->
         <header class="h-16 bg-[#0d8276] text-white shadow-md flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0 no-print">
             <div class="flex items-center space-x-3">
                 <a href="ruang-santri.php" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition">
@@ -167,10 +98,10 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
                 </a>
                 <div class="flex items-center space-x-2">
                     <div class="w-9 h-9 rounded-xl bg-white text-[#0d8276] flex items-center justify-center text-lg font-black shadow-inner">
-                        <i class="fas fa-users"></i>
+                        <i class="fas fa-graduation-cap"></i>
                     </div>
                     <div>
-                        <h1 class="font-black text-sm sm:text-base leading-tight">E-Learning Sosiologi</h1>
+                        <h1 class="font-black text-sm sm:text-base leading-tight">E-Learning <?= htmlspecialchars($mapel) ?></h1>
                         <p class="text-[10px] text-teal-100"><?= htmlspecialchars($kelas_santri) ?> • Mandiri & Terbimbing AI</p>
                     </div>
                 </div>
@@ -188,15 +119,17 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-[#e1f5f2] p-3.5 sm:p-6 pb-24 md:pb-8">
             <div class="max-w-4xl mx-auto">
                 
+                <?php if (count($list_bab) > 0 && $materi_aktif): ?>
+                
                 <!-- 1. DAFTAR PILIHAN BAB / MODUL BELAJAR (PILL TABS) -->
                 <div class="mb-5 overflow-x-auto hide-scrollbar flex items-center gap-2 pb-1">
-                    <?php foreach ($kurikulum_sosiologi as $b): ?>
-                    <a href="santri-belajar.php?mapel=Sosiologi&bab=<?= $b['id'] ?>" 
-                       class="whitespace-nowrap px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 <?= ($bab_id == $b['id']) ? 'bg-[#0d8276] text-white shadow-md shadow-teal-900/10 scale-100' : 'bg-white text-slate-700 hover:bg-teal-50 border border-teal-100/80' ?>">
-                        <span class="w-5 h-5 rounded-full <?= ($bab_id == $b['id']) ? 'bg-white/20 text-white' : 'bg-teal-100 text-[#0d8276]' ?> flex items-center justify-center text-[10px]">
-                            <?= $b['id'] ?>
+                    <?php foreach ($list_bab as $b): ?>
+                    <a href="santri-belajar.php?mapel=<?= urlencode($mapel) ?>&bab=<?= $b['nomor_bab'] ?>" 
+                       class="whitespace-nowrap px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 <?= ($bab_no == $b['nomor_bab']) ? 'bg-[#0d8276] text-white shadow-md shadow-teal-900/10 scale-100' : 'bg-white text-slate-700 hover:bg-teal-50 border border-teal-100/80' ?>">
+                        <span class="w-5 h-5 rounded-full <?= ($bab_no == $b['nomor_bab']) ? 'bg-white/20 text-white' : 'bg-teal-100 text-[#0d8276]' ?> flex items-center justify-center text-[10px]">
+                            <?= $b['nomor_bab'] ?>
                         </span>
-                        <span><?= explode(':', $b['judul'])[0] ?></span>
+                        <span><?= explode(':', $b['judul_bab'])[0] ?></span>
                     </a>
                     <?php endforeach; ?>
                 </div>
@@ -206,42 +139,65 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-4">
                         <div>
                             <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-teal-50 text-[#0d8276] border border-teal-100">Modul Pembelajaran Aktif</span>
-                            <h2 class="text-base sm:text-xl font-black text-slate-900 mt-1.5"><?= htmlspecialchars($materi_aktif['judul']) ?></h2>
-                            <p class="text-xs text-slate-500 mt-0.5"><?= htmlspecialchars($materi_aktif['subjudul']) ?></p>
+                            <h2 class="text-base sm:text-xl font-black text-slate-900 mt-1.5"><?= htmlspecialchars($materi_aktif['judul_bab']) ?></h2>
+                            <?php if(!empty($materi_aktif['subjudul'])): ?>
+                                <p class="text-xs text-slate-500 mt-0.5"><?= htmlspecialchars($materi_aktif['subjudul']) ?></p>
+                            <?php endif; ?>
                         </div>
                         <div class="flex items-center gap-2 self-start sm:self-auto">
                             <span class="text-xs text-slate-500 font-semibold bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100 flex items-center gap-1.5">
-                                <i class="far fa-clock text-[#0d8276]"></i> <?= $materi_aktif['durasi'] ?>
+                                <i class="far fa-clock text-[#0d8276]"></i> <?= htmlspecialchars($materi_aktif['durasi_menit'] ?? '15 Menit') ?>
                             </span>
                         </div>
                     </div>
 
-                    <!-- 3. VIDEO EMBED YOUTUBE PEMBELAJARAN -->
+                    <!-- 3. E-MODUL PDF RESMI NEGARA (KEMDIKBUD) - EMBED SEBELUM VIDEO YOUTUBE -->
+                    <?php if (!empty($materi_aktif['pdf_url'])): ?>
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                                <i class="fas fa-book-reader text-rose-600 text-sm"></i> 1. E-Modul PDF Resmi Negara (Kemdikbud/Kemenag)
+                            </h3>
+                            <a href="<?= htmlspecialchars($materi_aktif['pdf_url']) ?>" target="_blank" class="text-xs font-bold text-rose-600 hover:text-rose-800 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 flex items-center gap-1">
+                                <span>Buka Fullscreen</span> <i class="fas fa-external-link-alt text-[10px]"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="w-full h-[480px] sm:h-[580px] rounded-2xl overflow-hidden border-2 border-rose-100 shadow-md bg-slate-100 relative">
+                            <iframe src="<?= getPdfViewerUrl($materi_aktif['pdf_url']) ?>" class="w-full h-full border-0" title="E-Modul PDF Negara"></iframe>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- 4. VIDEO EMBED YOUTUBE PEMBELAJARAN -->
+                    <?php if (!empty($materi_aktif['video_url'])): ?>
                     <div class="mb-6">
                         <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-2">
-                            <i class="fas fa-play-circle text-rose-500 text-sm"></i> 1. Video Penjelasan Materi
+                            <i class="fas fa-play-circle text-red-500 text-sm"></i> 2. Video Penjelasan Materi Pembelajaran
                         </h3>
                         <div class="relative w-full overflow-hidden rounded-2xl bg-slate-900 shadow-lg" style="padding-top: 56.25%;">
                             <iframe class="absolute top-0 left-0 w-full h-full" 
-                                    src="<?= $materi_aktif['video_url'] ?>" 
-                                    title="Video Pembelajaran Sosiologi" 
+                                    src="<?= htmlspecialchars($materi_aktif['video_url']) ?>" 
+                                    title="Video Pembelajaran" 
                                     frameborder="0" 
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                     allowfullscreen>
                             </iframe>
                         </div>
                     </div>
+                    <?php endif; ?>
 
-                    <!-- 4. MODUL RANGKUMAN BACAAN MATERI -->
+                    <!-- 5. MODUL RANGKUMAN BACAAN MATERI -->
+                    <?php if (!empty($ringkasan_data)): ?>
                     <div class="mb-6">
                         <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-2">
-                            <i class="fas fa-book-open text-[#0d8276] text-sm"></i> 2. Rangkuman Konsep Penting
+                            <i class="fas fa-book-open text-[#0d8276] text-sm"></i> 3. Rangkuman Konsep Penting
                         </h3>
                         <div class="bg-[#e1f5f2]/40 rounded-2xl p-4 sm:p-5 border border-teal-100/80 space-y-3.5 text-xs sm:text-sm text-slate-700 leading-relaxed">
-                            <?php foreach ($materi_aktif['ringkasan'] as $header => $isi): ?>
+                            <?php foreach ($ringkasan_data as $header => $isi): ?>
                                 <div class="bg-white p-3.5 rounded-xl border border-teal-50 shadow-2xs">
                                     <h4 class="font-extrabold text-[#0d8276] mb-1.5 text-xs sm:text-sm flex items-center gap-1.5">
-                                        <i class="fas fa-check-circle text-teal-500 text-xs"></i> <?= $header ?>
+                                        <i class="fas fa-check-circle text-teal-500 text-xs"></i> <?= htmlspecialchars($header) ?>
                                     </h4>
                                     <?php if (is_array($isi)): ?>
                                         <ul class="list-disc list-inside space-y-1 text-slate-600 pl-1 text-xs sm:text-[13px]">
@@ -256,43 +212,54 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
                             <?php endforeach; ?>
                         </div>
                     </div>
+                    <?php endif; ?>
 
-                    <!-- 5. LEMBAR KERJA SISWA (LKS & TUGAS MANDIRI) -->
+                    <!-- 6. LEMBAR KERJA SISWA (LKS & TUGAS MANDIRI) -->
+                    <?php if (!empty($materi_aktif['lks_tugas'])): ?>
                     <div class="mb-6">
                         <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-2">
-                            <i class="fas fa-pencil-alt text-amber-500 text-sm"></i> 3. Lembar Kerja Siswa (LKS)
+                            <i class="fas fa-pencil-alt text-amber-500 text-sm"></i> 4. Lembar Kerja Siswa (LKS)
                         </h3>
                         <div class="bg-amber-50/60 rounded-2xl p-4 sm:p-5 border border-amber-100">
-                            <h4 class="font-extrabold text-amber-900 text-xs sm:text-sm mb-1"><?= $materi_aktif['lks']['judul'] ?></h4>
-                            <p class="text-xs text-amber-800 leading-relaxed"><?= $materi_aktif['lks']['tugas'] ?></p>
+                            <h4 class="font-extrabold text-amber-900 text-xs sm:text-sm mb-1"><?= htmlspecialchars($materi_aktif['lks_judul'] ?? 'Tugas Mandiri') ?></h4>
+                            <p class="text-xs text-amber-800 leading-relaxed"><?= nl2br(htmlspecialchars($materi_aktif['lks_tugas'])) ?></p>
                             
                             <div class="mt-4 pt-3 border-t border-amber-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <span class="text-[11px] text-amber-700 italic">Kerjakan di buku tulis sosiologi atau ketik langsung di chat Ustadz AI untuk dikoreksi!</span>
+                                <span class="text-[11px] text-amber-700 italic">Kerjakan di buku catatan atau diskusikan langsung dengan Ustadz AI!</span>
                                 <button onclick="konsultasiLksKeAI()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm self-start sm:self-auto flex items-center gap-1.5">
                                     <i class="fas fa-magic"></i> Diskusikan Jawaban ke AI
                                 </button>
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
-                    <!-- 6. KUIS LATIHAN SOAL INTERAKTIF DENGAN AUTO-SCORE -->
+                    <!-- 7. KUIS LATIHAN SOAL INTERAKTIF DENGAN AUTO-SCORE -->
+                    <?php if (count($list_kuis) > 0): ?>
                     <div>
                         <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-2">
-                            <i class="fas fa-question-circle text-indigo-500 text-sm"></i> 4. Kuis Latihan Pemahaman
+                            <i class="fas fa-question-circle text-indigo-500 text-sm"></i> 5. Kuis Latihan Pemahaman
                         </h3>
                         
                         <div class="bg-indigo-50/40 rounded-2xl p-4 sm:p-5 border border-indigo-100 space-y-4" id="quizContainer">
-                            <?php foreach ($materi_aktif['kuis'] as $qIdx => $q): ?>
+                            <?php foreach ($list_kuis as $qIdx => $q): ?>
                             <div class="bg-white p-4 rounded-xl border border-indigo-100/80 shadow-2xs" id="question_box_<?= $qIdx ?>">
                                 <p class="font-bold text-slate-900 text-xs sm:text-sm mb-3">
                                     <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 inline-flex items-center justify-center text-xs mr-1.5"><?= $qIdx + 1 ?></span>
                                     <?= htmlspecialchars($q['soal']) ?>
                                 </p>
                                 <div class="space-y-2">
-                                    <?php foreach ($q['opsi'] as $oIdx => $opsi): ?>
+                                    <?php 
+                                    $opsi_arr = [
+                                        'A' => $q['opsi_a'],
+                                        'B' => $q['opsi_b'],
+                                        'C' => $q['opsi_c'],
+                                        'D' => $q['opsi_d']
+                                    ];
+                                    foreach ($opsi_arr as $optKey => $opsiText): ?>
                                     <label class="flex items-center p-2.5 rounded-xl border border-slate-200 hover:bg-indigo-50/50 cursor-pointer transition text-xs text-slate-700 font-medium">
-                                        <input type="radio" name="quiz_<?= $qIdx ?>" value="<?= $oIdx ?>" class="w-4 h-4 text-[#0d8276] focus:ring-teal-500 mr-2.5" onchange="cekJawaban(<?= $qIdx ?>, <?= $oIdx ?>, <?= $q['jawaban'] ?>, '<?= addslashes($q['pembahasan']) ?>')">
-                                        <span><?= htmlspecialchars($opsi) ?></span>
+                                        <input type="radio" name="quiz_<?= $qIdx ?>" value="<?= $optKey ?>" class="w-4 h-4 text-[#0d8276] focus:ring-teal-500 mr-2.5" onchange="cekJawaban(<?= $qIdx ?>, '<?= $optKey ?>', '<?= $q['kunci_jawaban'] ?>', '<?= addslashes($q['pembahasan'] ?? 'Jawaban yang tepat adalah pilihan ' . $q['kunci_jawaban']) ?>')">
+                                        <span><b><?= $optKey ?>.</b> <?= htmlspecialchars($opsiText) ?></span>
                                     </label>
                                     <?php endforeach; ?>
                                 </div>
@@ -306,15 +273,32 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
                             </div>
                         </div>
                     </div>
+                    <?php endif; ?>
 
                 </div>
+
+                <?php else: ?>
+                <!-- JIKA BELUM ADA MATERI BAB -->
+                <div class="bg-white rounded-3xl p-8 sm:p-12 text-center border border-teal-100 shadow-sm max-w-xl mx-auto my-12">
+                    <div class="w-16 h-16 rounded-2xl bg-teal-50 text-[#0d8276] flex items-center justify-center text-3xl mx-auto mb-4">
+                        <i class="fas fa-book-reader"></i>
+                    </div>
+                    <h2 class="font-black text-lg text-slate-900">Modul Belajar Segera Hadir</h2>
+                    <p class="text-xs text-slate-500 mt-2 leading-relaxed">
+                        Materi pembelajaran untuk mata pelajaran <b><?= htmlspecialchars($mapel) ?></b> sedang dipersiapkan oleh Ustadz Pengampu / Tim Kurikulum.
+                    </p>
+                    <a href="ruang-santri.php" class="mt-6 inline-flex items-center gap-2 bg-[#0d8276] hover:bg-[#0b6f65] text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow transition">
+                        <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+                    </a>
+                </div>
+                <?php endif; ?>
 
             </div>
         </main>
     </div>
 
     <!-- ================================================== -->
-    <!-- MODAL USTADZ AI SOSIOLOGI (INTERAKTIF CHAT + SUARA)-->
+    <!-- MODAL USTADZ AI TUTOR (INTERAKTIF CHAT + SUARA)    -->
     <!-- ================================================== -->
     <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
         <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-teal-100 flex flex-col h-[85vh] sm:h-[600px] overflow-hidden animate-in slide-in-from-bottom duration-300">
@@ -327,10 +311,10 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
                     </div>
                     <div>
                         <h3 class="font-black text-sm leading-tight flex items-center gap-1.5">
-                            Ustadz AI Sosiologi
+                            Ustadz AI <?= htmlspecialchars($mapel) ?>
                             <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
                         </h3>
-                        <p class="text-[10px] text-teal-100"><?= $materi_aktif['judul'] ?></p>
+                        <p class="text-[10px] text-teal-100"><?= htmlspecialchars($materi_aktif['judul_bab'] ?? $mapel) ?></p>
                     </div>
                 </div>
                 
@@ -346,39 +330,38 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
 
             <!-- Chat Messages Body -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#e1f5f2]/30" id="chatContainer">
-                <!-- Welcome Message from AI -->
                 <div class="flex items-start gap-2.5">
                     <div class="w-7 h-7 rounded-xl bg-[#0d8276] text-white flex items-center justify-center text-xs flex-shrink-0">
                         <i class="fas fa-robot"></i>
                     </div>
                     <div class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-teal-100 shadow-2xs text-xs text-slate-800 max-w-[85%] leading-relaxed">
                         <p class="font-bold text-[#0d8276] mb-1">Ahlan Wa Sahlan, <?= htmlspecialchars($santri_nama) ?>! 🌸</p>
-                        <p>Saya <b>Ustadz AI Pembimbing Sosiologi</b>. Saya siap membantumu memahami materi <b><?= htmlspecialchars($materi_aktif['judul']) ?></b>.</p>
-                        <p class="mt-2 text-slate-600">Silakan tanyakan materi yang belum jelas, minta contoh kasus, atau bimbingan LKS!</p>
+                        <p>Saya <b>Ustadz AI Pembimbing <?= htmlspecialchars($mapel) ?></b>. Saya siap membantumu memahami materi <b><?= htmlspecialchars($materi_aktif['judul_bab'] ?? $mapel) ?></b>.</p>
+                        <p class="mt-2 text-slate-600">Silakan tanyakan materi yang belum jelas, minta penjelasan rumus/konsep, atau bimbingan LKS!</p>
                     </div>
                 </div>
             </div>
 
             <!-- Quick Suggestion Prompts -->
             <div class="px-3 py-2 bg-white border-t border-slate-100 overflow-x-auto hide-scrollbar flex items-center gap-1.5 flex-shrink-0 text-[11px]">
-                <button onclick="kirimPesanOtomatis('Ustadz, tolong jelaskan 4 ciri sosiologi dengan contoh sehari-hari!')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
-                    💡 4 Ciri Sosiologi
+                <button onclick="kirimPesanOtomatis('Ustadz, tolong jelaskan konsep utama bab ini dengan contoh sehari-hari!')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
+                    💡 Konsep Utama
                 </button>
-                <button onclick="kirimPesanOtomatis('Apa perbedaan Auguste Comte dan Emile Durkheim?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
-                    📖 Tokoh Sosiologi
+                <button onclick="kirimPesanOtomatis('Bagaimana tips mudah menghafal materi ini?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
+                    📖 Tips Mudah
                 </button>
-                <button onclick="kirimPesanOtomatis('Beri contoh fenomena sosial non-etis di pesantren!')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
-                    🕌 Contoh Non-Etis
+                <button onclick="kirimPesanOtomatis('Beri contoh kasus nyata di lingkungan pesantren!')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
+                    🕌 Contoh Nyata
                 </button>
             </div>
 
-            <!-- Chat Input Bar (Text + Mic Button) -->
+            <!-- Chat Input Bar -->
             <div class="p-3 bg-white border-t border-slate-200 flex items-center gap-2 flex-shrink-0">
                 <button id="micBtn" onclick="toggleVoiceInput()" class="w-10 h-10 rounded-2xl bg-teal-50 hover:bg-teal-100 text-[#0d8276] flex items-center justify-center transition flex-shrink-0" title="Bicara dengan Suara">
                     <i class="fas fa-microphone text-base"></i>
                 </button>
 
-                <input type="text" id="userInput" placeholder="Tanya Ustadz AI tentang Sosiologi..." class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-teal-500 focus:bg-white" onkeydown="if(event.key==='Enter') kirimPesan()">
+                <input type="text" id="userInput" placeholder="Tanya Ustadz AI tentang <?= htmlspecialchars($mapel) ?>..." class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-teal-500 focus:bg-white" onkeydown="if(event.key==='Enter') kirimPesan()">
 
                 <button onclick="kirimPesan()" id="sendBtn" class="w-10 h-10 rounded-2xl bg-[#0d8276] hover:bg-[#0b6f65] text-white flex items-center justify-center shadow-md transition flex-shrink-0">
                     <i class="fas fa-paper-plane text-sm"></i>
@@ -396,11 +379,11 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
         let totalScore = 0;
         let answeredQuestions = {};
 
-        function cekJawaban(qIdx, selectedOpsi, correctOpsi, pembahasan) {
+        function cekJawaban(qIdx, selectedKey, correctKey, pembahasan) {
             const feedbackBox = document.getElementById('feedback_' + qIdx);
             feedbackBox.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'border-emerald-200', 'bg-rose-50', 'text-rose-800', 'border-rose-200');
             
-            if (selectedOpsi === correctOpsi) {
+            if (selectedKey === correctKey) {
                 feedbackBox.classList.add('bg-emerald-50', 'text-emerald-800', 'border', 'border-emerald-200');
                 feedbackBox.innerHTML = `<i class="fas fa-check-circle text-emerald-600 mr-1"></i> <b>Tepat Sekali!</b> ${pembahasan}`;
                 answeredQuestions[qIdx] = 100;
@@ -410,9 +393,8 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
                 answeredQuestions[qIdx] = 0;
             }
 
-            // Hitung skor total
-            const totalQ = <?= count($materi_aktif['kuis']) ?>;
-            if (Object.keys(answeredQuestions).length === totalQ) {
+            const totalQ = <?= count($list_kuis) ?>;
+            if (totalQ > 0 && Object.keys(answeredQuestions).length === totalQ) {
                 let sum = Object.values(answeredQuestions).reduce((a, b) => a + b, 0);
                 let finalScore = Math.round(sum / totalQ);
                 const summaryBox = document.getElementById('quizResultSummary');
@@ -450,7 +432,7 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
 
         function konsultasiLksKeAI() {
             bukaUstadzAI();
-            kirimPesanOtomatis("Ustadz, bagaimana cara menjawab tugas LKS ini: '<?= addslashes($materi_aktif['lks']['tugas']) ?>'?");
+            kirimPesanOtomatis("Ustadz, bagaimana petunjuk dan langkah pengerjaan tugas LKS ini: '<?= addslashes($materi_aktif['lks_tugas'] ?? '') ?>'?");
         }
 
         function kirimPesanOtomatis(text) {
@@ -466,7 +448,6 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
             input.value = '';
             const container = document.getElementById('chatContainer');
 
-            // Tambah chat user
             container.innerHTML += `
                 <div class="flex items-start justify-end gap-2.5">
                     <div class="bg-[#0d8276] text-white p-3.5 rounded-2xl rounded-tr-none shadow-2xs text-xs max-w-[85%] leading-relaxed font-medium">
@@ -476,7 +457,6 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
             `;
             container.scrollTop = container.scrollHeight;
 
-            // Indikator AI Mengetik
             const typingId = 'typing_' + Date.now();
             container.innerHTML += `
                 <div class="flex items-start gap-2.5" id="${typingId}">
@@ -490,20 +470,19 @@ $materi_aktif = $kurikulum_sosiologi[$bab_id];
             `;
             container.scrollTop = container.scrollHeight;
 
-            // Prompt untuk Gemini
             const contextPrompt = `
-Anda adalah "Ustadz AI Sosiologi", seorang guru dan ustadz pembimbing mata pelajaran Sosiologi SMA yang sangat ramah, santun, cerdas, komunikatif, dan penuh motivasi islami di sekolah/pesantren digital SADIGS 4.0.
+Anda adalah "Ustadz AI <?= addslashes($mapel) ?>", seorang guru dan ustadz pembimbing mata pelajaran <?= addslashes($mapel) ?> yang sangat ramah, santun, cerdas, komunikatif, dan penuh motivasi islami di platform e-learning SADIGS 4.0.
 
 Konteks Pembelajaran:
-- Mata Pelajaran: Sosiologi
-- Bab Aktif: <?= addslashes($materi_aktif['judul']) ?> (<?= addslashes($materi_aktif['subjudul']) ?>)
+- Mata Pelajaran: <?= addslashes($mapel) ?>
+- Bab Aktif: <?= addslashes($materi_aktif['judul_bab'] ?? $mapel) ?> (<?= addslashes($materi_aktif['subjudul'] ?? '') ?>)
 - Nama Santri: <?= addslashes($santri_nama) ?>
 
 Instruksi Anda:
-1. Sapa santri dengan ramah (misal: "Ahlan ananda ${escapeHtml('<?= addslashes($santri_nama) ?>')}", "Masya Allah pertanyaan yang bagus!").
-2. Jelaskan konsep sosiologi dengan bahasa yang mudah dimengerti, analogi kehidupan sehari-hari, dan contoh lingkungan pondok/sekolah.
+1. Sapa santri dengan ramah (misal: "Ahlan ananda <?= addslashes($santri_nama) ?>", "Masya Allah pertanyaan yang sangat bagus!").
+2. Jelaskan materi dengan bahasa yang mudah dipahami anak sekolah/pesantren, gunakan analogi kehidupan nyata.
 3. Berikan poin-poin yang terstruktur rapi.
-4. Jangan terlalu panjang bertele-tele, fokus pada pemahaman konsep dan jawaban langsung.
+4. Jawab secara jelas dan to-the-point.
 
 Pertanyaan Santri:
 "${text}"
@@ -525,7 +504,6 @@ Pertanyaan Santri:
                     aiText = data.result;
                 }
 
-                // Render Markdown sederhana ke HTML
                 let formattedHtml = formatAiMarkdown(aiText);
 
                 container.innerHTML += `
@@ -540,7 +518,6 @@ Pertanyaan Santri:
                 `;
                 container.scrollTop = container.scrollHeight;
 
-                // Bacakan Suara AI jika suara aktif
                 if (isVoiceActive) {
                     speakText(aiText);
                 }
@@ -562,7 +539,7 @@ Pertanyaan Santri:
             }
         }
 
-        // Web Speech Recognition (Mic Voice Input)
+        // Web Speech Recognition
         function toggleVoiceInput() {
             const micBtn = document.getElementById('micBtn');
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -593,13 +570,13 @@ Pertanyaan Santri:
                 recognition.onerror = function() {
                     isListening = false;
                     micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
-                    document.getElementById('userInput').placeholder = "Tanya Ustadz AI tentang Sosiologi...";
+                    document.getElementById('userInput').placeholder = "Tanya Ustadz AI tentang <?= htmlspecialchars($mapel) ?>...";
                 };
 
                 recognition.onend = function() {
                     isListening = false;
                     micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
-                    document.getElementById('userInput').placeholder = "Tanya Ustadz AI tentang Sosiologi...";
+                    document.getElementById('userInput').placeholder = "Tanya Ustadz AI tentang <?= htmlspecialchars($mapel) ?>...";
                 };
             }
 
@@ -610,12 +587,11 @@ Pertanyaan Santri:
             }
         }
 
-        // Web Speech Synthesis (Text to Speech Suara Ustadz AI)
+        // Web Speech Synthesis
         function speakText(text) {
             if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
 
-            // Bersihkan format markdown sebelum dibaca
             const cleanText = text.replace(/[*_#`]/g, '').replace(/<[^>]*>?/gm, '');
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'id-ID';
