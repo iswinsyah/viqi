@@ -66,6 +66,45 @@ function getPdfViewerUrl($pdfUrl) {
     if (empty($pdfUrl)) return '';
     return "https://docs.google.com/viewer?url=" . urlencode($pdfUrl) . "&embedded=true";
 }
+
+// Format Embed YouTube
+function getYoutubeEmbedUrl($url) {
+    if (empty($url)) return '';
+    $url = trim($url);
+    if (strpos($url, 'youtube.com/embed/') !== false) return $url;
+    if (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i', $url, $match)) {
+        return 'https://www.youtube.com/embed/' . $match[1];
+    }
+    return $url;
+}
+
+// Helper parsing multi-videos
+$videos_list = [];
+if ($materi_aktif) {
+    if (!empty($materi_aktif['video_urls'])) {
+        $decoded_v = json_decode($materi_aktif['video_urls'], true);
+        if (is_array($decoded_v)) {
+            $labels = ['1. Konsep Inti', '2. Pendalaman & Kasus', '3. Contoh & Pembahasan', '4. Wawasan Pembanding', '5. Praktik Lapangan'];
+            foreach ($decoded_v as $idx => $v) {
+                if (is_string($v) && !empty(trim($v))) {
+                    $lbl = $labels[$idx] ?? ('Video ' . ($idx + 1));
+                    $videos_list[] = [
+                        'title' => $lbl,
+                        'url' => getYoutubeEmbedUrl(trim($v)),
+                        'raw' => trim($v)
+                    ];
+                }
+            }
+        }
+    }
+    if (empty($videos_list) && !empty($materi_aktif['video_url'])) {
+        $videos_list[] = [
+            'title' => 'Video Pembelajaran Utama',
+            'url' => getYoutubeEmbedUrl($materi_aktif['video_url']),
+            'raw' => $materi_aktif['video_url']
+        ];
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -169,15 +208,33 @@ function getPdfViewerUrl($pdfUrl) {
                     </div>
                     <?php endif; ?>
 
-                    <!-- 4. VIDEO EMBED YOUTUBE PEMBELAJARAN -->
-                    <?php if (!empty($materi_aktif['video_url'])): ?>
+                    <!-- 4. VIDEO EMBED YOUTUBE PEMBELAJARAN (3-5 VIDEO PEMBANDING) -->
+                    <?php if (!empty($videos_list)): ?>
                     <div class="mb-6">
-                        <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 mb-2 flex items-center gap-2">
-                            <i class="fas fa-play-circle text-red-500 text-sm"></i> 2. Video Penjelasan Materi Pembelajaran
-                        </h3>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                            <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                                <i class="fas fa-play-circle text-red-500 text-sm"></i> 2. Video Penjelasan Materi (<?= count($videos_list) ?> Video Pembanding)
+                            </h3>
+                            <span class="text-[10px] text-slate-500 font-semibold">Tonton variasi video untuk memperluas sudut pandang</span>
+                        </div>
+
+                        <!-- TABS PILIHAN VIDEO -->
+                        <?php if (count($videos_list) > 1): ?>
+                        <div class="flex items-center gap-2 mb-3 overflow-x-auto hide-scrollbar pb-1">
+                            <?php foreach ($videos_list as $vIdx => $vItem): ?>
+                            <button type="button" 
+                                    onclick="gantiVideoPembelajaran('<?= htmlspecialchars($vItem['url']) ?>', this)" 
+                                    class="video-tab-btn whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($vIdx === 0) ? 'bg-red-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700' ?>">
+                                <i class="fab fa-youtube"></i>
+                                <span><?= htmlspecialchars($vItem['title']) ?></span>
+                            </button>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+
                         <div class="relative w-full overflow-hidden rounded-2xl bg-slate-900 shadow-lg" style="padding-top: 56.25%;">
-                            <iframe class="absolute top-0 left-0 w-full h-full" 
-                                    src="<?= htmlspecialchars($materi_aktif['video_url']) ?>" 
+                            <iframe id="mainVideoPlayer" class="absolute top-0 left-0 w-full h-full" 
+                                    src="<?= htmlspecialchars($videos_list[0]['url']) ?>" 
                                     title="Video Pembelajaran" 
                                     frameborder="0" 
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
@@ -609,13 +666,17 @@ Pertanyaan Santri:
             return html;
         }
 
-        function escapeHtml(text) {
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+        function gantiVideoPembelajaran(videoUrl, btnElement) {
+            const iframe = document.getElementById('mainVideoPlayer');
+            if (iframe) {
+                iframe.src = videoUrl;
+            }
+            document.querySelectorAll('.video-tab-btn').forEach(btn => {
+                btn.className = 'video-tab-btn whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700';
+            });
+            if (btnElement) {
+                btnElement.className = 'video-tab-btn whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-red-600 text-white shadow-sm';
+            }
         }
     </script>
 </body>

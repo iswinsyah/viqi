@@ -35,6 +35,9 @@
             <a href="master-mapel.php" class="<?= (isset($active_menu) && $active_menu == 'master_mapel') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-book w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'master_mapel') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Master Mapel
             </a>
+            <a href="elearning-yayasan.php" class="<?= (isset($active_menu) && $active_menu == 'elearning_yayasan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
+                <i class="fas fa-robot w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'elearning_yayasan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Kurikulum & E-Learning (AI)
+            </a>
             <a href="kitab-rujukan.php" class="<?= (isset($active_menu) && $active_menu == 'kitab_rujukan') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-book-open w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'kitab_rujukan') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Kitab Rujukan
             </a>
