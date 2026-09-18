@@ -629,17 +629,22 @@ if ($view === 'ibadah_harian') {
                         <p id="modalDesc" class="text-xs text-slate-500 mt-0.5">Deskripsi modul belajar</p>
                     </div>
                 </div>
-                <div class="bg-[#e1f5f2]/60 p-3.5 rounded-2xl border border-teal-100 text-xs text-slate-700 mb-5">
-                    <p class="font-semibold text-[#0d8276] mb-1"><i class="fas fa-info-circle mr-1"></i> Informasi Belajar Santri</p>
-                    <p class="text-[11px] text-slate-600 leading-relaxed">Silakan cek riwayat nilai, rapor akademik, dan kalender kegiatan untuk mata pelajaran ini.</p>
+                <div class="bg-[#e1f5f2]/60 p-3.5 rounded-2xl border border-teal-100 text-xs text-slate-700 mb-4">
+                    <p class="font-semibold text-[#0d8276] mb-1"><i class="fas fa-graduation-cap mr-1"></i> E-Learning & Bimbingan AI</p>
+                    <p class="text-[11px] text-slate-600 leading-relaxed">Pelajari modul rangkuman, tonton video materi, kerjakan LKS & latihan soal, serta konsultasi 24 jam dengan Ustadz AI.</p>
                 </div>
-                <div class="grid grid-cols-2 gap-2.5">
-                    <a href="santri-rapot.php?tab=pkbm" class="bg-[#0d8276] hover:bg-[#0b6f65] text-white text-xs font-bold py-2.5 px-3 rounded-xl text-center shadow transition flex items-center justify-center gap-1.5">
-                        <i class="fas fa-file-invoice"></i> Raport PKBM
+                <div class="space-y-2">
+                    <a id="modalStudyBtn" href="santri-belajar.php?mapel=Sosiologi" class="w-full bg-[#0d8276] hover:bg-[#0b6f65] text-white text-xs font-black py-3 px-4 rounded-2xl text-center shadow-md shadow-teal-900/10 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-book-reader text-sm"></i> Buka Ruang Belajar & Ustadz AI
                     </a>
-                    <a href="santri-rapot.php?tab=diniyah" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl text-center shadow transition flex items-center justify-center gap-1.5">
-                        <i class="fas fa-book-quran"></i> Rapor Diniyah
-                    </a>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <a href="santri-rapot.php?tab=pkbm" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-xl text-center transition flex items-center justify-center gap-1.5">
+                            <i class="fas fa-file-invoice"></i> Rapor PKBM
+                        </a>
+                        <a href="santri-rapot.php?tab=diniyah" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-xl text-center transition flex items-center justify-center gap-1.5">
+                            <i class="fas fa-book-quran"></i> Rapor Diniyah
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -649,6 +654,7 @@ if ($view === 'ibadah_harian') {
                 document.getElementById('modalTitle').innerText = title;
                 document.getElementById('modalDesc').innerText = desc;
                 document.getElementById('modalIcon').className = iconClass;
+                document.getElementById('modalStudyBtn').href = 'santri-belajar.php?mapel=' + encodeURIComponent(title);
                 document.getElementById('subjectModal').classList.remove('hidden');
             }
             function closeSubjectModal() {
