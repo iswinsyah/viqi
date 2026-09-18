@@ -126,7 +126,7 @@ function hitung_predikat($nilai) {
             </div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-indigo-50/20 p-4 sm:p-6 lg:p-8">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-indigo-50/20 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
             
             <!-- FILTER BAR -->
             <div class="bg-white p-5 rounded-2xl border border-indigo-100 shadow-sm mb-6 no-print max-w-4xl mx-auto">
@@ -213,6 +213,9 @@ function hitung_predikat($nilai) {
 
         </main>
     </div>
+
+    <!-- BOTTOM NAVBAR MOBILE -->
+    <?php include 'bottombar-santri.php'; ?>
 
     <script>
         const openBtn = document.getElementById('open-sidebar-santri');

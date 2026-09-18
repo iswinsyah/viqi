@@ -178,7 +178,7 @@ $month_map = [
             </div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 pb-24 md:pb-8">
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-calendar-alt text-amber-500 mr-2"></i>Kalender Akademik</h1>
                 <p class="text-gray-500 mt-1">Rentang jadwal agenda dan hari besar akademik selama periode 2026/2027.</p>
@@ -272,5 +272,9 @@ $month_map = [
             </div>
         </main>
     </div>
+
+    <?php if (isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true): ?>
+        <?php include 'bottombar-santri.php'; ?>
+    <?php endif; ?>
 </body>
 </html>

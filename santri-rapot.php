@@ -145,7 +145,7 @@ function getDeskripsiCapaian($nilai) {
             <div class="flex items-center"><button id="open-sidebar-santri" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2></div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 pb-24 md:pb-8">
             <div class="mb-6 no-print">
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-book-reader text-indigo-600 mr-2"></i>Rapor Digital</h1>
                 <p class="text-gray-500 mt-1">Lihat rekapitulasi hasil belajarmu di sini.</p>
@@ -231,6 +231,10 @@ function getDeskripsiCapaian($nilai) {
             <?php endif; // End of check if $data_santri exists ?>
         </main>
     </div>
+
+    <!-- BOTTOM NAVBAR MOBILE -->
+    <?php include 'bottombar-santri.php'; ?>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar-santri');

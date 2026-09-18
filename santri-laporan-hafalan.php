@@ -86,7 +86,7 @@ $active_menu = 'santri_hafalan';
             </div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
             
             <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
@@ -189,6 +189,9 @@ $active_menu = 'santri_hafalan';
 
         </main>
     </div>
+
+    <!-- BOTTOM NAVBAR MOBILE -->
+    <?php include 'bottombar-santri.php'; ?>
 
     <script>
         const openBtn = document.getElementById('open-sidebar-santri');

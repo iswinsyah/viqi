@@ -95,7 +95,7 @@ foreach ($transaksi as $t) {
             </div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 pb-24 md:pb-8">
             <div class="mb-6">
                 <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-money-check-alt text-indigo-600 mr-2"></i>Tabel Keuangan Uang Saku</h1>
                 <p class="text-gray-500 mt-1">Pantau riwayat setoran dan penarikan uang sakumu di sini.</p>
@@ -183,6 +183,9 @@ foreach ($transaksi as $t) {
             </div>
         </main>
     </div>
+
+    <!-- BOTTOM NAVBAR MOBILE -->
+    <?php include 'bottombar-santri.php'; ?>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
