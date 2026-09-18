@@ -634,11 +634,11 @@ if ($view === 'ibadah_harian') {
                     <p class="text-[11px] text-slate-600 leading-relaxed">Silakan cek riwayat nilai, rapor akademik, dan kalender kegiatan untuk mata pelajaran ini.</p>
                 </div>
                 <div class="grid grid-cols-2 gap-2.5">
-                    <a href="santri-rapot.php" class="bg-[#0d8276] hover:bg-[#0b6f65] text-white text-xs font-bold py-2.5 px-3 rounded-xl text-center shadow transition flex items-center justify-center gap-1.5">
-                        <i class="fas fa-graduation-cap"></i> Rapor Sekolah
+                    <a href="santri-rapot.php?tab=pkbm" class="bg-[#0d8276] hover:bg-[#0b6f65] text-white text-xs font-bold py-2.5 px-3 rounded-xl text-center shadow transition flex items-center justify-center gap-1.5">
+                        <i class="fas fa-file-invoice"></i> Raport PKBM
                     </a>
-                    <a href="santri-rapot-pkbm.php" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2.5 px-3 rounded-xl text-center transition flex items-center justify-center gap-1.5">
-                        <i class="fas fa-file-invoice"></i> Rapor PKBM
+                    <a href="santri-rapot.php?tab=diniyah" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl text-center shadow transition flex items-center justify-center gap-1.5">
+                        <i class="fas fa-book-quran"></i> Rapor Diniyah
                     </a>
                 </div>
             </div>

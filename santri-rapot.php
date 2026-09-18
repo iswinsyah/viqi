@@ -4,232 +4,361 @@ require_once 'koneksi.php';
 
 $santri_id = $_SESSION['santri_id'];
 $santri_nama = $_SESSION['santri_nama'];
-$active_menu = 'rapot_akademik';
+$active_menu = 'rapot_santri';
 
-// --- PERSIAPAN DATA ---
-// Ambil data santri yang login
+// Active Tab: 'pkbm' or 'diniyah'
+$tab = $_GET['tab'] ?? 'pkbm';
+if (!in_array($tab, ['pkbm', 'diniyah'])) {
+    $tab = 'pkbm';
+}
+
+// 1. Data Santri
 $stmt_santri = $conn->prepare("SELECT * FROM buku_induk_santri WHERE id = ?");
 $stmt_santri->bind_param("i", $santri_id);
 $stmt_santri->execute();
 $data_santri = $stmt_santri->get_result()->fetch_assoc();
 
-$kelas_santri = $data_santri['kelas_sekarang'] ?? null;
+$kelas_santri = $data_santri['kelas_sekarang'] ?? 'Paket B';
 
-// Ambil opsi filter dari database berdasarkan data santri
-$filters = [
-    'tahun_ajaran' => $_GET['tahun_ajaran'] ?? '',
-    'semester' => $_GET['semester'] ?? ''
-];
-
-$opsi_filter = [];
-if ($data_santri) {
-    $stmt_opsi = $conn->prepare("SELECT DISTINCT tahun_ajaran, semester FROM leger_nilai WHERE santri_id = ? ORDER BY tahun_ajaran DESC, semester DESC");
-    $stmt_opsi->bind_param("i", $santri_id);
-    $stmt_opsi->execute();
-    $opsi_filter = $stmt_opsi->get_result()->fetch_all(MYSQLI_ASSOC);
+// Tentukan Paket B vs Paket C
+$paket_tipe = 'Paket B';
+if (
+    str_contains(strtolower($kelas_santri), 'paket c') || 
+    str_contains(strtolower($kelas_santri), 'sma') || 
+    preg_match('/\b(10|11|12|x|xi|xii)\b/i', strtolower($kelas_santri))
+) {
+    $paket_tipe = 'Paket C';
 }
 
-$opsi_ta = array_unique(array_column($opsi_filter, 'tahun_ajaran'));
-$opsi_semester = array_unique(array_column($opsi_filter, 'semester'));
-
-$is_data_available_for_filter = !empty($opsi_ta);
-
-// --- PROSES PENGAMBILAN DATA RAPOT ---
-$nilai_kelompok = [];
-$summary = [
-    'jumlah_nilai' => 0,
-    'rata_rata' => 0,
-    'peringkat' => 0,
-    'total_siswa' => 0
+// 2. Filter Tahun Ajaran & Semester
+$filters = [
+    'tahun_ajaran' => $_GET['tahun_ajaran'] ?? '',
+    'semester' => $_GET['semester'] ?? 'Ganjil'
 ];
-$show_rapot = false;
 
-if ($data_santri && !empty($filters['tahun_ajaran']) && !empty($filters['semester'])) {
-    $show_rapot = true;
+$opsi_ta = [];
+$res_ta = $conn->query("SELECT DISTINCT tahun_ajaran FROM leger_nilai WHERE santri_id = $santri_id ORDER BY tahun_ajaran DESC");
+if ($res_ta && $res_ta->num_rows > 0) {
+    while ($r = $res_ta->fetch_assoc()) $opsi_ta[] = $r['tahun_ajaran'];
+} else {
+    $opsi_ta = [date('Y') . '/' . (date('Y') + 1), (date('Y') - 1) . '/' . date('Y')];
+}
 
-    // 1. Ambil semua nilai UAS di kelas & semester yang sama untuk perhitungan peringkat
-    $sql_all_scores = "SELECT l.santri_id, s.nama_lengkap, l.mapel_id, m.nama_mapel, m.kategori_mapel, l.nilai
-                       FROM leger_nilai l
-                       JOIN buku_induk_santri s ON l.santri_id = s.id
-                       JOIN master_mapel m ON l.mapel_id = m.id
-                       WHERE l.kelas = ? AND l.tahun_ajaran = ? AND l.semester = ? AND l.jenis_ujian = 'Ujian Akhir Semester (UAS)'
-                       ORDER BY s.nama_lengkap, m.id";
-    
-    $stmt_all = $conn->prepare($sql_all_scores);
-    $stmt_all->bind_param("sss", $kelas_santri, $filters['tahun_ajaran'], $filters['semester']);
-    $stmt_all->execute();
-    $result_all = $stmt_all->get_result();
+if (empty($filters['tahun_ajaran']) && !empty($opsi_ta)) {
+    $filters['tahun_ajaran'] = $opsi_ta[0];
+}
 
-    $data_kelas_leger = [];
-    if ($result_all && $result_all->num_rows > 0) {
-        // 2. Olah data mentah menjadi format pivot (sama seperti di admin-leger.php)
-        while ($row = $result_all->fetch_assoc()) {
-            $current_santri_id = $row['santri_id'];
-            if (!isset($data_kelas_leger[$current_santri_id])) {
-                $data_kelas_leger[$current_santri_id] = ['nama' => $row['nama_lengkap'], 'nilai' => [], 'jumlah' => 0, 'rata_rata' => 0];
-            }
-            $data_kelas_leger[$current_santri_id]['nilai'][$row['mapel_id']] = $row['nilai'];
-            
-            // Jika ini adalah santri yang sedang login, kumpulkan nilainya untuk ditampilkan
-            if ($current_santri_id == $santri_id) {
-                $nilai_kelompok[$row['kategori_mapel']][] = [
-                    'mapel' => $row['nama_mapel'],
-                    'nilai' => $row['nilai']
-                ];
-            }
-        }
+$ta_esc = $conn->real_escape_string($filters['tahun_ajaran']);
+$sem_esc = $conn->real_escape_string($filters['semester']);
 
-        // 3. Hitung Jumlah & Rata-rata untuk semua siswa di kelas
-        foreach ($data_kelas_leger as &$santri) {
-            $total_nilai = array_sum($santri['nilai']);
-            $jumlah_mapel = count($santri['nilai']);
-            $santri['jumlah'] = $total_nilai;
-            $santri['rata_rata'] = $jumlah_mapel > 0 ? round($total_nilai / $jumlah_mapel, 2) : 0;
-        }
-        unset($santri);
+// ==========================================
+// A. LOGIC DATA TAB PKBM
+// ==========================================
+$nilai_pkbm = [];
+$catatan_pkbm = null;
 
-        // 4. Urutkan untuk menentukan peringkat
-        uasort($data_kelas_leger, function($a, $b) {
-            return $b['rata_rata'] <=> $a['rata_rata'];
-        });
+if ($data_santri && !empty($filters['tahun_ajaran'])) {
+    $sql_pkbm = "
+        SELECT m.id as mapel_id, m.nama_mapel, m.kode_mapel, 
+               ROUND(AVG(l.nilai), 0) as nilai
+        FROM leger_nilai l 
+        JOIN master_mapel m ON l.mapel_id = m.id 
+        WHERE l.santri_id = $santri_id AND l.tahun_ajaran = '$ta_esc' AND l.semester = '$sem_esc' 
+        GROUP BY m.id
+        ORDER BY m.kategori_mapel ASC, m.nama_mapel ASC
+    ";
+    $res_pkbm = $conn->query($sql_pkbm);
+    if ($res_pkbm) {
+        while ($r = $res_pkbm->fetch_assoc()) $nilai_pkbm[] = $r;
+    }
 
-        // 5. Cari peringkat santri yang login
-        $peringkat = 1;
-        foreach ($data_kelas_leger as $id => $data) {
-            if ($id == $santri_id) {
-                $summary['peringkat'] = $peringkat;
-                $summary['jumlah_nilai'] = $data['jumlah'];
-                $summary['rata_rata'] = $data['rata_rata'];
-                break;
-            }
-            $peringkat++;
-        }
-        $summary['total_siswa'] = count($data_kelas_leger);
+    $res_c = $conn->query("SELECT * FROM raport_pkbm_catatan WHERE santri_id = $santri_id AND tahun_ajaran = '$ta_esc' AND semester = '$sem_esc'");
+    if ($res_c && $res_c->num_rows > 0) {
+        $catatan_pkbm = $res_c->fetch_assoc();
     }
 }
 
-// Fungsi untuk deskripsi capaian
-function getDeskripsiCapaian($nilai) {
-    if ($nilai >= 90) return "Ananda menunjukkan penguasaan yang sangat baik pada seluruh kompetensi.";
-    if ($nilai >= 80) return "Ananda menunjukkan penguasaan yang baik pada seluruh kompetensi.";
-    if ($nilai >= 75) return "Ananda telah mencapai ketuntasan belajar dengan penguasaan yang cukup.";
-    return "Ananda memerlukan bimbingan lebih lanjut untuk mencapai ketuntasan belajar.";
+function hitung_predikat_pkbm($nilai) {
+    if ($nilai >= 88) return ['predikat' => 'A', 'badge' => 'bg-emerald-100 text-emerald-800 border-emerald-300'];
+    if ($nilai >= 78) return ['predikat' => 'B', 'badge' => 'bg-teal-100 text-teal-800 border-teal-300'];
+    if ($nilai >= 67) return ['predikat' => 'C', 'badge' => 'bg-amber-100 text-amber-800 border-amber-300'];
+    return ['predikat' => 'D', 'badge' => 'bg-rose-100 text-rose-800 border-rose-300'];
+}
+
+// ==========================================
+// B. LOGIC DATA TAB DINIYAH
+// ==========================================
+$nilai_diniyah = [];
+$summary_diniyah = ['jumlah' => 0, 'rata' => 0];
+
+if ($data_santri && !empty($filters['tahun_ajaran'])) {
+    $sql_diniyah = "
+        SELECT l.*, m.nama_mapel FROM leger_nilai l 
+        JOIN master_mapel m ON l.mapel_id = m.id 
+        WHERE l.santri_id = $santri_id AND l.tahun_ajaran = '$ta_esc' AND l.semester = '$sem_esc' 
+        AND m.kategori_mapel = 'Diniyah' AND l.jenis_ujian = 'Ujian Akhir Semester (UAS)'
+        ORDER BY m.nama_mapel ASC
+    ";
+    $res_d = $conn->query($sql_diniyah);
+    if ($res_d) {
+        while($r = $res_d->fetch_assoc()) {
+            $nilai_diniyah[] = $r;
+        }
+    }
+    
+    if (count($nilai_diniyah) > 0) {
+        $summary_diniyah['jumlah'] = array_sum(array_column($nilai_diniyah, 'nilai'));
+        $summary_diniyah['rata'] = round($summary_diniyah['jumlah'] / count($nilai_diniyah), 2);
+    }
+}
+
+function getDeskripsiDiniyah($nilai) {
+    if ($nilai >= 90) return "Mumtaz (Sangat Baik) - Menguasai materi dengan sangat memuaskan.";
+    if ($nilai >= 80) return "Jayyid Jiddan (Baik Sekali) - Menguasai materi dengan baik.";
+    if ($nilai >= 70) return "Jayyid (Baik) - Memenuhi standar kelulusan minimal.";
+    return "Maqbul (Cukup) - Memerlukan bimbingan dan muroja'ah lebih giat.";
 }
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rapor Digital | <?= htmlspecialchars($santri_nama) ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rapor Santri | SADIGS 4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         @media print {
-            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            #sidebar-santri, header, #form-filter, .no-print { display: none !important; }
+            .no-print, nav, header { display: none !important; }
+            body { background: white !important; padding: 0 !important; }
             main { padding: 0 !important; margin: 0 !important; }
-            .rapot-container { box-shadow: none !important; border: none !important; }
+            .print-area { border: none !important; box-shadow: none !important; padding: 0 !important; width: 100% !important; }
+            @page { size: A4; margin: 15mm; }
         }
-        .table-rapot { border-collapse: collapse; width: 100%; font-size: 11px; }
-        .table-rapot th, .table-rapot td { border: 1px solid #333; padding: 6px 8px; }
-        .table-rapot th { background-color: #e5e7eb; font-weight: bold; text-align: center; }
-        .table-rapot .text-center { text-align: center; }
-        .signature-box { display: inline-block; text-align: center; width: 200px; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
+<body class="bg-[#e1f5f2] font-sans antialiased text-slate-800 flex h-screen overflow-hidden">
+    
     <?php include 'sidebar-santri.php'; ?>
+
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0 no-print">
-            <div class="flex items-center"><button id="open-sidebar-santri" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2></div>
+        
+        <!-- HEADER -->
+        <header class="h-16 bg-[#0d8276] text-white shadow-md flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0 no-print">
+            <div class="flex items-center space-x-3">
+                <button id="open-sidebar-santri" class="text-white hover:text-teal-200 md:hidden p-2 rounded-xl focus:outline-none transition">
+                    <i class="fas fa-bars text-lg"></i>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <span class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white text-sm shadow-inner">
+                        <i class="fas fa-graduation-cap"></i>
+                    </span>
+                    <div>
+                        <h2 class="font-extrabold text-sm sm:text-base leading-tight">Rapor Hasil Belajar</h2>
+                        <p class="text-[10px] text-teal-100"><?= htmlspecialchars($santri_nama) ?></p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="window.print()" class="bg-white/20 hover:bg-white/30 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-sm transition flex items-center gap-1.5">
+                    <i class="fas fa-print"></i> Cetak
+                </button>
+            </div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 pb-24 md:pb-8">
-            <div class="mb-6 no-print">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-book-reader text-indigo-600 mr-2"></i>Rapor Digital</h1>
-                <p class="text-gray-500 mt-1">Lihat rekapitulasi hasil belajarmu di sini.</p>
-            </div>
-
-            <?php if (!$data_santri): ?>
-                <div class="bg-rose-100 text-rose-800 p-6 rounded-xl shadow-sm border border-rose-200">
-                    <h3 class="font-bold text-lg"><i class="fas fa-exclamation-triangle mr-2"></i> Kesalahan Data Santri</h3>
-                    <p class="mt-2">Data santri dengan ID sesi <strong><?= htmlspecialchars($_SESSION['santri_id']) ?></strong> tidak ditemukan di database. Halaman rapor tidak dapat dimuat.</p>
-                    <p class="mt-1 text-sm">Ini biasanya terjadi jika Anda login sebagai Super Admin. Silakan coba login sebagai akun santri biasa untuk melihat halaman ini dengan benar.</p>
+        <!-- MAIN SCROLLABLE CONTENT -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-[#e1f5f2] p-3.5 sm:p-6 lg:p-8 pb-24 md:pb-8">
+            <div class="max-w-4xl mx-auto">
+                
+                <!-- 1. TAB SWITCHER (PKBM VS DINIYAH) -->
+                <div class="no-print bg-white/90 backdrop-blur-md p-1.5 rounded-2xl border border-teal-100 shadow-sm flex items-center gap-2 mb-5">
+                    <a href="santri-rapot.php?tab=pkbm&tahun_ajaran=<?= urlencode($filters['tahun_ajaran']) ?>&semester=<?= urlencode($filters['semester']) ?>" 
+                       class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold text-center transition-all flex items-center justify-center gap-2 <?= ($tab === 'pkbm') ? 'bg-[#0d8276] text-white shadow-md' : 'text-slate-600 hover:text-[#0d8276] hover:bg-teal-50/50' ?>">
+                        <i class="fas fa-file-invoice text-sm"></i>
+                        <span>Raport Diknas PKBM (<?= $paket_tipe ?>)</span>
+                    </a>
+                    <a href="santri-rapot.php?tab=diniyah&tahun_ajaran=<?= urlencode($filters['tahun_ajaran']) ?>&semester=<?= urlencode($filters['semester']) ?>" 
+                       class="flex-1 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-extrabold text-center transition-all flex items-center justify-center gap-2 <?= ($tab === 'diniyah') ? 'bg-[#0d8276] text-white shadow-md' : 'text-slate-600 hover:text-[#0d8276] hover:bg-teal-50/50' ?>">
+                        <i class="fas fa-book-quran text-sm"></i>
+                        <span>Rapor Diniyah (Kepesantrenan)</span>
+                    </a>
                 </div>
-            <?php else: ?>
 
-            <!-- FORM FILTER -->
-            <div id="form-filter" class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 p-6 no-print">
-                <?php if ($is_data_available_for_filter): ?>
-                    <form action="santri-rapot.php" method="GET" class="flex flex-col sm:flex-row gap-4 items-end">
-                        <div class="flex-1 w-full"><label class="text-sm font-medium">Tahun Ajaran</label><select name="tahun_ajaran" required class="w-full mt-1 px-3 py-2 border rounded-lg bg-white"><?php foreach($opsi_ta as $o) echo "<option value='$o' ".($filters['tahun_ajaran']==$o?'selected':'').">".htmlspecialchars($o)."</option>"; ?></select></div>
-                        <div class="flex-1 w-full"><label class="text-sm font-medium">Semester</label><select name="semester" required class="w-full mt-1 px-3 py-2 border rounded-lg bg-white"><?php foreach($opsi_semester as $o) echo "<option value='$o' ".($filters['semester']==$o?'selected':'').">".htmlspecialchars($o)."</option>"; ?></select></div>
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition w-full sm:w-auto"><i class="fas fa-eye mr-2"></i> Tampilkan Rapor</button>
+                <!-- 2. FILTER BAR (TAHUN AJARAN & SEMESTER) -->
+                <div class="bg-white p-4 sm:p-5 rounded-2xl border border-teal-100 shadow-sm mb-6 no-print">
+                    <form method="GET" action="santri-rapot.php" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                        <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tahun Ajaran</label>
+                            <select name="tahun_ajaran" class="w-full text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-teal-500 bg-slate-50 focus:bg-white" required>
+                                <?php foreach ($opsi_ta as $ta): ?>
+                                    <option value="<?= htmlspecialchars($ta) ?>" <?= $filters['tahun_ajaran'] == $ta ? 'selected' : '' ?>><?= htmlspecialchars($ta) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Semester</label>
+                            <select name="semester" class="w-full text-xs sm:text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-teal-500 bg-slate-50 focus:bg-white" required>
+                                <option value="Ganjil" <?= $filters['semester'] === 'Ganjil' ? 'selected' : '' ?>>Ganjil</option>
+                                <option value="Genap" <?= $filters['semester'] === 'Genap' ? 'selected' : '' ?>>Genap</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full bg-[#0d8276] hover:bg-[#0b6f65] text-white font-bold py-2.5 px-4 rounded-xl text-xs sm:text-sm transition shadow-md shadow-teal-900/10 flex items-center justify-center gap-2">
+                                <i class="fas fa-search"></i> Tampilkan Rapor
+                            </button>
+                        </div>
                     </form>
-                <?php else: ?>
-                    <div class="text-center text-gray-500">
-                        <i class="fas fa-info-circle text-2xl mb-2 text-gray-400"></i>
-                        <p class="font-medium">Filter Rapor Belum Tersedia</p>
-                        <p class="text-sm">Belum ada data nilai yang tercatat untuk Anda. Rapor akan dapat dilihat setelah Ustadz menginput nilai semester.</p>
+                </div>
+
+                <!-- ================================================== -->
+                <!-- 3. KONTEN TAB 1: RAPORT PKBM                       -->
+                <!-- ================================================== -->
+                <?php if ($tab === 'pkbm'): ?>
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-teal-100 shadow-sm print-area">
+                    
+                    <!-- KOP RAPORT -->
+                    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-center text-[#0d8276] text-2xl font-black shadow-inner">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div>
+                                <h1 class="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-tight">RAPOR HASIL BELAJAR PENDIDIKAN KESETARAAN</h1>
+                                <h2 class="text-sm font-extrabold text-[#0d8276] uppercase">PROGRAM <?= strtoupper($paket_tipe) ?> (SETARA <?= ($paket_tipe === 'Paket C') ? 'SMA' : 'SMP' ?>)</h2>
+                                <p class="text-[11px] text-slate-500">PKBM Villa Quran Indonesia • NPSN: P9996543 • Terakreditasi</p>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- IDENTITAS SANTRI -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6">
+                        <div class="space-y-1.5">
+                            <div class="flex"><span class="w-32 font-bold text-slate-500">Nama Santri:</span> <span class="font-extrabold text-slate-900"><?= htmlspecialchars($data_santri['nama_lengkap'] ?? $santri_nama) ?></span></div>
+                            <div class="flex"><span class="w-32 font-bold text-slate-500">NIS / NISN:</span> <span class="font-semibold"><?= htmlspecialchars($data_santri['nis'] ?? '-') ?> / <?= htmlspecialchars($data_santri['nisn'] ?? '-') ?></span></div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <div class="flex"><span class="w-32 font-bold text-slate-500">Kelas / Tingkat:</span> <span class="font-extrabold text-[#0d8276]"><?= htmlspecialchars($data_santri['kelas_sekarang'] ?? '-') ?> (<?= $paket_tipe ?>)</span></div>
+                            <div class="flex"><span class="w-32 font-bold text-slate-500">Semester / TA:</span> <span class="font-semibold"><?= htmlspecialchars($filters['semester']) ?> / <?= htmlspecialchars($filters['tahun_ajaran']) ?></span></div>
+                        </div>
+                    </div>
+
+                    <!-- TABEL NILAI PKBM -->
+                    <div class="mb-6">
+                        <h3 class="font-extrabold text-xs sm:text-sm uppercase text-slate-900 mb-3 border-b-2 border-[#0d8276] pb-1 flex items-center justify-between">
+                            <span>A. Capaian Hasil Belajar (Nilai Akademik Diknas)</span>
+                            <span class="text-[11px] font-bold text-[#0d8276] normal-case">Standar Kurikulum Nasional</span>
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse border border-slate-300 text-xs">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                                        <th class="py-2.5 px-3 border border-slate-300 text-center w-10">No</th>
+                                        <th class="py-2.5 px-4 border border-slate-300 text-left">Mata Pelajaran</th>
+                                        <th class="py-2.5 px-3 border border-slate-300 text-center w-20">Nilai Akhir</th>
+                                        <th class="py-2.5 px-3 border border-slate-300 text-center w-20">Predikat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php if (!empty($nilai_pkbm)): ?>
+                                        <?php $no = 1; foreach ($nilai_pkbm as $nm): $val = (float)$nm['nilai']; $p_info = hitung_predikat_pkbm($val); ?>
+                                            <tr class="hover:bg-slate-50/50">
+                                                <td class="py-2 px-3 border border-slate-300 text-center font-bold text-slate-500"><?= $no++ ?></td>
+                                                <td class="py-2 px-4 border border-slate-300 font-bold text-slate-800"><?= htmlspecialchars($nm['nama_mapel']) ?></td>
+                                                <td class="py-2 px-3 border border-slate-300 text-center font-black text-sm <?= $val >= 75 ? 'text-emerald-600' : 'text-amber-600' ?>"><?= number_format($val, 0) ?></td>
+                                                <td class="py-2 px-3 border border-slate-300 text-center font-bold">
+                                                    <span class="px-2 py-0.5 rounded border text-[10px] <?= $p_info['badge'] ?>"><?= $p_info['predikat'] ?></span>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr><td colspan="4" class="py-8 text-center text-slate-400 italic">Belum ada nilai akademik yang diterbitkan untuk semester ini.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- CATATAN WALI KELAS -->
+                    <?php if (!empty($catatan_pkbm['catatan_wali_kelas'])): ?>
+                        <div class="mb-6 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+                            <b class="text-slate-800">Catatan Wali Kelas / Pembina:</b>
+                            <p class="italic text-slate-600 mt-1 leading-relaxed">"<?= htmlspecialchars($catatan_pkbm['catatan_wali_kelas']) ?>"</p>
+                        </div>
+                    <?php endif; ?>
+
+                </div>
+
+                <!-- ================================================== -->
+                <!-- 4. KONTEN TAB 2: RAPOR DINIYAH                     -->
+                <!-- ================================================== -->
+                <?php else: ?>
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-teal-100 shadow-sm print-area">
+                    
+                    <!-- KOP RAPOR DINIYAH -->
+                    <div class="border-b-2 border-slate-800 pb-4 mb-6 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 text-2xl font-black shadow-inner">
+                                <i class="fas fa-book-quran"></i>
+                            </div>
+                            <div>
+                                <h1 class="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-tight">RAPOR DINIYAH & KEPESANTRENAN</h1>
+                                <h2 class="text-sm font-extrabold text-amber-600 uppercase">PONDOK PESANTREN VILLA QURAN INDONESIA</h2>
+                                <p class="text-[11px] text-slate-500">Evaluasi Pembelajaran Kitab, Tajwid, Bahasa Arab, dan Adab</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUMMARY CARDS -->
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div class="bg-amber-50/70 p-4 rounded-2xl border border-amber-100">
+                            <div class="text-[10px] text-amber-700 font-bold uppercase tracking-wider">Total Nilai Diniyah</div>
+                            <div class="text-2xl font-black text-amber-950 mt-0.5"><?= $summary_diniyah['jumlah'] ?></div>
+                        </div>
+                        <div class="bg-teal-50/70 p-4 rounded-2xl border border-teal-100">
+                            <div class="text-[10px] text-[#0d8276] font-bold uppercase tracking-wider">Rata-Rata Nilai</div>
+                            <div class="text-2xl font-black text-teal-950 mt-0.5"><?= $summary_diniyah['rata'] ?></div>
+                        </div>
+                    </div>
+
+                    <!-- TABEL NILAI DINIYAH -->
+                    <div class="mb-6">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-700 font-bold uppercase text-[10px]">
+                                        <th class="p-3 rounded-l-xl w-10 text-center">No</th>
+                                        <th class="p-3">Mata Pelajaran Diniyah</th>
+                                        <th class="p-3 text-center w-20">Nilai</th>
+                                        <th class="p-3 rounded-r-xl">Keterangan / Capaian</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <?php if (!empty($nilai_diniyah)): ?>
+                                        <?php $no = 1; foreach ($nilai_diniyah as $row): ?>
+                                        <tr class="hover:bg-slate-50/80">
+                                            <td class="p-3 text-center text-slate-500 font-bold"><?= $no++ ?></td>
+                                            <td class="p-3 font-bold text-slate-800"><?= htmlspecialchars($row['nama_mapel']) ?></td>
+                                            <td class="p-3 text-center font-black text-sm <?= $row['nilai'] >= 75 ? 'text-emerald-600' : 'text-amber-600' ?>"><?= $row['nilai'] ?></td>
+                                            <td class="p-3 text-slate-600 text-[11px]"><?= getDeskripsiDiniyah($row['nilai']) ?></td>
+                                        </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr><td colspan="4" class="p-8 text-center text-slate-400 italic">Belum ada data nilai Diniyah untuk tahun ajaran & semester yang dipilih.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
                 <?php endif; ?>
+
             </div>
-
-            <?php if (!$is_data_available_for_filter && !$show_rapot): ?>
-                <div class="bg-amber-100 text-amber-800 p-4 rounded-lg mb-6 text-sm no-print">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    <strong>Mode Pratinjau:</strong> Data nilai belum tersedia. Tampilan rapor di bawah ini menggunakan data contoh untuk menunjukkan format.
-                </div>
-            <?php endif; ?>
-
-            <!-- HASIL RAPOT -->
-            <?php // Logic is changed to always show the report structure for preview purposes. ?>
-            <?php if ($show_rapot || !$is_data_available_for_filter): ?>
-                <div class="rapot-container bg-white rounded-xl shadow-lg border border-gray-200 p-8 max-w-4xl mx-auto">
-                    <div class="text-right mb-6 no-print"><button onclick="window.print()" class="bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm flex items-center ml-auto"><i class="fas fa-print mr-2"></i> Cetak Rapor</button></div>
-                    <div class="text-center border-b-4 border-black pb-2 mb-4"><h2 class="text-xl font-bold">LAPORAN HASIL BELAJAR SANTRI</h2><h3 class="text-2xl font-extrabold">VILLA QURAN INDONESIA</h3><p class="text-xs">Jl. Sejuk Asri No. 1, Kota Quran | Telp: (021) 1234-5678</p></div>
-                    <table class="text-sm mb-6 w-full">
-                        <tr><td class="font-bold w-1/4">Nama Santri</td><td class="w-1/2">: <?= htmlspecialchars($data_santri['nama_lengkap']) ?></td><td class="font-bold w-1/4">Kelas</td><td>: <?= htmlspecialchars($data_santri['kelas_sekarang'] ?? 'Contoh Kelas') ?></td></tr>
-                        <tr><td class="font-bold">NIS / NISN</td><td>: <?= htmlspecialchars($data_santri['nis'] ?? '12345') ?> / <?= htmlspecialchars($data_santri['nisn'] ?? '0012345') ?></td><td class="font-bold">Semester</td><td>: <?= htmlspecialchars($filters['semester'] ?: 'Ganjil') ?></td></tr>
-                        <tr><td class="font-bold">Nama Sekolah</td><td>: Villa Quran Indonesia</td><td class="font-bold">Tahun Ajaran</td><td>: <?= htmlspecialchars($filters['tahun_ajaran'] ?: date('Y').'/'.(date('Y')+1)) ?></td></tr>
-                    </table>
-                    <h4 class="font-bold text-sm mb-2">A. Sikap</h4><table class="table-rapot mb-6"><thead><tr><th>Predikat</th><th>Deskripsi</th></tr></thead><tbody><tr><td class="text-center">Sangat Baik</td><td>Ananda menunjukkan sikap spiritual dan sosial yang sangat baik, konsisten dalam menjalankan ibadah, serta memiliki kepedulian tinggi terhadap sesama.</td></tr></tbody></table>
-                    <h4 class="font-bold text-sm mb-2">B. Pengetahuan dan Keterampilan</h4>
-                    <table class="table-rapot mb-6">
-                        <thead><tr><th class="w-8">No.</th><th>Mata Pelajaran</th><th class="w-20">Nilai Akhir</th><th>Capaian Kompetensi</th></tr></thead>
-                        <tbody>
-                            <?php if (!empty($nilai_kelompok)):
-                                $kategori_mapel_order = ['Umum', 'Keterampilan']; $no_urut = 1; foreach($kategori_mapel_order as $kategori): if(isset($nilai_kelompok[$kategori])): ?>
-                                <tr><td colspan="4" class="font-bold bg-gray-100"><?= htmlspecialchars($kategori) ?></td></tr>
-                                <?php foreach($nilai_kelompok[$kategori] as $item): ?>
-                                <tr><td class="text-center"><?= $no_urut++ ?></td><td><?= htmlspecialchars($item['mapel']) ?></td><td class="text-center font-bold"><?= $item['nilai'] ?></td><td class="text-xs"><?= getDeskripsiCapaian($item['nilai']) ?></td></tr>
-                                <?php endforeach; endif; endforeach; ?>
-                                <tr><td colspan="2" class="text-right font-bold">Jumlah Nilai</td><td class="text-center font-bold"><?= $summary['jumlah_nilai'] ?></td><td></td></tr>
-                                <tr><td colspan="2" class="text-right font-bold">Rata-Rata Nilai</td><td class="text-center font-bold"><?= $summary['rata_rata'] ?></td><td></td></tr>
-                                <tr><td colspan="2" class="text-right font-bold">Peringkat Kelas</td><td class="text-center font-bold"><?= $summary['peringkat'] ?> dari <?= $summary['total_siswa'] ?> siswa</td><td></td></tr>
-                            <?php else: // JIKA DATA KOSONG, TAMPILKAN CONTOH FORMAT ?>
-                                <tr><td colspan="4" class="font-bold bg-gray-100">Umum</td></tr>
-                                <tr><td class="text-center">1</td><td>Matematika</td><td class="text-center font-bold">85</td><td class="text-xs">Ananda menunjukkan penguasaan yang baik pada seluruh kompetensi.</td></tr>
-                                <tr><td class="text-center">2</td><td>Bahasa Indonesia</td><td class="text-center font-bold">92</td><td class="text-xs">Ananda menunjukkan penguasaan yang sangat baik pada seluruh kompetensi.</td></tr>
-                                <tr><td colspan="2" class="text-right font-bold">Jumlah Nilai</td><td class="text-center font-bold">177</td><td></td></tr>
-                                <tr><td colspan="2" class="text-right font-bold">Rata-Rata Nilai</td><td class="text-center font-bold">88.50</td><td></td></tr>
-                                <tr><td colspan="2" class="text-right font-bold">Peringkat Kelas</td><td class="text-center font-bold">2 dari 25 siswa</td><td></td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                    <h4 class="font-bold text-sm mb-2">C. Ekstrakurikuler</h4><table class="table-rapot mb-6"><thead><tr><th class="w-8">No.</th><th>Kegiatan Ekstrakurikuler</th><th>Keterangan</th></tr></thead><tbody><tr><td class="text-center">1</td><td>Panahan</td><td class="text-xs">Mengikuti kegiatan dengan sangat baik dan menunjukkan bakat yang menonjol.</td></tr><tr><td class="text-center">2</td><td>Pramuka</td><td class="text-xs">Aktif dalam setiap kegiatan kepramukaan.</td></tr></tbody></table>
-                    <h4 class="font-bold text-sm mb-2">D. Ketidakhadiran</h4><table class="w-1/2 table-rapot mb-6"><tbody><tr><td class="w-2/3">Sakit</td><td>: 0 hari</td></tr><tr><td>Izin</td><td>: 1 hari</td></tr><tr><td>Tanpa Keterangan</td><td>: 0 hari</td></tr></tbody></table>
-                    <h4 class="font-bold text-sm mb-2">E. Catatan Wali Kelas</h4><div class="border border-black p-3 text-sm min-h-[60px]">Alhamdulillah, Ananda menunjukkan perkembangan yang sangat positif pada semester ini. Pertahankan semangat belajar dan terus tingkatkan interaksi positif dengan teman-teman.</div>
-                    <div class="flex justify-between mt-16 text-sm text-center"><div class="signature-box"><p>Mengetahui,</p><p>Orang Tua/Wali</p><br><br><br><p class="border-t border-black pt-1">(..............................)</p></div><div class="signature-box"><p>Kota Quran, <?= date('d F Y') ?></p><p>Wali Kelas</p><br><br><br><p class="border-t border-black pt-1"><b>Ust. Fulan, S.Pd.</b></p></div></div>
-                    <div class="flex justify-center mt-8 text-sm text-center"><div class="signature-box"><p>Mengetahui,</p><p>Kepala Sekolah</p><br><br><br><p class="border-t border-black pt-1"><b>Ust. Abdullah, Lc.</b></p></div></div>
-                </div>
-            <?php elseif ($is_data_available_for_filter): ?>
-                <div class="text-center py-16 text-gray-500 bg-white rounded-xl shadow-sm border no-print"><i class="fas fa-filter text-4xl mb-4 text-gray-300"></i><p class="font-medium">Silakan pilih Tahun Ajaran dan Semester di atas untuk melihat rapor.</p></div>
-            <?php endif; ?>
-
-            <?php endif; // End of check if $data_santri exists ?>
         </main>
+
     </div>
 
     <!-- BOTTOM NAVBAR MOBILE -->
@@ -240,8 +369,8 @@ function getDeskripsiCapaian($nilai) {
             const sidebar = document.getElementById('sidebar-santri');
             const openBtn = document.getElementById('open-sidebar-santri');
             const overlay = document.getElementById('sidebar-overlay-santri');
-            if(openBtn) openBtn.addEventListener('click', () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); });
-            if(overlay) overlay.addEventListener('click', () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); });
+            if(openBtn && sidebar) openBtn.addEventListener('click', () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); });
+            if(overlay && sidebar) overlay.addEventListener('click', () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); });
         });
     </script>
 </body>
