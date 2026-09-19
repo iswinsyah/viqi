@@ -168,130 +168,144 @@ foreach ($all_grid_items as $key => $item) {
         .tap-highlight-transparent { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body class="bg-[#e1f5f2] min-h-screen text-slate-800 flex flex-col antialiased overflow-x-hidden">
+<body class="bg-[#dcf3ee] min-h-screen text-slate-800 flex flex-col antialiased selection:bg-[#0b8478] selection:text-white">
 
     <!-- ========================================================= -->
-    <!-- 1. TOP HEADER TEAL DENGAN LOGO SADIGS & PROFILE BUTTON    -->
+    <!-- WRAPPER CONTAINER (ALIGNED TO MOBILE SUPER-APP VIEWPORT)   -->
     <!-- ========================================================= -->
-    <header class="bg-[#0d8276] text-white pt-6 pb-10 px-5 sm:px-6 shadow-sm z-10 flex-shrink-0">
-        <div class="max-w-md sm:max-w-lg mx-auto flex items-center justify-between">
-            
-            <!-- KIRI: BRAND LOGO SADIGS -->
-            <div class="flex items-center space-x-3">
-                <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
-                    <svg viewBox="0 0 100 100" class="w-full h-full">
-                        <circle cx="50" cy="45" r="12" fill="#f59e0b" />
-                        <path d="M50 12 L55 28 L45 28 Z" fill="#10b981" />
-                        <path d="M72 20 L66 34 L58 28 Z" fill="#10b981" />
-                        <path d="M84 40 L70 44 L68 36 Z" fill="#10b981" />
-                        <path d="M28 20 L42 28 L34 34 Z" fill="#10b981" />
-                        <path d="M16 40 L32 36 L30 44 Z" fill="#10b981" />
-                        <path d="M22 64 C35 55, 48 60, 50 68 C52 60, 65 55, 78 64 C76 76, 52 82, 50 82 C48 82, 24 76, 22 64 Z" fill="#0d8276" />
-                        <path d="M30 68 C40 62, 48 66, 50 72 C52 66, 60 62, 70 68 C68 76, 52 80, 50 80 C48 80, 32 76, 30 68 Z" fill="#f59e0b" />
-                    </svg>
-                </div>
-                <div>
-                    <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
-                    <p class="text-[11px] sm:text-xs text-teal-100 font-light italic tracking-tight mt-0.5">Sistem Administrasi Digital Sekolah</p>
-                </div>
-            </div>
+    <div class="w-full max-w-[440px] mx-auto min-h-screen flex flex-col relative bg-[#dcf3ee] shadow-2xl">
 
-            <!-- KANAN: PROFILE BUTTON (CIRCLE + LABEL PROFILE) -->
-            <button type="button" onclick="toggleProfileModal()" class="flex flex-col items-center group cursor-pointer focus:outline-none">
-                <div class="w-12 h-12 rounded-full bg-white text-[#0d8276] flex items-center justify-center font-black text-lg shadow-md group-hover:scale-105 transition-transform overflow-hidden border-2 border-teal-200">
-                    <?php if (!empty($user['foto_profil'])): ?>
-                        <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Profile" class="w-full h-full object-cover">
-                    <?php else: ?>
-                        <?= strtoupper(substr($user['nama_lengkap'], 0, 1)) ?>
-                    <?php endif; ?>
-                </div>
-                <span class="text-xs font-bold text-white mt-1 group-hover:text-teal-200 transition-colors">Profile</span>
-            </button>
-
-        </div>
-
-        <!-- ROLE SWITCHER PILL (DI DALAM HEADER SUPAYA RAPI) -->
-        <?php if ($is_admin || count($roles) > 1): ?>
-        <div class="max-w-md sm:max-w-lg mx-auto mt-4 pt-3 border-t border-teal-600/50 flex items-center justify-center gap-1.5 flex-wrap">
-            <span class="text-[10px] text-teal-100 font-semibold mr-1">Filter:</span>
-            <a href="dashboard.php?view_role=all" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'all') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                Semua
-            </a>
-            <a href="dashboard.php?view_role=tutor" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'tutor') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                Guru
-            </a>
-            <a href="dashboard.php?view_role=musyrif" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'musyrif') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                Asrama
-            </a>
-            <a href="dashboard.php?view_role=santri" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'santri') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                Santri
-            </a>
-            <a href="dashboard.php?view_role=walisantri" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'walisantri') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                Wali
-            </a>
-        </div>
-        <?php endif; ?>
-    </header>
-
-    <!-- ========================================================= -->
-    <!-- 2. MAIN BODY: WHITE SQUIRCLE CARD WITH 4-COLUMN GRID     -->
-    <!-- ========================================================= -->
-    <main class="flex-1 px-4 sm:px-6 pt-0 pb-24 max-w-md sm:max-w-lg mx-auto w-full -mt-6">
-        
-        <!-- KARTU UTAMA PUTIH DENGAN GRID 4 KOLOM SQUIRCLE IKON -->
-        <div class="bg-white rounded-[32px] p-5 sm:p-7 shadow-lg shadow-teal-900/5 border border-teal-100/60">
-            <div class="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-4 items-start justify-items-center">
+        <!-- ========================================================= -->
+        <!-- 1. TOP HERO TEAL (HEADER + BRANDING + PROFILE)            -->
+        <!-- ========================================================= -->
+        <div class="bg-[#0b8478] text-white pt-6 pb-20 px-6 relative rounded-b-[28px] shadow-md flex-shrink-0">
+            <div class="flex items-center justify-between">
                 
-                <?php foreach ($visible_items as $key => $item): ?>
-                <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center group cursor-pointer w-full text-center tap-highlight-transparent">
-                    
-                    <!-- Squircle Box Button (#0d8276) -->
-                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-[18px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/10 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
-                        <i class="<?= $item['icon'] ?>"></i>
+                <!-- KIRI: BRAND LOGO SADIGS + SUBTITLE 2 BARIS ITALIC -->
+                <div class="flex items-center space-x-3.5">
+                    <!-- Logo Circle Badge -->
+                    <div class="w-13 h-13 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
+                        <svg viewBox="0 0 100 100" class="w-10 h-10">
+                            <!-- Golden sun -->
+                            <circle cx="50" cy="46" r="10" fill="#f59e0b" />
+                            <!-- 5 Radiating Petals -->
+                            <path d="M50 14 C47 24, 47 28, 50 32 C53 28, 53 24, 50 14 Z" fill="#10b981" />
+                            <path d="M68 20 C61 28, 59 32, 60 36 C64 33, 68 31, 74 24 Z" fill="#10b981" />
+                            <path d="M80 36 C71 40, 68 43, 67 48 C72 47, 76 46, 84 41 Z" fill="#10b981" />
+                            <path d="M32 20 C39 28, 41 32, 40 36 C36 33, 32 31, 26 24 Z" fill="#10b981" />
+                            <path d="M20 36 C29 40, 32 43, 33 48 C28 47, 24 46, 16 41 Z" fill="#10b981" />
+                            <!-- Golden lower base -->
+                            <path d="M30 62 C42 56, 48 60, 50 66 C52 60, 58 56, 70 62 C68 70, 52 74, 50 74 C48 74, 32 70, 30 62 Z" fill="#f59e0b" />
+                            <!-- Teal open book base -->
+                            <path d="M22 68 C36 58, 48 64, 50 72 C52 64, 64 58, 78 68 C75 80, 52 86, 50 86 C48 86, 25 80, 22 68 Z" fill="#0b8478" />
+                        </svg>
                     </div>
 
-                    <!-- 1 Kata Keterangan Menu -->
-                    <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight">
-                        <?= htmlspecialchars($item['label']) ?>
-                    </span>
-                </a>
-                <?php endforeach; ?>
+                    <!-- Typography Title & 2-Line Subtitle -->
+                    <div class="flex flex-col justify-center">
+                        <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
+                        <div class="text-[11px] text-teal-100 font-medium italic leading-tight mt-1">
+                            <div>Sistem Administrasi</div>
+                            <div>Digital Sekolah</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KANAN: PROFILE BUTTON (WHITE CIRCLE + LABEL PROFILE) -->
+                <button type="button" onclick="toggleProfileModal()" class="flex flex-col items-center group cursor-pointer focus:outline-none">
+                    <div class="w-12 h-12 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-lg shadow-md group-hover:scale-105 transition-transform overflow-hidden border-2 border-white/80">
+                        <?php if (!empty($user['foto_profil'])): ?>
+                            <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Profile" class="w-full h-full object-cover">
+                        <?php else: ?>
+                            <i class="fas fa-user text-[#0b8478] text-xl"></i>
+                        <?php endif; ?>
+                    </div>
+                    <span class="text-xs font-bold text-white mt-1 group-hover:text-teal-200 transition-colors">Profile</span>
+                </button>
 
             </div>
+
+            <!-- ROLE SWITCHER PILL (KHUSUS SUPER ADMIN / MULTI-ROLE) -->
+            <?php if ($is_admin || count($roles) > 1): ?>
+            <div class="mt-4 pt-3 border-t border-teal-600/60 flex items-center justify-center gap-1.5 flex-wrap">
+                <a href="dashboard.php?view_role=all" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'all') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                    Semua
+                </a>
+                <a href="dashboard.php?view_role=tutor" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'tutor') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                    Guru
+                </a>
+                <a href="dashboard.php?view_role=musyrif" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'musyrif') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                    Asrama
+                </a>
+                <a href="dashboard.php?view_role=santri" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'santri') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                    Santri
+                </a>
+                <a href="dashboard.php?view_role=walisantri" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'walisantri') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                    Wali
+                </a>
+            </div>
+            <?php endif; ?>
         </div>
 
-        <!-- FOOTER BRANDING RINGKAS -->
-        <div class="mt-6 text-center text-[11px] text-teal-800 font-semibold opacity-75">
-            Villa Quran Indonesia • SADIGS 4.0
-        </div>
+        <!-- ========================================================= -->
+        <!-- 2. MAIN BINGKAI: KARTU PUTIH MELEKUK INDAH SQUIRCLE GRID  -->
+        <!-- ========================================================= -->
+        <main class="flex-1 px-4 pt-0 pb-24 w-full -mt-14 z-20">
+            
+            <!-- KARTU PUTIH UTAMA DENGAN SUDUT MELENGKUNG (SQUIRCLE) -->
+            <div class="bg-white rounded-[36px] p-6 shadow-xl shadow-teal-950/10 border border-teal-50">
+                <div class="grid grid-cols-4 gap-y-6 gap-x-2 items-start justify-items-center">
+                    
+                    <?php foreach ($visible_items as $key => $item): ?>
+                    <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center group cursor-pointer w-full text-center tap-highlight-transparent">
+                        
+                        <!-- Squircle Box Button (#0b8478) -->
+                        <div class="w-14 h-14 rounded-[20px] bg-[#0b8478] group-hover:bg-[#086a60] text-white flex items-center justify-center text-xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                            <i class="<?= $item['icon'] ?>"></i>
+                        </div>
 
-    </main>
+                        <!-- 1 Kata Keterangan Menu -->
+                        <span class="text-[11px] font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0b8478] transition-colors leading-tight">
+                            <?= htmlspecialchars($item['label']) ?>
+                        </span>
+                    </a>
+                    <?php endforeach; ?>
 
-    <!-- ========================================================= -->
-    <!-- 3. BOTTOM NAVIGATION BAR UNIVERSAL (FIXED DI BAWAH)       -->
-    <!-- ========================================================= -->
-    <nav class="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-teal-100 shadow-lg flex items-center justify-around z-40 max-w-md sm:max-w-lg mx-auto px-2">
-        <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-[#0d8276] font-black text-[10px]">
-            <i class="fas fa-house text-lg mb-0.5"></i>
-            <span>Beranda</span>
-        </a>
-        <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
-            <i class="fas fa-calendar-alt text-lg mb-0.5"></i>
-            <span>Kalender</span>
-        </a>
-        <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
-            <i class="fas fa-clock text-lg mb-0.5"></i>
-            <span>Jadwal</span>
-        </a>
-        <a href="artikel.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
-            <i class="fas fa-bullhorn text-lg mb-0.5"></i>
-            <span>Informasi</span>
-        </a>
-        <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-rose-500 hover:text-rose-700 font-bold text-[10px] transition">
-            <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5"></i>
-            <span>Keluar</span>
-        </a>
-    </nav>
+                </div>
+            </div>
+
+            <!-- FOOTER BRANDING RINGKAS -->
+            <div class="mt-6 text-center text-[11px] text-teal-800 font-semibold opacity-70">
+                Villa Quran Indonesia • SADIGS 4.0
+            </div>
+
+        </main>
+
+        <!-- ========================================================= -->
+        <!-- 3. BOTTOM NAVIGATION BAR UNIVERSAL                        -->
+        <!-- ========================================================= -->
+        <nav class="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-teal-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-around z-40 max-w-[440px] mx-auto px-2">
+            <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-[#0b8478] font-black text-[10px]">
+                <div class="w-9 h-7 rounded-full bg-teal-50 flex items-center justify-center mb-0.5">
+                    <i class="fas fa-house text-base text-[#0b8478]"></i>
+                </div>
+                <span>Beranda</span>
+            </a>
+            <a href="admin-validasi-ibadah-musyrif.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-mosque text-lg mb-0.5"></i>
+                <span>Ibadah</span>
+            </a>
+            <a href="admin-setoran-hafalan-santri.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-quran text-lg mb-0.5"></i>
+                <span>Hafalan</span>
+            </a>
+            <a href="admin-rekap-spp.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-wallet text-lg mb-0.5"></i>
+                <span>Keuangan</span>
+            </a>
+        </nav>
+
+    </div>
 
     <!-- ========================================================= -->
     <!-- 4. PROFILE & ACCOUNT MODAL (KLIK FOTO POJOK KANAN ATAS)   -->
