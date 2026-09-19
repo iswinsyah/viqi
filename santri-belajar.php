@@ -276,83 +276,299 @@ if ($materi_aktif) {
                         </div>
                     </div>
 
-                    <!-- 3. E-MODUL RESMI KEMENDIKDASMEN RI - INTERACTIVE FLIPBOOK HUB -->
+                    <!-- 3. E-MODUL RESMI KEMENDIKDASMEN RI - BUILT-IN INTERACTIVE DIGITAL FLIPBOOK -->
                     <?php 
-                    $emodul_url = !empty($materi_aktif['pdf_url']) ? $materi_aktif['pdf_url'] : 'https://emodul.kemendikdasmen.go.id/';
+                    $emodul_url = !empty($materi_aktif['pdf_url']) ? $materi_aktif['pdf_url'] : 'https://buku.kemdikbud.go.id/';
                     ?>
-                    <div class="mb-6">
-                        <div class="bg-gradient-to-br from-rose-900 via-rose-800 to-rose-950 rounded-3xl p-5 sm:p-6 text-white shadow-lg relative overflow-hidden border border-rose-700/50">
-                            <!-- Background Decoration -->
-                            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-rose-600/20 rounded-full blur-3xl pointer-events-none"></div>
-                            <div class="absolute right-4 top-4 text-rose-500/10 text-8xl font-black pointer-events-none">
-                                <i class="fas fa-book-open"></i>
+                    <div class="mb-8">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <h3 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-rose-600 text-white flex items-center justify-center text-xs shadow-xs">
+                                    <i class="fas fa-book-reader"></i>
+                                </span>
+                                <span>1. E-Modul & Digital Flipbook Resmi</span>
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="toggleFullscreenFlipbook()" class="text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl border border-rose-200 transition flex items-center gap-1.5">
+                                    <i class="fas fa-expand"></i> <span>Layar Penuh</span>
+                                </button>
+                                <a href="https://buku.kemdikbud.go.id/" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1">
+                                    <i class="fas fa-external-link-alt text-[10px]"></i> <span class="hidden sm:inline">Portal SIBI</span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- BUILT-IN FLIPBOOK CONTAINER -->
+                        <div id="flipbookWrapper" class="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 rounded-3xl p-3 sm:p-6 shadow-xl border border-slate-700/60 relative overflow-hidden transition-all duration-300">
+                            
+                            <!-- Flipbook Top Bar -->
+                            <div class="flex items-center justify-between px-2 pb-3 mb-3 border-b border-slate-700/80 text-white text-xs">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                                    <span class="font-black text-rose-300 tracking-wide uppercase text-[10px] sm:text-xs">Digital Flipbook Reader • Kurikulum Merdeka</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 font-bold text-slate-300 text-xs">
+                                    <span>Halaman</span>
+                                    <span id="pageIndicator" class="px-2 py-0.5 rounded-lg bg-rose-600 text-white font-black text-xs shadow-xs">1 / 5</span>
+                                </div>
                             </div>
 
-                            <div class="relative z-10">
-                                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                                    <div class="flex items-center gap-2">
-                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-500/30 text-rose-200 border border-rose-400/30 flex items-center gap-1.5 backdrop-blur-xs">
+                            <!-- Flipbook Stage / Pages -->
+                            <div class="relative w-full min-h-[460px] sm:min-h-[540px] bg-slate-100 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between border-4 border-slate-700/50">
+                                
+                                <!-- PAGE 1: COVER & CAPAIAN PEMBELAJARAN -->
+                                <div id="flipPage1" class="flip-page flex-1 p-5 sm:p-8 flex flex-col justify-between bg-gradient-to-br from-rose-900 via-rose-800 to-rose-950 text-white relative">
+                                    <div class="absolute right-4 top-4 text-rose-500/10 text-9xl font-black pointer-events-none">
+                                        <i class="fas fa-book"></i>
+                                    </div>
+                                    <div class="relative z-10">
+                                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-rose-200 text-[10px] font-black uppercase tracking-wider mb-4">
                                             <i class="fas fa-certificate text-amber-300"></i> Modul Resmi Kemendikdasmen RI
-                                        </span>
-                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-white/10 text-rose-100">
-                                            Kurikulum Merdeka
-                                        </span>
-                                    </div>
-                                    <a href="https://emodul.kemendikdasmen.go.id/" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-rose-200 hover:text-white flex items-center gap-1 transition">
-                                        <i class="fas fa-globe"></i> Portal Pusat Negara <i class="fas fa-external-link-alt text-[9px]"></i>
-                                    </a>
-                                </div>
-
-                                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
-                                    <div class="md:col-span-8">
-                                        <h3 class="text-base sm:text-lg font-black text-white leading-snug">
-                                            E-Modul Digital Flipbook: <?= htmlspecialchars($materi_aktif['judul_bab']) ?>
-                                        </h3>
-                                        <p class="text-xs text-rose-200/90 mt-1.5 leading-relaxed">
-                                            Buku teks dan modul digital interaktif resmi dari Kementerian Pendidikan Dasar dan Menengah RI. Dilengkapi fitur <b>3D Flipbook</b>, peta konsep, ilustrasi visual resolusi tinggi, dan lembar aktivitas siswa.
+                                        </div>
+                                        <h2 class="text-xl sm:text-3xl font-black text-white leading-tight tracking-tight">
+                                            <?= htmlspecialchars($materi_aktif['judul_bab']) ?>
+                                        </h2>
+                                        <p class="text-xs sm:text-sm text-rose-200 mt-2 font-medium leading-relaxed max-w-xl">
+                                            <?= htmlspecialchars($materi_aktif['subjudul'] ?? 'Mata Pelajaran ' . $mapel . ' • Edisi Pembelajaran Mandiri & Terbimbing') ?>
                                         </p>
-
-                                        <div class="mt-4 flex flex-wrap items-center gap-2.5">
-                                            <a href="<?= htmlspecialchars($emodul_url) ?>" target="_blank" rel="noopener noreferrer" 
-                                               class="bg-amber-400 hover:bg-amber-300 text-teal-950 font-black px-4 sm:px-5 py-2.5 rounded-2xl text-xs sm:text-sm shadow-md transition transform hover:-translate-y-0.5 flex items-center gap-2">
-                                                <i class="fas fa-book-reader text-sm"></i>
-                                                <span>Buka Flipbook Interaktif (Layar Penuh)</span>
-                                                <i class="fas fa-arrow-up-right-from-square text-[10px]"></i>
-                                            </a>
-
-                                            <a href="https://emodul.kemendikdasmen.go.id/" target="_blank" rel="noopener noreferrer" 
-                                               class="bg-white/15 hover:bg-white/25 text-white font-bold px-3.5 py-2.5 rounded-2xl text-xs border border-white/20 transition flex items-center gap-1.5">
-                                                <i class="fas fa-search"></i>
-                                                <span>Cari Modul Mapel Lain</span>
-                                            </a>
-                                        </div>
                                     </div>
 
-                                    <div class="md:col-span-4 flex flex-col items-center justify-center p-4 bg-black/20 rounded-2xl border border-white/10 text-center">
-                                        <div class="w-14 h-14 rounded-2xl bg-rose-600/40 text-amber-300 flex items-center justify-center text-2xl mb-2 shadow-inner border border-rose-400/30">
-                                            <i class="fas fa-layer-group"></i>
-                                        </div>
-                                        <span class="text-xs font-black text-white">Akses Bebas Kuota</span>
-                                        <span class="text-[10px] text-rose-200 mt-0.5">Sesuai Silabus Resmi Pemerintah</span>
+                                    <div class="relative z-10 my-4 bg-black/25 rounded-2xl p-4 border border-white/10 backdrop-blur-xs">
+                                        <h4 class="text-xs font-black text-amber-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                                            <i class="fas fa-bullseye"></i> Capaian & Tujuan Pembelajaran:
+                                        </h4>
+                                        <ul class="text-xs text-rose-100 space-y-1 list-disc list-inside">
+                                            <li>Memahami konsep dasar, hakikat, dan ruang lingkup materi <b><?= htmlspecialchars($mapel) ?></b>.</li>
+                                            <li>Mengidentifikasi contoh nyata dan studi kasus di kehidupan masyarakat & lingkungan pesantren.</li>
+                                            <li>Mampu menyelesaikan soal-soal penalaran HOTS dan lembar kerja mandiri.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/10 text-[11px] text-rose-200">
+                                        <span>Santri: <b><?= htmlspecialchars($santri_nama) ?></b> (<?= htmlspecialchars($kelas_santri) ?>)</span>
+                                        <span class="font-bold text-amber-300 flex items-center gap-1">
+                                            Klik tombol panah kanan untuk membuka materi <i class="fas fa-arrow-right"></i>
+                                        </span>
                                     </div>
                                 </div>
+
+                                <!-- PAGE 2: PETA KONSEP & KATA KUNCI -->
+                                <div id="flipPage2" class="flip-page hidden flex-1 p-5 sm:p-8 bg-white text-slate-800 flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                                            <h3 class="text-sm sm:text-base font-black text-[#0d8276] flex items-center gap-2">
+                                                <i class="fas fa-project-diagram"></i> Peta Konsep & Kata Kunci Bab
+                                            </h3>
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-teal-50 text-[#0d8276] border border-teal-100">Halaman 2</span>
+                                        </div>
+                                        
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                                            <div class="p-3.5 rounded-2xl bg-teal-50/70 border border-teal-100">
+                                                <h5 class="text-xs font-black text-[#0d8276] mb-1 flex items-center gap-1.5">
+                                                    <i class="fas fa-key text-teal-600"></i> Istilah Kunci
+                                                </h5>
+                                                <p class="text-xs text-slate-600 leading-relaxed">
+                                                    Konsep fundamental, objek material & formal, interaksi sosial, kaidah ilmiah, dan perspektif kritis.
+                                                </p>
+                                            </div>
+                                            <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-100">
+                                                <h5 class="text-xs font-black text-amber-900 mb-1 flex items-center gap-1.5">
+                                                    <i class="fas fa-lightbulb text-amber-600"></i> Nilai Karakter
+                                                </h5>
+                                                <p class="text-xs text-slate-600 leading-relaxed">
+                                                    Berpikir kritis, toleran terhadap perbedaan, empati sosial, dan adab bermasyarakat islami.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                            <h5 class="text-xs font-black text-slate-800 mb-2">Alur Penguasaan Materi:</h5>
+                                            <div class="flex flex-col sm:flex-row items-center gap-2 text-xs font-bold text-slate-700">
+                                                <div class="w-full sm:w-auto flex-1 bg-white p-2.5 rounded-xl border border-slate-200 text-center shadow-2xs">
+                                                    1. Membaca Teori
+                                                </div>
+                                                <i class="fas fa-chevron-right text-slate-400 hidden sm:inline"></i>
+                                                <div class="w-full sm:w-auto flex-1 bg-white p-2.5 rounded-xl border border-slate-200 text-center shadow-2xs">
+                                                    2. Studi Kasus
+                                                </div>
+                                                <i class="fas fa-chevron-right text-slate-400 hidden sm:inline"></i>
+                                                <div class="w-full sm:w-auto flex-1 bg-white p-2.5 rounded-xl border border-slate-200 text-center shadow-2xs">
+                                                    3. Diskusi Ustadz AI
+                                                </div>
+                                                <i class="fas fa-chevron-right text-slate-400 hidden sm:inline"></i>
+                                                <div class="w-full sm:w-auto flex-1 bg-white p-2.5 rounded-xl border border-slate-200 text-center shadow-2xs">
+                                                    4. Evaluasi Kuis
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
+                                        <span>Modul Pembelajaran Mandiri SADIGS 4.0</span>
+                                        <span class="text-[#0d8276] font-bold">Lanjut Halaman 3 ➡</span>
+                                    </div>
+                                </div>
+
+                                <!-- PAGE 3: URAIAN MATERI & PEMBAHASAN -->
+                                <div id="flipPage3" class="flip-page hidden flex-1 p-5 sm:p-8 bg-[#fbfdfc] text-slate-800 flex flex-col justify-between overflow-y-auto">
+                                    <div>
+                                        <div class="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                                            <h3 class="text-sm sm:text-base font-black text-slate-900 flex items-center gap-2">
+                                                <i class="fas fa-book-open text-rose-600"></i> Uraian Materi & Pembahasan Teori
+                                            </h3>
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-100">Halaman 3</span>
+                                        </div>
+
+                                        <div class="space-y-3.5 text-xs sm:text-[13px] text-slate-700 leading-relaxed">
+                                            <?php if (!empty($ringkasan_data)): ?>
+                                                <?php foreach ($ringkasan_data as $subH => $subContent): ?>
+                                                    <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-teal-100 shadow-2xs">
+                                                        <h5 class="font-extrabold text-[#0d8276] mb-1.5 text-xs sm:text-sm flex items-center gap-1.5">
+                                                            <i class="fas fa-bookmark text-teal-500 text-xs"></i> <?= htmlspecialchars($subH) ?>
+                                                        </h5>
+                                                        <?php if (is_array($subContent)): ?>
+                                                            <ul class="list-disc list-inside space-y-1 text-slate-600 pl-1">
+                                                                <?php foreach ($subContent as $it): ?>
+                                                                    <li><?= $it ?></li>
+                                                                <?php endforeach; ?>
+                                                            </ul>
+                                                        <?php else: ?>
+                                                            <p class="text-slate-600"><?= $subContent ?></p>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <div class="bg-white p-4 rounded-2xl border border-slate-200">
+                                                    <p class="text-slate-600 leading-relaxed">
+                                                        Materi pembelajaran pada bab ini menguraikan prinsip-prinsip mendasar dari <?= htmlspecialchars($mapel) ?>, membedah bagaimana struktur sosial, pola perilaku, dan fenomena kehidupan terbentuk dan berkembang.
+                                                    </p>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-3 mt-4 border-t border-slate-200 text-[11px] text-slate-400 flex items-center justify-between">
+                                        <span>Sumber: Silabus Kemendikdasmen RI</span>
+                                        <span class="text-rose-600 font-bold">Lanjut ke Studi Kasus ➡</span>
+                                    </div>
+                                </div>
+
+                                <!-- PAGE 4: STUDI KASUS & INTEGRASI KEISLAMAN -->
+                                <div id="flipPage4" class="flip-page hidden flex-1 p-5 sm:p-8 bg-white text-slate-800 flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                                            <h3 class="text-sm sm:text-base font-black text-indigo-900 flex items-center gap-2">
+                                                <i class="fas fa-search-plus text-indigo-600"></i> Studi Kasus & Integrasi Keislaman
+                                            </h3>
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">Halaman 4</span>
+                                        </div>
+
+                                        <div class="space-y-3.5">
+                                            <div class="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100">
+                                                <h5 class="text-xs font-black text-indigo-950 mb-1.5 flex items-center gap-1.5">
+                                                    <i class="fas fa-mosque text-indigo-600"></i> Konteks Pesantren & Kehidupan Nyata
+                                                </h5>
+                                                <p class="text-xs text-indigo-900/80 leading-relaxed">
+                                                    Dalam ekosistem pondok pesantren dan masyarakat umum, pemahaman konsep <b><?= htmlspecialchars($mapel) ?></b> melatih santri untuk memiliki sikap <i>ta'aruf</i> (saling mengenal), <i>tafahum</i> (saling memahami), dan <i>ta'awun</i> (saling tolong-menolong) dalam membangun peradaban yang berakhlak mulia.
+                                                </p>
+                                            </div>
+
+                                            <div class="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-100">
+                                                <h5 class="text-xs font-black text-emerald-950 mb-1 flex items-center gap-1.5">
+                                                    <i class="fas fa-quran text-emerald-600"></i> Inspirasi Nilai
+                                                </h5>
+                                                <p class="text-xs text-emerald-900/80 italic leading-relaxed">
+                                                    "Wahai manusia! Sungguh, Kami telah menciptakan kamu dari seorang laki-laki dan seorang perempuan, kemudian Kami jadikan kamu berbangsa-bangsa dan bersuku-suku agar kamu saling mengenal..." (QS. Al-Hujurat: 13)
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
+                                        <span>Integrasi Kurikulum Nasional & Nilai Luhur</span>
+                                        <span class="text-indigo-600 font-bold">Lanjut ke Lembar Kerja ➡</span>
+                                    </div>
+                                </div>
+
+                                <!-- PAGE 5: LEMBAR KERJA & RANGKUMAN -->
+                                <div id="flipPage5" class="flip-page hidden flex-1 p-5 sm:p-8 bg-gradient-to-br from-amber-50 to-orange-50/50 text-slate-800 flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-center justify-between border-b border-amber-200 pb-3 mb-4">
+                                            <h3 class="text-sm sm:text-base font-black text-amber-950 flex items-center gap-2">
+                                                <i class="fas fa-pencil-ruler text-amber-600"></i> Lembar Aktivitas Mandiri & Penutup
+                                            </h3>
+                                            <span class="text-[10px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 border border-amber-200">Halaman 5</span>
+                                        </div>
+
+                                        <div class="bg-white p-4 rounded-2xl border border-amber-200 shadow-2xs mb-4">
+                                            <h5 class="text-xs font-black text-amber-900 mb-1.5">
+                                                <?= htmlspecialchars($materi_aktif['lks_judul'] ?? 'Tugas Pengamatan Mandiri') ?>
+                                            </h5>
+                                            <p class="text-xs text-slate-700 leading-relaxed">
+                                                <?= nl2br(htmlspecialchars($materi_aktif['lks_tugas'] ?? 'Tuliskan rangkuman 3 poin penting yang kamu pelajari dari bab ini di buku catatanmu, lalu diskusikan contohnya dengan Ustadz AI!')) ?>
+                                            </p>
+                                        </div>
+
+                                        <div class="flex flex-wrap items-center gap-2.5">
+                                            <button type="button" onclick="bukaUstadzAI()" class="bg-[#0d8276] hover:bg-[#0b6f65] text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center gap-1.5">
+                                                <i class="fas fa-robot"></i> Tanya Ustadz AI
+                                            </button>
+                                            <a href="#quizSection" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center gap-1.5">
+                                                <i class="fas fa-check-circle"></i> Kerjakan Kuis di Bawah
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div class="pt-3 border-t border-amber-200 text-[11px] text-amber-800 flex items-center justify-between">
+                                        <span>Selesai Membaca E-Modul Bab <?= $bab_no ?></span>
+                                        <button type="button" onclick="goToFlipPage(1)" class="font-bold text-[#0d8276] hover:underline">
+                                            ↺ Kembali ke Sampul
+                                        </button>
+                                    </div>
+                                </div>
+
                             </div>
+
+                            <!-- Flipbook Navigation Control Bar -->
+                            <div class="mt-4 flex items-center justify-between gap-3 px-1">
+                                <button type="button" id="prevPageBtn" onclick="prevFlipPage()" class="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition flex items-center gap-2 border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                                    <i class="fas fa-chevron-left"></i>
+                                    <span class="hidden sm:inline">Halaman</span> Sebelumnya
+                                </button>
+
+                                <div class="flex items-center gap-1.5">
+                                    <?php for($p=1; $p<=5; $p++): ?>
+                                    <button type="button" onclick="goToFlipPage(<?= $p ?>)" id="dotPage<?= $p ?>" class="w-8 h-8 rounded-xl font-black text-xs transition flex items-center justify-center <?= ($p===1)?'bg-rose-600 text-white shadow-md':'bg-slate-800 text-slate-400 hover:bg-slate-700' ?>">
+                                        <?= $p ?>
+                                    </button>
+                                    <?php endfor; ?>
+                                </div>
+
+                                <button type="button" id="nextPageBtn" onclick="nextFlipPage()" class="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-md shadow-rose-900/30">
+                                    <span>Berikutnya</span>
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+
                         </div>
                     </div>
 
                     <!-- 4. VIDEO EMBED YOUTUBE PEMBELAJARAN (3-5 VIDEO PEMBANDING) -->
                     <?php if (!empty($videos_list)): ?>
-                    <div class="mb-6">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                            <h3 class="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                                <i class="fas fa-play-circle text-red-500 text-sm"></i> 2. Video Penjelasan Materi (<?= count($videos_list) ?> Video Pilihan)
+                    <div class="mb-8">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                            <h3 class="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-red-600 text-white flex items-center justify-center text-xs shadow-xs">
+                                    <i class="fab fa-youtube"></i>
+                                </span>
+                                <span>2. Video Penjelasan Materi (<?= count($videos_list) ?> Video Pilihan)</span>
                             </h3>
                             <div class="flex items-center gap-2">
-                                <a id="directYoutubeLink" href="<?= htmlspecialchars(str_replace('/embed/', '/watch?v=', $videos_list[0]['url'])) ?>" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-red-700 hover:text-red-900 bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 transition flex items-center gap-1">
-                                    <i class="fab fa-youtube"></i> <span>Tonton di YouTube</span> <i class="fas fa-external-link-alt text-[9px]"></i>
+                                <a id="directYoutubeLink" href="<?= htmlspecialchars(str_replace(['/embed/', 'youtube-nocookie.com'], ['/watch?v=', 'youtube.com'], $videos_list[0]['url'])) ?>" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-red-700 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl border border-red-200 transition flex items-center gap-1.5 shadow-2xs">
+                                    <i class="fab fa-youtube text-red-600"></i> <span>Buka di YouTube</span> <i class="fas fa-arrow-up-right-from-square text-[9px]"></i>
                                 </a>
-                                <a href="https://www.youtube.com/results?search_query=<?= urlencode('Pelajaran ' . $mapel . ' ' . $materi_aktif['judul_bab']) ?>" target="_blank" rel="noopener noreferrer" class="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 transition flex items-center gap-1">
-                                    <i class="fas fa-search"></i> <span>Cari Video Lain</span>
+                                <a href="https://www.youtube.com/results?search_query=<?= urlencode('Pelajaran ' . $mapel . ' ' . $materi_aktif['judul_bab']) ?>" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1">
+                                    <i class="fas fa-search"></i> <span>Cari Video Serupa</span>
                                 </a>
                             </div>
                         </div>
@@ -360,23 +576,27 @@ if ($materi_aktif) {
                         <!-- TABS PILIHAN VIDEO -->
                         <?php if (count($videos_list) > 1): ?>
                         <div class="flex items-center gap-2 mb-3 overflow-x-auto hide-scrollbar pb-1">
-                            <?php foreach ($videos_list as $vIdx => $vItem): ?>
+                            <?php foreach ($videos_list as $vIdx => $vItem): 
+                                $embedNocookie = str_replace('youtube.com/embed/', 'youtube-nocookie.com/embed/', $vItem['url']);
+                            ?>
                             <button type="button" 
-                                    onclick="gantiVideoPembelajaran('<?= htmlspecialchars($vItem['url']) ?>', this)" 
-                                    class="video-tab-btn whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($vIdx === 0) ? 'bg-red-600 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-700' ?>">
-                                <i class="fab fa-youtube"></i>
+                                    onclick="gantiVideoPembelajaran('<?= htmlspecialchars($embedNocookie) ?>', this)" 
+                                    class="video-tab-btn whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($vIdx === 0) ? 'bg-red-600 text-white shadow-sm' : 'bg-white hover:bg-red-50 text-slate-700 border border-slate-200/80' ?>">
+                                <i class="fab fa-youtube text-sm"></i>
                                 <span><?= htmlspecialchars($vItem['title']) ?></span>
                             </button>
                             <?php endforeach; ?>
                         </div>
                         <?php endif; ?>
 
-                        <div class="relative w-full overflow-hidden rounded-2xl bg-slate-900 shadow-lg border border-slate-800" style="padding-top: 56.25%;">
+                        <?php 
+                        $firstEmbedUrl = str_replace('youtube.com/embed/', 'youtube-nocookie.com/embed/', $videos_list[0]['url']);
+                        ?>
+                        <div class="relative w-full overflow-hidden rounded-3xl bg-slate-950 shadow-xl border-2 border-slate-800" style="padding-top: 56.25%;">
                             <iframe id="mainVideoPlayer" class="absolute top-0 left-0 w-full h-full" 
-                                    src="<?= htmlspecialchars($videos_list[0]['url']) ?>" 
+                                    src="<?= htmlspecialchars($firstEmbedUrl) ?>" 
                                     title="Video Pembelajaran <?= htmlspecialchars($mapel) ?>" 
                                     frameborder="0" 
-                                    referrerpolicy="strict-origin-when-cross-origin"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
                                     allowfullscreen>
                             </iframe>
@@ -806,6 +1026,91 @@ Pertanyaan Santri:
             return html;
         }
 
+        // --- LOGIC BUILT-IN DIGITAL FLIPBOOK ---
+        let currentFlipPage = 1;
+        const totalFlipPages = 5;
+
+        function updateFlipbookUI() {
+            for (let i = 1; i <= totalFlipPages; i++) {
+                const pElem = document.getElementById('flipPage' + i);
+                const dElem = document.getElementById('dotPage' + i);
+                if (pElem) {
+                    if (i === currentFlipPage) {
+                        pElem.classList.remove('hidden');
+                    } else {
+                        pElem.classList.add('hidden');
+                    }
+                }
+                if (dElem) {
+                    if (i === currentFlipPage) {
+                        dElem.className = 'w-8 h-8 rounded-xl font-black text-xs transition flex items-center justify-center bg-rose-600 text-white shadow-md scale-105';
+                    } else {
+                        dElem.className = 'w-8 h-8 rounded-xl font-black text-xs transition flex items-center justify-center bg-slate-800 text-slate-400 hover:bg-slate-700';
+                    }
+                }
+            }
+            
+            const indicator = document.getElementById('pageIndicator');
+            if (indicator) {
+                indicator.innerText = `${currentFlipPage} / ${totalFlipPages}`;
+            }
+
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            if (prevBtn) {
+                prevBtn.disabled = (currentFlipPage === 1);
+            }
+            if (nextBtn) {
+                if (currentFlipPage === totalFlipPages) {
+                    nextBtn.innerHTML = `<span>Selesai</span> <i class="fas fa-check"></i>`;
+                    nextBtn.className = 'px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-md';
+                } else {
+                    nextBtn.innerHTML = `<span>Berikutnya</span> <i class="fas fa-chevron-right"></i>`;
+                    nextBtn.className = 'px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-md shadow-rose-900/30';
+                }
+            }
+        }
+
+        function goToFlipPage(pageNum) {
+            if (pageNum >= 1 && pageNum <= totalFlipPages) {
+                currentFlipPage = pageNum;
+                updateFlipbookUI();
+            }
+        }
+
+        function nextFlipPage() {
+            if (currentFlipPage < totalFlipPages) {
+                currentFlipPage++;
+                updateFlipbookUI();
+            } else {
+                goToFlipPage(1);
+            }
+        }
+
+        function prevFlipPage() {
+            if (currentFlipPage > 1) {
+                currentFlipPage--;
+                updateFlipbookUI();
+            }
+        }
+
+        function toggleFullscreenFlipbook() {
+            const elem = document.getElementById('flipbookWrapper');
+            if (!document.fullscreenElement) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
         function gantiVideoPembelajaran(videoUrl, btnElement) {
             const iframe = document.getElementById('mainVideoPlayer');
             if (iframe) {
@@ -813,13 +1118,13 @@ Pertanyaan Santri:
             }
             const directLink = document.getElementById('directYoutubeLink');
             if (directLink) {
-                directLink.href = videoUrl.replace('/embed/', '/watch?v=');
+                directLink.href = videoUrl.replace('/embed/', '/watch?v=').replace('youtube-nocookie.com', 'youtube.com');
             }
             document.querySelectorAll('.video-tab-btn').forEach(btn => {
-                btn.className = 'video-tab-btn whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700';
+                btn.className = 'video-tab-btn whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-white hover:bg-red-50 text-slate-700 border border-slate-200/80';
             });
             if (btnElement) {
-                btnElement.className = 'video-tab-btn whitespace-nowrap px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-red-600 text-white shadow-sm';
+                btnElement.className = 'video-tab-btn whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-red-600 text-white shadow-sm';
             }
         }
     </script>
