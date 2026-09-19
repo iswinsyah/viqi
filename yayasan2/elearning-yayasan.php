@@ -4,10 +4,31 @@ require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../koneksi.php';
 require_once __DIR__ . '/../pkbm_modul_catalog.php';
 
-if (isset($_POST['action']) && in_array($_POST['action'], ['generate_ai_curriculum', 'save_ai_curriculum'])) {
+if (isset($_POST['action']) && in_array($_POST['action'], ['generate_ai_curriculum', 'save_ai_curriculum', 'update_single_pdf_url'])) {
     ini_set('display_errors', 0);
     error_reporting(0);
     if (ob_get_length()) ob_clean();
+}
+
+// Handler AJAX Simpan Link E-Modul Cepat
+if (isset($_POST['action']) && $_POST['action'] === 'update_single_pdf_url') {
+    header('Content-Type: application/json');
+    $bab_id = (int)($_POST['bab_id'] ?? 0);
+    $pdf_url = trim($_POST['pdf_url'] ?? '');
+    
+    if ($bab_id > 0) {
+        $stmt = $conn->prepare("UPDATE elearning_bab SET pdf_url = ? WHERE id = ?");
+        $stmt->bind_param("si", $pdf_url, $bab_id);
+        if ($stmt->execute()) {
+            echo json_encode(['status' => 'success', 'message' => 'Link E-Modul berhasil disimpan!']);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => $conn->error]);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode(['status' => 'error', 'message' => 'ID Bab tidak valid.']);
+    }
+    exit;
 }
 
 $active_menu = 'elearning_yayasan';
@@ -655,6 +676,62 @@ $stmt_b->close();
                                 </button>
                             </div>
                         </div>
+
+                        <!-- KARTU PENYEMATAN URL E-MODUL PDF (TEMPAT TEMPEL LINK RESMI) -->
+                        <?php if (count($list_bab) > 0): ?>
+                        <div class="bg-gradient-to-br from-rose-50 via-white to-amber-50 border-2 border-rose-200/80 rounded-3xl p-5 shadow-sm">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-rose-100">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-lg shadow-sm">
+                                        <i class="fas fa-link"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-black text-sm text-slate-900 flex items-center gap-2">
+                                            Sematkan URL E-Modul PDF (<?= htmlspecialchars($selected_mapel) ?>)
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-800">Auto-Flipbook</span>
+                                        </h3>
+                                        <p class="text-xs text-slate-500">Cukup tempel URL PDF (misal dari <a href="https://modul.pkbm.id/modul-paket-c.html" target="_blank" class="text-rose-600 font-bold hover:underline">modul.pkbm.id</a> atau Google Drive/Server), sistem akan otomatis menampilkan E-Modul dalam bentuk <b>3D Digital Flipbook</b> interaktif di layar santri.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <a href="https://modul.pkbm.id/modul-paket-c.html" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 px-3.5 py-2 rounded-xl transition flex items-center gap-1.5 shadow-2xs">
+                                        <i class="fas fa-search"></i> <span>Buka Portal modul.pkbm.id</span> <i class="fas fa-arrow-up-right-from-square text-[9px]"></i>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- DAFTAR INPUT CEPAT PER BAB -->
+                            <div class="space-y-3">
+                                <?php foreach ($list_bab as $bItem): 
+                                    $default_pkbm = getPkbmModulPdfUrl($bItem['mapel_nama'], $bItem['nomor_bab']);
+                                    $cur_pdf = !empty($bItem['pdf_url']) ? $bItem['pdf_url'] : $default_pkbm;
+                                ?>
+                                <div class="bg-white p-3.5 rounded-2xl border border-rose-100/90 shadow-2xs flex flex-col md:flex-row md:items-center gap-3 justify-between hover:border-rose-300 transition">
+                                    <div class="min-w-[180px]">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="w-6 h-6 rounded-lg bg-rose-100 text-rose-800 font-black text-xs flex items-center justify-center"><?= $bItem['nomor_bab'] ?></span>
+                                            <span class="text-xs font-black text-slate-800"><?= htmlspecialchars(mb_strimwidth($bItem['judul_bab'], 0, 30, '...')) ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                        <div class="relative flex-1">
+                                            <i class="fas fa-file-pdf absolute left-3.5 top-3 text-rose-500 text-xs"></i>
+                                            <input type="url" id="pdf_input_<?= $bItem['id'] ?>" value="<?= htmlspecialchars($cur_pdf) ?>" placeholder="https://modul.pkbm.id/paket-c/Modul...pdf" class="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-rose-500 font-mono text-slate-700">
+                                        </div>
+                                        <div class="flex items-center gap-1.5">
+                                            <button type="button" onclick="simpanSinglePdfUrl(<?= $bItem['id'] ?>)" id="btn_save_pdf_<?= $bItem['id'] ?>" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
+                                                <i class="fas fa-save"></i> <span>Simpan URL</span>
+                                            </button>
+                                            <a href="../santri-belajar.php?mapel=<?= urlencode($bItem['mapel_nama']) ?>&bab=<?= $bItem['nomor_bab'] ?>" target="_blank" class="bg-teal-50 hover:bg-teal-100 text-[#0d8276] border border-teal-200 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1 whitespace-nowrap" title="Buka Flipbook di Layar Santri">
+                                                <i class="fas fa-book-open"></i> <span>Uji Flipbook</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php endif; ?>
 
                         <!-- LIST OF CHAPTERS -->
                         <?php if (count($list_bab) === 0): ?>
@@ -1430,6 +1507,49 @@ $stmt_b->close();
             btnClose.onclick = function() {
                 window.location.href = 'elearning-yayasan.php';
             };
+        }
+
+        // Simpan Link E-Modul Tunggal Cepat
+        async function simpanSinglePdfUrl(babId) {
+            const input = document.getElementById('pdf_input_' + babId);
+            const btn = document.getElementById('btn_save_pdf_' + babId);
+            if (!input || !btn) return;
+
+            const pdfUrl = input.value.trim();
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Menyimpan...`;
+            btn.disabled = true;
+
+            try {
+                const fd = new FormData();
+                fd.append('action', 'update_single_pdf_url');
+                fd.append('bab_id', babId);
+                fd.append('pdf_url', pdfUrl);
+
+                const res = await fetch('elearning-yayasan.php', {
+                    method: 'POST',
+                    body: fd
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    btn.innerHTML = `<i class="fas fa-check text-emerald-300"></i> Tersimpan!`;
+                    btn.className = 'bg-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-2xs flex items-center gap-1.5 whitespace-nowrap';
+                    setTimeout(() => {
+                        btn.innerHTML = originalBtnHtml;
+                        btn.className = 'bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-2xs flex items-center gap-1.5 whitespace-nowrap';
+                        btn.disabled = false;
+                    }, 2000);
+                } else {
+                    alert('Gagal menyimpan: ' + (data.message || 'Terjadi kesalahan'));
+                    btn.innerHTML = originalBtnHtml;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Error koneksi: ' + err.message);
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

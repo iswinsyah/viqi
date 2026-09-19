@@ -196,6 +196,10 @@ if ($materi_aktif) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -301,20 +305,27 @@ if ($materi_aktif) {
                         <!-- BUILT-IN FLIPBOOK CONTAINER -->
                         <div id="flipbookWrapper" class="bg-gradient-to-b from-slate-900 via-slate-800 to-slate-950 rounded-3xl p-3 sm:p-6 shadow-xl border border-slate-700/60 relative overflow-hidden transition-all duration-300">
                             
-                            <!-- Flipbook Top Bar -->
-                            <div class="flex items-center justify-between px-2 pb-3 mb-3 border-b border-slate-700/80 text-white text-xs">
+                            <!-- Flipbook Top Bar & Mode Switcher -->
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-2 pb-3 mb-3 border-b border-slate-700/80 text-white text-xs">
                                 <div class="flex items-center gap-2">
                                     <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-                                    <span class="font-black text-rose-300 tracking-wide uppercase text-[10px] sm:text-xs">Digital Flipbook Reader • Kurikulum Merdeka</span>
+                                    <div class="flex items-center gap-1.5 bg-slate-800/90 p-1 rounded-xl border border-slate-700">
+                                        <button type="button" id="tabModeSummary" onclick="switchFlipbookMode('summary')" class="px-3 py-1 rounded-lg text-xs font-black transition bg-rose-600 text-white shadow-sm flex items-center gap-1.5">
+                                            <i class="fas fa-book"></i> <span>Ringkasan 5 Hal</span>
+                                        </button>
+                                        <button type="button" id="tabModePdf" onclick="switchFlipbookMode('pdf')" class="px-3 py-1 rounded-lg text-xs font-black transition text-slate-400 hover:text-white hover:bg-slate-700 flex items-center gap-1.5">
+                                            <i class="fas fa-file-pdf text-rose-400"></i> <span>Modul PDF Lengkap</span>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="flex items-center gap-1.5 font-bold text-slate-300 text-xs">
+                                <div class="flex items-center gap-1.5 font-bold text-slate-300 text-xs self-end sm:self-auto">
                                     <span>Halaman</span>
-                                    <span id="pageIndicator" class="px-2 py-0.5 rounded-lg bg-rose-600 text-white font-black text-xs shadow-xs">1 / 5</span>
+                                    <span id="pageIndicator" class="px-2.5 py-0.5 rounded-lg bg-rose-600 text-white font-black text-xs shadow-xs">1 / 5</span>
                                 </div>
                             </div>
 
-                            <!-- Flipbook Stage / Pages -->
-                            <div class="relative w-full min-h-[460px] sm:min-h-[540px] bg-slate-100 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between border-4 border-slate-700/50">
+                            <!-- 1. MODE SUMMARY (5 PAGES) -->
+                            <div id="summaryFlipbookStage" class="relative w-full min-h-[460px] sm:min-h-[540px] bg-slate-100 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between border-4 border-slate-700/50">
                                 
                                 <!-- PAGE 1: COVER & CAPAIAN PEMBELAJARAN -->
                                 <div id="flipPage1" class="flip-page flex-1 p-5 sm:p-8 flex flex-col justify-between bg-gradient-to-br from-rose-900 via-rose-800 to-rose-950 text-white relative">
@@ -529,8 +540,48 @@ if ($materi_aktif) {
 
                             </div>
 
-                            <!-- Flipbook Navigation Control Bar -->
-                            <div class="mt-4 flex items-center justify-between gap-3 px-1">
+                            <!-- 2. MODE FULL PDF FLIPBOOK (PDF.JS POWERED) -->
+                            <div id="pdfFlipbookStage" class="hidden relative w-full min-h-[540px] bg-slate-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between border-4 border-slate-700/50 p-2 sm:p-4">
+                                <div id="pdfLoadingSpinner" class="flex-1 flex flex-col items-center justify-center text-white py-16">
+                                    <div class="w-12 h-12 rounded-2xl bg-rose-600/20 text-rose-400 flex items-center justify-center text-2xl mb-3 shadow-inner">
+                                        <i class="fas fa-circle-notch fa-spin"></i>
+                                    </div>
+                                    <span class="text-xs font-black tracking-wide text-rose-200">Memuat Buku E-Modul PDF Asli...</span>
+                                    <span class="text-[10px] text-slate-400 mt-1">Mengambil data dari server repository</span>
+                                </div>
+
+                                <div id="pdfCanvasContainer" class="hidden flex-1 flex items-center justify-center overflow-auto max-h-[72vh] p-2 bg-slate-950/40 rounded-xl">
+                                    <canvas id="pdfRenderCanvas" class="rounded-lg shadow-2xl bg-white max-w-full"></canvas>
+                                </div>
+
+                                <!-- PDF Control Bar -->
+                                <div class="mt-3 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-700/80 text-white text-xs">
+                                    <button type="button" id="pdfPrevBtn" onclick="prevPdfPage()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold transition flex items-center gap-1.5 border border-slate-700 disabled:opacity-40">
+                                        <i class="fas fa-chevron-left"></i> <span class="hidden sm:inline">Sebelumnya</span>
+                                    </button>
+
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-[11px] text-slate-400">Hal</span>
+                                        <input type="number" id="pdfPageInput" min="1" value="1" onchange="jumpToPdfPage(this.value)" class="w-14 px-2 py-1 bg-slate-800 border border-slate-600 rounded-lg text-center font-black text-xs text-white focus:ring-2 focus:ring-rose-500">
+                                        <span class="text-[11px] text-slate-400">dari <b id="pdfTotalPages" class="text-white">...</b></span>
+                                    </div>
+
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" onclick="zoomPdf(-0.2)" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-xs border border-slate-700" title="Zoom Out">
+                                            <i class="fas fa-search-minus"></i>
+                                        </button>
+                                        <button type="button" onclick="zoomPdf(0.2)" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 flex items-center justify-center font-bold text-xs border border-slate-700" title="Zoom In">
+                                            <i class="fas fa-search-plus"></i>
+                                        </button>
+                                        <button type="button" id="pdfNextBtn" onclick="nextPdfPage()" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 font-bold transition flex items-center gap-1.5 shadow-md shadow-rose-900/40">
+                                            <span class="hidden sm:inline">Berikutnya</span> <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Flipbook Summary Navigation Control Bar -->
+                            <div id="summaryControlBar" class="mt-4 flex items-center justify-between gap-3 px-1">
                                 <button type="button" id="prevPageBtn" onclick="prevFlipPage()" class="px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition flex items-center gap-2 border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed">
                                     <i class="fas fa-chevron-left"></i>
                                     <span class="hidden sm:inline">Halaman</span> Sebelumnya
@@ -1109,6 +1160,140 @@ Pertanyaan Santri:
                     document.exitFullscreen();
                 }
             }
+        }
+
+        // --- LOGIC REAL PDF FLIPBOOK (PDF.JS POWERED) ---
+        let pdfDoc = null;
+        let currentPdfPage = 1;
+        let pdfTotalPagesCount = 0;
+        let pdfScale = 1.15;
+        let isPdfRendering = false;
+        let isPdfLoaded = false;
+        const pdfTargetUrl = '<?= addslashes($emodul_url) ?>';
+
+        function switchFlipbookMode(mode) {
+            const tabSummary = document.getElementById('tabModeSummary');
+            const tabPdf = document.getElementById('tabModePdf');
+            const summaryStage = document.getElementById('summaryFlipbookStage');
+            const summaryCtrl = document.getElementById('summaryControlBar');
+            const pdfStage = document.getElementById('pdfFlipbookStage');
+
+            if (mode === 'pdf') {
+                tabSummary.className = 'px-3 py-1 rounded-lg text-xs font-black transition text-slate-400 hover:text-white hover:bg-slate-700 flex items-center gap-1.5';
+                tabPdf.className = 'px-3 py-1 rounded-lg text-xs font-black transition bg-rose-600 text-white shadow-sm flex items-center gap-1.5';
+                summaryStage.classList.add('hidden');
+                summaryCtrl.classList.add('hidden');
+                pdfStage.classList.remove('hidden');
+
+                if (!isPdfLoaded) {
+                    initPdfViewer();
+                }
+            } else {
+                tabPdf.className = 'px-3 py-1 rounded-lg text-xs font-black transition text-slate-400 hover:text-white hover:bg-slate-700 flex items-center gap-1.5';
+                tabSummary.className = 'px-3 py-1 rounded-lg text-xs font-black transition bg-rose-600 text-white shadow-sm flex items-center gap-1.5';
+                pdfStage.classList.add('hidden');
+                summaryStage.classList.remove('hidden');
+                summaryCtrl.classList.remove('hidden');
+            }
+        }
+
+        async function initPdfViewer() {
+            if (!pdfTargetUrl) return;
+            const proxyUrl = 'pdf-proxy.php?url=' + encodeURIComponent(pdfTargetUrl);
+            const spinner = document.getElementById('pdfLoadingSpinner');
+            const container = document.getElementById('pdfCanvasContainer');
+
+            try {
+                const loadingTask = pdfjsLib.getDocument({
+                    url: proxyUrl,
+                    cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+                    cMapPacked: true
+                });
+
+                pdfDoc = await loadingTask.promise;
+                pdfTotalPagesCount = pdfDoc.numPages;
+                document.getElementById('pdfTotalPages').innerText = pdfTotalPagesCount;
+                document.getElementById('pdfPageInput').max = pdfTotalPagesCount;
+
+                isPdfLoaded = true;
+                if (spinner) spinner.classList.add('hidden');
+                if (container) container.classList.remove('hidden');
+
+                renderPdfPage(currentPdfPage);
+            } catch (error) {
+                if (spinner) {
+                    spinner.innerHTML = `
+                        <div class="text-center p-6 space-y-3">
+                            <i class="fas fa-exclamation-circle text-rose-400 text-3xl"></i>
+                            <p class="text-xs font-bold text-white">Tidak dapat memuat pratinjau PDF langsung: ${error.message}</p>
+                            <a href="${pdfTargetUrl}" target="_blank" class="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white font-black px-4 py-2 rounded-xl text-xs shadow-md">
+                                <i class="fas fa-external-link-alt"></i> Buka Dokumen PDF Resmi
+                            </a>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        async function renderPdfPage(pageNumber) {
+            if (!pdfDoc || isPdfRendering) return;
+            isPdfRendering = true;
+
+            try {
+                const page = await pdfDoc.getPage(pageNumber);
+                const canvas = document.getElementById('pdfRenderCanvas');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+
+                const viewport = page.getViewport({ scale: pdfScale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+
+                await page.render(renderContext).promise;
+
+                const pInput = document.getElementById('pdfPageInput');
+                if (pInput) pInput.value = pageNumber;
+                const pPrev = document.getElementById('pdfPrevBtn');
+                if (pPrev) pPrev.disabled = (pageNumber <= 1);
+                const pNext = document.getElementById('pdfNextBtn');
+                if (pNext) pNext.disabled = (pageNumber >= pdfTotalPagesCount);
+            } catch (e) {
+                console.error("Render page error: ", e);
+            } finally {
+                isPdfRendering = false;
+            }
+        }
+
+        function prevPdfPage() {
+            if (currentPdfPage > 1) {
+                currentPdfPage--;
+                renderPdfPage(currentPdfPage);
+            }
+        }
+
+        function nextPdfPage() {
+            if (currentPdfPage < pdfTotalPagesCount) {
+                currentPdfPage++;
+                renderPdfPage(currentPdfPage);
+            }
+        }
+
+        function jumpToPdfPage(pageNum) {
+            let p = parseInt(pageNum);
+            if (p >= 1 && p <= pdfTotalPagesCount) {
+                currentPdfPage = p;
+                renderPdfPage(currentPdfPage);
+            }
+        }
+
+        function zoomPdf(delta) {
+            pdfScale = Math.max(0.6, Math.min(2.5, pdfScale + delta));
+            renderPdfPage(currentPdfPage);
         }
 
         function gantiVideoPembelajaran(videoUrl, btnElement) {
