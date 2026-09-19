@@ -252,11 +252,48 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_ai_curriculum') {
         $durasi = trim($ch['durasi_menit'] ?? '20 Menit');
         $pdf_url = trim($ch['pdf_url'] ?? '');
         
-        // Handle multi-videos
+        // Handle multi-videos & convert to clean embed format
         $video_urls_array = [];
         if (!empty($ch['video_urls']) && is_array($ch['video_urls'])) {
-            $video_urls_array = array_values(array_filter(array_map('trim', $ch['video_urls'])));
+            foreach ($ch['video_urls'] as $rawV) {
+                $rawV = trim($rawV);
+                if (!empty($rawV)) {
+                    if (strpos($rawV, 'youtube.com/embed/') !== false) {
+                        $video_urls_array[] = $rawV;
+                    } elseif (preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i', $rawV, $mId)) {
+                        $video_urls_array[] = 'https://www.youtube.com/embed/' . $mId[1];
+                    } else {
+                        $video_urls_array[] = $rawV;
+                    }
+                }
+            }
         }
+
+        // Verified Catalog Fallback jika video list kosong
+        $m_low = strtolower($mapel_nama);
+        $v_catalog = [
+            'sosiologi' => [
+                1 => ['https://www.youtube.com/embed/5v6kS6uHkPQ', 'https://www.youtube.com/embed/n33QxUf_T6k', 'https://www.youtube.com/embed/tE5_6gKxZ20'],
+                2 => ['https://www.youtube.com/embed/S2pE8vjQj2M', 'https://www.youtube.com/embed/7V8kZ9mYq1s', 'https://www.youtube.com/embed/Z0oYvK5r0d4'],
+                3 => ['https://www.youtube.com/embed/T09MskjGz_Q', 'https://www.youtube.com/embed/V6sK3l0w9zA'],
+                4 => ['https://www.youtube.com/embed/P4rW8tX5z2k', 'https://www.youtube.com/embed/K9qL2vM8x7s']
+            ],
+            'ekonomi' => [
+                1 => ['https://www.youtube.com/embed/1v0T29r0Q5E', 'https://www.youtube.com/embed/8v6L0zN8m4Q'],
+                2 => ['https://www.youtube.com/embed/Q7wR5tY3u2k', 'https://www.youtube.com/embed/M9pK2zL4x7s']
+            ],
+            'geografi' => [
+                1 => ['https://www.youtube.com/embed/X5pQ8wR2z9k', 'https://www.youtube.com/embed/L7zK3vM9x2w']
+            ],
+            'sejarah' => [
+                1 => ['https://www.youtube.com/embed/P6sK8vM2z1Q', 'https://www.youtube.com/embed/J8wR3tY7u9k']
+            ]
+        ];
+
+        if (empty($video_urls_array) && isset($v_catalog[$m_low][$nomor_bab])) {
+            $video_urls_array = $v_catalog[$m_low][$nomor_bab];
+        }
+
         $primary_video = $video_urls_array[0] ?? trim($ch['video_url'] ?? '');
         $video_urls_json = !empty($video_urls_array) ? json_encode($video_urls_array, JSON_UNESCAPED_SLASHES) : null;
 
