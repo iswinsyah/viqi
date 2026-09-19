@@ -20,179 +20,121 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     exit;
 }
 
-// Master Definisi Semua Grid Cards Layanan
-$all_cards = [
-    // 1. KELOMPOK PEMBELAJARAN & GURU (TUTOR / ASATIDZ)
+// Master Definisi Semua Grid Cards dengan 1 KATA KETERANGAN
+$all_grid_items = [
+    // --- GURU / TUTOR / AKADEMIK ---
     'emodul' => [
-        'title' => 'E-Modul & Flipbook',
-        'desc' => '138 Modul PDF Resmi PKBM & Flipbook 3D',
+        'label' => 'E-Modul',
         'icon' => 'fas fa-book-open',
-        'color' => 'from-rose-500 to-rose-600',
-        'bg_light' => 'bg-rose-50 text-rose-700 border-rose-200',
         'href' => 'admin-elearning.php',
         'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
     ],
-    'prota_promes' => [
-        'title' => 'Pekan Efektif & Promes',
-        'desc' => 'Distribusi 41 Pekan KBM, Prota & Promes',
+    'promes' => [
+        'label' => 'Promes',
         'icon' => 'fas fa-calendar-check',
-        'color' => 'from-indigo-500 to-indigo-600',
-        'bg_light' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
         'href' => 'admin-kurikulum-prota-promes.php',
         'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
     ],
-    'jurnal_kbm' => [
-        'title' => 'Jurnal KBM & Presensi',
-        'desc' => 'Agenda Mengajar & Kehadiran Santri',
+    'jurnal' => [
+        'label' => 'Jurnal',
         'icon' => 'fas fa-clipboard-list',
-        'color' => 'from-teal-500 to-teal-600',
-        'bg_light' => 'bg-teal-50 text-teal-700 border-teal-200',
         'href' => 'admin-absensi-pegawai.php',
         'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
     ],
-    'silabus_cp' => [
-        'title' => 'Master Silabus & CP',
-        'desc' => 'Capaian Pembelajaran Kurikulum Merdeka',
+    'silabus' => [
+        'label' => 'Silabus',
         'icon' => 'fas fa-file-invoice',
-        'color' => 'from-blue-500 to-blue-600',
-        'bg_light' => 'bg-blue-50 text-blue-700 border-blue-200',
         'href' => 'admin-pegawai-silabus.php',
         'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
     ],
-    'leger_nilai' => [
-        'title' => 'Bank Nilai & Leger',
-        'desc' => 'Rekap Nilai Tugas, Kuis, PTS & PAS',
+    'nilai' => [
+        'label' => 'Nilai',
         'icon' => 'fas fa-chart-bar',
-        'color' => 'from-amber-500 to-amber-600',
-        'bg_light' => 'bg-amber-50 text-amber-700 border-amber-200',
         'href' => 'admin-leger.php',
         'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
     ],
-    'rapot_pkbm' => [
-        'title' => 'Raport Diknas PKBM',
-        'desc' => 'e-Raport Paket B & Paket C Resmi',
+    'raport' => [
+        'label' => 'Raport',
         'icon' => 'fas fa-graduation-cap',
-        'color' => 'from-emerald-500 to-emerald-600',
-        'bg_light' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
         'href' => 'admin-rapot-pkbm.php',
-        'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
+        'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah', 'walisantri', 'santri']
     ],
 
-    // 2. KELOMPOK ASRAMA & MUSYRIF
-    'validasi_ibadah' => [
-        'title' => 'Validasi Ibadah Santri',
-        'desc' => 'Approval Sholat 5 Waktu & Ibadah Sunnah',
+    // --- ASRAMA & MUSYRIF ---
+    'ibadah' => [
+        'label' => 'Ibadah',
         'icon' => 'fas fa-mosque',
-        'color' => 'from-teal-600 to-emerald-700',
-        'bg_light' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        'href' => 'admin-validasi-ibadah-musyrif.php',
-        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama']
+        'href' => ($is_admin || in_array('musyrif', $roles)) ? 'admin-validasi-ibadah-musyrif.php' : 'ruang-santri.php?view=ibadah_harian',
+        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama', 'santri', 'walisantri']
     ],
-    'setoran_hafalan' => [
-        'title' => 'Setoran Hafalan Quran',
-        'desc' => 'Input Ziyadah & Murojaah Santri',
+    'hafalan' => [
+        'label' => 'Hafalan',
         'icon' => 'fas fa-quran',
-        'color' => 'from-cyan-600 to-blue-600',
-        'bg_light' => 'bg-cyan-50 text-cyan-700 border-cyan-200',
-        'href' => 'admin-setoran-hafalan-santri.php',
-        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama']
+        'href' => ($is_admin || in_array('musyrif', $roles)) ? 'admin-setoran-hafalan-santri.php' : 'santri-laporan-hafalan.php',
+        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama', 'santri', 'walisantri']
     ],
-    'laporan_adab' => [
-        'title' => 'Disiplin & Adab Santri',
-        'desc' => 'Pencatatan Karakter & Kedisiplinan',
+    'adab' => [
+        'label' => 'Adab',
         'icon' => 'fas fa-scale-balanced',
-        'color' => 'from-violet-500 to-purple-600',
-        'bg_light' => 'bg-purple-50 text-purple-700 border-purple-200',
         'href' => 'admin-pegawai-laporan-adab.php',
-        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama']
+        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama', 'walisantri']
     ],
-    'cek_kesehatan' => [
-        'title' => 'Cek Kesehatan Santri',
-        'desc' => 'Monitoring Kondisi Fisik & Medis',
+    'kesehatan' => [
+        'label' => 'Kesehatan',
         'icon' => 'fas fa-notes-medical',
-        'color' => 'from-rose-600 to-pink-600',
-        'bg_light' => 'bg-pink-50 text-pink-700 border-pink-200',
         'href' => 'admin-cek-kesehatan-santri.php',
-        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama']
+        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama', 'walisantri']
     ],
 
-    // 3. KELOMPOK RUANG BELAJAR SANTRI
-    'santri_portal' => [
-        'title' => 'Ruang Santri Belajar',
-        'desc' => 'Akses 14 Mapel, Flipbook & Ustadz AI',
+    // --- SANTRI BELAJAR ---
+    'belajar' => [
+        'label' => 'Belajar',
         'icon' => 'fas fa-laptop-code',
-        'color' => 'from-[#0d8276] to-teal-500',
-        'bg_light' => 'bg-teal-50 text-[#0d8276] border-teal-200',
         'href' => 'ruang-santri.php',
-        'roles' => ['super_admin', 'santri']
-    ],
-    'santri_ibadah' => [
-        'title' => 'Lapor Ibadah Harian',
-        'desc' => 'Input Sholat Berjamaah & Tilawah Mandiri',
-        'icon' => 'fas fa-pray',
-        'color' => 'from-emerald-500 to-green-600',
-        'bg_light' => 'bg-green-50 text-green-700 border-green-200',
-        'href' => 'ruang-santri.php?view=ibadah_harian',
-        'roles' => ['super_admin', 'santri']
+        'roles' => ['super_admin', 'santri', 'tutor', 'ustadz']
     ],
 
-    // 4. KELOMPOK WALISANTRI
-    'tagihan_spp' => [
-        'title' => 'SPP & Keuangan Santri',
-        'desc' => 'Rekap Pembayaran & Tagihan Bulanan',
+    // --- KEUANGAN & WALISANTRI ---
+    'spp' => [
+        'label' => 'SPP',
         'icon' => 'fas fa-wallet',
-        'color' => 'from-emerald-600 to-teal-700',
-        'bg_light' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
         'href' => 'admin-rekap-spp.php',
         'roles' => ['super_admin', 'walisantri', 'bendahara_sekolah']
     ],
-    'uang_saku' => [
-        'title' => 'Rekap Uang Saku',
-        'desc' => 'Catatan Saldo & Penyaluran Uang Saku',
+    'uangsaku' => [
+        'label' => 'Saku',
         'icon' => 'fas fa-coins',
-        'color' => 'from-amber-500 to-yellow-600',
-        'bg_light' => 'bg-amber-50 text-amber-700 border-amber-200',
         'href' => 'admin-rekap-uang-saku.php',
         'roles' => ['super_admin', 'walisantri', 'musyrif']
     ],
 
-    // 5. KELOMPOK KELEMBAGAAN & YAYASAN (SUPER ADMIN)
-    'buku_induk' => [
-        'title' => 'Buku Induk Santri',
-        'desc' => 'Master Data Santri, NISN & Orang Tua',
+    // --- KELEMBAGAAN & ADMIN ---
+    'induk' => [
+        'label' => 'Induk',
         'icon' => 'fas fa-address-book',
-        'color' => 'from-blue-600 to-indigo-700',
-        'bg_light' => 'bg-blue-50 text-blue-700 border-blue-200',
         'href' => 'admin-buku-induk.php',
         'roles' => ['super_admin', 'admin_sekolah', 'kepala_sekolah']
     ],
-    'pembukuan_sekolah' => [
-        'title' => 'Buku Kas Sekolah',
-        'desc' => 'Arus Kas Masuk, Keluar & Laporan Laba Rugi',
+    'kas' => [
+        'label' => 'Kas',
         'icon' => 'fas fa-book-bookmark',
-        'color' => 'from-slate-700 to-slate-800',
-        'bg_light' => 'bg-slate-100 text-slate-800 border-slate-300',
         'href' => 'sekolah-pembukuan.php',
         'roles' => ['super_admin', 'bendahara_sekolah', 'kepala_sekolah']
     ],
-    'kelola_asatidz' => [
-        'title' => 'Kelola Asatidz & Pegawai',
-        'desc' => 'Master Akun, Hak Akses & Amanah Pegawai',
+    'pegawai' => [
+        'label' => 'Pegawai',
         'icon' => 'fas fa-users-gear',
-        'color' => 'from-purple-600 to-indigo-800',
-        'bg_light' => 'bg-purple-50 text-purple-700 border-purple-200',
         'href' => 'yayasan2/asatidz.php',
         'roles' => ['super_admin', 'kepala_sekolah']
     ]
 ];
 
-// Filter Kartu Berdasarkan Hak Akses & Filter Sudut Pandang
-$visible_cards = [];
-foreach ($all_cards as $key => $card) {
-    // 1. Cek Hak Akses
+// Filter Item Sesuai Role & Role Switcher
+$visible_items = [];
+foreach ($all_grid_items as $key => $item) {
     $has_access = $is_admin;
     if (!$has_access) {
-        foreach ($card['roles'] as $r) {
+        foreach ($item['roles'] as $r) {
             if (in_array(strtolower($r), $roles)) {
                 $has_access = true;
                 break;
@@ -201,15 +143,15 @@ foreach ($all_cards as $key => $card) {
     }
     if (!$has_access) continue;
 
-    // 2. Cek Filter Sudut Pandang
+    // Filter Sudut Pandang
     if ($active_view !== 'all') {
-        if ($active_view === 'tutor' && !in_array('tutor', $card['roles'])) continue;
-        if ($active_view === 'musyrif' && !in_array('musyrif', $card['roles'])) continue;
-        if ($active_view === 'santri' && !in_array('santri', $card['roles'])) continue;
-        if ($active_view === 'walisantri' && !in_array('walisantri', $card['roles'])) continue;
+        if ($active_view === 'tutor' && !in_array('tutor', $item['roles'])) continue;
+        if ($active_view === 'musyrif' && !in_array('musyrif', $item['roles'])) continue;
+        if ($active_view === 'santri' && !in_array('santri', $item['roles'])) continue;
+        if ($active_view === 'walisantri' && !in_array('walisantri', $item['roles'])) continue;
     }
 
-    $visible_cards[$key] = $card;
+    $visible_items[$key] = $item;
 }
 ?>
 <!DOCTYPE html>
@@ -217,7 +159,7 @@ foreach ($all_cards as $key => $card) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dashboard Utama | SADIGS 4.0 - Villa Quran</title>
+    <title>SADIGS 4.0 | Villa Quran Indonesia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -226,186 +168,133 @@ foreach ($all_cards as $key => $card) {
         .tap-highlight-transparent { -webkit-tap-highlight-color: transparent; }
     </style>
 </head>
-<body class="bg-[#f0f9f8] min-h-screen text-slate-800 flex flex-col md:flex-row antialiased overflow-x-hidden">
+<body class="bg-[#e1f5f2] min-h-screen text-slate-800 flex flex-col antialiased overflow-x-hidden">
 
     <!-- ========================================================= -->
-    <!-- DESKTOP SIDEBAR (TAMPIL DI PC/LAPTOP, TERSEMBUNYI DI HP)  -->
+    <!-- 1. TOP HEADER TEAL DENGAN LOGO SADIGS & PROFILE BUTTON    -->
     <!-- ========================================================= -->
-    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-teal-100/80 p-5 shadow-xs flex-shrink-0 min-h-screen">
-        <div class="flex items-center gap-3 pb-6 border-b border-slate-100">
-            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#0d8276] to-teal-500 text-white flex items-center justify-center font-black text-lg shadow-md shadow-teal-900/10">
-                <i class="fas fa-cubes-stacked"></i>
-            </div>
-            <div>
-                <h2 class="font-black text-base text-slate-900 leading-none">SADIGS</h2>
-                <p class="text-[10px] text-teal-600 font-bold mt-0.5">Villa Quran Indonesia</p>
-            </div>
-        </div>
-
-        <!-- MENU UNIVERSAL DESKTOP -->
-        <nav class="mt-6 space-y-1.5 flex-1">
-            <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-3 rounded-2xl font-bold text-xs bg-[#0d8276] text-white shadow-sm shadow-teal-900/10 transition">
-                <i class="fas fa-house text-sm"></i> <span>Beranda Utama</span>
-            </a>
-            <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-3 rounded-2xl font-bold text-xs text-slate-600 hover:bg-teal-50/70 hover:text-[#0d8276] transition">
-                <i class="fas fa-calendar-alt text-sm"></i> <span>Kalender Akademik</span>
-            </a>
-            <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-3 rounded-2xl font-bold text-xs text-slate-600 hover:bg-teal-50/70 hover:text-[#0d8276] transition">
-                <i class="fas fa-clock text-sm"></i> <span>Jadwal Pelajaran</span>
-            </a>
-            <a href="artikel.php" class="flex items-center gap-3 px-3.5 py-3 rounded-2xl font-bold text-xs text-slate-600 hover:bg-teal-50/70 hover:text-[#0d8276] transition">
-                <i class="fas fa-bullhorn text-sm"></i> <span>Informasi & Berita</span>
-            </a>
-        </nav>
-
-        <!-- USER INFO BOTTOM DESKTOP -->
-        <div class="pt-4 border-t border-slate-100">
-            <a href="dashboard.php?action=logout" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-xs text-rose-600 hover:bg-rose-50 transition" onclick="return confirm('Yakin ingin keluar?');">
-                <span class="flex items-center gap-2"><i class="fas fa-arrow-right-from-bracket"></i> Keluar</span>
-            </a>
-        </div>
-    </aside>
-
-    <!-- ========================================================= -->
-    <!-- KONTEN UTAMA (HEADER + HERO + GRID CARDS)                 -->
-    <!-- ========================================================= -->
-    <div class="flex-1 flex flex-col min-h-screen pb-24 md:pb-10 overflow-x-hidden">
-        
-        <!-- 1. TOP HEADER APP (MOBILE & PC) -->
-        <header class="h-16 bg-white border-b border-teal-100/60 shadow-2xs flex items-center justify-between px-4 sm:px-8 z-20 flex-shrink-0">
+    <header class="bg-[#0d8276] text-white pt-6 pb-10 px-5 sm:px-6 shadow-sm z-10 flex-shrink-0">
+        <div class="max-w-md sm:max-w-lg mx-auto flex items-center justify-between">
             
-            <div class="flex items-center gap-2.5">
-                <div class="md:hidden w-8 h-8 rounded-xl bg-[#0d8276] text-white flex items-center justify-center font-black text-sm shadow-sm">
-                    <i class="fas fa-cubes-stacked"></i>
+            <!-- KIRI: BRAND LOGO SADIGS -->
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <circle cx="50" cy="45" r="12" fill="#f59e0b" />
+                        <path d="M50 12 L55 28 L45 28 Z" fill="#10b981" />
+                        <path d="M72 20 L66 34 L58 28 Z" fill="#10b981" />
+                        <path d="M84 40 L70 44 L68 36 Z" fill="#10b981" />
+                        <path d="M28 20 L42 28 L34 34 Z" fill="#10b981" />
+                        <path d="M16 40 L32 36 L30 44 Z" fill="#10b981" />
+                        <path d="M22 64 C35 55, 48 60, 50 68 C52 60, 65 55, 78 64 C76 76, 52 82, 50 82 C48 82, 24 76, 22 64 Z" fill="#0d8276" />
+                        <path d="M30 68 C40 62, 48 66, 50 72 C52 66, 60 62, 70 68 C68 76, 52 80, 50 80 C48 80, 32 76, 30 68 Z" fill="#f59e0b" />
+                    </svg>
                 </div>
                 <div>
-                    <h1 class="font-black text-sm sm:text-base text-slate-900 leading-tight">SADIGS 4.0</h1>
-                    <p class="text-[10px] text-slate-400 hidden sm:block">Portal Sistem Administrasi Digital Sekolah Terpadu</p>
+                    <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
+                    <p class="text-[11px] sm:text-xs text-teal-100 font-light italic tracking-tight mt-0.5">Sistem Administrasi Digital Sekolah</p>
                 </div>
             </div>
 
-            <!-- KANAN: PROFIL DROPDOWN TRIGGER -->
-            <div class="relative">
-                <button type="button" onclick="toggleProfileModal()" class="flex items-center gap-2.5 bg-slate-50 hover:bg-teal-50/80 p-1.5 sm:px-3 sm:py-1.5 rounded-full sm:rounded-2xl border border-slate-200 transition focus:outline-none">
-                    <div class="w-8 h-8 rounded-full bg-[#0d8276] text-white flex items-center justify-center font-bold text-xs shadow-2xs overflow-hidden">
-                        <?php if (!empty($user['foto_profil'])): ?>
-                            <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Avatar" class="w-full h-full object-cover">
-                        <?php else: ?>
-                            <?= strtoupper(substr($user['nama_lengkap'], 0, 1)) ?>
-                        <?php endif; ?>
-                    </div>
-                    <div class="text-left hidden sm:block">
-                        <div class="text-xs font-black text-slate-900 leading-tight truncate max-w-[130px]"><?= htmlspecialchars($user['nama_lengkap']) ?></div>
-                        <div class="text-[9px] text-[#0d8276] font-extrabold uppercase"><?= $is_admin ? 'Super Admin' : htmlspecialchars($user['roles']) ?></div>
-                    </div>
-                    <i class="fas fa-chevron-down text-[10px] text-slate-400 hidden sm:inline ml-1"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- 2. BODY CONTENT -->
-        <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
-            
-            <!-- HERO BANNER GREETING -->
-            <div class="bg-gradient-to-r from-[#0d8276] via-teal-700 to-emerald-800 rounded-3xl p-5 sm:p-7 text-white shadow-md shadow-teal-900/10 relative overflow-hidden">
-                <div class="absolute -right-8 -bottom-8 w-44 h-44 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-                
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
-                    <div>
-                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-white/20 text-white backdrop-blur-xs mb-2">
-                            <i class="fas fa-star text-amber-300"></i> Member Area Terpadu
-                        </div>
-                        <h2 class="text-lg sm:text-2xl font-black tracking-tight leading-snug">
-                            Assalamu'alaikum, <?= htmlspecialchars($user['nama_lengkap']) ?>! 👋
-                        </h2>
-                        <p class="text-xs sm:text-sm text-teal-100 mt-1 max-w-xl font-light">
-                            Selamat datang di portal SADIGS 4.0. Seluruh layanan akademik, asrama, dan belajar mandiri terintegrasi di sini.
-                        </p>
-                    </div>
-
-                    <div class="flex items-center gap-2 bg-white/10 backdrop-blur-xs px-4 py-2.5 rounded-2xl border border-white/20 self-start sm:self-auto text-xs">
-                        <i class="fas fa-calendar-day text-amber-300 text-base"></i>
-                        <div>
-                            <div class="font-black text-white"><?= date('d F Y') ?></div>
-                            <div class="text-[10px] text-teal-200">Tahun Ajaran 2026/2027</div>
-                        </div>
-                    </div>
+            <!-- KANAN: PROFILE BUTTON (CIRCLE + LABEL PROFILE) -->
+            <button type="button" onclick="toggleProfileModal()" class="flex flex-col items-center group cursor-pointer focus:outline-none">
+                <div class="w-12 h-12 rounded-full bg-white text-[#0d8276] flex items-center justify-center font-black text-lg shadow-md group-hover:scale-105 transition-transform overflow-hidden border-2 border-teal-200">
+                    <?php if (!empty($user['foto_profil'])): ?>
+                        <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Profile" class="w-full h-full object-cover">
+                    <?php else: ?>
+                        <?= strtoupper(substr($user['nama_lengkap'], 0, 1)) ?>
+                    <?php endif; ?>
                 </div>
-            </div>
+                <span class="text-xs font-bold text-white mt-1 group-hover:text-teal-200 transition-colors">Profile</span>
+            </button>
 
-            <!-- FILTER SUDUT PANDANG (ROLE SWITCHER) - KHUSUS MULTI-ROLE -->
-            <?php if ($is_admin || count($roles) > 1): ?>
-            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-teal-100/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex items-center gap-2 text-xs font-black text-slate-700">
-                    <i class="fas fa-sliders text-[#0d8276]"></i>
-                    <span>Tampilan Layanan:</span>
-                </div>
-                
-                <div class="flex flex-wrap items-center gap-1.5 text-xs">
-                    <a href="dashboard.php?view_role=all" class="px-3 py-1.5 rounded-xl font-bold transition <?= ($active_view === 'all') ? 'bg-[#0d8276] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
-                        Semua Layanan
-                    </a>
-                    <a href="dashboard.php?view_role=tutor" class="px-3 py-1.5 rounded-xl font-bold transition <?= ($active_view === 'tutor') ? 'bg-[#0d8276] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
-                        👨‍🏫 Mode Guru / Tutor
-                    </a>
-                    <a href="dashboard.php?view_role=musyrif" class="px-3 py-1.5 rounded-xl font-bold transition <?= ($active_view === 'musyrif') ? 'bg-[#0d8276] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
-                        🕌 Mode Asrama
-                    </a>
-                    <a href="dashboard.php?view_role=santri" class="px-3 py-1.5 rounded-xl font-bold transition <?= ($active_view === 'santri') ? 'bg-[#0d8276] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
-                        🎒 Mode Santri
-                    </a>
-                    <a href="dashboard.php?view_role=walisantri" class="px-3 py-1.5 rounded-xl font-bold transition <?= ($active_view === 'walisantri') ? 'bg-[#0d8276] text-white shadow-2xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
-                        👨‍👩‍👧 Mode Orang Tua
-                    </a>
-                </div>
-            </div>
-            <?php endif; ?>
+        </div>
 
-            <!-- ========================================================= -->
-            <!-- 3. GRID CARDS MENU LAYANAN UTAMA (ALA ANDROID APPS)      -->
-            <!-- ========================================================= -->
-            <div>
-                <div class="flex items-center justify-between mb-3 px-1">
-                    <h3 class="font-black text-sm text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                        <i class="fas fa-grid-2 text-[#0d8276]"></i>
-                        <span>Menu & Layanan Tersedia</span>
-                    </h3>
-                    <span class="text-[11px] font-bold text-slate-400"><?= count($visible_cards) ?> Aplikasi</span>
-                </div>
-
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <?php foreach ($visible_cards as $key => $card): ?>
-                    <a href="<?= htmlspecialchars($card['href']) ?>" class="bg-white hover:bg-teal-50/40 p-4 sm:p-5 rounded-3xl border border-teal-100/70 shadow-2xs hover:shadow-md hover:border-teal-300 transition-all duration-200 flex flex-col justify-between group">
-                        
-                        <!-- ICON SQUIRCLE -->
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr <?= $card['color'] ?> text-white flex items-center justify-center text-xl shadow-md group-hover:scale-108 transition-transform mb-3.5">
-                            <i class="<?= $card['icon'] ?>"></i>
-                        </div>
-
-                        <!-- TITLE & DESC -->
-                        <div>
-                            <h4 class="font-extrabold text-xs sm:text-sm text-slate-900 leading-snug group-hover:text-[#0d8276] transition-colors">
-                                <?= htmlspecialchars($card['title']) ?>
-                            </h4>
-                            <p class="text-[10px] sm:text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                                <?= htmlspecialchars($card['desc']) ?>
-                            </p>
-                        </div>
-
-                        <div class="mt-3.5 pt-2 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-[#0d8276]">
-                            <span>Buka Layanan</span>
-                            <i class="fas fa-arrow-right text-[9px] group-hover:translate-x-1 transition-transform"></i>
-                        </div>
-                    </a>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-        </main>
-    </div>
+        <!-- ROLE SWITCHER PILL (DI DALAM HEADER SUPAYA RAPI) -->
+        <?php if ($is_admin || count($roles) > 1): ?>
+        <div class="max-w-md sm:max-w-lg mx-auto mt-4 pt-3 border-t border-teal-600/50 flex items-center justify-center gap-1.5 flex-wrap">
+            <span class="text-[10px] text-teal-100 font-semibold mr-1">Filter:</span>
+            <a href="dashboard.php?view_role=all" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'all') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                Semua
+            </a>
+            <a href="dashboard.php?view_role=tutor" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'tutor') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                Guru
+            </a>
+            <a href="dashboard.php?view_role=musyrif" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'musyrif') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                Asrama
+            </a>
+            <a href="dashboard.php?view_role=santri" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'santri') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                Santri
+            </a>
+            <a href="dashboard.php?view_role=walisantri" class="px-3 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'walisantri') ? 'bg-white text-[#0d8276] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
+                Wali
+            </a>
+        </div>
+        <?php endif; ?>
+    </header>
 
     <!-- ========================================================= -->
-    <!-- PROFIL & PENGATURAN MODAL (KLIK FOTO POJOK KANAN ATAS)    -->
+    <!-- 2. MAIN BODY: WHITE SQUIRCLE CARD WITH 4-COLUMN GRID     -->
+    <!-- ========================================================= -->
+    <main class="flex-1 px-4 sm:px-6 pt-0 pb-24 max-w-md sm:max-w-lg mx-auto w-full -mt-6">
+        
+        <!-- KARTU UTAMA PUTIH DENGAN GRID 4 KOLOM SQUIRCLE IKON -->
+        <div class="bg-white rounded-[32px] p-5 sm:p-7 shadow-lg shadow-teal-900/5 border border-teal-100/60">
+            <div class="grid grid-cols-4 gap-y-5 gap-x-2 sm:gap-x-4 items-start justify-items-center">
+                
+                <?php foreach ($visible_items as $key => $item): ?>
+                <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center group cursor-pointer w-full text-center tap-highlight-transparent">
+                    
+                    <!-- Squircle Box Button (#0d8276) -->
+                    <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-[18px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/10 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                        <i class="<?= $item['icon'] ?>"></i>
+                    </div>
+
+                    <!-- 1 Kata Keterangan Menu -->
+                    <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight">
+                        <?= htmlspecialchars($item['label']) ?>
+                    </span>
+                </a>
+                <?php endforeach; ?>
+
+            </div>
+        </div>
+
+        <!-- FOOTER BRANDING RINGKAS -->
+        <div class="mt-6 text-center text-[11px] text-teal-800 font-semibold opacity-75">
+            Villa Quran Indonesia • SADIGS 4.0
+        </div>
+
+    </main>
+
+    <!-- ========================================================= -->
+    <!-- 3. BOTTOM NAVIGATION BAR UNIVERSAL (FIXED DI BAWAH)       -->
+    <!-- ========================================================= -->
+    <nav class="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-teal-100 shadow-lg flex items-center justify-around z-40 max-w-md sm:max-w-lg mx-auto px-2">
+        <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-[#0d8276] font-black text-[10px]">
+            <i class="fas fa-house text-lg mb-0.5"></i>
+            <span>Beranda</span>
+        </a>
+        <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
+            <i class="fas fa-calendar-alt text-lg mb-0.5"></i>
+            <span>Kalender</span>
+        </a>
+        <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
+            <i class="fas fa-clock text-lg mb-0.5"></i>
+            <span>Jadwal</span>
+        </a>
+        <a href="artikel.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
+            <i class="fas fa-bullhorn text-lg mb-0.5"></i>
+            <span>Informasi</span>
+        </a>
+        <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-rose-500 hover:text-rose-700 font-bold text-[10px] transition">
+            <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5"></i>
+            <span>Keluar</span>
+        </a>
+    </nav>
+
+    <!-- ========================================================= -->
+    <!-- 4. PROFILE & ACCOUNT MODAL (KLIK FOTO POJOK KANAN ATAS)   -->
     <!-- ========================================================= -->
     <div id="profileModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-teal-100 relative animate-in fade-in zoom-in duration-150">
@@ -444,32 +333,6 @@ foreach ($all_cards as $key => $card) {
             </div>
         </div>
     </div>
-
-    <!-- ========================================================= -->
-    <!-- 4. BOTTOM NAVIGATION BAR (KHUSUS HP / MOBILE VIEW)        -->
-    <!-- ========================================================= -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-teal-100 shadow-lg flex items-center justify-around z-40 px-2">
-        <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-[#0d8276] font-black text-[10px]">
-            <i class="fas fa-house text-lg mb-0.5"></i>
-            <span>Beranda</span>
-        </a>
-        <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
-            <i class="fas fa-calendar-alt text-lg mb-0.5"></i>
-            <span>Kalender</span>
-        </a>
-        <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
-            <i class="fas fa-clock text-lg mb-0.5"></i>
-            <span>Jadwal</span>
-        </a>
-        <a href="artikel.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
-            <i class="fas fa-bullhorn text-lg mb-0.5"></i>
-            <span>Informasi</span>
-        </a>
-        <button type="button" onclick="toggleProfileModal()" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0d8276] font-bold text-[10px] transition">
-            <i class="fas fa-user text-lg mb-0.5"></i>
-            <span>Akun</span>
-        </button>
-    </nav>
 
     <script>
         function toggleProfileModal() {
