@@ -55,6 +55,34 @@ $conn->query("CREATE TABLE IF NOT EXISTS elearning_kuis (
     FOREIGN KEY (bab_id) REFERENCES elearning_bab(id) ON DELETE CASCADE
 )");
 
+// Self-healing Master Mapel Diknas
+$default_diknas_mapel = [
+    ['Sosiologi', 'Diknas'],
+    ['Ekonomi', 'Diknas'],
+    ['Geografi', 'Diknas'],
+    ['Sejarah', 'Diknas'],
+    ['Bahasa Indonesia', 'Diknas'],
+    ['Bahasa Inggris', 'Diknas'],
+    ['Matematika', 'Diknas'],
+    ['Fisika', 'Diknas'],
+    ['Kimia', 'Diknas'],
+    ['Biologi', 'Diknas'],
+    ['IPA', 'Diknas'],
+    ['IPS', 'Diknas'],
+    ['Pendidikan Pancasila', 'Diknas'],
+    ['PJOK (Pendidikan Jasmani)', 'Diknas'],
+    ['Informatika', 'Diknas'],
+    ['Solopreneur & Bisnis Digital', 'Lainnya']
+];
+foreach ($default_diknas_mapel as $dm) {
+    $nm = $conn->real_escape_string($dm[0]);
+    $kat = $dm[1];
+    $chk = $conn->query("SELECT id FROM master_mapel WHERE nama_mapel = '$nm' LIMIT 1");
+    if ($chk && $chk->num_rows === 0) {
+        $conn->query("INSERT INTO master_mapel (nama_mapel, kategori_mapel, status_aktif, metode_belajar) VALUES ('$nm', '$kat', 1, 'online')");
+    }
+}
+
 // ==========================================
 // 2. PROSES GENERATE AI CURRICULUM (BACKEND)
 // ==========================================
@@ -1238,16 +1266,39 @@ $stmt_b->close();
             // Filter target mapel
             let targetList = [];
             if (scope === 'tanpa_guru') {
-                targetList = allMapelDatabase.filter(m => !m.pengampu_id || m.pengampu_id == 0);
+                targetList = allMapelDatabase.filter(m => !m.pengampu_id || m.pengampu_id == 0 || m.pengampu_id === '0');
             } else if (scope === 'semua_diknas') {
-                targetList = allMapelDatabase.filter(m => m.kategori_mapel && m.kategori_mapel.toLowerCase() === 'diknas');
+                targetList = allMapelDatabase.filter(m => m.kategori_mapel && m.kategori_mapel.toLowerCase().includes('diknas'));
             } else {
                 targetList = allMapelDatabase;
             }
 
-            if (targetList.length === 0) {
-                alert('Tidak ada mata pelajaran yang sesuai dengan target filter ini.');
-                return;
+            // Smart Fallback jika filter kategori belum terisi di beberapa record
+            if (!targetList || targetList.length === 0) {
+                if (scope === 'semua_diknas' || scope === 'tanpa_guru') {
+                    targetList = allMapelDatabase.filter(m => !m.kategori_mapel || !m.kategori_mapel.toLowerCase().includes('diniyah'));
+                }
+                if (!targetList || targetList.length === 0) {
+                    targetList = allMapelDatabase;
+                }
+            }
+
+            // Fallback darurat jika database mapel belum termuat di browser
+            if (!targetList || targetList.length === 0) {
+                targetList = [
+                    { nama_mapel: 'Sosiologi', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Ekonomi', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Geografi', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Sejarah', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Bahasa Indonesia', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Bahasa Inggris', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Matematika', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'IPA', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Fisika', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Kimia', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Biologi', kategori_mapel: 'Diknas' },
+                    { nama_mapel: 'Pendidikan Pancasila', kategori_mapel: 'Diknas' }
+                ];
             }
 
             // Ganti UI ke Live Console
