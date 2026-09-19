@@ -334,7 +334,8 @@ if ($res_db_struct) {
             'laporan_adab' => 'Laporan Kedisiplinan',
             'kpi_musyrif' => 'KPI Musyrif',
             'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
-            'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)'
+            'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)',
+            'manajemen_elearning' => 'E-Modul & Flipbook Belajar'
         ];
         
         $title = $default_titles[$key] ?? ucwords(str_replace('_', ' ', $key));

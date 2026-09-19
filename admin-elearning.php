@@ -1,6 +1,7 @@
 <?php
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
+require_once 'pkbm_modul_catalog.php';
 
 $active_menu = 'manajemen_elearning';
 $pesan_sukses = '';
@@ -12,7 +13,7 @@ $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_r
 $norm_user_roles = array_map(function($r) {
     return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
 }, $user_roles);
-$is_super_admin = in_array('super_admin', $norm_user_roles) || in_array('kepala_sekolah', $norm_user_roles) || in_array('admin_sekolah', $norm_user_roles);
+$is_super_admin = in_array('super_admin', $norm_user_roles) || in_array('kepala_sekolah', $norm_user_roles) || in_array('admin_sekolah', $norm_user_roles) || $ustadz_id === 9999;
 
 // ==========================================
 // 1. SELF-HEALING DATABASE MIGRATIONS
@@ -49,10 +50,53 @@ $conn->query("CREATE TABLE IF NOT EXISTS elearning_kuis (
     FOREIGN KEY (bab_id) REFERENCES elearning_bab(id) ON DELETE CASCADE
 )");
 
+// ==========================================
+// 2. AJAX FAST ACTION HANDLERS
+// ==========================================
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action'])) {
+    if ($_POST['action'] === 'update_single_pdf_url') {
+        header('Content-Type: application/json');
+        $bab_id = (int)($_POST['bab_id'] ?? 0);
+        $pdf_url = trim($_POST['pdf_url'] ?? '');
+        if ($bab_id > 0) {
+            $pdf_url_esc = $conn->real_escape_string($pdf_url);
+            $res_up = $conn->query("UPDATE elearning_bab SET pdf_url = '$pdf_url_esc' WHERE id = $bab_id");
+            if ($res_up) {
+                echo json_encode(['status' => 'success', 'message' => 'URL Modul berhasil disimpan!']);
+            } else {
+                echo json_encode(['status' => 'error', 'message' => $conn->error]);
+            }
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Bab ID tidak valid']);
+        }
+        exit;
+    }
+
+    if ($_POST['action'] === 'apply_pkbm_catalog') {
+        header('Content-Type: application/json');
+        $mapel_target = trim($_POST['mapel_nama'] ?? '');
+        $mapel_esc = $conn->real_escape_string($mapel_target);
+        
+        $res_b = $conn->query("SELECT id, nomor_bab FROM elearning_bab WHERE mapel_nama = '$mapel_esc'");
+        $updated_count = 0;
+        if ($res_b && $res_b->num_rows > 0) {
+            while ($b = $res_b->fetch_assoc()) {
+                $catalog_url = getPkbmModulPdfUrl($mapel_target, $b['nomor_bab']);
+                if (!empty($catalog_url)) {
+                    $cat_esc = $conn->real_escape_string($catalog_url);
+                    $conn->query("UPDATE elearning_bab SET pdf_url = '$cat_esc' WHERE id = " . $b['id']);
+                    $updated_count++;
+                }
+            }
+        }
+        echo json_encode(['status' => 'success', 'message' => "Berhasil menerapkan $updated_count URL resmi dari katalog PKBM!"]);
+        exit;
+    }
+}
+
 // Seed initial Sosiologi data if empty
 $chk_sosiologi = $conn->query("SELECT id FROM elearning_bab WHERE mapel_nama = 'Sosiologi' LIMIT 1");
 if ($chk_sosiologi && $chk_sosiologi->num_rows === 0) {
-    // Bab 1
     $b1_ringkasan = json_encode([
         'Pengertian Dasar' => 'Sosiologi berasal dari bahasa Latin <i>Socius</i> (kawan/masyarakat) dan bahasa Yunani <i>Logos</i> (ilmu/bicara). Pertama kali dicetuskan oleh <b>Auguste Comte</b> (Bapak Sosiologi Dunia).',
         '4 Ciri Utama Sosiologi' => [
@@ -66,7 +110,7 @@ if ($chk_sosiologi && $chk_sosiologi->num_rows === 0) {
     
     $sql_b1 = "INSERT INTO elearning_bab (mapel_nama, nomor_bab, judul_bab, subjudul, durasi_menit, pdf_url, video_url, ringkasan_materi, lks_judul, lks_tugas) 
                VALUES ('Sosiologi', 1, 'Bab 1: Sosiologi Sebagai Ilmu & Objek Kajian', 'Hakikat, Objek, dan Ciri-Ciri Utama Ilmu Sosiologi', '15 Menit', 
-               'https://repositori.kemdikbud.go.id/21980/1/X_Sosiologi_KD-3.1_Final.pdf', 
+               'https://modul.pkbm.id/paket-c/Modul%201%20Sosiologi.pdf', 
                'https://www.youtube.com/embed/5v6kS6uHkPQ', 
                '" . $conn->real_escape_string($b1_ringkasan) . "', 
                'LKS 1: Analisis Gejala Sosial di Lingkungan Pondok/Sekolah', 
@@ -81,7 +125,6 @@ if ($chk_sosiologi && $chk_sosiologi->num_rows === 0) {
         ($b1_id, 'Teori sosiologi saat ini menyempurnakan teori terdahulu sesuai perkembangan zaman modern. Karakteristik ini disebut...', 'Kumulatif', 'Spekulatif', 'Normatif', 'Empiris', 'A', 'Kumulatif berarti teori sosiologi saling melengkapi dan memperluas teori sebelumnya.')");
     }
 
-    // Bab 2
     $b2_ringkasan = json_encode([
         '2 Syarat Interaksi Sosial' => [
             '<b>Kontak Sosial:</b> Hubungan awal antar individu/kelompok (Primer: tatap muka; Sekunder: perantara HP/surat).',
@@ -95,8 +138,8 @@ if ($chk_sosiologi && $chk_sosiologi->num_rows === 0) {
         ]
     ]);
     $sql_b2 = "INSERT INTO elearning_bab (mapel_nama, nomor_bab, judul_bab, subjudul, durasi_menit, pdf_url, video_url, ringkasan_materi, lks_judul, lks_tugas) 
-               VALUES ('Sosiologi', 2, 'Bab 2: Interaksi Sosial & Dinamika Kelompok', 'Syarat, Bentuk Asosiatif, dan Disosiatif Interaksi Sosial', '15 Menit', 
-               'https://repositori.kemdikbud.go.id/21981/1/X_Sosiologi_KD-3.2_Final.pdf', 
+               VALUES ('Sosiologi', 2, 'Bab 2: Individu, Kelompok dan Hubungan Sosial', 'Syarat, Bentuk Asosiatif, dan Disosiatif Interaksi Sosial', '15 Menit', 
+               'https://modul.pkbm.id/paket-c/Modul%202%20Sosiologi.pdf', 
                'https://www.youtube.com/embed/n33wY8GjSGo', 
                '" . $conn->real_escape_string($b2_ringkasan) . "', 
                'LKS 2: Studi Kasus Penyelesaian Perselisihan', 
@@ -105,26 +148,66 @@ if ($chk_sosiologi && $chk_sosiologi->num_rows === 0) {
 }
 
 // ==========================================
-// 2. AMBIL LIST MATA PELAJARAN YANG DIKELOLA
+// 3. AMBIL LIST MATA PELAJARAN YANG DIKELOLA
 // ==========================================
-if ($is_super_admin) {
-    $res_mapel = $conn->query("SELECT * FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
-} else {
-    // Guru hanya melihat mapel yang diampunya
-    $res_mapel = $conn->query("SELECT * FROM master_mapel WHERE pengampu_id = $ustadz_id AND status_aktif = 1 ORDER BY nama_mapel ASC");
-    // Fallback jika belum di-set pengampu_id
-    if (!$res_mapel || $res_mapel->num_rows === 0) {
-        $res_mapel = $conn->query("SELECT * FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
-    }
+// Query semua mapel beserta nama ustadz pengampu (jika ada)
+$sql_mapel_all = "SELECT m.*, u.nama_lengkap as nama_pengampu 
+                  FROM master_mapel m 
+                  LEFT JOIN akun_ustadz u ON m.pengampu_id = u.id 
+                  WHERE m.status_aktif = 1 
+                  ORDER BY m.kategori_mapel ASC, m.nama_mapel ASC";
+$res_mapel_all = $conn->query($sql_mapel_all);
+$all_mapel = $res_mapel_all ? $res_mapel_all->fetch_all(MYSQLI_ASSOC) : [];
+
+// Filter tab aktif: 'all', 'diknas', 'unassigned', 'diniyah', 'my_mapel'
+$filter_kategori = $_GET['filter_kat'] ?? ($is_super_admin ? 'all' : 'my_mapel');
+
+$list_mapel = [];
+$my_mapel_count = 0;
+$unassigned_count = 0;
+$diknas_count = 0;
+$diniyah_count = 0;
+
+foreach ($all_mapel as $m) {
+    $is_my = ($m['pengampu_id'] == $ustadz_id);
+    $is_unassigned = empty($m['pengampu_id']);
+    $is_dik = (strtolower($m['kategori_mapel'] ?? '') === 'diknas');
+    $is_din = (strtolower($m['kategori_mapel'] ?? '') === 'diniyah' || strtolower($m['kategori_mapel'] ?? '') === 'kepesantrenan');
+
+    if ($is_my) $my_mapel_count++;
+    if ($is_unassigned) $unassigned_count++;
+    if ($is_dik) $diknas_count++;
+    if ($is_din) $diniyah_count++;
+
+    // Terapkan filter tampilan
+    if ($filter_kategori === 'my_mapel' && !$is_my && !$is_super_admin) continue;
+    if ($filter_kategori === 'unassigned' && !$is_unassigned) continue;
+    if ($filter_kategori === 'diknas' && !$is_dik) continue;
+    if ($filter_kategori === 'diniyah' && !$is_din) continue;
+
+    $list_mapel[] = $m;
 }
-$list_mapel = $res_mapel ? $res_mapel->fetch_all(MYSQLI_ASSOC) : [];
+
+// Jika daftar mapel terfilter kosong, fallback ke semua mapel
+if (empty($list_mapel)) {
+    $list_mapel = $all_mapel;
+}
 
 // Mapel Aktif yang Dipilih
 $selected_mapel = $_GET['mapel'] ?? ($list_mapel[0]['nama_mapel'] ?? 'Sosiologi');
 $selected_mapel_esc = $conn->real_escape_string($selected_mapel);
 
+// Dapatkan info detail mapel terpilih
+$selected_mapel_info = null;
+foreach ($all_mapel as $m) {
+    if ($m['nama_mapel'] === $selected_mapel) {
+        $selected_mapel_info = $m;
+        break;
+    }
+}
+
 // ==========================================
-// 3. ACTION POST (TAMBAH / EDIT / HAPUS BAB)
+// 4. ACTION POST (TAMBAH / EDIT / HAPUS BAB)
 // ==========================================
 $action = $_POST['action'] ?? '';
 
@@ -224,7 +307,7 @@ if ($edit_bab_id > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kelola E-Learning (Modul & Kuis) | SADIGS 4.0</title>
+    <title>Kelola E-Modul & E-Learning | Ruang Asatidz</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -243,97 +326,250 @@ if ($edit_bab_id > 0) {
                     <i class="fas fa-bars text-lg"></i>
                 </button>
                 <div class="flex items-center space-x-2.5">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-100">
-                        <i class="fas fa-laptop-code"></i>
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-rose-100">
+                        <i class="fas fa-book-open"></i>
                     </div>
                     <div>
-                        <h1 class="font-extrabold text-sm sm:text-base text-slate-900 leading-tight">Manajemen E-Learning & Modul Belajar</h1>
-                        <p class="text-[10px] text-slate-400">Pengaturan E-Modul PDF Negara, Video YouTube, LKS, Kuis, & Ustadz AI</p>
+                        <h1 class="font-extrabold text-sm sm:text-base text-slate-900 leading-tight flex items-center gap-2">
+                            Penyematan E-Modul & E-Learning
+                            <?php if ($is_super_admin): ?>
+                                <span class="bg-rose-100 text-rose-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-rose-200">Super Admin Mode</span>
+                            <?php else: ?>
+                                <span class="bg-indigo-100 text-indigo-800 text-[10px] font-black px-2 py-0.5 rounded-full border border-indigo-200">Ruang Asatidz</span>
+                            <?php endif; ?>
+                        </h1>
+                        <p class="text-[10px] text-slate-400">Sematkan Link PDF Modul (Auto Flipbook), Video Pembelajaran YouTube, Rangkuman & Kuis</p>
                     </div>
                 </div>
             </div>
 
             <div class="flex items-center space-x-2">
-                <a href="santri-belajar.php?mapel=<?= urlencode($selected_mapel) ?>" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
-                    <i class="fas fa-external-link-alt"></i>
-                    <span class="hidden sm:inline">Pratinjau di Ruang Santri</span>
+                <a href="santri-belajar.php?mapel=<?= urlencode($selected_mapel) ?>&bab=1" target="_blank" class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5">
+                    <i class="fas fa-book-reader"></i>
+                    <span class="hidden sm:inline">Uji Layar Flipbook Santri</span>
                 </a>
             </div>
         </header>
 
         <!-- MAIN SCROLLABLE -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
-            <div class="max-w-6xl mx-auto">
+            <div class="max-w-6xl mx-auto space-y-6">
                 
                 <?php if(!empty($pesan_sukses)): ?>
-                <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl mb-5 shadow-sm flex items-center gap-3">
+                <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl shadow-sm flex items-center gap-3">
                     <i class="fas fa-check-circle text-emerald-600 text-lg flex-shrink-0"></i>
                     <span class="text-xs sm:text-sm font-semibold"><?= $pesan_sukses ?></span>
                 </div>
                 <?php endif; ?>
 
                 <?php if(!empty($pesan_error)): ?>
-                <div class="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl mb-5 shadow-sm flex items-center gap-3">
+                <div class="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl shadow-sm flex items-center gap-3">
                     <i class="fas fa-exclamation-circle text-rose-600 text-lg flex-shrink-0"></i>
                     <span class="text-xs sm:text-sm font-semibold"><?= $pesan_error ?></span>
                 </div>
                 <?php endif; ?>
 
-                <!-- PILIH MATA PELAJARAN YANG DIKELOLA -->
-                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
-                    <form method="GET" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                            <label class="block text-xs font-black uppercase text-slate-500 tracking-wider mb-1">Mata Pelajaran yang Dikelola</label>
-                            <p class="text-xs text-slate-400">Pilih mata pelajaran untuk melihat atau mengedit daftar bab dan materi pembelajaran</p>
+                <!-- FILTER KATEGORI & PEMILIH MATA PELAJARAN -->
+                <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        
+                        <!-- TAB FILTER CEPAT -->
+                        <div class="flex flex-wrap items-center gap-2">
+                            <?php if (!$is_super_admin): ?>
+                            <a href="admin-elearning.php?filter_kat=my_mapel&mapel=<?= urlencode($selected_mapel) ?>" 
+                               class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($filter_kategori === 'my_mapel') ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                                <i class="fas fa-user-check"></i>
+                                <span>Mapel Ampuan Saya</span>
+                                <span class="bg-white/20 px-1.5 py-0.2 rounded-md text-[10px]"><?= $my_mapel_count ?></span>
+                            </a>
+                            <?php endif; ?>
+
+                            <a href="admin-elearning.php?filter_kat=all&mapel=<?= urlencode($selected_mapel) ?>" 
+                               class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($filter_kategori === 'all') ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                                <i class="fas fa-layer-group"></i>
+                                <span>Semua Mapel</span>
+                                <span class="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-md text-[10px]"><?= count($all_mapel) ?></span>
+                            </a>
+
+                            <a href="admin-elearning.php?filter_kat=diknas&mapel=<?= urlencode($selected_mapel) ?>" 
+                               class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($filter_kategori === 'diknas') ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                                <i class="fas fa-school"></i>
+                                <span>Mapel Diknas (PKBM)</span>
+                                <span class="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-md text-[10px]"><?= $diknas_count ?></span>
+                            </a>
+
+                            <?php if ($is_super_admin || $unassigned_count > 0): ?>
+                            <a href="admin-elearning.php?filter_kat=unassigned&mapel=<?= urlencode($selected_mapel) ?>" 
+                               class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($filter_kategori === 'unassigned') ? 'bg-amber-500 text-white shadow-sm' : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100' ?>"
+                               title="Mapel yang belum ada guru pengampunya sehingga Super Admin / Pengganti dapat membantu menyematkan link E-Modul">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>Belum Ada Guru</span>
+                                <span class="bg-amber-200 text-amber-900 px-1.5 py-0.2 rounded-md text-[10px] font-black"><?= $unassigned_count ?></span>
+                            </a>
+                            <?php endif; ?>
+
+                            <a href="admin-elearning.php?filter_kat=diniyah&mapel=<?= urlencode($selected_mapel) ?>" 
+                               class="px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($filter_kategori === 'diniyah') ? 'bg-indigo-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 hover:bg-slate-200' ?>">
+                                <i class="fas fa-mosque"></i>
+                                <span>Diniyah / Kepesantrenan</span>
+                                <span class="bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded-md text-[10px]"><?= $diniyah_count ?></span>
+                            </a>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <select name="mapel" onchange="this.form.submit()" class="px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 min-w-[200px]">
-                                <?php foreach ($list_mapel as $m): ?>
+
+                        <!-- DROPDOWN PEMILIH MAPEL -->
+                        <form method="GET" class="flex items-center gap-2 flex-shrink-0">
+                            <input type="hidden" name="filter_kat" value="<?= htmlspecialchars($filter_kategori) ?>">
+                            <label class="text-xs font-bold text-slate-500 whitespace-nowrap"><i class="fas fa-book mr-1"></i> Pilih Mapel:</label>
+                            <select name="mapel" onchange="this.form.submit()" class="px-3.5 py-2 bg-slate-50 border-2 border-indigo-200 rounded-xl text-xs sm:text-sm font-extrabold text-slate-900 focus:bg-white focus:ring-2 focus:ring-indigo-500 min-w-[220px]">
+                                <?php foreach ($list_mapel as $m): 
+                                    $pengampu_text = !empty($m['nama_pengampu']) ? $m['nama_pengampu'] : '⚠️ Belum Ada Guru';
+                                    $is_my = ($m['pengampu_id'] == $ustadz_id);
+                                ?>
                                     <option value="<?= htmlspecialchars($m['nama_mapel']) ?>" <?= ($selected_mapel === $m['nama_mapel']) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($m['nama_mapel']) ?> (<?= $m['kategori_mapel'] ?>)
+                                        <?= htmlspecialchars($m['nama_mapel']) ?> <?= $is_my ? '⭐ (Ampuan Saya)' : '' ?> — [<?= $pengampu_text ?>]
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </form>
+                    </div>
+
+                    <!-- STATUS BADGE MAPEL AKTIF -->
+                    <?php if ($selected_mapel_info): ?>
+                    <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-3">
+                            <span class="font-extrabold text-slate-800 text-sm">Pelajaran: <?= htmlspecialchars($selected_mapel) ?></span>
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                Kategori: <?= htmlspecialchars($selected_mapel_info['kategori_mapel'] ?? 'Diknas') ?>
+                            </span>
+                            <?php if (!empty($selected_mapel_info['nama_pengampu'])): ?>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                    <i class="fas fa-chalkboard-teacher"></i> Guru Pengampu: <b><?= htmlspecialchars($selected_mapel_info['nama_pengampu']) ?></b>
+                                </span>
+                            <?php else: ?>
+                                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1 animate-pulse">
+                                    <i class="fas fa-exclamation-triangle"></i> Belum ada pengampu — Diisi oleh Super Admin / Pengganti
+                                </span>
+                            <?php endif; ?>
                         </div>
-                    </form>
+
+                        <div class="text-[11px] text-slate-400">
+                            Total Bab Terdaftar: <b class="text-slate-700"><?= count($list_bab) ?> Bab</b>
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
+                <!-- ========================================================================= -->
+                <!-- KARTU PENYEMATAN LINK E-MODUL PDF (TEMPAT TEMPEL URL PER BAB & AUTO-FLIPBOOK) -->
+                <!-- ========================================================================= -->
+                <div class="bg-gradient-to-br from-rose-50 via-white to-amber-50 border-2 border-rose-200/80 rounded-3xl p-5 sm:p-6 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-rose-100">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-2xl bg-rose-600 text-white flex items-center justify-center text-xl shadow-md shadow-rose-200">
+                                <i class="fas fa-link"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-black text-base text-slate-900 flex items-center gap-2">
+                                    Sematkan URL E-Modul PDF (<?= htmlspecialchars($selected_mapel) ?>)
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-200">Auto-Flipbook 3D</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">
+                                    Tempelkan link file PDF modul (dari <a href="https://modul.pkbm.id/modul-paket-c.html" target="_blank" class="text-rose-600 font-bold hover:underline">modul.pkbm.id</a>, Google Drive, atau repositori lainnya). Sistem akan otomatis merendernya menjadi <b>Flipbook Interaktif</b> di layar santri.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <button type="button" onclick="terapkanKatalogPkbm('<?= htmlspecialchars($selected_mapel) ?>')" class="text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fas fa-magic text-amber-500"></i> <span>Gunakan Link Standar PKBM</span>
+                            </button>
+                            <a href="https://modul.pkbm.id/modul-paket-c.html" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-rose-700 bg-white hover:bg-rose-50 border border-rose-200 px-3.5 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fas fa-search"></i> <span>Buka Portal modul.pkbm.id</span> <i class="fas fa-arrow-up-right-from-square text-[9px]"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- DAFTAR INPUT CEPAT PER BAB -->
+                    <?php if (count($list_bab) > 0): ?>
+                    <div class="space-y-3">
+                        <?php foreach ($list_bab as $bItem): 
+                            $default_pkbm = getPkbmModulPdfUrl($bItem['mapel_nama'], $bItem['nomor_bab']);
+                            $cur_pdf = !empty($bItem['pdf_url']) ? $bItem['pdf_url'] : $default_pkbm;
+                        ?>
+                        <div class="bg-white p-4 rounded-2xl border border-rose-100 shadow-2xs flex flex-col md:flex-row md:items-center gap-3 justify-between hover:border-rose-300 transition">
+                            <div class="min-w-[220px]">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-7 h-7 rounded-xl bg-rose-100 text-rose-800 font-black text-xs flex items-center justify-center shadow-2xs"><?= $bItem['nomor_bab'] ?></span>
+                                    <div>
+                                        <h4 class="text-xs font-black text-slate-900 leading-snug"><?= htmlspecialchars(mb_strimwidth($bItem['judul_bab'], 0, 35, '...')) ?></h4>
+                                        <p class="text-[10px] text-slate-400"><?= htmlspecialchars(mb_strimwidth($bItem['subjudul'] ?? 'Materi Pembelajaran', 0, 40, '...')) ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                <div class="relative flex-1">
+                                    <i class="fas fa-file-pdf absolute left-3.5 top-3 text-rose-500 text-xs"></i>
+                                    <input type="url" id="pdf_input_<?= $bItem['id'] ?>" value="<?= htmlspecialchars($cur_pdf) ?>" placeholder="https://modul.pkbm.id/paket-c/Modul...pdf" class="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-rose-500 font-mono text-slate-700">
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="simpanSinglePdfUrl(<?= $bItem['id'] ?>)" id="btn_save_pdf_<?= $bItem['id'] ?>" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-2xs flex items-center gap-1.5 whitespace-nowrap">
+                                        <i class="fas fa-save"></i> <span>Simpan URL</span>
+                                    </button>
+                                    <a href="santri-belajar.php?mapel=<?= urlencode($bItem['mapel_nama']) ?>&bab=<?= $bItem['nomor_bab'] ?>" target="_blank" class="bg-teal-50 hover:bg-teal-100 text-[#0d8276] border border-teal-200 font-bold px-3.5 py-2.5 rounded-xl text-xs transition flex items-center gap-1.5 whitespace-nowrap" title="Buka Flipbook di Layar Santri">
+                                        <i class="fas fa-book-open"></i> <span>Uji Flipbook</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="text-center py-8 bg-white/70 rounded-2xl border border-dashed border-rose-200">
+                        <i class="fas fa-folder-plus text-3xl text-rose-300 mb-2"></i>
+                        <h4 class="text-xs font-bold text-slate-700">Belum ada Bab/Modul untuk Mata Pelajaran <?= htmlspecialchars($selected_mapel) ?></h4>
+                        <p class="text-[11px] text-slate-400 mt-1">Tambahkan bab baru pada formulir di bawah ini untuk mulai menyematkan link E-Modul.</p>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- DUA KOLOM: DAFTAR BAB (KIRI) & FORM EDIT/TAMBAH BAB (KANAN) -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
                     <!-- KOLOM KIRI: DAFTAR BAB -->
                     <div class="lg:col-span-1 space-y-4">
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
                             <div class="flex items-center justify-between mb-4 border-b pb-3">
                                 <div>
-                                    <h2 class="font-black text-sm text-slate-900">Daftar Bab / Modul</h2>
+                                    <h2 class="font-black text-sm text-slate-900">Struktur Bab / Modul</h2>
                                     <p class="text-[11px] text-slate-400"><?= htmlspecialchars($selected_mapel) ?></p>
                                 </div>
-                                <a href="admin-elearning.php?mapel=<?= urlencode($selected_mapel) ?>" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1">
-                                    <i class="fas fa-plus"></i> Tambah
+                                <a href="admin-elearning.php?filter_kat=<?= urlencode($filter_kategori) ?>&mapel=<?= urlencode($selected_mapel) ?>" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                                    <i class="fas fa-plus"></i> Tambah Bab
                                 </a>
                             </div>
 
                             <div class="space-y-2.5">
                                 <?php if (count($list_bab) > 0): ?>
                                     <?php foreach ($list_bab as $b): ?>
-                                    <div class="p-3.5 rounded-xl border transition <?= ($edit_bab_id == $b['id']) ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80' ?>">
+                                    <div class="p-3.5 rounded-2xl border transition <?= ($edit_bab_id == $b['id']) ? 'bg-indigo-50 border-indigo-300 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-slate-100/80' ?>">
                                         <div class="flex items-start justify-between gap-2">
                                             <div class="flex-1">
                                                 <div class="flex items-center gap-1.5">
                                                     <span class="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold"><?= $b['nomor_bab'] ?></span>
                                                     <h3 class="font-bold text-xs text-slate-900 leading-snug"><?= htmlspecialchars($b['judul_bab']) ?></h3>
                                                 </div>
-                                                <p class="text-[11px] text-slate-500 mt-1 line-clamp-1"><?= htmlspecialchars($b['subjudul']) ?></p>
+                                                <p class="text-[11px] text-slate-500 mt-1 line-clamp-1"><?= htmlspecialchars($b['subjudul'] ?? '') ?></p>
                                                 
                                                 <div class="flex items-center gap-2 mt-2 text-[10px] font-semibold text-slate-400">
-                                                    <?php if(!empty($b['pdf_url'])): ?><span class="text-rose-600"><i class="fas fa-file-pdf"></i> PDF</span><?php endif; ?>
+                                                    <?php if(!empty($b['pdf_url'])): ?><span class="text-rose-600"><i class="fas fa-file-pdf"></i> PDF Flip</span><?php endif; ?>
                                                     <?php if(!empty($b['video_url'])): ?><span class="text-red-500"><i class="fab fa-youtube"></i> Video</span><?php endif; ?>
                                                     <?php if(!empty($b['lks_tugas'])): ?><span class="text-amber-600"><i class="fas fa-pencil-alt"></i> LKS</span><?php endif; ?>
                                                 </div>
                                             </div>
                                             
                                             <div class="flex items-center gap-1">
-                                                <a href="admin-elearning.php?mapel=<?= urlencode($selected_mapel) ?>&edit_bab=<?= $b['id'] ?>" class="w-7 h-7 rounded-lg bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-slate-200 flex items-center justify-center text-xs transition" title="Edit Bab">
+                                                <a href="admin-elearning.php?filter_kat=<?= urlencode($filter_kategori) ?>&mapel=<?= urlencode($selected_mapel) ?>&edit_bab=<?= $b['id'] ?>" class="w-7 h-7 rounded-lg bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-slate-200 flex items-center justify-center text-xs transition" title="Edit Rincian Bab">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
                                                 <form method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus Bab ini?');" class="inline">
@@ -359,16 +595,16 @@ if ($edit_bab_id > 0) {
 
                     <!-- KOLOM KANAN: FORM INPUT / EDIT BAB & SOAL -->
                     <div class="lg:col-span-2">
-                        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm">
                             <div class="border-b pb-4 mb-6 flex items-center justify-between">
                                 <div>
                                     <h2 class="font-black text-base text-slate-900">
-                                        <?= $edit_data ? 'Edit Modul Pembelajaran' : 'Tambah Modul Pembelajaran Baru' ?>
+                                        <?= $edit_data ? 'Edit Rincian Modul Pembelajaran' : 'Tambah Modul / Bab Baru' ?>
                                     </h2>
                                     <p class="text-xs text-slate-400">Mata Pelajaran: <b><?= htmlspecialchars($selected_mapel) ?></b></p>
                                 </div>
                                 <?php if($edit_data): ?>
-                                <a href="admin-elearning.php?mapel=<?= urlencode($selected_mapel) ?>" class="text-xs font-bold text-slate-500 hover:text-slate-700">
+                                <a href="admin-elearning.php?filter_kat=<?= urlencode($filter_kategori) ?>&mapel=<?= urlencode($selected_mapel) ?>" class="text-xs font-bold text-slate-500 hover:text-slate-700">
                                     <i class="fas fa-times mr-1"></i> Batal Edit
                                 </a>
                                 <?php endif; ?>
@@ -381,60 +617,60 @@ if ($edit_bab_id > 0) {
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div>
                                         <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Nomor Bab</label>
-                                        <input type="number" name="nomor_bab" value="<?= htmlspecialchars($edit_data['nomor_bab'] ?? (count($list_bab) + 1)) ?>" required class="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                                        <input type="number" name="nomor_bab" value="<?= htmlspecialchars($edit_data['nomor_bab'] ?? (count($list_bab) + 1)) ?>" required class="w-full px-3.5 py-2.5 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
                                     </div>
                                     <div class="sm:col-span-2">
                                         <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Judul Bab</label>
-                                        <input type="text" name="judul_bab" value="<?= htmlspecialchars($edit_data['judul_bab'] ?? '') ?>" placeholder="misal: Bab 1: Sosiologi Sebagai Ilmu" required class="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                                        <input type="text" name="judul_bab" value="<?= htmlspecialchars($edit_data['judul_bab'] ?? '') ?>" placeholder="misal: Bab 1: Sosiologi Sebagai Ilmu" required class="w-full px-3.5 py-2.5 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
                                     </div>
                                 </div>
 
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                     <div class="sm:col-span-2">
                                         <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Sub-Judul / Topik Pembahasan</label>
-                                        <input type="text" name="subjudul" value="<?= htmlspecialchars($edit_data['subjudul'] ?? '') ?>" placeholder="misal: Hakikat, Ciri-ciri, dan Objek Kajian" class="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                                        <input type="text" name="subjudul" value="<?= htmlspecialchars($edit_data['subjudul'] ?? '') ?>" placeholder="misal: Hakikat, Ciri-ciri, dan Objek Kajian" class="w-full px-3.5 py-2.5 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Estimasi Waktu</label>
-                                        <input type="text" name="durasi_menit" value="<?= htmlspecialchars($edit_data['durasi_menit'] ?? '15 Menit') ?>" placeholder="misal: 15 Menit" class="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                                        <input type="text" name="durasi_menit" value="<?= htmlspecialchars($edit_data['durasi_menit'] ?? '15 Menit') ?>" placeholder="misal: 15 Menit" class="w-full px-3.5 py-2.5 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
                                     </div>
                                 </div>
 
-                                <!-- 1. URL E-MODUL RESMI KEMENDIKDASMEN -->
-                                <div class="bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
+                                <!-- 1. URL E-MODUL RESMI PDF -->
+                                <div class="bg-rose-50/60 p-4 rounded-2xl border border-rose-100">
                                     <label class="block text-xs font-extrabold uppercase text-rose-900 mb-1 flex items-center gap-1.5">
-                                        <i class="fas fa-file-pdf text-rose-600"></i> Link E-Modul Resmi Pemerintah (https://emodul.kemendikdasmen.go.id/)
+                                        <i class="fas fa-file-pdf text-rose-600"></i> Link File E-Modul PDF (Auto Flipbook Engine)
                                     </label>
-                                    <p class="text-[11px] text-rose-700 mb-2">Tempelkan link dari portal resmi Kemendikdasmen atau link PDF modul resmi.</p>
-                                    <input type="url" name="pdf_url" value="<?= htmlspecialchars($edit_data['pdf_url'] ?? '') ?>" placeholder="https://emodul.kemendikdasmen.go.id/... atau link PDF" class="w-full px-3 py-2 border border-rose-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-rose-500">
+                                    <p class="text-[11px] text-rose-700 mb-2">Tempelkan link file PDF modul (misal dari repositori https://modul.pkbm.id/ atau server Anda).</p>
+                                    <input type="url" name="pdf_url" value="<?= htmlspecialchars($edit_data['pdf_url'] ?? '') ?>" placeholder="https://modul.pkbm.id/paket-c/Modul...pdf" class="w-full px-3.5 py-2.5 border border-rose-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-rose-500 font-mono">
                                 </div>
 
                                 <!-- 2. URL VIDEO YOUTUBE -->
-                                <div class="bg-red-50/50 p-4 rounded-2xl border border-red-100">
+                                <div class="bg-red-50/60 p-4 rounded-2xl border border-red-100">
                                     <label class="block text-xs font-extrabold uppercase text-red-900 mb-1 flex items-center gap-1.5">
                                         <i class="fab fa-youtube text-red-600"></i> Link Video Pembelajaran YouTube
                                     </label>
-                                    <p class="text-[11px] text-red-700 mb-2">Tempelkan link video YouTube materi ini (akan otomatis di-embed).</p>
-                                    <input type="url" name="video_url" value="<?= htmlspecialchars($edit_data['video_url'] ?? '') ?>" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 border border-red-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-red-500">
+                                    <p class="text-[11px] text-red-700 mb-2">Tempelkan link video YouTube materi ini (otomatis ditampilkan dengan privacy player bebas iklan pelacak).</p>
+                                    <input type="url" name="video_url" value="<?= htmlspecialchars($edit_data['video_url'] ?? '') ?>" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3.5 py-2.5 border border-red-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-red-500 font-mono">
                                 </div>
 
                                 <!-- 3. RANGKUMAN MATERI -->
                                 <div>
-                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Rangkuman / Konsep Inti Pembelajaran</label>
-                                    <textarea name="ringkasan_materi" rows="4" placeholder="Tuliskan poin-poin hafalan, definisi, atau ringkasan konsep penting..." class="w-full px-3 py-2 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500"><?= htmlspecialchars($edit_data['ringkasan_materi'] ?? '') ?></textarea>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Rangkuman / Konsep Inti Pembelajaran (Flipbook 5 Halaman)</label>
+                                    <textarea name="ringkasan_materi" rows="4" placeholder="Tuliskan poin-poin hafalan, definisi, atau ringkasan konsep penting..." class="w-full px-3.5 py-2.5 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500"><?= htmlspecialchars($edit_data['ringkasan_materi'] ?? '') ?></textarea>
                                 </div>
 
                                 <!-- 4. LKS (LEMBAR KERJA SISWA) -->
-                                <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 space-y-3">
+                                <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-100 space-y-3">
                                     <label class="block text-xs font-extrabold uppercase text-amber-900 flex items-center gap-1.5">
                                         <i class="fas fa-pencil-alt text-amber-600"></i> Lembar Kerja Siswa (LKS) & Penugasan Mandiri
                                     </label>
-                                    <input type="text" name="lks_judul" value="<?= htmlspecialchars($edit_data['lks_judul'] ?? '') ?>" placeholder="Judul Tugas LKS (misal: LKS 1: Analisis Gejala Sosial)" class="w-full px-3 py-2 border border-amber-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-amber-500">
-                                    <textarea name="lks_tugas" rows="3" placeholder="Instruksi tugas yang harus dikerjakan santri..." class="w-full px-3 py-2 border border-amber-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-amber-500"><?= htmlspecialchars($edit_data['lks_tugas'] ?? '') ?></textarea>
+                                    <input type="text" name="lks_judul" value="<?= htmlspecialchars($edit_data['lks_judul'] ?? '') ?>" placeholder="Judul Tugas LKS (misal: LKS 1: Analisis Gejala Sosial)" class="w-full px-3.5 py-2.5 border border-amber-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-amber-500">
+                                    <textarea name="lks_tugas" rows="3" placeholder="Instruksi tugas yang harus dikerjakan santri..." class="w-full px-3.5 py-2.5 border border-amber-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-amber-500"><?= htmlspecialchars($edit_data['lks_tugas'] ?? '') ?></textarea>
                                 </div>
 
                                 <!-- 5. BANK SOAL KUIS PILIHAN GANDA -->
-                                <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100">
+                                <div class="bg-indigo-50/60 p-4 rounded-2xl border border-indigo-100">
                                     <div class="flex items-center justify-between mb-3">
                                         <div>
                                             <label class="block text-xs font-extrabold uppercase text-indigo-900 flex items-center gap-1.5">
@@ -533,6 +769,77 @@ if ($edit_bab_id > 0) {
                 </div>
             `;
             container.insertAdjacentHTML('beforeend', rowHtml);
+        }
+
+        // Simpan Link E-Modul Tunggal Cepat via AJAX
+        async function simpanSinglePdfUrl(babId) {
+            const input = document.getElementById('pdf_input_' + babId);
+            const btn = document.getElementById('btn_save_pdf_' + babId);
+            if (!input || !btn) return;
+
+            const pdfUrl = input.value.trim();
+            const originalBtnHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Menyimpan...`;
+            btn.disabled = true;
+
+            try {
+                const fd = new FormData();
+                fd.append('action', 'update_single_pdf_url');
+                fd.append('bab_id', babId);
+                fd.append('pdf_url', pdfUrl);
+
+                const res = await fetch('admin-elearning.php', {
+                    method: 'POST',
+                    body: fd
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    btn.innerHTML = `<i class="fas fa-check text-emerald-200"></i> Tersimpan!`;
+                    btn.className = 'bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-2xs flex items-center gap-1.5 whitespace-nowrap';
+                    setTimeout(() => {
+                        btn.innerHTML = originalBtnHtml;
+                        btn.className = 'bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition shadow-2xs flex items-center gap-1.5 whitespace-nowrap';
+                        btn.disabled = false;
+                    }, 2000);
+                } else {
+                    alert('Gagal menyimpan: ' + (data.message || 'Terjadi kesalahan'));
+                    btn.innerHTML = originalBtnHtml;
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert('Error koneksi: ' + err.message);
+                btn.innerHTML = originalBtnHtml;
+                btn.disabled = false;
+            }
+        }
+
+        // Terapkan Link Standar PKBM Otomatis
+        async function terapkanKatalogPkbm(mapelNama) {
+            if (!confirm(`Terapkan URL resmi modul.pkbm.id secara otomatis untuk semua bab di mapel ${mapelNama}?`)) {
+                return;
+            }
+
+            try {
+                const fd = new FormData();
+                fd.append('action', 'apply_pkbm_catalog');
+                fd.append('mapel_nama', mapelNama);
+
+                const res = await fetch('admin-elearning.php', {
+                    method: 'POST',
+                    body: fd
+                });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert('Gagal: ' + (data.message || 'Terjadi kesalahan'));
+                }
+            } catch (err) {
+                alert('Error koneksi: ' + err.message);
+            }
         }
     </script>
 </body>
