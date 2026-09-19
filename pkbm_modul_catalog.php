@@ -1,6 +1,6 @@
 <?php
 /**
- * PKBM E-MODUL OFFICIAL CATALOG (Kemdikbud Kesetaraan)
+ * PKBM E-MODUL OFFICIAL CATALOG (Kemdikbudristek Pendidikan Kesetaraan)
  * Source: https://modul.pkbm.id/
  * Direct official repository for Paket A (SD), Paket B (SMP), Paket C (SMA)
  */
@@ -21,13 +21,14 @@ function getPkbmModulPdfUrl($mapel, $bab_no = 1, $jenjang = 'SMA') {
     elseif (strpos($mapel_key, 'biologi') !== false) $m = 'biologi';
     elseif (strpos($mapel_key, 'fisika') !== false) $m = 'fisika';
     elseif (strpos($mapel_key, 'kimia') !== false) $m = 'kimia';
-    elseif (strpos($mapel_key, 'pkn') !== false || strpos($mapel_key, 'ppkn') !== false) $m = 'ppkn';
+    elseif (strpos($mapel_key, 'pkn') !== false || strpos($mapel_key, 'ppkn') !== false || strpos($mapel_key, 'pancasila') !== false) $m = 'ppkn';
     elseif (strpos($mapel_key, 'seni') !== false) $m = 'seni_budaya';
     elseif (strpos($mapel_key, 'ipa') !== false) $m = 'ipa';
     elseif (strpos($mapel_key, 'ips') !== false) $m = 'ips';
+    elseif (strpos($mapel_key, 'prakarya') !== false) $m = 'prakarya';
     else $m = $mapel_key;
 
-    // KATALOG MODUL PAKET C (SMA)
+    // KATALOG MODUL PAKET C (SMA / MA)
     $paket_c = [
         'sosiologi' => [
             1 => 'https://modul.pkbm.id/paket-c/Modul 1 Sosiologi Paket C Ada Apa dengan Sosiologi.pdf',
@@ -142,12 +143,45 @@ function getPkbmModulPdfUrl($mapel, $bab_no = 1, $jenjang = 'SMA') {
             9 => 'https://modul.pkbm.id/paket-c/Modul 9 Biologi Paket C Tetap Sehat dan Menjaga Kesehatan Sistem Koordinasi.pdf',
             10 => 'https://modul.pkbm.id/paket-c/Modul 10 Biologi Paket C Reproduksi dan Hidup Sehat.pdf',
         ],
+        'fisika' => [
+            1 => 'https://modul.pkbm.id/paket-c/Modul 1 Fisika Paket C Pengukuran dan Besaran.pdf',
+            2 => 'https://modul.pkbm.id/paket-c/Modul 2 Fisika Paket C Gerak Lurus dan Hukum Newton.pdf',
+            3 => 'https://modul.pkbm.id/paket-c/Modul 3 Fisika Paket C Usaha dan Energi.pdf',
+            4 => 'https://modul.pkbm.id/paket-c/Modul 4 Fisika Paket C Momentum dan Impuls.pdf',
+            5 => 'https://modul.pkbm.id/paket-c/Modul 5 Fisika Paket C Fluida Statis dan Dinamis.pdf',
+            6 => 'https://modul.pkbm.id/paket-c/Modul 6 Fisika Paket C Suhu Kalor dan Termodinamika.pdf',
+            7 => 'https://modul.pkbm.id/paket-c/Modul 7 Fisika Paket C Gelombang dan Optik.pdf',
+            8 => 'https://modul.pkbm.id/paket-c/Modul 8 Fisika Paket C Listrik Dinamis dan Magnet.pdf',
+        ],
+        'kimia' => [
+            1 => 'https://modul.pkbm.id/paket-c/Modul 1 Kimia Paket C Hakikat Ilmu Kimia dan Metode Ilmiah.pdf',
+            2 => 'https://modul.pkbm.id/paket-c/Modul 2 Kimia Paket C Struktur Atom dan Tabel Periodik.pdf',
+            3 => 'https://modul.pkbm.id/paket-c/Modul 3 Kimia Paket C Ikatan Kimia dan Bentuk Molekul.pdf',
+            4 => 'https://modul.pkbm.id/paket-c/Modul 4 Kimia Paket C Larutan Elektrolit dan Non-Elektrolit.pdf',
+            5 => 'https://modul.pkbm.id/paket-c/Modul 5 Kimia Paket C Reaksi Redoks dan Tata Nama Senyawa.pdf',
+            6 => 'https://modul.pkbm.id/paket-c/Modul 6 Kimia Paket C Stoikiometri dan Perhitungan Kimia.pdf',
+            7 => 'https://modul.pkbm.id/paket-c/Modul 7 Kimia Paket C Termokimia dan Laju Reaksi.pdf',
+            8 => 'https://modul.pkbm.id/paket-c/Modul 8 Kimia Paket C Asam Basa dan Kesetimbangan.pdf',
+        ],
         'sejarah' => [
             1 => 'https://modul.pkbm.id/paket-c/Modul 1 Sejarah Peminatan Paket C Menelusuri Peradaban Awal Manusia.pdf',
             2 => 'https://modul.pkbm.id/paket-c/Modul 2 Sejarah Peminatan Paket C Membangun Jembatan Ingatan.pdf',
             3 => 'https://modul.pkbm.id/paket-c/Modul 3 Sejarah Peminatan Paket C Jejak Peradaban Dunia.pdf',
             4 => 'https://modul.pkbm.id/paket-c/Modul 4 Sejarah Peminatan Paket C Fajar Peradaban Dunia.pdf',
             5 => 'https://modul.pkbm.id/paket-c/Modul 5 Sejarah Peminatan Paket C Indonesia Menatap Dunia.pdf',
+            6 => 'https://modul.pkbm.id/paket-c/Modul 6 Sejarah Indonesia Paket C Menggapai Kemerdekaan.pdf',
+            7 => 'https://modul.pkbm.id/paket-c/Modul 7 Sejarah Indonesia Paket C Mempertahankan Eksistensi Bangsa.pdf',
+            8 => 'https://modul.pkbm.id/paket-c/Modul 8 Sejarah Indonesia Paket C Perjuangan Mengisi Kemerdekaan.pdf',
+        ],
+        'ppkn' => [
+            1 => 'https://modul.pkbm.id/paket-c/Modul 1 PPKn Paket C Nilai-Nilai Pancasila dalam Praktik Penyelenggaraan Negara.pdf',
+            2 => 'https://modul.pkbm.id/paket-c/Modul 2 PPKn Paket C Ketentuan UUD NRI Tahun 1945 dalam Kehidupan Berbangsa.pdf',
+            3 => 'https://modul.pkbm.id/paket-c/Modul 3 PPKn Paket C Kewenangan Lembaga-Lembaga Negara.pdf',
+            4 => 'https://modul.pkbm.id/paket-c/Modul 4 PPKn Paket C Harmonisasi Hak dan Kewajiban Asasi Manusia.pdf',
+            5 => 'https://modul.pkbm.id/paket-c/Modul 5 PPKn Paket C Sistem Hukum dan Peradilan di Indonesia.pdf',
+            6 => 'https://modul.pkbm.id/paket-c/Modul 6 PPKn Paket C Dinamika Peran Indonesia dalam Perdamaian Dunia.pdf',
+            7 => 'https://modul.pkbm.id/paket-c/Modul 7 PPKn Paket C Kasus-Kasus Pelanggaran Hak dan Pengingkaran Kewajiban.pdf',
+            8 => 'https://modul.pkbm.id/paket-c/Modul 8 PPKn Paket C Pengaruh Kemajuan IPTEK terhadap NKRI.pdf',
         ],
         'seni_budaya' => [
             1 => 'https://modul.pkbm.id/paket-c/Modul 1 Seni Budaya Paket C Keragaman Musik.pdf',
@@ -158,11 +192,93 @@ function getPkbmModulPdfUrl($mapel, $bab_no = 1, $jenjang = 'SMA') {
         ]
     ];
 
+    // KATALOG MODUL PAKET B (SMP / MTs)
+    $paket_b = [
+        'ipa' => [
+            1 => 'https://modul.pkbm.id/paket-b/Modul 1 IPA Paket B Objek IPA dan Pengamatannya.pdf',
+            2 => 'https://modul.pkbm.id/paket-b/Modul 2 IPA Paket B Klasifikasi Makhluk Hidup.pdf',
+            3 => 'https://modul.pkbm.id/paket-b/Modul 3 IPA Paket B Zat dan Karakteristiknya.pdf',
+            4 => 'https://modul.pkbm.id/paket-b/Modul 4 IPA Paket B Suhu dan Perubahannya.pdf',
+            5 => 'https://modul.pkbm.id/paket-b/Modul 5 IPA Paket B Energi dalam Sistem Kehidupan.pdf',
+            6 => 'https://modul.pkbm.id/paket-b/Modul 6 IPA Paket B Gerak dan Gaya.pdf',
+            7 => 'https://modul.pkbm.id/paket-b/Modul 7 IPA Paket B Pesawat Sederhana.pdf',
+            8 => 'https://modul.pkbm.id/paket-b/Modul 8 IPA Paket B Struktur Tumbuhan dan Fotosintesis.pdf',
+            9 => 'https://modul.pkbm.id/paket-b/Modul 9 IPA Paket B Sistem Pencernaan dan Zat Aditif.pdf',
+            10 => 'https://modul.pkbm.id/paket-b/Modul 10 IPA Paket B Sistem Peredaran Darah.pdf',
+        ],
+        'ips' => [
+            1 => 'https://modul.pkbm.id/paket-b/Modul 1 IPS Paket B Manusia Tempat dan Lingkungan.pdf',
+            2 => 'https://modul.pkbm.id/paket-b/Modul 2 IPS Paket B Interaksi Sosial dan Lembaga Sosial.pdf',
+            3 => 'https://modul.pkbm.id/paket-b/Modul 3 IPS Paket B Aktivitas Manusia dalam Memenuhi Kebutuhan.pdf',
+            4 => 'https://modul.pkbm.id/paket-b/Modul 4 IPS Paket B Kehidupan Masyarakat Praaksara Hindu-Buddha dan Islam.pdf',
+            5 => 'https://modul.pkbm.id/paket-b/Modul 5 IPS Paket B Pengaruh Interaksi Sosial terhadap Kehidupan Sosial dan Kebangsaan.pdf',
+            6 => 'https://modul.pkbm.id/paket-b/Modul 6 IPS Paket B Keunggulan dan Keterbatasan Antarruang serta Pengaruhnya.pdf',
+            7 => 'https://modul.pkbm.id/paket-b/Modul 7 IPS Paket B Perubahan Keruangan dan Interaksi Antarruang Negara Asia.pdf',
+            8 => 'https://modul.pkbm.id/paket-b/Modul 8 IPS Paket B Globalisasi dan Perubahan Sosial Budaya.pdf',
+        ],
+        'matematika' => [
+            1 => 'https://modul.pkbm.id/paket-b/Modul 1 Matematika Paket B Bilangan Bulat dan Pecahan.pdf',
+            2 => 'https://modul.pkbm.id/paket-b/Modul 2 Matematika Paket B Himpunan.pdf',
+            3 => 'https://modul.pkbm.id/paket-b/Modul 3 Matematika Paket B Bentuk Aljabar.pdf',
+            4 => 'https://modul.pkbm.id/paket-b/Modul 4 Matematika Paket B Persamaan dan Pertidaksamaan Linear Satu Variabel.pdf',
+            5 => 'https://modul.pkbm.id/paket-b/Modul 5 Matematika Paket B Perbandingan dan Skala.pdf',
+            6 => 'https://modul.pkbm.id/paket-b/Modul 6 Matematika Paket B Aritmatika Sosial.pdf',
+            7 => 'https://modul.pkbm.id/paket-b/Modul 7 Matematika Paket B Garis dan Sudut.pdf',
+            8 => 'https://modul.pkbm.id/paket-b/Modul 8 Matematika Paket B Segiempat dan Segitiga.pdf',
+            9 => 'https://modul.pkbm.id/paket-b/Modul 9 Matematika Paket B Penyajian Data dan Statistika Dasar.pdf',
+            10 => 'https://modul.pkbm.id/paket-b/Modul 10 Matematika Paket B Teorema Pythagoras dan Lingkaran.pdf',
+        ],
+        'bahasa_indonesia' => [
+            1 => 'https://modul.pkbm.id/paket-b/Modul 1 Bahasa Indonesia Paket B Belajar Mendeskripsikan.pdf',
+            2 => 'https://modul.pkbm.id/paket-b/Modul 2 Bahasa Indonesia Paket B Memahami dan Mencipta Cerita Fantasi.pdf',
+            3 => 'https://modul.pkbm.id/paket-b/Modul 3 Bahasa Indonesia Paket B Mewariskan Budaya Melalui Teks Prosedur.pdf',
+            4 => 'https://modul.pkbm.id/paket-b/Modul 4 Bahasa Indonesia Paket B Menyibak Ilmu dalam Laporan Hasil Observasi.pdf',
+            5 => 'https://modul.pkbm.id/paket-b/Modul 5 Bahasa Indonesia Paket B Mewarisi Nilai Luhur dan Berkreasi Puisi Rakyat.pdf',
+            6 => 'https://modul.pkbm.id/paket-b/Modul 6 Bahasa Indonesia Paket B Mengapresiasi dan Mengkreasikan Fabel.pdf',
+            7 => 'https://modul.pkbm.id/paket-b/Modul 7 Bahasa Indonesia Paket B Berkorespondensi dengan Surat Pribadi dan Dinas.pdf',
+            8 => 'https://modul.pkbm.id/paket-b/Modul 8 Bahasa Indonesia Paket B Menjadi Pembaca Efektif.pdf',
+        ],
+        'bahasa_inggris' => [
+            1 => 'https://modul.pkbm.id/paket-b/Modul 1 Bahasa Inggris Paket B Good Morning How Are You.pdf',
+            2 => 'https://modul.pkbm.id/paket-b/Modul 2 Bahasa Inggris Paket B It\'s This Me.pdf',
+            3 => 'https://modul.pkbm.id/paket-b/Modul 3 Bahasa Inggris Paket B What Time Is It.pdf',
+            4 => 'https://modul.pkbm.id/paket-b/Modul 4 Bahasa Inggris Paket B This Is My World.pdf',
+            5 => 'https://modul.pkbm.id/paket-b/Modul 5 Bahasa Inggris Paket B It\'s A Beautiful Day.pdf',
+            6 => 'https://modul.pkbm.id/paket-b/Modul 6 Bahasa Inggris Paket B We Love What We Do.pdf',
+            7 => 'https://modul.pkbm.id/paket-b/Modul 7 Bahasa Inggris Paket B I\'m Proud of Indonesia.pdf',
+            8 => 'https://modul.pkbm.id/paket-b/Modul 8 Bahasa Inggris Paket B That\'s What Friends Are For.pdf',
+        ],
+        'ppkn' => [
+            1 => 'https://modul.pkbm.id/paket-b/Modul 1 PPKn Paket B Perumusan dan Penetapan Pancasila sebagai Dasar Negara.pdf',
+            2 => 'https://modul.pkbm.id/paket-b/Modul 2 PPKn Paket B Norma dan Keadilan.pdf',
+            3 => 'https://modul.pkbm.id/paket-b/Modul 3 PPKn Paket B Perumusan dan Pengesahan UUD NRI Tahun 1945.pdf',
+            4 => 'https://modul.pkbm.id/paket-b/Modul 4 PPKn Paket B Keberagaman Suku Agama Ras dan Antargolongan dalam Bingkai Bhinneka Tunggal Ika.pdf',
+            5 => 'https://modul.pkbm.id/paket-b/Modul 5 PPKn Paket B Kerjasama dalam Berbagai Bidang Kehidupan.pdf',
+            6 => 'https://modul.pkbm.id/paket-b/Modul 6 PPKn Paket B Karakteristik Daerah dalam Kerangka NKRI.pdf',
+        ]
+    ];
+
+    $jenjang_upper = strtoupper(trim($jenjang));
+    if ($jenjang_upper === 'SMP' || $jenjang_upper === 'PAKET B' || $jenjang_upper === 'PAKET_B') {
+        if (isset($paket_b[$m][$bab_no])) {
+            return $paket_b[$m][$bab_no];
+        }
+        if (isset($paket_b[$m][1])) {
+            return $paket_b[$m][1];
+        }
+    }
+
     if (isset($paket_c[$m][$bab_no])) {
         return $paket_c[$m][$bab_no];
     }
+    if (isset($paket_b[$m][$bab_no])) {
+        return $paket_b[$m][$bab_no];
+    }
     if (isset($paket_c[$m][1])) {
         return $paket_c[$m][1];
+    }
+    if (isset($paket_b[$m][1])) {
+        return $paket_b[$m][1];
     }
 
     return "https://modul.pkbm.id/modul-paket-c.html";
