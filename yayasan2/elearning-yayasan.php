@@ -432,6 +432,36 @@ $stmt_b->close();
                     <span><?= htmlspecialchars($pesan_error) ?></span>
                 </div>
                 <?php endif; ?>
+                <!-- MASTER TEAM AI AGENTIC KICK-OFF BANNER -->
+                <div class="bg-gradient-to-r from-amber-950 via-slate-900 to-amber-900 rounded-3xl p-6 text-white shadow-xl border border-amber-800/60 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 -mr-10 -mt-10 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                        <div class="space-y-2 max-w-2xl">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                                    <i class="fas fa-users-cog"></i> Team AI Agentic Active
+                                </span>
+                                <span class="text-xs text-amber-300 font-bold">7 Agen Kurikulum Mandiri</span>
+                            </div>
+                            <h2 class="text-lg sm:text-2xl font-black text-white leading-tight">
+                                Eksekusi Dewan Pakar AI: Auto-Fill Pembelajaran Semester Berjalan
+                            </h2>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Jalankan orkestrasi 7 Agen AI sekaligus untuk mengisi seluruh mata pelajaran tanpa guru fisik. Modul resmi Kemendikdasmen, 3-5 Video YouTube, Rangkuman Teori, LKS, dan Kuis langsung aktif untuk santri hari ini juga!
+                            </p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row lg:flex-col gap-2.5 flex-shrink-0">
+                            <button onclick="bukaModalTeamAIBatch()" class="bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-black px-6 py-3.5 rounded-2xl text-xs shadow-lg shadow-amber-900/30 transition flex items-center justify-center gap-2 transform hover:scale-[1.02] active:scale-95">
+                                <i class="fas fa-rocket text-sm"></i>
+                                <span>🚀 KICK-OFF TEAM AI (Semua Mapel)</span>
+                            </button>
+                            <button onclick="bukaModalAIGenerator('<?= htmlspecialchars($selected_mapel) ?>')" class="bg-white/10 hover:bg-white/20 text-amber-200 border border-amber-400/30 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center justify-center gap-1.5">
+                                <i class="fas fa-magic"></i>
+                                <span>Generate Mapel: <?= htmlspecialchars($selected_mapel) ?></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- STATS CARDS -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -643,6 +673,131 @@ $stmt_b->close();
 
             </div>
         </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 0: TEAM AI AGENTIC BATCH ORCHESTRATOR -->
+    <!-- ========================================== -->
+    <div id="modalTeamAIBatch" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-100 max-h-[92vh] overflow-y-auto space-y-6">
+            
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-600 to-yellow-400 text-slate-950 flex items-center justify-center text-xl font-black shadow-lg">
+                        <i class="fas fa-users-cog"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base sm:text-lg font-black text-slate-900">🤖 DEWAN PAKAR AI: Multi-Agent Orchestrator</h3>
+                        <p class="text-xs text-slate-500">Eksekusi 7 Agen AI untuk Menghasilkan Kurikulum & Ruang Belajar Lengkap</p>
+                    </div>
+                </div>
+                <button onclick="tutupModalTeamAIBatch()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- SETTINGS / FILTER SCOPE -->
+            <div id="teamAISettings" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-amber-50/70 p-4 rounded-2xl border border-amber-200">
+                        <label class="block text-xs font-black text-amber-900 uppercase mb-1">Target Mata Pelajaran</label>
+                        <select id="teamAITargetScope" class="w-full px-3.5 py-2.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500">
+                            <option value="tanpa_guru" selected>Khusus Mapel Tanpa Guru Fisik (<?= $total_mapel_tanpa_guru ?> Mapel - IPS & Autodidak)</option>
+                            <option value="semua_diknas">Seluruh Mapel Diknas (SMP & SMA)</option>
+                            <option value="semua_mapel">Seluruh Mapel (Diknas & Diniyah - <?= count($list_all_mapel) ?> Mapel)</option>
+                        </select>
+                        <p class="text-[10px] text-amber-700 mt-1.5 leading-relaxed">Memprioritaskan mata pelajaran yang paling membutuhkan guru virtual AI.</p>
+                    </div>
+
+                    <div class="bg-amber-50/70 p-4 rounded-2xl border border-amber-200">
+                        <label class="block text-xs font-black text-amber-900 uppercase mb-1">Target Kurikulum</label>
+                        <select id="teamAISemesterScope" class="w-full px-3.5 py-2.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-500">
+                            <option value="semester_1" selected>Semester 1 (Semester Berjalan Saat Ini - 4 Bab Inti)</option>
+                            <option value="semester_2">Semester 2 (Persiapan Semester Genap)</option>
+                            <option value="setahun_penuh">1 Tahun Ajaran Penuh (Semester 1 & 2 Lengkap)</option>
+                        </select>
+                        <p class="text-[10px] text-amber-700 mt-1.5 leading-relaxed">E-Modul Kemendikdasmen + 3-5 Video + LKS + Kuis per bab.</p>
+                    </div>
+                </div>
+
+                <!-- 7 AGENTS SHOWCASE GRID -->
+                <div class="space-y-2">
+                    <h4 class="text-xs font-black text-slate-700 uppercase tracking-wider">Struktur 7 Dewan Pakar AI yang Bekerja:</h4>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                            <i class="fas fa-brain text-amber-600 text-base mb-1"></i>
+                            <div class="text-[10px] font-black text-slate-800">1. Curriculum Scout</div>
+                            <div class="text-[9px] text-slate-400">Riset CP/ATP</div>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                            <i class="fas fa-file-invoice text-indigo-600 text-base mb-1"></i>
+                            <div class="text-[10px] font-black text-slate-800">2. RPP Architect</div>
+                            <div class="text-[9px] text-slate-400">Modul Ajar Guru</div>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                            <i class="fas fa-book-reader text-rose-600 text-base mb-1"></i>
+                            <div class="text-[10px] font-black text-slate-800">3. E-Modul Scout</div>
+                            <div class="text-[9px] text-slate-400">Kemendikdasmen RI</div>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                            <i class="fab fa-youtube text-red-600 text-base mb-1"></i>
+                            <div class="text-[10px] font-black text-slate-800">4. Video Curator</div>
+                            <div class="text-[9px] text-slate-400">3-5 Video per Bab</div>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                            <i class="fas fa-feather-alt text-teal-600 text-base mb-1"></i>
+                            <div class="text-[10px] font-black text-slate-800">5. Content Adapter</div>
+                            <div class="text-[9px] text-slate-400">Teori & Adab Santri</div>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                            <i class="fas fa-tasks text-emerald-600 text-base mb-1"></i>
+                            <div class="text-[10px] font-black text-slate-800">6. Quiz Engineer</div>
+                            <div class="text-[9px] text-slate-400">Kuis HOTS & LKS</div>
+                        </div>
+                        <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-center col-span-2 sm:col-span-2">
+                            <i class="fas fa-sync text-yellow-600 text-base mb-1"></i>
+                            <div class="text-[10px] font-black text-slate-800">7. QA & Database Synchronizer</div>
+                            <div class="text-[9px] text-slate-400">Sinkronisasi Instan ke Database Santri & Guru</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIVE BATCH PROGRESS CONSOLE -->
+            <div id="teamAILiveConsole" class="hidden space-y-4">
+                <div class="p-5 bg-slate-900 rounded-2xl text-white space-y-3 shadow-inner">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold flex items-center gap-2 text-amber-300" id="teamAIActiveMapel">
+                            <i class="fas fa-spinner fa-spin text-amber-400"></i> Memulai Dewan Pakar AI...
+                        </span>
+                        <span class="text-amber-400 font-mono font-bold text-sm" id="teamAITotalPercent">0%</span>
+                    </div>
+
+                    <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                        <div id="teamAIBigProgressBar" class="bg-gradient-to-r from-amber-400 via-yellow-400 to-emerald-400 h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-400">
+                        <span id="teamAIMapelCounter">Mapel 0 dari 0</span>
+                        <span id="teamAIEstimateTime">Estimasi: Berlangsung cepat...</span>
+                    </div>
+                </div>
+
+                <!-- STREAM LOG LIST -->
+                <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 font-mono text-[11px] text-slate-300 h-48 overflow-y-auto space-y-1.5" id="teamAILogStream">
+                    <div class="text-emerald-400">● [SYSTEM] Inisialisasi Team AI Agentic Kurikulum SADIGS...</div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button type="button" id="btnBatalTeamAI" onclick="tutupModalTeamAIBatch()" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition">Tutup</button>
+                <button type="button" id="btnJalankanTeamAIBatch" onclick="jalankanTeamAIBatchOrchestrator()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black px-6 py-3 rounded-xl text-xs shadow-lg transition flex items-center gap-2">
+                    <i class="fas fa-play"></i>
+                    <span>Mulai Kick-off Seluruh Mapel Sekarang</span>
+                </button>
+            </div>
+
+        </div>
     </div>
 
     <!-- ========================================== -->
@@ -1035,8 +1190,154 @@ $stmt_b->close();
             document.getElementById('modalBabManual').classList.remove('hidden');
         }
 
-        function tutupModalBabManual() {
-            document.getElementById('modalBabManual').classList.add('hidden');
+        // ==========================================
+        // TEAM AI AGENTIC BATCH ORCHESTRATOR
+        // ==========================================
+        const allMapelDatabase = <?= json_encode($list_all_mapel) ?>;
+
+        function bukaModalTeamAIBatch() {
+            document.getElementById('teamAISettings').classList.remove('hidden');
+            document.getElementById('teamAILiveConsole').classList.add('hidden');
+            document.getElementById('btnJalankanTeamAIBatch').classList.remove('hidden');
+            document.getElementById('btnBatalTeamAI').innerText = 'Tutup';
+            document.getElementById('modalTeamAIBatch').classList.remove('hidden');
+        }
+
+        function tutupModalTeamAIBatch() {
+            document.getElementById('modalTeamAIBatch').classList.add('hidden');
+        }
+
+        function appendTeamAILog(msg, type = 'normal') {
+            const stream = document.getElementById('teamAILogStream');
+            const d = document.createElement('div');
+            const time = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            if (type === 'agent') {
+                d.className = 'text-amber-300';
+                d.innerHTML = `[${time}] <i class="fas fa-robot text-amber-400 mr-1"></i> ${msg}`;
+            } else if (type === 'success') {
+                d.className = 'text-emerald-400 font-bold';
+                d.innerHTML = `[${time}] <i class="fas fa-check-circle text-emerald-400 mr-1"></i> ${msg}`;
+            } else if (type === 'error') {
+                d.className = 'text-rose-400 font-bold';
+                d.innerHTML = `[${time}] <i class="fas fa-exclamation-triangle text-rose-400 mr-1"></i> ${msg}`;
+            } else {
+                d.className = 'text-slate-300';
+                d.innerHTML = `[${time}] ${msg}`;
+            }
+            stream.appendChild(d);
+            stream.scrollTop = stream.scrollHeight;
+        }
+
+        async function jalankanTeamAIBatchOrchestrator() {
+            const scope = document.getElementById('teamAITargetScope').value;
+            const semester = document.getElementById('teamAISemesterScope').value;
+            const btnRun = document.getElementById('btnJalankanTeamAIBatch');
+            const btnClose = document.getElementById('btnBatalTeamAI');
+
+            // Filter target mapel
+            let targetList = [];
+            if (scope === 'tanpa_guru') {
+                targetList = allMapelDatabase.filter(m => !m.pengampu_id || m.pengampu_id == 0);
+            } else if (scope === 'semua_diknas') {
+                targetList = allMapelDatabase.filter(m => m.kategori_mapel && m.kategori_mapel.toLowerCase() === 'diknas');
+            } else {
+                targetList = allMapelDatabase;
+            }
+
+            if (targetList.length === 0) {
+                alert('Tidak ada mata pelajaran yang sesuai dengan target filter ini.');
+                return;
+            }
+
+            // Ganti UI ke Live Console
+            document.getElementById('teamAISettings').classList.add('hidden');
+            document.getElementById('teamAILiveConsole').classList.remove('hidden');
+            btnRun.classList.add('hidden');
+            btnClose.innerText = 'Batal / Berhenti';
+
+            const stream = document.getElementById('teamAILogStream');
+            stream.innerHTML = '';
+            appendTeamAILog(`Dewan Pakar AI diaktifkan untuk ${targetList.length} Mata Pelajaran target...`, 'success');
+            appendTeamAILog(`Target Silabus: ${semester.replace('_', ' ').toUpperCase()} • Sumber E-Modul: emodul.kemendikdasmen.go.id`);
+
+            const total = targetList.length;
+            let successCount = 0;
+
+            const jumlahBab = (semester === 'setahun_penuh') ? 6 : 4;
+
+            for (let i = 0; i < total; i++) {
+                const mapel = targetList[i];
+                const currentNum = i + 1;
+                const mapelPercent = Math.round((i / total) * 100);
+
+                document.getElementById('teamAITotalPercent').innerText = `${mapelPercent}%`;
+                document.getElementById('teamAIBigProgressBar').style.width = `${mapelPercent}%`;
+                document.getElementById('teamAIMapelCounter').innerText = `Memproses Mapel ${currentNum} dari ${total}: ${mapel.nama_mapel}`;
+                document.getElementById('teamAIActiveMapel').innerHTML = `<i class="fas fa-spinner fa-spin text-amber-400"></i> Memproses: <b>${mapel.nama_mapel}</b>`;
+
+                appendTeamAILog(`--- [MAPEL ${currentNum}/${total}: ${mapel.nama_mapel}] ---`, 'agent');
+                appendTeamAILog(`Agent 1 (Curriculum Scout): Meriset CP & ATP Kurikulum Merdeka...`, 'agent');
+                appendTeamAILog(`Agent 3 (E-Modul Scout): Menautkan portal resmi Kemendikdasmen RI...`, 'agent');
+                appendTeamAILog(`Agent 4 (Video Curator): Mengkurasi 3-5 Video YouTube pembanding per bab...`, 'agent');
+                appendTeamAILog(`Agent 5 & 6: Menyusun Rangkuman, LKS Santri, dan Kuis Interaktif HOTS...`, 'agent');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('action', 'generate_ai_curriculum');
+                    formData.append('mapel_nama', mapel.nama_mapel);
+                    formData.append('jenjang_kelas', 'SMA Kelas 10 (Fase E)');
+                    formData.append('jumlah_bab', jumlahBab);
+
+                    const res = await fetch('elearning-yayasan.php', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+
+                    if (data.status === 'success' && data.data) {
+                        appendTeamAILog(`Agent 7 (QA Sync): Menyimpan ${data.data.length} Bab ke Database E-Learning...`, 'agent');
+
+                        const saveFormData = new FormData();
+                        saveFormData.append('action', 'save_ai_curriculum');
+                        saveFormData.append('mapel_nama', mapel.nama_mapel);
+                        saveFormData.append('chapters_json', JSON.stringify(data.data));
+                        saveFormData.append('replace_existing', '1');
+
+                        const saveRes = await fetch('elearning-yayasan.php', {
+                            method: 'POST',
+                            body: saveFormData
+                        });
+                        const saveResult = await saveRes.json();
+
+                        if (saveResult.status === 'success') {
+                            successCount++;
+                            appendTeamAILog(`✓ SUKSES: ${mapel.nama_mapel} berhasil diterbitkan di Ruang Santri!`, 'success');
+                        } else {
+                            appendTeamAILog(`✗ Gagal menyimpan ${mapel.nama_mapel}: ${saveResult.message}`, 'error');
+                        }
+                    } else {
+                        appendTeamAILog(`✗ Gagal generate ${mapel.nama_mapel}: ${data.message}`, 'error');
+                    }
+                } catch (e) {
+                    appendTeamAILog(`✗ Error koneksi pada ${mapel.nama_mapel}: ${e.message}`, 'error');
+                }
+
+                // Jeda singkat antar mapel agar server dan API rate limit tetap terjaga aman
+                await new Promise(r => setTimeout(r, 600));
+            }
+
+            document.getElementById('teamAITotalPercent').innerText = `100%`;
+            document.getElementById('teamAIBigProgressBar').style.width = `100%`;
+            document.getElementById('teamAIActiveMapel').innerHTML = `<i class="fas fa-check-circle text-emerald-400"></i> Selesai Semua Mapel!`;
+            document.getElementById('teamAIMapelCounter').innerText = `Selesai: ${successCount} dari ${total} Mapel Siap Digunakan!`;
+            appendTeamAILog(`🎉 SEMUA SELESAI! ${successCount} Mapel berhasil disinkronkan dan langsung aktif di Ruang Santri hari ini.`, 'success');
+
+            btnClose.innerText = 'Selesai & Lihat Hasil';
+            btnClose.className = 'bg-emerald-600 hover:bg-emerald-700 text-white font-black px-6 py-2.5 rounded-xl text-xs transition shadow-md';
+            btnClose.onclick = function() {
+                window.location.href = 'elearning-yayasan.php';
+            };
         }
     </script>
 </body>
