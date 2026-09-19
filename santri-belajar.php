@@ -7,7 +7,42 @@ $santri_nama = $_SESSION['santri_nama'];
 $active_menu = 'dashboard_santri';
 
 // Tangkap nama mata pelajaran (Default: Sosiologi)
-$mapel = $_GET['mapel'] ?? 'Sosiologi';
+$raw_mapel = trim($_GET['mapel'] ?? 'Sosiologi');
+$raw_mapel_lower = strtolower($raw_mapel);
+
+// Normalisasi Alias Mapel
+if ($raw_mapel_lower === 'bahasa' || strpos($raw_mapel_lower, 'indo') !== false) {
+    $mapel = 'Bahasa Indonesia';
+} elseif ($raw_mapel_lower === 'english' || strpos($raw_mapel_lower, 'inggris') !== false) {
+    $mapel = 'Bahasa Inggris';
+} elseif (strpos($raw_mapel_lower, 'sosiologi') !== false) {
+    $mapel = 'Sosiologi';
+} elseif (strpos($raw_mapel_lower, 'mtk') !== false || strpos($raw_mapel_lower, 'matematika') !== false) {
+    $mapel = 'Matematika';
+} elseif (strpos($raw_mapel_lower, 'ekonomi') !== false) {
+    $mapel = 'Ekonomi';
+} elseif (strpos($raw_mapel_lower, 'geografi') !== false) {
+    $mapel = 'Geografi';
+} elseif (strpos($raw_mapel_lower, 'sejarah') !== false) {
+    $mapel = 'Sejarah';
+} elseif (strpos($raw_mapel_lower, 'biologi') !== false) {
+    $mapel = 'Biologi';
+} elseif (strpos($raw_mapel_lower, 'fisika') !== false) {
+    $mapel = 'Fisika';
+} elseif (strpos($raw_mapel_lower, 'kimia') !== false) {
+    $mapel = 'Kimia';
+} elseif (strpos($raw_mapel_lower, 'ipa') !== false) {
+    $mapel = 'IPA';
+} elseif (strpos($raw_mapel_lower, 'ips') !== false) {
+    $mapel = 'IPS';
+} elseif (strpos($raw_mapel_lower, 'ppkn') !== false || strpos($raw_mapel_lower, 'pkn') !== false || strpos($raw_mapel_lower, 'pancasila') !== false) {
+    $mapel = 'PPKn';
+} elseif (strpos($raw_mapel_lower, 'seni') !== false) {
+    $mapel = 'Seni Budaya';
+} else {
+    $mapel = $raw_mapel;
+}
+
 $mapel_esc = $conn->real_escape_string($mapel);
 $bab_no = (int)($_GET['bab'] ?? 1);
 
@@ -20,6 +55,10 @@ $kelas_santri = $data_santri['kelas_sekarang'] ?? 'Santri';
 // 1. QUERY BAB DARI DATABASE (ELEARNING_BAB)
 // ==========================================
 $res_babs = $conn->query("SELECT * FROM elearning_bab WHERE mapel_nama = '$mapel_esc' ORDER BY nomor_bab ASC, id ASC");
+if (!$res_babs || $res_babs->num_rows === 0) {
+    // Fallback pencarian fuzzy LIKE jika nama sedikit berbeda
+    $res_babs = $conn->query("SELECT * FROM elearning_bab WHERE mapel_nama LIKE '%$mapel_esc%' ORDER BY nomor_bab ASC, id ASC");
+}
 $list_bab = ($res_babs && $res_babs->num_rows > 0) ? $res_babs->fetch_all(MYSQLI_ASSOC) : [];
 
 $materi_aktif = null;

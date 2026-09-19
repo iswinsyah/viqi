@@ -213,20 +213,21 @@ if ($view === 'ibadah_harian') {
 
     // 2. Daftar Mata Pelajaran / Modul Belajar (Sesuai Mockup Desain)
     $subjects = [
-        ['name' => 'Bahasa', 'icon' => 'fas fa-book-open', 'desc' => 'Bahasa Indonesia & Literasi'],
-        ['name' => 'Matematika', 'icon' => 'fas fa-square-root-variable', 'desc' => 'Matematika & Logika'],
-        ['name' => 'IPA', 'icon' => 'fas fa-flask', 'desc' => 'Ilmu Pengetahuan Alam'],
-        ['name' => 'Fisika', 'icon' => 'fas fa-atom', 'desc' => 'Fisika Terapan'],
-        ['name' => 'Kimia', 'icon' => 'fas fa-vial', 'desc' => 'Kimia & Reaksi'],
-        ['name' => 'Biologi', 'icon' => 'fas fa-dna', 'desc' => 'Biologi Sains'],
-        ['name' => 'IPS', 'icon' => 'fas fa-globe-asia', 'desc' => 'Ilmu Pengetahuan Sosial'],
-        ['name' => 'Ekonomi', 'icon' => 'fas fa-chart-line', 'desc' => 'Ekonomi & Manajemen'],
-        ['name' => 'Geografi', 'icon' => 'fas fa-map-marked-alt', 'desc' => 'Geografi & Kebumian'],
-        ['name' => 'Sejarah', 'icon' => 'fas fa-landmark', 'desc' => 'Sejarah Kebangsaan'],
-        ['name' => 'Sosiologi', 'icon' => 'fas fa-users', 'desc' => 'Sosiologi & Masyarakat'],
-        ['name' => 'English', 'icon' => 'fas fa-comments', 'desc' => 'Bahasa Inggris / English'],
-        ['name' => 'Olahraga', 'icon' => 'fas fa-running', 'desc' => 'Pendidikan Jasmani & Olahraga'],
-        ['name' => 'Solopreneur', 'icon' => 'fas fa-lightbulb', 'desc' => 'Kewirausahaan Mandiri']
+        ['name' => 'B. Indonesia', 'param' => 'Bahasa Indonesia', 'icon' => 'fas fa-book-open', 'desc' => 'Bahasa Indonesia & Literasi'],
+        ['name' => 'Matematika', 'param' => 'Matematika', 'icon' => 'fas fa-square-root-variable', 'desc' => 'Matematika & Logika'],
+        ['name' => 'IPA', 'param' => 'IPA', 'icon' => 'fas fa-flask', 'desc' => 'Ilmu Pengetahuan Alam'],
+        ['name' => 'Fisika', 'param' => 'Fisika', 'icon' => 'fas fa-atom', 'desc' => 'Fisika Terapan'],
+        ['name' => 'Kimia', 'param' => 'Kimia', 'icon' => 'fas fa-vial', 'desc' => 'Kimia & Reaksi'],
+        ['name' => 'Biologi', 'param' => 'Biologi', 'icon' => 'fas fa-dna', 'desc' => 'Biologi Sains'],
+        ['name' => 'IPS', 'param' => 'IPS', 'icon' => 'fas fa-globe-asia', 'desc' => 'Ilmu Pengetahuan Sosial'],
+        ['name' => 'Ekonomi', 'param' => 'Ekonomi', 'icon' => 'fas fa-chart-line', 'desc' => 'Ekonomi & Manajemen'],
+        ['name' => 'Geografi', 'param' => 'Geografi', 'icon' => 'fas fa-map-marked-alt', 'desc' => 'Geografi & Kebumian'],
+        ['name' => 'Sejarah', 'param' => 'Sejarah', 'icon' => 'fas fa-landmark', 'desc' => 'Sejarah Kebangsaan'],
+        ['name' => 'Sosiologi', 'param' => 'Sosiologi', 'icon' => 'fas fa-users', 'desc' => 'Sosiologi & Masyarakat'],
+        ['name' => 'English', 'param' => 'Bahasa Inggris', 'icon' => 'fas fa-comments', 'desc' => 'Bahasa Inggris / English'],
+        ['name' => 'PPKn', 'param' => 'PPKn', 'icon' => 'fas fa-balance-scale', 'desc' => 'Pendidikan Pancasila & Kewarganegaraan'],
+        ['name' => 'Seni Budaya', 'param' => 'Seni Budaya', 'icon' => 'fas fa-palette', 'desc' => 'Seni Budaya & Apresiasi Karya'],
+        ['name' => 'Solopreneur', 'param' => 'Solopreneur', 'icon' => 'fas fa-lightbulb', 'desc' => 'Kewirausahaan Mandiri (AI)']
     ];
 }
 ?>
@@ -503,7 +504,7 @@ if ($view === 'ibadah_harian') {
                     <div class="grid grid-cols-4 gap-y-4 gap-x-2 sm:gap-4 items-start justify-items-center">
                         
                         <?php foreach ($subjects as $s): ?>
-                        <div class="flex flex-col items-center group cursor-pointer w-full text-center" onclick="showSubjectModal('<?= addslashes($s['name']) ?>', '<?= addslashes($s['desc']) ?>', '<?= $s['icon'] ?>')">
+                        <div class="flex flex-col items-center group cursor-pointer w-full text-center" onclick="showSubjectModal('<?= addslashes($s['name']) ?>', '<?= addslashes($s['desc']) ?>', '<?= $s['icon'] ?>', '<?= addslashes($s['param'] ?? $s['name']) ?>')">
                             <!-- Squircle Box Button (#0d8276) -->
                             <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-[18px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/10 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
                                 <i class="<?= $s['icon'] ?>"></i>
@@ -650,11 +651,12 @@ if ($view === 'ibadah_harian') {
         </div>
 
         <script>
-            function showSubjectModal(title, desc, iconClass) {
+            function showSubjectModal(title, desc, iconClass, param) {
+                const mapelTarget = param || title;
                 document.getElementById('modalTitle').innerText = title;
                 document.getElementById('modalDesc').innerText = desc;
                 document.getElementById('modalIcon').className = iconClass;
-                document.getElementById('modalStudyBtn').href = 'santri-belajar.php?mapel=' + encodeURIComponent(title);
+                document.getElementById('modalStudyBtn').href = 'santri-belajar.php?mapel=' + encodeURIComponent(mapelTarget) + '&bab=1';
                 document.getElementById('subjectModal').classList.remove('hidden');
             }
             function closeSubjectModal() {
