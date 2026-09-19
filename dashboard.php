@@ -6,12 +6,34 @@ $user = getCurrentUser();
 $roles = getUserRoles();
 $is_admin = isSuperAdmin();
 
-// Tangkap Filter Sudut Pandang (Role Switcher)
-if (isset($_GET['view_role'])) {
-    $vr = strtolower(trim($_GET['view_role']));
-    setActiveRoleView($vr);
+// Tangkap Multi-Role Toggle (Simulasi Multi-Role Fleksibel - Checkbox Mode)
+if (isset($_GET['toggle_role'])) {
+    $tr = strtolower(trim($_GET['toggle_role']));
+    if ($tr === 'all') {
+        $_SESSION['active_role_views'] = ['all'];
+    } else {
+        $current_views = $_SESSION['active_role_views'] ?? ['all'];
+        // Jika sebelumnya 'all', reset ke kosong lalu toggle role yang dipilih
+        if (in_array('all', $current_views)) {
+            $current_views = [];
+        }
+        // Toggle role: jika sudah ada, hapus; jika belum ada, tambahkan
+        if (in_array($tr, $current_views)) {
+            $current_views = array_diff($current_views, [$tr]);
+        } else {
+            $current_views[] = $tr;
+        }
+        // Jika semua checkbox dilepas, kembalikan otomatis ke 'all'
+        if (empty($current_views)) {
+            $current_views = ['all'];
+        }
+        $_SESSION['active_role_views'] = array_values($current_views);
+    }
+    header("Location: dashboard.php");
+    exit;
 }
-$active_view = getActiveRoleView();
+$active_views = $_SESSION['active_role_views'] ?? ['all'];
+$is_all_view = in_array('all', $active_views);
 
 // Logout Action
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
@@ -129,9 +151,10 @@ $all_grid_items = [
     ]
 ];
 
-// Filter Item Sesuai Role & Role Switcher
+// Filter Item Sesuai Role Pengguna & Simulasi Checkbox Multi-Role
 $visible_items = [];
 foreach ($all_grid_items as $key => $item) {
+    // 1. Cek hak akses dasar akun
     $has_access = $is_admin;
     if (!$has_access) {
         foreach ($item['roles'] as $r) {
@@ -143,12 +166,16 @@ foreach ($all_grid_items as $key => $item) {
     }
     if (!$has_access) continue;
 
-    // Filter Sudut Pandang
-    if ($active_view !== 'all') {
-        if ($active_view === 'tutor' && !in_array('tutor', $item['roles'])) continue;
-        if ($active_view === 'musyrif' && !in_array('musyrif', $item['roles'])) continue;
-        if ($active_view === 'santri' && !in_array('santri', $item['roles'])) continue;
-        if ($active_view === 'walisantri' && !in_array('walisantri', $item['roles'])) continue;
+    // 2. Terapkan Filter Checkbox Multi-Role (Jika bukan mode 'all')
+    if (!$is_all_view) {
+        $matches_active_filter = false;
+        foreach ($active_views as $av) {
+            if (in_array($av, $item['roles'])) {
+                $matches_active_filter = true;
+                break;
+            }
+        }
+        if (!$matches_active_filter) continue;
     }
 
     $visible_items[$key] = $item;
@@ -225,24 +252,44 @@ foreach ($all_grid_items as $key => $item) {
 
             </div>
 
-            <!-- ROLE SWITCHER PILL (KHUSUS SUPER ADMIN / MULTI-ROLE) -->
+            <!-- MULTI-ROLE CHECKBOX SIMULATION PILL (UNTUK SUPER ADMIN / MULTI-ROLE) -->
             <?php if ($is_admin || count($roles) > 1): ?>
-            <div class="mt-4 pt-3 border-t border-teal-600/60 flex items-center justify-center gap-1.5 flex-wrap">
-                <a href="dashboard.php?view_role=all" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'all') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                    Semua
+            <div class="mt-4 pt-3 border-t border-teal-600/60 flex items-center justify-center gap-1.5 flex-wrap text-[10px]">
+                
+                <!-- Opsi Semua -->
+                <a href="dashboard.php?toggle_role=all" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_all_view ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                    <i class="fas <?= $is_all_view ? 'fa-circle-check text-[#0b8478]' : 'fa-circle text-white/40' ?>"></i>
+                    <span>Semua</span>
                 </a>
-                <a href="dashboard.php?view_role=tutor" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'tutor') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                    Guru
+
+                <!-- Checkbox Guru -->
+                <?php $is_tutor_active = in_array('tutor', $active_views); ?>
+                <a href="dashboard.php?toggle_role=tutor" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_tutor_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                    <i class="fas <?= $is_tutor_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
+                    <span>Guru</span>
                 </a>
-                <a href="dashboard.php?view_role=musyrif" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'musyrif') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                    Asrama
+
+                <!-- Checkbox Asrama -->
+                <?php $is_musyrif_active = in_array('musyrif', $active_views); ?>
+                <a href="dashboard.php?toggle_role=musyrif" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_musyrif_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                    <i class="fas <?= $is_musyrif_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
+                    <span>Asrama</span>
                 </a>
-                <a href="dashboard.php?view_role=santri" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'santri') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                    Santri
+
+                <!-- Checkbox Santri -->
+                <?php $is_santri_active = in_array('santri', $active_views); ?>
+                <a href="dashboard.php?toggle_role=santri" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_santri_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                    <i class="fas <?= $is_santri_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
+                    <span>Santri</span>
                 </a>
-                <a href="dashboard.php?view_role=walisantri" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold transition <?= ($active_view === 'walisantri') ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white hover:bg-teal-700' ?>">
-                    Wali
+
+                <!-- Checkbox Wali -->
+                <?php $is_wali_active = in_array('walisantri', $active_views); ?>
+                <a href="dashboard.php?toggle_role=walisantri" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_wali_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                    <i class="fas <?= $is_wali_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
+                    <span>Wali</span>
                 </a>
+
             </div>
             <?php endif; ?>
         </div>
