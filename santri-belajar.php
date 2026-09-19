@@ -61,19 +61,14 @@ if ($materi_aktif && !empty($materi_aktif['ringkasan_materi'])) {
     }
 }
 
+require_once 'pkbm_modul_catalog.php';
+
 // Format Embed PDF / Web E-Modul
-function getPdfViewerUrl($pdfUrl) {
-    if (empty($pdfUrl)) return '';
-    $pdfUrl = trim($pdfUrl);
-    // Jika link adalah portal emodul / flipbook web
-    if (strpos($pdfUrl, 'emodul.kemendikdasmen.go.id') !== false || strpos($pdfUrl, 'buku.kemdikbud.go.id') !== false) {
-        return $pdfUrl;
+function getPdfViewerUrl($pdfUrl, $mapel = '', $bab_no = 1) {
+    if (empty($pdfUrl) || strpos($pdfUrl, '.pdf') === false) {
+        return getPkbmModulPdfUrl($mapel, $bab_no);
     }
-    // Jika link direct PDF dan bukan google viewer
-    if (strpos($pdfUrl, '.pdf') !== false && strpos($pdfUrl, 'docs.google.com') === false) {
-        return $pdfUrl;
-    }
-    return $pdfUrl;
+    return trim($pdfUrl);
 }
 
 // Format Embed YouTube
@@ -278,7 +273,7 @@ if ($materi_aktif) {
 
                     <!-- 3. E-MODUL RESMI KEMENDIKDASMEN RI - BUILT-IN INTERACTIVE DIGITAL FLIPBOOK -->
                     <?php 
-                    $emodul_url = !empty($materi_aktif['pdf_url']) ? $materi_aktif['pdf_url'] : 'https://buku.kemdikbud.go.id/';
+                    $emodul_url = getPdfViewerUrl($materi_aktif['pdf_url'] ?? '', $mapel, $bab_no);
                     ?>
                     <div class="mb-8">
                         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
@@ -292,8 +287,13 @@ if ($materi_aktif) {
                                 <button type="button" onclick="toggleFullscreenFlipbook()" class="text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl border border-rose-200 transition flex items-center gap-1.5">
                                     <i class="fas fa-expand"></i> <span>Layar Penuh</span>
                                 </button>
-                                <a href="https://buku.kemdikbud.go.id/" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1">
-                                    <i class="fas fa-external-link-alt text-[10px]"></i> <span class="hidden sm:inline">Portal SIBI</span>
+                                <?php if (!empty($emodul_url)): ?>
+                                <a href="<?= htmlspecialchars($emodul_url) ?>" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 px-3 py-1.5 rounded-xl shadow-xs transition flex items-center gap-1.5">
+                                    <i class="fas fa-file-pdf"></i> <span>Buka PDF Asli (PKBM)</span> <i class="fas fa-arrow-up-right-from-square text-[9px]"></i>
+                                </a>
+                                <?php endif; ?>
+                                <a href="https://modul.pkbm.id/" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 px-2.5 py-1.5 rounded-xl border border-slate-200 transition flex items-center gap-1">
+                                    <i class="fas fa-external-link-alt text-[10px]"></i> <span class="hidden sm:inline">Portal Modul</span>
                                 </a>
                             </div>
                         </div>

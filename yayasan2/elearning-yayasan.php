@@ -2,6 +2,7 @@
 ob_start();
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/../koneksi.php';
+require_once __DIR__ . '/../pkbm_modul_catalog.php';
 
 if (isset($_POST['action']) && in_array($_POST['action'], ['generate_ai_curriculum', 'save_ai_curriculum'])) {
     ini_set('display_errors', 0);
@@ -251,6 +252,9 @@ if (isset($_POST['action']) && $_POST['action'] === 'save_ai_curriculum') {
         $subjudul = trim($ch['subjudul'] ?? '');
         $durasi = trim($ch['durasi_menit'] ?? '20 Menit');
         $pdf_url = trim($ch['pdf_url'] ?? '');
+        if (empty($pdf_url) || strpos($pdf_url, '.pdf') === false) {
+            $pdf_url = getPkbmModulPdfUrl($mapel_nama, $nomor_bab);
+        }
         
         // Handle multi-videos & convert to clean embed format
         $video_urls_array = [];
