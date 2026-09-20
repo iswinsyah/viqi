@@ -21,9 +21,14 @@
             <a href="asatidz.php" class="<?= (isset($active_menu) && $active_menu == 'asatidz') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-users-cog w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'asatidz') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Daftar Asatidz
             </a>
+            <?php 
+            $curr_role = strtolower($_SESSION['yayasan_role'] ?? ($_SESSION['role'] ?? ''));
+            if (empty($curr_role) || in_array($curr_role, ['super_admin', 'ketua_yayasan', 'admin', 'yayasan'])): 
+            ?>
             <a href="manajemen-menu.php" class="<?= (isset($active_menu) && $active_menu == 'manajemen_menu') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-sitemap w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'manajemen_menu') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Manajemen Menu
             </a>
+            <?php endif; ?>
             <a href="pengumuman-update.php" class="<?= (isset($active_menu) && $active_menu == 'pengumuman_update') ? 'bg-amber-800 text-white' : 'text-amber-100 hover:bg-amber-800 hover:text-white' ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
                 <i class="fas fa-bullhorn w-6 text-center mr-2 <?= (isset($active_menu) && $active_menu == 'pengumuman_update') ? 'text-amber-400' : 'text-amber-300 group-hover:text-white' ?>"></i> Update Fitur Aplikasi
             </a>
