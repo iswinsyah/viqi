@@ -277,7 +277,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // B. Simpan Permissions
     foreach ($defined_menus as $group => $menus) {
         foreach ($menus as $key => $title) {
-            $allowed_roles = isset($_POST['permissions'][$key]) ? implode(',', $_POST['permissions'][$key]) : '';
+            $selected_roles = isset($_POST['permissions'][$key]) && is_array($_POST['permissions'][$key]) ? $_POST['permissions'][$key] : [];
+            // Jika ketua_yayasan dipilih, sertakan juga super_admin sebagai alias internal
+            if (in_array('ketua_yayasan', $selected_roles) && !in_array('super_admin', $selected_roles)) {
+                $selected_roles[] = 'super_admin';
+            }
+            $allowed_roles = implode(',', $selected_roles);
             
             $stmt = $conn->prepare("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES (?, ?) ON DUPLICATE KEY UPDATE allowed_roles = ?");
             $stmt->bind_param("sss", $key, $allowed_roles, $allowed_roles);
@@ -360,17 +365,17 @@ $active_menu = 'manajemen_menu';
         </header>
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-sitemap text-amber-500 mr-2"></i>Manajemen Menu & Hak Akses Beranda</h1>
-                <p class="text-gray-500 mt-1">Atur menu apa saja yang muncul di Beranda Super-App untuk setiap dari 16 Peran/Jabatan.</p>
+                <h1 class="text-2xl font-bold text-slate-900"><i class="fas fa-sitemap text-[#0b8478] mr-2"></i>Manajemen Menu & Hak Akses Beranda</h1>
+                <p class="text-slate-500 mt-1 text-sm">Atur hak akses menu apa saja yang muncul di Beranda Super-App untuk setiap dari 16 Peran/Jabatan.</p>
             </div>
-            <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
+            <?php if(isset($pesan_sukses)) echo "<div class='bg-teal-50 border border-teal-200 text-[#0b8478] px-4 py-3 rounded-xl mb-6 shadow-sm flex items-center font-bold text-sm'><i class='fas fa-check-circle text-lg mr-2.5'></i> $pesan_sukses</div>"; ?>
             
             <!-- TAB NAVIGATION -->
             <div class="mb-6 flex gap-4 border-b border-gray-200">
-                <button type="button" id="tab-btn-hak-akses" onclick="switchTab('hak-akses')" class="px-5 py-2.5 font-bold text-sm text-amber-600 border-b-2 border-amber-500 transition-all flex items-center gap-1.5 focus:outline-none">
+                <button type="button" id="tab-btn-hak-akses" onclick="switchTab('hak-akses')" class="px-5 py-2.5 font-bold text-sm text-[#0b8478] border-b-2 border-[#0b8478] transition-all flex items-center gap-1.5 focus:outline-none">
                     <i class="fas fa-key text-base"></i> Hak Akses 16 Role & Nama
                 </button>
-                <button type="button" id="tab-btn-tata-letak" onclick="switchTab('tata-letak')" class="px-5 py-2.5 font-bold text-sm text-gray-500 hover:text-amber-500 border-b-2 border-transparent transition-all flex items-center gap-1.5 focus:outline-none">
+                <button type="button" id="tab-btn-tata-letak" onclick="switchTab('tata-letak')" class="px-5 py-2.5 font-bold text-sm text-gray-500 hover:text-[#0b8478] border-b-2 border-transparent transition-all flex items-center gap-1.5 focus:outline-none">
                     <i class="fas fa-arrows-alt text-base"></i> Tata Letak & Urutan Menu
                 </button>
             </div>
@@ -378,14 +383,14 @@ $active_menu = 'manajemen_menu';
             <!-- TAB 1: HAK AKSES PERAN -->
             <div id="tab-content-hak-akses" class="tab-pane">
                 <form action="manajemen-menu.php" method="POST">
-                    <div class="relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="relative bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
                         <!-- Floating Left Scroll Button (Sticky on top of content) -->
-                        <button type="button" onclick="scrollMenuTable(-300)" class="absolute left-[310px] top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-gray-950 w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-30 transition-all opacity-85 hover:opacity-100 border border-amber-300">
+                        <button type="button" onclick="scrollMenuTable(-300)" class="absolute left-[310px] top-1/2 -translate-y-1/2 bg-[#0b8478] hover:bg-[#086a60] text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-30 transition-all opacity-85 hover:opacity-100 border border-teal-400">
                             <i class="fas fa-chevron-left text-lg"></i>
                         </button>
                         
                         <!-- Floating Right Scroll Button -->
-                        <button type="button" onclick="scrollMenuTable(300)" class="absolute right-4 top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-gray-955 w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-30 transition-all opacity-85 hover:opacity-100 border border-amber-300">
+                        <button type="button" onclick="scrollMenuTable(300)" class="absolute right-4 top-1/2 -translate-y-1/2 bg-[#0b8478] hover:bg-[#086a60] text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-30 transition-all opacity-85 hover:opacity-100 border border-teal-400">
                             <i class="fas fa-chevron-right text-lg"></i>
                         </button>
 
@@ -413,19 +418,19 @@ $active_menu = 'manajemen_menu';
                                                  <div class="flex flex-col gap-1.5">
                                                      <div>
                                                          <label class="text-[10px] text-gray-500 font-bold block mb-0.5">Nama Lengkap:</label>
-                                                         <input type="text" name="custom_labels[<?= $key ?>]" value="<?= htmlspecialchars($display_title) ?>" class="px-2.5 py-1 border border-gray-200 rounded text-xs w-full focus:ring-2 focus:ring-amber-500 font-semibold" placeholder="<?= htmlspecialchars($title) ?>">
+                                                         <input type="text" name="custom_labels[<?= $key ?>]" value="<?= htmlspecialchars($display_title) ?>" class="px-2.5 py-1 border border-gray-200 rounded-lg text-xs w-full focus:ring-2 focus:ring-teal-500 font-semibold" placeholder="<?= htmlspecialchars($title) ?>">
                                                      </div>
                                                      <div>
-                                                         <label class="text-[10px] text-amber-700 font-bold block mb-0.5">Label 1 Kata (Beranda Super-App):</label>
-                                                         <input type="text" name="short_labels[<?= $key ?>]" value="<?= htmlspecialchars($display_short) ?>" class="px-2.5 py-1 border border-amber-200 bg-amber-50/50 rounded text-xs w-full focus:ring-2 focus:ring-amber-500 font-bold text-[#0b8478]" placeholder="Misal: E-Modul">
+                                                         <label class="text-[10px] text-[#0b8478] font-bold block mb-0.5">Label 1 Kata (Beranda Super-App):</label>
+                                                         <input type="text" name="short_labels[<?= $key ?>]" value="<?= htmlspecialchars($display_short) ?>" class="px-2.5 py-1 border border-teal-200 bg-teal-50/50 rounded-lg text-xs w-full focus:ring-2 focus:ring-teal-500 font-bold text-[#0b8478]" placeholder="Misal: E-Modul">
                                                      </div>
                                                  </div>
                                              </td>
                                             <?php foreach ($defined_roles as $role_key => $role_label): 
-                                                $checked = isset($permissions[$key]) && (in_array($role_key, $permissions[$key]) || in_array('super_admin', $permissions[$key])) ? 'checked' : '';
+                                                $checked = isset($permissions[$key]) && in_array($role_key, $permissions[$key]) ? 'checked' : '';
                                             ?>
                                                 <td class="px-4 py-4 text-center">
-                                                    <input type="checkbox" name="permissions[<?= $key ?>][]" value="<?= $role_key ?>" <?= $checked ?> class="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer">
+                                                    <input type="checkbox" name="permissions[<?= $key ?>][]" value="<?= $role_key ?>" <?= $checked ?> class="w-4 h-4 text-[#0b8478] border-gray-300 rounded focus:ring-teal-500 cursor-pointer">
                                                 </td>
                                             <?php endforeach; ?>
                                          </tr>
@@ -435,7 +440,7 @@ $active_menu = 'manajemen_menu';
                             </table>
                         </div>
                         <div class="p-6 bg-gray-50 border-t border-gray-200 flex justify-end">
-                            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-md transition cursor-pointer"><i class="fas fa-save mr-2"></i> Simpan Hak Akses & Nama</button>
+                            <button type="submit" class="bg-[#0b8478] hover:bg-[#086a60] text-white font-bold py-3 px-8 rounded-xl shadow-md transition cursor-pointer flex items-center gap-2"><i class="fas fa-save mr-1"></i> Simpan Hak Akses & Nama</button>
                         </div>
                     </div>
                 </form>
@@ -443,19 +448,19 @@ $active_menu = 'manajemen_menu';
 
             <!-- TAB 2: TATA LETAK & DRAG AND DROP -->
             <div id="tab-content-tata-letak" class="tab-pane hidden">
-                <p class="text-xs text-gray-500 mb-6 bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-xl flex items-center gap-1.5"><i class="fas fa-info-circle text-sm text-amber-600"></i> Seret kartu menu ke atas/bawah untuk mengurutkan, atau seret ke kolom lain untuk memindahkan kelompok/kategori menu.</p>
+                <p class="text-xs text-slate-600 mb-6 bg-teal-50 border border-teal-200 p-3.5 rounded-xl flex items-center gap-2 font-medium"><i class="fas fa-info-circle text-base text-[#0b8478]"></i> Seret kartu menu ke atas/bawah untuk mengurutkan, atau seret ke kolom lain untuk memindahkan kelompok/kategori menu.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
                     <?php foreach ($defined_menus as $group => $menus): ?>
                         <div class="menu-column bg-gray-100 p-4 rounded-xl border border-gray-250 flex flex-col gap-3 min-h-[300px]" data-group="<?= htmlspecialchars($group) ?>">
                             <h3 class="font-bold text-gray-800 text-xs border-b pb-2 uppercase tracking-wider text-slate-700 flex items-center justify-between">
                                 <span><?= $group ?></span>
-                                <span class="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full text-[9px]"><?= count($menus) ?></span>
+                                <span class="bg-teal-100 text-[#0b8478] font-bold px-2 py-0.5 rounded-full text-[9px]"><?= count($menus) ?></span>
                             </h3>
                             <div class="sortable-list flex-1 space-y-2 pb-10" id="list-<?= str_replace([' ', '&'], ['-', 'and'], strtolower($group)) ?>">
                                 <?php foreach ($menus as $key => $title): 
                                     $display_title = isset($custom_labels[$key]) ? $custom_labels[$key] : $title;
                                 ?>
-                                    <div class="menu-item-card bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between cursor-grab active:cursor-grabbing text-xs hover:border-amber-300 transition" data-key="<?= $key ?>">
+                                    <div class="menu-item-card bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between cursor-grab active:cursor-grabbing text-xs hover:border-teal-400 transition" data-key="<?= $key ?>">
                                         <span class="font-bold text-slate-750 flex items-center gap-2">
                                             <i class="fas fa-grip-vertical text-gray-400"></i>
                                             <span><?= htmlspecialchars($display_title) ?></span>
@@ -470,7 +475,7 @@ $active_menu = 'manajemen_menu';
 
                 <form method="POST" id="form-layout" class="mt-8 flex justify-end">
                     <input type="hidden" name="layout_json" id="layout-json-input">
-                    <button type="submit" onclick="submitLayoutForm()" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-md transition flex items-center gap-1.5">
+                    <button type="submit" onclick="submitLayoutForm()" class="bg-[#0b8478] hover:bg-[#086a60] text-white font-bold py-3 px-8 rounded-xl shadow-md transition flex items-center gap-2">
                         <i class="fas fa-save text-sm"></i> Simpan Urutan & Tata Letak
                     </button>
                 </form>
@@ -504,11 +509,11 @@ $active_menu = 'manajemen_menu';
             const btnTata = document.getElementById('tab-btn-tata-letak');
 
             if (tabId === 'hak-akses') {
-                btnAkses.className = "px-5 py-2.5 font-bold text-sm text-amber-600 border-b-2 border-amber-500 transition-all flex items-center gap-1.5 focus:outline-none";
-                btnTata.className = "px-5 py-2.5 font-bold text-sm text-gray-500 hover:text-amber-500 border-b-2 border-transparent transition-all flex items-center gap-1.5 focus:outline-none";
+                btnAkses.className = "px-5 py-2.5 font-bold text-sm text-[#0b8478] border-b-2 border-[#0b8478] transition-all flex items-center gap-1.5 focus:outline-none";
+                btnTata.className = "px-5 py-2.5 font-bold text-sm text-gray-500 hover:text-[#0b8478] border-b-2 border-transparent transition-all flex items-center gap-1.5 focus:outline-none";
             } else {
-                btnTata.className = "px-5 py-2.5 font-bold text-sm text-amber-600 border-b-2 border-amber-500 transition-all flex items-center gap-1.5 focus:outline-none";
-                btnAkses.className = "px-5 py-2.5 font-bold text-sm text-gray-500 hover:text-amber-500 border-b-2 border-transparent transition-all flex items-center gap-1.5 focus:outline-none";
+                btnTata.className = "px-5 py-2.5 font-bold text-sm text-[#0b8478] border-b-2 border-[#0b8478] transition-all flex items-center gap-1.5 focus:outline-none";
+                btnAkses.className = "px-5 py-2.5 font-bold text-sm text-gray-500 hover:text-[#0b8478] border-b-2 border-transparent transition-all flex items-center gap-1.5 focus:outline-none";
             }
         }
 
