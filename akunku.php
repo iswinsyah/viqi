@@ -1,308 +1,375 @@
 <?php
-require_once 'auth-ustadz.php';
-require_once 'koneksi.php';
+require_once 'auth-unified.php';
+requireLogin();
 
-$active_menu = 'akunku';
+$user = getCurrentUser();
+$roles = getUserRoles();
+$is_admin = isSuperAdmin();
+
 $pesan_sukses = '';
 $pesan_error = '';
 
-$ustadz_id = $_SESSION['ustadz_id'];
+$user_id = $user['id'] ?? 0;
+$user_type = $user['type'] ?? 'admin';
 
-// --- DATABASE SELF-HEALING (Tambah kolom profil jika belum ada) ---
-$cols = [];
-$res_cols = $conn->query("SHOW COLUMNS FROM akun_ustadz");
-if ($res_cols) {
-    while ($r = $res_cols->fetch_assoc()) {
-        $cols[] = $r['Field'];
-    }
-}
-if (!in_array('email', $cols)) $conn->query("ALTER TABLE akun_ustadz ADD COLUMN email VARCHAR(100) NULL");
-if (!in_array('jenis_kelamin', $cols)) $conn->query("ALTER TABLE akun_ustadz ADD COLUMN jenis_kelamin VARCHAR(20) NULL");
-if (!in_array('alamat', $cols)) $conn->query("ALTER TABLE akun_ustadz ADD COLUMN alamat TEXT NULL");
-if (!in_array('foto', $cols)) $conn->query("ALTER TABLE akun_ustadz ADD COLUMN foto VARCHAR(255) NULL");
-if (!in_array('tempat_lahir', $cols)) $conn->query("ALTER TABLE akun_ustadz ADD COLUMN tempat_lahir VARCHAR(100) NULL");
-if (!in_array('tanggal_lahir', $cols)) $conn->query("ALTER TABLE akun_ustadz ADD COLUMN tanggal_lahir DATE NULL");
-if (!in_array('nik', $cols)) $conn->query("ALTER TABLE akun_ustadz ADD COLUMN nik VARCHAR(30) NULL");
-if (!in_array('pendidikan_terakhir', $cols)) $conn->query("ALTER TABLE akun_ustadz ADD COLUMN pendidikan_terakhir VARCHAR(50) NULL");
-
-// Ambil data ustadz yang sedang login
-$res_ustadz = $conn->query("SELECT * FROM akun_ustadz WHERE id = $ustadz_id");
-$data_ustadz = $res_ustadz ? $res_ustadz->fetch_assoc() : [];
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // 1. Data Diri
-    $nama = $conn->real_escape_string(trim($_POST['nama']));
-    $whatsapp = $conn->real_escape_string(trim($_POST['whatsapp']));
-    $email = $conn->real_escape_string(trim($_POST['email']));
-    $jenis_kelamin = $conn->real_escape_string($_POST['jenis_kelamin']);
-    $tempat_lahir = $conn->real_escape_string(trim($_POST['tempat_lahir']));
-    $tanggal_lahir = $conn->real_escape_string($_POST['tanggal_lahir']);
-    $nik = $conn->real_escape_string(trim($_POST['nik']));
-    $pendidikan_terakhir = $conn->real_escape_string($_POST['pendidikan_terakhir']);
-    $alamat = $conn->real_escape_string(trim($_POST['alamat']));
-    
-    // 2. Akun
-    $username = $conn->real_escape_string(trim($_POST['username']));
-    
-    // Validasi input wajib
-    if (empty($nama) || empty($username)) {
-        $pesan_error = "Nama Lengkap dan Username wajib diisi!";
+// Ambil data user dari tabel masing-masing
+$db_user = [];
+if ($user_type === 'ustadz') {
+    $res = $conn->query("SELECT * FROM akun_ustadz WHERE id = " . (int)$user_id);
+    if ($res) $db_user = $res->fetch_assoc();
+} elseif ($user_type === 'santri') {
+    $res = $conn->query("SELECT * FROM santri WHERE id = " . (int)$user_id);
+    if ($res) $db_user = $res->fetch_assoc();
+} elseif ($user_type === 'orangtua') {
+    $res = $conn->query("SELECT * FROM akun_orangtua WHERE id = " . (int)$user_id);
+    if ($res) $db_user = $res->fetch_assoc();
+} elseif ($user_type === 'yayasan2') {
+    $res = $conn->query("SELECT * FROM akun_yayasan WHERE id = " . (int)$user_id);
+    if ($res && $res->num_rows > 0) {
+        $db_user = $res->fetch_assoc();
     } else {
-        // Cek keunikan username
-        $chk = $conn->query("SELECT id FROM akun_ustadz WHERE username = '$username' AND id != $ustadz_id");
-        if ($chk && $chk->num_rows > 0) {
-            $pesan_error = "Username sudah digunakan oleh pegawai lain!";
+        $db_user = ['nama' => $_SESSION['nama_lengkap'] ?? 'Pengurus Yayasan', 'username' => $_SESSION['username'] ?? 'yayasan', 'foto' => ''];
+    }
+} else {
+    // Admin utama / Super admin
+    $db_user = [
+        'nama' => $_SESSION['nama_lengkap'] ?? ($user['nama_lengkap'] ?? 'Super Admin'),
+        'username' => $_SESSION['username'] ?? ($user['username'] ?? 'admin'),
+        'foto' => $user['foto_profil'] ?? '',
+        'email' => 'admin@vqi.or.id',
+        'whatsapp' => '-'
+    ];
+}
+
+// Proses Form Update
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    $tab_active = $_POST['tab_active'] ?? 'profil';
+
+    if ($tab_active === 'password') {
+        $password_lama = $_POST['password_lama'] ?? '';
+        $password_baru = $_POST['password_baru'] ?? '';
+        $konfirmasi_password = $_POST['konfirmasi_password'] ?? '';
+
+        if (empty($password_baru) || empty($konfirmasi_password)) {
+            $pesan_error = "Password baru dan konfirmasi password tidak boleh kosong!";
+        } elseif ($password_baru !== $konfirmasi_password) {
+            $pesan_error = "Password baru dan konfirmasi password tidak cocok!";
+        } elseif (strlen($password_baru) < 6) {
+            $pesan_error = "Password baru minimal 6 karakter!";
         } else {
-            // 3. Proses Upload Foto (jika ada)
-            $foto_path = $data_ustadz['foto']; // Default foto lama
+            $pass_esc = $conn->real_escape_string($password_baru);
+            if ($user_type === 'ustadz') {
+                $conn->query("UPDATE akun_ustadz SET password = '$pass_esc' WHERE id = " . (int)$user_id);
+                $pesan_sukses = "Password berhasil diperbarui!";
+            } elseif ($user_type === 'santri') {
+                $conn->query("UPDATE santri SET password = '$pass_esc' WHERE id = " . (int)$user_id);
+                $pesan_sukses = "Password berhasil diperbarui!";
+            } elseif ($user_type === 'orangtua') {
+                $conn->query("UPDATE akun_orangtua SET password = '$pass_esc' WHERE id = " . (int)$user_id);
+                $pesan_sukses = "Password berhasil diperbarui!";
+            } elseif ($user_type === 'admin') {
+                // Admin session
+                $_SESSION['admin_password'] = $password_baru;
+                $pesan_sukses = "Password admin berhasil diperbarui!";
+            }
+        }
+    } else {
+        // Update Biodata
+        $nama = $conn->real_escape_string(trim($_POST['nama'] ?? ''));
+        $whatsapp = $conn->real_escape_string(trim($_POST['whatsapp'] ?? ''));
+        $email = $conn->real_escape_string(trim($_POST['email'] ?? ''));
+        $alamat = $conn->real_escape_string(trim($_POST['alamat'] ?? ''));
+
+        if (empty($nama)) {
+            $pesan_error = "Nama Lengkap wajib diisi!";
+        } else {
+            // Upload Foto
+            $foto_path = $db_user['foto'] ?? '';
             if (isset($_FILES['foto']) && $_FILES['foto']['error'] === UPLOAD_ERR_OK) {
                 $file_tmp = $_FILES['foto']['tmp_name'];
                 $file_name = $_FILES['foto']['name'];
                 $file_size = $_FILES['foto']['size'];
                 $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
-                
-                $allowed_exts = ['jpg', 'jpeg', 'png'];
-                if (!in_array($file_ext, $allowed_exts)) {
-                    $pesan_error = "Format foto harus JPG, JPEG, atau PNG!";
-                } elseif ($file_size > 2 * 1024 * 1024) { // Max 2MB
-                    $pesan_error = "Ukuran foto maksimal adalah 2MB!";
-                } else {
-                    // Buat folder uploads jika belum ada
-                    if (!file_exists('uploads/foto_pegawai')) {
-                        mkdir('uploads/foto_pegawai', 0777, true);
+
+                if (in_array($file_ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                    if (!file_exists('uploads/profil')) {
+                        mkdir('uploads/profil', 0777, true);
                     }
-                    // Generate nama file unik
-                    $new_file_name = 'pegawai_' . $ustadz_id . '_' . time() . '.' . $file_ext;
-                    $dest_path = 'uploads/foto_pegawai/' . $new_file_name;
-                    
-                    if (move_uploaded_file($file_tmp, $dest_path)) {
-                        // Hapus foto lama jika ada
-                        if (!empty($foto_path) && file_exists($foto_path)) {
-                            unlink($foto_path);
-                        }
-                        $foto_path = $dest_path;
-                    } else {
-                        $pesan_error = "Gagal mengunggah foto profil!";
+                    $new_name = 'user_' . $user_id . '_' . time() . '.' . $file_ext;
+                    $dest = 'uploads/profil/' . $new_name;
+                    if (move_uploaded_file($file_tmp, $dest)) {
+                        $foto_path = $dest;
+                        $_SESSION['foto_profil'] = $dest;
                     }
                 }
             }
-            
-            // 4. Update Password (jika diisi)
-            $update_password_sql = "";
-            if (!empty($_POST['password_lama']) || !empty($_POST['password_baru']) || !empty($_POST['konfirmasi_password'])) {
-                $password_lama = $_POST['password_lama'] ?? '';
-                $password_baru = $_POST['password_baru'] ?? '';
-                $konfirmasi_password = $_POST['konfirmasi_password'] ?? '';
-                
-                if ($password_lama !== $data_ustadz['password']) {
-                    $pesan_error = "Password lama tidak sesuai!";
-                } elseif ($password_baru !== $konfirmasi_password) {
-                    $pesan_error = "Password baru dan konfirmasi password tidak cocok!";
-                } elseif (strlen($password_baru) < 6) {
-                    $pesan_error = "Password baru minimal 6 karakter!";
-                } else {
-                    $update_password_sql = ", password = '$password_baru'";
-                }
+
+            if ($user_type === 'ustadz') {
+                $conn->query("UPDATE akun_ustadz SET nama = '$nama', whatsapp = '$whatsapp', email = '$email', alamat = '$alamat', foto = '$foto_path' WHERE id = " . (int)$user_id);
+                $pesan_sukses = "Profil berhasil diperbarui!";
+            } elseif ($user_type === 'santri') {
+                $conn->query("UPDATE santri SET nama_lengkap = '$nama', whatsapp = '$whatsapp', alamat = '$alamat', foto = '$foto_path' WHERE id = " . (int)$user_id);
+                $pesan_sukses = "Profil berhasil diperbarui!";
+            } elseif ($user_type === 'orangtua') {
+                $conn->query("UPDATE akun_orangtua SET nama_ayah = '$nama', no_wa = '$whatsapp', alamat = '$alamat' WHERE id = " . (int)$user_id);
+                $pesan_sukses = "Profil berhasil diperbarui!";
+            } else {
+                $_SESSION['nama_lengkap'] = $nama;
+                $pesan_sukses = "Profil berhasil diperbarui!";
             }
-            
-            // Jika tidak ada error sejauh ini, simpan perubahan
-            if (empty($pesan_error)) {
-                $tgl_lahir_val = empty($tanggal_lahir) ? "NULL" : "'$tanggal_lahir'";
-                
-                $sql = "UPDATE akun_ustadz SET 
-                            nama = '$nama',
-                            whatsapp = '$whatsapp',
-                            email = '$email',
-                            jenis_kelamin = '$jenis_kelamin',
-                            tempat_lahir = '$tempat_lahir',
-                            tanggal_lahir = $tgl_lahir_val,
-                            nik = '$nik',
-                            pendidikan_terakhir = '$pendidikan_terakhir',
-                            alamat = '$alamat',
-                            username = '$username',
-                            foto = '$foto_path'
-                            $update_password_sql
-                        WHERE id = $ustadz_id";
-                
-                if ($conn->query($sql) === TRUE) {
-                    $pesan_sukses = "Data akun dan profil berhasil diperbarui!";
-                    // Reload data terbaru
-                    $res_ustadz = $conn->query("SELECT * FROM akun_ustadz WHERE id = $ustadz_id");
-                    $data_ustadz = $res_ustadz ? $res_ustadz->fetch_assoc() : [];
-                } else {
-                    $pesan_error = "Gagal memperbarui database: " . $conn->error;
-                }
-            }
+
+            // Refresh data
+            $user = getCurrentUser();
         }
     }
 }
+
+$tab = $_GET['tab'] ?? 'profil';
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Akunku | Ruang Asatidz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Profil & Pengaturan Akun | SADIGS 4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
-    <?php include 'sidebar-hr.php'; ?>
-    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
-            <div class="flex items-center">
-                <button id="open-sidebar-hr" class="text-gray-500 hover:text-gray-700 md:hidden mr-4">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
+<body class="bg-[#dcf3ee] min-h-screen text-slate-800 flex flex-col md:flex-row antialiased selection:bg-[#0b8478] selection:text-white">
+
+    <!-- DESKTOP SIDEBAR (PC) -->
+    <aside class="hidden md:flex flex-col w-64 lg:w-72 bg-[#0b8478] text-white min-h-screen sticky top-0 h-screen shadow-2xl z-30 flex-shrink-0 border-r border-teal-700/50">
+        
+        <div class="p-6 border-b border-teal-700/60 flex items-center space-x-3.5">
+            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <circle cx="50" cy="46" r="10" fill="#f59e0b" />
+                    <path d="M50 14 C47 24, 47 28, 50 32 C53 28, 53 24, 50 14 Z" fill="#10b981" />
+                    <path d="M68 20 C61 28, 59 32, 60 36 C64 33, 68 31, 74 24 Z" fill="#10b981" />
+                    <path d="M80 36 C71 40, 68 43, 67 48 C72 47, 76 46, 84 41 Z" fill="#10b981" />
+                    <path d="M32 20 C39 28, 41 32, 40 36 C36 33, 32 31, 26 24 Z" fill="#10b981" />
+                    <path d="M20 36 C29 40, 32 43, 33 48 C28 47, 24 46, 16 41 Z" fill="#10b981" />
+                    <path d="M30 62 C42 56, 48 60, 50 66 C52 60, 58 56, 70 62 C68 70, 52 74, 50 74 C48 74, 32 70, 30 62 Z" fill="#f59e0b" />
+                    <path d="M22 68 C36 58, 48 64, 50 72 C52 64, 64 58, 78 68 C75 80, 52 86, 50 86 C48 86, 25 80, 22 68 Z" fill="#0b8478" />
+                </svg>
             </div>
-        </header>
-
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-user-cog text-cyan-600 mr-2"></i>Pengaturan Akunku</h1>
-                <p class="text-gray-500 mt-1 font-outfit">Lengkapi data diri Anda sebagai database kepegawaian Yayasan serta kelola keamanan akun Anda di sini.</p>
+            <div>
+                <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
+                <p class="text-[11px] text-teal-100 font-light italic tracking-tight mt-0.5">Sistem Administrasi Digital</p>
             </div>
-            
-            <?php if($pesan_sukses): ?>
-                <div class="bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center">
-                    <i class="fas fa-check-circle mr-2"></i> <?= $pesan_sukses ?>
-                </div>
-            <?php endif; ?>
-            <?php if($pesan_error): ?>
-                <div class="bg-rose-100 text-rose-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center">
-                    <i class="fas fa-exclamation-circle mr-2"></i> <?= $pesan_error ?>
-                </div>
-            <?php endif; ?>
+        </div>
 
-            <form action="" method="POST" enctype="multipart/form-data">
-                <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-                    
-                    <!-- KARTU UTAMA FOTO PROFIL & USERNAME -->
-                    <div class="xl:col-span-1 bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 flex flex-col items-center justify-center text-center">
-                        <div class="relative w-32 h-32 rounded-full overflow-hidden border-2 border-cyan-500 shadow-md mb-4 bg-gray-150 flex items-center justify-center">
-                            <?php if (!empty($data_ustadz['foto']) && file_exists($data_ustadz['foto'])): ?>
-                                <img src="<?= $data_ustadz['foto'] ?>" alt="Foto Profil" class="w-full h-full object-cover">
-                            <?php else: ?>
-                                <i class="fas fa-user text-5xl text-gray-300"></i>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <h2 class="font-bold text-slate-800 text-base mb-1"><?= htmlspecialchars($data_ustadz['nama'] ?? '') ?></h2>
-                        <span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-4 border border-slate-200">
-                            <?= htmlspecialchars(str_replace('_', ' ', $data_ustadz['role'] ?? '')) ?>
-                        </span>
+        <div class="px-5 py-4 border-b border-teal-700/40 bg-teal-900/30">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-base shadow-sm border-2 border-white/80 overflow-hidden flex-shrink-0">
+                    <?php if (!empty($user['foto_profil'])): ?>
+                        <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Avatar" class="w-full h-full object-cover">
+                    <?php else: ?>
+                        <i class="fas fa-user text-[#0b8478]"></i>
+                    <?php endif; ?>
+                </div>
+                <div class="overflow-hidden flex-1">
+                    <h4 class="font-bold text-xs text-white truncate leading-tight"><?= htmlspecialchars($user['nama_lengkap']) ?></h4>
+                    <p class="text-[10px] text-teal-200 truncate mt-0.5">@<?= htmlspecialchars($user['username']) ?></p>
+                    <span class="inline-block px-2 py-0.5 bg-teal-800/80 rounded text-[9px] font-bold text-teal-100 border border-teal-600/50 mt-1 truncate max-w-full">
+                        <?= htmlspecialchars($user['roles']) ?>
+                    </span>
+                </div>
+            </div>
+        </div>
 
-                        <div class="w-full pt-4 border-t border-slate-100 text-left">
-                            <label class="block text-xs font-bold text-slate-650 mb-1">Unggah Foto Baru</label>
-                            <input type="file" name="foto" accept="image/*" class="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 cursor-pointer">
-                            <span class="text-[9px] text-gray-400 block mt-1">Format: JPG, JPEG, PNG. Maksimal: 2MB.</span>
-                        </div>
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
+            <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-house w-4 text-center"></i>
+                <span>Beranda</span>
+            </a>
+            <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-calendar-alt w-4 text-center"></i>
+                <span>Kalender</span>
+            </a>
+            <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-clock w-4 text-center"></i>
+                <span>Jadwal</span>
+            </a>
+            <a href="pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-bullhorn w-4 text-center"></i>
+                <span>Info</span>
+            </a>
+        </nav>
+
+        <div class="p-4 border-t border-teal-700/60">
+            <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
+                <i class="fas fa-arrow-right-from-bracket"></i> Keluar
+            </a>
+        </div>
+    </aside>
+
+    <!-- MAIN CANVAS -->
+    <div class="flex-1 min-h-screen flex flex-col relative bg-[#dcf3ee]">
+        
+        <!-- TOP HERO BANNER -->
+        <div class="bg-[#0b8478] text-white pt-6 pb-20 px-6 relative rounded-b-[28px] md:rounded-b-[36px] shadow-md flex-shrink-0">
+            <div class="max-w-3xl mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-white/15 backdrop-blur-xs flex items-center justify-center text-white text-2xl border border-white/20 shadow-md">
+                        <i class="fas fa-user-gear text-amber-300"></i>
                     </div>
+                    <div>
+                        <h1 class="font-black text-2xl text-white leading-tight">Profil & Pengaturan Akun</h1>
+                        <p class="text-xs text-teal-100 mt-0.5">Kelola biodata, foto profil, dan keamanan password Anda</p>
+                    </div>
+                </div>
 
-                    <!-- FORM DATA DIRI & KEAMANAN -->
-                    <div class="xl:col-span-2 space-y-6">
-                        
-                        <!-- PANEL 1: DATA DIRI -->
-                        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 text-left">
-                            <h3 class="font-bold text-slate-800 text-sm mb-4 border-b pb-2 uppercase tracking-wider flex items-center gap-1.5"><i class="fas fa-id-card text-cyan-600"></i> Database Kepegawaian</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Nama Lengkap *</label>
-                                    <input type="text" name="nama" value="<?= htmlspecialchars($data_ustadz['nama'] ?? '') ?>" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Nama Lengkap">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">NIK (Nomor Induk Kependudukan)</label>
-                                    <input type="text" name="nik" value="<?= htmlspecialchars($data_ustadz['nik'] ?? '') ?>" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="NIK 16 Digit">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">No. WhatsApp *</label>
-                                    <input type="text" name="whatsapp" value="<?= htmlspecialchars($data_ustadz['whatsapp'] ?? '') ?>" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Contoh: 08123456789">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Email</label>
-                                    <input type="email" name="email" value="<?= htmlspecialchars($data_ustadz['email'] ?? '') ?>" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="alamat@domain.com">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Jenis Kelamin</label>
-                                    <select name="jenis_kelamin" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500">
-                                        <option value="" <?= empty($data_ustadz['jenis_kelamin']) ? 'selected' : '' ?>>-- Pilih --</option>
-                                        <option value="Laki-laki" <?= ($data_ustadz['jenis_kelamin'] === 'Laki-laki') ? 'selected' : '' ?>>Laki-laki</option>
-                                        <option value="Perempuan" <?= ($data_ustadz['jenis_kelamin'] === 'Perempuan') ? 'selected' : '' ?>>Perempuan</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Pendidikan Terakhir</label>
-                                    <select name="pendidikan_terakhir" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500">
-                                        <option value="" <?= empty($data_ustadz['pendidikan_terakhir']) ? 'selected' : '' ?>>-- Pilih --</option>
-                                        <option value="SMA/MA/Sederajat" <?= ($data_ustadz['pendidikan_terakhir'] === 'SMA/MA/Sederajat') ? 'selected' : '' ?>>SMA/MA/Sederajat</option>
-                                        <option value="D3" <?= ($data_ustadz['pendidikan_terakhir'] === 'D3') ? 'selected' : '' ?>>D3</option>
-                                        <option value="S1/D4" <?= ($data_ustadz['pendidikan_terakhir'] === 'S1/D4') ? 'selected' : '' ?>>S1/D4</option>
-                                        <option value="S2" <?= ($data_ustadz['pendidikan_terakhir'] === 'S2') ? 'selected' : '' ?>>S2</option>
-                                        <option value="S3" <?= ($data_ustadz['pendidikan_terakhir'] === 'S3') ? 'selected' : '' ?>>S3</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Lahir</label>
-                                    <input type="text" name="tempat_lahir" value="<?= htmlspecialchars($data_ustadz['tempat_lahir'] ?? '') ?>" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Kota / Kabupaten">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Tanggal Lahir</label>
-                                    <input type="date" name="tanggal_lahir" value="<?= htmlspecialchars($data_ustadz['tanggal_lahir'] ?? '') ?>" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500">
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Alamat Lengkap</label>
-                                    <textarea name="alamat" rows="2" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Alamat tinggal saat ini"><?= htmlspecialchars($data_ustadz['alamat'] ?? '') ?></textarea>
-                                </div>
-                            </div>
+                <a href="dashboard.php" class="px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition border border-white/20 flex items-center gap-1.5">
+                    <i class="fas fa-arrow-left"></i> Kembali
+                </a>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-1 px-4 sm:px-8 pt-0 pb-24 md:pb-12 w-full max-w-3xl mx-auto -mt-12 z-20">
+            
+            <?php if (!empty($pesan_sukses)): ?>
+            <div class="mb-4 bg-teal-50 border border-teal-200 text-[#0b8478] px-4 py-3 rounded-2xl shadow-sm flex items-center font-bold text-xs">
+                <i class="fas fa-check-circle text-base mr-2"></i> <?= htmlspecialchars($pesan_sukses) ?>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($pesan_error)): ?>
+            <div class="mb-4 bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-2xl shadow-sm flex items-center font-bold text-xs">
+                <i class="fas fa-circle-exclamation text-base mr-2"></i> <?= htmlspecialchars($pesan_error) ?>
+            </div>
+            <?php endif; ?>
+
+            <!-- KARTU UTAMA DENGAN TAB -->
+            <div class="bg-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-50">
+                
+                <!-- HEADER PROFIL RINGKAS -->
+                <div class="flex items-center space-x-4 pb-6 border-b border-slate-100">
+                    <div class="w-18 h-18 rounded-2xl bg-[#0b8478] text-white flex items-center justify-center text-3xl font-black shadow-md border-2 border-teal-100 overflow-hidden flex-shrink-0">
+                        <?php if (!empty($user['foto_profil'])): ?>
+                            <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Avatar" class="w-full h-full object-cover">
+                        <?php else: ?>
+                            <i class="fas fa-user text-white"></i>
+                        <?php endif; ?>
+                    </div>
+                    <div>
+                        <h2 class="font-black text-lg text-slate-900 leading-tight"><?= htmlspecialchars($user['nama_lengkap']) ?></h2>
+                        <p class="text-xs text-slate-500 mt-0.5">@<?= htmlspecialchars($user['username']) ?></p>
+                        <span class="inline-block mt-1.5 px-2.5 py-0.5 bg-teal-50 text-[#0b8478] rounded-full text-[10px] font-extrabold border border-teal-200">
+                            Role: <?= htmlspecialchars($user['roles']) ?>
+                        </span>
+                    </div>
+                </div>
+
+                <!-- TAB SWITCHER -->
+                <div class="mt-6 flex border-b border-slate-100 gap-4">
+                    <a href="akunku.php?tab=profil" class="pb-3 text-xs font-bold transition flex items-center gap-1.5 border-b-2 <?= $tab === 'profil' ? 'text-[#0b8478] border-[#0b8478]' : 'text-slate-400 border-transparent hover:text-slate-600' ?>">
+                        <i class="fas fa-user-pen"></i> Edit Biodata & Foto
+                    </a>
+                    <a href="akunku.php?tab=password" class="pb-3 text-xs font-bold transition flex items-center gap-1.5 border-b-2 <?= $tab === 'password' ? 'text-[#0b8478] border-[#0b8478]' : 'text-slate-400 border-transparent hover:text-slate-600' ?>">
+                        <i class="fas fa-key"></i> Ganti Password
+                    </a>
+                </div>
+
+                <!-- FORM BODY -->
+                <form action="akunku.php?tab=<?= htmlspecialchars($tab) ?>" method="POST" enctype="multipart/form-data" class="mt-6 space-y-4 text-xs">
+                    <input type="hidden" name="tab_active" value="<?= htmlspecialchars($tab) ?>">
+
+                    <?php if ($tab === 'password'): ?>
+                    <!-- TAB GANTI PASSWORD -->
+                    <div class="space-y-4 max-w-md">
+                        <div>
+                            <label class="font-bold text-slate-700 block mb-1">Password Baru:</label>
+                            <input type="password" name="password_baru" required placeholder="Minimal 6 karakter" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#0b8478] focus:outline-none font-semibold">
                         </div>
 
-                        <!-- PANEL 2: KREDENSIAL AKUN & KEAMANAN -->
-                        <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 text-left">
-                            <h3 class="font-bold text-slate-800 text-sm mb-4 border-b pb-2 uppercase tracking-wider flex items-center gap-1.5"><i class="fas fa-shield-alt text-cyan-600"></i> Kredensial & Keamanan Akun</h3>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Username *</label>
-                                    <input type="text" name="username" value="<?= htmlspecialchars($data_ustadz['username'] ?? '') ?>" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Username login">
-                                </div>
-                                
-                                <div class="md:col-span-2 border-t pt-4 mt-2">
-                                    <p class="text-xs text-slate-450 font-bold mb-3"><i class="fas fa-lock mr-1"></i> Ganti Password (Kosongkan jika tidak ingin mengubah password)</p>
-                                </div>
-                                
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Password Lama</label>
-                                    <input type="password" name="password_lama" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Password saat ini">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Password Baru</label>
-                                    <input type="password" name="password_baru" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Minimal 6 karakter">
-                                </div>
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-bold text-gray-700 mb-1">Konfirmasi Password Baru</label>
-                                    <input type="password" name="konfirmasi_password" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500" placeholder="Ulangi password baru">
-                                </div>
-                            </div>
+                        <div>
+                            <label class="font-bold text-slate-700 block mb-1">Konfirmasi Password Baru:</label>
+                            <input type="password" name="konfirmasi_password" required placeholder="Ulangi password baru" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#0b8478] focus:outline-none font-semibold">
                         </div>
 
-                        <!-- PANEL 3: BUTTON SAVE -->
-                        <div class="flex justify-end">
-                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-xl shadow-md transition-all flex items-center gap-1.5 text-xs">
-                                <i class="fas fa-save text-sm"></i> Simpan Seluruh Perubahan
+                        <div class="pt-2">
+                            <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#0b8478] hover:bg-[#086a60] text-white font-bold transition shadow-md flex items-center gap-2 cursor-pointer">
+                                <i class="fas fa-save"></i> Simpan Password Baru
                             </button>
                         </div>
-
                     </div>
-                </div>
-            </form>
+
+                    <?php else: ?>
+                    <!-- TAB EDIT BIODATA & FOTO -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="sm:col-span-2">
+                            <label class="font-bold text-slate-700 block mb-1">Nama Lengkap:</label>
+                            <input type="text" name="nama" value="<?= htmlspecialchars($user['nama_lengkap']) ?>" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#0b8478] focus:outline-none font-semibold">
+                        </div>
+
+                        <div>
+                            <label class="font-bold text-slate-700 block mb-1">Nomor WhatsApp:</label>
+                            <input type="text" name="whatsapp" value="<?= htmlspecialchars($db_user['whatsapp'] ?? ($db_user['no_wa'] ?? '')) ?>" placeholder="08xxxxxxxxxx" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#0b8478] focus:outline-none font-semibold">
+                        </div>
+
+                        <div>
+                            <label class="font-bold text-slate-700 block mb-1">Email:</label>
+                            <input type="email" name="email" value="<?= htmlspecialchars($db_user['email'] ?? '') ?>" placeholder="email@contoh.com" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#0b8478] focus:outline-none font-semibold">
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <label class="font-bold text-slate-700 block mb-1">Alamat Domisili:</label>
+                            <textarea name="alamat" rows="2" placeholder="Alamat lengkap..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-[#0b8478] focus:outline-none font-semibold"><?= htmlspecialchars($db_user['alamat'] ?? '') ?></textarea>
+                        </div>
+
+                        <div class="sm:col-span-2">
+                            <label class="font-bold text-slate-700 block mb-1">Ganti Foto Profil:</label>
+                            <input type="file" name="foto" accept="image/*" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-teal-50 file:text-[#0b8478] hover:file:bg-teal-100">
+                            <p class="text-[10px] text-slate-400 mt-1">Format: JPG, PNG, atau WEBP. Maksimal 2MB.</p>
+                        </div>
+
+                        <div class="sm:col-span-2 pt-3 flex justify-end">
+                            <button type="submit" class="px-6 py-2.5 rounded-xl bg-[#0b8478] hover:bg-[#086a60] text-white font-bold transition shadow-md flex items-center gap-2 cursor-pointer">
+                                <i class="fas fa-save"></i> Simpan Perubahan Biodata
+                            </button>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                </form>
+
+            </div>
+
         </main>
+
+        <!-- BOTTOM NAVIGATION BAR (HP) -->
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-teal-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-around z-40 max-w-[440px] mx-auto px-2">
+            <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-house text-lg mb-0.5"></i>
+                <span>Beranda</span>
+            </a>
+            <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-calendar-alt text-lg mb-0.5"></i>
+                <span>Kalender</span>
+            </a>
+            <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-clock text-lg mb-0.5"></i>
+                <span>Jadwal</span>
+            </a>
+            <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-bullhorn text-lg mb-0.5"></i>
+                <span>Info</span>
+            </a>
+            <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-rose-500 hover:text-rose-700 font-bold text-[10px] transition">
+                <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5"></i>
+                <span>Keluar</span>
+            </a>
+        </nav>
+
     </div>
-    <script>
-        document.getElementById('open-sidebar-hr').addEventListener('click', () => { 
-            document.getElementById('sidebar-hr').classList.toggle('hidden'); 
-            document.getElementById('sidebar-overlay-hr').classList.toggle('hidden'); 
-        });
-    </script>
+
 </body>
 </html>
