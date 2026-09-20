@@ -74,6 +74,40 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     exit;
 }
 
+// AJAX: Simpan & Reset Urutan Drag-and-Drop Menu Pengguna
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if ($_POST['action'] === 'save_user_menu_order') {
+        header('Content-Type: application/json');
+        $user_key = 'user_' . ($user['id'] ?? $user['username'] ?? 'default');
+        $order_data = $_POST['menu_order'] ?? '[]';
+        $decoded = json_decode($order_data, true);
+        if (is_array($decoded)) {
+            $conn->query("CREATE TABLE IF NOT EXISTS user_menu_preferences (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_key VARCHAR(100) UNIQUE,
+                menu_order_json LONGTEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )");
+            $stmt = $conn->prepare("INSERT INTO user_menu_preferences (user_key, menu_order_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE menu_order_json = VALUES(menu_order_json)");
+            if ($stmt) {
+                $stmt->bind_param("ss", $user_key, $order_data);
+                $stmt->execute();
+                $stmt->close();
+            }
+            echo json_encode(['status' => 'success']);
+            exit;
+        }
+        echo json_encode(['status' => 'error', 'message' => 'Format data tidak valid']);
+        exit;
+    } elseif ($_POST['action'] === 'reset_user_menu_order') {
+        header('Content-Type: application/json');
+        $user_key = 'user_' . ($user['id'] ?? $user['username'] ?? 'default');
+        $conn->query("DELETE FROM user_menu_preferences WHERE user_key = '" . $conn->real_escape_string($user_key) . "'");
+        echo json_encode(['status' => 'success']);
+        exit;
+    }
+}
+
 // =========================================================
 // SINKRONISASI DINAMIS DENGAN MANAJEMEN MENU DATABASE
 // =========================================================
@@ -187,6 +221,29 @@ foreach ($all_grid_items as $key => $item) {
 
     $visible_items[$key] = $item;
 }
+
+// Urutkan $visible_items sesuai preferensi Custom Drag-and-Drop Pengguna
+$user_key = 'user_' . ($user['id'] ?? $user['username'] ?? 'default');
+$user_custom_order = [];
+$res_pref = $conn->query("SELECT menu_order_json FROM user_menu_preferences WHERE user_key = '" . $conn->real_escape_string($user_key) . "' LIMIT 1");
+if ($res_pref && $row_pref = $res_pref->fetch_assoc()) {
+    $user_custom_order = json_decode($row_pref['menu_order_json'], true) ?: [];
+}
+
+if (!empty($user_custom_order) && is_array($user_custom_order)) {
+    $sorted_visible = [];
+    foreach ($user_custom_order as $k) {
+        if (isset($visible_items[$k])) {
+            $sorted_visible[$k] = $visible_items[$k];
+            unset($visible_items[$k]);
+        }
+    }
+    // Sisipkan menu baru yang belum tersimpan di order
+    foreach ($visible_items as $k => $item) {
+        $sorted_visible[$k] = $item;
+    }
+    $visible_items = $sorted_visible;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -197,11 +254,31 @@ foreach ($all_grid_items as $key => $item) {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- SortableJS untuk Drag and Drop mirip Launcher Android -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .tap-highlight-transparent { -webkit-tap-highlight-color: transparent; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Gaya Animasi Drag & Drop Android Launcher */
+        .sortable-ghost {
+            opacity: 0.3 !important;
+            transform: scale(0.92) !important;
+            border-radius: 24px !important;
+        }
+        .sortable-chosen {
+            transform: scale(1.08) !important;
+            z-index: 50 !important;
+        }
+        .sortable-chosen .squircle-icon {
+            box-shadow: 0 16px 32px -4px rgba(11, 132, 120, 0.4), 0 0 0 3px rgba(11, 132, 120, 0.35) !important;
+        }
+        .sortable-drag {
+            opacity: 0.95 !important;
+            transform: rotate(2.5deg) scale(1.1) !important;
+        }
     </style>
 </head>
 <body class="bg-[#dcf3ee] min-h-screen text-slate-800 flex flex-col md:flex-row antialiased selection:bg-[#0b8478] selection:text-white">
@@ -412,21 +489,34 @@ foreach ($all_grid_items as $key => $item) {
             
             <!-- KARTU PUTIH UTAMA DENGAN SUDUT MELENGKUNG (SQUIRCLE) -->
             <div class="bg-white rounded-[36px] md:rounded-[40px] p-6 sm:p-10 shadow-xl shadow-teal-950/10 border border-teal-50">
-                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center">
+                
+                <!-- TOP HEADER DALAM KARTU DENGAN HINT & RESET -->
+                <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+                        <i class="fas fa-grip-vertical text-[#0b8478]"></i> Tata Letak Menu
+                    </span>
+                    <button type="button" onclick="resetMenuOrder()" class="text-[10px] font-bold text-teal-700 hover:text-[#086a60] hover:underline flex items-center gap-1 cursor-pointer transition">
+                        <i class="fas fa-rotate-left text-[9px]"></i> Reset Posisi
+                    </button>
+                </div>
+
+                <!-- DRAGGABLE GRID CONTAINER -->
+                <div id="grid-menu-container" class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center">
                     
                     <?php foreach ($visible_items as $key => $item): ?>
-                    <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center group cursor-pointer w-full text-center tap-highlight-transparent">
-                        
-                        <!-- Squircle Box Button (#0b8478) -->
-                        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-[#0b8478] group-hover:bg-[#086a60] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
-                            <i class="<?= $item['icon'] ?>"></i>
-                        </div>
+                    <div data-id="<?= htmlspecialchars($key) ?>" class="grid-menu-card flex flex-col items-center group cursor-grab active:cursor-grabbing w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center w-full focus:outline-none" draggable="false">
+                            <!-- Squircle Box Button (#0b8478) -->
+                            <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-[#0b8478] group-hover:bg-[#086a60] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= $item['icon'] ?>"></i>
+                            </div>
 
-                        <!-- 1 Kata Keterangan Menu -->
-                        <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0b8478] transition-colors leading-tight">
-                            <?= htmlspecialchars($item['label']) ?>
-                        </span>
-                    </a>
+                            <!-- 1 Kata Keterangan Menu -->
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0b8478] transition-colors leading-tight line-clamp-1">
+                                <?= htmlspecialchars($item['label']) ?>
+                            </span>
+                        </a>
+                    </div>
                     <?php endforeach; ?>
 
                 </div>
@@ -467,6 +557,12 @@ foreach ($all_grid_items as $key => $item) {
             </a>
         </nav>
 
+    </div>
+
+    <!-- FLOATING TOAST NOTIFICATION (ANDROID-LIKE) -->
+    <div id="saveToast" class="fixed bottom-20 md:bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white backdrop-blur-md px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2.5 text-xs font-semibold border border-teal-500/30 transition-all duration-300 opacity-0 pointer-events-none translate-y-4">
+        <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+        <span id="toastMsg">Tata letak menu tersimpan ✨</span>
     </div>
 
     <!-- ========================================================= -->
@@ -537,12 +633,15 @@ foreach ($all_grid_items as $key => $item) {
 
                 <!-- Scrollable Checkbox List -->
                 <div class="flex-1 overflow-y-auto pr-1 space-y-1.5 pb-2">
-                    <?php foreach ($master_roles_list as $role_key => $role_label): 
-                        $is_checked = in_array($role_key, $active_views) || (in_array('all', $active_views));
+                    <?php 
+                    $modal_roles = $simulation_roles_grid ?? [];
+                    foreach ($modal_roles as $role_key => $role_data): 
+                        if (isset($role_data['action'])) continue;
+                        $is_checked = in_array($role_key, $active_views) || in_array('all', $active_views);
                     ?>
                     <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:bg-teal-50/70 cursor-pointer transition select-none">
                         <input type="checkbox" name="roles_sim[]" value="<?= htmlspecialchars($role_key) ?>" <?= $is_checked ? 'checked' : '' ?> class="role-checkbox w-4 h-4 text-[#0b8478] rounded focus:ring-[#0b8478]">
-                        <span class="text-xs font-semibold text-slate-800"><?= htmlspecialchars($role_label) ?></span>
+                        <span class="text-xs font-semibold text-slate-800"><?= htmlspecialchars($role_data['label']) ?></span>
                     </label>
                     <?php endforeach; ?>
                 </div>
@@ -574,6 +673,85 @@ foreach ($all_grid_items as $key => $item) {
             const checkboxes = document.querySelectorAll('.role-checkbox');
             checkboxes.forEach(cb => cb.checked = check);
         }
+
+        // =========================================================
+        // INISIALISASI SORTABLEJS DRAG & DROP MIRIP ANDROID LAUNCHER
+        // =========================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            const gridContainer = document.getElementById('grid-menu-container');
+            if (!gridContainer) return;
+
+            let toastTimer = null;
+            function showToast(msg) {
+                const toast = document.getElementById('saveToast');
+                const text = document.getElementById('toastMsg');
+                if (!toast) return;
+                if (text) text.innerText = msg;
+                toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+                toast.classList.add('opacity-100', 'translate-y-0');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('opacity-100', 'translate-y-0');
+                    toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+                }, 2200);
+            }
+
+            new Sortable(gridContainer, {
+                animation: 250, // Reordering animation speed (ms)
+                delay: 100, // 100ms delay on touch to prevent conflicts with normal clicks
+                delayOnTouchOnly: true,
+                touchStartThreshold: 5,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    if (evt.oldIndex === evt.newIndex) return;
+
+                    const cards = Array.from(gridContainer.querySelectorAll('.grid-menu-card'));
+                    const order = cards.map(c => c.getAttribute('data-id')).filter(Boolean);
+
+                    localStorage.setItem('sadigs_menu_order', JSON.stringify(order));
+
+                    const formData = new FormData();
+                    formData.append('action', 'save_user_menu_order');
+                    formData.append('menu_order', JSON.stringify(order));
+
+                    fetch('dashboard.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            showToast('Tata letak menu tersimpan ✨');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Gagal menyimpan tata letak menu:', err);
+                    });
+                }
+            });
+
+            window.resetMenuOrder = function() {
+                if (!confirm('Kembalikan tata letak menu ke urutan bawaan sistem?')) return;
+
+                localStorage.removeItem('sadigs_menu_order');
+                const formData = new FormData();
+                formData.append('action', 'reset_user_menu_order');
+
+                fetch('dashboard.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    showToast('Tata letak di-reset 🔄');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 400);
+                });
+            };
+        });
     </script>
 </body>
 </html>
