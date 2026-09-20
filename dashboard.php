@@ -124,9 +124,16 @@ if ($res_struct && $res_struct->num_rows > 0) {
         $label = $db_custom_labels[$k]['short'] ?? ($default_1word_labels[$k] ?? ucwords(str_replace('_', ' ', $k)));
         $roles_allowed = $db_permissions[$k] ?? ['super_admin', 'ketua_yayasan'];
         
+        $icon = trim($r['icon'] ?? '');
+        if (!empty($icon) && !str_starts_with($icon, 'fa')) {
+            $icon = 'fas fa-' . $icon;
+        } elseif (str_starts_with($icon, 'fa-')) {
+            $icon = 'fas ' . $icon;
+        }
+        
         $all_grid_items[$k] = [
             'label' => $label,
-            'icon'  => $r['icon'],
+            'icon'  => $icon,
             'href'  => $r['href'],
             'roles' => $roles_allowed,
             'group' => $r['menu_group']
