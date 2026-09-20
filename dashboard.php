@@ -249,18 +249,6 @@ foreach ($all_grid_items as $key => $item) {
                 <i class="fas fa-house w-4 text-center"></i>
                 <span>Beranda</span>
             </a>
-            <a href="admin-validasi-ibadah-musyrif.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-mosque w-4 text-center"></i>
-                <span>Ibadah</span>
-            </a>
-            <a href="admin-setoran-hafalan-santri.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-quran w-4 text-center"></i>
-                <span>Hafalan</span>
-            </a>
-            <a href="admin-rekap-spp.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-wallet w-4 text-center"></i>
-                <span>Keuangan</span>
-            </a>
             <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-calendar-alt w-4 text-center"></i>
                 <span>Kalender</span>
@@ -271,7 +259,7 @@ foreach ($all_grid_items as $key => $item) {
             </a>
             <a href="artikel.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-bullhorn w-4 text-center"></i>
-                <span>Informasi</span>
+                <span>Info</span>
             </a>
 
             <!-- SIMULASI ROLE WIDGET DI SIDEBAR -->
@@ -453,17 +441,21 @@ foreach ($all_grid_items as $key => $item) {
                 </div>
                 <span>Beranda</span>
             </a>
-            <a href="admin-validasi-ibadah-musyrif.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0b8478] font-bold text-[10px] transition">
-                <i class="fas fa-mosque text-lg mb-0.5"></i>
-                <span>Ibadah</span>
+            <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-calendar-alt text-lg mb-0.5"></i>
+                <span>Kalender</span>
             </a>
-            <a href="admin-setoran-hafalan-santri.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0b8478] font-bold text-[10px] transition">
-                <i class="fas fa-quran text-lg mb-0.5"></i>
-                <span>Hafalan</span>
+            <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-clock text-lg mb-0.5"></i>
+                <span>Jadwal</span>
             </a>
-            <a href="admin-rekap-spp.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-400 hover:text-[#0b8478] font-bold text-[10px] transition">
-                <i class="fas fa-wallet text-lg mb-0.5"></i>
-                <span>Keuangan</span>
+            <a href="artikel.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
+                <i class="fas fa-bullhorn text-lg mb-0.5"></i>
+                <span>Info</span>
+            </a>
+            <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-rose-500 hover:text-rose-700 font-bold text-[10px] transition">
+                <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5"></i>
+                <span>Keluar</span>
             </a>
         </nav>
 
