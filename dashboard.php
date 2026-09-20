@@ -151,7 +151,7 @@ $default_1word_labels = [
 ];
 
 $all_grid_items = [];
-$res_struct = $conn->query("SELECT * FROM menu_structure ORDER BY sort_order ASC");
+$res_struct = $conn->query("SELECT * FROM menu_structure WHERE menu_key NOT IN ('kalender', 'akunku', 'prota_promes', 'yayasan_update', 'update') ORDER BY sort_order ASC");
 if ($res_struct && $res_struct->num_rows > 0) {
     while ($r = $res_struct->fetch_assoc()) {
         $k = $r['menu_key'];
