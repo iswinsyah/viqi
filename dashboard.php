@@ -6,46 +6,47 @@ $user = getCurrentUser();
 $roles = getUserRoles();
 $is_admin = isSuperAdmin();
 
-// Master 16 Daftar Role Resmi Lembaga
-$master_roles_list = [
-    'ketua_yayasan'      => '1. Ketua Yayasan (Super Admin)',
-    'sekretaris_yayasan' => '2. Sekretaris Yayasan',
-    'bendahara_yayasan'  => '3. Bendahara Yayasan',
-    'kepala_sekolah'     => '4. Kepala Sekolah',
-    'kepala_mahad'       => '5. Kepala Ma\'had',
-    'kepala_ldu'         => '6. Kepala LDU',
-    'sekretaris_sekolah' => '7. Sekretaris Sekolah',
-    'bendahara_sekolah'  => '8. Bendahara Sekolah',
-    'admin_sekolah'      => '9. Admin Sekolah',
-    'kepala_asrama'      => '10. Kepala Asrama (Rijal/Nisa)',
-    'tutor'              => '11. Tutor',
-    'musyrif'            => '12. Musyrif / Musyrifah',
-    'ustadz'             => '13. Ustadz / Ustadzah',
-    'trainer'            => '14. Trainer',
-    'santri'             => '15. Santri (Rijal/Nisa)',
-    'orangtua'           => '16. Orangtua / Walisantri'
+// Master 5 Kolom x 4 Baris Matrix Simulasi Role Lembaga (Total 20 Slot)
+$simulation_roles_grid = [
+    // Baris 1 (5 Kolom)
+    'all'                => ['label' => 'Semua Role', 'action' => 'all'],
+    'ketua_yayasan'      => ['label' => 'Ketua Yayasan'],
+    'sekretaris_yayasan' => ['label' => 'Sekr. Yayasan'],
+    'bendahara_yayasan'  => ['label' => 'Bend. Yayasan'],
+    'kepala_sekolah'     => ['label' => 'Kepala Sekolah'],
+
+    // Baris 2 (5 Kolom)
+    'kepala_mahad'       => ['label' => 'Kepala Ma\'had'],
+    'kepala_ldu'         => ['label' => 'Kepala LDU'],
+    'sekretaris_sekolah' => ['label' => 'Sekr. Sekolah'],
+    'bendahara_sekolah'  => ['label' => 'Bend. Sekolah'],
+    'admin_sekolah'      => ['label' => 'Admin Sekolah'],
+
+    // Baris 3 (5 Kolom)
+    'kepala_asrama'      => ['label' => 'Kepala Asrama'],
+    'tutor'              => ['label' => 'Tutor'],
+    'musyrif'            => ['label' => 'Musyrif / Ah'],
+    'ustadz'             => ['label' => 'Ustadz / Ah'],
+    'trainer'            => ['label' => 'Trainer'],
+
+    // Baris 4 (5 Kolom)
+    'santri_rijal'       => ['label' => 'Santri Rijal'],
+    'santri_nisa'        => ['label' => 'Santri Nisa'],
+    'orangtua'           => ['label' => 'Orangtua / Wali'],
+    'pilih_semua'        => ['label' => 'Pilih Semua', 'action' => 'all'],
+    'lepas_semua'        => ['label' => 'Lepas Semua', 'action' => 'reset']
 ];
 
-// Tangkap Form Multi-Role Checklist Modal
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_role_simulation'])) {
-    $selected_roles = $_POST['roles_sim'] ?? [];
-    if (empty($selected_roles) || in_array('all', $selected_roles)) {
-        $_SESSION['active_role_views'] = ['all'];
-    } else {
-        $_SESSION['active_role_views'] = array_map('trim', $selected_roles);
-    }
-    header("Location: dashboard.php");
-    exit;
-}
-
-// Tangkap Multi-Role Toggle Cepat (Quick Pill Toggle)
+// Tangkap Multi-Role Toggle Cepat (Direct Checkbox Toggle)
 if (isset($_GET['toggle_role'])) {
     $tr = strtolower(trim($_GET['toggle_role']));
-    if ($tr === 'all') {
+    if ($tr === 'all' || $tr === 'pilih_semua') {
         $_SESSION['active_role_views'] = ['all'];
+    } elseif ($tr === 'reset' || $tr === 'lepas_semua') {
+        $_SESSION['active_role_views'] = ['none'];
     } else {
         $current_views = $_SESSION['active_role_views'] ?? ['all'];
-        if (in_array('all', $current_views)) {
+        if (in_array('all', $current_views) || in_array('none', $current_views)) {
             $current_views = [];
         }
         if (in_array($tr, $current_views)) {
@@ -54,7 +55,7 @@ if (isset($_GET['toggle_role'])) {
             $current_views[] = $tr;
         }
         if (empty($current_views)) {
-            $current_views = ['all'];
+            $current_views = ['none'];
         }
         $_SESSION['active_role_views'] = array_values($current_views);
     }
@@ -63,6 +64,7 @@ if (isset($_GET['toggle_role'])) {
 }
 $active_views = $_SESSION['active_role_views'] ?? ['all'];
 $is_all_view = in_array('all', $active_views);
+$is_none_view = in_array('none', $active_views);
 
 // Logout Action
 if (isset($_GET['action']) && $_GET['action'] === 'logout') {
@@ -406,50 +408,44 @@ foreach ($all_grid_items as $key => $item) {
 
             </div>
 
-            <!-- MULTI-ROLE CHECKBOX SIMULATION PILL (MOBILE & DESKTOP) -->
+            <!-- MULTI-ROLE 5 KOLOM X 4 BARIS DIRECT CHECKBOX SIMULATION -->
             <?php if ($is_admin || count($roles) > 1): ?>
-            <div class="max-w-4xl mx-auto mt-4 pt-3 border-t border-teal-600/60 flex items-center justify-center gap-1.5 flex-wrap text-[10px]">
-                
-                <!-- Opsi Semua -->
-                <a href="dashboard.php?toggle_role=all" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_all_view ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                    <i class="fas <?= $is_all_view ? 'fa-circle-check text-[#0b8478]' : 'fa-circle text-white/40' ?>"></i>
-                    <span>Semua</span>
-                </a>
+            <div class="max-w-4xl mx-auto mt-4 pt-3 border-t border-teal-600/60">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-teal-100 flex items-center gap-1.5">
+                        <i class="fas fa-sliders text-[9px]"></i> Filter Simulasi Multi-Role (5 Kolom x 4 Baris)
+                    </span>
+                    <div class="text-[10px] text-teal-200">
+                        Status: <span class="font-extrabold text-white"><?= $is_all_view ? 'Semua Role' : ($is_none_view ? 'Kosong' : count($active_views).' Role Aktif') ?></span>
+                    </div>
+                </div>
 
-                <!-- Checkbox Tutor / Guru -->
-                <?php $is_tutor_active = in_array('tutor', $active_views); ?>
-                <a href="dashboard.php?toggle_role=tutor" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_tutor_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                    <i class="fas <?= $is_tutor_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
-                    <span>Tutor</span>
-                </a>
-
-                <!-- Checkbox Musyrif -->
-                <?php $is_musyrif_active = in_array('musyrif', $active_views); ?>
-                <a href="dashboard.php?toggle_role=musyrif" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_musyrif_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                    <i class="fas <?= $is_musyrif_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
-                    <span>Musyrif</span>
-                </a>
-
-                <!-- Checkbox Santri -->
-                <?php $is_santri_active = in_array('santri', $active_views); ?>
-                <a href="dashboard.php?toggle_role=santri" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_santri_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                    <i class="fas <?= $is_santri_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
-                    <span>Santri</span>
-                </a>
-
-                <!-- Checkbox Orangtua -->
-                <?php $is_wali_active = in_array('orangtua', $active_views) || in_array('walisantri', $active_views); ?>
-                <a href="dashboard.php?toggle_role=orangtua" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_wali_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                    <i class="fas <?= $is_wali_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
-                    <span>Orangtua</span>
-                </a>
-
-                <!-- Tombol Buka 16 Role Lengkap -->
-                <button type="button" onclick="toggleRoleModal()" class="px-2.5 py-0.5 rounded-full font-bold bg-amber-400 text-teal-950 hover:bg-amber-300 transition flex items-center gap-1 shadow-xs cursor-pointer">
-                    <i class="fas fa-sliders text-[9px]"></i>
-                    <span>16 Role</span>
-                </button>
-
+                <!-- 5 KOLOM X 4 BARIS MATRIX CHECKBOX -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 text-[10px]">
+                    <?php foreach ($simulation_roles_grid as $r_key => $r_data): 
+                        $is_action = isset($r_data['action']);
+                        if ($is_action) {
+                            if ($r_data['action'] === 'all') {
+                                $is_checked = $is_all_view;
+                            } else {
+                                $is_checked = false;
+                            }
+                        } else {
+                            $is_checked = in_array($r_key, $active_views) || $is_all_view;
+                        }
+                    ?>
+                    <a href="dashboard.php?toggle_role=<?= urlencode($r_key) ?>" class="px-2 py-1 rounded-lg font-bold flex items-center gap-1.5 transition text-left truncate <?= $is_checked ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                        <?php if ($is_action && $r_data['action'] === 'reset'): ?>
+                            <i class="fas fa-square-minus text-rose-300"></i>
+                        <?php elseif ($is_action && $r_data['action'] === 'all'): ?>
+                            <i class="fas <?= $is_all_view ? 'fa-circle-check text-[#0b8478]' : 'fa-circle text-white/40' ?>"></i>
+                        <?php else: ?>
+                            <i class="fas <?= $is_checked ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
+                        <?php endif; ?>
+                        <span class="truncate"><?= htmlspecialchars($r_data['label']) ?></span>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
             </div>
             <?php endif; ?>
         </div>
