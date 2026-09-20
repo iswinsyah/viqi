@@ -151,7 +151,7 @@ $default_1word_labels = [
 ];
 
 $all_grid_items = [];
-$res_struct = $conn->query("SELECT * FROM menu_structure WHERE menu_key NOT IN ('kalender', 'akunku', 'prota_promes', 'yayasan_update', 'update') ORDER BY sort_order ASC");
+$res_struct = $conn->query("SELECT * FROM menu_structure WHERE menu_key NOT IN ('kalender', 'akunku', 'prota_promes', 'yayasan_update', 'update', 'absensi_pegawai', 'absensi') ORDER BY sort_order ASC");
 if ($res_struct && $res_struct->num_rows > 0) {
     while ($r = $res_struct->fetch_assoc()) {
         $k = $r['menu_key'];
@@ -220,6 +220,36 @@ foreach ($all_grid_items as $key => $item) {
     }
 
     $visible_items[$key] = $item;
+}
+
+// Cek Visibilitas 2 Tombol Absensi Cepat di Bawah Frame Card (Kecuali Santri & Walisantri)
+$non_staff_roles = ['santri', 'santri_rijal', 'santri_nisa', 'walisantri', 'orangtua'];
+$show_absensi_buttons = false;
+if ($is_admin) {
+    $show_absensi_buttons = true;
+} else {
+    foreach ($roles as $r) {
+        if (!in_array($r, $non_staff_roles)) {
+            $show_absensi_buttons = true;
+            break;
+        }
+    }
+}
+
+// Jika dalam mode simulasi role (bukan All Views)
+if (!$is_all_view) {
+    if ($is_none_view) {
+        $show_absensi_buttons = false;
+    } else {
+        $show_absensi_buttons = false;
+        foreach ($active_views as $av) {
+            $av_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($av)));
+            if (!in_array($av_norm, $non_staff_roles)) {
+                $show_absensi_buttons = true;
+                break;
+            }
+        }
+    }
 }
 
 // Urutkan $visible_items sesuai preferensi Custom Drag-and-Drop Pengguna
@@ -521,6 +551,47 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
 
                 </div>
             </div>
+
+            <?php if ($show_absensi_buttons): ?>
+            <!-- ========================================================= -->
+            <!-- TOMBOL CEPAT ABSENSI PEGAWAI & MENGAJAR (DI BAWAH FRAME)  -->
+            <!-- ========================================================= -->
+            <div class="mt-4 sm:mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <!-- Tombol 1: Absensi Kehadiran / Kepulangan -->
+                <a href="admin-absensi-pegawai.php?tipe=pegawai" class="group relative overflow-hidden bg-gradient-to-br from-[#0b8478] to-[#086a60] hover:from-[#086a60] hover:to-[#054c45] text-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-lg shadow-teal-950/15 border border-teal-400/20 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between">
+                    <div class="flex items-center gap-3.5 sm:gap-4">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-xl sm:text-2xl text-white group-hover:scale-105 transition-transform flex-shrink-0">
+                            <i class="fas fa-fingerprint"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-[10px] font-bold text-teal-200 uppercase tracking-wider">Presensi Harian</div>
+                            <h3 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-snug">Absensi Kehadiran / Kepulangan</h3>
+                            <p class="text-[11px] text-teal-100/80 font-medium hidden sm:block mt-0.5">Check-in / Check-out GPS & QR Pegawai</p>
+                        </div>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-white/10 group-hover:bg-white/20 flex items-center justify-center text-white/90 group-hover:translate-x-1 transition-all flex-shrink-0 ml-2">
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </div>
+                </a>
+
+                <!-- Tombol 2: Absensi Mulai Mengajar / Mengakhiri Pelajaran -->
+                <a href="admin-absensi-pegawai.php?tipe=mengajar" class="group relative overflow-hidden bg-gradient-to-br from-[#1b5e76] to-[#0e4457] hover:from-[#0e4457] hover:to-[#09303e] text-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-lg shadow-cyan-950/15 border border-cyan-400/20 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between">
+                    <div class="flex items-center gap-3.5 sm:gap-4">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-xl sm:text-2xl text-white group-hover:scale-105 transition-transform flex-shrink-0">
+                            <i class="fas fa-chalkboard-user"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-[10px] font-bold text-cyan-200 uppercase tracking-wider">KBM & Jurnal</div>
+                            <h3 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-snug">Absensi Mulai Mengajar / Mengakhiri Pelajaran</h3>
+                            <p class="text-[11px] text-cyan-100/80 font-medium hidden sm:block mt-0.5">Presensi Pelajaran & Jurnal KBM Santri</p>
+                        </div>
+                    </div>
+                    <div class="w-8 h-8 rounded-full bg-white/10 group-hover:bg-white/20 flex items-center justify-center text-white/90 group-hover:translate-x-1 transition-all flex-shrink-0 ml-2">
+                        <i class="fas fa-arrow-right text-xs"></i>
+                    </div>
+                </a>
+            </div>
+            <?php endif; ?>
 
             <!-- FOOTER BRANDING RINGKAS -->
             <div class="mt-6 text-center text-[11px] text-teal-800 font-semibold opacity-70">

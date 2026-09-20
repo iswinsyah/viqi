@@ -1247,6 +1247,27 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                 }
             });
         }, 10000);
+
+        // Auto focus / highlight based on ?tipe= query parameter
+        document.addEventListener("DOMContentLoaded", function() {
+            const params = new URLSearchParams(window.location.search);
+            const tipe = params.get('tipe');
+            if (tipe === 'pegawai') {
+                const btn = document.getElementById('btn-absen-pegawai');
+                if (btn) {
+                    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    btn.classList.add('ring-4', 'ring-teal-400', 'animate-pulse');
+                    setTimeout(() => btn.classList.remove('animate-pulse'), 2500);
+                }
+            } else if (tipe === 'mengajar') {
+                const btn = document.getElementById('btn-absen-mengajar');
+                if (btn) {
+                    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    btn.classList.add('ring-4', 'ring-cyan-400', 'animate-pulse');
+                    setTimeout(() => btn.classList.remove('animate-pulse'), 2500);
+                }
+            }
+        });
     </script>
 </body>
 </html>
