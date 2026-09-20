@@ -258,7 +258,7 @@ foreach ($all_grid_items as $key => $item) {
                 <i class="fas fa-clock w-4 text-center"></i>
                 <span>Jadwal</span>
             </a>
-            <a href="artikel.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+            <a href="pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-bullhorn w-4 text-center"></i>
                 <span>Info</span>
             </a>
@@ -450,7 +450,7 @@ foreach ($all_grid_items as $key => $item) {
                 <i class="fas fa-clock text-lg mb-0.5"></i>
                 <span>Jadwal</span>
             </a>
-            <a href="artikel.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
+            <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
                 <i class="fas fa-bullhorn text-lg mb-0.5"></i>
                 <span>Info</span>
             </a>
