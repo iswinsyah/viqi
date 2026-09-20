@@ -231,6 +231,8 @@ foreach ($all_grid_items as $key => $item) {
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .tap-highlight-transparent { -webkit-tap-highlight-color: transparent; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-[#dcf3ee] min-h-screen text-slate-800 flex flex-col md:flex-row antialiased selection:bg-[#0b8478] selection:text-white">
@@ -281,7 +283,7 @@ foreach ($all_grid_items as $key => $item) {
         </div>
 
         <!-- SIDEBAR NAVIGATION LINKS -->
-        <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-xs">
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
             <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-[#0b8478] font-black shadow-sm transition">
                 <i class="fas fa-house w-4 text-center"></i>
                 <span>Beranda</span>
