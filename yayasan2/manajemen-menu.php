@@ -206,6 +206,7 @@ if ($res_db_menus) {
 }
 
 $group_order = [
+    'Ruang Yayasan' => 0,
     'Menu Utama' => 1,
     'Administrasi' => 2,
     'Asatidz' => 3,
