@@ -6,24 +6,53 @@ $user = getCurrentUser();
 $roles = getUserRoles();
 $is_admin = isSuperAdmin();
 
-// Tangkap Multi-Role Toggle (Simulasi Multi-Role Fleksibel - Checkbox Mode)
+// Master 16 Daftar Role Resmi Lembaga
+$master_roles_list = [
+    'ketua_yayasan'      => '1. Ketua Yayasan (Super Admin)',
+    'sekretaris_yayasan' => '2. Sekretaris Yayasan',
+    'bendahara_yayasan'  => '3. Bendahara Yayasan',
+    'kepala_sekolah'     => '4. Kepala Sekolah',
+    'kepala_mahad'       => '5. Kepala Ma\'had',
+    'kepala_ldu'         => '6. Kepala LDU',
+    'sekretaris_sekolah' => '7. Sekretaris Sekolah',
+    'bendahara_sekolah'  => '8. Bendahara Sekolah',
+    'admin_sekolah'      => '9. Admin Sekolah',
+    'kepala_asrama'      => '10. Kepala Asrama (Rijal/Nisa)',
+    'tutor'              => '11. Tutor',
+    'musyrif'            => '12. Musyrif / Musyrifah',
+    'ustadz'             => '13. Ustadz / Ustadzah',
+    'trainer'            => '14. Trainer',
+    'santri'             => '15. Santri (Rijal/Nisa)',
+    'orangtua'           => '16. Orangtua / Walisantri'
+];
+
+// Tangkap Form Multi-Role Checklist Modal
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_role_simulation'])) {
+    $selected_roles = $_POST['roles_sim'] ?? [];
+    if (empty($selected_roles) || in_array('all', $selected_roles)) {
+        $_SESSION['active_role_views'] = ['all'];
+    } else {
+        $_SESSION['active_role_views'] = array_map('trim', $selected_roles);
+    }
+    header("Location: dashboard.php");
+    exit;
+}
+
+// Tangkap Multi-Role Toggle Cepat (Quick Pill Toggle)
 if (isset($_GET['toggle_role'])) {
     $tr = strtolower(trim($_GET['toggle_role']));
     if ($tr === 'all') {
         $_SESSION['active_role_views'] = ['all'];
     } else {
         $current_views = $_SESSION['active_role_views'] ?? ['all'];
-        // Jika sebelumnya 'all', reset ke kosong lalu toggle role yang dipilih
         if (in_array('all', $current_views)) {
             $current_views = [];
         }
-        // Toggle role: jika sudah ada, hapus; jika belum ada, tambahkan
         if (in_array($tr, $current_views)) {
             $current_views = array_diff($current_views, [$tr]);
         } else {
             $current_views[] = $tr;
         }
-        // Jika semua checkbox dilepas, kembalikan otomatis ke 'all'
         if (empty($current_views)) {
             $current_views = ['all'];
         }
@@ -42,70 +71,70 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     exit;
 }
 
-// Master Definisi Semua Grid Cards dengan 1 KATA KETERANGAN
+// Master Definisi Semua Grid Cards dengan Hak Akses 16 Role Resmi
 $all_grid_items = [
-    // --- GURU / TUTOR / AKADEMIK ---
+    // --- AKADEMIK & KURIKULUM ---
     'emodul' => [
         'label' => 'E-Modul',
         'icon' => 'fas fa-book-open',
         'href' => 'admin-elearning.php',
-        'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'kepala_ldu', 'tutor', 'ustadz', 'ustadzah', 'trainer', 'admin_sekolah']
     ],
     'promes' => [
         'label' => 'Promes',
         'icon' => 'fas fa-calendar-check',
         'href' => 'admin-kurikulum-prota-promes.php',
-        'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'kepala_ldu', 'tutor', 'ustadz', 'ustadzah', 'trainer', 'admin_sekolah']
     ],
     'jurnal' => [
         'label' => 'Jurnal',
         'icon' => 'fas fa-clipboard-list',
         'href' => 'admin-absensi-pegawai.php',
-        'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'sekretaris_sekolah', 'admin_sekolah', 'tutor', 'ustadz', 'ustadzah', 'trainer', 'musyrif', 'musyrifah', 'kepala_asrama']
     ],
     'silabus' => [
         'label' => 'Silabus',
         'icon' => 'fas fa-file-invoice',
         'href' => 'admin-pegawai-silabus.php',
-        'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'kepala_ldu', 'tutor', 'ustadz', 'ustadzah', 'trainer']
     ],
     'nilai' => [
         'label' => 'Nilai',
         'icon' => 'fas fa-chart-bar',
         'href' => 'admin-leger.php',
-        'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'tutor', 'ustadz', 'ustadzah', 'trainer']
     ],
     'raport' => [
         'label' => 'Raport',
         'icon' => 'fas fa-graduation-cap',
         'href' => 'admin-rapot-pkbm.php',
-        'roles' => ['super_admin', 'tutor', 'ustadz', 'guru', 'kepala_sekolah', 'walisantri', 'santri']
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'sekretaris_sekolah', 'tutor', 'ustadz', 'ustadzah', 'trainer', 'musyrif', 'musyrifah', 'kepala_asrama', 'orangtua', 'walisantri', 'santri']
     ],
 
-    // --- ASRAMA & MUSYRIF ---
+    // --- ASRAMA & KEPENGASUHAN ---
     'ibadah' => [
         'label' => 'Ibadah',
         'icon' => 'fas fa-mosque',
-        'href' => ($is_admin || in_array('musyrif', $roles)) ? 'admin-validasi-ibadah-musyrif.php' : 'ruang-santri.php?view=ibadah_harian',
-        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama', 'santri', 'walisantri']
+        'href' => ($is_admin || in_array('musyrif', $roles) || in_array('kepala_asrama', $roles)) ? 'admin-validasi-ibadah-musyrif.php' : 'ruang-santri.php?view=ibadah_harian',
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_mahad', 'kepala_asrama', 'musyrif', 'musyrifah', 'santri', 'orangtua', 'walisantri']
     ],
     'hafalan' => [
         'label' => 'Hafalan',
         'icon' => 'fas fa-quran',
-        'href' => ($is_admin || in_array('musyrif', $roles)) ? 'admin-setoran-hafalan-santri.php' : 'santri-laporan-hafalan.php',
-        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama', 'santri', 'walisantri']
+        'href' => ($is_admin || in_array('musyrif', $roles) || in_array('kepala_asrama', $roles)) ? 'admin-setoran-hafalan-santri.php' : 'santri-laporan-hafalan.php',
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_mahad', 'kepala_asrama', 'musyrif', 'musyrifah', 'santri', 'orangtua', 'walisantri']
     ],
     'adab' => [
         'label' => 'Adab',
         'icon' => 'fas fa-scale-balanced',
         'href' => 'admin-pegawai-laporan-adab.php',
-        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama', 'walisantri']
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_mahad', 'kepala_sekolah', 'kepala_asrama', 'musyrif', 'musyrifah', 'orangtua', 'walisantri']
     ],
     'kesehatan' => [
         'label' => 'Kesehatan',
         'icon' => 'fas fa-notes-medical',
         'href' => 'admin-cek-kesehatan-santri.php',
-        'roles' => ['super_admin', 'musyrif', 'musyrifah', 'kepala_asrama', 'walisantri']
+        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_mahad', 'kepala_sekolah', 'kepala_asrama', 'musyrif', 'musyrifah', 'orangtua', 'walisantri']
     ],
 
     // --- SANTRI BELAJAR ---
@@ -113,7 +142,7 @@ $all_grid_items = [
         'label' => 'Belajar',
         'icon' => 'fas fa-laptop-code',
         'href' => 'ruang-santri.php',
-        'roles' => ['super_admin', 'santri', 'tutor', 'ustadz']
+        'roles' => ['super_admin', 'ketua_yayasan', 'santri', 'tutor', 'ustadz', 'ustadzah', 'trainer']
     ],
 
     // --- KEUANGAN & WALISANTRI ---
@@ -121,13 +150,13 @@ $all_grid_items = [
         'label' => 'SPP',
         'icon' => 'fas fa-wallet',
         'href' => 'admin-rekap-spp.php',
-        'roles' => ['super_admin', 'walisantri', 'bendahara_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'bendahara_yayasan', 'bendahara_sekolah', 'admin_sekolah', 'kepala_sekolah', 'orangtua', 'walisantri']
     ],
     'uangsaku' => [
         'label' => 'Saku',
         'icon' => 'fas fa-coins',
         'href' => 'admin-rekap-uang-saku.php',
-        'roles' => ['super_admin', 'walisantri', 'musyrif']
+        'roles' => ['super_admin', 'ketua_yayasan', 'musyrif', 'musyrifah', 'kepala_asrama', 'orangtua', 'walisantri']
     ],
 
     // --- KELEMBAGAAN & ADMIN ---
@@ -135,19 +164,19 @@ $all_grid_items = [
         'label' => 'Induk',
         'icon' => 'fas fa-address-book',
         'href' => 'admin-buku-induk.php',
-        'roles' => ['super_admin', 'admin_sekolah', 'kepala_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'kepala_sekolah', 'kepala_mahad', 'sekretaris_sekolah', 'admin_sekolah']
     ],
     'kas' => [
         'label' => 'Kas',
         'icon' => 'fas fa-book-bookmark',
         'href' => 'sekolah-pembukuan.php',
-        'roles' => ['super_admin', 'bendahara_sekolah', 'kepala_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'bendahara_yayasan', 'bendahara_sekolah', 'kepala_sekolah', 'kepala_mahad']
     ],
     'pegawai' => [
         'label' => 'Pegawai',
         'icon' => 'fas fa-users-gear',
         'href' => 'yayasan2/asatidz.php',
-        'roles' => ['super_admin', 'kepala_sekolah']
+        'roles' => ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'kepala_sekolah', 'kepala_mahad']
     ]
 ];
 
@@ -170,9 +199,18 @@ foreach ($all_grid_items as $key => $item) {
     if (!$is_all_view) {
         $matches_active_filter = false;
         foreach ($active_views as $av) {
-            if (in_array($av, $item['roles'])) {
-                $matches_active_filter = true;
-                break;
+            // Mapping alias
+            $av_aliases = [$av];
+            if ($av === 'musyrif') $av_aliases[] = 'musyrifah';
+            if ($av === 'ustadz') $av_aliases[] = 'ustadzah';
+            if ($av === 'orangtua') $av_aliases[] = 'walisantri';
+            if ($av === 'ketua_yayasan') $av_aliases[] = 'super_admin';
+
+            foreach ($av_aliases as $alias) {
+                if (in_array($alias, $item['roles'])) {
+                    $matches_active_filter = true;
+                    break 2;
+                }
             }
         }
         if (!$matches_active_filter) continue;
@@ -262,18 +300,18 @@ foreach ($all_grid_items as $key => $item) {
                     <span>Semua</span>
                 </a>
 
-                <!-- Checkbox Guru -->
+                <!-- Checkbox Tutor / Guru -->
                 <?php $is_tutor_active = in_array('tutor', $active_views); ?>
                 <a href="dashboard.php?toggle_role=tutor" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_tutor_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
                     <i class="fas <?= $is_tutor_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
-                    <span>Guru</span>
+                    <span>Tutor</span>
                 </a>
 
-                <!-- Checkbox Asrama -->
+                <!-- Checkbox Musyrif -->
                 <?php $is_musyrif_active = in_array('musyrif', $active_views); ?>
                 <a href="dashboard.php?toggle_role=musyrif" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_musyrif_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
                     <i class="fas <?= $is_musyrif_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
-                    <span>Asrama</span>
+                    <span>Musyrif</span>
                 </a>
 
                 <!-- Checkbox Santri -->
@@ -283,12 +321,18 @@ foreach ($all_grid_items as $key => $item) {
                     <span>Santri</span>
                 </a>
 
-                <!-- Checkbox Wali -->
-                <?php $is_wali_active = in_array('walisantri', $active_views); ?>
-                <a href="dashboard.php?toggle_role=walisantri" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_wali_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                <!-- Checkbox Orangtua -->
+                <?php $is_wali_active = in_array('orangtua', $active_views) || in_array('walisantri', $active_views); ?>
+                <a href="dashboard.php?toggle_role=orangtua" class="px-2 py-0.5 rounded-full font-bold flex items-center gap-1 transition <?= $is_wali_active ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
                     <i class="fas <?= $is_wali_active ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
-                    <span>Wali</span>
+                    <span>Orangtua</span>
                 </a>
+
+                <!-- Tombol Buka 16 Role Lengkap -->
+                <button type="button" onclick="toggleRoleModal()" class="px-2.5 py-0.5 rounded-full font-bold bg-amber-400 text-teal-950 hover:bg-amber-300 transition flex items-center gap-1 shadow-xs cursor-pointer">
+                    <i class="fas fa-sliders text-[9px]"></i>
+                    <span>16 Role</span>
+                </button>
 
             </div>
             <?php endif; ?>
@@ -395,10 +439,65 @@ foreach ($all_grid_items as $key => $item) {
         </div>
     </div>
 
+    <!-- ========================================================= -->
+    <!-- 5. 16-ROLE CHECKLIST SIMULATION MODAL (KHUSUS SUPER ADMIN)-->
+    <!-- ========================================================= -->
+    <?php if ($is_admin || count($roles) > 1): ?>
+    <div id="roleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-teal-100 relative animate-in fade-in zoom-in duration-150 max-h-[90vh] flex flex-col">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                    <h3 class="font-black text-base text-slate-900 leading-tight">Simulasi Multi-Role (16 Role)</h3>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Pilih kombinasi role yang ingin diuji coba</p>
+                </div>
+                <button type="button" onclick="toggleRoleModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="dashboard.php" class="flex-1 overflow-y-auto py-3 pr-1 space-y-1.5 custom-scrollbar">
+                <input type="hidden" name="save_role_simulation" value="1">
+                
+                <div class="flex items-center justify-between mb-2 px-1">
+                    <button type="button" onclick="selectAllRoles(true)" class="text-[11px] font-bold text-[#0b8478] hover:underline cursor-pointer">Pilih Semua</button>
+                    <button type="button" onclick="selectAllRoles(false)" class="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer">Lepas Semua</button>
+                </div>
+
+                <?php foreach ($master_roles_list as $role_key => $role_label): 
+                    $is_checked = in_array($role_key, $active_views) || (in_array('all', $active_views));
+                ?>
+                <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:bg-teal-50/70 cursor-pointer transition select-none">
+                    <input type="checkbox" name="roles_sim[]" value="<?= htmlspecialchars($role_key) ?>" <?= $is_checked ? 'checked' : '' ?> class="role-checkbox w-4 h-4 text-[#0b8478] rounded focus:ring-[#0b8478]">
+                    <span class="text-xs font-semibold text-slate-800"><?= htmlspecialchars($role_label) ?></span>
+                </label>
+                <?php endforeach; ?>
+
+                <div class="pt-3 border-t border-slate-100 mt-3 sticky bottom-0 bg-white">
+                    <button type="submit" class="w-full bg-[#0b8478] hover:bg-[#086a60] text-white font-extrabold py-2.5 px-4 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="fas fa-check-double"></i> Terapkan Simulasi Role
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+    <?php endif; ?>
+
     <script>
         function toggleProfileModal() {
             const modal = document.getElementById('profileModal');
             if (modal) modal.classList.toggle('hidden');
+        }
+
+        function toggleRoleModal() {
+            const modal = document.getElementById('roleModal');
+            if (modal) modal.classList.toggle('hidden');
+        }
+
+        function selectAllRoles(check) {
+            const checkboxes = document.querySelectorAll('.role-checkbox');
+            checkboxes.forEach(cb => cb.checked = check);
         }
     </script>
 </body>

@@ -33,7 +33,7 @@ function getUserRoles() {
 
 function isSuperAdmin() {
     $roles = getUserRoles();
-    return in_array('super_admin', $roles) || (isset($_SESSION['app_user_id']) && $_SESSION['app_user_id'] == 1);
+    return in_array('super_admin', $roles) || in_array('ketua_yayasan', $roles) || (isset($_SESSION['app_user_id']) && $_SESSION['app_user_id'] == 1);
 }
 
 function hasRole($role) {
