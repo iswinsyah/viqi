@@ -2,6 +2,36 @@
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 
+// Pastikan tabel master_mapel & leger_nilai tersedia (Self-healing)
+$conn->query("CREATE TABLE IF NOT EXISTS master_mapel (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_mapel VARCHAR(50) DEFAULT NULL,
+    nama_mapel VARCHAR(150) UNIQUE NOT NULL,
+    kategori_mapel ENUM('Diknas', 'Diniyah', 'Ekstrakurikuler', 'Lainnya') DEFAULT 'Lainnya',
+    metode_belajar ENUM('offline', 'online') DEFAULT 'offline',
+    status_aktif TINYINT(1) DEFAULT 1,
+    pengampu_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$conn->query("CREATE TABLE IF NOT EXISTS leger_nilai (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    santri_id INT NOT NULL,
+    mapel_id INT NOT NULL,
+    kelas VARCHAR(50) DEFAULT NULL,
+    tahun_ajaran VARCHAR(20) DEFAULT NULL,
+    semester VARCHAR(20) DEFAULT NULL,
+    jenis_ujian VARCHAR(100) DEFAULT NULL,
+    nilai INT DEFAULT 0,
+    ustadz_id INT NULL,
+    created_by INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_santri (santri_id),
+    KEY idx_mapel (mapel_id),
+    KEY idx_filter (kelas, tahun_ajaran, semester, jenis_ujian)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 $active_menu = 'leger_nilai';
 
 // --- PERSIAPAN DATA UNTUK FILTER ---
@@ -12,11 +42,39 @@ $filters = [
     'jenis_ujian' => $_GET['jenis_ujian'] ?? 'Ujian Akhir Semester (UAS)' // Default ke UAS
 ];
 
-// Ambil opsi filter dari database
-$opsi_kelas = $conn->query("SELECT DISTINCT kelas FROM leger_nilai ORDER BY kelas ASC")->fetch_all(MYSQLI_ASSOC);
-$opsi_ta = $conn->query("SELECT DISTINCT tahun_ajaran FROM leger_nilai ORDER BY tahun_ajaran DESC")->fetch_all(MYSQLI_ASSOC);
-$opsi_semester = $conn->query("SELECT DISTINCT semester FROM leger_nilai ORDER BY semester ASC")->fetch_all(MYSQLI_ASSOC);
-$opsi_ujian = $conn->query("SELECT DISTINCT jenis_ujian FROM leger_nilai ORDER BY jenis_ujian ASC")->fetch_all(MYSQLI_ASSOC);
+// Ambil opsi filter dari database secara aman (defensive & self-healing)
+$res_kelas = $conn->query("SELECT DISTINCT kelas FROM leger_nilai WHERE kelas IS NOT NULL AND kelas != '' ORDER BY kelas ASC");
+$opsi_kelas = ($res_kelas) ? $res_kelas->fetch_all(MYSQLI_ASSOC) : [];
+if (empty($opsi_kelas)) {
+    $res_mk = $conn->query("SELECT DISTINCT nama_kelas as kelas FROM master_kelas ORDER BY nama_kelas ASC");
+    if ($res_mk && $res_mk->num_rows > 0) {
+        $opsi_kelas = $res_mk->fetch_all(MYSQLI_ASSOC);
+    } else {
+        $opsi_kelas = [['kelas' => 'E4 406'], ['kelas' => 'E4 402'], ['kelas' => 'E4 157'], ['kelas' => 'E4.2']];
+    }
+}
+
+$res_ta = $conn->query("SELECT DISTINCT tahun_ajaran FROM leger_nilai WHERE tahun_ajaran IS NOT NULL AND tahun_ajaran != '' ORDER BY tahun_ajaran DESC");
+$opsi_ta = ($res_ta) ? $res_ta->fetch_all(MYSQLI_ASSOC) : [];
+if (empty($opsi_ta)) {
+    $opsi_ta = [['tahun_ajaran' => '2026/2027'], ['tahun_ajaran' => '2025/2026'], ['tahun_ajaran' => '2024/2025']];
+}
+
+$res_sem = $conn->query("SELECT DISTINCT semester FROM leger_nilai WHERE semester IS NOT NULL AND semester != '' ORDER BY semester ASC");
+$opsi_semester = ($res_sem) ? $res_sem->fetch_all(MYSQLI_ASSOC) : [];
+if (empty($opsi_semester)) {
+    $opsi_semester = [['semester' => 'Ganjil'], ['semester' => 'Genap']];
+}
+
+$res_uj = $conn->query("SELECT DISTINCT jenis_ujian FROM leger_nilai WHERE jenis_ujian IS NOT NULL AND jenis_ujian != '' ORDER BY jenis_ujian ASC");
+$opsi_ujian = ($res_uj) ? $res_uj->fetch_all(MYSQLI_ASSOC) : [];
+if (empty($opsi_ujian)) {
+    $opsi_ujian = [
+        ['jenis_ujian' => 'Ujian Akhir Semester (UAS)'],
+        ['jenis_ujian' => 'Ujian Tengah Semester (UTS)'],
+        ['jenis_ujian' => 'Ulangan Harian']
+    ];
+}
 
 $data_leger = [];
 $mapel_header = [];

@@ -9,26 +9,52 @@ $res_user = $conn->query("SELECT role, nama FROM akun_ustadz WHERE id = $user_id
 $user_data = $res_user ? $res_user->fetch_assoc() : null;
 $user_roles = isset($user_data['role']) ? explode(',', $user_data['role']) : [];
 $user_roles_trimmed = array_map('trim', $user_roles);
-$is_super_admin = ($user_id === 9999);
 
-$can_see_pegawai = true;
-$can_see_musyrif = in_array('musyrif', $user_roles_trimmed) || in_array('musyrifah', $user_roles_trimmed) || $is_super_admin;
-$can_see_kepsek = in_array('kepala_sekolah', $user_roles_trimmed) || $is_super_admin;
-$can_see_admin_sekolah = in_array('admin_sekolah', $user_roles_trimmed) || $is_super_admin;
+// Sinkronisasi dengan Unified Auth Roles jika ada
+$session_roles = [];
+if (!empty($_SESSION['app_user_roles'])) {
+    $session_roles = array_map('trim', explode(',', strtolower($_SESSION['app_user_roles'])));
+}
+if (!empty($_SESSION['ustadz_role'])) {
+    $session_roles = array_merge($session_roles, array_map('trim', explode(',', strtolower($_SESSION['ustadz_role']))));
+}
+$all_user_roles = array_unique(array_merge($user_roles_trimmed, $session_roles));
+$is_super_admin = ($user_id === 9999) || in_array('super_admin', $all_user_roles);
+
+// Simulasi Role dari Matrix Header (jika sedang simulasi khusus)
+$active_views = $_SESSION['active_role_views'] ?? ['all'];
+$is_simulating = !in_array('all', $active_views) && !in_array('none', $active_views);
+
+if (in_array('none', $active_views)) {
+    $can_see_pegawai = false;
+    $can_see_musyrif = false;
+    $can_see_kepsek = false;
+    $can_see_admin_sekolah = false;
+} elseif ($is_simulating) {
+    $can_see_pegawai = true;
+    $can_see_musyrif = in_array('musyrif', $active_views) || in_array('musyrifah', $active_views);
+    $can_see_kepsek = in_array('kepala_sekolah', $active_views);
+    $can_see_admin_sekolah = in_array('admin_sekolah', $active_views);
+} else {
+    $can_see_pegawai = true;
+    $can_see_musyrif = in_array('musyrif', $all_user_roles) || in_array('musyrifah', $all_user_roles) || $is_super_admin;
+    $can_see_kepsek = in_array('kepala_sekolah', $all_user_roles) || $is_super_admin;
+    $can_see_admin_sekolah = in_array('admin_sekolah', $all_user_roles) || $is_super_admin;
+}
 
 // Default view selection
 $default_view = 'pegawai';
-if (in_array('kepala_sekolah', $user_roles_trimmed)) {
-    $default_view = 'kepsek';
-} elseif (in_array('admin_sekolah', $user_roles_trimmed)) {
+if ($can_see_admin_sekolah && (in_array('admin_sekolah', $active_views) || in_array('admin_sekolah', $all_user_roles))) {
     $default_view = 'admin_sekolah';
-} elseif (in_array('musyrif', $user_roles_trimmed) || in_array('musyrifah', $user_roles_trimmed)) {
+} elseif ($can_see_kepsek && (in_array('kepala_sekolah', $active_views) || in_array('kepala_sekolah', $all_user_roles))) {
+    $default_view = 'kepsek';
+} elseif ($can_see_musyrif && (in_array('musyrif', $active_views) || in_array('musyrif', $all_user_roles))) {
     $default_view = 'musyrif';
 }
 
 $view = $_GET['view'] ?? $default_view;
 
-// Enforce view authorization
+// Enforce view authorization (Pencegahan akses ilegal view Admin Sekolah jika tidak memiliki role)
 if ($view === 'kepsek' && !$can_see_kepsek) {
     $view = 'pegawai';
 } elseif ($view === 'admin_sekolah' && !$can_see_admin_sekolah) {

@@ -215,8 +215,9 @@ $active_menu = 'counseling_karir';
 // 1. Dashboard Stats
 $total_santri = $conn->query("SELECT COUNT(id) as total FROM buku_induk_santri WHERE status_santri = 'Aktif'")->fetch_assoc()['total'] ?? 0;
 $total_counseled = $conn->query("SELECT COUNT(DISTINCT santri_id) as total FROM counseling_karir")->fetch_assoc()['total'] ?? 0;
-$avg_grade_school = $conn->query("SELECT AVG(nilai) as avg FROM leger_nilai")->fetch_assoc()['avg'] ?? 0;
-$avg_grade_school = round($avg_grade_school, 2);
+$res_avg = $conn->query("SELECT AVG(nilai) as avg FROM leger_nilai");
+$avg_grade_school = ($res_avg && $row_avg = $res_avg->fetch_assoc()) ? ($row_avg['avg'] ?? 0) : 0;
+$avg_grade_school = round((float)$avg_grade_school, 2);
 
 // Jalur Terpopuler
 $popular_path = $conn->query("SELECT jalur_pilihan, COUNT(*) as cnt FROM counseling_karir GROUP BY jalur_pilihan ORDER BY cnt DESC LIMIT 1")->fetch_assoc();

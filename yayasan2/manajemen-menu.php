@@ -14,9 +14,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
 )");
 
 // Cek dan seed jika kosong
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal_mengajar', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
-$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes')");
-$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes')");
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
 $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('rekap_ibadah_rijal', 'rekap_ibadah_nisa', 'rekap_ibadah_mahad', 'laporan_setoran_rijal', 'laporan_setoran_nisa', 'laporan_setoran_hafalan')");
 $conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
 
@@ -67,6 +67,27 @@ if ($res_chk_rapat && $res_chk_rapat->num_rows === 0) {
     $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
     $new_ord = $max_ord + 1;
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'jadwal_rapat', $new_ord, 'fa-handshake', 'admin-jadwal-rapat.php')");
+}
+
+// Pastikan menu 'kpi_admin_sekolah' & 'salary_admin' terdaftar jika belum ada (Self-Healing)
+$res_chk_kpi_adm = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kpi_admin_sekolah'");
+if ($res_chk_kpi_adm && $res_chk_kpi_adm->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'kpi_admin_sekolah', $new_ord, 'fa-laptop-code', 'admin-pegawai-kpi.php?view=admin_sekolah')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_admin_sekolah', 'admin_sekolah')");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('kpi_admin_sekolah', 'KPI Admin Sekolah', 'KPI Admin')");
+}
+
+$res_chk_sal_adm = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'salary_admin'");
+if ($res_chk_sal_adm && $res_chk_sal_adm->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'salary_admin', $new_ord, 'fa-money-bill-wave', 'admin-salary.php')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('salary_admin', 'admin_sekolah')");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('salary_admin', 'Salary Admin Sekolah', 'Salary Admin')");
 }
 
 $res_cnt = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure");
@@ -164,7 +185,9 @@ if ($res_db_menus) {
             'counseling_karir' => 'Pemetaan Karir & PTN (AI)',
             'rekap_keuangan' => 'Rekap Pembayaran Keuangan',
             'penagihan_spp' => 'Penagihan SPP',
-            'rekap_uang_saku' => 'Rekap Data Uang Saku',
+            'yayasan_saku' => 'Validasi Uang Saku',
+            'uangsaku' => 'Saldo Uang Saku Santri',
+            'rekap_uang_saku' => 'Validasi Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
             'kontrol_jam_kosong' => 'Kontrol Jam Kosong',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',
@@ -178,7 +201,9 @@ if ($res_db_menus) {
             'kitab_rujukan' => 'Master Kitab Rujukan',
             'dashboard_asrama' => 'Dashboard Asrama',
             'manajemen_halaqoh' => 'Manajemen Halaqoh',
-            'rekap_ibadah_santri' => 'Rekap Ibadah Santri',
+            'yayasan_ibadah' => 'Rekap Ibadah Yayasan',
+            'rekap_ibadah_santri' => 'Rekap Ibadah Asrama',
+            'ibadah' => 'Validasi Ibadah Santri',
             'setoran_hafalan_santri' => 'Setoran Hafalan Santri',
             'rekap_setoran_santri' => 'Rekap Setoran Santri',
             'validasi_ibadah_musyrif' => 'Validasi Ibadah',

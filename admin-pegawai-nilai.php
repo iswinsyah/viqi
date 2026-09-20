@@ -1,6 +1,36 @@
 <?php
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
+
+// Pastikan tabel master_mapel & leger_nilai tersedia (Self-healing)
+$conn->query("CREATE TABLE IF NOT EXISTS master_mapel (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_mapel VARCHAR(50) DEFAULT NULL,
+    nama_mapel VARCHAR(150) UNIQUE NOT NULL,
+    kategori_mapel ENUM('Diknas', 'Diniyah', 'Ekstrakurikuler', 'Lainnya') DEFAULT 'Lainnya',
+    metode_belajar ENUM('offline', 'online') DEFAULT 'offline',
+    status_aktif TINYINT(1) DEFAULT 1,
+    pengampu_id INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+$conn->query("CREATE TABLE IF NOT EXISTS leger_nilai (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    santri_id INT NOT NULL,
+    mapel_id INT NOT NULL,
+    kelas VARCHAR(50) DEFAULT NULL,
+    tahun_ajaran VARCHAR(20) DEFAULT NULL,
+    semester VARCHAR(20) DEFAULT NULL,
+    jenis_ujian VARCHAR(100) DEFAULT NULL,
+    nilai INT DEFAULT 0,
+    ustadz_id INT NULL,
+    created_by INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY idx_santri (santri_id),
+    KEY idx_mapel (mapel_id),
+    KEY idx_filter (kelas, tahun_ajaran, semester, jenis_ujian)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
  
 // Dapatkan ID ustadz yang sedang login
 $ustadz_id = $_SESSION['ustadz_id'];

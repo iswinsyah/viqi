@@ -142,6 +142,8 @@ if ($conn) {
     }
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_kepsek', 'kepala_sekolah,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('supervisi_mengajar', 'kepala_sekolah,kepala_mahad,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_admin_sekolah', 'admin_sekolah')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('salary_admin', 'admin_sekolah')");
 }
 
 // Load custom menu labels from database
@@ -201,7 +203,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
 )");
 
 // Pembersihan paksa untuk penggabungan menu KPI, Akunku, Jurnal Mengajar & Santri Tidak Masuk
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal_mengajar', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
 
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
@@ -317,9 +319,13 @@ if ($res_db_struct) {
             'counseling_karir' => 'Pemetaan Karir & PTN (AI)',
             'rekap_keuangan' => 'Rekap Pembayaran Keuangan',
             'penagihan_spp' => 'Penagihan SPP',
-            'rekap_uang_saku' => 'Rekap Data Uang Saku',
+            'yayasan_saku' => 'Validasi Uang Saku',
+            'uangsaku' => 'Saldo Uang Saku Santri',
+            'rekap_uang_saku' => 'Validasi Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
             'kontrol_jam_kosong' => 'Kontrol Jam Kosong',
+            'kpi_admin_sekolah' => 'KPI Admin Sekolah',
+            'salary_admin' => 'Salary Admin Sekolah',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',
             'kalender_akademik' => 'Kalender Akademik',
             'jadwal_pelajaran' => 'Jadwal Pelajaran',
@@ -331,7 +337,9 @@ if ($res_db_struct) {
             'kitab_rujukan' => 'Master Kitab Rujukan',
             'dashboard_asrama' => 'Dashboard Asrama',
             'manajemen_halaqoh' => 'Manajemen Halaqoh',
-            'rekap_ibadah_santri' => 'Rekap Ibadah Santri',
+            'yayasan_ibadah' => 'Rekap Ibadah Yayasan',
+            'rekap_ibadah_santri' => 'Rekap Ibadah Asrama',
+            'ibadah' => 'Validasi Ibadah Santri',
             'setoran_hafalan_santri' => 'Setoran Hafalan Santri',
             'rekap_setoran_santri' => 'Rekap Setoran Santri',
             'validasi_ibadah_musyrif' => 'Validasi Ibadah',
