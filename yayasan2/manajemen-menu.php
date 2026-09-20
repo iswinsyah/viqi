@@ -221,19 +221,22 @@ uksort($defined_menus, function($a, $b) use ($group_order) {
 });
 
 $defined_roles = [
-    'kepala_sekolah' => 'Kepala Sekolah',
+    'ketua_yayasan'      => 'Ketua Yayasan',
+    'sekretaris_yayasan' => 'Sekretaris Yayasan',
+    'bendahara_yayasan'  => 'Bendahara Yayasan',
+    'kepala_sekolah'     => 'Kepala Sekolah',
+    'kepala_mahad'       => "Kepala Ma'had",
+    'kepala_ldu'         => 'Kepala LDU',
     'sekretaris_sekolah' => 'Sekretaris Sekolah',
-    'bendahara_sekolah' => 'Bendahara Sekolah',
-    'admin_sekolah' => 'Admin Sekolah',
-    'kepala_mahad' => "Kepala Ma'had",
-    'kepala_asrama_rijal' => 'Kepala Asrama Rijal',
-    'kepala_asrama_nisa' => 'Kepala Asrama Nisa',
-    'musyrif' => 'Musyrif',
-    'musyrifah' => 'Musyrifah',
-    'ustadz' => 'Ustadz',
-    'ustadzah' => 'Ustadzah',
-    'tutor' => 'Tutor',
-    'trainer' => 'Trainer',
+    'bendahara_sekolah'  => 'Bendahara Sekolah',
+    'admin_sekolah'      => 'Admin Sekolah',
+    'kepala_asrama'      => 'Kepala Asrama',
+    'tutor'              => 'Tutor',
+    'musyrif'            => 'Musyrif / Musyrifah',
+    'ustadz'             => 'Ustadz / Ustadzah',
+    'trainer'            => 'Trainer',
+    'santri'             => 'Santri (Rijal/Nisa)',
+    'orangtua'           => 'Orangtua / Walisantri'
 ];
 
 // 2. Buat tabel permissions & custom labels jika belum ada & seed default
@@ -245,21 +248,23 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
 
 $conn->query("CREATE TABLE IF NOT EXISTS menu_custom_labels (
     menu_key VARCHAR(100) PRIMARY KEY,
-    custom_label VARCHAR(255) NOT NULL
+    custom_label VARCHAR(255) NOT NULL,
+    short_label VARCHAR(50) NULL
 )");
 
-// Seed default permissions for Jadwal Pelajaran if not present
-$conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('jadwal_pelajaran', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
+// Tambahkan kolom short_label jika belum ada
+$conn->query("ALTER TABLE menu_custom_labels ADD COLUMN IF NOT EXISTS short_label VARCHAR(50) NULL");
 
 // 3. Proses penyimpanan data
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // A. Simpan Custom Labels
+    // A. Simpan Custom Labels & Short Labels (1 Kata Keterangan)
     if (isset($_POST['custom_labels']) && is_array($_POST['custom_labels'])) {
-        $stmt_lbl = $conn->prepare("INSERT INTO menu_custom_labels (menu_key, custom_label) VALUES (?, ?) ON DUPLICATE KEY UPDATE custom_label = ?");
+        $stmt_lbl = $conn->prepare("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE custom_label = ?, short_label = ?");
         foreach ($_POST['custom_labels'] as $key => $lbl) {
             $lbl = trim($lbl);
+            $short = isset($_POST['short_labels'][$key]) ? trim($_POST['short_labels'][$key]) : '';
             if ($lbl !== '') {
-                $stmt_lbl->bind_param("sss", $key, $lbl, $lbl);
+                $stmt_lbl->bind_param("sssss", $key, $lbl, $short, $lbl, $short);
                 $stmt_lbl->execute();
             } else {
                 $conn->query("DELETE FROM menu_custom_labels WHERE menu_key = '" . $conn->real_escape_string($key) . "'");
@@ -314,10 +319,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 // 4. Ambil data custom labels & permissions yang sudah ada
 $custom_labels = [];
+$short_labels = [];
 $res_lbls = $conn->query("SELECT * FROM menu_custom_labels");
 if ($res_lbls) {
     while ($row = $res_lbls->fetch_assoc()) {
         $custom_labels[$row['menu_key']] = $row['custom_label'];
+        $short_labels[$row['menu_key']] = $row['short_label'];
     }
 }
 
@@ -346,18 +353,21 @@ $active_menu = 'manajemen_menu';
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
             <div class="flex items-center"><button id="open-sidebar-yayasan2" class="text-gray-500 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif Yayasan</h2></div>
+            <a href="../dashboard.php" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-2">
+                <i class="fas fa-house"></i> Lihat Beranda Super-App
+            </a>
         </header>
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-sitemap text-amber-500 mr-2"></i>Manajemen Menu Ruang Asatidz</h1>
-                <p class="text-gray-500 mt-1">Atur menu apa saja yang bisa dilihat oleh setiap peran/jabatan.</p>
+                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-sitemap text-amber-500 mr-2"></i>Manajemen Menu & Hak Akses Beranda</h1>
+                <p class="text-gray-500 mt-1">Atur menu apa saja yang muncul di Beranda Super-App untuk setiap dari 16 Peran/Jabatan.</p>
             </div>
             <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
             
             <!-- TAB NAVIGATION -->
             <div class="mb-6 flex gap-4 border-b border-gray-200">
                 <button type="button" id="tab-btn-hak-akses" onclick="switchTab('hak-akses')" class="px-5 py-2.5 font-bold text-sm text-amber-600 border-b-2 border-amber-500 transition-all flex items-center gap-1.5 focus:outline-none">
-                    <i class="fas fa-key text-base"></i> Hak Akses Peran
+                    <i class="fas fa-key text-base"></i> Hak Akses 16 Role & Nama
                 </button>
                 <button type="button" id="tab-btn-tata-letak" onclick="switchTab('tata-letak')" class="px-5 py-2.5 font-bold text-sm text-gray-500 hover:text-amber-500 border-b-2 border-transparent transition-all flex items-center gap-1.5 focus:outline-none">
                     <i class="fas fa-arrows-alt text-base"></i> Tata Letak & Urutan Menu
@@ -369,7 +379,7 @@ $active_menu = 'manajemen_menu';
                 <form action="manajemen-menu.php" method="POST">
                     <div class="relative bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                         <!-- Floating Left Scroll Button (Sticky on top of content) -->
-                        <button type="button" onclick="scrollMenuTable(-300)" class="absolute left-[260px] top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-gray-950 w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-30 transition-all opacity-85 hover:opacity-100 border border-amber-300">
+                        <button type="button" onclick="scrollMenuTable(-300)" class="absolute left-[310px] top-1/2 -translate-y-1/2 bg-amber-500 hover:bg-amber-600 text-gray-950 w-10 h-10 rounded-full flex items-center justify-center shadow-lg z-30 transition-all opacity-85 hover:opacity-100 border border-amber-300">
                             <i class="fas fa-chevron-left text-lg"></i>
                         </button>
                         
@@ -382,9 +392,9 @@ $active_menu = 'manajemen_menu';
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase sticky top-0 left-0 bg-gray-50 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[250px] min-w-[250px]">Nama Menu</th>
+                                        <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase sticky top-0 left-0 bg-gray-50 z-20 border-r border-gray-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] w-[300px] min-w-[300px]">Nama Menu & Label 1 Kata</th>
                                         <?php foreach ($defined_roles as $role_key => $role_label): ?>
-                                            <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase sticky top-0 bg-gray-50 z-10"><?= $role_label ?></th>
+                                            <th class="px-4 py-3 text-center text-[11px] font-bold text-gray-600 uppercase sticky top-0 bg-gray-50 z-10 whitespace-nowrap"><?= $role_label ?></th>
                                         <?php endforeach; ?>
                                     </tr>
                                 </thead>
@@ -395,29 +405,36 @@ $active_menu = 'manajemen_menu';
                                         </tr>
                                         <?php foreach ($menus as $key => $title): 
                                             $display_title = isset($custom_labels[$key]) ? $custom_labels[$key] : $title;
+                                            $display_short = isset($short_labels[$key]) ? $short_labels[$key] : '';
                                         ?>
-                                         <tr class="hover:bg-gray-50 <?= ($key === 'jadwal_pelajaran') ? 'bg-amber-50/50' : '' ?>">
-                                             <td class="px-4 py-3 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-150 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] w-[250px] min-w-[250px]">
-                                                 <div class="flex flex-col gap-1">
-                                                     <input type="text" name="custom_labels[<?= $key ?>]" value="<?= htmlspecialchars($display_title) ?>" class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs w-full focus:ring-2 focus:ring-amber-500 font-semibold" placeholder="<?= htmlspecialchars($title) ?>">
-                                                     <span class="text-[9px] text-gray-400 font-normal">Default: <?= htmlspecialchars($title) ?></span>
+                                         <tr class="hover:bg-gray-50">
+                                             <td class="px-4 py-3 font-medium text-gray-900 sticky left-0 bg-white group-hover:bg-gray-50 z-10 border-r border-gray-150 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] w-[300px] min-w-[300px]">
+                                                 <div class="flex flex-col gap-1.5">
+                                                     <div>
+                                                         <label class="text-[10px] text-gray-500 font-bold block mb-0.5">Nama Lengkap:</label>
+                                                         <input type="text" name="custom_labels[<?= $key ?>]" value="<?= htmlspecialchars($display_title) ?>" class="px-2.5 py-1 border border-gray-200 rounded text-xs w-full focus:ring-2 focus:ring-amber-500 font-semibold" placeholder="<?= htmlspecialchars($title) ?>">
+                                                     </div>
+                                                     <div>
+                                                         <label class="text-[10px] text-amber-700 font-bold block mb-0.5">Label 1 Kata (Beranda Super-App):</label>
+                                                         <input type="text" name="short_labels[<?= $key ?>]" value="<?= htmlspecialchars($display_short) ?>" class="px-2.5 py-1 border border-amber-200 bg-amber-50/50 rounded text-xs w-full focus:ring-2 focus:ring-amber-500 font-bold text-[#0b8478]" placeholder="Misal: E-Modul">
+                                                     </div>
                                                  </div>
                                              </td>
                                             <?php foreach ($defined_roles as $role_key => $role_label): 
-                                                $checked = isset($permissions[$key]) && in_array($role_key, $permissions[$key]) ? 'checked' : '';
+                                                $checked = isset($permissions[$key]) && (in_array($role_key, $permissions[$key]) || in_array('super_admin', $permissions[$key])) ? 'checked' : '';
                                             ?>
-                                                <td class="px-6 py-4 text-center">
-                                                    <input type="checkbox" name="permissions[<?= $key ?>][]" value="<?= $role_key ?>" <?= $checked ?> class="w-5 h-5 text-amber-600 border-gray-300 rounded focus:ring-amber-500">
+                                                <td class="px-4 py-4 text-center">
+                                                    <input type="checkbox" name="permissions[<?= $key ?>][]" value="<?= $role_key ?>" <?= $checked ?> class="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500 cursor-pointer">
                                                 </td>
                                             <?php endforeach; ?>
                                          </tr>
                                          <?php endforeach; ?>
-                                    <?php endforeach; ?>
+                                     <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
                         <div class="p-6 bg-gray-50 border-t border-gray-200 flex justify-end">
-                            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-md transition"><i class="fas fa-save mr-2"></i> Simpan Hak Akses & Nama</button>
+                            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-3 px-8 rounded-lg shadow-md transition cursor-pointer"><i class="fas fa-save mr-2"></i> Simpan Hak Akses & Nama</button>
                         </div>
                     </div>
                 </form>

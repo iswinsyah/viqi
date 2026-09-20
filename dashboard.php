@@ -73,123 +73,75 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
     exit;
 }
 
-// Master Definisi Semua Grid Cards dengan Hak Akses 16 Role Resmi
-$all_grid_items = [
-    // --- AKADEMIK & KURIKULUM ---
-    'emodul' => [
-        'label' => 'E-Modul',
-        'icon' => 'fas fa-book-open',
-        'href' => 'admin-elearning.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'kepala_ldu', 'tutor', 'ustadz', 'ustadzah', 'trainer', 'admin_sekolah']
-    ],
-    'promes' => [
-        'label' => 'Promes',
-        'icon' => 'fas fa-calendar-check',
-        'href' => 'admin-kurikulum-prota-promes.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'kepala_ldu', 'tutor', 'ustadz', 'ustadzah', 'trainer', 'admin_sekolah']
-    ],
-    'jurnal' => [
-        'label' => 'Jurnal',
-        'icon' => 'fas fa-clipboard-list',
-        'href' => 'admin-absensi-pegawai.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'sekretaris_sekolah', 'admin_sekolah', 'tutor', 'ustadz', 'ustadzah', 'trainer', 'musyrif', 'musyrifah', 'kepala_asrama']
-    ],
-    'silabus' => [
-        'label' => 'Silabus',
-        'icon' => 'fas fa-file-invoice',
-        'href' => 'admin-pegawai-silabus.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'kepala_ldu', 'tutor', 'ustadz', 'ustadzah', 'trainer']
-    ],
-    'nilai' => [
-        'label' => 'Nilai',
-        'icon' => 'fas fa-chart-bar',
-        'href' => 'admin-leger.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'tutor', 'ustadz', 'ustadzah', 'trainer']
-    ],
-    'raport' => [
-        'label' => 'Raport',
-        'icon' => 'fas fa-graduation-cap',
-        'href' => 'admin-rapot-pkbm.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_sekolah', 'kepala_mahad', 'admin_sekolah', 'sekretaris_sekolah', 'tutor', 'ustadz', 'ustadzah', 'trainer', 'musyrif', 'musyrifah', 'kepala_asrama', 'orangtua', 'walisantri', 'santri']
-    ],
+// =========================================================
+// SINKRONISASI DINAMIS DENGAN MANAJEMEN MENU DATABASE
+// =========================================================
+$db_permissions = [];
+$res_perm = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
+if ($res_perm) {
+    while ($r = $res_perm->fetch_assoc()) {
+        $db_permissions[$r['menu_key']] = array_map('trim', explode(',', strtolower($r['allowed_roles'])));
+    }
+}
 
-    // --- ASRAMA & KEPENGASUHAN ---
-    'ibadah' => [
-        'label' => 'Ibadah',
-        'icon' => 'fas fa-mosque',
-        'href' => ($is_admin || in_array('musyrif', $roles) || in_array('kepala_asrama', $roles)) ? 'admin-validasi-ibadah-musyrif.php' : 'ruang-santri.php?view=ibadah_harian',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_mahad', 'kepala_asrama', 'musyrif', 'musyrifah', 'santri', 'orangtua', 'walisantri']
-    ],
-    'hafalan' => [
-        'label' => 'Hafalan',
-        'icon' => 'fas fa-quran',
-        'href' => ($is_admin || in_array('musyrif', $roles) || in_array('kepala_asrama', $roles)) ? 'admin-setoran-hafalan-santri.php' : 'santri-laporan-hafalan.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_mahad', 'kepala_asrama', 'musyrif', 'musyrifah', 'santri', 'orangtua', 'walisantri']
-    ],
-    'adab' => [
-        'label' => 'Adab',
-        'icon' => 'fas fa-scale-balanced',
-        'href' => 'admin-pegawai-laporan-adab.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_mahad', 'kepala_sekolah', 'kepala_asrama', 'musyrif', 'musyrifah', 'orangtua', 'walisantri']
-    ],
-    'kesehatan' => [
-        'label' => 'Kesehatan',
-        'icon' => 'fas fa-notes-medical',
-        'href' => 'admin-cek-kesehatan-santri.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'kepala_mahad', 'kepala_sekolah', 'kepala_asrama', 'musyrif', 'musyrifah', 'orangtua', 'walisantri']
-    ],
+$db_custom_labels = [];
+$res_lbl = $conn->query("SELECT menu_key, custom_label, short_label FROM menu_custom_labels");
+if ($res_lbl) {
+    while ($r = $res_lbl->fetch_assoc()) {
+        $db_custom_labels[$r['menu_key']] = [
+            'full' => $r['custom_label'],
+            'short' => !empty($r['short_label']) ? $r['short_label'] : $r['custom_label']
+        ];
+    }
+}
 
-    // --- SANTRI BELAJAR ---
-    'belajar' => [
-        'label' => 'Belajar',
-        'icon' => 'fas fa-laptop-code',
-        'href' => 'ruang-santri.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'santri', 'tutor', 'ustadz', 'ustadzah', 'trainer']
-    ],
-
-    // --- KEUANGAN & WALISANTRI ---
-    'spp' => [
-        'label' => 'SPP',
-        'icon' => 'fas fa-wallet',
-        'href' => 'admin-rekap-spp.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'bendahara_yayasan', 'bendahara_sekolah', 'admin_sekolah', 'kepala_sekolah', 'orangtua', 'walisantri']
-    ],
-    'uangsaku' => [
-        'label' => 'Saku',
-        'icon' => 'fas fa-coins',
-        'href' => 'admin-rekap-uang-saku.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'musyrif', 'musyrifah', 'kepala_asrama', 'orangtua', 'walisantri']
-    ],
-
-    // --- KELEMBAGAAN & ADMIN ---
-    'induk' => [
-        'label' => 'Induk',
-        'icon' => 'fas fa-address-book',
-        'href' => 'admin-buku-induk.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'kepala_sekolah', 'kepala_mahad', 'sekretaris_sekolah', 'admin_sekolah']
-    ],
-    'kas' => [
-        'label' => 'Kas',
-        'icon' => 'fas fa-book-bookmark',
-        'href' => 'sekolah-pembukuan.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'bendahara_yayasan', 'bendahara_sekolah', 'kepala_sekolah', 'kepala_mahad']
-    ],
-    'pegawai' => [
-        'label' => 'Pegawai',
-        'icon' => 'fas fa-users-gear',
-        'href' => 'yayasan2/asatidz.php',
-        'roles' => ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'kepala_sekolah', 'kepala_mahad']
-    ]
+// Fallback label 1 kata default untuk keindahan UI
+$default_1word_labels = [
+    'emodul' => 'E-Modul',
+    'promes' => 'Promes',
+    'jurnal' => 'Jurnal',
+    'silabus' => 'Silabus',
+    'nilai' => 'Nilai',
+    'raport' => 'Raport',
+    'ibadah' => 'Ibadah',
+    'hafalan' => 'Hafalan',
+    'adab' => 'Adab',
+    'kesehatan' => 'Kesehatan',
+    'belajar' => 'Belajar',
+    'spp' => 'SPP',
+    'uangsaku' => 'Saku',
+    'induk' => 'Induk',
+    'kas' => 'Kas',
+    'pegawai' => 'Pegawai'
 ];
+
+$all_grid_items = [];
+$res_struct = $conn->query("SELECT * FROM menu_structure ORDER BY sort_order ASC");
+if ($res_struct && $res_struct->num_rows > 0) {
+    while ($r = $res_struct->fetch_assoc()) {
+        $k = $r['menu_key'];
+        $label = $db_custom_labels[$k]['short'] ?? ($default_1word_labels[$k] ?? ucwords(str_replace('_', ' ', $k)));
+        $roles_allowed = $db_permissions[$k] ?? ['super_admin', 'ketua_yayasan'];
+        
+        $all_grid_items[$k] = [
+            'label' => $label,
+            'icon'  => $r['icon'],
+            'href'  => $r['href'],
+            'roles' => $roles_allowed,
+            'group' => $r['menu_group']
+        ];
+    }
+}
 
 // Filter Item Sesuai Role Pengguna & Simulasi Checkbox Multi-Role
 $visible_items = [];
 foreach ($all_grid_items as $key => $item) {
-    // 1. Cek hak akses dasar akun
+    // 1. Cek hak akses dasar akun pengguna
     $has_access = $is_admin;
     if (!$has_access) {
         foreach ($item['roles'] as $r) {
-            if (in_array(strtolower($r), $roles)) {
+            $norm_r = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+            if (in_array($norm_r, $roles) || in_array($r, $roles)) {
                 $has_access = true;
                 break;
             }
@@ -197,21 +149,28 @@ foreach ($all_grid_items as $key => $item) {
     }
     if (!$has_access) continue;
 
-    // 2. Terapkan Filter Checkbox Multi-Role (Jika bukan mode 'all')
+    // 2. Terapkan Filter Checkbox Multi-Role (Jika sedang simulasi)
     if (!$is_all_view) {
+        if ($is_none_view) continue;
+
         $matches_active_filter = false;
         foreach ($active_views as $av) {
-            // Mapping alias
+            // Pemetaan alias role untuk fleksibilitas maksimal
             $av_aliases = [$av];
-            if ($av === 'musyrif') $av_aliases[] = 'musyrifah';
-            if ($av === 'ustadz') $av_aliases[] = 'ustadzah';
-            if ($av === 'orangtua') $av_aliases[] = 'walisantri';
-            if ($av === 'ketua_yayasan') $av_aliases[] = 'super_admin';
+            if ($av === 'musyrif') { $av_aliases[] = 'musyrifah'; $av_aliases[] = 'kepala_asrama'; }
+            if ($av === 'ustadz') { $av_aliases[] = 'ustadzah'; $av_aliases[] = 'guru'; }
+            if ($av === 'orangtua') { $av_aliases[] = 'walisantri'; }
+            if ($av === 'ketua_yayasan') { $av_aliases[] = 'super_admin'; }
+            if ($av === 'santri_rijal' || $av === 'santri_nisa') { $av_aliases[] = 'santri'; $av_aliases[] = $av; }
 
             foreach ($av_aliases as $alias) {
-                if (in_array($alias, $item['roles'])) {
-                    $matches_active_filter = true;
-                    break 2;
+                $alias_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($alias)));
+                foreach ($item['roles'] as $ir) {
+                    $ir_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($ir)));
+                    if ($alias_norm === $ir_norm || $alias === $ir) {
+                        $matches_active_filter = true;
+                        break 2;
+                    }
                 }
             }
         }
