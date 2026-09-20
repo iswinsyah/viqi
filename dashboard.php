@@ -425,59 +425,6 @@ foreach ($all_grid_items as $key => $item) {
                 </div>
             </div>
 
-            <!-- INFORMASI ACUAN DATABASE ROLE (KHUSUS PENGURUS YAYASAN) -->
-            <?php if ($is_yayasan_pengurus): ?>
-            <div class="mt-4 bg-white/90 backdrop-blur-xs rounded-[24px] p-5 shadow-lg shadow-teal-950/5 border border-teal-100 text-xs text-slate-700 animate-in fade-in duration-200">
-                <div class="flex items-center justify-between border-b border-teal-100 pb-2.5 mb-3">
-                    <div class="flex items-center gap-2 font-black text-slate-800 text-xs sm:text-sm">
-                        <i class="fas fa-database text-[#0b8478]"></i>
-                        <span>Acuan Database Role & Menu Beranda</span>
-                    </div>
-                    <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-[#0b8478] font-black text-[10px] border border-teal-200 uppercase tracking-wider">
-                        Single Source of Truth
-                    </span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-[11px]">
-                    <div class="bg-teal-50/60 p-3 rounded-xl border border-teal-100/70">
-                        <div class="font-bold text-slate-500 text-[10px] flex items-center gap-1">
-                            <i class="fas fa-shield-halved text-[#0b8478]"></i> Hak Akses Role:
-                        </div>
-                        <div class="font-mono font-black text-[#0b8478] text-xs mt-1">menu_permissions</div>
-                        <div class="text-[10px] text-slate-500 mt-1">Kolom: <code class="bg-white px-1 py-0.5 rounded border border-teal-200/60 font-semibold text-slate-700">allowed_roles</code></div>
-                    </div>
-
-                    <div class="bg-teal-50/60 p-3 rounded-xl border border-teal-100/70">
-                        <div class="font-bold text-slate-500 text-[10px] flex items-center gap-1">
-                            <i class="fas fa-sitemap text-[#0b8478]"></i> Struktur & Ikon:
-                        </div>
-                        <div class="font-mono font-black text-[#0b8478] text-xs mt-1">menu_structure</div>
-                        <div class="text-[10px] text-slate-500 mt-1">Kolom: <code class="bg-white px-1 py-0.5 rounded border border-teal-200/60 font-semibold text-slate-700">menu_group, icon, href</code></div>
-                    </div>
-
-                    <div class="bg-teal-50/60 p-3 rounded-xl border border-teal-100/70">
-                        <div class="font-bold text-slate-500 text-[10px] flex items-center gap-1">
-                            <i class="fas fa-tag text-[#0b8478]"></i> Label 1 Kata:
-                        </div>
-                        <div class="font-mono font-black text-[#0b8478] text-xs mt-1">menu_custom_labels</div>
-                        <div class="text-[10px] text-slate-500 mt-1">Kolom: <code class="bg-white px-1 py-0.5 rounded border border-teal-200/60 font-semibold text-slate-700">short_label, custom_label</code></div>
-                    </div>
-                </div>
-
-                <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-600 gap-2">
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                        <span>Role Akun Anda (<code class="text-[#0b8478] font-bold">users.roles</code>):</span>
-                        <span class="font-bold text-slate-900 bg-teal-100/80 text-[#0b8478] px-2 py-0.5 rounded-md border border-teal-200"><?= htmlspecialchars($user['roles']) ?></span>
-                    </div>
-                    <?php if ($is_admin || in_array('ketua_yayasan', $roles)): ?>
-                    <a href="yayasan2/manajemen-menu.php" class="inline-flex items-center gap-1 font-black text-[#0b8478] hover:text-[#086a60] hover:underline transition">
-                        <i class="fas fa-gear"></i> Kelola di Manajemen Menu &rarr;
-                    </a>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php endif; ?>
-
             <!-- FOOTER BRANDING RINGKAS -->
             <div class="mt-6 text-center text-[11px] text-teal-800 font-semibold opacity-70">
                 Villa Quran Indonesia • SADIGS 4.0
