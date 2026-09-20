@@ -456,24 +456,28 @@ foreach ($all_grid_items as $key => $item) {
                 </button>
             </div>
 
-            <form method="POST" action="dashboard.php" class="flex-1 overflow-y-auto py-3 pr-1 space-y-1.5 custom-scrollbar">
+            <form method="POST" action="dashboard.php" class="flex-1 flex flex-col min-h-0 pt-3">
                 <input type="hidden" name="save_role_simulation" value="1">
                 
-                <div class="flex items-center justify-between mb-2 px-1">
+                <div class="flex items-center justify-between mb-2 px-1 flex-shrink-0">
                     <button type="button" onclick="selectAllRoles(true)" class="text-[11px] font-bold text-[#0b8478] hover:underline cursor-pointer">Pilih Semua</button>
                     <button type="button" onclick="selectAllRoles(false)" class="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer">Lepas Semua</button>
                 </div>
 
-                <?php foreach ($master_roles_list as $role_key => $role_label): 
-                    $is_checked = in_array($role_key, $active_views) || (in_array('all', $active_views));
-                ?>
-                <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:bg-teal-50/70 cursor-pointer transition select-none">
-                    <input type="checkbox" name="roles_sim[]" value="<?= htmlspecialchars($role_key) ?>" <?= $is_checked ? 'checked' : '' ?> class="role-checkbox w-4 h-4 text-[#0b8478] rounded focus:ring-[#0b8478]">
-                    <span class="text-xs font-semibold text-slate-800"><?= htmlspecialchars($role_label) ?></span>
-                </label>
-                <?php endforeach; ?>
+                <!-- Scrollable Checkbox List -->
+                <div class="flex-1 overflow-y-auto pr-1 space-y-1.5 pb-2">
+                    <?php foreach ($master_roles_list as $role_key => $role_label): 
+                        $is_checked = in_array($role_key, $active_views) || (in_array('all', $active_views));
+                    ?>
+                    <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:bg-teal-50/70 cursor-pointer transition select-none">
+                        <input type="checkbox" name="roles_sim[]" value="<?= htmlspecialchars($role_key) ?>" <?= $is_checked ? 'checked' : '' ?> class="role-checkbox w-4 h-4 text-[#0b8478] rounded focus:ring-[#0b8478]">
+                        <span class="text-xs font-semibold text-slate-800"><?= htmlspecialchars($role_label) ?></span>
+                    </label>
+                    <?php endforeach; ?>
+                </div>
 
-                <div class="pt-3 border-t border-slate-100 mt-3 sticky bottom-0 bg-white">
+                <!-- Fixed Footer Button -->
+                <div class="pt-3 border-t border-slate-100 flex-shrink-0">
                     <button type="submit" class="w-full bg-[#0b8478] hover:bg-[#086a60] text-white font-extrabold py-2.5 px-4 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
                         <i class="fas fa-check-double"></i> Terapkan Simulasi Role
                     </button>
