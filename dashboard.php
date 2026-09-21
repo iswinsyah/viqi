@@ -67,6 +67,21 @@ if (isset($_GET['toggle_role'])) {
     header("Location: dashboard.php");
     exit;
 }
+
+// Tangkap Form Modal Checklist Simulasi Multi-Role (18 Role)
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['save_role_simulation'])) {
+    $selected_sim_roles = $_POST['roles_sim'] ?? [];
+    if (empty($selected_sim_roles)) {
+        $_SESSION['active_role_views'] = ['none'];
+    } elseif (count($selected_sim_roles) >= 18) {
+        $_SESSION['active_role_views'] = ['all'];
+    } else {
+        $_SESSION['active_role_views'] = array_values(array_map('strtolower', $selected_sim_roles));
+    }
+    header("Location: dashboard.php");
+    exit;
+}
+
 $active_views = $_SESSION['active_role_views'] ?? ['all'];
 $is_all_view = in_array('all', $active_views);
 $is_none_view = in_array('none', $active_views);
@@ -328,6 +343,7 @@ foreach ($all_grid_items as $key => $item) {
                 if ($av === 'orangtua') { $av_aliases[] = 'walisantri'; }
                 if ($av === 'ketua_yayasan') { $av_aliases[] = 'super_admin'; }
                 if ($av === 'santri_rijal' || $av === 'santri_nisa') { $av_aliases[] = 'santri'; $av_aliases[] = $av; }
+                if ($av === 'santri') { $av_aliases[] = 'santri_rijal'; $av_aliases[] = 'santri_nisa'; }
                 if ($av === 'web') { $av_aliases[] = 'admin_web'; $av_aliases[] = 'admin'; }
                 if ($av === 'marketing') { $av_aliases[] = 'tim_marketing'; }
 
@@ -835,8 +851,11 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                     <span class="text-[10px] font-black uppercase tracking-wider text-teal-100 flex items-center gap-1.5">
                         <i class="fas fa-sliders text-[9px]"></i> Filter Simulasi Multi-Role (18 Role)
                     </span>
-                    <div class="text-[10px] text-teal-200">
-                        Status: <span class="font-extrabold text-white"><?= $is_all_view ? 'Semua Role' : ($is_none_view ? 'Kosong' : count($active_views).' Role Aktif') ?></span>
+                    <div class="text-[10px] text-teal-200 flex items-center gap-2">
+                        <span>Status: <span class="font-extrabold text-white"><?= $is_all_view ? 'Semua Role' : ($is_none_view ? 'Kosong' : count($active_views).' Role Aktif') ?></span></span>
+                        <button type="button" onclick="toggleRoleModal()" class="px-2 py-0.5 rounded bg-amber-400 hover:bg-amber-300 text-teal-950 font-bold text-[9px] transition cursor-pointer flex items-center gap-1 shadow-xs">
+                            <i class="fas fa-list-check"></i> Checklist Dialog
+                        </button>
                     </div>
                 </div>
 

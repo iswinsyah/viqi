@@ -120,6 +120,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if ($login_success && $user_data) {
+            $_SESSION['active_role_views'] = ['all'];
             syncLegacySessions($user_data);
             header("Location: dashboard.php");
             exit;

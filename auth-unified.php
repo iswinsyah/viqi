@@ -96,11 +96,21 @@ function hasRole($role) {
 }
 
 function getActiveRoleView() {
-    return $_SESSION['active_role_view'] ?? 'all';
+    $views = $_SESSION['active_role_views'] ?? ['all'];
+    return is_array($views) ? ($views[0] ?? 'all') : ($views ?? 'all');
 }
 
 function setActiveRoleView($roleView) {
+    $_SESSION['active_role_views'] = [$roleView];
     $_SESSION['active_role_view'] = $roleView;
+}
+
+function getActiveRoleViews() {
+    return $_SESSION['active_role_views'] ?? ['all'];
+}
+
+function setActiveRoleViews($roleViews) {
+    $_SESSION['active_role_views'] = is_array($roleViews) ? $roleViews : [$roleViews];
 }
 
 function requireLogin() {
@@ -119,7 +129,9 @@ function syncLegacySessions($user) {
     $_SESSION['app_username'] = $user['username'];
     $_SESSION['app_user_nama'] = $user['nama_lengkap'];
     $_SESSION['app_user_roles'] = $user['roles'];
-    $_SESSION['active_role_views'] = ['all']; // Reset filter simulasi saat login baru
+    if (!isset($_SESSION['active_role_views']) || empty($_SESSION['active_role_views'])) {
+        $_SESSION['active_role_views'] = ['all']; // Default 'all' hanya jika belum ada sesi simulasi
+    }
 
     $roles = array_map('trim', explode(',', strtolower($user['roles'])));
 
