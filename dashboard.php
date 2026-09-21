@@ -283,6 +283,74 @@ if (!$is_all_view) {
     }
 }
 
+// =========================================================
+// OTORITAS AKSES & DATA FRAME RUANG WEB DAN RUANG MARKETING
+// Khusus: Ketua Yayasan, Sekretaris Yayasan, Bendahara Yayasan (serta Super Admin)
+// =========================================================
+$yayasan_core_roles = ['ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'];
+$has_yayasan_core_role = $is_admin;
+if (!$has_yayasan_core_role) {
+    foreach ($roles as $r) {
+        $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+        if (in_array($r_norm, $yayasan_core_roles)) {
+            $has_yayasan_core_role = true;
+            break;
+        }
+    }
+}
+
+$show_web_and_marketing = $has_yayasan_core_role;
+
+// Sinkronisasi dengan Matrix Filter Simulasi Multi-Role di Header Dashboard
+if (!$is_all_view) {
+    if ($is_none_view) {
+        $show_web_and_marketing = false;
+    } else {
+        $show_web_and_marketing = false;
+        foreach ($active_views as $av) {
+            $av_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($av)));
+            if (in_array($av_norm, $yayasan_core_roles) || ($av_norm === 'super_admin' && $is_admin)) {
+                $show_web_and_marketing = true;
+                break;
+            }
+        }
+    }
+}
+
+// Data Menu Grid Card Ruang Web (Pengaturan Web)
+$ruang_web_cards = [
+    ['label' => 'Dashboard Web', 'icon' => 'fas fa-tachometer-alt', 'href' => 'admin.php'],
+    ['label' => 'Hero Banner', 'icon' => 'fas fa-home', 'href' => 'admin-hero.php'],
+    ['label' => 'Tentang Kami', 'icon' => 'fas fa-info-circle', 'href' => 'admin-tentang.php'],
+    ['label' => 'Pengajar', 'icon' => 'fas fa-chalkboard-teacher', 'href' => 'admin-pengajar.php'],
+    ['label' => 'Fasilitas', 'icon' => 'fas fa-building', 'href' => 'admin-fasilitas.php'],
+    ['label' => 'Kurikulum', 'icon' => 'fas fa-book', 'href' => 'admin-kurikulum.php'],
+    ['label' => 'Galeri', 'icon' => 'fas fa-images', 'href' => 'admin-galeri.php'],
+    ['label' => 'Testimoni', 'icon' => 'fas fa-comments', 'href' => 'admin-testimoni.php'],
+    ['label' => 'Info Biaya', 'icon' => 'fas fa-money-bill-wave', 'href' => 'admin-biaya.php'],
+    ['label' => 'Parenting', 'icon' => 'fas fa-calendar-check', 'href' => 'admin-parenting.php'],
+    ['label' => 'Artikel Blog', 'icon' => 'fas fa-file-alt', 'href' => 'admin-artikel.php'],
+    ['label' => 'Lead Magnet', 'icon' => 'fas fa-bullhorn', 'href' => 'admin-popup.php'],
+    ['label' => 'Media', 'icon' => 'fas fa-folder-open', 'href' => 'admin-media.php'],
+    ['label' => 'Pengaturan', 'icon' => 'fas fa-cog', 'href' => 'admin-pengaturan.php'],
+];
+
+// Data Menu Grid Card Ruang Marketing (AI & Prospek)
+$ruang_marketing_cards = [
+    ['label' => 'Dashboard Mkt', 'icon' => 'fas fa-tachometer-alt', 'href' => 'dashboard-marketing.php'],
+    ['label' => 'Pipeline', 'icon' => 'fas fa-filter', 'href' => 'data-pipeline.php'],
+    ['label' => 'Data Agen', 'icon' => 'fas fa-users', 'href' => 'data-agen.php'],
+    ['label' => 'Pendaftar SPMB', 'icon' => 'fas fa-user-graduate', 'href' => 'admin-spmb.php'],
+    ['label' => 'AI Control Hub', 'icon' => 'fas fa-robot', 'href' => 'admin-ai-hub.php'],
+    ['label' => 'Analisa Persona', 'icon' => 'fas fa-brain', 'href' => 'admin-analisa.php'],
+    ['label' => 'Trend Scout', 'icon' => 'fas fa-chart-line', 'href' => 'admin-trend-scout.php'],
+    ['label' => 'Community Scout', 'icon' => 'fas fa-search-location', 'href' => 'admin-community-scout.php'],
+    ['label' => 'Keyword Explorer', 'icon' => 'fas fa-search-dollar', 'href' => 'admin-kalender.php'],
+    ['label' => 'Artikel SEO AI', 'icon' => 'fas fa-pen-nib', 'href' => 'admin-seo.php'],
+    ['label' => 'Publisher AI', 'icon' => 'fas fa-paper-plane', 'href' => 'admin-publisher.php'],
+    ['label' => 'Sosmed Workflow', 'icon' => 'fas fa-route', 'href' => 'admin-sosmed-workflow.php'],
+];
+
 // Sinkronisasi Sesi & Cek Status Realtime Absensi Hari Ini
 if ($user) {
     syncLegacySessions($user);
@@ -681,6 +749,90 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
 
                 </div>
             </div>
+
+            <?php if ($show_web_and_marketing): ?>
+            <!-- ========================================================= -->
+            <!-- FRAME KHUSUS 1: RUANG WEB (PENGATURAN WEBSITE)            -->
+            <!-- (Hanya: Ketua Yayasan, Sekretaris Yayasan, Bendahara)     -->
+            <!-- ========================================================= -->
+            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-50 mt-6 sm:mt-7 transition-all duration-200">
+                <!-- HEADER FRAME RUANG WEB -->
+                <div class="flex items-center justify-between mb-5 pb-3 border-b border-teal-100/70">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-base font-black shadow-inner">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
+                                Ruang Web
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0b8478] border border-teal-200 uppercase tracking-wider">Pengaturan Website</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 font-medium">Kelola landing page, profil lembaga, brosur biaya, dan konten publik</p>
+                        </div>
+                    </div>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
+                        <i class="fas fa-shield-halved text-[#0b8478]"></i> Khusus Yayasan
+                    </span>
+                </div>
+
+                <!-- GRID CARD RUANG WEB -->
+                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center">
+                    <?php foreach ($ruang_web_cards as $card): ?>
+                    <div class="flex flex-col items-center group w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <a href="<?= htmlspecialchars($card['href']) ?>" class="flex flex-col items-center w-full focus:outline-none">
+                            <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-gradient-to-br from-[#0b8478] to-[#086a60] group-hover:from-[#086a60] group-hover:to-[#065049] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= htmlspecialchars($card['icon']) ?>"></i>
+                            </div>
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0b8478] transition-colors leading-tight line-clamp-1">
+                                <?= htmlspecialchars($card['label']) ?>
+                            </span>
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- FRAME KHUSUS 2: RUANG MARKETING (AI & PROSPEK SPMB)       -->
+            <!-- (Hanya: Ketua Yayasan, Sekretaris Yayasan, Bendahara)     -->
+            <!-- ========================================================= -->
+            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-indigo-950/5 border border-indigo-50 mt-6 sm:mt-7 transition-all duration-200">
+                <!-- HEADER FRAME RUANG MARKETING -->
+                <div class="flex items-center justify-between mb-5 pb-3 border-b border-indigo-100/70">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-black shadow-inner">
+                            <i class="fas fa-bullseye"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
+                                Ruang Marketing
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-indigo-50 text-indigo-600 border border-indigo-200 uppercase tracking-wider">AI & Prospek</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 font-medium">Pusat kendali AI, otomatisasi leads SPMB, analisis pasar, dan sosmed</p>
+                        </div>
+                    </div>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-indigo-800 bg-indigo-50/90 px-3 py-1 rounded-xl border border-indigo-200/80 shadow-xs">
+                        <i class="fas fa-robot text-indigo-600"></i> Otomatisasi AI
+                    </span>
+                </div>
+
+                <!-- GRID CARD RUANG MARKETING -->
+                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center">
+                    <?php foreach ($ruang_marketing_cards as $card): ?>
+                    <div class="flex flex-col items-center group w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <a href="<?= htmlspecialchars($card['href']) ?>" class="flex flex-col items-center w-full focus:outline-none">
+                            <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-gradient-to-br from-indigo-600 to-indigo-800 group-hover:from-indigo-700 group-hover:to-indigo-900 text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-indigo-900/20 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= htmlspecialchars($card['icon']) ?>"></i>
+                            </div>
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-indigo-600 transition-colors leading-tight line-clamp-1">
+                                <?= htmlspecialchars($card['label']) ?>
+                            </span>
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <?php if ($show_absensi_pegawai || $show_absensi_mengajar): ?>
             <!-- ========================================================= -->

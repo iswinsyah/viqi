@@ -81,7 +81,7 @@ function syncLegacySessions($user) {
         $_SESSION['ustadz_nama'] = $user['nama_lengkap'];
         $_SESSION['ustadz_role'] = $user['roles'];
         
-        if (in_array('super_admin', $roles)) {
+        if (in_array('super_admin', $roles) || in_array('ketua_yayasan', $roles) || in_array('sekretaris_yayasan', $roles) || in_array('bendahara_yayasan', $roles)) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['yayasan2_logged_in'] = true;
         }
