@@ -6,6 +6,7 @@ $user = getCurrentUser();
 $roles = getUserRoles();
 $is_admin = isSuperAdmin();
 $is_yayasan_pengurus = $is_admin || !empty(array_intersect(['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'admin', 'yayasan'], $roles));
+$can_view_role_simulation = $is_admin || in_array('ketua_yayasan', $roles) || in_array('super_admin', $roles);
 
 // Master Matrix Simulasi Role Lembaga (5 Kolom)
 $simulation_roles_grid = [
@@ -741,14 +742,11 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             </a>
             <?php endif; ?>
 
-            <!-- SIMULASI ROLE WIDGET DI SIDEBAR -->
-            <?php if ($is_admin || count($roles) > 1): ?>
+            <!-- SIMULASI ROLE WIDGET DI SIDEBAR (KHUSUS KETUA YAYASAN / SUPER ADMIN) -->
+            <?php if ($can_view_role_simulation): ?>
             <div class="pt-4 mt-4 border-t border-teal-700/60">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-[10px] font-black uppercase tracking-wider text-teal-200">Simulasi Role</span>
-                    <button type="button" onclick="toggleRoleModal()" class="px-2 py-0.5 rounded bg-amber-400 hover:bg-amber-300 text-teal-950 font-bold text-[9px] transition cursor-pointer">
-                        18 Role
-                    </button>
                 </div>
                 <div class="grid grid-cols-2 gap-1.5 text-[10px]">
                     <a href="dashboard.php?toggle_role=all" class="p-1.5 rounded-lg text-center font-bold transition <?= $is_all_view ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
@@ -851,46 +849,56 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 
             </div>
 
-            <!-- MULTI-ROLE 5 KOLOM X 4 BARIS DIRECT CHECKBOX SIMULATION -->
-            <?php if ($is_admin || count($roles) > 1): ?>
-            <div class="max-w-4xl mx-auto mt-4 pt-3 border-t border-teal-600/60">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-[10px] font-black uppercase tracking-wider text-teal-100 flex items-center gap-1.5">
-                        <i class="fas fa-sliders text-[9px]"></i> Filter Simulasi Multi-Role (18 Role)
-                    </span>
-                    <div class="text-[10px] text-teal-200 flex items-center gap-2">
-                        <span>Status: <span class="font-extrabold text-white"><?= $is_all_view ? 'Semua Role' : ($is_none_view ? 'Kosong' : count($active_views).' Role Aktif') ?></span></span>
-                        <button type="button" onclick="toggleRoleModal()" class="px-2 py-0.5 rounded bg-amber-400 hover:bg-amber-300 text-teal-950 font-bold text-[9px] transition cursor-pointer flex items-center gap-1 shadow-xs">
-                            <i class="fas fa-list-check"></i> Checklist Dialog
-                        </button>
-                    </div>
+            <!-- MULTI-ROLE 5 KOLOM X 4 BARIS DIRECT CHECKBOX SIMULATION (SPOILER / COLLAPSIBLE - KHUSUS KETUA YAYASAN / SUPER ADMIN) -->
+            <?php if ($can_view_role_simulation): ?>
+            <div class="max-w-4xl mx-auto mt-4 pt-3 border-t border-teal-600/60" id="simulasi-role-container">
+                <!-- SPOILER TOGGLE HEADER -->
+                <div class="flex items-center justify-between">
+                    <button type="button" onclick="toggleSimulasiSpoiler()" class="flex items-center gap-2 group cursor-pointer focus:outline-none text-left py-1">
+                        <span class="w-5 h-5 rounded-md bg-teal-800/80 group-hover:bg-teal-700 flex items-center justify-center text-teal-200 transition-colors shadow-xs">
+                            <i id="simulasi-chevron" class="fas fa-chevron-down text-[10px] transition-transform duration-200"></i>
+                        </span>
+                        <span class="text-[11px] font-black uppercase tracking-wider text-teal-100 group-hover:text-white flex items-center gap-1.5 transition-colors">
+                            <i class="fas fa-sliders text-[10px]"></i> Filter Simulasi Multi-Role (18 Role)
+                        </span>
+                        <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-teal-800/90 text-teal-200 border border-teal-600/40">
+                            <?= $is_all_view ? 'Semua Role' : ($is_none_view ? 'Kosong' : count($active_views).' Role Aktif') ?>
+                        </span>
+                    </button>
+
+                    <button type="button" onclick="toggleSimulasiSpoiler()" id="simulasi-toggle-btn" class="px-2.5 py-1 rounded-lg bg-teal-800/70 hover:bg-teal-700 text-[10px] font-bold text-teal-100 hover:text-white cursor-pointer transition flex items-center gap-1.5 shadow-xs">
+                        <i class="fas fa-eye-slash text-[9px]"></i>
+                        <span id="simulasi-toggle-text">Sembunyikan</span>
+                    </button>
                 </div>
 
-                <!-- 5 KOLOM X 4 BARIS MATRIX CHECKBOX -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 text-[10px]">
-                    <?php foreach ($simulation_roles_grid as $r_key => $r_data): 
-                        $is_action = isset($r_data['action']);
-                        if ($is_action) {
-                            if ($r_data['action'] === 'all') {
-                                $is_checked = $is_all_view;
+                <!-- SPOILER CONTENT: 5 KOLOM X 4 BARIS MATRIX CHECKBOX -->
+                <div id="simulasi-content" class="mt-2.5 transition-all duration-200">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5 text-[10px]">
+                        <?php foreach ($simulation_roles_grid as $r_key => $r_data): 
+                            $is_action = isset($r_data['action']);
+                            if ($is_action) {
+                                if ($r_data['action'] === 'all') {
+                                    $is_checked = $is_all_view;
+                                } else {
+                                    $is_checked = false;
+                                }
                             } else {
-                                $is_checked = false;
+                                $is_checked = in_array($r_key, $active_views) || $is_all_view;
                             }
-                        } else {
-                            $is_checked = in_array($r_key, $active_views) || $is_all_view;
-                        }
-                    ?>
-                    <a href="dashboard.php?toggle_role=<?= urlencode($r_key) ?>" class="px-2 py-1 rounded-lg font-bold flex items-center gap-1.5 transition text-left truncate <?= $is_checked ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                        <?php if ($is_action && $r_data['action'] === 'reset'): ?>
-                            <i class="fas fa-square-minus text-rose-300"></i>
-                        <?php elseif ($is_action && $r_data['action'] === 'all'): ?>
-                            <i class="fas <?= $is_all_view ? 'fa-circle-check text-[#0b8478]' : 'fa-circle text-white/40' ?>"></i>
-                        <?php else: ?>
-                            <i class="fas <?= $is_checked ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
-                        <?php endif; ?>
-                        <span class="truncate"><?= htmlspecialchars($r_data['label']) ?></span>
-                    </a>
-                    <?php endforeach; ?>
+                        ?>
+                        <a href="dashboard.php?toggle_role=<?= urlencode($r_key) ?>" class="px-2 py-1 rounded-lg font-bold flex items-center gap-1.5 transition text-left truncate <?= $is_checked ? 'bg-white text-[#0b8478] shadow-xs' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                            <?php if ($is_action && $r_data['action'] === 'reset'): ?>
+                                <i class="fas fa-square-minus text-rose-300"></i>
+                            <?php elseif ($is_action && $r_data['action'] === 'all'): ?>
+                                <i class="fas <?= $is_all_view ? 'fa-circle-check text-[#0b8478]' : 'fa-circle text-white/40' ?>"></i>
+                            <?php else: ?>
+                                <i class="fas <?= $is_checked ? 'fa-square-check text-[#0b8478]' : 'fa-square text-white/40' ?>"></i>
+                            <?php endif; ?>
+                            <span class="truncate"><?= htmlspecialchars($r_data['label']) ?></span>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             </div>
             <?php endif; ?>
@@ -1480,73 +1488,44 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
         </div>
     </div>
 
-    <!-- ========================================================= -->
-    <!-- 5. 16-ROLE CHECKLIST SIMULATION MODAL (KHUSUS SUPER ADMIN)-->
-    <!-- ========================================================= -->
-    <?php if ($is_admin || count($roles) > 1): ?>
-    <div id="roleModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-teal-100 relative animate-in fade-in zoom-in duration-150 max-h-[90vh] flex flex-col">
-            
-            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                <div>
-                    <h3 class="font-black text-base text-slate-900 leading-tight">Simulasi Multi-Role (18 Role)</h3>
-                    <p class="text-[11px] text-slate-500 mt-0.5">Pilih kombinasi role yang ingin diuji coba</p>
-                </div>
-                <button type="button" onclick="toggleRoleModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
-                    <i class="fas fa-times text-xs"></i>
-                </button>
-            </div>
-
-            <form method="POST" action="dashboard.php" class="flex-1 flex flex-col min-h-0 pt-3">
-                <input type="hidden" name="save_role_simulation" value="1">
-                
-                <div class="flex items-center justify-between mb-2 px-1 flex-shrink-0">
-                    <button type="button" onclick="selectAllRoles(true)" class="text-[11px] font-bold text-[#0b8478] hover:underline cursor-pointer">Pilih Semua</button>
-                    <button type="button" onclick="selectAllRoles(false)" class="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer">Lepas Semua</button>
-                </div>
-
-                <!-- Scrollable Checkbox List -->
-                <div class="flex-1 overflow-y-auto pr-1 space-y-1.5 pb-2">
-                    <?php 
-                    $modal_roles = $simulation_roles_grid ?? [];
-                    foreach ($modal_roles as $role_key => $role_data): 
-                        if (isset($role_data['action'])) continue;
-                        $is_checked = in_array($role_key, $active_views) || in_array('all', $active_views);
-                    ?>
-                    <label class="flex items-center gap-3 p-2.5 rounded-xl border border-slate-100 hover:bg-teal-50/70 cursor-pointer transition select-none">
-                        <input type="checkbox" name="roles_sim[]" value="<?= htmlspecialchars($role_key) ?>" <?= $is_checked ? 'checked' : '' ?> class="role-checkbox w-4 h-4 text-[#0b8478] rounded focus:ring-[#0b8478]">
-                        <span class="text-xs font-semibold text-slate-800"><?= htmlspecialchars($role_data['label']) ?></span>
-                    </label>
-                    <?php endforeach; ?>
-                </div>
-
-                <!-- Fixed Footer Button -->
-                <div class="pt-3 border-t border-slate-100 flex-shrink-0">
-                    <button type="submit" class="w-full bg-[#0b8478] hover:bg-[#086a60] text-white font-extrabold py-2.5 px-4 rounded-xl text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
-                        <i class="fas fa-check-double"></i> Terapkan Simulasi Role
-                    </button>
-                </div>
-            </form>
-
-        </div>
-    </div>
-    <?php endif; ?>
-
     <script>
         function toggleProfileModal() {
             const modal = document.getElementById('profileModal');
             if (modal) modal.classList.toggle('hidden');
         }
 
-        function toggleRoleModal() {
-            const modal = document.getElementById('roleModal');
-            if (modal) modal.classList.toggle('hidden');
+        // Spoiler toggle untuk Filter Simulasi Multi-Role
+        function toggleSimulasiSpoiler() {
+            const content = document.getElementById('simulasi-content');
+            const chevron = document.getElementById('simulasi-chevron');
+            const btn = document.getElementById('simulasi-toggle-btn');
+            if (!content) return;
+            
+            const isHidden = content.classList.contains('hidden');
+            if (isHidden) {
+                content.classList.remove('hidden');
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
+                if (btn) btn.innerHTML = '<i class="fas fa-eye-slash text-[9px]"></i> <span id="simulasi-toggle-text">Sembunyikan</span>';
+                localStorage.setItem('sadigs_simulasi_hidden', 'false');
+            } else {
+                content.classList.add('hidden');
+                if (chevron) chevron.style.transform = 'rotate(-90deg)';
+                if (btn) btn.innerHTML = '<i class="fas fa-eye text-[9px]"></i> <span id="simulasi-toggle-text">Tampilkan</span>';
+                localStorage.setItem('sadigs_simulasi_hidden', 'true');
+            }
         }
 
-        function selectAllRoles(check) {
-            const checkboxes = document.querySelectorAll('.role-checkbox');
-            checkboxes.forEach(cb => cb.checked = check);
-        }
+        // Restore status spoiler simulasi dari localStorage saat halaman dibuka
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('sadigs_simulasi_hidden') === 'true') {
+                const content = document.getElementById('simulasi-content');
+                const chevron = document.getElementById('simulasi-chevron');
+                const btn = document.getElementById('simulasi-toggle-btn');
+                if (content) content.classList.add('hidden');
+                if (chevron) chevron.style.transform = 'rotate(-90deg)';
+                if (btn) btn.innerHTML = '<i class="fas fa-eye text-[9px]"></i> <span id="simulasi-toggle-text">Tampilkan</span>';
+            }
+        });
 
         // =========================================================
         // INISIALISASI SORTABLEJS DRAG & DROP MIRIP ANDROID LAUNCHER
