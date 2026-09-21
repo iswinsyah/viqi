@@ -16,7 +16,7 @@ if (ini_get("session.use_cookies")) {
 // Finally, destroy the session.
 session_destroy();
 
-// Arahkan ke beranda depan
-header("Location: index.html");
+// Arahkan ke halaman web villaquranindonesia.com
+header("Location: https://villaquranindonesia.com");
 exit;
 ?>

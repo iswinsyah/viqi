@@ -43,7 +43,7 @@
     </div>
 
     <div class="p-4 border-t border-purple-800">
-        <a href="logout.php" class="flex items-center justify-center text-sm font-bold text-white transition-all bg-rose-600 hover:bg-rose-700 px-4 py-2.5 rounded-lg shadow-sm">
+        <a href="logout.php" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center text-sm font-bold text-white transition-all bg-rose-600 hover:bg-rose-700 px-4 py-2.5 rounded-lg shadow-sm">
             <i class="fas fa-sign-out-alt mr-2"></i> Keluar
         </a>
     </div>

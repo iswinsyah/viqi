@@ -65,5 +65,8 @@
         <a href="admin.php" class="flex items-center justify-center text-xs font-semibold text-indigo-200 hover:text-white transition-all py-1">
             <i class="fas fa-globe mr-1.5"></i> Ke Ruang Web
         </a>
+        <a href="logout.php" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center text-xs font-bold text-white transition-all bg-rose-600 hover:bg-rose-700 px-4 py-2 rounded-lg shadow-sm">
+            <i class="fas fa-arrow-right-from-bracket mr-1.5"></i> Keluar
+        </a>
     </div>
 </aside>

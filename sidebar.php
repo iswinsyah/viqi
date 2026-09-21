@@ -64,7 +64,7 @@
         <a href="dashboard.php" class="flex items-center justify-center text-sm font-bold text-emerald-950 transition-all bg-amber-400 hover:bg-amber-300 px-4 py-2.5 rounded-lg shadow-sm">
             <i class="fas fa-arrow-left mr-2"></i> Dashboard Utama
         </a>
-        <a href="logout.php" class="flex items-center justify-center text-sm font-bold text-white transition-all bg-rose-600 hover:bg-rose-700 px-4 py-2.5 rounded-lg shadow-sm">
+        <a href="logout.php" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center text-sm font-bold text-white transition-all bg-rose-600 hover:bg-rose-700 px-4 py-2.5 rounded-lg shadow-sm">
             <i class="fas fa-sign-out-alt mr-2"></i> Keluar (Logout)
         </a>
     </div>

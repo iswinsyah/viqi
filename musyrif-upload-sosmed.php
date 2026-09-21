@@ -54,11 +54,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
 // --- LOGOUT HANDLER ---
 if (isset($_GET['logout'])) {
-    unset($_SESSION['ustadz_logged_in']);
-    unset($_SESSION['ustadz_id']);
-    unset($_SESSION['ustadz_nama']);
-    unset($_SESSION['ustadz_role']);
-    header("Location: musyrif-upload-sosmed.php");
+    $_SESSION = array();
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
+    session_destroy();
+    header("Location: https://villaquranindonesia.com");
     exit;
 }
 

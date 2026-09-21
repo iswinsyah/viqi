@@ -48,7 +48,7 @@
     </div>
 
     <div class="p-4 border-t border-indigo-800">
-        <a href="logout-santri.php" class="flex items-center justify-center text-sm font-bold text-white hover:text-white transition-all bg-rose-500 hover:bg-rose-600 px-4 py-2.5 rounded-lg shadow-sm">
+        <a href="logout-santri.php" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center text-sm font-bold text-white hover:text-white transition-all bg-rose-500 hover:bg-rose-600 px-4 py-2.5 rounded-lg shadow-sm">
             <i class="fas fa-sign-out-alt mr-2"></i> Keluar
         </a>
     </div>
