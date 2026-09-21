@@ -113,8 +113,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // =========================================================
-// SINKRONISASI DINAMIS DENGAN MANAJEMEN MENU DATABASE
+// SELF-HEALING & SINKRONISASI MANAJEMEN MENU DATABASE
 // =========================================================
+if ($conn && $conn instanceof mysqli) {
+    @$conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_group VARCHAR(100) NOT NULL,
+        menu_key VARCHAR(100) UNIQUE NOT NULL,
+        sort_order INT NOT NULL DEFAULT 0,
+        icon VARCHAR(100) NOT NULL,
+        href VARCHAR(255) NOT NULL
+    )");
+    @$conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_key VARCHAR(100) UNIQUE NOT NULL,
+        allowed_roles TEXT NOT NULL
+    )");
+    @$conn->query("CREATE TABLE IF NOT EXISTS menu_custom_labels (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_key VARCHAR(100) UNIQUE NOT NULL,
+        custom_label VARCHAR(100) NOT NULL,
+        short_label VARCHAR(50) NOT NULL
+    )");
+
+    $res_cnt = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure");
+    $count_struct = $res_cnt ? (int)$res_cnt->fetch_assoc()['cnt'] : 0;
+    if ($count_struct === 0) {
+        $default_seed_structure = [
+            'Menu Utama' => [
+                'perizinan_pegawai' => ['href' => 'admin-pegawai-perizinan.php', 'icon' => 'fa-calendar-check', 'roles' => 'super_admin,ketua_yayasan,kepala_sekolah,kepala_asrama'],
+                'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract', 'roles' => 'super_admin,ketua_yayasan,kepala_sekolah,tutor,musyrif,ustadz'],
+                'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher', 'roles' => 'super_admin,ketua_yayasan,kepala_sekolah'],
+                'supervisi_mengajar' => ['href' => 'admin-supervisi-mengajar.php', 'icon' => 'fa-clipboard-check', 'roles' => 'super_admin,ketua_yayasan,kepala_sekolah'],
+                'jadwal_rapat' => ['href' => 'admin-jadwal-rapat.php', 'icon' => 'fa-handshake', 'roles' => 'super_admin,ketua_yayasan,sekretaris_yayasan,kepala_sekolah,tutor,musyrif,ustadz'],
+            ],
+            'Administrasi' => [
+                'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-address-book', 'roles' => 'super_admin,ketua_yayasan,sekretaris_sekolah,admin_sekolah,kepala_sekolah'],
+                'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users', 'roles' => 'super_admin,ketua_yayasan,admin_sekolah'],
+                'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader', 'roles' => 'super_admin,ketua_yayasan,kepala_sekolah,admin_sekolah'],
+                'rapot_pkbm' => ['href' => 'admin-rapot-pkbm.php', 'icon' => 'fa-file-invoice', 'roles' => 'super_admin,ketua_yayasan,tutor,ustadz,kepala_sekolah'],
+                'counseling_karir' => ['href' => 'admin-counseling-karir.php', 'icon' => 'fa-graduation-cap', 'roles' => 'super_admin,ketua_yayasan,tutor,ustadz,kepala_sekolah'],
+                'rekap_keuangan' => ['href' => 'admin-rekap-spp.php', 'icon' => 'fa-file-invoice-dollar', 'roles' => 'super_admin,ketua_yayasan,bendahara_yayasan,bendahara_sekolah'],
+                'penagihan_spp' => ['href' => 'admin-penagihan-spp.php', 'icon' => 'fa-comment-dollar', 'roles' => 'super_admin,ketua_yayasan,bendahara_yayasan,bendahara_sekolah'],
+                'rekap_uang_saku' => ['href' => 'admin-rekap-uang-saku.php', 'icon' => 'fa-wallet', 'roles' => 'super_admin,ketua_yayasan,bendahara_sekolah,musyrif,orangtua'],
+                'sekolah_pembukuan' => ['href' => 'sekolah-pembukuan.php', 'icon' => 'fa-book', 'roles' => 'super_admin,ketua_yayasan,bendahara_sekolah,kepala_sekolah'],
+                'kontrol_jam_kosong' => ['href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fa-calendar-times', 'roles' => 'super_admin,ketua_yayasan,kepala_sekolah,admin_sekolah'],
+                'kpi_admin_sekolah' => ['href' => 'admin-pegawai-kpi.php?view=admin_sekolah', 'icon' => 'fa-laptop-code', 'roles' => 'super_admin,ketua_yayasan,kepala_sekolah'],
+                'salary_admin' => ['href' => 'admin-salary.php', 'icon' => 'fa-money-bill-wave', 'roles' => 'super_admin,ketua_yayasan,bendahara_yayasan'],
+            ],
+            'Asatidz' => [
+                'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock', 'roles' => 'super_admin,ketua_yayasan,tutor,ustadz'],
+                'jadwal_pelajaran' => ['href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fa-calendar-alt', 'roles' => 'super_admin,ketua_yayasan,tutor,ustadz,santri_rijal,santri_nisa,orangtua'],
+                'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader', 'roles' => 'super_admin,ketua_yayasan,tutor,ustadz'],
+                'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic', 'roles' => 'super_admin,ketua_yayasan,tutor,ustadz'],
+                'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt', 'roles' => 'super_admin,ketua_yayasan,tutor,ustadz,kepala_sekolah'],
+                'master_kelas' => ['href' => 'admin-master-kelas.php', 'icon' => 'fa-school', 'roles' => 'super_admin,ketua_yayasan,admin_sekolah,kepala_sekolah'],
+                'master_mapel' => ['href' => 'admin-master-mapel.php', 'icon' => 'fa-book', 'roles' => 'super_admin,ketua_yayasan,admin_sekolah,kepala_sekolah'],
+                'kitab_rujukan' => ['href' => 'admin-kitab-rujukan.php', 'icon' => 'fa-book-open', 'roles' => 'super_admin,ketua_yayasan,tutor,ustadz'],
+            ],
+            'Asrama' => [
+                'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+                'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+                'rekap_ibadah_santri' => ['href' => 'admin-ibadah-santri.php', 'icon' => 'fa-mosque', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+            ],
+            'Musyrif' => [
+                'validasi_ibadah_musyrif' => ['href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fa-tasks', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+                'kontak_orangtua' => ['href' => 'admin-kontak-orangtua.php', 'icon' => 'fa-comments', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+                'cek_belajar_mandiri' => ['href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fa-book-reader', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+                'cek_kesehatan_santri' => ['href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fa-notes-medical', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+                'mutabaah' => ['href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fa-clipboard-list', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+                'laporan_adab' => ['href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fa-balance-scale', 'roles' => 'super_admin,ketua_yayasan,musyrif,tutor,ustadz'],
+                'setoran_hafalan_santri' => ['href' => 'admin-setoran-hafalan-santri.php', 'icon' => 'fa-quran', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama,santri'],
+                'rekap_setoran_santri' => ['href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fa-file-alt', 'roles' => 'super_admin,ketua_yayasan,musyrif,kepala_asrama'],
+            ]
+        ];
+        $ord = 0;
+        foreach ($default_seed_structure as $grp => $mns) {
+            foreach ($mns as $mk => $mv) {
+                $h = $conn->real_escape_string($mv['href']);
+                $ic = $conn->real_escape_string($mv['icon']);
+                $conn->query("INSERT IGNORE INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('$grp', '$mk', $ord, '$ic', '$h')");
+                if (isset($mv['roles'])) {
+                    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('$mk', '".$conn->real_escape_string($mv['roles'])."')");
+                }
+                $ord++;
+            }
+        }
+    }
+}
+
 $db_permissions = [];
 $res_perm = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
 if ($res_perm) {
@@ -181,6 +268,34 @@ if ($res_struct && $res_struct->num_rows > 0) {
             'group' => $r['menu_group']
         ];
     }
+}
+
+// Fallback jika query DB kosong agar dashboard tetap tampil lengkap
+if (empty($all_grid_items)) {
+    $all_grid_items = [
+        'buku_induk' => ['label' => 'Induk', 'icon' => 'fas fa-address-book', 'href' => 'admin-buku-induk.php', 'roles' => ['super_admin','ketua_yayasan','sekretaris_sekolah','admin_sekolah','kepala_sekolah'], 'group' => 'Administrasi'],
+        'jadwal_pelajaran' => ['label' => 'Jadwal', 'icon' => 'fas fa-calendar-alt', 'href' => 'admin-jadwal-pelajaran.php', 'roles' => ['super_admin','ketua_yayasan','tutor','ustadz','santri_rijal','santri_nisa','orangtua'], 'group' => 'Asatidz'],
+        'bank_nilai' => ['label' => 'Nilai', 'icon' => 'fas fa-star-half-alt', 'href' => 'admin-pegawai-nilai.php', 'roles' => ['super_admin','ketua_yayasan','tutor','ustadz','kepala_sekolah'], 'group' => 'Asatidz'],
+        'rapot_pkbm' => ['label' => 'Raport', 'icon' => 'fas fa-file-invoice', 'href' => 'admin-rapot-pkbm.php', 'roles' => ['super_admin','ketua_yayasan','tutor','ustadz','kepala_sekolah'], 'group' => 'Administrasi'],
+        'rekap_ibadah_santri' => ['label' => 'Ibadah Asrama', 'icon' => 'fas fa-mosque', 'href' => 'admin-ibadah-santri.php', 'roles' => ['super_admin','ketua_yayasan','musyrif','kepala_asrama'], 'group' => 'Asrama'],
+        'validasi_ibadah_musyrif' => ['label' => 'Validasi Ibadah', 'icon' => 'fas fa-tasks', 'href' => 'admin-validasi-ibadah-musyrif.php', 'roles' => ['super_admin','ketua_yayasan','musyrif','kepala_asrama'], 'group' => 'Musyrif'],
+        'setoran_hafalan_santri' => ['label' => 'Hafalan', 'icon' => 'fas fa-quran', 'href' => 'admin-setoran-hafalan-santri.php', 'roles' => ['super_admin','ketua_yayasan','musyrif','kepala_asrama','santri'], 'group' => 'Musyrif'],
+        'rekap_setoran_santri' => ['label' => 'Rekap Setoran', 'icon' => 'fas fa-file-alt', 'href' => 'admin-laporan-setoran-hafalan.php', 'roles' => ['super_admin','ketua_yayasan','musyrif','kepala_asrama'], 'group' => 'Musyrif'],
+        'laporan_adab' => ['label' => 'Adab', 'icon' => 'fas fa-balance-scale', 'href' => 'admin-pegawai-laporan-adab.php', 'roles' => ['super_admin','ketua_yayasan','musyrif','tutor','ustadz'], 'group' => 'Musyrif'],
+        'cek_kesehatan_santri' => ['label' => 'Kesehatan', 'icon' => 'fas fa-notes-medical', 'href' => 'admin-cek-kesehatan-santri.php', 'roles' => ['super_admin','ketua_yayasan','musyrif','kepala_asrama'], 'group' => 'Musyrif'],
+        'cek_belajar_mandiri' => ['label' => 'Belajar', 'icon' => 'fas fa-book-reader', 'href' => 'admin-cek-belajar-mandiri.php', 'roles' => ['super_admin','ketua_yayasan','musyrif','kepala_asrama'], 'group' => 'Musyrif'],
+        'penagihan_spp' => ['label' => 'SPP', 'icon' => 'fas fa-comment-dollar', 'href' => 'admin-penagihan-spp.php', 'roles' => ['super_admin','ketua_yayasan','bendahara_yayasan','bendahara_sekolah'], 'group' => 'Administrasi'],
+        'rekap_uang_saku' => ['label' => 'Saldo Saku', 'icon' => 'fas fa-wallet', 'href' => 'admin-rekap-uang-saku.php', 'roles' => ['super_admin','ketua_yayasan','bendahara_sekolah','musyrif','orangtua'], 'group' => 'Administrasi'],
+        'sekolah_pembukuan' => ['label' => 'Kas', 'icon' => 'fas fa-book', 'href' => 'sekolah-pembukuan.php', 'roles' => ['super_admin','ketua_yayasan','bendahara_sekolah','kepala_sekolah'], 'group' => 'Administrasi'],
+        'perizinan_pegawai' => ['label' => 'Perizinan', 'icon' => 'fas fa-calendar-check', 'href' => 'admin-pegawai-perizinan.php', 'roles' => ['super_admin','ketua_yayasan','kepala_sekolah','kepala_asrama'], 'group' => 'Menu Utama'],
+        'jadwal_rapat' => ['label' => 'Rapat', 'icon' => 'fas fa-handshake', 'href' => 'admin-jadwal-rapat.php', 'roles' => ['super_admin','ketua_yayasan','sekretaris_yayasan','kepala_sekolah','tutor','musyrif','ustadz'], 'group' => 'Menu Utama'],
+        'kontrol_jam_kosong' => ['label' => 'Jam Kosong', 'icon' => 'fas fa-calendar-times', 'href' => 'admin-kontrol-jam-kosong.php', 'roles' => ['super_admin','ketua_yayasan','kepala_sekolah','admin_sekolah'], 'group' => 'Administrasi'],
+        'kpi_admin_sekolah' => ['label' => 'KPI Admin', 'icon' => 'fas fa-laptop-code', 'href' => 'admin-pegawai-kpi.php?view=admin_sekolah', 'roles' => ['super_admin','ketua_yayasan','kepala_sekolah'], 'group' => 'Administrasi'],
+        'salary_admin' => ['label' => 'Salary Admin', 'icon' => 'fas fa-money-bill-wave', 'href' => 'admin-salary.php', 'roles' => ['super_admin','ketua_yayasan','bendahara_yayasan'], 'group' => 'Administrasi'],
+        'kesediaan_mengajar' => ['label' => 'Kesediaan', 'icon' => 'fas fa-clock', 'href' => 'admin-pegawai-kesediaan.php', 'roles' => ['super_admin','ketua_yayasan','tutor','ustadz'], 'group' => 'Asatidz'],
+        'ai_rpp' => ['label' => 'AI RPP', 'icon' => 'fas fa-magic', 'href' => 'admin-pegawai-rpp.php', 'roles' => ['super_admin','ketua_yayasan','tutor','ustadz'], 'group' => 'Asatidz'],
+        'mutabaah' => ['label' => 'Mutaba\'ah', 'icon' => 'fas fa-clipboard-list', 'href' => 'admin-pegawai-mutabaah.php', 'roles' => ['super_admin','ketua_yayasan','musyrif','kepala_asrama'], 'group' => 'Musyrif']
+    ];
 }
 
 // Filter Item Sesuai Role Pengguna & Simulasi Checkbox Multi-Role
@@ -384,7 +499,7 @@ if ($user) {
     syncLegacySessions($user);
 }
 $today_str = date('Y-m-d');
-$current_ustadz_id = $_SESSION['ustadz_id'] ?? ($user['ref_id'] ? (int)$user['ref_id'] : (int)$user['id']);
+$current_ustadz_id = $_SESSION['ustadz_id'] ?? ((!empty($user['ref_id'])) ? (int)$user['ref_id'] : (int)($user['id'] ?? 1));
 
 $res_peg_status = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $current_ustadz_id AND DATE(waktu_absen) = '$today_str' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
 $dash_pegawai_status = 'belum_absen';
@@ -575,10 +690,10 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                     <?php endif; ?>
                 </div>
                 <div class="overflow-hidden flex-1">
-                    <h4 class="font-bold text-xs text-white truncate leading-tight"><?= htmlspecialchars($user['nama_lengkap']) ?></h4>
-                    <p class="text-[10px] text-teal-200 truncate mt-0.5">@<?= htmlspecialchars($user['username']) ?></p>
+                    <h4 class="font-bold text-xs text-white truncate leading-tight"><?= htmlspecialchars($user['nama_lengkap'] ?? $_SESSION['app_user_nama'] ?? 'Admin') ?></h4>
+                    <p class="text-[10px] text-teal-200 truncate mt-0.5">@<?= htmlspecialchars($user['username'] ?? $_SESSION['app_username'] ?? 'admin') ?></p>
                     <span class="inline-block px-2 py-0.5 bg-teal-800/80 rounded text-[9px] font-bold text-teal-100 border border-teal-600/50 mt-1 truncate max-w-full">
-                        <?= htmlspecialchars($user['roles']) ?>
+                        <?= htmlspecialchars($user['roles'] ?? $_SESSION['app_user_roles'] ?? 'super_admin') ?>
                     </span>
                 </div>
             </div>
@@ -1230,13 +1345,13 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                     <?php if (!empty($user['foto_profil'])): ?>
                         <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Avatar" class="w-full h-full object-cover">
                     <?php else: ?>
-                        <?= strtoupper(substr($user['nama_lengkap'], 0, 1)) ?>
+                        <?= strtoupper(substr($user['nama_lengkap'] ?? $_SESSION['app_user_nama'] ?? 'A', 0, 1)) ?>
                     <?php endif; ?>
                 </div>
-                <h3 class="font-black text-base text-slate-900 leading-tight"><?= htmlspecialchars($user['nama_lengkap']) ?></h3>
-                <p class="text-xs text-slate-400 mt-0.5">@<?= htmlspecialchars($user['username']) ?></p>
+                <h3 class="font-black text-base text-slate-900 leading-tight"><?= htmlspecialchars($user['nama_lengkap'] ?? $_SESSION['app_user_nama'] ?? 'Admin') ?></h3>
+                <p class="text-xs text-slate-400 mt-0.5">@<?= htmlspecialchars($user['username'] ?? $_SESSION['app_username'] ?? 'admin') ?></p>
                 <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-black bg-teal-50 text-[#0d8276] border border-teal-200">
-                    <i class="fas fa-id-badge"></i> Role: <?= htmlspecialchars($user['roles']) ?>
+                    <i class="fas fa-id-badge"></i> Role: <?= htmlspecialchars($user['roles'] ?? $_SESSION['app_user_roles'] ?? 'super_admin') ?>
                 </div>
             </div>
 

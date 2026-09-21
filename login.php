@@ -83,15 +83,40 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // 5. Fallback master akun winsyah / viqi jika belum termigrasi
         if (!$login_success && ($username === 'viqi' || $username === 'winsyah') && ($password === 'Bismillah99!' || $password === 'Khilafet@1924')) {
             $login_success = true;
-            $user_data = [
-                'id' => 9999,
-                'username' => $username,
-                'nama_lengkap' => 'Ustadz Winsyah (Super Admin)',
-                'roles' => 'super_admin,ketua_yayasan,tutor,musyrif,walisantri,kepala_sekolah,web,marketing',
-                'user_type' => 'pegawai',
-                'ref_id' => 9999,
-                'status_aktif' => 1
-            ];
+            $all_master_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,kepala_sekolah,tutor,musyrif,ustadz,walisantri,web,marketing';
+            $nama_admin = ($username === 'winsyah') ? 'Ustadz Winsyah (Super Admin)' : 'Master Web Admin';
+
+            $conn->query("CREATE TABLE IF NOT EXISTS app_users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(100) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                nama_lengkap VARCHAR(150) NOT NULL,
+                roles VARCHAR(255) NOT NULL,
+                user_type VARCHAR(50) NOT NULL DEFAULT 'pegawai',
+                ref_id INT NULL,
+                foto_profil VARCHAR(255) NULL,
+                status_aktif TINYINT(1) NOT NULL DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )");
+
+            $pass_hash = password_hash($password, PASSWORD_DEFAULT);
+            $conn->query("INSERT INTO app_users (username, password, nama_lengkap, roles, user_type, ref_id, status_aktif) 
+                VALUES ('$username_esc', '$pass_hash', '$nama_admin', '$all_master_roles', 'pegawai', 1, 1) 
+                ON DUPLICATE KEY UPDATE password = '$pass_hash', roles = '$all_master_roles', status_aktif = 1, nama_lengkap = '$nama_admin'");
+
+            $res_re = $conn->query("SELECT * FROM app_users WHERE username = '$username_esc' LIMIT 1");
+            $user_data = $res_re ? $res_re->fetch_assoc() : null;
+            if (!$user_data) {
+                $user_data = [
+                    'id' => 1,
+                    'username' => $username,
+                    'nama_lengkap' => $nama_admin,
+                    'roles' => $all_master_roles,
+                    'user_type' => 'pegawai',
+                    'ref_id' => 1,
+                    'status_aktif' => 1
+                ];
+            }
         }
 
         if ($login_success && $user_data) {
