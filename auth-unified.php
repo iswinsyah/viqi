@@ -10,6 +10,44 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/koneksi.php';
 
+function getRoleAliases($role) {
+    $r = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($role)));
+    $map = [
+        'musyrif'          => ['musyrif', 'musyrifah', 'musyirfah', 'musyifah', 'kepala_asrama', 'asrama'],
+        'musyrifah'        => ['musyrif', 'musyrifah', 'musyirfah', 'musyifah', 'kepala_asrama', 'asrama'],
+        'musyirfah'        => ['musyrif', 'musyrifah', 'musyirfah', 'musyifah', 'kepala_asrama', 'asrama'],
+        'kepala_asrama'    => ['musyrif', 'musyrifah', 'musyirfah', 'musyifah', 'kepala_asrama', 'asrama'],
+        'ustadz'           => ['ustadz', 'ustadzah', 'guru', 'pengajar', 'asatidz', 'ustadz_ah'],
+        'ustadzah'         => ['ustadz', 'ustadzah', 'guru', 'pengajar', 'asatidz', 'ustadz_ah'],
+        'ustadz_ah'        => ['ustadz', 'ustadzah', 'guru', 'pengajar', 'asatidz', 'ustadz_ah'],
+        'guru'             => ['ustadz', 'ustadzah', 'guru', 'pengajar', 'asatidz'],
+        'santri'           => ['santri', 'santri_rijal', 'santri_nisa'],
+        'santri_rijal'     => ['santri', 'santri_rijal'],
+        'santri_nisa'      => ['santri', 'santri_nisa'],
+        'orangtua'         => ['orangtua', 'walisantri', 'wali_santri', 'wali'],
+        'walisantri'       => ['orangtua', 'walisantri', 'wali_santri', 'wali'],
+        'marketing'        => ['marketing', 'tim_marketing'],
+        'tim_marketing'    => ['marketing', 'tim_marketing'],
+        'web'              => ['web', 'admin_web'],
+        'admin_web'        => ['web', 'admin_web'],
+        'ketua_yayasan'    => ['ketua_yayasan', 'super_admin'],
+        'super_admin'      => ['super_admin', 'superadmin'],
+    ];
+    return $map[$r] ?? [$r];
+}
+
+function normalizeCanonicalRole($role) {
+    $r = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($role)));
+    if (in_array($r, ['musyrif', 'musyrifah', 'musyirfah', 'musyifah', 'kepala_asrama', 'asrama'])) return 'musyrif';
+    if (in_array($r, ['ustadz', 'ustadzah', 'guru', 'pengajar', 'asatidz', 'ustadz_ah'])) return 'ustadz';
+    if (in_array($r, ['santri', 'santri_rijal', 'santri_nisa'])) return 'santri';
+    if (in_array($r, ['orangtua', 'walisantri', 'wali_santri', 'wali'])) return 'orangtua';
+    if (in_array($r, ['marketing', 'tim_marketing'])) return 'marketing';
+    if (in_array($r, ['web', 'admin_web'])) return 'web';
+    if (in_array($r, ['super_admin', 'superadmin'])) return 'super_admin';
+    return $r;
+}
+
 function getCurrentUser() {
     global $conn;
     if (!isset($_SESSION['app_user_id']) && !isset($_SESSION['app_username'])) {
@@ -41,6 +79,7 @@ function getCurrentUser() {
         }
         return [
             'id' => $userId > 0 ? $userId : 1,
+            'ref_id' => isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : ($userId > 0 ? $userId : 1),
             'username' => $sessionUsername,
             'nama_lengkap' => $_SESSION['app_user_nama'] ?? $sessionUsername,
             'roles' => $session_roles,
@@ -94,10 +133,20 @@ function isSuperAdmin() {
 function hasRole($role) {
     if (isSuperAdmin()) return true;
     $roles = getUserRoles();
-    $norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
+    $targetAliases = getRoleAliases($role);
     foreach ($roles as $r) {
-        $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
-        if ($r_norm === $norm) return true;
+        $userAliases = getRoleAliases($r);
+        if (!empty(array_intersect($targetAliases, $userAliases))) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function hasAnyRole($roleList) {
+    if (isSuperAdmin()) return true;
+    foreach ($roleList as $r) {
+        if (hasRole($r)) return true;
     }
     return false;
 }
@@ -132,24 +181,28 @@ function requireLogin() {
  * Memastikan semua halaman lama tetap berjalan tanpa modifikasi
  */
 function syncLegacySessions($user) {
-    $_SESSION['app_user_id'] = (int)$user['id'];
-    $_SESSION['app_username'] = $user['username'];
-    $_SESSION['app_user_nama'] = $user['nama_lengkap'];
-    $_SESSION['app_user_roles'] = $user['roles'];
+    if (!$user) return;
+    $_SESSION['app_user_id'] = (int)($user['id'] ?? 1);
+    $_SESSION['app_username'] = $user['username'] ?? '';
+    $_SESSION['app_user_nama'] = $user['nama_lengkap'] ?? '';
+    $_SESSION['app_user_roles'] = $user['roles'] ?? '';
     if (!isset($_SESSION['active_role_views']) || empty($_SESSION['active_role_views'])) {
         $_SESSION['active_role_views'] = ['all']; // Default 'all' hanya jika belum ada sesi simulasi
     }
 
-    $roles = array_map('trim', explode(',', strtolower($user['roles'])));
+    $roles = !empty($user['roles']) ? array_map('trim', explode(',', strtolower($user['roles']))) : [];
+    $user_type = $user['user_type'] ?? 'pegawai';
+    $ref_id = !empty($user['ref_id']) ? (int)$user['ref_id'] : (int)($user['id'] ?? 1);
 
     // 1. Sesi Pegawai / Ustadz / Admin
-    if ($user['user_type'] === 'pegawai' || in_array('super_admin', $roles) || in_array('ustadz', $roles) || in_array('tutor', $roles) || in_array('musyrif', $roles)) {
+    $is_pegawai = ($user_type === 'pegawai') || hasAnyRole(['super_admin', 'ustadz', 'tutor', 'musyrif', 'kepala_sekolah', 'trainer']);
+    if ($is_pegawai) {
         $_SESSION['ustadz_logged_in'] = true;
-        $_SESSION['ustadz_id'] = $user['ref_id'] ? (int)$user['ref_id'] : (int)$user['id'];
-        $_SESSION['ustadz_nama'] = $user['nama_lengkap'];
-        $_SESSION['ustadz_role'] = $user['roles'];
+        $_SESSION['ustadz_id'] = $ref_id;
+        $_SESSION['ustadz_nama'] = $user['nama_lengkap'] ?? '';
+        $_SESSION['ustadz_role'] = $user['roles'] ?? '';
         
-        if (in_array('super_admin', $roles) || in_array('ketua_yayasan', $roles) || in_array('sekretaris_yayasan', $roles) || in_array('bendahara_yayasan', $roles) || in_array('web', $roles) || in_array('marketing', $roles)) {
+        if (empty($_SESSION['is_impersonating']) && hasAnyRole(['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'web', 'marketing'])) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['yayasan2_logged_in'] = true;
         } else {
@@ -160,16 +213,17 @@ function syncLegacySessions($user) {
     }
 
     // 2. Sesi Santri
-    if ($user['user_type'] === 'santri' || in_array('santri', $roles)) {
+    if ($user_type === 'santri' || hasRole('santri')) {
         $_SESSION['santri_logged_in'] = true;
-        $_SESSION['santri_id'] = $user['ref_id'] ? (int)$user['ref_id'] : (int)$user['id'];
-        $_SESSION['santri_nama'] = $user['nama_lengkap'];
+        $_SESSION['santri_id'] = $ref_id;
+        $_SESSION['santri_nama'] = $user['nama_lengkap'] ?? '';
     }
 
     // 3. Sesi Walisantri
-    if ($user['user_type'] === 'walisantri' || in_array('walisantri', $roles)) {
+    if ($user_type === 'walisantri' || hasRole('orangtua')) {
         $_SESSION['orangtua_logged_in'] = true;
-        $_SESSION['orangtua_id'] = $user['ref_id'] ? (int)$user['ref_id'] : (int)$user['id'];
-        $_SESSION['orangtua_nama'] = $user['nama_lengkap'];
+        $_SESSION['orangtua_id'] = $ref_id;
+        $_SESSION['orangtua_nama'] = $user['nama_lengkap'] ?? '';
     }
 }
+?>

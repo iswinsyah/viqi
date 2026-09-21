@@ -323,8 +323,7 @@ foreach ($all_grid_items as $key => $item) {
         $has_access = $is_admin;
         if (!$has_access) {
             foreach ($item['roles'] as $r) {
-                $norm_r = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
-                if (in_array($norm_r, $roles) || in_array($r, $roles)) {
+                if (hasRole($r)) {
                     $has_access = true;
                     break;
                 }
@@ -337,24 +336,12 @@ foreach ($all_grid_items as $key => $item) {
 
             $matches_active_filter = false;
             foreach ($active_views as $av) {
-                $av_aliases = [$av];
-                if ($av === 'musyrif') { $av_aliases[] = 'musyrifah'; $av_aliases[] = 'kepala_asrama'; }
-                if ($av === 'ustadz') { $av_aliases[] = 'ustadzah'; $av_aliases[] = 'guru'; }
-                if ($av === 'orangtua') { $av_aliases[] = 'walisantri'; }
-                if ($av === 'ketua_yayasan') { $av_aliases[] = 'super_admin'; }
-                if ($av === 'santri_rijal' || $av === 'santri_nisa') { $av_aliases[] = 'santri'; $av_aliases[] = $av; }
-                if ($av === 'santri') { $av_aliases[] = 'santri_rijal'; $av_aliases[] = 'santri_nisa'; }
-                if ($av === 'web') { $av_aliases[] = 'admin_web'; $av_aliases[] = 'admin'; }
-                if ($av === 'marketing') { $av_aliases[] = 'tim_marketing'; }
-
-                foreach ($av_aliases as $alias) {
-                    $alias_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($alias)));
-                    foreach ($item['roles'] as $ir) {
-                        $ir_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($ir)));
-                        if ($alias_norm === $ir_norm || $alias === $ir) {
-                            $matches_active_filter = true;
-                            break 2;
-                        }
+                $av_aliases = getRoleAliases($av);
+                foreach ($item['roles'] as $ir) {
+                    $ir_aliases = getRoleAliases($ir);
+                    if (!empty(array_intersect($av_aliases, $ir_aliases))) {
+                        $matches_active_filter = true;
+                        break 2;
                     }
                 }
             }
@@ -368,29 +355,21 @@ foreach ($all_grid_items as $key => $item) {
 $visible_items = $operational_items;
 
 // 1. Cek Visibilitas Absensi Pegawai (Semua Staf/Pegawai kecuali Santri & Walisantri)
-$non_staff_roles = ['santri', 'santri_rijal', 'santri_nisa', 'walisantri', 'orangtua'];
 $show_absensi_pegawai = false;
 if ($is_admin) {
     $show_absensi_pegawai = true;
 } else {
     foreach ($roles as $r) {
-        if (!in_array($r, $non_staff_roles)) {
+        $canon = normalizeCanonicalRole($r);
+        if (!in_array($canon, ['santri', 'orangtua'])) {
             $show_absensi_pegawai = true;
             break;
         }
     }
 }
 
-// 2. Cek Otoritas Role Khusus Mengajar & Form Jurnal (Hanya: Tutor, Ustadz, Ustadzah, Trainer)
-$teaching_target_roles = ['tutor', 'ustadz', 'ustadzah', 'trainer', 'ustadz_ah'];
-$has_teaching_role = false;
-foreach ($roles as $r) {
-    $r_norm = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($r)));
-    if (in_array($r_norm, $teaching_target_roles) || strpos($r_norm, 'ustadz') !== false || strpos($r_norm, 'tutor') !== false || strpos($r_norm, 'trainer') !== false) {
-        $has_teaching_role = true;
-        break;
-    }
-}
+// 2. Cek Otoritas Role Khusus Mengajar & Form Jurnal (Hanya: Tutor, Ustadz, Trainer)
+$has_teaching_role = hasAnyRole(['tutor', 'ustadz', 'trainer']);
 $show_absensi_mengajar = $has_teaching_role;
 $show_jurnal_mengajar = $has_teaching_role;
 
@@ -406,11 +385,11 @@ if (!$is_all_view) {
         $show_jurnal_mengajar = false;
 
         foreach ($active_views as $av) {
-            $av_norm = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($av)));
-            if (!in_array($av_norm, $non_staff_roles)) {
+            $canon_av = normalizeCanonicalRole($av);
+            if (!in_array($canon_av, ['santri', 'orangtua'])) {
                 $show_absensi_pegawai = true;
             }
-            if (in_array($av_norm, $teaching_target_roles) || strpos($av_norm, 'ustadz') !== false || strpos($av_norm, 'tutor') !== false || strpos($av_norm, 'trainer') !== false) {
+            if (in_array($canon_av, ['tutor', 'ustadz', 'trainer'])) {
                 $show_absensi_mengajar = true;
                 $show_jurnal_mengajar = true;
             }
@@ -673,10 +652,10 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
         }
     </style>
 </head>
-<body class="bg-[#dcf3ee] min-h-screen text-slate-800 flex flex-col md:flex-row antialiased selection:bg-[#0b8478] selection:text-white">
+<body class="bg-[#dcf3ee] min-h-screen text-slate-800 flex flex-col antialiased selection:bg-[#0b8478] selection:text-white">
 
     <?php if (isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === true): ?>
-    <div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 text-white px-4 py-2 text-xs shadow-2xl flex items-center justify-between border-b border-purple-400">
+    <div class="w-full bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 text-white px-4 py-2.5 text-xs shadow-2xl flex items-center justify-between border-b border-purple-400 z-50 sticky top-0 flex-shrink-0">
         <div class="flex items-center space-x-2">
             <span class="animate-pulse text-amber-300 font-extrabold text-sm"><i class="fas fa-user-secret"></i> MODE IMPERSONASI</span>
             <span class="hidden sm:inline text-purple-200">|</span>
@@ -687,11 +666,10 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             <i class="fas fa-undo"></i> Kembali ke Super Admin
         </a>
     </div>
-    <style>
-    /* Geser layout sedikit jika banner impersonasi aktif */
-    body { padding-top: 36px !important; }
-    </style>
     <?php endif; ?>
+
+    <!-- ROOT CONTAINER (FLEX-ROW PADA DESKTOP UNTUK SIDEBAR + MAIN CONTENT) -->
+    <div class="flex-1 flex flex-col md:flex-row w-full min-h-screen">
 
     <!-- ========================================================= -->
     <!-- DESKTOP SIDEBAR (HANYA TAMPIL DI LAYAR PC / TABLET md:)   -->
@@ -1452,6 +1430,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             </a>
         </nav>
 
+    </div>
     </div>
 
     <!-- FLOATING TOAST NOTIFICATION (ANDROID-LIKE) -->

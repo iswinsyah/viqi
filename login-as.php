@@ -1,6 +1,7 @@
 <?php
 session_start();
 require_once 'koneksi.php';
+require_once 'auth-unified.php';
 
 // Pastikan yang mengakses adalah Super Admin atau Pimpinan Yayasan
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
@@ -83,8 +84,23 @@ if ($target_id > 0) {
             $roles_arr = ['ustadz'];
         }
 
+        // Hitung peran kanonikal (misal: musyirfah/musyrifah -> musyrif, ustadzah -> ustadz)
+        $canonical_views = [];
+        foreach ($roles_arr as $ra) {
+            $canon = normalizeCanonicalRole($ra);
+            if (!in_array($canon, $canonical_views)) {
+                $canonical_views[] = $canon;
+            }
+        }
+        if (empty($canonical_views)) {
+            $canonical_views = ['ustadz'];
+        }
+
+        // Gabungkan seluruh alias ke roles sesi agar kompatibel dengan seluruh script
+        $combined_roles = array_unique(array_merge($roles_arr, $canonical_views));
+
         // Cek apakah target user memiliki hak akses kepengurusan yayasan
-        $is_target_yayasan = !empty(array_intersect(['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'], $roles_arr));
+        $is_target_yayasan = !empty(array_intersect(['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'], $canonical_views));
         if (!$is_target_yayasan) {
             unset($_SESSION['yayasan_logged_in']);
             unset($_SESSION['yayasan2_logged_in']);
@@ -99,18 +115,18 @@ if ($target_id > 0) {
         $_SESSION['app_user_id'] = $app_id;
         $_SESSION['app_username'] = $app_uname;
         $_SESSION['app_user_nama'] = $app_nama;
-        $_SESSION['app_user_roles'] = implode(',', $roles_arr);
-        $_SESSION['active_role_views'] = array_values($roles_arr); // Set tampilan menu langsung sesuai role target!
+        $_SESSION['app_user_roles'] = implode(',', $combined_roles);
+        $_SESSION['active_role_views'] = $canonical_views; // Kunci filter menu ke role kanonikal target!
 
         // Set Legacy Sessions untuk kompatibilitas script lama
         $_SESSION['ustadz_logged_in'] = true;
         $_SESSION['ustadz_id'] = (int)$user['id'];
         $_SESSION['ustadz_nama'] = $user['nama'];
-        $_SESSION['ustadz_role'] = $user['role'];
+        $_SESSION['ustadz_role'] = implode(',', $combined_roles);
         $_SESSION['username'] = $app_uname;
-        $_SESSION['role'] = $user['role'];
+        $_SESSION['role'] = implode(',', $combined_roles);
 
-        header("Location: dashboard.php?sukses=" . urlencode("Berhasil Login Sebagai: " . $user['nama'] . " (" . implode(', ', $roles_arr) . ")"));
+        header("Location: dashboard.php?sukses=" . urlencode("Berhasil Login Sebagai: " . $user['nama'] . " (" . implode(', ', $canonical_views) . ")"));
         exit;
     } else {
         die("User tidak ditemukan.");
