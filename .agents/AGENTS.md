@@ -3,4 +3,4 @@
 Here are the project-specific rules for this workspace:
 
 ## Deployment & Repository Rule
-* **Always Push & Deploy on Changes**: Whenever any changes or bug fixes are successfully completed and verified in this project, they must immediately be committed, pushed to the GitHub repository's `main` branch, which triggers the auto-deployment workflow to Hostinger.
+* **Localhost Only (Do Not Auto-Push / Auto-Deploy)**: Semua perubahan, modifikasi, dan perombakan layout HANYA dilakukan di localhost saja. JANGAN PERNAH melakukan `git push` ke GitHub atau memicu auto-deploy ke Hostinger, KECUALI jika USER secara eksplisit memberikan perintah untuk push / deploy.
