@@ -202,8 +202,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
     href VARCHAR(255) NOT NULL
 )");
 
-// Pembersihan paksa untuk penggabungan menu KPI, Akunku, Jurnal Mengajar & Santri Tidak Masuk
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+// Pembersihan paksa untuk penggabungan menu KPI, Akunku, Jurnal Mengajar, Santri Tidak Masuk & Duplikat E-Modul
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul')");
 
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");

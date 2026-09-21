@@ -14,9 +14,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
 )");
 
 // Cek dan seed jika kosong
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
-$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
-$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
 $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('rekap_ibadah_rijal', 'rekap_ibadah_nisa', 'rekap_ibadah_mahad', 'laporan_setoran_rijal', 'laporan_setoran_nisa', 'laporan_setoran_hafalan')");
 $conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
 
