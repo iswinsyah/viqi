@@ -89,9 +89,24 @@ if ($_SERVER["REQUEST_METHOD"] !== "POST") {
 date_default_timezone_set('Asia/Jakarta');
 
 // A. Inisialisasi Database (Self-Healing Migrations)
+$conn->query("CREATE TABLE IF NOT EXISTS master_lokasi (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_lokasi VARCHAR(50) UNIQUE NOT NULL,
+    nama_lokasi VARCHAR(100) NOT NULL,
+    alias_nama VARCHAR(255) DEFAULT '',
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL,
+    radius_meter INT DEFAULT 75,
+    status_aktif TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
 $conn->query("CREATE TABLE IF NOT EXISTS jadwal_rapat (
     id INT AUTO_INCREMENT PRIMARY KEY,
     agenda VARCHAR(255) NOT NULL,
+    tempat_rapat VARCHAR(100) DEFAULT NULL,
+    lokasi_latitude DECIMAL(10, 8) DEFAULT NULL,
+    lokasi_longitude DECIMAL(11, 8) DEFAULT NULL,
+    lokasi_radius INT DEFAULT 75,
     pengundang VARCHAR(50) NOT NULL,
     waktu_mulai DATETIME NOT NULL,
     status VARCHAR(20) DEFAULT 'aktif',
@@ -99,6 +114,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_rapat (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 @$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN rapat_id INT DEFAULT NULL AFTER jenis_absen");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN tempat_rapat VARCHAR(100) DEFAULT NULL AFTER agenda");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN lokasi_latitude DECIMAL(10, 8) DEFAULT NULL AFTER tempat_rapat");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN lokasi_longitude DECIMAL(11, 8) DEFAULT NULL AFTER lokasi_latitude");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN lokasi_radius INT DEFAULT 75 AFTER lokasi_longitude");
 
 $ustadz_id = $_SESSION['ustadz_id'];
 $qr_data_base64 = $_POST['qr_data'] ?? '';
@@ -344,7 +363,55 @@ $res_izin = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $usta
 $is_izin_approved = ($res_izin && $res_izin->num_rows > 0);
 
 // D. Cari koordinat dan jarak lokasi
-if (!empty($qr_data_base64)) {
+$max_distance_allowed = MAX_DISTANCE_METERS;
+
+if ($qr_jenis_absen === 'Rapat') {
+    // --- METODE GEOLOKASI KHUSUS RAPAT: HANYA BISA ABSEN SESUAI LOKASI YANG DITENTUKAN DI UNDANGAN ---
+    $target_lat = null;
+    $target_lon = null;
+    $target_radius = MAX_DISTANCE_METERS;
+    $target_location_name = !empty($rapat['tempat_rapat']) ? $rapat['tempat_rapat'] : 'Lokasi Rapat';
+
+    // 1. Cek dari kolom koordinat spesifik jadwal_rapat di database
+    if (!empty($rapat['lokasi_latitude']) && !empty($rapat['lokasi_longitude'])) {
+        $target_lat = (float)$rapat['lokasi_latitude'];
+        $target_lon = (float)$rapat['lokasi_longitude'];
+        $target_radius = !empty($rapat['lokasi_radius']) ? (int)$rapat['lokasi_radius'] : MAX_DISTANCE_METERS;
+    }
+    
+    // 2. Cek dari tabel master_lokasi di database berdasarkan tempat_rapat
+    if ($target_lat === null || $target_lon === null) {
+        $tempat_esc = $conn->real_escape_string($rapat['tempat_rapat'] ?? '');
+        $q_lok = $conn->query("SELECT * FROM master_lokasi WHERE nama_lokasi LIKE '%$tempat_esc%' OR alias_nama LIKE '%$tempat_esc%' OR kode_lokasi LIKE '%$tempat_esc%' LIMIT 1");
+        if ($q_lok && $q_lok->num_rows > 0) {
+            $row_lok = $q_lok->fetch_assoc();
+            $target_lat = (float)$row_lok['latitude'];
+            $target_lon = (float)$row_lok['longitude'];
+            $target_radius = (int)($row_lok['radius_meter'] ?? MAX_DISTANCE_METERS);
+            $target_location_name = $row_lok['nama_lokasi'];
+        }
+    }
+
+    // 3. Fallback jika nama gedung belum ada di database
+    if ($target_lat === null || $target_lon === null) {
+        $tempat_norm = strtolower(trim($rapat['tempat_rapat'] ?? ''));
+        if (strpos($tempat_norm, 'gedung a') !== false || strpos($tempat_norm, 'rijal') !== false) {
+            $target_lat = -7.9480257; $target_lon = 112.5822426; $target_location_name = 'Gedung A (Asrama Rijal)';
+        } elseif (strpos($tempat_norm, 'gedung b') !== false || strpos($tempat_norm, 'kantor') !== false) {
+            $target_lat = -7.9485768; $target_lon = 112.5823352; $target_location_name = 'Gedung B (Kantor Villa Quran)';
+        } elseif (strpos($tempat_norm, 'gedung c') !== false || strpos($tempat_norm, 'nisa') !== false) {
+            $target_lat = -7.9405464; $target_lon = 112.5791353; $target_location_name = 'Gedung C (Asrama Nisa)';
+        } elseif (strpos($tempat_norm, 'masjid') !== false || strpos($tempat_norm, 'taqwa') !== false) {
+            $target_lat = -7.9464649; $target_lon = 112.5822123; $target_location_name = 'Masjid At Taqwa VBT';
+        } else {
+            $target_lat = -7.9485768; $target_lon = 112.5823352; $target_location_name = 'Gedung B (Kantor Utama)';
+        }
+    }
+
+    $distance = haversine_distance($user_lat, $user_lon, $target_lat, $target_lon);
+    $qr_location_key = 'rapat_loc_' . $rapat_id;
+    $max_distance_allowed = $target_radius;
+} elseif (!empty($qr_data_base64)) {
     // --- METODE HYBRID (DENGAN QR) ---
     $encrypted_data = base64_decode($qr_data_base64);
     $decrypted_json = openssl_decrypt($encrypted_data, 'aes-256-cbc', ENCRYPTION_KEY, 0, ENCRYPTION_IV);
@@ -367,6 +434,7 @@ if (!empty($qr_data_base64)) {
     $target_location_name = $locations[$qr_location_key]['nama'];
 
     $distance = haversine_distance($user_lat, $user_lon, $qr_lat, $qr_lon);
+    $max_distance_allowed = MAX_DISTANCE_METERS;
 } else {
     // --- METODE GEOLOCATION-ONLY (TANPA QR) ---
     $closest_location_key = null;
@@ -390,16 +458,17 @@ if (!empty($qr_data_base64)) {
     } else {
         json_response('error', 'Tidak ada koordinat gedung resmi yang terdaftar.');
     }
+    $max_distance_allowed = MAX_DISTANCE_METERS;
 }
 
 // E. Validasi Jarak & Eksekusi Penyimpanan
-if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
+if ($distance > $max_distance_allowed && !$is_izin_approved) {
     // --- DI LUAR JANGKAUAN DAN TIDAK ADA IZIN ---
     // Tetap catat ke database dengan status "Ditolak ([Status])"
     $status_ditolak = 'Ditolak (' . $status_kehadiran . ')';
     $waktu_sekarang = date('Y-m-d H:i:s');
     $koordinat_pegawai = "$user_lat, $user_lon";
-    $keterangan_ditolak = 'Ditolak (Di luar jangkauan)';
+    $keterangan_ditolak = 'Ditolak (Di luar radius ' . $target_location_name . ': ' . round($distance) . 'm)';
 
     $stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan, rapat_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
     $stmt->bind_param("isssssi", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $status_ditolak, $koordinat_pegawai, $keterangan_ditolak, $rapat_id);
@@ -418,10 +487,14 @@ if ($distance > MAX_DISTANCE_METERS && !$is_izin_approved) {
               . "-- SADIGS 4.0 Villa Quran --";
     kirim_notifikasi_wa_yayasan($pesan_wa);
 
+    $pesan_ditolak = ($qr_jenis_absen === 'Rapat')
+        ? 'Absensi ditolak karena Anda berada di luar jangkauan lokasi rapat (' . $target_location_name . '). Jarak Anda: ' . round($distance) . ' meter dari lokasi (maksimal ' . $max_distance_allowed . ' meter). Anda hanya dapat absen sesuai lokasi yang telah ditentukan di undangan.'
+        : 'Absensi ditolak karena Anda berada di luar jangkauan gedung. Jarak Anda: ' . round($distance) . ' meter dari ' . $target_location_name . '. Upaya ini telah dicatat sistem.';
+
     // Kirim response khusus
     die(json_encode([
         'status' => 'rejected',
-        'message' => 'Absensi ditolak karena Anda berada di luar jangkauan gedung. Jarak Anda: ' . round($distance) . ' meter dari ' . $target_location_name . '. Upaya ini telah dicatat sistem.'
+        'message' => $pesan_ditolak
     ]));
 }
 

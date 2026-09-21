@@ -1,24 +1,71 @@
 <?php
 date_default_timezone_set('Asia/Jakarta');
-require_once 'auth-ustadz.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once 'koneksi.php';
+require_once 'auth-unified.php';
 
 $active_menu = 'jadwal_rapat';
-$ustadz_id = $_SESSION['ustadz_id'];
+
+$user_id = $_SESSION['app_user_id'] ?? $_SESSION['ustadz_id'] ?? null;
+if (!$user_id) {
+    header("Location: login.php");
+    exit;
+}
+
+$ustadz_id = $_SESSION['ustadz_id'] ?? $user_id;
 $today = date('Y-m-d');
-$user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+
+// Deteksi role & mode simulasi multi-role jika aktif
+$active_sim_views = $_SESSION['active_role_views'] ?? ['all'];
+$is_simulating = !in_array('all', $active_sim_views) && !in_array('none', $active_sim_views);
+
+if ($is_simulating) {
+    $user_roles = $active_sim_views;
+} else {
+    $user_roles = getUserRoles();
+    if (empty($user_roles) && isset($_SESSION['ustadz_role'])) {
+        $user_roles = array_map('trim', explode(',', strtolower($_SESSION['ustadz_role'])));
+    }
+}
 if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
     if (!in_array('super_admin', $user_roles)) {
         $user_roles[] = 'super_admin';
     }
 }
 $user_roles = array_map('trim', $user_roles);
+$is_super_admin = isSuperAdmin() && (!$is_simulating || in_array('super_admin', $user_roles));
 
-// Self-healing migration untuk tempat_rapat dan notulensi
+// Self-healing migration untuk master_lokasi dan koordinat jadwal_rapat
+$conn->query("CREATE TABLE IF NOT EXISTS master_lokasi (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    kode_lokasi VARCHAR(50) UNIQUE NOT NULL,
+    nama_lokasi VARCHAR(100) NOT NULL,
+    alias_nama VARCHAR(255) DEFAULT '',
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL,
+    radius_meter INT DEFAULT 75,
+    status_aktif TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
 @$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN tempat_rapat VARCHAR(100) DEFAULT NULL AFTER agenda");
-@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN notulensi TEXT DEFAULT NULL AFTER tempat_rapat");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN lokasi_latitude DECIMAL(10, 8) DEFAULT NULL AFTER tempat_rapat");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN lokasi_longitude DECIMAL(11, 8) DEFAULT NULL AFTER lokasi_latitude");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN lokasi_radius INT DEFAULT 75 AFTER lokasi_longitude");
+@$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN notulensi TEXT DEFAULT NULL AFTER lokasi_radius");
 @$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN notulensi_updated_at DATETIME DEFAULT NULL AFTER notulensi");
 @$conn->query("ALTER TABLE jadwal_rapat ADD COLUMN notulensi_by INT DEFAULT NULL AFTER notulensi_updated_at");
+
+$cnt_lok = $conn->query("SELECT COUNT(*) as cnt FROM master_lokasi")->fetch_assoc()['cnt'] ?? 0;
+if ($cnt_lok < 4) {
+    $conn->query("INSERT IGNORE INTO master_lokasi (kode_lokasi, nama_lokasi, alias_nama, latitude, longitude, radius_meter) VALUES
+        ('gedung_a', 'Gedung A (Asrama Rijal)', 'Gedung A, Asrama Rijal', -7.9480257, 112.5822426, 75),
+        ('gedung_b', 'Gedung B (Kantor Villa Quran)', 'Gedung B, Kantor Utama, Kantor Villa Quran', -7.9485768, 112.5823352, 75),
+        ('gedung_c', 'Gedung C (Asrama Nisa)', 'Gedung C, Asrama Nisa', -7.9405464, 112.5791353, 75),
+        ('masjid_taqwa', 'Masjid At Taqwa VBT', 'Masjid Taqwa, Masjid At Taqwa, Masjid At Taqwa VBT', -7.9464649, 112.5822123, 75)
+    ");
+}
 
 // Handler AJAX Rincian Presensi Rapat Selesai
 if (isset($_GET['ajax_action']) && $_GET['ajax_action'] === 'get_rapat_presensi') {
@@ -182,13 +229,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     $peserta_terundang_escaped = $conn->real_escape_string($peserta_terundang);
     
     $is_authorized = false;
-    if ($pengundang === 'kepala_sekolah' || $pengundang === 'kepala_mahad' || $pengundang === 'ketua_yayasan') $is_authorized = true;
-    if (in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('musyrif', $user_roles) || in_array('super_admin', $user_roles)) $is_authorized = true;
+    $is_super = in_array('super_admin', $user_roles);
+    if ($pengundang === 'kepala_sekolah' && ($is_super || in_array('kepala_sekolah', $user_roles))) {
+        $is_authorized = true;
+    } elseif ($pengundang === 'kepala_mahad' && ($is_super || in_array('kepala_mahad', $user_roles))) {
+        $is_authorized = true;
+    } elseif ($pengundang === 'ketua_yayasan' && ($is_super || in_array('ketua_yayasan', $user_roles))) {
+        $is_authorized = true;
+    } elseif ($pengundang === 'kepala_ldu' && ($is_super || in_array('kepala_ldu', $user_roles))) {
+        $is_authorized = true;
+    }
 
     if ($is_authorized) {
         $tempat_rapat = $conn->real_escape_string($_POST['tempat_rapat'] ?? '');
         
-        $sql_ins = "INSERT INTO jadwal_rapat (agenda, tempat_rapat, pengundang, peserta_terundang, waktu_mulai, jenis_rutin, hari_rutin, tanggal_rutin, tgl_penyesuaian_libur, status, created_by) VALUES ('$agenda', " . ($tempat_rapat ? "'$tempat_rapat'" : "NULL") . ", '$pengundang', '$peserta_terundang_escaped', '$waktu_rapat', '$jenis_rutin', " . ($hari_rutin ? "'$hari_rutin'" : "NULL") . ", $tanggal_rutin, $tgl_penyesuaian_libur, 'aktif', $ustadz_id)";
+        // Cari koordinat dan radius dari master_lokasi berdasarkan tempat_rapat
+        $lok_lat = "NULL";
+        $lok_lon = "NULL";
+        $lok_radius = 75;
+        if (!empty($tempat_rapat)) {
+            $q_lok = $conn->query("SELECT latitude, longitude, radius_meter FROM master_lokasi WHERE nama_lokasi = '$tempat_rapat' OR kode_lokasi = '$tempat_rapat' OR alias_nama LIKE '%$tempat_rapat%' LIMIT 1");
+            if ($q_lok && $q_lok->num_rows > 0) {
+                $r_lok = $q_lok->fetch_assoc();
+                $lok_lat = (float)$r_lok['latitude'];
+                $lok_lon = (float)$r_lok['longitude'];
+                $lok_radius = (int)($r_lok['radius_meter'] ?? 75);
+            }
+        }
+        
+        $sql_ins = "INSERT INTO jadwal_rapat (agenda, tempat_rapat, lokasi_latitude, lokasi_longitude, lokasi_radius, pengundang, peserta_terundang, waktu_mulai, jenis_rutin, hari_rutin, tanggal_rutin, tgl_penyesuaian_libur, status, created_by) VALUES ('$agenda', " . ($tempat_rapat ? "'$tempat_rapat'" : "NULL") . ", $lok_lat, $lok_lon, $lok_radius, '$pengundang', '$peserta_terundang_escaped', '$waktu_rapat', '$jenis_rutin', " . ($hari_rutin ? "'$hari_rutin'" : "NULL") . ", $tanggal_rutin, $tgl_penyesuaian_libur, 'aktif', $ustadz_id)";
         $conn->query($sql_ins);
         
         $lbl_peng = 'Ketua Yayasan';
@@ -196,6 +265,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             $lbl_peng = 'Kepala Sekolah';
         } elseif ($pengundang === 'kepala_mahad') {
             $lbl_peng = "Kepala Ma'had";
+        } elseif ($pengundang === 'kepala_ldu') {
+            $lbl_peng = "Kepala LDU";
         }
         
         broadcast_undangan_rapat_wa($conn, $_POST['agenda'], $tempat_rapat, $lbl_peng, $waktu_rapat, $target_roles, $target_ids, $jenis_rutin, $hari_rutin, $tanggal_rutin, $tgl_penyesuaian_libur_val, $target_ortu_ids);
@@ -255,6 +326,18 @@ if ($rapat_aktif) {
     $pengundang = $rapat_aktif['pengundang'];
     $peserta_json = $rapat_aktif['peserta_terundang'] ?? null;
     
+    // Pastikan koordinat rapat terisi dari master_lokasi jika sebelumnya kosong
+    if (empty($rapat_aktif['lokasi_latitude']) && !empty($rapat_aktif['tempat_rapat'])) {
+        $t_esc = $conn->real_escape_string($rapat_aktif['tempat_rapat']);
+        $q_fix_geo = $conn->query("SELECT latitude, longitude, radius_meter FROM master_lokasi WHERE nama_lokasi LIKE '%$t_esc%' OR alias_nama LIKE '%$t_esc%' OR kode_lokasi LIKE '%$t_esc%' LIMIT 1");
+        if ($q_fix_geo && $q_fix_geo->num_rows > 0) {
+            $r_geo = $q_fix_geo->fetch_assoc();
+            $rapat_aktif['lokasi_latitude'] = $r_geo['latitude'];
+            $rapat_aktif['lokasi_longitude'] = $r_geo['longitude'];
+            $rapat_aktif['lokasi_radius'] = $r_geo['radius_meter'];
+        }
+    }
+    
     if (in_array('super_admin', $user_roles)) {
         $is_invited_rapat = true;
     } elseif (!empty($peserta_json)) {
@@ -268,16 +351,13 @@ if ($rapat_aktif) {
             $is_invited_rapat = true;
         } else {
             foreach ($t_roles as $tr) {
+                if (in_array($tr, $user_roles)) {
+                    $is_invited_rapat = true; break;
+                }
                 if ($tr === 'musyrif' && (in_array('musyrif', $user_roles) || in_array('kepala_asrama', $user_roles))) {
                     $is_invited_rapat = true; break;
                 }
                 if ($tr === 'admin_sekolah' && (in_array('admin_sekolah', $user_roles) || in_array('sekretaris_sekolah', $user_roles) || in_array('bendahara_sekolah', $user_roles))) {
-                    $is_invited_rapat = true; break;
-                }
-                if ($tr === 'kepala_sekolah' && in_array('kepala_sekolah', $user_roles)) {
-                    $is_invited_rapat = true; break;
-                }
-                if ($tr === 'ustadz' && in_array('ustadz', $user_roles)) {
                     $is_invited_rapat = true; break;
                 }
             }
@@ -309,8 +389,32 @@ if ($rapat_aktif) {
     }
 }
 
-// Otoritas membuat rapat
-$can_create_rapat = in_array('kepala_sekolah', $user_roles) || in_array('kepala_mahad', $user_roles) || in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles) || in_array('ketua_yayasan', $user_roles) || in_array('kepala_ldu', $user_roles) || in_array('direktur_ldu', $user_roles) || in_array('staff_ldu', $user_roles) || in_array('musyrif', $user_roles) || in_array('musyrifah', $user_roles);
+// Otoritas Hak Akses Jadwal Rapat & Tab Formulir
+$is_super_admin = in_array('super_admin', $user_roles);
+$can_sekolah = $is_super_admin || in_array('kepala_sekolah', $user_roles);
+$can_mahad   = $is_super_admin || in_array('kepala_mahad', $user_roles);
+$can_yayasan = $is_super_admin || in_array('ketua_yayasan', $user_roles);
+$can_ldu     = $is_super_admin || in_array('kepala_ldu', $user_roles);
+
+// Menu Formulir Jadwal Rapat HANYA tampil untuk 4 Role: Ketua Yayasan, Kepala Sekolah, Kepala Ma'had, Kepala LDU (atau super_admin)
+$can_create_rapat = $can_sekolah || $can_mahad || $can_yayasan || $can_ldu;
+
+// Tentukan Tab yang Tersedia dan Tab Default yang Aktif
+$available_tabs = [];
+if ($can_sekolah) $available_tabs[] = 'sekolah';
+if ($can_mahad)   $available_tabs[] = 'mahad';
+if ($can_yayasan) $available_tabs[] = 'yayasan';
+if ($can_ldu)     $available_tabs[] = 'ldu';
+$default_active_tab = !empty($available_tabs) ? $available_tabs[0] : '';
+
+// Master Lokasi dari Database untuk Dropdown Tempat Rapat
+$master_lokasi_list = [];
+$res_lok = $conn->query("SELECT * FROM master_lokasi WHERE status_aktif = 1 ORDER BY id ASC");
+if ($res_lok && $res_lok->num_rows > 0) {
+    while ($row_l = $res_lok->fetch_assoc()) {
+        $master_lokasi_list[] = $row_l;
+    }
+}
 
 // Fetch List Ustadz/Pegawai & Orangtua untuk Undangan Khusus
 $all_ustadz = [];
@@ -436,13 +540,25 @@ if ($res_o) {
                                 $lbl_peng = '';
                                 if ($rapat_aktif['pengundang'] === 'kepala_sekolah') $lbl_peng = 'Kepala Sekolah';
                                 elseif ($rapat_aktif['pengundang'] === 'kepala_mahad') $lbl_peng = "Kepala Ma'had";
+                                elseif ($rapat_aktif['pengundang'] === 'kepala_ldu') $lbl_peng = "Kepala LDU";
                                 else $lbl_peng = 'Ketua Yayasan';
                                 ?>
                                 <div class="text-left bg-indigo-50 border border-indigo-100 rounded-xl p-3 mb-6 text-xs text-indigo-900 leading-relaxed">
                                     <p class="font-bold text-xs text-indigo-950 mb-1"><i class="fas fa-bullhorn mr-1 text-cyan-600"></i> <?= htmlspecialchars($rapat_aktif['agenda']) ?></p>
                                     <p class="mb-0.5"><span class="font-semibold text-indigo-700">Penyelenggara:</span> <?= $lbl_peng ?></p>
                                     <p class="mb-0.5"><span class="font-semibold text-indigo-700">Tempat:</span> <span class="text-amber-800 font-bold"><?= empty($rapat_aktif['tempat_rapat']) ? '-' : htmlspecialchars($rapat_aktif['tempat_rapat']) ?></span></p>
-                                    <p><span class="font-semibold text-indigo-700">Waktu:</span> <?= date('H:i', strtotime($rapat_aktif['waktu_mulai'])) ?> WIB</p>
+                                    <p class="mb-1.5"><span class="font-semibold text-indigo-700">Waktu:</span> <?= date('H:i', strtotime($rapat_aktif['waktu_mulai'])) ?> WIB</p>
+                                    
+                                    <div class="pt-2 border-t border-indigo-200/60 flex flex-col gap-1 text-[11px]">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-600 font-medium"><i class="fas fa-location-crosshairs text-indigo-600 mr-1"></i> Radius Presensi:</span>
+                                            <span class="font-bold text-indigo-900"><?= (int)($rapat_aktif['lokasi_radius'] ?? 75) ?> Meter</span>
+                                        </div>
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-600 font-medium"><i class="fas fa-route text-cyan-600 mr-1"></i> Jarak Anda:</span>
+                                            <span id="rapat-distance-badge" class="font-bold text-gray-500">Mendeteksi GPS...</span>
+                                        </div>
+                                    </div>
                                 </div>
                                 <p class="text-xs text-gray-500 mb-6">
                                     <?php if ($rapat_status === 'belum_absen'): ?>
@@ -493,24 +609,24 @@ if ($res_o) {
                                 </h3>
                                 <!-- Form Selector tabs based on user roles -->
                                 <div class="flex gap-1.5 flex-wrap">
-                                    <?php if (in_array('kepala_sekolah', $user_roles) || in_array('super_admin', $user_roles) || in_array('admin_sekolah', $user_roles)): ?>
-                                        <button onclick="switchFormTab('sekolah')" id="tab-btn-sekolah" class="py-1 px-2.5 font-bold text-[10px] rounded-lg bg-cyan-600 text-white shadow-sm transition-all">Sekolah</button>
+                                    <?php if ($can_sekolah): ?>
+                                        <button type="button" onclick="switchFormTab('sekolah')" id="tab-btn-sekolah" class="py-1 px-2.5 font-bold text-[10px] rounded-lg <?= ($default_active_tab === 'sekolah') ? 'bg-cyan-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all">Sekolah</button>
                                     <?php endif; ?>
-                                    <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles) || in_array('musyrif', $user_roles) || in_array('musyrifah', $user_roles)): ?>
-                                        <button onclick="switchFormTab('mahad')" id="tab-btn-mahad" class="py-1 px-2.5 font-bold text-[10px] rounded-lg <?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('super_admin', $user_roles)) ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all">Ma'had</button>
+                                    <?php if ($can_mahad): ?>
+                                        <button type="button" onclick="switchFormTab('mahad')" id="tab-btn-mahad" class="py-1 px-2.5 font-bold text-[10px] rounded-lg <?= ($default_active_tab === 'mahad') ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all">Ma'had</button>
                                     <?php endif; ?>
-                                    <?php if (in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
-                                        <button onclick="switchFormTab('yayasan')" id="tab-btn-yayasan" class="py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all">Yayasan</button>
+                                    <?php if ($can_yayasan): ?>
+                                        <button type="button" onclick="switchFormTab('yayasan')" id="tab-btn-yayasan" class="py-1 px-2.5 font-bold text-[10px] rounded-lg <?= ($default_active_tab === 'yayasan') ? 'bg-amber-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all">Yayasan</button>
                                     <?php endif; ?>
-                                    <?php if (in_array('kepala_ldu', $user_roles) || in_array('direktur_ldu', $user_roles) || in_array('staff_ldu', $user_roles) || in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
-                                        <button onclick="switchFormTab('ldu')" id="tab-btn-ldu" class="py-1 px-2.5 font-bold text-[10px] rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 shadow-sm transition-all">LDU</button>
+                                    <?php if ($can_ldu): ?>
+                                        <button type="button" onclick="switchFormTab('ldu')" id="tab-btn-ldu" class="py-1 px-2.5 font-bold text-[10px] rounded-lg <?= ($default_active_tab === 'ldu') ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' ?> shadow-sm transition-all">LDU</button>
                                     <?php endif; ?>
                                 </div>
                             </div>
 
                             <!-- 1. FORM RAPAT SEKOLAH -->
-                            <?php if (in_array('kepala_sekolah', $user_roles) || in_array('super_admin', $user_roles) || in_array('admin_sekolah', $user_roles)): ?>
-                            <div id="form-container-sekolah" class="block">
+                            <?php if ($can_sekolah): ?>
+                            <div id="form-container-sekolah" class="<?= ($default_active_tab === 'sekolah') ? 'block' : 'hidden' ?>">
                                 <form action="admin-jadwal-rapat.php" method="POST" class="space-y-4">
                                     <input type="hidden" name="action" value="buat_rapat">
                                     <input type="hidden" name="pengundang" value="kepala_sekolah">
@@ -532,10 +648,9 @@ if ($res_o) {
                                             <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Rapat</label>
                                             <select name="tempat_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500 bg-white font-semibold">
                                                 <option value="">-- Pilih Tempat Rapat --</option>
-                                                <option value="Gedung A">Gedung A</option>
-                                                <option value="Gedung B">Gedung B</option>
-                                                <option value="Gedung C">Gedung C</option>
-                                                <option value="Masjid Taqwa">Masjid Taqwa</option>
+                                                <?php foreach ($master_lokasi_list as $ml): ?>
+                                                    <option value="<?= htmlspecialchars($ml['nama_lokasi']) ?>"><?= htmlspecialchars($ml['nama_lokasi']) ?> (Radius <?= $ml['radius_meter'] ?>m)</option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                         <div>
@@ -633,8 +748,8 @@ if ($res_o) {
                             <?php endif; ?>
 
                             <!-- 2. FORM RAPAT MA'HAD -->
-                            <?php if (in_array('kepala_mahad', $user_roles) || in_array('super_admin', $user_roles) || in_array('musyrif', $user_roles) || in_array('musyrifah', $user_roles)): ?>
-                            <div id="form-container-mahad" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles)) ? 'block' : 'hidden' ?>">
+                            <?php if ($can_mahad): ?>
+                            <div id="form-container-mahad" class="<?= ($default_active_tab === 'mahad') ? 'block' : 'hidden' ?>">
                                 <form action="admin-jadwal-rapat.php" method="POST" class="space-y-4">
                                     <input type="hidden" name="action" value="buat_rapat">
                                     <input type="hidden" name="pengundang" value="kepala_mahad">
@@ -656,10 +771,9 @@ if ($res_o) {
                                             <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Rapat</label>
                                             <select name="tempat_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 bg-white font-semibold">
                                                 <option value="">-- Pilih Tempat Rapat --</option>
-                                                <option value="Gedung A">Gedung A</option>
-                                                <option value="Gedung B">Gedung B</option>
-                                                <option value="Gedung C">Gedung C</option>
-                                                <option value="Masjid Taqwa">Masjid Taqwa</option>
+                                                <?php foreach ($master_lokasi_list as $ml): ?>
+                                                    <option value="<?= htmlspecialchars($ml['nama_lokasi']) ?>"><?= htmlspecialchars($ml['nama_lokasi']) ?> (Radius <?= $ml['radius_meter'] ?>m)</option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                         <div>
@@ -761,8 +875,8 @@ if ($res_o) {
                             <?php endif; ?>
 
                             <!-- 3. FORM RAPAT YAYASAN -->
-                            <?php if (in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
-                            <div id="form-container-yayasan" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles)) ? 'block' : 'hidden' ?>">
+                            <?php if ($can_yayasan): ?>
+                            <div id="form-container-yayasan" class="<?= ($default_active_tab === 'yayasan') ? 'block' : 'hidden' ?>">
                                 <form action="admin-jadwal-rapat.php" method="POST" class="space-y-4">
                                     <input type="hidden" name="action" value="buat_rapat">
                                     <input type="hidden" name="pengundang" value="ketua_yayasan">
@@ -784,10 +898,9 @@ if ($res_o) {
                                             <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Rapat</label>
                                             <select name="tempat_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-amber-500 bg-white font-semibold">
                                                 <option value="">-- Pilih Tempat Rapat --</option>
-                                                <option value="Gedung A">Gedung A</option>
-                                                <option value="Gedung B">Gedung B</option>
-                                                <option value="Gedung C">Gedung C</option>
-                                                <option value="Masjid Taqwa">Masjid Taqwa</option>
+                                                <?php foreach ($master_lokasi_list as $ml): ?>
+                                                    <option value="<?= htmlspecialchars($ml['nama_lokasi']) ?>"><?= htmlspecialchars($ml['nama_lokasi']) ?> (Radius <?= $ml['radius_meter'] ?>m)</option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                         <div>
@@ -880,9 +993,9 @@ if ($res_o) {
                             </div>
                             <?php endif; ?>
 
-                            <!-- 4. FORM RAPAT LDU (BARU) -->
-                            <?php if (in_array('kepala_ldu', $user_roles) || in_array('direktur_ldu', $user_roles) || in_array('staff_ldu', $user_roles) || in_array('ketua_yayasan', $user_roles) || in_array('super_admin', $user_roles)): ?>
-                            <div id="form-container-ldu" class="<?= (!in_array('kepala_sekolah', $user_roles) && !in_array('admin_sekolah', $user_roles) && !in_array('kepala_mahad', $user_roles) && !in_array('ketua_yayasan', $user_roles)) ? 'block' : 'hidden' ?>">
+                            <!-- 4. FORM RAPAT LDU -->
+                            <?php if ($can_ldu): ?>
+                            <div id="form-container-ldu" class="<?= ($default_active_tab === 'ldu') ? 'block' : 'hidden' ?>">
                                 <form action="admin-jadwal-rapat.php" method="POST" class="space-y-4">
                                     <input type="hidden" name="action" value="buat_rapat">
                                     <input type="hidden" name="pengundang" value="kepala_ldu">
@@ -904,10 +1017,9 @@ if ($res_o) {
                                             <label class="block text-xs font-bold text-gray-700 mb-1">Tempat Rapat</label>
                                             <select name="tempat_rapat" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 bg-white font-semibold">
                                                 <option value="">-- Pilih Tempat Rapat --</option>
-                                                <option value="Gedung A">Gedung A</option>
-                                                <option value="Gedung B">Gedung B</option>
-                                                <option value="Gedung C">Gedung C</option>
-                                                <option value="Masjid Taqwa">Masjid Taqwa</option>
+                                                <?php foreach ($master_lokasi_list as $ml): ?>
+                                                    <option value="<?= htmlspecialchars($ml['nama_lokasi']) ?>"><?= htmlspecialchars($ml['nama_lokasi']) ?> (Radius <?= $ml['radius_meter'] ?>m)</option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                         <div>
@@ -1178,9 +1290,48 @@ if ($res_o) {
             document.getElementById('sidebar-overlay-hr').classList.toggle('hidden'); 
         });
 
-        // GPS Logics
+        // GPS & Rapat Geolocation Logics
         let userLatitude = null;
         let userLongitude = null;
+
+        const activeRapatGeo = {
+            id: <?= (int)($rapat_aktif['id'] ?? 0) ?>,
+            lat: <?= (!empty($rapat_aktif['lokasi_latitude'])) ? (float)$rapat_aktif['lokasi_latitude'] : 'null' ?>,
+            lon: <?= (!empty($rapat_aktif['lokasi_longitude'])) ? (float)$rapat_aktif['lokasi_longitude'] : 'null' ?>,
+            radius: <?= (int)($rapat_aktif['lokasi_radius'] ?? 75) ?>,
+            tempat: <?= json_encode($rapat_aktif['tempat_rapat'] ?? '') ?>
+        };
+
+        function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371000; // meters
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return Math.round(R * c);
+        }
+
+        function checkRapatDistance() {
+            const badge = document.getElementById('rapat-distance-badge');
+            if (!badge || !activeRapatGeo.id) return;
+            if (userLatitude === null || userLongitude === null) {
+                badge.innerHTML = '<span class="text-amber-600">Menunggu sinyal GPS...</span>';
+                return;
+            }
+            if (activeRapatGeo.lat === null || activeRapatGeo.lon === null) {
+                badge.innerHTML = '<span class="text-emerald-600">Sesuai (Lokasi Terbuka)</span>';
+                return;
+            }
+
+            const dist = calculateHaversineDistance(userLatitude, userLongitude, activeRapatGeo.lat, activeRapatGeo.lon);
+            if (dist <= activeRapatGeo.radius) {
+                badge.innerHTML = `<span class="text-emerald-600 font-bold"><i class="fas fa-circle-check"></i> ${dist}m (Dalam Radius)</span>`;
+            } else {
+                badge.innerHTML = `<span class="text-rose-600 font-bold"><i class="fas fa-circle-xmark"></i> ${dist}m (Di Luar Radius)</span>`;
+            }
+        }
 
         function updateGPSStatus() {
             const gpsLabel = document.getElementById('gps-coords-label');
@@ -1191,10 +1342,13 @@ if ($res_o) {
                         userLongitude = position.coords.longitude;
                         gpsLabel.innerHTML = `Lat: <b>${userLatitude.toFixed(6)}</b>, Lon: <b>${userLongitude.toFixed(6)}</b>`;
                         gpsLabel.className = "block text-[10px] text-emerald-600 font-semibold mt-0.5";
+                        checkRapatDistance();
                     },
                     (error) => {
                         gpsLabel.innerText = "Gagal mendeteksi lokasi (Izin ditolak/GPS nonaktif).";
                         gpsLabel.className = "block text-[10px] text-rose-500 font-semibold mt-0.5";
+                        const badge = document.getElementById('rapat-distance-badge');
+                        if (badge) badge.innerHTML = '<span class="text-rose-500 font-semibold">GPS Nonaktif/Ditolak</span>';
                     },
                     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
                 );
@@ -1217,8 +1371,21 @@ if ($res_o) {
             const btn = document.getElementById('btn-absen-rapat');
             if (!btn) return;
             if (userLatitude === null || userLongitude === null) {
-                showAlertModal('Akses GPS Dibutuhkan', 'Gagal mendapatkan lokasi Anda. Pastikan GPS aktif dan izinkan lokasi di pengaturan browser.', 'error');
+                showAlertModal('Akses GPS Dibutuhkan', 'Gagal mendapatkan lokasi Anda. Pastikan GPS aktif dan izinkan akses lokasi di browser perangkat Anda.', 'error');
                 return;
+            }
+            
+            // Validasi Geolocation Lokasi Rapat di Frontend: hanya bisa absen sesuai lokasi yang ditentukan di undangan
+            if (jenisAbsen === 'Rapat' && activeRapatGeo.id && activeRapatGeo.lat !== null && activeRapatGeo.lon !== null) {
+                const dist = calculateHaversineDistance(userLatitude, userLongitude, activeRapatGeo.lat, activeRapatGeo.lon);
+                if (dist > activeRapatGeo.radius) {
+                    showAlertModal(
+                        'Di Luar Jangkauan Lokasi Rapat', 
+                        `Absensi ditolak karena posisi Anda (${dist} meter) berada di luar batas lokasi rapat '${activeRapatGeo.tempat}' (maksimal radius ${activeRapatGeo.radius} meter). Anda hanya dapat absen sesuai lokasi yang telah ditentukan di undangan.`, 
+                        'error'
+                    );
+                    return;
+                }
             }
             sendAbsensiRequest(jenisAbsen, btn);
         }
