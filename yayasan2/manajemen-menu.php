@@ -90,6 +90,27 @@ if ($res_chk_sal_adm && $res_chk_sal_adm->num_rows === 0) {
     $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('salary_admin', 'Salary Admin Sekolah', 'Salary Admin')");
 }
 
+// Pastikan menu 'ruang_web' & 'ruang_marketing' terdaftar (Self-Healing)
+$res_chk_web = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'ruang_web'");
+if ($res_chk_web && $res_chk_web->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Web & Marketing', 'ruang_web', $new_ord, 'fa-globe', 'admin.php')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('ruang_web', 'ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,web,super_admin')");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_web', 'Ruang Web (CMS & Website)', 'Ruang Web')");
+}
+
+$res_chk_mkt = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'ruang_marketing'");
+if ($res_chk_mkt && $res_chk_mkt->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Web & Marketing', 'ruang_marketing', $new_ord, 'fa-bullseye', 'dashboard-marketing.php')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('ruang_marketing', 'ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,super_admin')");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_marketing', 'Ruang Marketing & AI', 'Marketing')");
+}
+
 $res_cnt = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure");
 $count_struct = $res_cnt ? (int)$res_cnt->fetch_assoc()['cnt'] : 0;
 if ($count_struct === 0) {
@@ -215,7 +236,9 @@ if ($res_db_menus) {
             'laporan_adab' => 'Laporan Kedisiplinan',
             'kpi_musyrif' => 'KPI Musyrif',
             'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
-            'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)'
+            'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)',
+            'ruang_web' => 'Ruang Web (CMS & Website)',
+            'ruang_marketing' => 'Ruang Marketing & AI'
         ];
         
         $title = $default_titles[$key] ?? ucwords(str_replace('_', ' ', $key));
@@ -231,7 +254,8 @@ $group_order = [
     'Asrama' => 4,
     'Musyrif' => 5,
     'Keuangan Santri' => 6,
-    'Solopreneur & AI' => 7
+    'Solopreneur & AI' => 7,
+    'Web & Marketing' => 8
 ];
 uksort($defined_menus, function($a, $b) use ($group_order) {
     $order_a = $group_order[$a] ?? 99;
@@ -255,7 +279,9 @@ $defined_roles = [
     'ustadz'             => 'Ustadz / Ustadzah',
     'trainer'            => 'Trainer',
     'santri'             => 'Santri (Rijal/Nisa)',
-    'orangtua'           => 'Orangtua / Walisantri'
+    'orangtua'           => 'Orangtua / Walisantri',
+    'web'                => 'Web',
+    'marketing'          => 'Marketing'
 ];
 
 // 2. Buat tabel permissions & custom labels jika belum ada & seed default

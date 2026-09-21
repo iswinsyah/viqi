@@ -7,7 +7,7 @@ $roles = getUserRoles();
 $is_admin = isSuperAdmin();
 $is_yayasan_pengurus = $is_admin || !empty(array_intersect(['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'admin', 'yayasan'], $roles));
 
-// Master 5 Kolom x 4 Baris Matrix Simulasi Role Lembaga (Total 20 Slot)
+// Master Matrix Simulasi Role Lembaga (5 Kolom)
 $simulation_roles_grid = [
     // Baris 1 (5 Kolom)
     'all'                => ['label' => 'Semua Role', 'action' => 'all'],
@@ -34,6 +34,10 @@ $simulation_roles_grid = [
     'santri_rijal'       => ['label' => 'Santri Rijal'],
     'santri_nisa'        => ['label' => 'Santri Nisa'],
     'orangtua'           => ['label' => 'Orangtua / Wali'],
+    'web'                => ['label' => 'Web'],
+    'marketing'          => ['label' => 'Marketing'],
+
+    // Baris 5: Aksi Cepat
     'pilih_semua'        => ['label' => 'Pilih Semua', 'action' => 'all'],
     'lepas_semua'        => ['label' => 'Lepas Semua', 'action' => 'reset']
 ];
@@ -155,7 +159,7 @@ $default_1word_labels = [
 ];
 
 $all_grid_items = [];
-$res_struct = $conn->query("SELECT * FROM menu_structure WHERE menu_key NOT IN ('emodul', 'hafalan', 'kalender', 'akunku', 'prota_promes', 'yayasan_update', 'update', 'absensi_pegawai', 'absensi', 'jurnal', 'jurnal_mengajar') AND href NOT LIKE '%admin-absensi-pegawai.php%' ORDER BY sort_order ASC");
+$res_struct = $conn->query("SELECT * FROM menu_structure WHERE menu_key NOT IN ('emodul', 'hafalan', 'kalender', 'akunku', 'prota_promes', 'yayasan_update', 'update', 'absensi_pegawai', 'absensi', 'jurnal', 'jurnal_mengajar', 'ruang_web', 'ruang_marketing') AND href NOT LIKE '%admin-absensi-pegawai.php%' ORDER BY sort_order ASC");
 if ($res_struct && $res_struct->num_rows > 0) {
     while ($r = $res_struct->fetch_assoc()) {
         $k = $r['menu_key'];
@@ -208,6 +212,8 @@ foreach ($all_grid_items as $key => $item) {
             if ($av === 'orangtua') { $av_aliases[] = 'walisantri'; }
             if ($av === 'ketua_yayasan') { $av_aliases[] = 'super_admin'; }
             if ($av === 'santri_rijal' || $av === 'santri_nisa') { $av_aliases[] = 'santri'; $av_aliases[] = $av; }
+            if ($av === 'web') { $av_aliases[] = 'admin_web'; $av_aliases[] = 'admin'; }
+            if ($av === 'marketing') { $av_aliases[] = 'tim_marketing'; }
 
             foreach ($av_aliases as $alias) {
                 $alias_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($alias)));
@@ -285,33 +291,55 @@ if (!$is_all_view) {
 
 // =========================================================
 // OTORITAS AKSES & DATA FRAME RUANG WEB DAN RUANG MARKETING
-// Khusus: Ketua Yayasan, Sekretaris Yayasan, Bendahara Yayasan (serta Super Admin)
+// Khusus: Ketua Yayasan, Sekretaris Yayasan, Bendahara Yayasan,
+// serta Role Khusus Web dan Marketing (atau Super Admin)
 // =========================================================
 $yayasan_core_roles = ['ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'];
-$has_yayasan_core_role = $is_admin;
-if (!$has_yayasan_core_role) {
+
+// Role Web: bisa diakses oleh Ketua, Sekr, Bendahara Yayasan, Super Admin, atau role Web
+$can_see_web = $is_admin;
+if (!$can_see_web) {
     foreach ($roles as $r) {
         $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
-        if (in_array($r_norm, $yayasan_core_roles)) {
-            $has_yayasan_core_role = true;
+        if (in_array($r_norm, array_merge($yayasan_core_roles, ['web', 'admin_web', 'admin']))) {
+            $can_see_web = true;
             break;
         }
     }
 }
 
-$show_web_and_marketing = $has_yayasan_core_role;
+// Role Marketing: bisa diakses oleh Ketua, Sekr, Bendahara Yayasan, Super Admin, atau role Marketing
+$can_see_marketing = $is_admin;
+if (!$can_see_marketing) {
+    foreach ($roles as $r) {
+        $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+        if (in_array($r_norm, array_merge($yayasan_core_roles, ['marketing']))) {
+            $can_see_marketing = true;
+            break;
+        }
+    }
+}
 
 // Sinkronisasi dengan Matrix Filter Simulasi Multi-Role di Header Dashboard
 if (!$is_all_view) {
     if ($is_none_view) {
-        $show_web_and_marketing = false;
+        $can_see_web = false;
+        $can_see_marketing = false;
     } else {
-        $show_web_and_marketing = false;
+        $can_see_web = false;
+        $can_see_marketing = false;
         foreach ($active_views as $av) {
             $av_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($av)));
             if (in_array($av_norm, $yayasan_core_roles) || ($av_norm === 'super_admin' && $is_admin)) {
-                $show_web_and_marketing = true;
+                $can_see_web = true;
+                $can_see_marketing = true;
                 break;
+            }
+            if (in_array($av_norm, ['web', 'admin_web', 'admin'])) {
+                $can_see_web = true;
+            }
+            if (in_array($av_norm, ['marketing'])) {
+                $can_see_marketing = true;
             }
         }
     }
@@ -581,7 +609,7 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-[10px] font-black uppercase tracking-wider text-teal-200">Simulasi Role</span>
                     <button type="button" onclick="toggleRoleModal()" class="px-2 py-0.5 rounded bg-amber-400 hover:bg-amber-300 text-teal-950 font-bold text-[9px] transition cursor-pointer">
-                        16 Role
+                        18 Role
                     </button>
                 </div>
                 <div class="grid grid-cols-2 gap-1.5 text-[10px]">
@@ -597,8 +625,14 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                     <a href="dashboard.php?toggle_role=santri" class="p-1.5 rounded-lg text-center font-bold transition <?= in_array('santri', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
                         Santri
                     </a>
-                    <a href="dashboard.php?toggle_role=orangtua" class="col-span-2 p-1.5 rounded-lg text-center font-bold transition <?= (in_array('orangtua', $active_views) || in_array('walisantri', $active_views)) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                    <a href="dashboard.php?toggle_role=orangtua" class="p-1.5 rounded-lg text-center font-bold transition <?= (in_array('orangtua', $active_views) || in_array('walisantri', $active_views)) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
                         Orangtua
+                    </a>
+                    <a href="dashboard.php?toggle_role=web" class="p-1.5 rounded-lg text-center font-bold transition <?= in_array('web', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                        Web
+                    </a>
+                    <a href="dashboard.php?toggle_role=marketing" class="col-span-2 p-1.5 rounded-lg text-center font-bold transition <?= in_array('marketing', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                        Marketing
                     </a>
                 </div>
             </div>
@@ -673,7 +707,7 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
             <div class="max-w-4xl mx-auto mt-4 pt-3 border-t border-teal-600/60">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-[10px] font-black uppercase tracking-wider text-teal-100 flex items-center gap-1.5">
-                        <i class="fas fa-sliders text-[9px]"></i> Filter Simulasi Multi-Role (5 Kolom x 4 Baris)
+                        <i class="fas fa-sliders text-[9px]"></i> Filter Simulasi Multi-Role (18 Role)
                     </span>
                     <div class="text-[10px] text-teal-200">
                         Status: <span class="font-extrabold text-white"><?= $is_all_view ? 'Semua Role' : ($is_none_view ? 'Kosong' : count($active_views).' Role Aktif') ?></span>
@@ -750,10 +784,10 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                 </div>
             </div>
 
-            <?php if ($show_web_and_marketing): ?>
+            <?php if ($can_see_web): ?>
             <!-- ========================================================= -->
             <!-- FRAME KHUSUS 1: RUANG WEB (PENGATURAN WEBSITE)            -->
-            <!-- (Hanya: Ketua Yayasan, Sekretaris Yayasan, Bendahara)     -->
+            <!-- (Akses: Yayasan, Super Admin, dan Role Web)              -->
             <!-- ========================================================= -->
             <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-50 mt-6 sm:mt-7 transition-all duration-200">
                 <!-- HEADER FRAME RUANG WEB -->
@@ -771,7 +805,7 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                         </div>
                     </div>
                     <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
-                        <i class="fas fa-shield-halved text-[#0b8478]"></i> Khusus Yayasan
+                        <i class="fas fa-shield-halved text-[#0b8478]"></i> Role: Yayasan & Web
                     </span>
                 </div>
 
@@ -791,10 +825,12 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                     <?php endforeach; ?>
                 </div>
             </div>
+            <?php endif; ?>
 
+            <?php if ($can_see_marketing): ?>
             <!-- ========================================================= -->
             <!-- FRAME KHUSUS 2: RUANG MARKETING (AI & PROSPEK SPMB)       -->
-            <!-- (Hanya: Ketua Yayasan, Sekretaris Yayasan, Bendahara)     -->
+            <!-- (Akses: Yayasan, Super Admin, dan Role Marketing)         -->
             <!-- ========================================================= -->
             <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-indigo-950/5 border border-indigo-50 mt-6 sm:mt-7 transition-all duration-200">
                 <!-- HEADER FRAME RUANG MARKETING -->
@@ -812,7 +848,7 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                         </div>
                     </div>
                     <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-indigo-800 bg-indigo-50/90 px-3 py-1 rounded-xl border border-indigo-200/80 shadow-xs">
-                        <i class="fas fa-robot text-indigo-600"></i> Otomatisasi AI
+                        <i class="fas fa-robot text-indigo-600"></i> Role: Yayasan & Marketing
                     </span>
                 </div>
 
@@ -1230,7 +1266,7 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div>
-                    <h3 class="font-black text-base text-slate-900 leading-tight">Simulasi Multi-Role (16 Role)</h3>
+                    <h3 class="font-black text-base text-slate-900 leading-tight">Simulasi Multi-Role (18 Role)</h3>
                     <p class="text-[11px] text-slate-500 mt-0.5">Pilih kombinasi role yang ingin diuji coba</p>
                 </div>
                 <button type="button" onclick="toggleRoleModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
