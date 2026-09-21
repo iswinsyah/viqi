@@ -71,6 +71,7 @@ function syncLegacySessions($user) {
     $_SESSION['app_username'] = $user['username'];
     $_SESSION['app_user_nama'] = $user['nama_lengkap'];
     $_SESSION['app_user_roles'] = $user['roles'];
+    $_SESSION['active_role_views'] = ['all']; // Reset filter simulasi saat login baru
 
     $roles = array_map('trim', explode(',', strtolower($user['roles'])));
 

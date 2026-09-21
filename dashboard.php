@@ -75,7 +75,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'logout') {
 }
 
 // AJAX: Simpan & Reset Urutan Drag-and-Drop Menu Pengguna
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'save_user_menu_order') {
         header('Content-Type: application/json');
         $user_key = 'user_' . ($user['id'] ?? $user['username'] ?? 'default');
@@ -111,6 +111,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 // =========================================================
 // SINKRONISASI DINAMIS DENGAN MANAJEMEN MENU DATABASE
 // =========================================================
+$yayasan_pengurus_roles = ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'];
+$is_yayasan_pengurus = $is_admin || !empty(array_intersect($yayasan_pengurus_roles, $roles));
+
+// Self-Healing Database: Pastikan seluruh menu Ruang Yayasan & Operasional terdaftar kuat
+$res_cnt_check = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure WHERE menu_group = 'Ruang Yayasan'");
+$cnt_yayasan = $res_cnt_check ? (int)$res_cnt_check->fetch_assoc()['cnt'] : 0;
+if ($cnt_yayasan < 20) {
+    $master_seed_menus = [
+        // Ruang Yayasan (Khusus Pengurus: Ketua, Sekretaris, Bendahara)
+        ['yayasan_pegawai', 'Ruang Yayasan', 1, 'fas fa-users-gear', 'yayasan2/asatidz.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Pegawai', 'Daftar Pegawai & Asatidz'],
+        ['yayasan_menu', 'Ruang Yayasan', 2, 'fas fa-sliders', 'yayasan2/manajemen-menu.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Manajemen Menu', 'Manajemen Menu & Hak Akses'],
+        ['yayasan_kelas', 'Ruang Yayasan', 3, 'fas fa-school', 'yayasan2/master-kelas.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kelas', 'Master Data Kelas'],
+        ['yayasan_mapel', 'Ruang Yayasan', 4, 'fas fa-book', 'yayasan2/master-mapel.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Mapel', 'Master Mata Pelajaran'],
+        ['yayasan_elearning', 'Ruang Yayasan', 5, 'fas fa-robot', 'yayasan2/elearning-yayasan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'E-Learning', 'Kurikulum & E-Learning (AI)'],
+        ['yayasan_kitab', 'Ruang Yayasan', 6, 'fas fa-book-open', 'yayasan2/kitab-rujukan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kitab', 'Master Kitab Rujukan'],
+        ['yayasan_hafalan', 'Ruang Yayasan', 7, 'fas fa-book-quran', 'yayasan2/laporan-setoran-hafalan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Hafalan', 'Laporan Setoran Hafalan'],
+        ['yayasan_ibadah', 'Ruang Yayasan', 8, 'fas fa-mosque', 'yayasan2/ibadah-harian-santri.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Ibadah', 'Rekap Ibadah Harian Santri'],
+        ['yayasan_raport', 'Ruang Yayasan', 9, 'fas fa-file-invoice', 'yayasan2/rapot-pkbm.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Raport', 'Monitoring Raport PKBM'],
+        ['yayasan_kas', 'Ruang Yayasan', 10, 'fas fa-calculator', 'yayasan2/pembukuan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kas', 'Pembukuan Terpusat Lembaga'],
+        ['yayasan_cashflow', 'Ruang Yayasan', 11, 'fas fa-funnel-dollar', 'yayasan2/pembukuan.php?tab=proyeksi', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Cashflow', 'Perencanaan & Cashflow Kas'],
+        ['yayasan_kpi', 'Ruang Yayasan', 12, 'fas fa-chart-bar', 'yayasan2/kpi.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'KPI', 'Monitoring AI & Kinerja Pegawai'],
+        ['yayasan_kpi_musyrif', 'Ruang Yayasan', 13, 'fas fa-chart-line', 'yayasan2/kpi-musyrif.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'KPI-Asrama', 'KPI Musyrif Asrama'],
+        ['yayasan_kpi_kepsek', 'Ruang Yayasan', 14, 'fas fa-chart-pie', 'yayasan2/kpi-kepala-sekolah.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'KPI-Kepsek', 'KPI Kepala Sekolah'],
+        ['yayasan_supervisi', 'Ruang Yayasan', 15, 'fas fa-clipboard-check', 'admin-supervisi-mengajar.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Supervisi', 'Supervisi Mengajar Asatidz'],
+        ['yayasan_gaji', 'Ruang Yayasan', 16, 'fas fa-coins', 'yayasan2/gaji-pegawai.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Gaji', 'Rekap Gaji (Payroll)'],
+        ['yayasan_tarif_gaji', 'Ruang Yayasan', 17, 'fas fa-sliders', 'yayasan2/gaji-asatidz.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Tarif', 'Pengaturan Tarif Gaji'],
+        ['yayasan_ai_hrd', 'Ruang Yayasan', 18, 'fas fa-robot', 'yayasan2/ai-agent-hrd.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'AI-HRD', 'AI Agent HRD & Personalia'],
+        ['yayasan_spp', 'Ruang Yayasan', 19, 'fas fa-file-invoice-dollar', 'yayasan2/rekap-spp.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SPP', 'Rekap Pembayaran SPP/Keuangan'],
+        ['yayasan_saku', 'Ruang Yayasan', 20, 'fas fa-wallet', 'yayasan2/rekap-uang-saku.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Saku', 'Rekap Uang Saku Santri'],
+        ['yayasan_tunjangan', 'Ruang Yayasan', 21, 'fas fa-award', 'yayasan2/tunjangan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Tunjangan', 'Pengaturan Tunjangan'],
+        ['yayasan_swot', 'Ruang Yayasan', 22, 'fas fa-chart-line', 'yayasan2/analisis-swot.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SWOT', 'Analisis SWOT & Strategi'],
+        ['yayasan_struktur', 'Ruang Yayasan', 23, 'fas fa-sitemap', 'yayasan2/struktur-jobdesc.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Struktur', 'Struktur Organisasi'],
+        ['yayasan_jobdesc', 'Ruang Yayasan', 24, 'fas fa-id-card', 'yayasan2/jobdesc.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Jobdesc', 'Job Description Pegawai'],
+        ['yayasan_peraturan', 'Ruang Yayasan', 25, 'fas fa-gavel', 'yayasan2/admin-peraturan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SOP', 'SOP & Peraturan Yayasan'],
+        ['yayasan_solopreneur', 'Ruang Yayasan', 26, 'fas fa-rocket', 'yayasan2/kurikulum-solopreneur.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Solopreneur', 'Inkubator Kurikulum Solopreneur']
+    ];
+    foreach ($master_seed_menus as $m) {
+        list($key, $grp, $ord, $ico, $hrf, $al_roles, $sh_lbl, $fl_lbl) = $m;
+        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('$grp', '$key', $ord, '$ico', '$hrf') ON DUPLICATE KEY UPDATE menu_group='$grp', sort_order=$ord, icon='$ico', href='$hrf'");
+        $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('$key', '$al_roles') ON DUPLICATE KEY UPDATE allowed_roles='$al_roles'");
+        $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('$key', '$fl_lbl', '$sh_lbl') ON DUPLICATE KEY UPDATE custom_label='$fl_lbl', short_label='$sh_lbl'");
+    }
+}
+
 $db_permissions = [];
 $res_perm = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
 if ($res_perm) {
@@ -132,22 +176,59 @@ if ($res_lbl) {
 
 // Fallback label 1 kata default untuk keindahan UI
 $default_1word_labels = [
-    'emodul' => 'E-Modul',
-    'promes' => 'Promes',
-    'jurnal' => 'Jurnal',
-    'silabus' => 'Silabus',
-    'nilai' => 'Nilai',
-    'raport' => 'Raport',
-    'ibadah' => 'Ibadah',
-    'hafalan' => 'Hafalan',
-    'adab' => 'Adab',
-    'kesehatan' => 'Kesehatan',
-    'belajar' => 'Belajar',
-    'spp' => 'SPP',
-    'uangsaku' => 'Saku',
-    'induk' => 'Induk',
-    'kas' => 'Kas',
-    'pegawai' => 'Pegawai'
+    'yayasan_pegawai'    => 'Pegawai',
+    'yayasan_menu'       => 'Manajemen Menu',
+    'yayasan_kelas'      => 'Kelas',
+    'yayasan_mapel'      => 'Mapel',
+    'yayasan_elearning'  => 'E-Learning',
+    'yayasan_kitab'      => 'Kitab',
+    'yayasan_hafalan'    => 'Hafalan',
+    'yayasan_ibadah'     => 'Ibadah',
+    'yayasan_raport'     => 'Raport',
+    'yayasan_kas'        => 'Kas',
+    'yayasan_cashflow'   => 'Cashflow',
+    'yayasan_kpi'        => 'KPI',
+    'yayasan_kpi_musyrif'=> 'KPI Asrama',
+    'yayasan_kpi_kepsek' => 'KPI Kepsek',
+    'yayasan_supervisi'  => 'Supervisi',
+    'yayasan_gaji'       => 'Gaji',
+    'yayasan_tarif_gaji' => 'Tarif Gaji',
+    'yayasan_ai_hrd'     => 'AI-HRD',
+    'yayasan_spp'        => 'SPP Yayasan',
+    'yayasan_saku'       => 'Saku Yayasan',
+    'yayasan_tunjangan'  => 'Tunjangan',
+    'yayasan_swot'       => 'SWOT',
+    'yayasan_struktur'   => 'Struktur',
+    'yayasan_jobdesc'    => 'Jobdesc',
+    'yayasan_peraturan'  => 'SOP',
+    'yayasan_solopreneur'=> 'Solopreneur',
+    'emodul'             => 'E-Modul',
+    'promes'             => 'Promes',
+    'jurnal'             => 'Jurnal',
+    'silabus'            => 'Silabus',
+    'nilai'              => 'Nilai',
+    'raport'             => 'Raport',
+    'ibadah'             => 'Ibadah',
+    'hafalan'            => 'Hafalan',
+    'adab'               => 'Adab',
+    'kesehatan'          => 'Kesehatan',
+    'belajar'            => 'Belajar',
+    'spp'                => 'SPP',
+    'uangsaku'           => 'Saku',
+    'induk'              => 'Induk',
+    'kas'                => 'Kas',
+    'pegawai'            => 'Pegawai',
+    'rekap_ibadah_santri'=> 'Ibadah Asrama',
+    'rekap_setoran_santri'=> 'Rekap Setoran',
+    'setoran_hafalan_santri'=> 'Hafalan',
+    'kontrol_jam_kosong' => 'Jam Kosong',
+    'penagihan_spp'      => 'Tagihan SPP',
+    'kpi_admin_sekolah'  => 'KPI Admin',
+    'jadwal_rapat'       => 'Rapat',
+    'salary_admin'       => 'Salary Admin',
+    'manajemen_elearning'=> 'E-Learning Guru',
+    'ruang_web'          => 'Web Admin',
+    'ruang_marketing'    => 'Marketing'
 ];
 
 $all_grid_items = [];
@@ -156,7 +237,7 @@ if ($res_struct && $res_struct->num_rows > 0) {
     while ($r = $res_struct->fetch_assoc()) {
         $k = $r['menu_key'];
         $label = $db_custom_labels[$k]['short'] ?? ($default_1word_labels[$k] ?? ucwords(str_replace('_', ' ', $k)));
-        $roles_allowed = $db_permissions[$k] ?? ['super_admin', 'ketua_yayasan'];
+        $roles_allowed = $db_permissions[$k] ?? ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'];
         
         $icon = trim($r['icon'] ?? '');
         if (!empty($icon) && !str_starts_with($icon, 'fa')) {
@@ -175,51 +256,71 @@ if ($res_struct && $res_struct->num_rows > 0) {
     }
 }
 
-// Filter Item Sesuai Role Pengguna & Simulasi Checkbox Multi-Role
-$visible_items = [];
-foreach ($all_grid_items as $key => $item) {
-    // 1. Cek hak akses dasar akun pengguna
-    $has_access = $is_admin;
-    if (!$has_access) {
-        foreach ($item['roles'] as $r) {
-            $norm_r = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
-            if (in_array($norm_r, $roles) || in_array($r, $roles)) {
-                $has_access = true;
-                break;
-            }
+// Cek Otoritas Visibilitas Frame Ruang Yayasan (Hanya Pengurus Yayasan: super_admin, ketua_yayasan, sekretaris_yayasan, bendahara_yayasan)
+$show_yayasan_frame = false;
+if ($is_yayasan_pengurus) {
+    if ($is_all_view) {
+        $show_yayasan_frame = true;
+    } elseif (!$is_none_view) {
+        if (!empty(array_intersect($yayasan_pengurus_roles, $active_views))) {
+            $show_yayasan_frame = true;
         }
     }
-    if (!$has_access) continue;
+}
 
-    // 2. Terapkan Filter Checkbox Multi-Role (Jika sedang simulasi)
-    if (!$is_all_view) {
-        if ($is_none_view) continue;
+// Pisahkan Item: Frame 1 (Ruang Yayasan) & Frame 2 (Menu Operasional)
+$yayasan_items = [];
+$operational_items = [];
 
-        $matches_active_filter = false;
-        foreach ($active_views as $av) {
-            // Pemetaan alias role untuk fleksibilitas maksimal
-            $av_aliases = [$av];
-            if ($av === 'musyrif') { $av_aliases[] = 'musyrifah'; $av_aliases[] = 'kepala_asrama'; }
-            if ($av === 'ustadz') { $av_aliases[] = 'ustadzah'; $av_aliases[] = 'guru'; }
-            if ($av === 'orangtua') { $av_aliases[] = 'walisantri'; }
-            if ($av === 'ketua_yayasan') { $av_aliases[] = 'super_admin'; }
-            if ($av === 'santri_rijal' || $av === 'santri_nisa') { $av_aliases[] = 'santri'; $av_aliases[] = $av; }
-
-            foreach ($av_aliases as $alias) {
-                $alias_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($alias)));
-                foreach ($item['roles'] as $ir) {
-                    $ir_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($ir)));
-                    if ($alias_norm === $ir_norm || $alias === $ir) {
-                        $matches_active_filter = true;
-                        break 2;
-                    }
+foreach ($all_grid_items as $key => $item) {
+    if ($item['group'] === 'Ruang Yayasan') {
+        if ($show_yayasan_frame) {
+            $yayasan_items[$key] = $item;
+        }
+    } else {
+        // Filter Menu Operasional Sesuai Hak Akses Pengguna
+        $has_access = $is_admin;
+        if (!$has_access) {
+            foreach ($item['roles'] as $r) {
+                $norm_r = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+                if (in_array($norm_r, $roles) || in_array($r, $roles)) {
+                    $has_access = true;
+                    break;
                 }
             }
         }
-        if (!$matches_active_filter) continue;
-    }
+        if (!$has_access) continue;
 
-    $visible_items[$key] = $item;
+        if (!$is_all_view) {
+            if ($is_none_view) continue;
+
+            $matches_active_filter = false;
+            foreach ($active_views as $av) {
+                $av_aliases = [$av];
+                if ($av === 'musyrif') { $av_aliases[] = 'musyrifah'; $av_aliases[] = 'kepala_asrama'; }
+                if ($av === 'ustadz') { $av_aliases[] = 'ustadzah'; $av_aliases[] = 'guru'; }
+                if ($av === 'orangtua') { $av_aliases[] = 'walisantri'; }
+                if ($av === 'ketua_yayasan') { $av_aliases[] = 'super_admin'; }
+                if ($av === 'santri_rijal' || $av === 'santri_nisa') { $av_aliases[] = 'santri'; $av_aliases[] = $av; }
+                if ($av === 'web') { $av_aliases[] = 'admin_web'; $av_aliases[] = 'admin'; }
+                if ($av === 'marketing') { $av_aliases[] = 'tim_marketing'; }
+
+                foreach ($av_aliases as $alias) {
+                    $alias_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($alias)));
+                    foreach ($item['roles'] as $ir) {
+                        $ir_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($ir)));
+                        if ($alias_norm === $ir_norm || $alias === $ir) {
+                            $matches_active_filter = true;
+                            break 2;
+                        }
+                    }
+                }
+            }
+            if (!$matches_active_filter) continue;
+        }
+
+        $operational_items[$key] = $item;
+    }
 }
 
 // Cek Visibilitas 2 Tombol Absensi Cepat di Bawah Frame Card (Kecuali Santri & Walisantri)
@@ -252,7 +353,7 @@ if (!$is_all_view) {
     }
 }
 
-// Urutkan $visible_items sesuai preferensi Custom Drag-and-Drop Pengguna
+// Urutkan $operational_items sesuai preferensi Custom Drag-and-Drop Pengguna
 $user_key = 'user_' . ($user['id'] ?? $user['username'] ?? 'default');
 $user_custom_order = [];
 $res_pref = $conn->query("SELECT menu_order_json FROM user_menu_preferences WHERE user_key = '" . $conn->real_escape_string($user_key) . "' LIMIT 1");
@@ -261,19 +362,20 @@ if ($res_pref && $row_pref = $res_pref->fetch_assoc()) {
 }
 
 if (!empty($user_custom_order) && is_array($user_custom_order)) {
-    $sorted_visible = [];
+    $sorted_op = [];
     foreach ($user_custom_order as $k) {
-        if (isset($visible_items[$k])) {
-            $sorted_visible[$k] = $visible_items[$k];
-            unset($visible_items[$k]);
+        if (isset($operational_items[$k])) {
+            $sorted_op[$k] = $operational_items[$k];
+            unset($operational_items[$k]);
         }
     }
     // Sisipkan menu baru yang belum tersimpan di order
-    foreach ($visible_items as $k => $item) {
-        $sorted_visible[$k] = $item;
+    foreach ($operational_items as $k => $item) {
+        $sorted_op[$k] = $item;
     }
-    $visible_items = $sorted_visible;
+    $operational_items = $sorted_op;
 }
+$visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -376,6 +478,12 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
                 <i class="fas fa-bullhorn w-4 text-center"></i>
                 <span>Info</span>
             </a>
+            <?php if ($is_yayasan_pengurus): ?>
+            <a href="yayasan2/manajemen-menu.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-amber-400/20 text-amber-200 hover:bg-amber-400/30 hover:text-white font-bold transition border border-amber-300/30 mt-1">
+                <i class="fas fa-sliders w-4 text-center text-amber-300"></i>
+                <span>Manajemen Menu</span>
+            </a>
+            <?php endif; ?>
 
             <!-- SIMULASI ROLE WIDGET DI SIDEBAR -->
             <?php if ($is_admin || count($roles) > 1): ?>
@@ -517,14 +625,84 @@ if (!empty($user_custom_order) && is_array($user_custom_order)) {
         <!-- ========================================================= -->
         <main class="flex-1 px-4 sm:px-8 pt-0 pb-24 md:pb-12 w-full max-w-4xl mx-auto -mt-14 z-20">
             
-            <!-- KARTU PUTIH UTAMA DENGAN SUDUT MELENGKUNG (SQUIRCLE) -->
+            <?php if ($show_yayasan_frame && !empty($yayasan_items)): ?>
+            <!-- ========================================================= -->
+            <!-- FRAME 1: RUANG EKSEKUTIF YAYASAN (KHUSUS PENGURUS YAYASAN)-->
+            <!-- (HANYA BISA DIAKSES & DILIHAT OLEH PENGURUS YAYASAN)      -->
+            <!-- ========================================================= -->
+            <div class="bg-white rounded-[36px] md:rounded-[40px] p-6 sm:p-10 shadow-xl shadow-amber-950/5 border-2 border-amber-300/80 mb-6 sm:mb-8 relative overflow-hidden">
+                <!-- Watermark Background Decorative Icon -->
+                <div class="absolute -right-6 -bottom-6 text-amber-100/30 pointer-events-none text-9xl">
+                    <i class="fas fa-landmark"></i>
+                </div>
+
+                <!-- TOP HEADER FRAME RUANG YAYASAN -->
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-amber-100/80 relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-white flex items-center justify-center text-xl shadow-md shadow-amber-500/25 flex-shrink-0">
+                            <i class="fas fa-landmark"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h2 class="text-base sm:text-lg font-black text-slate-800 tracking-tight">Ruang Eksekutif Yayasan</h2>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1">
+                                    <i class="fas fa-crown text-[9px] text-amber-600"></i> Khusus Pimpinan
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 font-medium">Ketua Yayasan • Sekretaris Yayasan • Bendahara Yayasan</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="yayasan2/manajemen-menu.php" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-[11px] flex items-center gap-1.5 shadow-sm shadow-amber-500/30 hover:scale-105 transition-all">
+                            <i class="fas fa-sliders text-xs"></i> Atur Hak Akses Menu
+                        </a>
+                        <span class="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200">
+                            <?= count($yayasan_items) ?> Menu
+                        </span>
+                    </div>
+                </div>
+
+                <!-- GRID CONTAINER RUANG YAYASAN -->
+                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center relative z-10">
+                    <?php foreach ($yayasan_items as $y_key => $y_item): 
+                        $is_key_menu = ($y_key === 'yayasan_menu');
+                    ?>
+                    <div data-id="<?= htmlspecialchars($y_key) ?>" class="flex flex-col items-center group w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <a href="<?= htmlspecialchars($y_item['href']) ?>" class="flex flex-col items-center w-full focus:outline-none" draggable="false">
+                            <!-- Squircle Box Button Khusus Yayasan (Deep Teal Gradient + Gold Accent) -->
+                            <div class="relative squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] <?= $is_key_menu ? 'bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white ring-4 ring-amber-400/30 shadow-lg shadow-amber-600/30' : 'bg-gradient-to-br from-[#0b8478] to-[#064e46] text-amber-300 group-hover:text-white group-hover:from-[#097368] group-hover:to-[#043d37] border border-amber-300/30 shadow-md shadow-teal-900/15' ?> flex items-center justify-center text-xl sm:text-2xl group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= $is_key_menu ? 'fas fa-sliders' : $y_item['icon'] ?>"></i>
+                                <?php if ($is_key_menu): ?>
+                                <span class="absolute -top-1.5 -right-1.5 bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-tighter shadow-sm">KUNCI</span>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Label Menu -->
+                            <span class="text-[11px] sm:text-xs font-bold <?= $is_key_menu ? 'text-amber-800 font-extrabold' : 'text-slate-800' ?> mt-2 tracking-tight group-hover:text-[#0b8478] transition-colors leading-tight line-clamp-2 max-w-[85px] text-center">
+                                <?= htmlspecialchars($y_item['label']) ?>
+                            </span>
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- ========================================================= -->
+            <!-- FRAME 2: TATA LETAK MENU OPERASIONAL (DRAGGABLE)          -->
+            <!-- ========================================================= -->
             <div class="bg-white rounded-[36px] md:rounded-[40px] p-6 sm:p-10 shadow-xl shadow-teal-950/10 border border-teal-50">
                 
                 <!-- TOP HEADER DALAM KARTU DENGAN HINT & RESET -->
                 <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
-                        <i class="fas fa-grip-vertical text-[#0b8478]"></i> Tata Letak Menu
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1.5">
+                            <i class="fas fa-grip-vertical text-[#0b8478]"></i> Tata Letak Menu Operasional
+                        </span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                            <?= count($visible_items) ?> Menu
+                        </span>
+                    </div>
                     <button type="button" onclick="resetMenuOrder()" class="text-[10px] font-bold text-teal-700 hover:text-[#086a60] hover:underline flex items-center gap-1 cursor-pointer transition">
                         <i class="fas fa-rotate-left text-[9px]"></i> Reset Posisi
                     </button>
