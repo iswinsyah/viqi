@@ -174,8 +174,6 @@ if ($cnt_yayasan < 20) {
         ['yayasan_kas', 'Ruang Yayasan', 10, 'fas fa-calculator', 'yayasan2/pembukuan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kas', 'Pembukuan Terpusat Lembaga'],
         ['yayasan_cashflow', 'Ruang Yayasan', 11, 'fas fa-funnel-dollar', 'yayasan2/pembukuan.php?tab=proyeksi', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Cashflow', 'Perencanaan & Cashflow Kas'],
         ['yayasan_kpi', 'Ruang Yayasan', 12, 'fas fa-chart-bar', 'yayasan2/kpi.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'KPI', 'Monitoring AI & Kinerja Pegawai'],
-        ['yayasan_kpi_musyrif', 'Ruang Yayasan', 13, 'fas fa-chart-line', 'yayasan2/kpi-musyrif.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'KPI-Asrama', 'KPI Musyrif Asrama'],
-        ['yayasan_kpi_kepsek', 'Ruang Yayasan', 14, 'fas fa-chart-pie', 'yayasan2/kpi-kepala-sekolah.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'KPI-Kepsek', 'KPI Kepala Sekolah'],
         ['yayasan_supervisi', 'Ruang Yayasan', 15, 'fas fa-clipboard-check', 'admin-supervisi-mengajar.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Supervisi', 'Supervisi Mengajar Asatidz'],
         ['yayasan_gaji', 'Ruang Yayasan', 16, 'fas fa-coins', 'yayasan2/gaji-pegawai.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Gaji', 'Rekap Gaji (Payroll)'],
         ['yayasan_tarif_gaji', 'Ruang Yayasan', 17, 'fas fa-sliders', 'yayasan2/gaji-asatidz.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Tarif', 'Pengaturan Tarif Gaji'],
@@ -196,6 +194,33 @@ if ($cnt_yayasan < 20) {
         $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('$key', '$fl_lbl', '$sh_lbl') ON DUPLICATE KEY UPDATE custom_label='$fl_lbl', short_label='$sh_lbl'");
     }
 }
+
+// =========================================================
+// MIGRATION & SELF-HEALING: PINDAHKAN KPI KEPSEK & MUSYRIF KE FRAME UTAMA (OPERASIONAL)
+// =========================================================
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('yayasan_kpi_musyrif', 'yayasan_kpi_kepsek') AND menu_group = 'Ruang Yayasan'");
+
+// Pastikan kpi_kepsek terdaftar di Frame Utama (Administrasi)
+$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+    VALUES ('Administrasi', 'kpi_kepsek', 51, 'fas fa-chart-pie', 'yayasan2/kpi-kepala-sekolah.php') 
+    ON DUPLICATE KEY UPDATE menu_group='Administrasi', icon='fas fa-chart-pie', href='yayasan2/kpi-kepala-sekolah.php'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+    VALUES ('kpi_kepsek', 'kepala_sekolah,ketua_yayasan,super_admin') 
+    ON DUPLICATE KEY UPDATE allowed_roles = IF(allowed_roles LIKE '%kepala_sekolah%', allowed_roles, CONCAT(allowed_roles, ',kepala_sekolah,ketua_yayasan,super_admin'))");
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('kpi_kepsek', 'KPI Kepala Sekolah', 'KPI Kepsek') 
+    ON DUPLICATE KEY UPDATE custom_label='KPI Kepala Sekolah', short_label='KPI Kepsek'");
+
+// Pastikan kpi_musyrif terdaftar di Frame Utama (Musyrif)
+$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+    VALUES ('Musyrif', 'kpi_musyrif', 52, 'fas fa-chart-line', 'yayasan2/kpi-musyrif.php') 
+    ON DUPLICATE KEY UPDATE menu_group='Musyrif', icon='fas fa-chart-line', href='yayasan2/kpi-musyrif.php'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+    VALUES ('kpi_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,ketua_yayasan,super_admin,kepala_sekolah') 
+    ON DUPLICATE KEY UPDATE allowed_roles = IF(allowed_roles LIKE '%musyrif%', allowed_roles, CONCAT(allowed_roles, ',musyrif,musyrifah,kepala_asrama,kepala_mahad,ketua_yayasan,super_admin,kepala_sekolah'))");
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('kpi_musyrif', 'KPI Musyrif Asrama', 'KPI Musyrif') 
+    ON DUPLICATE KEY UPDATE custom_label='KPI Musyrif Asrama', short_label='KPI Musyrif'");
 
 $db_permissions = [];
 $res_perm = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
@@ -230,6 +255,8 @@ $default_1word_labels = [
     'yayasan_kas'        => 'Kas',
     'yayasan_cashflow'   => 'Cashflow',
     'yayasan_kpi'        => 'KPI',
+    'kpi_kepsek'         => 'KPI Kepsek',
+    'kpi_musyrif'        => 'KPI Musyrif',
     'yayasan_kpi_musyrif'=> 'KPI Asrama',
     'yayasan_kpi_kepsek' => 'KPI Kepsek',
     'yayasan_supervisi'  => 'Supervisi',

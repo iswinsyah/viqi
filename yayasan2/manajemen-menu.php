@@ -14,7 +14,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
 )");
 
 // Cek dan seed jika kosong
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'yayasan_kpi_musyrif', 'yayasan_kpi_kepsek', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
 $conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'hafalan', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
 $conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
 $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('rekap_ibadah_rijal', 'rekap_ibadah_nisa', 'rekap_ibadah_mahad', 'laporan_setoran_rijal', 'laporan_setoran_nisa', 'laporan_setoran_hafalan')");
@@ -109,6 +109,28 @@ if ($res_chk_mkt && $res_chk_mkt->num_rows === 0) {
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Web & Marketing', 'ruang_marketing', $new_ord, 'fa-bullseye', 'dashboard-marketing.php')");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('ruang_marketing', 'ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,super_admin')");
     $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_marketing', 'Ruang Marketing & AI', 'Marketing')");
+}
+
+// Pastikan menu 'kpi_kepsek' terdaftar di Frame Utama (Administrasi)
+$res_chk_kpi_ks = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kpi_kepsek'");
+if ($res_chk_kpi_ks && $res_chk_kpi_ks->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'kpi_kepsek', $new_ord, 'fa-chart-pie', 'yayasan2/kpi-kepala-sekolah.php')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_kepsek', 'kepala_sekolah,ketua_yayasan,super_admin') ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,ketua_yayasan,super_admin'");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('kpi_kepsek', 'KPI Kepala Sekolah', 'KPI Kepsek') ON DUPLICATE KEY UPDATE custom_label='KPI Kepala Sekolah', short_label='KPI Kepsek'");
+}
+
+// Pastikan menu 'kpi_musyrif' terdaftar di Frame Utama (Musyrif)
+$res_chk_kpi_ms = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kpi_musyrif'");
+if ($res_chk_kpi_ms && $res_chk_kpi_ms->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'kpi_musyrif', $new_ord, 'fa-chart-line', 'yayasan2/kpi-musyrif.php')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,ketua_yayasan,super_admin,kepala_sekolah') ON DUPLICATE KEY UPDATE allowed_roles='musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,ketua_yayasan,super_admin,kepala_sekolah'");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('kpi_musyrif', 'KPI Musyrif Asrama', 'KPI Musyrif') ON DUPLICATE KEY UPDATE custom_label='KPI Musyrif Asrama', short_label='KPI Musyrif'");
 }
 
 $res_cnt = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure");

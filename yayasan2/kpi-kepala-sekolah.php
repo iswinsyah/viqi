@@ -27,9 +27,27 @@ if ($res_kepsek) {
 }
 
 // Get current user details from session
-$current_ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
+$current_ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : (isset($_SESSION['app_user_id']) ? (int)$_SESSION['app_user_id'] : 0);
 $current_user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-$is_current_kepsek = in_array('kepala_sekolah', array_map('trim', $current_user_roles));
+if (empty($current_user_roles) && isset($_SESSION['app_user_roles'])) {
+    $current_user_roles = explode(',', $_SESSION['app_user_roles']);
+}
+$session_username = $_SESSION['app_username'] ?? ($_SESSION['username'] ?? '');
+$is_super_admin = ($current_ustadz_id === 9999) || (!empty($_SESSION['app_user_id']) && (int)$_SESSION['app_user_id'] === 1) || (!empty($session_username) && in_array(strtolower($session_username), ['viqi', 'winsyah']));
+
+$norm_roles = array_map(function($r) {
+    return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+}, $current_user_roles);
+
+$is_authorized = $is_super_admin || !empty(array_intersect($norm_roles, [
+    'super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'kepala_sekolah'
+]));
+
+if (!$is_authorized) {
+    die("Akses ditolak. Menu ini hanya dapat diakses oleh Yayasan dan Kepala Sekolah.");
+}
+
+$is_current_kepsek = in_array('kepala_sekolah', $norm_roles) && !$is_super_admin && !in_array('ketua_yayasan', $norm_roles);
 
 // Set selected Kepala Sekolah ID
 if ($is_current_kepsek) {
@@ -210,7 +228,12 @@ if ($selected_kepsek_id > 0) {
                 <button id="open-sidebar-yayasan2" class="text-gray-500 hover:text-gray-700 md:hidden mr-4">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                <h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif Yayasan</h2>
+                <h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif & Manajemen Sekolah</h2>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="../dashboard.php" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition">
+                    <i class="fas fa-arrow-left text-[11px]"></i> Ke Dashboard
+                </a>
             </div>
         </header>
 

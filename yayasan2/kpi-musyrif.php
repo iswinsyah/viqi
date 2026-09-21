@@ -4,20 +4,33 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 require_once '../koneksi.php';
 
-// Validasi akses yayasan (Super Admin / Yayasan / Kepala Ma'had)
+// Validasi akses (Super Admin / Yayasan / Kepala Sekolah / Kepala Ma'had / Musyrif)
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-$ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
-$is_super_admin = ($ustadz_id === 9999);
+if (empty($user_roles) && isset($_SESSION['app_user_roles'])) {
+    $user_roles = explode(',', $_SESSION['app_user_roles']);
+}
+$ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : (isset($_SESSION['app_user_id']) ? (int)$_SESSION['app_user_id'] : 0);
+$session_username = $_SESSION['app_username'] ?? ($_SESSION['username'] ?? '');
+$is_super_admin = ($ustadz_id === 9999) || (!empty($_SESSION['app_user_id']) && (int)$_SESSION['app_user_id'] === 1) || (!empty($session_username) && in_array(strtolower($session_username), ['viqi', 'winsyah']));
 
 $norm_roles = array_map(function($r) {
     return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
 }, $user_roles);
 
-$is_authorized = $is_super_admin || !empty(array_intersect($norm_roles, ['super_admin', 'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah']));
+$is_authorized = $is_super_admin || !empty(array_intersect($norm_roles, [
+    'super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan',
+    'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah',
+    'kepala_asrama', 'musyrif', 'musyrifah'
+]));
 
 if (!$is_authorized) {
-    die("Akses ditolak. Menu ini hanya dapat diakses oleh Yayasan dan Super Admin.");
+    die("Akses ditolak. Menu ini hanya dapat diakses oleh Yayasan, Kepala Ma'had, dan Musyrif.");
 }
+
+$is_pimpinan = $is_super_admin || !empty(array_intersect($norm_roles, [
+    'super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan',
+    'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah', 'kepala_asrama'
+]));
 
 // 1. Ambil daftar Musyrif & Musyrifah
 $musyrif_list = [];
@@ -29,7 +42,11 @@ if ($res_m) {
 }
 
 // Filter parameters
-$selected_musyrif_id = isset($_GET['musyrif_id']) ? (int)$_GET['musyrif_id'] : ($musyrif_list[0]['id'] ?? 0);
+if (!$is_pimpinan && $ustadz_id > 0) {
+    $selected_musyrif_id = $ustadz_id;
+} else {
+    $selected_musyrif_id = isset($_GET['musyrif_id']) ? (int)$_GET['musyrif_id'] : ($musyrif_list[0]['id'] ?? 0);
+}
 $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 
@@ -299,6 +316,9 @@ $active_menu = 'kpi_musyrif';
                 <h2 class="font-bold text-slate-800 hidden sm:block">KPI & Evaluasi Kinerja Musyrif Asrama</h2>
             </div>
             <div class="flex items-center gap-2">
+                <a href="../dashboard.php" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition">
+                    <i class="fas fa-arrow-left text-[11px]"></i> Ke Dashboard
+                </a>
                 <span class="text-xs bg-amber-50 text-amber-800 font-bold px-3 py-1.5 rounded-full border border-amber-200">
                     <i class="fas fa-crown mr-1"></i> Yayasan Boardroom
                 </span>
@@ -319,12 +339,19 @@ $active_menu = 'kpi_musyrif';
                 <form action="kpi-musyrif.php" method="GET" class="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end">
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Pilih Musyrif / Musyrifah</label>
+                        <?php if ($is_pimpinan): ?>
                         <select name="musyrif_id" required class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-amber-500 bg-white font-semibold">
                             <option value="">-- Pilih --</option>
                             <?php foreach ($musyrif_list as $m): ?>
                                 <option value="<?= $m['id'] ?>" <?= $selected_musyrif_id == $m['id'] ? 'selected' : '' ?>><?= htmlspecialchars($m['nama']) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <?php else: ?>
+                        <div class="w-full px-3 py-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700">
+                            <?= htmlspecialchars($staf['nama'] ?? 'Kinerja Saya') ?>
+                        </div>
+                        <input type="hidden" name="musyrif_id" value="<?= $selected_musyrif_id ?>">
+                        <?php endif; ?>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Bulan</label>
