@@ -21,8 +21,10 @@ $ta = $_GET['tahun_ajaran'] ?? '';
 $sem = $_GET['semester'] ?? '';
 
 // 4. Ambil Opsi Filter
-$opsi_ta = $conn->query("SELECT DISTINCT tahun_ajaran FROM leger_nilai WHERE santri_id = $santri_id")->fetch_all(MYSQLI_ASSOC);
-$opsi_sem = $conn->query("SELECT DISTINCT semester FROM leger_nilai WHERE santri_id = $santri_id")->fetch_all(MYSQLI_ASSOC);
+$res_ta = $conn->query("SELECT DISTINCT tahun_ajaran FROM leger_nilai WHERE santri_id = $santri_id");
+$opsi_ta = ($res_ta) ? $res_ta->fetch_all(MYSQLI_ASSOC) : [];
+$res_sem = $conn->query("SELECT DISTINCT semester FROM leger_nilai WHERE santri_id = $santri_id");
+$opsi_sem = ($res_sem) ? $res_sem->fetch_all(MYSQLI_ASSOC) : [];
 
 // 5. Fetch Nilai (Hanya Kategori Diknas)
 $nilai_data = [];

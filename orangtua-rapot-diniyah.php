@@ -20,8 +20,10 @@ $santri_nama = $data_santri['nama_lengkap'];
 // 3. Filter
 $ta = $_GET['tahun_ajaran'] ?? '';
 $sem = $_GET['semester'] ?? '';
-$opsi_ta = $conn->query("SELECT DISTINCT tahun_ajaran FROM leger_nilai WHERE santri_id = $santri_id")->fetch_all(MYSQLI_ASSOC);
-$opsi_sem = $conn->query("SELECT DISTINCT semester FROM leger_nilai WHERE santri_id = $santri_id")->fetch_all(MYSQLI_ASSOC);
+$res_ta = $conn->query("SELECT DISTINCT tahun_ajaran FROM leger_nilai WHERE santri_id = $santri_id");
+$opsi_ta = ($res_ta) ? $res_ta->fetch_all(MYSQLI_ASSOC) : [];
+$res_sem = $conn->query("SELECT DISTINCT semester FROM leger_nilai WHERE santri_id = $santri_id");
+$opsi_sem = ($res_sem) ? $res_sem->fetch_all(MYSQLI_ASSOC) : [];
 
 // 4. Fetch Nilai (Hanya Kategori Diniyah)
 $nilai_data = [];

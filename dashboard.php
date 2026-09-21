@@ -7,7 +7,7 @@ $roles = getUserRoles();
 $is_admin = isSuperAdmin();
 $is_yayasan_pengurus = $is_admin || !empty(array_intersect(['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'admin', 'yayasan'], $roles));
 
-// Master 5 Kolom x 4 Baris Matrix Simulasi Role Lembaga (Total 20 Slot)
+// Master Matrix Simulasi Role Lembaga (5 Kolom)
 $simulation_roles_grid = [
     // Baris 1 (5 Kolom)
     'all'                => ['label' => 'Semua Role', 'action' => 'all'],
@@ -34,6 +34,10 @@ $simulation_roles_grid = [
     'santri_rijal'       => ['label' => 'Santri Rijal'],
     'santri_nisa'        => ['label' => 'Santri Nisa'],
     'orangtua'           => ['label' => 'Orangtua / Wali'],
+    'web'                => ['label' => 'Web'],
+    'marketing'          => ['label' => 'Marketing'],
+
+    // Baris 5: Aksi Cepat
     'pilih_semua'        => ['label' => 'Pilih Semua', 'action' => 'all'],
     'lepas_semua'        => ['label' => 'Lepas Semua', 'action' => 'reset']
 ];
@@ -109,8 +113,30 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action']))
 }
 
 // =========================================================
-// SINKRONISASI DINAMIS DENGAN MANAJEMEN MENU DATABASE
+// SELF-HEALING & SINKRONISASI MANAJEMEN MENU DATABASE
 // =========================================================
+if ($conn && $conn instanceof mysqli) {
+    @$conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_group VARCHAR(100) NOT NULL,
+        menu_key VARCHAR(100) UNIQUE NOT NULL,
+        sort_order INT NOT NULL DEFAULT 0,
+        icon VARCHAR(100) NOT NULL,
+        href VARCHAR(255) NOT NULL
+    )");
+    @$conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_key VARCHAR(100) UNIQUE NOT NULL,
+        allowed_roles TEXT NOT NULL
+    )");
+    @$conn->query("CREATE TABLE IF NOT EXISTS menu_custom_labels (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        menu_key VARCHAR(100) UNIQUE NOT NULL,
+        custom_label VARCHAR(100) NOT NULL,
+        short_label VARCHAR(50) NOT NULL
+    )");
+}
+
 $yayasan_pengurus_roles = ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'];
 $is_yayasan_pengurus = $is_admin || !empty(array_intersect($yayasan_pengurus_roles, $roles));
 
@@ -228,11 +254,11 @@ $default_1word_labels = [
     'salary_admin'       => 'Salary Admin',
     'manajemen_elearning'=> 'E-Learning Guru',
     'ruang_web'          => 'Web Admin',
-    'ruang_marketing'    => 'Marketing'
+    'ruang_marketing'    => 'Marketing' 
 ];
 
 $all_grid_items = [];
-$res_struct = $conn->query("SELECT * FROM menu_structure WHERE menu_key NOT IN ('kalender', 'akunku', 'prota_promes', 'yayasan_update', 'update', 'absensi_pegawai', 'absensi') ORDER BY sort_order ASC");
+$res_struct = $conn->query("SELECT * FROM menu_structure WHERE menu_key NOT IN ('emodul', 'hafalan', 'kalender', 'akunku', 'prota_promes', 'yayasan_update', 'update', 'absensi_pegawai', 'absensi', 'jurnal', 'jurnal_mengajar', 'ruang_web', 'ruang_marketing') AND href NOT LIKE '%admin-absensi-pegawai.php%' ORDER BY sort_order ASC");
 if ($res_struct && $res_struct->num_rows > 0) {
     while ($r = $res_struct->fetch_assoc()) {
         $k = $r['menu_key'];
@@ -323,34 +349,250 @@ foreach ($all_grid_items as $key => $item) {
     }
 }
 
-// Cek Visibilitas 2 Tombol Absensi Cepat di Bawah Frame Card (Kecuali Santri & Walisantri)
+$visible_items = $operational_items;
+
+// 1. Cek Visibilitas Absensi Pegawai (Semua Staf/Pegawai kecuali Santri & Walisantri)
 $non_staff_roles = ['santri', 'santri_rijal', 'santri_nisa', 'walisantri', 'orangtua'];
-$show_absensi_buttons = false;
+$show_absensi_pegawai = false;
 if ($is_admin) {
-    $show_absensi_buttons = true;
+    $show_absensi_pegawai = true;
 } else {
     foreach ($roles as $r) {
         if (!in_array($r, $non_staff_roles)) {
-            $show_absensi_buttons = true;
+            $show_absensi_pegawai = true;
             break;
         }
     }
 }
 
-// Jika dalam mode simulasi role (bukan All Views)
+// 2. Cek Otoritas Role Khusus Mengajar & Form Jurnal (Hanya: Tutor, Ustadz, Ustadzah, Trainer)
+$teaching_target_roles = ['tutor', 'ustadz', 'ustadzah', 'trainer', 'ustadz_ah'];
+$has_teaching_role = false;
+foreach ($roles as $r) {
+    $r_norm = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($r)));
+    if (in_array($r_norm, $teaching_target_roles) || strpos($r_norm, 'ustadz') !== false || strpos($r_norm, 'tutor') !== false || strpos($r_norm, 'trainer') !== false) {
+        $has_teaching_role = true;
+        break;
+    }
+}
+$show_absensi_mengajar = $has_teaching_role;
+$show_jurnal_mengajar = $has_teaching_role;
+
+// Penyesuaian Mode Simulasi Role (Matrix Filter di Header)
 if (!$is_all_view) {
     if ($is_none_view) {
-        $show_absensi_buttons = false;
+        $show_absensi_pegawai = false;
+        $show_absensi_mengajar = false;
+        $show_jurnal_mengajar = false;
     } else {
-        $show_absensi_buttons = false;
+        $show_absensi_pegawai = false;
+        $show_absensi_mengajar = false;
+        $show_jurnal_mengajar = false;
+
         foreach ($active_views as $av) {
-            $av_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($av)));
+            $av_norm = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($av)));
             if (!in_array($av_norm, $non_staff_roles)) {
-                $show_absensi_buttons = true;
-                break;
+                $show_absensi_pegawai = true;
+            }
+            if (in_array($av_norm, $teaching_target_roles) || strpos($av_norm, 'ustadz') !== false || strpos($av_norm, 'tutor') !== false || strpos($av_norm, 'trainer') !== false) {
+                $show_absensi_mengajar = true;
+                $show_jurnal_mengajar = true;
             }
         }
     }
+} else {
+    // Mode "Semua Role" (Matrix All View): jika akun super admin, tampilkan akses lengkap
+    if ($is_admin) {
+        $show_absensi_mengajar = true;
+        $show_jurnal_mengajar = true;
+    }
+}
+
+// =========================================================
+// OTORITAS AKSES & DATA FRAME RUANG WEB DAN RUANG MARKETING
+// Khusus: Ketua Yayasan, Sekretaris Yayasan, Bendahara Yayasan,
+// serta Role Khusus Web dan Marketing (atau Super Admin)
+// =========================================================
+$yayasan_core_roles = ['ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'];
+
+// Role Web: bisa diakses oleh Ketua, Sekr, Bendahara Yayasan, Super Admin, atau role Web
+$can_see_web = $is_admin;
+if (!$can_see_web) {
+    foreach ($roles as $r) {
+        $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+        if (in_array($r_norm, array_merge($yayasan_core_roles, ['web', 'admin_web', 'admin']))) {
+            $can_see_web = true;
+            break;
+        }
+    }
+}
+
+// Role Marketing: bisa diakses oleh Ketua, Sekr, Bendahara Yayasan, Super Admin, atau role Marketing
+$can_see_marketing = $is_admin;
+if (!$can_see_marketing) {
+    foreach ($roles as $r) {
+        $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+        if (in_array($r_norm, array_merge($yayasan_core_roles, ['marketing']))) {
+            $can_see_marketing = true;
+            break;
+        }
+    }
+}
+
+// Sinkronisasi dengan Matrix Filter Simulasi Multi-Role di Header Dashboard
+if (!$is_all_view) {
+    if ($is_none_view) {
+        $can_see_web = false;
+        $can_see_marketing = false;
+    } else {
+        $can_see_web = false;
+        $can_see_marketing = false;
+        foreach ($active_views as $av) {
+            $av_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($av)));
+            if (in_array($av_norm, $yayasan_core_roles) || ($av_norm === 'super_admin' && $is_admin)) {
+                $can_see_web = true;
+                $can_see_marketing = true;
+                break;
+            }
+            if (in_array($av_norm, ['web', 'admin_web', 'admin'])) {
+                $can_see_web = true;
+            }
+            if (in_array($av_norm, ['marketing'])) {
+                $can_see_marketing = true;
+            }
+        }
+    }
+}
+
+// Data Menu Grid Card Ruang Web (Pengaturan Web)
+$ruang_web_cards = [
+    ['label' => 'Dashboard Web', 'icon' => 'fas fa-tachometer-alt', 'href' => 'admin.php'],
+    ['label' => 'Hero Banner', 'icon' => 'fas fa-home', 'href' => 'admin-hero.php'],
+    ['label' => 'Tentang Kami', 'icon' => 'fas fa-info-circle', 'href' => 'admin-tentang.php'],
+    ['label' => 'Pengajar', 'icon' => 'fas fa-chalkboard-teacher', 'href' => 'admin-pengajar.php'],
+    ['label' => 'Fasilitas', 'icon' => 'fas fa-building', 'href' => 'admin-fasilitas.php'],
+    ['label' => 'Kurikulum', 'icon' => 'fas fa-book', 'href' => 'admin-kurikulum.php'],
+    ['label' => 'Galeri', 'icon' => 'fas fa-images', 'href' => 'admin-galeri.php'],
+    ['label' => 'Testimoni', 'icon' => 'fas fa-comments', 'href' => 'admin-testimoni.php'],
+    ['label' => 'Info Biaya', 'icon' => 'fas fa-money-bill-wave', 'href' => 'admin-biaya.php'],
+    ['label' => 'Parenting', 'icon' => 'fas fa-calendar-check', 'href' => 'admin-parenting.php'],
+    ['label' => 'Artikel Blog', 'icon' => 'fas fa-file-alt', 'href' => 'admin-artikel.php'],
+    ['label' => 'Lead Magnet', 'icon' => 'fas fa-bullhorn', 'href' => 'admin-popup.php'],
+    ['label' => 'Media', 'icon' => 'fas fa-folder-open', 'href' => 'admin-media.php'],
+    ['label' => 'Pengaturan', 'icon' => 'fas fa-cog', 'href' => 'admin-pengaturan.php'],
+];
+
+// Data Menu Grid Card Ruang Marketing (AI & Prospek)
+$ruang_marketing_cards = [
+    ['label' => 'Dashboard Mkt', 'icon' => 'fas fa-tachometer-alt', 'href' => 'dashboard-marketing.php'],
+    ['label' => 'Pipeline', 'icon' => 'fas fa-filter', 'href' => 'data-pipeline.php'],
+    ['label' => 'Data Agen', 'icon' => 'fas fa-users', 'href' => 'data-agen.php'],
+    ['label' => 'Pendaftar SPMB', 'icon' => 'fas fa-user-graduate', 'href' => 'admin-spmb.php'],
+    ['label' => 'AI Control Hub', 'icon' => 'fas fa-robot', 'href' => 'admin-ai-hub.php'],
+    ['label' => 'Analisa Persona', 'icon' => 'fas fa-brain', 'href' => 'admin-analisa.php'],
+    ['label' => 'Trend Scout', 'icon' => 'fas fa-chart-line', 'href' => 'admin-trend-scout.php'],
+    ['label' => 'Community Scout', 'icon' => 'fas fa-search-location', 'href' => 'admin-community-scout.php'],
+    ['label' => 'Keyword Explorer', 'icon' => 'fas fa-search-dollar', 'href' => 'admin-kalender.php'],
+    ['label' => 'Artikel SEO AI', 'icon' => 'fas fa-pen-nib', 'href' => 'admin-seo.php'],
+    ['label' => 'Publisher AI', 'icon' => 'fas fa-paper-plane', 'href' => 'admin-publisher.php'],
+    ['label' => 'Sosmed Workflow', 'icon' => 'fas fa-route', 'href' => 'admin-sosmed-workflow.php'],
+];
+
+// Sinkronisasi Sesi & Cek Status Realtime Absensi Hari Ini
+if ($user) {
+    syncLegacySessions($user);
+}
+$today_str = date('Y-m-d');
+$current_ustadz_id = $_SESSION['ustadz_id'] ?? ((!empty($user['ref_id'])) ? (int)$user['ref_id'] : (int)($user['id'] ?? 1));
+
+$res_peg_status = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $current_ustadz_id AND DATE(waktu_absen) = '$today_str' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+$dash_pegawai_status = 'belum_absen';
+if ($res_peg_status) {
+    $num_p = $res_peg_status->num_rows;
+    if ($num_p >= 2) {
+        $dash_pegawai_status = 'selesai';
+    } elseif ($num_p == 1) {
+        $dash_pegawai_status = 'datang';
+    }
+}
+
+$res_meng_status = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $current_ustadz_id AND DATE(waktu_absen) = '$today_str' AND jenis_absen = 'Mengajar' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+$dash_mengajar_status = 'belum_absen';
+if ($res_meng_status) {
+    $num_m = $res_meng_status->num_rows;
+    if ($num_m >= 2) {
+        $dash_mengajar_status = 'selesai';
+    } elseif ($num_m == 1) {
+        $dash_mengajar_status = 'datang';
+    }
+}
+
+// --- Handler Simpan / Update / Hapus Jurnal Mengajar dari Dashboard ---
+$pesan_jurnal_sukses = "";
+if (($_SERVER["REQUEST_METHOD"] ?? "GET") === "POST" && isset($_POST['action']) && $_POST['action'] === 'simpan_jurnal') {
+    $j_id = !empty($_POST['jurnal_id']) ? (int)$_POST['jurnal_id'] : 0;
+    $tanggal = $conn->real_escape_string($_POST['tanggal'] ?? date('Y-m-d'));
+    $kelas = $conn->real_escape_string($_POST['kelas'] ?? '');
+    $mata_pelajaran = $conn->real_escape_string($_POST['mata_pelajaran'] ?? '');
+    $materi = $conn->real_escape_string($_POST['materi'] ?? '');
+    $absensi_notes = $conn->real_escape_string($_POST['absensi_notes'] ?? '');
+
+    if ($j_id > 0) {
+        $sql = "UPDATE jurnal_mengajar SET tanggal='$tanggal', kelas='$kelas', mata_pelajaran='$mata_pelajaran', materi='$materi', absensi='$absensi_notes' WHERE id=$j_id AND ustadz_id=$current_ustadz_id";
+        $conn->query($sql);
+        header("Location: dashboard.php?sukses_jurnal=updated#section-jurnal");
+        exit;
+    } else {
+        $sql = "INSERT INTO jurnal_mengajar (ustadz_id, tanggal, kelas, mata_pelajaran, materi, absensi) VALUES ($current_ustadz_id, '$tanggal', '$kelas', '$mata_pelajaran', '$materi', '$absensi_notes')";
+        $conn->query($sql);
+        header("Location: dashboard.php?sukses_jurnal=created#section-jurnal");
+        exit;
+    }
+}
+
+if (isset($_GET['hapus_jurnal_id'])) {
+    $j_id = (int)$_GET['hapus_jurnal_id'];
+    $conn->query("DELETE FROM jurnal_mengajar WHERE id = $j_id AND ustadz_id = $current_ustadz_id");
+    header("Location: dashboard.php?sukses_jurnal=deleted#section-jurnal");
+    exit;
+}
+
+$edit_jurnal_mode = false;
+$jurnal_edit_data = null;
+if (isset($_GET['edit_jurnal_id'])) {
+    $edit_jurnal_mode = true;
+    $j_id = (int)$_GET['edit_jurnal_id'];
+    $res_edit = $conn->query("SELECT * FROM jurnal_mengajar WHERE id = $j_id AND ustadz_id = $current_ustadz_id");
+    if ($res_edit && $res_edit->num_rows > 0) {
+        $jurnal_edit_data = $res_edit->fetch_assoc();
+    }
+}
+
+if (isset($_GET['sukses_jurnal'])) {
+    if ($_GET['sukses_jurnal'] === 'created') $pesan_jurnal_sukses = "Jurnal mengajar baru berhasil disimpan!";
+    elseif ($_GET['sukses_jurnal'] === 'updated') $pesan_jurnal_sukses = "Jurnal mengajar berhasil diperbarui!";
+    elseif ($_GET['sukses_jurnal'] === 'deleted') $pesan_jurnal_sukses = "Jurnal mengajar berhasil dihapus!";
+}
+
+// Ambil Master Kelas & Mapel untuk Dropdown Form Jurnal
+$daftar_kelas = [];
+$res_kelas = $conn->query("SELECT nama_kelas FROM master_kelas ORDER BY nama_kelas ASC");
+if ($res_kelas && $res_kelas->num_rows > 0) {
+    while($rk = $res_kelas->fetch_assoc()) {
+        $daftar_kelas[] = $rk['nama_kelas'];
+    }
+} else {
+    $daftar_kelas = ['Kelas 7', 'Kelas 8', 'Kelas 9', 'Kelas 10', 'Kelas 11', 'Kelas 12', 'Kelas Rijal', 'Kelas Nisa'];
+}
+
+$daftar_mapel = [];
+$res_mapel = $conn->query("SELECT nama_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
+if ($res_mapel && $res_mapel->num_rows > 0) {
+    while($rm = $res_mapel->fetch_assoc()) {
+        $daftar_mapel[] = $rm['nama_mapel'];
+    }
+} else {
+    $daftar_mapel = ['Tahfidz Al-Qur\'an', 'Aqidah Akhlak', 'Fiqih', 'Hadits', 'Bahasa Arab', 'Matematika', 'Bahasa Indonesia', 'IPA', 'IPS', 'Bahasa Inggris', 'PKn'];
 }
 
 // Urutkan $operational_items sesuai preferensi Custom Drag-and-Drop Pengguna
@@ -388,6 +630,8 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- SortableJS untuk Drag and Drop mirip Launcher Android -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- HTML5 QR Code Scanner untuk Scan Ruang Kelas Jurnal -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .tap-highlight-transparent { -webkit-tap-highlight-color: transparent; }
@@ -451,10 +695,10 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                     <?php endif; ?>
                 </div>
                 <div class="overflow-hidden flex-1">
-                    <h4 class="font-bold text-xs text-white truncate leading-tight"><?= htmlspecialchars($user['nama_lengkap']) ?></h4>
-                    <p class="text-[10px] text-teal-200 truncate mt-0.5">@<?= htmlspecialchars($user['username']) ?></p>
+                    <h4 class="font-bold text-xs text-white truncate leading-tight"><?= htmlspecialchars($user['nama_lengkap'] ?? $_SESSION['app_user_nama'] ?? 'Admin') ?></h4>
+                    <p class="text-[10px] text-teal-200 truncate mt-0.5">@<?= htmlspecialchars($user['username'] ?? $_SESSION['app_username'] ?? 'admin') ?></p>
                     <span class="inline-block px-2 py-0.5 bg-teal-800/80 rounded text-[9px] font-bold text-teal-100 border border-teal-600/50 mt-1 truncate max-w-full">
-                        <?= htmlspecialchars($user['roles']) ?>
+                        <?= htmlspecialchars($user['roles'] ?? $_SESSION['app_user_roles'] ?? 'super_admin') ?>
                     </span>
                 </div>
             </div>
@@ -491,7 +735,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-[10px] font-black uppercase tracking-wider text-teal-200">Simulasi Role</span>
                     <button type="button" onclick="toggleRoleModal()" class="px-2 py-0.5 rounded bg-amber-400 hover:bg-amber-300 text-teal-950 font-bold text-[9px] transition cursor-pointer">
-                        16 Role
+                        18 Role
                     </button>
                 </div>
                 <div class="grid grid-cols-2 gap-1.5 text-[10px]">
@@ -507,8 +751,14 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                     <a href="dashboard.php?toggle_role=santri" class="p-1.5 rounded-lg text-center font-bold transition <?= in_array('santri', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
                         Santri
                     </a>
-                    <a href="dashboard.php?toggle_role=orangtua" class="col-span-2 p-1.5 rounded-lg text-center font-bold transition <?= (in_array('orangtua', $active_views) || in_array('walisantri', $active_views)) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                    <a href="dashboard.php?toggle_role=orangtua" class="p-1.5 rounded-lg text-center font-bold transition <?= (in_array('orangtua', $active_views) || in_array('walisantri', $active_views)) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
                         Orangtua
+                    </a>
+                    <a href="dashboard.php?toggle_role=web" class="p-1.5 rounded-lg text-center font-bold transition <?= in_array('web', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                        Web
+                    </a>
+                    <a href="dashboard.php?toggle_role=marketing" class="col-span-2 p-1.5 rounded-lg text-center font-bold transition <?= in_array('marketing', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
+                        Marketing
                     </a>
                 </div>
             </div>
@@ -583,7 +833,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             <div class="max-w-4xl mx-auto mt-4 pt-3 border-t border-teal-600/60">
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-[10px] font-black uppercase tracking-wider text-teal-100 flex items-center gap-1.5">
-                        <i class="fas fa-sliders text-[9px]"></i> Filter Simulasi Multi-Role (5 Kolom x 4 Baris)
+                        <i class="fas fa-sliders text-[9px]"></i> Filter Simulasi Multi-Role (18 Role)
                     </span>
                     <div class="text-[10px] text-teal-200">
                         Status: <span class="font-extrabold text-white"><?= $is_all_view ? 'Semua Role' : ($is_none_view ? 'Kosong' : count($active_views).' Role Aktif') ?></span>
@@ -730,44 +980,392 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 </div>
             </div>
 
-            <?php if ($show_absensi_buttons): ?>
+            <?php if ($can_see_web): ?>
             <!-- ========================================================= -->
-            <!-- TOMBOL CEPAT ABSENSI PEGAWAI & MENGAJAR (DI BAWAH FRAME)  -->
+            <!-- FRAME KHUSUS 1: RUANG WEB (PENGATURAN WEBSITE)            -->
+            <!-- (Akses: Yayasan, Super Admin, dan Role Web)              -->
             <!-- ========================================================= -->
-            <div class="mt-4 sm:mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <!-- Tombol 1: Absensi Kehadiran / Kepulangan -->
-                <a href="admin-absensi-pegawai.php?tipe=pegawai" class="group relative overflow-hidden bg-gradient-to-br from-[#0b8478] to-[#086a60] hover:from-[#086a60] hover:to-[#054c45] text-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-lg shadow-teal-950/15 border border-teal-400/20 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between">
-                    <div class="flex items-center gap-3.5 sm:gap-4">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-xl sm:text-2xl text-white group-hover:scale-105 transition-transform flex-shrink-0">
-                            <i class="fas fa-fingerprint"></i>
+            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-50 mt-6 sm:mt-7 transition-all duration-200">
+                <!-- HEADER FRAME RUANG WEB -->
+                <div class="flex items-center justify-between mb-5 pb-3 border-b border-teal-100/70">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-base font-black shadow-inner">
+                            <i class="fas fa-globe"></i>
                         </div>
-                        <div class="text-left">
-                            <div class="text-[10px] font-bold text-teal-200 uppercase tracking-wider">Presensi Harian</div>
-                            <h3 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-snug">Absensi Kehadiran / Kepulangan</h3>
-                            <p class="text-[11px] text-teal-100/80 font-medium hidden sm:block mt-0.5">Check-in / Check-out GPS & QR Pegawai</p>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
+                                Ruang Web
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0b8478] border border-teal-200 uppercase tracking-wider">Pengaturan Website</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 font-medium">Kelola landing page, profil lembaga, brosur biaya, dan konten publik</p>
                         </div>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-white/10 group-hover:bg-white/20 flex items-center justify-center text-white/90 group-hover:translate-x-1 transition-all flex-shrink-0 ml-2">
-                        <i class="fas fa-arrow-right text-xs"></i>
-                    </div>
-                </a>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
+                        <i class="fas fa-shield-halved text-[#0b8478]"></i> Role: Yayasan & Web
+                    </span>
+                </div>
 
-                <!-- Tombol 2: Absensi Mulai Mengajar / Mengakhiri Pelajaran -->
-                <a href="admin-absensi-pegawai.php?tipe=mengajar" class="group relative overflow-hidden bg-gradient-to-br from-[#1b5e76] to-[#0e4457] hover:from-[#0e4457] hover:to-[#09303e] text-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-lg shadow-cyan-950/15 border border-cyan-400/20 transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-between">
-                    <div class="flex items-center gap-3.5 sm:gap-4">
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-xl sm:text-2xl text-white group-hover:scale-105 transition-transform flex-shrink-0">
-                            <i class="fas fa-chalkboard-user"></i>
+                <!-- GRID CARD RUANG WEB -->
+                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center">
+                    <?php foreach ($ruang_web_cards as $card): ?>
+                    <div class="flex flex-col items-center group w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <a href="<?= htmlspecialchars($card['href']) ?>" class="flex flex-col items-center w-full focus:outline-none">
+                            <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-gradient-to-br from-[#0b8478] to-[#086a60] group-hover:from-[#086a60] group-hover:to-[#065049] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= htmlspecialchars($card['icon']) ?>"></i>
+                            </div>
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0b8478] transition-colors leading-tight line-clamp-1">
+                                <?= htmlspecialchars($card['label']) ?>
+                            </span>
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($can_see_marketing): ?>
+            <!-- ========================================================= -->
+            <!-- FRAME KHUSUS 2: RUANG MARKETING (AI & PROSPEK SPMB)       -->
+            <!-- (Akses: Yayasan, Super Admin, dan Role Marketing)         -->
+            <!-- ========================================================= -->
+            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-indigo-950/5 border border-indigo-50 mt-6 sm:mt-7 transition-all duration-200">
+                <!-- HEADER FRAME RUANG MARKETING -->
+                <div class="flex items-center justify-between mb-5 pb-3 border-b border-indigo-100/70">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-black shadow-inner">
+                            <i class="fas fa-bullseye"></i>
                         </div>
-                        <div class="text-left">
-                            <div class="text-[10px] font-bold text-cyan-200 uppercase tracking-wider">KBM & Jurnal</div>
-                            <h3 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-snug">Absensi Mulai Mengajar / Mengakhiri Pelajaran</h3>
-                            <p class="text-[11px] text-cyan-100/80 font-medium hidden sm:block mt-0.5">Presensi Pelajaran & Jurnal KBM Santri</p>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
+                                Ruang Marketing
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-indigo-50 text-indigo-600 border border-indigo-200 uppercase tracking-wider">AI & Prospek</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 font-medium">Pusat kendali AI, otomatisasi leads SPMB, analisis pasar, dan sosmed</p>
                         </div>
                     </div>
-                    <div class="w-8 h-8 rounded-full bg-white/10 group-hover:bg-white/20 flex items-center justify-center text-white/90 group-hover:translate-x-1 transition-all flex-shrink-0 ml-2">
-                        <i class="fas fa-arrow-right text-xs"></i>
+                    <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-indigo-800 bg-indigo-50/90 px-3 py-1 rounded-xl border border-indigo-200/80 shadow-xs">
+                        <i class="fas fa-robot text-indigo-600"></i> Role: Yayasan & Marketing
+                    </span>
+                </div>
+
+                <!-- GRID CARD RUANG MARKETING -->
+                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center">
+                    <?php foreach ($ruang_marketing_cards as $card): ?>
+                    <div class="flex flex-col items-center group w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <a href="<?= htmlspecialchars($card['href']) ?>" class="flex flex-col items-center w-full focus:outline-none">
+                            <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-gradient-to-br from-indigo-600 to-indigo-800 group-hover:from-indigo-700 group-hover:to-indigo-900 text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-indigo-900/20 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= htmlspecialchars($card['icon']) ?>"></i>
+                            </div>
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-indigo-600 transition-colors leading-tight line-clamp-1">
+                                <?= htmlspecialchars($card['label']) ?>
+                            </span>
+                        </a>
                     </div>
-                </a>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($show_absensi_pegawai || $show_absensi_mengajar): ?>
+            <!-- ========================================================= -->
+            <!-- TOMBOL CEPAT ABSENSI PEGAWAI & MENGAJAR (LANGSUNG ABSEN)  -->
+            <!-- ========================================================= -->
+            <div class="mt-4 sm:mt-5 grid grid-cols-1 <?= ($show_absensi_pegawai && $show_absensi_mengajar) ? 'sm:grid-cols-2' : '' ?> gap-3 sm:gap-4">
+                <?php if ($show_absensi_pegawai): ?>
+                <!-- Tombol 1: Absensi Kehadiran / Kepulangan Pegawai -->
+                <div class="group relative overflow-hidden bg-gradient-to-br from-[#0b8478] to-[#086a60] text-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-lg shadow-teal-950/15 border border-teal-400/20 transition-all duration-200 hover:shadow-xl flex flex-col justify-between">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3.5 sm:gap-4">
+                            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-xl sm:text-2xl text-white flex-shrink-0">
+                                <i class="fas fa-fingerprint"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-[10px] font-bold text-teal-200 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>Presensi Harian</span>
+                                    <span class="w-2 h-2 rounded-full <?= $dash_pegawai_status === 'selesai' ? 'bg-emerald-300' : ($dash_pegawai_status === 'datang' ? 'bg-amber-300 animate-ping' : 'bg-white/60') ?>"></span>
+                                </div>
+                                <h3 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-snug">
+                                    <?php if ($dash_pegawai_status === 'belum_absen'): ?>
+                                        Absensi Kedatangan (Masuk)
+                                    <?php elseif ($dash_pegawai_status === 'datang'): ?>
+                                        Absensi Kepulangan (Pulang)
+                                    <?php else: ?>
+                                        Absensi Pegawai Selesai ✓
+                                    <?php endif; ?>
+                                </h3>
+                                <p class="text-[11px] text-teal-100/80 font-medium hidden sm:block mt-0.5">
+                                    <?php if ($dash_pegawai_status === 'belum_absen'): ?>
+                                        Langsung catat waktu check-in hadir via GPS
+                                    <?php elseif ($dash_pegawai_status === 'datang'): ?>
+                                        Sudah Masuk. Klik untuk catat waktu pulang
+                                    <?php else: ?>
+                                        Kehadiran & kepulangan hari ini telah tuntas
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </div>
+                        <a href="admin-absensi-pegawai.php?tipe=pegawai" title="Buka Halaman Lengkap Rekap & Jurnal" class="p-2 rounded-xl bg-white/10 hover:bg-white/25 text-teal-100 hover:text-white transition flex items-center justify-center flex-shrink-0" onclick="event.stopPropagation();">
+                            <i class="fas fa-arrow-up-right-from-square text-xs"></i>
+                        </a>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-[11px] text-teal-200/90 font-medium">
+                            Status: <strong class="text-white"><?= $dash_pegawai_status === 'selesai' ? 'Lengkap (Pulang)' : ($dash_pegawai_status === 'datang' ? 'Sudah Masuk' : 'Belum Absen') ?></strong>
+                        </span>
+                        <button type="button" 
+                                id="btn-dash-absen-pegawai" 
+                                onclick="doDirectAbsensi('Pegawai', this)" 
+                                <?= $dash_pegawai_status === 'selesai' ? 'disabled' : '' ?>
+                                class="py-2 px-4 rounded-xl font-black text-xs transition-all duration-200 flex items-center gap-2 <?= $dash_pegawai_status === 'selesai' ? 'bg-white/20 text-white/70 cursor-not-allowed' : ($dash_pegawai_status === 'datang' ? 'bg-amber-400 hover:bg-amber-300 text-teal-950 shadow-md active:scale-95' : 'bg-white hover:bg-teal-50 text-[#086a60] shadow-md active:scale-95') ?>">
+                            <i class="fas <?= $dash_pegawai_status === 'selesai' ? 'fa-check' : ($dash_pegawai_status === 'datang' ? 'fa-sign-out-alt' : 'fa-location-dot') ?>"></i>
+                            <span><?= $dash_pegawai_status === 'selesai' ? 'Tuntas' : ($dash_pegawai_status === 'datang' ? 'Klik Absen Pulang' : 'Klik Absen Masuk') ?></span>
+                        </button>
+                    </div>
+                </div>
+                <?php endif; ?>
+
+                <?php if ($show_absensi_mengajar): ?>
+                <!-- Tombol 2: Absensi Mulai Mengajar / Selesai KBM -->
+                <div class="group relative overflow-hidden bg-gradient-to-br from-[#1b5e76] to-[#0e4457] text-white p-4 sm:p-5 rounded-2xl sm:rounded-3xl shadow-lg shadow-cyan-950/15 border border-cyan-400/20 transition-all duration-200 hover:shadow-xl flex flex-col justify-between">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-center gap-3.5 sm:gap-4">
+                            <div class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex items-center justify-center text-xl sm:text-2xl text-white flex-shrink-0">
+                                <i class="fas fa-chalkboard-user"></i>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-[10px] font-bold text-cyan-200 uppercase tracking-wider flex items-center gap-1.5">
+                                    <span>KBM & Jurnal</span>
+                                    <span class="w-2 h-2 rounded-full <?= $dash_mengajar_status === 'selesai' ? 'bg-emerald-300' : ($dash_mengajar_status === 'datang' ? 'bg-cyan-300 animate-ping' : 'bg-white/60') ?>"></span>
+                                </div>
+                                <h3 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-snug">
+                                    <?php if ($dash_mengajar_status === 'belum_absen'): ?>
+                                        Mulai Mengajar (Masuk KBM)
+                                    <?php elseif ($dash_mengajar_status === 'datang'): ?>
+                                        Selesai Mengajar (Akhiri KBM)
+                                    <?php else: ?>
+                                        Absensi Mengajar Selesai ✓
+                                    <?php endif; ?>
+                                </h3>
+                                <p class="text-[11px] text-cyan-100/80 font-medium hidden sm:block mt-0.5">
+                                    <?php if ($dash_mengajar_status === 'belum_absen'): ?>
+                                        Langsung catat waktu mulai pelajaran via GPS
+                                    <?php elseif ($dash_mengajar_status === 'datang'): ?>
+                                        Sedang KBM. Klik untuk akhiri jam mengajar
+                                    <?php else: ?>
+                                        Selesai seluruh jam mengajar hari ini
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+                        </div>
+                        <a href="admin-absensi-pegawai.php?tipe=mengajar" title="Buka Halaman Lengkap Rekap & Jurnal" class="p-2 rounded-xl bg-white/10 hover:bg-white/25 text-cyan-100 hover:text-white transition flex items-center justify-center flex-shrink-0" onclick="event.stopPropagation();">
+                            <i class="fas fa-arrow-up-right-from-square text-xs"></i>
+                        </a>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                        <span class="text-[11px] text-cyan-200/90 font-medium">
+                            Status: <strong class="text-white"><?= $dash_mengajar_status === 'selesai' ? 'Selesai Mengajar' : ($dash_mengajar_status === 'datang' ? 'Sedang KBM' : 'Belum Mulai') ?></strong>
+                        </span>
+                        <button type="button" 
+                                id="btn-dash-absen-mengajar" 
+                                onclick="doDirectAbsensi('Mengajar', this)" 
+                                <?= $dash_mengajar_status === 'selesai' ? 'disabled' : '' ?>
+                                class="py-2 px-4 rounded-xl font-black text-xs transition-all duration-200 flex items-center gap-2 <?= $dash_mengajar_status === 'selesai' ? 'bg-white/20 text-white/70 cursor-not-allowed' : ($dash_mengajar_status === 'datang' ? 'bg-cyan-300 hover:bg-cyan-200 text-cyan-950 shadow-md active:scale-95' : 'bg-white hover:bg-cyan-50 text-[#0e4457] shadow-md active:scale-95') ?>">
+                            <i class="fas <?= $dash_mengajar_status === 'selesai' ? 'fa-check' : ($dash_mengajar_status === 'datang' ? 'fa-door-closed' : 'fa-location-dot') ?>"></i>
+                            <span><?= $dash_mengajar_status === 'selesai' ? 'Tuntas' : ($dash_mengajar_status === 'datang' ? 'Selesai Mengajar' : 'Mulai Mengajar') ?></span>
+                        </button>
+                    </div>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($show_jurnal_mengajar): ?>
+            <!-- ========================================================= -->
+            <!-- SECTION JURNAL MENGAJAR (DI BAWAH TOMBOL ABSENSI)         -->
+            <!-- ========================================================= -->
+            <div id="section-jurnal" class="mt-5 sm:mt-6 space-y-5 text-left">
+                
+                <?php if (!empty($pesan_jurnal_sukses)): ?>
+                <!-- Notifikasi Pesan Sukses Jurnal -->
+                <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-2xl shadow-sm flex items-center gap-2.5 text-xs">
+                    <i class="fas fa-check-circle text-emerald-600 text-base flex-shrink-0"></i>
+                    <span class="font-medium"><?= htmlspecialchars($pesan_jurnal_sukses) ?></span>
+                </div>
+                <?php endif; ?>
+
+                <!-- KARTU 1: FORM INPUT / EDIT JURNAL MENGAJAR -->
+                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 sm:p-6 transition-all hover:shadow-md">
+                    <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-2xl bg-cyan-50 text-cyan-700 flex items-center justify-center text-sm font-bold shadow-inner">
+                                <i class="fas <?= $edit_jurnal_mode ? 'fa-edit' : 'fa-pen-to-square' ?>"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-black text-slate-800 text-sm tracking-tight">
+                                    <?= $edit_jurnal_mode ? 'Edit Jurnal Mengajar' : 'Form Jurnal Mengajar KBM' ?>
+                                </h3>
+                                <p class="text-[11px] text-slate-500 font-medium">
+                                    <?= $edit_jurnal_mode ? 'Perbarui data jurnal pembelajaran yang dipilih' : 'Catat jurnal pelajaran, materi pokok, dan kehadiran santri hari ini' ?>
+                                </p>
+                            </div>
+                        </div>
+                        <?php if ($edit_jurnal_mode): ?>
+                            <a href="dashboard.php#section-jurnal" class="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1 bg-rose-50 px-3 py-1.5 rounded-xl transition hover:bg-rose-100">
+                                <i class="fas fa-times"></i> Batal Edit
+                            </a>
+                        <?php endif; ?>
+                    </div>
+
+                    <form action="dashboard.php#section-jurnal" method="POST" class="space-y-4">
+                        <input type="hidden" name="action" value="simpan_jurnal">
+                        <input type="hidden" name="jurnal_id" value="<?= $edit_jurnal_mode ? (int)$jurnal_edit_data['id'] : '' ?>">
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">Tanggal KBM</label>
+                                <input type="date" name="tanggal" value="<?= $edit_jurnal_mode ? htmlspecialchars($jurnal_edit_data['tanggal']) : date('Y-m-d') ?>" required class="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">Kelas / Rombel</label>
+                                <div class="flex gap-1.5">
+                                    <select name="kelas" id="input-kelas-jurnal" required class="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition">
+                                        <option value="">-- Pilih Kelas --</option>
+                                        <?php
+                                        $kelas_tersimpan = $edit_jurnal_mode ? $jurnal_edit_data['kelas'] : '';
+                                        $ada_di_list = false;
+                                        foreach ($daftar_kelas as $nama_kelas) {
+                                            $sel = ($kelas_tersimpan == $nama_kelas) ? 'selected' : '';
+                                            if ($sel) $ada_di_list = true;
+                                            echo "<option value=\"".htmlspecialchars($nama_kelas)."\" $sel>".htmlspecialchars($nama_kelas)."</option>";
+                                        }
+                                        if ($edit_jurnal_mode && !$ada_di_list && !empty($kelas_tersimpan)) {
+                                            echo "<option value=\"".htmlspecialchars($kelas_tersimpan)."\" selected>".htmlspecialchars($kelas_tersimpan)." (Data Lama)</option>";
+                                        }
+                                        ?>
+                                    </select>
+                                    <button type="button" onclick="bukaScannerKelas()" class="bg-cyan-50 text-cyan-700 hover:bg-cyan-100 px-3 py-2.5 rounded-xl border border-cyan-200 transition flex items-center justify-center flex-shrink-0" title="Scan QR Stiker Kelas">
+                                        <i class="fas fa-qrcode text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">Mata Pelajaran</label>
+                                <select name="mata_pelajaran" required class="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition">
+                                    <option value="">-- Pilih Mata Pelajaran --</option>
+                                    <?php
+                                    $mapel_tersimpan = $edit_jurnal_mode ? $jurnal_edit_data['mata_pelajaran'] : '';
+                                    $mapel_ada = false;
+                                    foreach ($daftar_mapel as $nama_mapel) {
+                                        $sel = ($mapel_tersimpan == $nama_mapel) ? 'selected' : '';
+                                        if ($sel) $mapel_ada = true;
+                                        echo "<option value=\"".htmlspecialchars($nama_mapel)."\" $sel>".htmlspecialchars($nama_mapel)."</option>";
+                                    }
+                                    if ($edit_jurnal_mode && !$mapel_ada && !empty($mapel_tersimpan)) {
+                                        echo "<option value=\"".htmlspecialchars($mapel_tersimpan)."\" selected>".htmlspecialchars($mapel_tersimpan)." (Data Lama)</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">Materi / Bahasan Pembelajaran</label>
+                                <textarea name="materi" rows="3" required class="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition" placeholder="Ringkasan materi atau capaian KBM hari ini..."><?= $edit_jurnal_mode ? htmlspecialchars($jurnal_edit_data['materi']) : '' ?></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">Catatan Absensi Santri / Kendala</label>
+                                <textarea name="absensi_notes" rows="3" class="w-full px-3.5 py-2.5 bg-slate-50/80 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 focus:bg-white focus:ring-2 focus:ring-cyan-500 focus:outline-none transition" placeholder="Contoh: Ahmad (Sakit), Faris (Izin), kondisi kelas tertib kondusif..."><?= $edit_jurnal_mode ? htmlspecialchars($jurnal_edit_data['absensi']) : '' ?></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2.5 pt-1">
+                            <?php if ($edit_jurnal_mode): ?>
+                                <a href="dashboard.php#section-jurnal" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs transition">
+                                    Batal
+                                </a>
+                            <?php endif; ?>
+                            <button type="submit" class="bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700 text-white font-black px-5 py-2.5 rounded-xl text-xs shadow-md shadow-teal-900/10 hover:shadow-lg transition flex items-center gap-2 active:scale-95">
+                                <i class="fas fa-floppy-disk"></i>
+                                <span><?= $edit_jurnal_mode ? 'Simpan Perubahan' : 'Simpan Jurnal KBM' ?></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- KARTU 2: TABEL RIWAYAT JURNAL MENGAJAR -->
+                <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 sm:p-6 transition-all hover:shadow-md">
+                    <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-sm font-bold shadow-inner">
+                                <i class="fas fa-clock-rotate-left"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-black text-slate-800 text-sm tracking-tight">Riwayat Jurnal Mengajar</h3>
+                                <p class="text-[11px] text-slate-500 font-medium">Daftar jurnal KBM yang pernah Anda inputkan sebelumnya</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-2xl border border-slate-100">
+                        <table class="min-w-full divide-y divide-slate-100 text-xs">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 font-bold">
+                                    <th class="px-3.5 py-3 text-left">Tanggal</th>
+                                    <th class="px-3.5 py-3 text-left">Kelas & Mapel</th>
+                                    <th class="px-3.5 py-3 text-left">Materi KBM</th>
+                                    <th class="px-3.5 py-3 text-left">Absensi / Catatan</th>
+                                    <th class="px-3.5 py-3 text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white">
+                                <?php
+                                $res_jurnal = $conn->query("SELECT * FROM jurnal_mengajar WHERE ustadz_id = $current_ustadz_id ORDER BY tanggal DESC, id DESC LIMIT 15");
+                                if ($res_jurnal && $res_jurnal->num_rows > 0):
+                                    while ($rj = $res_jurnal->fetch_assoc()):
+                                ?>
+                                <tr class="hover:bg-slate-50/70 transition">
+                                    <td class="px-3.5 py-3 text-slate-700 font-medium whitespace-nowrap">
+                                        <?= date('d M Y', strtotime($rj['tanggal'])) ?>
+                                    </td>
+                                    <td class="px-3.5 py-3">
+                                        <span class="font-bold text-teal-800 block"><?= htmlspecialchars($rj['kelas']) ?></span>
+                                        <span class="text-slate-500 text-[10px] font-semibold"><?= htmlspecialchars($rj['mata_pelajaran']) ?></span>
+                                    </td>
+                                    <td class="px-3.5 py-3 text-slate-600 font-medium max-w-xs truncate" title="<?= htmlspecialchars($rj['materi']) ?>">
+                                        <?= htmlspecialchars($rj['materi']) ?>
+                                    </td>
+                                    <td class="px-3.5 py-3 text-slate-600 font-medium max-w-xs truncate" title="<?= htmlspecialchars($rj['absensi'] ?? '') ?>">
+                                        <?= empty($rj['absensi']) ? '<span class="text-slate-400 italic">Nihil</span>' : htmlspecialchars($rj['absensi']) ?>
+                                    </td>
+                                    <td class="px-3.5 py-3 text-center whitespace-nowrap">
+                                        <a href="dashboard.php?edit_jurnal_id=<?= $rj['id'] ?>#section-jurnal" class="text-blue-600 hover:text-blue-800 p-1.5 inline-block transition" title="Edit Jurnal">
+                                            <i class="fas fa-edit text-xs"></i>
+                                        </a>
+                                        <a href="dashboard.php?hapus_jurnal_id=<?= $rj['id'] ?>#section-jurnal" onclick="return confirm('Hapus jurnal mengajar ini?')" class="text-rose-600 hover:text-rose-800 p-1.5 inline-block transition" title="Hapus Jurnal">
+                                            <i class="fas fa-trash text-xs"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php
+                                    endwhile;
+                                else:
+                                ?>
+                                <tr>
+                                    <td colspan="5" class="px-4 py-8 text-center text-slate-400 italic">
+                                        Belum ada riwayat jurnal mengajar yang tersimpan.
+                                    </td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
             <?php endif; ?>
 
@@ -828,13 +1426,13 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                     <?php if (!empty($user['foto_profil'])): ?>
                         <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Avatar" class="w-full h-full object-cover">
                     <?php else: ?>
-                        <?= strtoupper(substr($user['nama_lengkap'], 0, 1)) ?>
+                        <?= strtoupper(substr($user['nama_lengkap'] ?? $_SESSION['app_user_nama'] ?? 'A', 0, 1)) ?>
                     <?php endif; ?>
                 </div>
-                <h3 class="font-black text-base text-slate-900 leading-tight"><?= htmlspecialchars($user['nama_lengkap']) ?></h3>
-                <p class="text-xs text-slate-400 mt-0.5">@<?= htmlspecialchars($user['username']) ?></p>
+                <h3 class="font-black text-base text-slate-900 leading-tight"><?= htmlspecialchars($user['nama_lengkap'] ?? $_SESSION['app_user_nama'] ?? 'Admin') ?></h3>
+                <p class="text-xs text-slate-400 mt-0.5">@<?= htmlspecialchars($user['username'] ?? $_SESSION['app_username'] ?? 'admin') ?></p>
                 <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-black bg-teal-50 text-[#0d8276] border border-teal-200">
-                    <i class="fas fa-id-badge"></i> Role: <?= htmlspecialchars($user['roles']) ?>
+                    <i class="fas fa-id-badge"></i> Role: <?= htmlspecialchars($user['roles'] ?? $_SESSION['app_user_roles'] ?? 'super_admin') ?>
                 </div>
             </div>
 
@@ -864,7 +1462,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             
             <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div>
-                    <h3 class="font-black text-base text-slate-900 leading-tight">Simulasi Multi-Role (16 Role)</h3>
+                    <h3 class="font-black text-base text-slate-900 leading-tight">Simulasi Multi-Role (18 Role)</h3>
                     <p class="text-[11px] text-slate-500 mt-0.5">Pilih kombinasi role yang ingin diuji coba</p>
                 </div>
                 <button type="button" onclick="toggleRoleModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
@@ -1001,6 +1599,181 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 });
             };
         });
+
+        // =========================================================
+        // DIRECT ATTENDANCE HANDLER (LANGSUNG DARI DASHBOARD)
+        // =========================================================
+        function showDashAbsenModal(title, message, type = 'info', autoReload = false) {
+            const modal = document.getElementById('dash-absen-modal');
+            const iconContainer = document.getElementById('dash-modal-icon');
+            const titleEl = document.getElementById('dash-modal-title');
+            const msgEl = document.getElementById('dash-modal-message');
+            const btn = document.getElementById('dash-modal-btn');
+            if (!modal) return;
+
+            titleEl.innerText = title;
+            msgEl.innerHTML = message;
+
+            if (type === 'loading') {
+                iconContainer.className = "w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl bg-teal-50 text-teal-600";
+                iconContainer.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                btn.classList.add('hidden');
+            } else if (type === 'success') {
+                iconContainer.className = "w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl bg-emerald-50 text-emerald-600 animate-bounce";
+                iconContainer.innerHTML = '<i class="fas fa-check-circle"></i>';
+                btn.className = "w-full py-2.5 px-4 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-md";
+                btn.classList.remove('hidden');
+                if (autoReload) {
+                    setTimeout(() => window.location.reload(), 2500);
+                }
+            } else if (type === 'rejected') {
+                iconContainer.className = "w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl bg-amber-50 text-amber-600";
+                iconContainer.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                btn.className = "w-full py-2.5 px-4 rounded-xl font-bold text-xs text-white bg-amber-600 hover:bg-amber-700 transition shadow-md";
+                btn.classList.remove('hidden');
+            } else { // error
+                iconContainer.className = "w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl bg-rose-50 text-rose-600";
+                iconContainer.innerHTML = '<i class="fas fa-circle-exclamation"></i>';
+                btn.className = "w-full py-2.5 px-4 rounded-xl font-bold text-xs text-white bg-rose-600 hover:bg-rose-700 transition shadow-md";
+                btn.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeDashAbsenModal() {
+            const modal = document.getElementById('dash-absen-modal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function doDirectAbsensi(jenisAbsen, btnElement) {
+            if (btnElement && btnElement.hasAttribute('disabled')) return;
+
+            showDashAbsenModal('Mendeteksi Lokasi GPS', 'Mohon izinkan akses lokasi perangkat untuk verifikasi radius absensi...', 'loading');
+
+            if (!navigator.geolocation) {
+                showDashAbsenModal('GPS Tidak Didukung', 'Browser perangkat ini tidak mendukung fitur deteksi lokasi.', 'error');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
+
+                    showDashAbsenModal('Menyimpan Absensi...', `Koordinat terdeteksi (${userLat.toFixed(4)}, ${userLon.toFixed(4)}). Sedang mencatat ke database...`, 'loading');
+
+                    const fd = new FormData();
+                    fd.append('user_lat', userLat);
+                    fd.append('user_lon', userLon);
+                    fd.append('jenis_absen', jenisAbsen);
+
+                    fetch('proses-absen.php', {
+                        method: 'POST',
+                        body: fd
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            const warnNote = data.warning_msg ? `<div class="mt-2 text-amber-600 bg-amber-50 p-2 rounded-lg text-xs font-semibold">${data.warning_msg}</div>` : '';
+                            showDashAbsenModal('🎉 Absensi Berhasil!', `<span class="font-bold text-slate-800">${data.message}</span>${warnNote}<div class="mt-2 text-[11px] text-slate-400">Halaman akan otomatis dimuat ulang...</div>`, 'success', true);
+                        } else if (data.status === 'rejected') {
+                            showDashAbsenModal('⚠️ Di Luar Jangkauan', data.message, 'rejected');
+                        } else {
+                            showDashAbsenModal('Gagal Absensi', data.message || 'Terjadi kendala saat memproses absensi.', 'error');
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Absensi Error:', err);
+                        showDashAbsenModal('Kesalahan Server', 'Gagal menghubungi server absensi. Periksa koneksi internet Anda.', 'error');
+                    });
+                },
+                (err) => {
+                    let msg = 'Pastikan GPS perangkat Anda telah AKTIF dan berikan izin akses lokasi pada peramban web ini.';
+                    if (err.code === err.PERMISSION_DENIED) {
+                        msg = 'Akses GPS ditolak. Silakan aktifkan izin lokasi di ikon gembok sebelah URL browser Anda.';
+                    } else if (err.code === err.TIMEOUT) {
+                        msg = 'Waktu permintaan sinyal GPS habis. Silakan coba klik sekali lagi.';
+                    }
+                    showDashAbsenModal('Akses GPS Dibutuhkan', msg, 'error');
+                },
+                { enableHighAccuracy: true, timeout: 9000, maximumAge: 0 }
+            );
+        }
+
+        // ==========================================
+        // SCANNER QR RUANG KELAS JURNAL
+        // ==========================================
+        let html5QrcodeScannerJurnal = null;
+
+        window.bukaScannerKelas = function() {
+            const modal = document.getElementById('qr-modal-jurnal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            html5QrcodeScannerJurnal = new Html5QrcodeScanner(
+                "reader-jurnal", { fps: 10, qrbox: {width: 250, height: 250} }, false
+            );
+            html5QrcodeScannerJurnal.render(onScanSuccessJurnal);
+        };
+
+        window.tutupScannerKelas = function() {
+            const modal = document.getElementById('qr-modal-jurnal');
+            if (modal) modal.classList.add('hidden');
+            if (html5QrcodeScannerJurnal) {
+                html5QrcodeScannerJurnal.clear().catch(error => console.error("Gagal mematikan scanner.", error));
+            }
+        };
+
+        function onScanSuccessJurnal(decodedText, decodedResult) {
+            const selectKelas = document.getElementById('input-kelas-jurnal');
+            if (!selectKelas) return;
+            let found = false;
+            
+            for (let i = 0; i < selectKelas.options.length; i++) {
+                if (selectKelas.options[i].value === decodedText) {
+                    selectKelas.selectedIndex = i;
+                    found = true; break;
+                }
+            }
+            tutupScannerKelas();
+            if (found) {
+                alert("Berhasil! Kamera mendeteksi Anda berada di kelas " + decodedText);
+            } else {
+                alert("QR Code (" + decodedText + ") tidak dikenali oleh sistem kelas. Pastikan Anda men-scan QR yang benar.");
+            }
+        }
     </script>
+
+    <!-- MODAL POPUP FEEDBACK ABSENSI LANGSUNG -->
+    <div id="dash-absen-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center transform transition-all border border-slate-100">
+            <div id="dash-modal-icon" class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl bg-teal-50 text-teal-600">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <h3 id="dash-modal-title" class="text-base sm:text-lg font-black text-slate-800 mb-2">Memproses Absensi</h3>
+            <div id="dash-modal-message" class="text-xs sm:text-sm text-slate-600 leading-relaxed mb-5">
+                Sedang mendeteksi koordinat GPS...
+            </div>
+            <button id="dash-modal-btn" onclick="closeDashAbsenModal()" class="w-full py-2.5 px-4 rounded-xl font-bold text-xs text-white bg-teal-600 hover:bg-teal-700 transition shadow-md">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL SCANNER QR RUANG KELAS -->
+    <div id="qr-modal-jurnal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-100">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fas fa-qrcode text-emerald-600"></i> Scan QR Ruang Kelas
+                </h3>
+                <button type="button" onclick="tutupScannerKelas()" class="w-7 h-7 rounded-full bg-slate-200/60 hover:bg-rose-100 hover:text-rose-600 transition flex items-center justify-center text-slate-600 font-bold">&times;</button>
+            </div>
+            <div class="p-6 text-center">
+                <p class="text-xs text-slate-500 mb-4">Arahkan kamera ke stiker QR Code yang tertempel di dinding kelas.</p>
+                <div id="reader-jurnal" class="w-full bg-black rounded-2xl overflow-hidden min-h-[280px] shadow-inner"></div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

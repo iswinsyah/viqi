@@ -142,6 +142,8 @@ if ($conn) {
     }
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_kepsek', 'kepala_sekolah,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('supervisi_mengajar', 'kepala_sekolah,kepala_mahad,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_admin_sekolah', 'admin_sekolah')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('salary_admin', 'admin_sekolah')");
 }
 
 // Load custom menu labels from database
@@ -200,8 +202,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
     href VARCHAR(255) NOT NULL
 )");
 
-// Pembersihan paksa untuk penggabungan menu KPI, Akunku, Jurnal Mengajar & Santri Tidak Masuk
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal_mengajar', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+// Pembersihan paksa untuk penggabungan menu KPI, Akunku, Jurnal Mengajar, Santri Tidak Masuk & Duplikat E-Modul/Hafalan
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
+$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'hafalan')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan')");
 
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
@@ -317,9 +321,13 @@ if ($res_db_struct) {
             'counseling_karir' => 'Pemetaan Karir & PTN (AI)',
             'rekap_keuangan' => 'Rekap Pembayaran Keuangan',
             'penagihan_spp' => 'Penagihan SPP',
-            'rekap_uang_saku' => 'Rekap Data Uang Saku',
+            'yayasan_saku' => 'Validasi Uang Saku',
+            'uangsaku' => 'Saldo Uang Saku Santri',
+            'rekap_uang_saku' => 'Validasi Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
             'kontrol_jam_kosong' => 'Kontrol Jam Kosong',
+            'kpi_admin_sekolah' => 'KPI Admin Sekolah',
+            'salary_admin' => 'Salary Admin Sekolah',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',
             'kalender_akademik' => 'Kalender Akademik',
             'jadwal_pelajaran' => 'Jadwal Pelajaran',
@@ -331,7 +339,9 @@ if ($res_db_struct) {
             'kitab_rujukan' => 'Master Kitab Rujukan',
             'dashboard_asrama' => 'Dashboard Asrama',
             'manajemen_halaqoh' => 'Manajemen Halaqoh',
-            'rekap_ibadah_santri' => 'Rekap Ibadah Santri',
+            'yayasan_ibadah' => 'Rekap Ibadah Yayasan',
+            'rekap_ibadah_santri' => 'Rekap Ibadah Asrama',
+            'ibadah' => 'Validasi Ibadah Santri',
             'setoran_hafalan_santri' => 'Setoran Hafalan Santri',
             'rekap_setoran_santri' => 'Rekap Setoran Santri',
             'validasi_ibadah_musyrif' => 'Validasi Ibadah',
@@ -375,59 +385,183 @@ foreach ($menu_structure as $group_title => &$menus) {
 }
 unset($menu); // Bersihkan referensi
 
-?>
-<!-- SIDEBAR OVERLAY -->
-<div id="sidebar-overlay-hr" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 hidden md:hidden transition-opacity"></div>
+// Data Pengguna untuk Kartu Profil Sidebar
+$u_nama = $_SESSION['app_user_nama'] ?? ($_SESSION['ustadz_nama'] ?? ($_SESSION['nama_lengkap'] ?? ($_SESSION['nama'] ?? 'Asatidz')));
+$u_user = $_SESSION['app_username'] ?? ($_SESSION['ustadz_username'] ?? ($_SESSION['username'] ?? 'asatidz'));
+$u_role = $_SESSION['app_user_roles'] ?? ($_SESSION['ustadz_role'] ?? ($_SESSION['role'] ?? 'Asatidz'));
+$u_foto = $_SESSION['foto_profil'] ?? '';
 
-<!-- SIDEBAR KHUSUS KEPEGAWAIAN & AI HRD -->
-<aside id="sidebar-hr" class="bg-slate-800 text-white w-64 flex-shrink-0 hidden flex md:flex flex-col z-30 transition-all duration-300 absolute md:relative h-full shadow-2xl">
-    <div class="h-16 flex items-center justify-between px-6 border-b border-slate-700 bg-slate-900">
-        <h1 class="font-extrabold text-lg tracking-wider flex items-center text-cyan-400">
-            <i class="fas fa-users-cog mr-2"></i> RUANG ASATIDZ
-        </h1>
-        <button id="close-sidebar-hr" class="md:hidden text-slate-200 hover:text-white focus:outline-none">
-            <i class="fas fa-times text-xl"></i>
+if (empty($u_foto) && isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
+    $uid = (int)$_SESSION['ustadz_id'];
+    $res_pic = @$conn->query("SELECT foto FROM akun_ustadz WHERE id = $uid LIMIT 1");
+    if ($res_pic && $res_pic->num_rows > 0) {
+        $u_foto = $res_pic->fetch_assoc()['foto'] ?? '';
+    }
+}
+
+$curr_file = basename($_SERVER['PHP_SELF']);
+?>
+<!-- SIDEBAR OVERLAY UNTUK MOBILE -->
+<div id="sidebar-overlay-hr" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden md:hidden transition-opacity"></div>
+
+<!-- SIDEBAR RUANG ASATIDZ (#0b8478 TEAL THEME - SAMA DENGAN DASHBOARD) -->
+<aside id="sidebar-hr" class="bg-[#0b8478] text-white w-64 lg:w-72 flex-shrink-0 hidden md:flex flex-col z-50 transition-all duration-300 fixed md:sticky top-0 h-screen shadow-2xl border-r border-teal-700/50 left-0">
+    
+    <!-- SIDEBAR HEADER: BRAND LOGO SADIGS -->
+    <div class="p-6 border-b border-teal-700/60 flex items-center justify-between bg-teal-900/40 flex-shrink-0">
+        <a href="dashboard.php" class="flex items-center space-x-3.5 group">
+            <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
+                <svg viewBox="0 0 100 100" class="w-full h-full">
+                    <circle cx="50" cy="46" r="10" fill="#f59e0b" />
+                    <path d="M50 14 C47 24, 47 28, 50 32 C53 28, 53 24, 50 14 Z" fill="#10b981" />
+                    <path d="M68 20 C61 28, 59 32, 60 36 C64 33, 68 31, 74 24 Z" fill="#10b981" />
+                    <path d="M80 36 C71 40, 68 43, 67 48 C72 47, 76 46, 84 41 Z" fill="#10b981" />
+                    <path d="M32 20 C39 28, 41 32, 40 36 C36 33, 32 31, 26 24 Z" fill="#10b981" />
+                    <path d="M20 36 C29 40, 32 43, 33 48 C28 47, 24 46, 16 41 Z" fill="#10b981" />
+                    <path d="M30 62 C42 56, 48 60, 50 66 C52 60, 58 56, 70 62 C68 70, 52 74, 50 74 C48 74, 32 70, 30 62 Z" fill="#f59e0b" />
+                    <path d="M22 68 C36 58, 48 64, 50 72 C52 64, 64 58, 78 68 C75 80, 52 86, 50 86 C48 86, 25 80, 22 68 Z" fill="#0b8478" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
+                <p class="text-[11px] text-teal-100 font-light italic tracking-tight mt-0.5">Sistem Administrasi Digital</p>
+            </div>
+        </a>
+        <button id="close-sidebar-hr" class="md:hidden text-teal-200 hover:text-white p-1 rounded-lg focus:outline-none">
+            <i class="fas fa-times text-lg"></i>
         </button>
     </div>
 
-    <div class="flex-1 overflow-y-auto py-4">
-        <nav class="px-4 space-y-1">
-            <?php foreach ($menu_structure as $group_title => $menus): ?>
-                <?php
-                    // Cek apakah ada setidaknya satu menu dalam grup ini yang bisa diakses
-                    $is_group_visible = false;
-                    foreach ($menus as $key => $menu) {
-                        if (has_access($key, $user_roles, $menu_permissions, $is_super_admin)) {
-                            $is_group_visible = true;
-                            break;
-                        }
-                    }
-                ?>
-                <?php if ($is_group_visible): ?>
-                    <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 mt-6"><?= $group_title ?></p>
-                    <?php foreach ($menus as $key => $menu): ?>
-                        <?php if (has_access($key, $user_roles, $menu_permissions, $is_super_admin)): ?>
-                            <?php
-                                $is_active = (isset($active_menu) && $active_menu == $key);
-                                $class_a = $is_active ? 'bg-slate-700 text-white' : 'text-slate-100 hover:bg-slate-700 hover:text-white';
-                                $class_i = $is_active ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white';
-                            ?>
-                            <a href="<?= $menu['href'] ?>" class="<?= $class_a ?> group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all">
-                                <i class="fas <?= $menu['icon'] ?> w-6 text-center mr-2 <?= $class_i ?>"></i> <?= $menu['title'] ?>
-                            </a>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
+    <!-- SIDEBAR PROFILE CARD -->
+    <div class="px-5 py-4 border-b border-teal-700/40 bg-teal-900/30 flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-base shadow-sm border-2 border-white/80 overflow-hidden flex-shrink-0">
+                <?php if (!empty($u_foto)): ?>
+                    <img src="<?= htmlspecialchars($u_foto) ?>" alt="Avatar" class="w-full h-full object-cover">
+                <?php else: ?>
+                    <i class="fas fa-user text-[#0b8478]"></i>
                 <?php endif; ?>
-            <?php endforeach; ?>
-        </nav>
+            </div>
+            <div class="overflow-hidden flex-1">
+                <h4 class="font-bold text-xs text-white truncate leading-tight"><?= htmlspecialchars($u_nama) ?></h4>
+                <p class="text-[10px] text-teal-200 truncate mt-0.5">@<?= htmlspecialchars($u_user) ?></p>
+                <span class="inline-block px-2 py-0.5 bg-teal-800/80 rounded text-[9px] font-bold text-teal-100 border border-teal-600/50 mt-1 truncate max-w-full">
+                    <?= htmlspecialchars($u_role) ?>
+                </span>
+            </div>
+        </div>
     </div>
 
-    <div class="p-4 border-t border-slate-700">
-        <a href="logout-ustadz.php" class="flex items-center justify-center text-sm font-bold text-white hover:text-white transition-all bg-rose-500 hover:bg-rose-600 px-4 py-2.5 rounded-lg shadow-sm">
-            <i class="fas fa-sign-out-alt mr-2"></i> Keluar
+    <!-- SIDEBAR NAVIGATION LINKS -->
+    <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
+        <!-- 1. MENU UTAMA (SAMA DENGAN DASHBOARD) -->
+        <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'dashboard.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-house w-4 text-center"></i>
+            <span>Beranda</span>
+        </a>
+        <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'kalender-akademik.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-calendar-alt w-4 text-center"></i>
+            <span>Kalender</span>
+        </a>
+        <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-clock w-4 text-center"></i>
+            <span>Jadwal</span>
+        </a>
+        <a href="pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'pengumuman.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-bullhorn w-4 text-center"></i>
+            <span>Info</span>
+        </a>
+
+        <!-- 2. MODUL RUANG ASATIDZ -->
+        <div class="pt-4 mt-3 border-t border-teal-700/60">
+            <div class="flex items-center justify-between px-2 mb-2">
+                <span class="text-[10px] font-black uppercase tracking-wider text-teal-200 flex items-center gap-1.5">
+                    <i class="fas fa-folder-open text-[9px]"></i> Modul Asatidz
+                </span>
+            </div>
+            <div class="space-y-1">
+                <?php foreach ($menu_structure as $group_title => $menus): ?>
+                    <?php
+                        $is_group_visible = false;
+                        foreach ($menus as $key => $menu) {
+                            if (has_access($key, $user_roles, $menu_permissions, $is_super_admin)) {
+                                $is_group_visible = true;
+                                break;
+                            }
+                        }
+                    ?>
+                    <?php if ($is_group_visible): ?>
+                        <p class="px-2 text-[9px] font-black text-teal-300/80 uppercase tracking-wider mt-3 mb-1"><?= htmlspecialchars($group_title) ?></p>
+                        <?php foreach ($menus as $key => $menu): ?>
+                            <?php if (has_access($key, $user_roles, $menu_permissions, $is_super_admin)): ?>
+                                <?php
+                                    $is_active = (isset($active_menu) && $active_menu == $key) || ($curr_file === basename($menu['href']));
+                                    $class_a = $is_active ? 'bg-white text-[#0b8478] font-bold shadow-xs' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-medium';
+                                    $class_i = $is_active ? 'text-[#0b8478]' : 'text-teal-200 group-hover:text-white';
+                                ?>
+                                <a href="<?= htmlspecialchars($menu['href']) ?>" class="<?= $class_a ?> group flex items-center px-3 py-2 text-xs rounded-xl transition-all">
+                                    <i class="fas <?= htmlspecialchars($menu['icon']) ?> w-5 text-center mr-2 <?= $class_i ?>"></i> 
+                                    <span class="truncate"><?= htmlspecialchars($menu['title']) ?></span>
+                                </a>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </nav>
+
+    <!-- SIDEBAR FOOTER: KELUAR -->
+    <div class="p-4 border-t border-teal-700/60 flex-shrink-0">
+        <a href="logout-ustadz.php" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
+            <i class="fas fa-arrow-right-from-bracket"></i> Keluar
         </a>
     </div>
 </aside>
+
+<!-- ========================================================= -->
+<!-- BOTTOM NAVIGATION BAR (HANYA MUNCUL DI MOBILE / md:hidden) -->
+<!-- ========================================================= -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-teal-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-around z-40 max-w-[440px] mx-auto px-2">
+    <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'dashboard.php') ? 'text-[#0b8478] font-black' : 'text-slate-500 hover:text-[#0b8478] font-bold' ?> text-[10px] transition">
+        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'dashboard.php') ? 'bg-teal-50' : '' ?> flex items-center justify-center mb-0.5">
+            <i class="fas fa-house text-base <?= ($curr_file === 'dashboard.php') ? 'text-[#0b8478]' : 'text-slate-500' ?>"></i>
+        </div>
+        <span>Beranda</span>
+    </a>
+    <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'kalender-akademik.php') ? 'text-[#0b8478] font-black' : 'text-slate-500 hover:text-[#0b8478] font-bold' ?> text-[10px] transition">
+        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'kalender-akademik.php') ? 'bg-teal-50' : '' ?> flex items-center justify-center mb-0.5">
+            <i class="fas fa-calendar-alt text-base <?= ($curr_file === 'kalender-akademik.php') ? 'text-[#0b8478]' : 'text-slate-500' ?>"></i>
+        </div>
+        <span>Kalender</span>
+    </a>
+    <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'text-[#0b8478] font-black' : 'text-slate-500 hover:text-[#0b8478] font-bold' ?> text-[10px] transition">
+        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'bg-teal-50' : '' ?> flex items-center justify-center mb-0.5">
+            <i class="fas fa-clock text-base <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'text-[#0b8478]' : 'text-slate-500' ?>"></i>
+        </div>
+        <span>Jadwal</span>
+    </a>
+    <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'pengumuman.php') ? 'text-[#0b8478] font-black' : 'text-slate-500 hover:text-[#0b8478] font-bold' ?> text-[10px] transition">
+        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'pengumuman.php') ? 'bg-teal-50' : '' ?> flex items-center justify-center mb-0.5">
+            <i class="fas fa-bullhorn text-base <?= ($curr_file === 'pengumuman.php') ? 'text-[#0b8478]' : 'text-slate-500' ?>"></i>
+        </div>
+        <span>Info</span>
+    </a>
+    <a href="logout-ustadz.php" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-rose-500 hover:text-rose-700 font-bold text-[10px] transition">
+        <div class="w-9 h-7 rounded-full flex items-center justify-center mb-0.5">
+            <i class="fas fa-arrow-right-from-bracket text-base"></i>
+        </div>
+        <span>Keluar</span>
+    </a>
+</nav>
+
+<style>
+@media (max-width: 767px) {
+    main, .overflow-y-auto {
+        padding-bottom: 5rem !important;
+    }
+}
+</style>
 
 <?php if (isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === true): ?>
 <div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 text-white px-4 py-2 text-xs shadow-2xl flex items-center justify-between border-b border-purple-400">

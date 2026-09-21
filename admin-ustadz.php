@@ -203,7 +203,9 @@ if ($view === 'dashboard_asrama') {
         'musyrif' => 'Musyrif',
         'ustadz' => 'Ustadz',
         'tutor' => 'Tutor',
-        'trainer' => 'Trainer'
+        'trainer' => 'Trainer',
+        'web' => 'Web',
+        'marketing' => 'Marketing'
     ];
 
     // Ambil konten amanah per role dari DB
