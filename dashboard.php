@@ -675,6 +675,24 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 </head>
 <body class="bg-[#dcf3ee] min-h-screen text-slate-800 flex flex-col md:flex-row antialiased selection:bg-[#0b8478] selection:text-white">
 
+    <?php if (isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === true): ?>
+    <div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 text-white px-4 py-2 text-xs shadow-2xl flex items-center justify-between border-b border-purple-400">
+        <div class="flex items-center space-x-2">
+            <span class="animate-pulse text-amber-300 font-extrabold text-sm"><i class="fas fa-user-secret"></i> MODE IMPERSONASI</span>
+            <span class="hidden sm:inline text-purple-200">|</span>
+            <span class="text-purple-100">Anda sedang mengakses sistem sebagai: <strong class="text-amber-200 underline font-bold"><?= htmlspecialchars($user['nama_lengkap'] ?? $_SESSION['ustadz_nama'] ?? '') ?></strong></span>
+            <span class="bg-purple-800 text-purple-200 px-2 py-0.5 rounded text-[10px] font-mono hidden md:inline-block"><?= htmlspecialchars(implode(', ', $roles)) ?></span>
+        </div>
+        <a href="switch-back-admin.php" class="bg-amber-400 hover:bg-amber-300 text-purple-950 font-extrabold px-3.5 py-1 rounded-full text-[11px] shadow transition flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fas fa-undo"></i> Kembali ke Super Admin
+        </a>
+    </div>
+    <style>
+    /* Geser layout sedikit jika banner impersonasi aktif */
+    body { padding-top: 36px !important; }
+    </style>
+    <?php endif; ?>
+
     <!-- ========================================================= -->
     <!-- DESKTOP SIDEBAR (HANYA TAMPIL DI LAYAR PC / TABLET md:)   -->
     <!-- ========================================================= -->
@@ -798,6 +816,17 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
         <!-- 1. TOP HERO TEAL (HEADER + BRANDING + PROFILE)            -->
         <!-- ========================================================= -->
         <div class="bg-[#0b8478] text-white pt-6 pb-20 px-6 relative rounded-b-[28px] md:rounded-b-[36px] shadow-md flex-shrink-0">
+            <?php if (isset($_GET['sukses']) && !empty($_GET['sukses'])): ?>
+            <div class="max-w-4xl mx-auto mb-4">
+                <div class="bg-white/95 text-teal-950 px-4 py-2.5 rounded-2xl shadow-lg flex items-center justify-between text-xs font-bold border border-teal-200">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-circle-check text-emerald-600 text-sm"></i>
+                        <?= htmlspecialchars($_GET['sukses']) ?>
+                    </span>
+                    <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-600 cursor-pointer ml-2"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="max-w-4xl mx-auto flex items-center justify-between">
                 
                 <!-- KIRI: BRAND LOGO SADIGS + SUBTITLE 2 BARIS ITALIC -->

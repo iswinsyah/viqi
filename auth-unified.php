@@ -36,7 +36,7 @@ function getCurrentUser() {
     // 2. Fallback tangguh dari SESSION jika record DB belum sinkron / id 9999
     if (!empty($sessionUsername)) {
         $session_roles = $_SESSION['app_user_roles'] ?? '';
-        if (in_array(strtolower($sessionUsername), ['viqi', 'winsyah'])) {
+        if (empty($_SESSION['is_impersonating']) && in_array(strtolower($sessionUsername), ['viqi', 'winsyah'])) {
             $session_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,kepala_sekolah,tutor,musyrif,ustadz,walisantri,web,marketing';
         }
         return [
@@ -63,7 +63,7 @@ function getUserRoles() {
         return array_map('trim', explode(',', strtolower($_SESSION['app_user_roles'])));
     }
     $uname = strtolower($_SESSION['app_username'] ?? '');
-    if (in_array($uname, ['viqi', 'winsyah'])) {
+    if (empty($_SESSION['is_impersonating']) && in_array($uname, ['viqi', 'winsyah'])) {
         return ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'kepala_sekolah', 'tutor', 'musyrif', 'ustadz', 'walisantri', 'web', 'marketing'];
     }
     return [];
@@ -71,10 +71,17 @@ function getUserRoles() {
 
 function isSuperAdmin() {
     $roles = getUserRoles();
-    $uname = strtolower($_SESSION['app_username'] ?? '');
-    if (in_array('super_admin', $roles) || in_array('ketua_yayasan', $roles)) {
+    if (in_array('super_admin', $roles)) {
         return true;
     }
+    // Jika dalam mode impersonasi (Login As), jangan fallback ke privilege admin
+    if (isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === true) {
+        return false;
+    }
+    if (in_array('ketua_yayasan', $roles)) {
+        return true;
+    }
+    $uname = strtolower($_SESSION['app_username'] ?? '');
     if (in_array($uname, ['viqi', 'winsyah'])) {
         return true;
     }
@@ -145,6 +152,10 @@ function syncLegacySessions($user) {
         if (in_array('super_admin', $roles) || in_array('ketua_yayasan', $roles) || in_array('sekretaris_yayasan', $roles) || in_array('bendahara_yayasan', $roles) || in_array('web', $roles) || in_array('marketing', $roles)) {
             $_SESSION['admin_logged_in'] = true;
             $_SESSION['yayasan2_logged_in'] = true;
+        } else {
+            unset($_SESSION['admin_logged_in']);
+            unset($_SESSION['yayasan_logged_in']);
+            unset($_SESSION['yayasan2_logged_in']);
         }
     }
 
