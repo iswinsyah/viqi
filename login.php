@@ -153,12 +153,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         <!-- BRAND LOGO & TITLE -->
         <div class="text-center mb-8">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#0d8276] to-teal-500 text-white flex items-center justify-center text-2xl mx-auto mb-4 shadow-lg shadow-teal-700/20">
-                <i class="fas fa-cubes-stacked"></i>
-            </div>
+            <a href="index.html" class="inline-block group mb-3">
+                <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center p-2 mx-auto shadow-xl border-2 border-teal-100 group-hover:scale-105 transition-transform duration-300">
+                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Indonesia" class="w-16 h-16 object-contain">
+                </div>
+            </a>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">SADIGS 4.0</h1>
-            <p class="text-xs text-slate-500 mt-1">Sistem Administrasi Digital Sekolah & Pesantren</p>
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold bg-teal-50 text-[#0d8276] border border-teal-200 mt-3">
+            <p class="text-xs text-slate-500 mt-1">Sistem Administrasi Digital • Villa Quran Indonesia</p>
+            <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-extrabold bg-teal-50 text-[#0b8478] border border-teal-200 mt-3 shadow-xs">
                 <i class="fas fa-shield-alt"></i> Satu Pintu Masuk (Universal Member Area)
             </div>
         </div>

@@ -80,7 +80,12 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
     <header class="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
         <div class="max-w-4xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
-            <div class="flex-shrink-0 flex items-center"><a href="index.html" class="font-bold text-xl text-emerald-800 hover:text-emerald-600 transition"><i class="fas fa-leaf mr-2 text-emerald-500"></i>Villa Quran</a></div>
+            <div class="flex-shrink-0 flex items-center">
+                <a href="index.html" class="flex items-center space-x-2.5 font-bold text-xl text-emerald-800 hover:text-emerald-600 transition">
+                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="h-9 w-auto inline-block">
+                    <span>Villa Quran</span>
+                </a>
+            </div>
                 <a href="artikel.php" class="text-gray-500 hover:text-emerald-600 text-sm font-medium"><i class="fas fa-arrow-left mr-1"></i> Kembali ke Blog</a>
             </div>
         </div>

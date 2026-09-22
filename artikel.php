@@ -23,7 +23,10 @@ if ($result && $result->num_rows > 0) {
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-20">
                 <div class="flex-shrink-0 flex items-center">
-                    <a href="index.html" class="font-extrabold text-2xl text-emerald-800 hover:text-emerald-600 transition"><i class="fas fa-leaf mr-2 text-emerald-500"></i>Villa Quran</a>
+                    <a href="index.html" class="flex items-center space-x-2.5 font-extrabold text-2xl text-emerald-800 hover:text-emerald-600 transition">
+                        <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="h-10 w-auto inline-block">
+                        <span class="hidden sm:inline-block">Villa Quran</span>
+                    </a>
                 </div>
                 <nav class="hidden md:flex space-x-6 lg:space-x-8">
                     <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
