@@ -36,6 +36,28 @@ $conn->query("CREATE TABLE IF NOT EXISTS elearning_bab (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
+// Cek kolom video_urls
+$chk_col = $conn->query("SHOW COLUMNS FROM elearning_bab LIKE 'video_urls'");
+if ($chk_col && $chk_col->num_rows == 0) {
+    $conn->query("ALTER TABLE elearning_bab ADD COLUMN video_urls TEXT NULL AFTER video_url");
+}
+
+// Self-healing kolom Capaian Pembelajaran (CP), Fase, Kelas, Semester, dan KKTP
+$cols_elearning = [
+    'tingkat_kelas' => "VARCHAR(30) NULL DEFAULT 'Kelas 7' AFTER mapel_nama",
+    'semester' => "VARCHAR(30) NULL DEFAULT 'Semester 1' AFTER tingkat_kelas",
+    'fase' => "VARCHAR(20) NULL DEFAULT 'Fase D' AFTER semester",
+    'kktp_nilai' => "INT NOT NULL DEFAULT 75 AFTER durasi_menit",
+    'cp_elemen' => "VARCHAR(255) NULL AFTER kktp_nilai",
+    'tujuan_pembelajaran' => "TEXT NULL AFTER cp_elemen"
+];
+foreach ($cols_elearning as $cName => $cDef) {
+    $cCheck = $conn->query("SHOW COLUMNS FROM elearning_bab LIKE '$cName'");
+    if ($cCheck && $cCheck->num_rows == 0) {
+        $conn->query("ALTER TABLE elearning_bab ADD COLUMN $cName $cDef");
+    }
+}
+
 $conn->query("CREATE TABLE IF NOT EXISTS elearning_kuis (
     id INT AUTO_INCREMENT PRIMARY KEY,
     bab_id INT NOT NULL,
@@ -50,10 +72,27 @@ $conn->query("CREATE TABLE IF NOT EXISTS elearning_kuis (
     FOREIGN KEY (bab_id) REFERENCES elearning_bab(id) ON DELETE CASCADE
 )");
 
+// Self-healing Tabel Progress Belajar & Ketuntasan Santri
+$conn->query("CREATE TABLE IF NOT EXISTS santri_belajar_progress (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    santri_id INT NOT NULL,
+    bab_id INT NOT NULL,
+    mapel_nama VARCHAR(100) NOT NULL,
+    status_baca_modul TINYINT(1) DEFAULT 0,
+    status_tonton_video TINYINT(1) DEFAULT 0,
+    skor_kuis INT DEFAULT 0,
+    status_ketuntasan ENUM('belum_selesai', 'tuntas', 'remedial') DEFAULT 'belum_selesai',
+    percobaan_ke INT DEFAULT 0,
+    jawaban_detail LONGTEXT NULL,
+    catatan_ai TEXT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_santri_bab (santri_id, bab_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
 // ==========================================
 // 2. AJAX FAST ACTION HANDLERS
 // ==========================================
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action'])) {
+if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST" && isset($_POST['action'])) {
     if ($_POST['action'] === 'update_single_pdf_url') {
         header('Content-Type: application/json');
         $bab_id = (int)($_POST['bab_id'] ?? 0);
@@ -222,7 +261,7 @@ function formatYoutubeEmbed($url) {
     return $url;
 }
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     if ($action === 'simpan_bab') {
         $bab_id = (int)($_POST['bab_id'] ?? 0);
         $nomor_bab = (int)$_POST['nomor_bab'];
@@ -235,23 +274,33 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $lks_judul = $conn->real_escape_string($_POST['lks_judul']);
         $lks_tugas = $conn->real_escape_string($_POST['lks_tugas']);
 
+        $tingkat_kelas = $conn->real_escape_string($_POST['tingkat_kelas'] ?? 'Kelas 7');
+        $semester = $conn->real_escape_string($_POST['semester'] ?? 'Semester 1');
+        $fase = $conn->real_escape_string($_POST['fase'] ?? 'Fase D');
+        $kktp_nilai = (int)($_POST['kktp_nilai'] ?? 75);
+        if ($kktp_nilai <= 0) $kktp_nilai = 75;
+        $cp_elemen = $conn->real_escape_string($_POST['cp_elemen'] ?? '');
+        $tujuan_pembelajaran = $conn->real_escape_string($_POST['tujuan_pembelajaran'] ?? '');
+
         if ($bab_id > 0) {
             $sql = "UPDATE elearning_bab SET 
                     nomor_bab = $nomor_bab, judul_bab = '$judul_bab', subjudul = '$subjudul', 
                     durasi_menit = '$durasi_menit', pdf_url = '$pdf_url', video_url = '$video_url', 
-                    ringkasan_materi = '$ringkasan_materi', lks_judul = '$lks_judul', lks_tugas = '$lks_tugas'
+                    ringkasan_materi = '$ringkasan_materi', lks_judul = '$lks_judul', lks_tugas = '$lks_tugas',
+                    tingkat_kelas = '$tingkat_kelas', semester = '$semester', fase = '$fase',
+                    kktp_nilai = $kktp_nilai, cp_elemen = '$cp_elemen', tujuan_pembelajaran = '$tujuan_pembelajaran'
                     WHERE id = $bab_id";
             if ($conn->query($sql)) {
-                $pesan_sukses = "Modul $judul_bab berhasil diperbarui!";
+                $pesan_sukses = "Modul $judul_bab & Standar KKTP berhasil diperbarui!";
             } else {
                 $pesan_error = "Gagal memperbarui bab: " . $conn->error;
             }
         } else {
-            $sql = "INSERT INTO elearning_bab (mapel_nama, nomor_bab, judul_bab, subjudul, durasi_menit, pdf_url, video_url, ringkasan_materi, lks_judul, lks_tugas, created_by)
-                    VALUES ('$selected_mapel_esc', $nomor_bab, '$judul_bab', '$subjudul', '$durasi_menit', '$pdf_url', '$video_url', '$ringkasan_materi', '$lks_judul', '$lks_tugas', $ustadz_id)";
+            $sql = "INSERT INTO elearning_bab (mapel_nama, nomor_bab, judul_bab, subjudul, durasi_menit, pdf_url, video_url, ringkasan_materi, lks_judul, lks_tugas, tingkat_kelas, semester, fase, kktp_nilai, cp_elemen, tujuan_pembelajaran, created_by)
+                    VALUES ('$selected_mapel_esc', $nomor_bab, '$judul_bab', '$subjudul', '$durasi_menit', '$pdf_url', '$video_url', '$ringkasan_materi', '$lks_judul', '$lks_tugas', '$tingkat_kelas', '$semester', '$fase', $kktp_nilai, '$cp_elemen', '$tujuan_pembelajaran', $ustadz_id)";
             if ($conn->query($sql)) {
                 $bab_id = $conn->insert_id;
-                $pesan_sukses = "Modul $judul_bab berhasil ditambahkan!";
+                $pesan_sukses = "Modul $judul_bab beserta CP & Standar KKTP berhasil ditambahkan!";
             } else {
                 $pesan_error = "Gagal menambahkan bab: " . $conn->error;
             }
@@ -301,6 +350,27 @@ if ($edit_bab_id > 0) {
         if ($res_ek) $edit_kuis = $res_ek->fetch_all(MYSQLI_ASSOC);
     }
 }
+
+// Ambil Rekap Ketuntasan Belajar Santri untuk Mapel Terpilih
+$sql_prog = "SELECT p.*, s.nama_lengkap, s.kelas_sekarang, b.judul_bab, b.nomor_bab, b.kktp_nilai, b.tingkat_kelas, b.fase
+             FROM santri_belajar_progress p
+             LEFT JOIN buku_induk_santri s ON p.santri_id = s.id
+             LEFT JOIN elearning_bab b ON p.bab_id = b.id
+             WHERE p.mapel_nama = '$selected_mapel_esc'
+             ORDER BY p.updated_at DESC LIMIT 50";
+$res_prog = $conn->query($sql_prog);
+$list_progres = $res_prog ? $res_prog->fetch_all(MYSQLI_ASSOC) : [];
+$stat_tuntas = 0;
+$stat_remedial = 0;
+$total_skor = 0;
+foreach ($list_progres as $rp) {
+    if ($rp['status_ketuntasan'] === 'tuntas') $stat_tuntas++;
+    elseif ($rp['status_ketuntasan'] === 'remedial') $stat_remedial++;
+    $total_skor += (int)$rp['skor_kuis'];
+}
+$total_santri_tes = count($list_progres);
+$avg_skor = $total_santri_tes > 0 ? round($total_skor / $total_santri_tes, 1) : 0;
+$persen_tuntas = $total_santri_tes > 0 ? round(($stat_tuntas / $total_santri_tes) * 100) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -561,6 +631,16 @@ if ($edit_bab_id > 0) {
                                                 </div>
                                                 <p class="text-[11px] text-slate-500 mt-1 line-clamp-1"><?= htmlspecialchars($b['subjudul'] ?? '') ?></p>
                                                 
+                                                <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                                                    <?php if (!empty($b['fase'])): ?>
+                                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900"><?= htmlspecialchars($b['fase']) ?></span>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($b['tingkat_kelas'])): ?>
+                                                        <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-200 text-slate-700"><?= htmlspecialchars($b['tingkat_kelas']) ?></span>
+                                                    <?php endif; ?>
+                                                    <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">KKTP: <?= (int)($b['kktp_nilai'] ?? 75) ?></span>
+                                                </div>
+
                                                 <div class="flex items-center gap-2 mt-2 text-[10px] font-semibold text-slate-400">
                                                     <?php if(!empty($b['pdf_url'])): ?><span class="text-rose-600"><i class="fas fa-file-pdf"></i> PDF Flip</span><?php endif; ?>
                                                     <?php if(!empty($b['video_url'])): ?><span class="text-red-500"><i class="fab fa-youtube"></i> Video</span><?php endif; ?>
@@ -622,6 +702,53 @@ if ($edit_bab_id > 0) {
                                     <div class="sm:col-span-2">
                                         <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Judul Bab</label>
                                         <input type="text" name="judul_bab" value="<?= htmlspecialchars($edit_data['judul_bab'] ?? '') ?>" placeholder="misal: Bab 1: Sosiologi Sebagai Ilmu" required class="w-full px-3.5 py-2.5 border rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-indigo-500">
+                                    </div>
+                                </div>
+
+                                <!-- KURIKULUM MERDEKA & STANDAR KKTP -->
+                                <div class="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-3">
+                                    <span class="text-xs font-black text-indigo-900 flex items-center gap-1.5 uppercase">
+                                        <i class="fas fa-certificate text-indigo-600"></i> Penyelarasan Kurikulum Merdeka & KKTP
+                                    </span>
+                                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Fase</label>
+                                            <select name="fase" class="w-full px-2.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-bold">
+                                                <option value="Fase D" <?= ($edit_data['fase'] ?? '') === 'Fase D' ? 'selected' : '' ?>>Fase D (SMP 7-9)</option>
+                                                <option value="Fase E" <?= ($edit_data['fase'] ?? '') === 'Fase E' ? 'selected' : '' ?>>Fase E (SMA 10)</option>
+                                                <option value="Fase F" <?= ($edit_data['fase'] ?? '') === 'Fase F' ? 'selected' : '' ?>>Fase F (SMA 11-12)</option>
+                                                <option value="Fase A-C" <?= ($edit_data['fase'] ?? '') === 'Fase A-C' ? 'selected' : '' ?>>Fase A-C (SD/MI)</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Tingkat Kelas</label>
+                                            <select name="tingkat_kelas" class="w-full px-2.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-bold">
+                                                <?php for($k = 7; $k <= 12; $k++): ?>
+                                                    <option value="Kelas <?= $k ?>" <?= ($edit_data['tingkat_kelas'] ?? '') === "Kelas $k" ? 'selected' : '' ?>>Kelas <?= $k ?></option>
+                                                <?php endfor; ?>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Semester</label>
+                                            <select name="semester" class="w-full px-2.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-bold">
+                                                <option value="Semester 1" <?= ($edit_data['semester'] ?? '') === 'Semester 1' ? 'selected' : '' ?>>Semester 1</option>
+                                                <option value="Semester 2" <?= ($edit_data['semester'] ?? '') === 'Semester 2' ? 'selected' : '' ?>>Semester 2</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Nilai KKTP (Lulus)</label>
+                                            <input type="number" name="kktp_nilai" value="<?= htmlspecialchars($edit_data['kktp_nilai'] ?? 75) ?>" min="50" max="100" class="w-full px-2.5 py-2 bg-white border border-indigo-200 rounded-xl text-xs font-black text-emerald-700">
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Elemen Capaian Pembelajaran (CP)</label>
+                                            <input type="text" name="cp_elemen" value="<?= htmlspecialchars($edit_data['cp_elemen'] ?? '') ?>" placeholder="Misal: Pemahaman Konsep Keruangan & Interaksi Sosial" class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Tujuan Pembelajaran (TP)</label>
+                                            <input type="text" name="tujuan_pembelajaran" value="<?= htmlspecialchars($edit_data['tujuan_pembelajaran'] ?? '') ?>" placeholder="Misal: Santri mampu menganalisis letak geografis Indonesia..." class="w-full px-3 py-2 bg-white border border-indigo-200 rounded-xl text-xs">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -728,6 +855,125 @@ if ($edit_bab_id > 0) {
                         </div>
                     </div>
 
+                </div>
+
+                <!-- KARTU REKAPITULASI KETUNTASAN BELAJAR SANTRI (KKTP) -->
+                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm mt-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-500 text-white flex items-center justify-center text-xl shadow-sm">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-black text-base text-slate-900">Rekapitulasi Ketuntasan Belajar Santri</h3>
+                                    <span class="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                        Standar KKTP: 75
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-0.5">Monitoring hasil pengerjaan kuis formatif HOTS santri secara mandiri dengan evaluasi & rekomendasi AI.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <a href="santri-belajar.php?mapel=<?= urlencode($selected_mapel) ?>" target="_blank" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-2xs">
+                                <i class="fas fa-external-link-alt text-[11px]"></i> <span>Buka Ruang Santri</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- KPI MINI TILES -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 my-4">
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Santri Uji Kuis</span>
+                            <div class="text-xl font-black text-slate-800 mt-1"><?= $total_santri_tes ?> <span class="text-xs font-normal text-slate-400">santri</span></div>
+                        </div>
+                        <div class="bg-emerald-50/60 p-4 rounded-2xl border border-emerald-100">
+                            <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">Tuntas Belajar (≥75)</span>
+                            <div class="text-xl font-black text-emerald-700 mt-1"><?= $stat_tuntas ?> <span class="text-xs font-bold text-emerald-600">(<?= $persen_tuntas ?>%)</span></div>
+                        </div>
+                        <div class="bg-rose-50/60 p-4 rounded-2xl border border-rose-100">
+                            <span class="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Remedial AI (&lt;75)</span>
+                            <div class="text-xl font-black text-rose-700 mt-1"><?= $stat_remedial ?> <span class="text-xs font-normal text-rose-400">santri</span></div>
+                        </div>
+                        <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-100">
+                            <span class="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">Rata-rata Nilai</span>
+                            <div class="text-xl font-black text-amber-900 mt-1"><?= $avg_skor ?> <span class="text-xs font-normal text-slate-400">/ 100</span></div>
+                        </div>
+                    </div>
+
+                    <!-- TABEL HASIL BELAJAR SANTRI -->
+                    <?php if (count($list_progres) === 0): ?>
+                        <div class="text-center py-8 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-100/60 text-indigo-700 flex items-center justify-center mx-auto mb-2 text-xl">
+                                <i class="fas fa-user-clock"></i>
+                            </div>
+                            <h4 class="text-xs font-bold text-slate-700">Belum Ada Riwayat Kuis Santri untuk Mapel <?= htmlspecialchars($selected_mapel) ?></h4>
+                            <p class="text-[11px] text-slate-400 mt-1 max-w-md mx-auto">Begitu santri menyelesaikan kuis formatif di modul belajar santri, skor dan status ketuntasannya akan langsung terdata otomatis di sini.</p>
+                        </div>
+                    <?php else: ?>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[10px] font-extrabold bg-slate-50/80">
+                                        <th class="py-2.5 px-3 rounded-l-xl">Santri</th>
+                                        <th class="py-2.5 px-3">Kelas / Fase</th>
+                                        <th class="py-2.5 px-3">Materi Bab</th>
+                                        <th class="py-2.5 px-3 text-center">Skor / KKTP</th>
+                                        <th class="py-2.5 px-3 text-center">Status</th>
+                                        <th class="py-2.5 px-3 text-center">Percobaan</th>
+                                        <th class="py-2.5 px-3 rounded-r-xl text-right">Waktu</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 font-medium">
+                                    <?php foreach ($list_progres as $pItem): 
+                                        $is_tuntas = ($pItem['status_ketuntasan'] === 'tuntas');
+                                        $nama_santri = !empty($pItem['nama_lengkap']) ? $pItem['nama_lengkap'] : ($pItem['santri_id'] === 9999 ? 'Super Admin (Simulasi)' : 'Santri #' . $pItem['santri_id']);
+                                        $kktp_item = !empty($pItem['kktp_nilai']) ? $pItem['kktp_nilai'] : 75;
+                                    ?>
+                                    <tr class="hover:bg-slate-50/60 transition">
+                                        <td class="py-3 px-3">
+                                            <div class="font-bold text-slate-800"><?= htmlspecialchars($nama_santri) ?></div>
+                                            <div class="text-[10px] text-slate-400">ID Santri: #<?= (int)$pItem['santri_id'] ?></div>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700">
+                                                <?= htmlspecialchars($pItem['tingkat_kelas'] ?? $pItem['kelas_sekarang'] ?? 'Kelas 7') ?>
+                                            </span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <div class="font-bold text-slate-800 truncate max-w-[220px]">
+                                                Bab <?= $pItem['nomor_bab'] ?? '?' ?>: <?= htmlspecialchars($pItem['judul_bab'] ?? '-') ?>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 text-center">
+                                            <span class="font-extrabold text-xs <?= $is_tuntas ? 'text-emerald-700' : 'text-rose-600' ?>">
+                                                <?= $pItem['skor_kuis'] ?>
+                                            </span>
+                                            <span class="text-[10px] text-slate-400">/ <?= $kktp_item ?></span>
+                                        </td>
+                                        <td class="py-3 px-3 text-center">
+                                            <?php if ($is_tuntas): ?>
+                                                <span class="px-2 py-1 rounded-lg text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1">
+                                                    <i class="fas fa-check-circle"></i> TUNTAS
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="px-2 py-1 rounded-lg text-[10px] font-black bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
+                                                    <i class="fas fa-redo-alt"></i> REMEDIAL AI
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3 px-3 text-center">
+                                            <span class="text-[11px] font-bold text-slate-600">Ke-<?= $pItem['percobaan_ke'] ?></span>
+                                        </td>
+                                        <td class="py-3 px-3 text-right text-slate-400 text-[11px]">
+                                            <?= date('d/m/Y H:i', strtotime($pItem['updated_at'])) ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
                 </div>
 
             </div>

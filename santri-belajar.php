@@ -2,12 +2,86 @@
 require_once 'auth-santri.php';
 require_once 'koneksi.php';
 
-$santri_id = $_SESSION['santri_id'];
-$santri_nama = $_SESSION['santri_nama'];
+$santri_id = (int)($_SESSION['santri_id'] ?? 0);
+$santri_nama = $_SESSION['santri_nama'] ?? 'Santri';
 $active_menu = 'dashboard_santri';
 
-// Tangkap nama mata pelajaran (Default: Sosiologi)
-$raw_mapel = trim($_GET['mapel'] ?? 'Sosiologi');
+// ==============================================================
+// AJAX HANDLER: SIMPAN PROGRES BELAJAR & KETUNTASAN KUIS SANTRI
+// ==============================================================
+if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST" && isset($_POST['action'])) {
+    if ($_POST['action'] === 'simpan_progres_kuis') {
+        header('Content-Type: application/json');
+        $b_id = (int)($_POST['bab_id'] ?? 0);
+        $skor = (int)($_POST['skor'] ?? 0);
+        $jawaban_json = trim($_POST['jawaban_json'] ?? '');
+        
+        if ($b_id <= 0 || $santri_id <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Parameter tidak valid.']);
+            exit;
+        }
+
+        // Ambil data bab dan KKTP
+        $stmt_b = $conn->prepare("SELECT kktp_nilai, mapel_nama, judul_bab FROM elearning_bab WHERE id = ?");
+        $stmt_b->bind_param("i", $b_id);
+        $stmt_b->execute();
+        $res_b = $stmt_b->get_result();
+        $bab_info = $res_b->fetch_assoc();
+        $stmt_b->close();
+
+        $kktp = (int)($bab_info['kktp_nilai'] ?? 75);
+        $m_nama = $bab_info['mapel_nama'] ?? 'Mapel';
+        $status_tuntas = ($skor >= $kktp) ? 'tuntas' : 'remedial';
+
+        // Pastikan tabel santri_belajar_progress ada
+        $conn->query("CREATE TABLE IF NOT EXISTS santri_belajar_progress (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            santri_id INT NOT NULL,
+            bab_id INT NOT NULL,
+            mapel_nama VARCHAR(100) NOT NULL,
+            status_baca_modul TINYINT(1) DEFAULT 0,
+            status_tonton_video TINYINT(1) DEFAULT 0,
+            skor_kuis INT DEFAULT 0,
+            status_ketuntasan ENUM('belum_selesai', 'tuntas', 'remedial') DEFAULT 'belum_selesai',
+            percobaan_ke INT DEFAULT 0,
+            jawaban_detail LONGTEXT NULL,
+            catatan_ai TEXT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_santri_bab (santri_id, bab_id)
+        )");
+
+        // Simpan / update ke santri_belajar_progress
+        $stmt_ins = $conn->prepare("INSERT INTO santri_belajar_progress 
+            (santri_id, bab_id, mapel_nama, status_baca_modul, status_tonton_video, skor_kuis, status_ketuntasan, percobaan_ke, jawaban_detail)
+            VALUES (?, ?, ?, 1, 1, ?, ?, 1, ?)
+            ON DUPLICATE KEY UPDATE 
+            skor_kuis = VALUES(skor_kuis),
+            status_ketuntasan = VALUES(status_ketuntasan),
+            percobaan_ke = percobaan_ke + 1,
+            jawaban_detail = VALUES(jawaban_detail),
+            updated_at = CURRENT_TIMESTAMP");
+        $stmt_ins->bind_param("iisis", $santri_id, $b_id, $m_nama, $skor, $status_tuntas, $jawaban_json);
+        
+        if ($stmt_ins->execute()) {
+            echo json_encode([
+                'status' => 'success',
+                'skor' => $skor,
+                'kktp' => $kktp,
+                'status_ketuntasan' => $status_tuntas,
+                'message' => ($status_tuntas === 'tuntas') 
+                    ? "Masya Allah, Alhamdulillah! Nilai antum $skor/100 telah mencapai batas ketuntasan belajar (KKTP: $kktp). Silakan lanjut ke bab berikutnya!" 
+                    : "Nilai antum $skor/100 belum mencapai standar ketuntasan (KKTP: $kktp). Jangan berkecil hati, yuk pelajari kembali materinya atau minta penjelasan ke Ustadz AI lalu coba lagi!"
+            ]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => $conn->error]);
+        }
+        $stmt_ins->close();
+        exit;
+    }
+}
+
+// Tangkap nama mata pelajaran (Default: IPS)
+$raw_mapel = trim($_GET['mapel'] ?? 'IPS');
 $raw_mapel_lower = strtolower($raw_mapel);
 
 // Normalisasi Alias Mapel
@@ -76,6 +150,24 @@ if (count($list_bab) > 0) {
         $bab_no = (int)$materi_aktif['nomor_bab'];
     }
 }
+
+// ==========================================
+// 1B. QUERY STATUS KETUNTASAN BELAJAR SANTRI
+// ==========================================
+$progress_map = [];
+$tot_tuntas = 0;
+$tot_remedial = 0;
+if ($santri_id > 0) {
+    $res_prog = $conn->query("SELECT * FROM santri_belajar_progress WHERE santri_id = $santri_id AND mapel_nama = '$mapel_esc'");
+    if ($res_prog) {
+        while ($rp = $res_prog->fetch_assoc()) {
+            $progress_map[(int)$rp['bab_id']] = $rp;
+            if ($rp['status_ketuntasan'] === 'tuntas') $tot_tuntas++;
+            elseif ($rp['status_ketuntasan'] === 'remedial') $tot_remedial++;
+        }
+    }
+}
+$progres_aktif = ($materi_aktif && isset($progress_map[(int)$materi_aktif['id']])) ? $progress_map[(int)$materi_aktif['id']] : null;
 
 // ==========================================
 // 2. QUERY KUIS DARI DATABASE (ELEARNING_KUIS)
@@ -284,21 +376,96 @@ if ($materi_aktif) {
                 
                 <?php if (count($list_bab) > 0 && $materi_aktif): ?>
                 
-                <!-- 1. DAFTAR PILIHAN BAB / MODUL BELAJAR (PILL TABS) -->
-                <div class="mb-5 overflow-x-auto hide-scrollbar flex items-center gap-2 pb-1">
-                    <?php foreach ($list_bab as $b): ?>
-                    <a href="santri-belajar.php?mapel=<?= urlencode($mapel) ?>&bab=<?= $b['nomor_bab'] ?>" 
-                       class="whitespace-nowrap px-4 py-2.5 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 <?= ($bab_no == $b['nomor_bab']) ? 'bg-[#0d8276] text-white shadow-md shadow-teal-900/10 scale-100' : 'bg-white text-slate-700 hover:bg-teal-50 border border-teal-100/80' ?>">
-                        <span class="w-5 h-5 rounded-full <?= ($bab_no == $b['nomor_bab']) ? 'bg-white/20 text-white' : 'bg-teal-100 text-[#0d8276]' ?> flex items-center justify-center text-[10px]">
-                            <?= $b['nomor_bab'] ?>
-                        </span>
-                        <span><?= explode(':', $b['judul_bab'])[0] ?></span>
-                    </a>
-                    <?php endforeach; ?>
+                <!-- 1. DAFTAR PILIHAN BAB / MODUL BELAJAR (PILL TABS DENGAN STATUS KETUNTASAN) -->
+                <div class="mb-5 bg-white rounded-2xl p-3 sm:p-4 border border-teal-100 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span class="text-xs font-black text-slate-800">Progres Ketuntasan Belajar:</span>
+                            <span class="text-xs font-black text-[#0d8276] bg-teal-50 px-2 py-0.5 rounded-md border border-teal-100">
+                                <?= $tot_tuntas ?> dari <?= count($list_bab) ?> Bab Tuntas
+                            </span>
+                        </div>
+                        <div class="text-[11px] text-slate-400 font-semibold">
+                            Standar Ketuntasan (KKTP): Minimal 75/100
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto hide-scrollbar flex items-center gap-2 pb-1" id="babPillsList">
+                        <?php foreach ($list_bab as $b): 
+                            $b_prog = $progress_map[(int)$b['id']] ?? null;
+                            $b_status = $b_prog['status_ketuntasan'] ?? 'belum_selesai';
+                            $b_skor = $b_prog['skor_kuis'] ?? null;
+                            $is_active = ($bab_no == $b['nomor_bab']);
+                        ?>
+                        <a href="santri-belajar.php?mapel=<?= urlencode($mapel) ?>&bab=<?= $b['nomor_bab'] ?>" 
+                           class="whitespace-nowrap px-3.5 py-2 rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 <?= $is_active ? 'bg-[#0d8276] text-white shadow-md shadow-teal-900/15 scale-100' : 'bg-slate-50 text-slate-700 hover:bg-teal-50/70 border border-slate-200/80' ?>">
+                            <span class="w-5 h-5 rounded-full <?= $is_active ? 'bg-white/20 text-white' : 'bg-teal-100 text-[#0d8276]' ?> flex items-center justify-center text-[10px] font-black">
+                                <?= $b['nomor_bab'] ?>
+                            </span>
+                            <span>Bab <?= $b['nomor_bab'] ?></span>
+                            <?php if (!empty($b['tingkat_kelas'])): ?>
+                                <span class="text-[9px] px-1.5 py-0.2 rounded font-black <?= $is_active ? 'bg-white/20 text-teal-100' : 'bg-slate-200 text-slate-600' ?>">Kls <?= $b['tingkat_kelas'] ?></span>
+                            <?php endif; ?>
+
+                            <?php if ($b_status === 'tuntas'): ?>
+                                <i class="fas fa-check-circle text-emerald-400 text-xs" title="Tuntas (Skor: <?= $b_skor ?>)"></i>
+                            <?php elseif ($b_status === 'remedial'): ?>
+                                <i class="fas fa-exclamation-triangle text-amber-400 text-xs" title="Remedial (Skor: <?= $b_skor ?>)"></i>
+                            <?php endif; ?>
+                        </a>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
 
-                <!-- 2. BANNER JUDUL BAB AKTIF -->
+                <!-- 2. BANNER JUDUL BAB AKTIF & STRUKTUR CP/ATP/KKTP -->
                 <div class="bg-white rounded-3xl p-5 sm:p-6 border border-teal-100 shadow-sm mb-6">
+                    <!-- CP & ATP METADATA BADGE -->
+                    <div class="mb-3.5 p-3.5 rounded-2xl bg-gradient-to-r from-teal-50 via-emerald-50/60 to-white border border-teal-100/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-[#0d8276] text-white">
+                                    <?= htmlspecialchars($materi_aktif['fase'] ?? 'Fase D') ?>
+                                </span>
+                                <?php if (!empty($materi_aktif['tingkat_kelas'])): ?>
+                                <span class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    Kelas <?= htmlspecialchars($materi_aktif['tingkat_kelas']) ?> SMP • Semester <?= htmlspecialchars($materi_aktif['semester'] ?? '1') ?>
+                                </span>
+                                <?php endif; ?>
+                                <?php if (!empty($materi_aktif['cp_elemen'])): ?>
+                                <span class="text-xs font-extrabold text-slate-700">
+                                    <?= htmlspecialchars($materi_aktif['cp_elemen']) ?>
+                                </span>
+                                <?php endif; ?>
+                            </div>
+                            <?php if (!empty($materi_aktif['tujuan_pembelajaran'])): ?>
+                            <p class="text-[11px] text-slate-600 leading-relaxed pt-0.5">
+                                <b class="text-[#0d8276]">Tujuan Pembelajaran (ATP):</b> <?= htmlspecialchars($materi_aktif['tujuan_pembelajaran']) ?>
+                            </p>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- STATUS KETUNTASAN BADGE SANTRI SAAT INI -->
+                        <div class="flex items-center gap-2 flex-shrink-0 self-start md:self-auto">
+                            <?php if ($progres_aktif && $progres_aktif['status_ketuntasan'] === 'tuntas'): ?>
+                                <div class="px-3 py-1.5 rounded-xl bg-emerald-500 text-white font-black text-xs shadow-sm flex items-center gap-1.5">
+                                    <i class="fas fa-medal text-amber-300"></i>
+                                    <span>TUNTAS (Nilai: <?= (int)$progres_aktif['skor_kuis'] ?>)</span>
+                                </div>
+                            <?php elseif ($progres_aktif && $progres_aktif['status_ketuntasan'] === 'remedial'): ?>
+                                <div class="px-3 py-1.5 rounded-xl bg-rose-500 text-white font-black text-xs shadow-sm flex items-center gap-1.5">
+                                    <i class="fas fa-rotate text-white"></i>
+                                    <span>REMEDIAL (Nilai: <?= (int)$progres_aktif['skor_kuis'] ?>)</span>
+                                </div>
+                            <?php else: ?>
+                                <div class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 font-bold text-xs border border-slate-200 flex items-center gap-1.5">
+                                    <i class="far fa-circle text-slate-400"></i>
+                                    <span>Belum Kuis (KKTP: <?= (int)($materi_aktif['kktp_nilai'] ?? 75) ?>)</span>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4 mb-4">
                         <div>
                             <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider bg-teal-50 text-[#0d8276] border border-teal-100">Modul Pembelajaran Aktif</span>
@@ -774,9 +941,31 @@ if ($materi_aktif) {
                             </div>
                             <?php endforeach; ?>
 
-                            <div id="quizResultSummary" class="hidden bg-white p-4 rounded-xl border border-teal-200 text-center">
-                                <h4 class="font-black text-sm text-slate-900">Hasil Latihan Kuis Selesai! 🎉</h4>
-                                <p class="text-xs text-slate-500 mt-1" id="quizScoreText">Skor: 100/100</p>
+                            <div id="quizResultSummary" class="hidden bg-white p-5 sm:p-6 rounded-3xl border-2 border-teal-200 text-center shadow-lg transition-all duration-300">
+                                <div id="quizResultIcon" class="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner bg-emerald-50 text-emerald-600">
+                                    <i class="fas fa-medal"></i>
+                                </div>
+                                <div id="quizBadgeStatus" class="inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-2 bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    Status: TUNTAS
+                                </div>
+                                <h4 class="font-black text-lg sm:text-xl text-slate-900" id="quizScoreText">Skor: 100 / 100</h4>
+                                <p class="text-xs text-slate-600 mt-1.5 max-w-md mx-auto leading-relaxed" id="quizFeedbackMessage">
+                                    Alhamdulillah! Pemahamanmu pada bab ini telah memenuhi standar ketuntasan belajar (KKTP: <?= (int)($materi_aktif['kktp_nilai'] ?? 75) ?>).
+                                </p>
+                                
+                                <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2.5" id="quizActionButtons">
+                                    <button type="button" onclick="ulangKuis()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5">
+                                        <i class="fas fa-rotate"></i> Ulangi Kuis
+                                    </button>
+                                    <button type="button" onclick="bukaUstadzAI()" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow transition flex items-center gap-1.5">
+                                        <i class="fas fa-robot"></i> Tanya Ustadz AI
+                                    </button>
+                                    <?php if ($bab_no < count($list_bab)): ?>
+                                    <a href="santri-belajar.php?mapel=<?= urlencode($mapel) ?>&bab=<?= $bab_no + 1 ?>" id="btnLanjutBab" class="px-5 py-2 rounded-xl bg-[#0d8276] hover:bg-[#0b6f65] text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5">
+                                        <span>Lanjut Bab <?= $bab_no + 1 ?></span> <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -882,7 +1071,7 @@ if ($materi_aktif) {
     <?php include 'bottombar-santri.php'; ?>
 
     <script>
-        // --- LOGIC KUIS ---
+        // --- LOGIC KUIS & PERSISTENSI KETUNTASAN ---
         let totalScore = 0;
         let answeredQuestions = {};
 
@@ -904,11 +1093,63 @@ if ($materi_aktif) {
             if (totalQ > 0 && Object.keys(answeredQuestions).length === totalQ) {
                 let sum = Object.values(answeredQuestions).reduce((a, b) => a + b, 0);
                 let finalScore = Math.round(sum / totalQ);
-                const summaryBox = document.getElementById('quizResultSummary');
-                const scoreText = document.getElementById('quizScoreText');
-                scoreText.innerHTML = `Nilai Latihan Anda: <b>${finalScore}/100</b> • ${finalScore >= 75 ? 'Alhamdulillah Tuntas!' : 'Yuk baca lagi materinya dan tanya Ustadz AI!'}`;
-                summaryBox.classList.remove('hidden');
+                const kktp = <?= (int)($materi_aktif['kktp_nilai'] ?? 75) ?>;
+                const isTuntas = (finalScore >= kktp);
+
+                // Kirim AJAX ke server untuk simpan progres ketuntasan di database
+                const formData = new FormData();
+                formData.append('action', 'simpan_progres_kuis');
+                formData.append('bab_id', <?= (int)$materi_aktif['id'] ?>);
+                formData.append('skor', finalScore);
+                formData.append('jawaban_json', JSON.stringify(answeredQuestions));
+
+                fetch('santri-belajar.php?mapel=<?= urlencode($mapel) ?>', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(r => r.json())
+                .then(res => {
+                    const summaryBox = document.getElementById('quizResultSummary');
+                    const scoreText = document.getElementById('quizScoreText');
+                    const iconBox = document.getElementById('quizResultIcon');
+                    const badgeStatus = document.getElementById('quizBadgeStatus');
+                    const msgBox = document.getElementById('quizFeedbackMessage');
+
+                    scoreText.innerHTML = `Skor Akhir: <b>${finalScore} / 100</b>`;
+                    if (isTuntas) {
+                        iconBox.className = "w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner bg-emerald-50 text-emerald-600 animate-bounce";
+                        iconBox.innerHTML = '<i class="fas fa-medal"></i>';
+                        badgeStatus.className = "inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-2 bg-emerald-100 text-emerald-800 border border-emerald-200";
+                        badgeStatus.innerHTML = '<i class="fas fa-check-circle mr-1 text-emerald-600"></i> STATUS: TUNTAS';
+                        msgBox.innerText = res.message || `Alhamdulillah! Antum telah tuntas memenuhi kriteria ketuntasan belajar (KKTP: ${kktp}).`;
+                    } else {
+                        iconBox.className = "w-16 h-16 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-3 shadow-inner bg-rose-50 text-rose-600";
+                        iconBox.innerHTML = '<i class="fas fa-rotate"></i>';
+                        badgeStatus.className = "inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-2 bg-rose-100 text-rose-800 border border-rose-200";
+                        badgeStatus.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-rose-600"></i> STATUS: REMEDIAL (BELUM TUNTAS)';
+                        msgBox.innerText = res.message || `Nilai antum (${finalScore}) belum mencapai standar ketuntasan (${kktp}). Jangan berkecil hati, yuk pelajari materinya atau tanya Ustadz AI!`;
+                    }
+
+                    summaryBox.classList.remove('hidden');
+                    summaryBox.scrollIntoView({ behavior: 'smooth' });
+                })
+                .catch(err => {
+                    console.error("Gagal simpan progres:", err);
+                });
             }
+        }
+
+        function ulangKuis() {
+            answeredQuestions = {};
+            document.querySelectorAll('input[type="radio"][name^="quiz_"]').forEach(r => r.checked = false);
+            document.querySelectorAll('[id^="feedback_"]').forEach(f => {
+                f.classList.add('hidden');
+                f.innerHTML = '';
+            });
+            const summaryBox = document.getElementById('quizResultSummary');
+            if (summaryBox) summaryBox.classList.add('hidden');
+            const qBox = document.getElementById('quizContainer');
+            if (qBox) qBox.scrollIntoView({ behavior: 'smooth' });
         }
 
         // --- LOGIC USTADZ AI ---
