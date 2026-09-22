@@ -336,10 +336,15 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
 
 // Auto-seed sample model IPS jika belum lengkap di database (baik di lokal maupun live Hostinger)
 require_once __DIR__ . '/seed_sample_ips.php';
-ensureIpsSampleSeeded($conn);
+$force_seed = isset($_GET['seed_ips']) || isset($_GET['reload']);
+ensureIpsSampleSeeded($conn, $force_seed);
 
 // Ambil data Bab untuk Mapel yang dipilih
 $res_babs = $conn->query("SELECT * FROM elearning_bab WHERE mapel_nama = '$selected_mapel_esc' ORDER BY nomor_bab ASC, id ASC");
+if ((!$res_babs || $res_babs->num_rows === 0) && (strpos(strtolower($selected_mapel), 'ips') !== false)) {
+    ensureIpsSampleSeeded($conn, true);
+    $res_babs = $conn->query("SELECT * FROM elearning_bab WHERE mapel_nama = 'IPS' ORDER BY nomor_bab ASC, id ASC");
+}
 $list_bab = $res_babs ? $res_babs->fetch_all(MYSQLI_ASSOC) : [];
 
 // Mode Edit Bab

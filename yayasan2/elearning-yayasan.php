@@ -467,7 +467,8 @@ if (isset($_GET['hapus_bab'])) {
 
 // Auto-seed sample model IPS jika belum lengkap di database (baik di lokal maupun live Hostinger)
 require_once __DIR__ . '/../seed_sample_ips.php';
-ensureIpsSampleSeeded($conn);
+$force_seed = isset($_GET['seed_ips']) || isset($_GET['reload']);
+ensureIpsSampleSeeded($conn, $force_seed);
 
 // Ambil Daftar Mapel & Status Pengampu
 $sql_mapel = "SELECT m.id, m.nama_mapel, m.kategori_mapel, m.pengampu_id, u.nama_lengkap AS nama_pengampu,

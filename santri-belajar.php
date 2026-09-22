@@ -127,7 +127,8 @@ $kelas_santri = $data_santri['kelas_sekarang'] ?? 'Santri';
 
 // Auto-seed sample model IPS jika belum lengkap di database (baik di lokal maupun live Hostinger)
 require_once __DIR__ . '/seed_sample_ips.php';
-ensureIpsSampleSeeded($conn);
+$force_seed = isset($_GET['seed_ips']) || isset($_GET['reload']);
+ensureIpsSampleSeeded($conn, $force_seed);
 
 // ==========================================
 // 1. QUERY BAB DARI DATABASE (ELEARNING_BAB)
@@ -136,6 +137,12 @@ $res_babs = $conn->query("SELECT * FROM elearning_bab WHERE mapel_nama = '$mapel
 if (!$res_babs || $res_babs->num_rows === 0) {
     // Fallback pencarian fuzzy LIKE jika nama sedikit berbeda
     $res_babs = $conn->query("SELECT * FROM elearning_bab WHERE mapel_nama LIKE '%$mapel_esc%' ORDER BY nomor_bab ASC, id ASC");
+}
+
+// Fallback cerdas: Jika mapel IPS masih kosong di database Hostinger, jalankan force re-seed seketika!
+if ((!$res_babs || $res_babs->num_rows === 0) && (strpos($raw_mapel_lower, 'ips') !== false || $mapel === 'IPS')) {
+    ensureIpsSampleSeeded($conn, true);
+    $res_babs = $conn->query("SELECT * FROM elearning_bab WHERE mapel_nama = 'IPS' ORDER BY nomor_bab ASC, id ASC");
 }
 $list_bab = ($res_babs && $res_babs->num_rows > 0) ? $res_babs->fetch_all(MYSQLI_ASSOC) : [];
 

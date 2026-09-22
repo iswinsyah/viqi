@@ -1,20 +1,105 @@
 <?php
 // Function ensureIpsSampleSeeded - Menjamin kurikulum model sample IPS Fase D selalu tersedia di database (lokal & Hostinger)
-function ensureIpsSampleSeeded($conn) {
+// Function ensureIpsSampleSeeded - Menjamin kurikulum model sample IPS Fase D selalu tersedia di database (lokal & Hostinger)
+function ensureIpsSampleSeeded($conn, $force = false) {
     if (!$conn) return;
 
-    // Cek apakah bab IPS sudah terisi minimal 8 bab
-    $chk = $conn->query("SELECT COUNT(*) AS total FROM elearning_bab WHERE mapel_nama = 'IPS'");
-    if ($chk) {
-        $r = $chk->fetch_assoc();
-        if ((int)($r['total'] ?? 0) >= 8) {
-            return; // Sudah ada dan lengkap
+    // 1. Self-healing tabel elearning_bab
+    $conn->query("CREATE TABLE IF NOT EXISTS elearning_bab (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        mapel_id INT NULL DEFAULT 0,
+        mapel_nama VARCHAR(100) NOT NULL,
+        nomor_bab INT NOT NULL DEFAULT 1,
+        judul_bab VARCHAR(255) NOT NULL,
+        subjudul VARCHAR(255) NULL,
+        durasi_menit VARCHAR(50) DEFAULT '15 Menit',
+        pdf_url TEXT NULL,
+        video_url TEXT NULL,
+        video_urls TEXT NULL,
+        ringkasan_materi LONGTEXT NULL,
+        lks_judul VARCHAR(255) NULL,
+        lks_tugas TEXT NULL,
+        tingkat_kelas VARCHAR(30) NULL DEFAULT '7',
+        semester VARCHAR(30) NULL DEFAULT '1',
+        fase VARCHAR(20) NULL DEFAULT 'Fase D',
+        kktp_nilai INT NOT NULL DEFAULT 75,
+        cp_elemen VARCHAR(255) NULL,
+        tujuan_pembelajaran TEXT NULL,
+        created_by INT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // 2. Self-healing alter kolom-kolom baru jika tabel sudah ada dari skema lama
+    $cols_needed = [
+        'video_urls' => "TEXT NULL AFTER video_url",
+        'tingkat_kelas' => "VARCHAR(30) NULL DEFAULT '7' AFTER mapel_nama",
+        'semester' => "VARCHAR(30) NULL DEFAULT '1' AFTER tingkat_kelas",
+        'fase' => "VARCHAR(20) NULL DEFAULT 'Fase D' AFTER semester",
+        'kktp_nilai' => "INT NOT NULL DEFAULT 75 AFTER durasi_menit",
+        'cp_elemen' => "VARCHAR(255) NULL AFTER kktp_nilai",
+        'tujuan_pembelajaran' => "TEXT NULL AFTER cp_elemen"
+    ];
+    foreach ($cols_needed as $colName => $colDef) {
+        $cCheck = $conn->query("SHOW COLUMNS FROM elearning_bab LIKE '$colName'");
+        if ($cCheck && $cCheck->num_rows == 0) {
+            $conn->query("ALTER TABLE elearning_bab ADD COLUMN $colName $colDef");
         }
     }
 
-    // Bersihkan bab IPS lama jika tidak lengkap agar ter-upgrade
+    // 3. Self-healing tabel elearning_kuis
+    $conn->query("CREATE TABLE IF NOT EXISTS elearning_kuis (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        bab_id INT NOT NULL,
+        soal TEXT NOT NULL,
+        opsi_a TEXT NOT NULL,
+        opsi_b TEXT NOT NULL,
+        opsi_c TEXT NOT NULL,
+        opsi_d TEXT NOT NULL,
+        kunci_jawaban ENUM('A', 'B', 'C', 'D') NOT NULL DEFAULT 'A',
+        pembahasan TEXT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_bab (bab_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // 4. Self-healing tabel santri_belajar_progress
+    $conn->query("CREATE TABLE IF NOT EXISTS santri_belajar_progress (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        santri_id INT NOT NULL,
+        bab_id INT NOT NULL,
+        mapel_nama VARCHAR(100) NOT NULL,
+        status_baca_modul TINYINT(1) DEFAULT 0,
+        status_tonton_video TINYINT(1) DEFAULT 0,
+        skor_kuis INT DEFAULT 0,
+        status_ketuntasan ENUM('belum_selesai', 'tuntas', 'remedial') DEFAULT 'belum_selesai',
+        percobaan_ke INT DEFAULT 0,
+        jawaban_detail LONGTEXT NULL,
+        catatan_ai TEXT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_santri_bab (santri_id, bab_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    // 5. Cek apakah bab IPS sudah terisi minimal 8 bab DAN memiliki modul flipbook valid
+    if (!$force) {
+        $chk = $conn->query("SELECT COUNT(*) AS total FROM elearning_bab WHERE mapel_nama = 'IPS' AND pdf_url IS NOT NULL AND pdf_url != ''");
+        if ($chk) {
+            $r = $chk->fetch_assoc();
+            if ((int)($r['total'] ?? 0) >= 8) {
+                // Cek kuis apakah sudah ada minimal 30 soal
+                $chk_q = $conn->query("SELECT COUNT(*) AS total_q FROM elearning_kuis q JOIN elearning_bab b ON q.bab_id = b.id WHERE b.mapel_nama = 'IPS'");
+                if ($chk_q) {
+                    $rq = $chk_q->fetch_assoc();
+                    if ((int)($rq['total_q'] ?? 0) >= 30) {
+                        return; // Sudah ada dan lengkap
+                    }
+                }
+            }
+        }
+    }
+
+    // Bersihkan bab IPS lama jika tidak lengkap / force reload agar ter-upgrade
     $old_ips = $conn->query("SELECT id FROM elearning_bab WHERE mapel_nama = 'IPS'");
-    if ($old_ips) {
+    if ($old_ips && $old_ips->num_rows > 0) {
         while ($ro = $old_ips->fetch_assoc()) {
             $old_id = (int)$ro['id'];
             $conn->query("DELETE FROM elearning_kuis WHERE bab_id = $old_id");
