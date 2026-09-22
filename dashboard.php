@@ -778,26 +778,6 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             </div>
         </div>
 
-        <!-- SIDEBAR USER PROFILE CARD -->
-        <div class="px-5 py-4 border-b border-teal-700/40 bg-teal-900/30">
-            <div class="flex items-center space-x-3">
-                <div class="w-11 h-11 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-base shadow-sm border-2 border-white/80 overflow-hidden flex-shrink-0">
-                    <?php if (!empty($user['foto_profil'])): ?>
-                        <img src="<?= htmlspecialchars($user['foto_profil']) ?>" alt="Avatar" class="w-full h-full object-cover">
-                    <?php else: ?>
-                        <i class="fas fa-user text-[#0b8478]"></i>
-                    <?php endif; ?>
-                </div>
-                <div class="overflow-hidden flex-1">
-                    <h4 class="font-bold text-xs text-white truncate leading-tight"><?= htmlspecialchars($user['nama_lengkap'] ?? $_SESSION['app_user_nama'] ?? 'Admin') ?></h4>
-                    <p class="text-[10px] text-teal-200 truncate mt-0.5">@<?= htmlspecialchars($user['username'] ?? $_SESSION['app_username'] ?? 'admin') ?></p>
-                    <span class="inline-block px-2 py-0.5 bg-teal-800/80 rounded text-[9px] font-bold text-teal-100 border border-teal-600/50 mt-1 truncate max-w-full">
-                        <?= htmlspecialchars($user['roles'] ?? $_SESSION['app_user_roles'] ?? 'super_admin') ?>
-                    </span>
-                </div>
-            </div>
-        </div>
-
         <!-- SIDEBAR NAVIGATION LINKS -->
         <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
             <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-[#0b8478] font-black shadow-sm transition">
@@ -823,37 +803,6 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             </a>
             <?php endif; ?>
 
-            <!-- SIMULASI ROLE WIDGET DI SIDEBAR (KHUSUS KETUA YAYASAN / SUPER ADMIN) -->
-            <?php if ($can_view_role_simulation): ?>
-            <div class="pt-4 mt-4 border-t border-teal-700/60">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-[10px] font-black uppercase tracking-wider text-teal-200">Simulasi Role</span>
-                </div>
-                <div class="grid grid-cols-2 gap-1.5 text-[10px]">
-                    <a href="dashboard.php?toggle_role=all" class="p-1.5 rounded-lg text-center font-bold transition <?= $is_all_view ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                        Semua
-                    </a>
-                    <a href="dashboard.php?toggle_role=tutor" class="p-1.5 rounded-lg text-center font-bold transition <?= in_array('tutor', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                        Tutor
-                    </a>
-                    <a href="dashboard.php?toggle_role=musyrif" class="p-1.5 rounded-lg text-center font-bold transition <?= in_array('musyrif', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                        Musyrif
-                    </a>
-                    <a href="dashboard.php?toggle_role=santri" class="p-1.5 rounded-lg text-center font-bold transition <?= in_array('santri', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                        Santri
-                    </a>
-                    <a href="dashboard.php?toggle_role=orangtua" class="p-1.5 rounded-lg text-center font-bold transition <?= (in_array('orangtua', $active_views) || in_array('walisantri', $active_views)) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                        Orangtua
-                    </a>
-                    <a href="dashboard.php?toggle_role=web" class="p-1.5 rounded-lg text-center font-bold transition <?= in_array('web', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                        Web
-                    </a>
-                    <a href="dashboard.php?toggle_role=marketing" class="col-span-2 p-1.5 rounded-lg text-center font-bold transition <?= in_array('marketing', $active_views) ? 'bg-white text-[#0b8478]' : 'bg-teal-800/60 text-white/90 hover:bg-teal-700' ?>">
-                        Marketing
-                    </a>
-                </div>
-            </div>
-            <?php endif; ?>
         </nav>
 
         <!-- SIDEBAR FOOTER: LOGOUT -->
