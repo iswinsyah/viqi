@@ -465,6 +465,10 @@ if (isset($_GET['hapus_bab'])) {
     exit;
 }
 
+// Auto-seed sample model IPS jika belum lengkap di database (baik di lokal maupun live Hostinger)
+require_once __DIR__ . '/../seed_sample_ips.php';
+ensureIpsSampleSeeded($conn);
+
 // Ambil Daftar Mapel & Status Pengampu
 $sql_mapel = "SELECT m.id, m.nama_mapel, m.kategori_mapel, m.pengampu_id, u.nama_lengkap AS nama_pengampu,
               (SELECT COUNT(*) FROM elearning_bab b WHERE b.mapel_nama = m.nama_mapel) AS total_bab

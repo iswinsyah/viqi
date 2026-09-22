@@ -125,6 +125,10 @@ $res_s = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $santri_id LIM
 $data_santri = ($res_s && $res_s->num_rows > 0) ? $res_s->fetch_assoc() : null;
 $kelas_santri = $data_santri['kelas_sekarang'] ?? 'Santri';
 
+// Auto-seed sample model IPS jika belum lengkap di database (baik di lokal maupun live Hostinger)
+require_once __DIR__ . '/seed_sample_ips.php';
+ensureIpsSampleSeeded($conn);
+
 // ==========================================
 // 1. QUERY BAB DARI DATABASE (ELEARNING_BAB)
 // ==========================================
