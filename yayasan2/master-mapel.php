@@ -19,7 +19,9 @@ if ($res->num_rows == 0) {
 
 $res = $conn->query("SHOW COLUMNS FROM master_mapel LIKE 'metode_belajar'");
 if ($res->num_rows == 0) {
-    $conn->query("ALTER TABLE master_mapel ADD COLUMN metode_belajar ENUM('offline', 'online') DEFAULT 'offline' AFTER kategori_mapel");
+    $conn->query("ALTER TABLE master_mapel ADD COLUMN metode_belajar ENUM('offline', 'online', 'ai_agentic') DEFAULT 'offline' AFTER kategori_mapel");
+} else {
+    $conn->query("ALTER TABLE master_mapel MODIFY COLUMN metode_belajar ENUM('offline', 'online', 'ai_agentic') DEFAULT 'offline'");
 }
 
 $res = $conn->query("SHOW COLUMNS FROM master_mapel LIKE 'status_aktif'");
@@ -38,6 +40,21 @@ $conn->query("CREATE TABLE IF NOT EXISTS mapel_kelas_target (
     kelas_id INT NOT NULL,
     PRIMARY KEY (mapel_id, kelas_id)
 )");
+
+// Aksi Cepat: Alihkan Mapel ke Team AI Agentic
+if (isset($_GET['action'])) {
+    if ($_GET['action'] === 'assign_ai' && isset($_GET['id'])) {
+        $mapel_id = (int)$_GET['id'];
+        $conn->query("UPDATE master_mapel SET metode_belajar = 'ai_agentic', pengampu_id = NULL WHERE id = $mapel_id");
+        header("Location: master-mapel.php?sukses=" . urlencode("Mata pelajaran berhasil dialihkan ke Team AI Agentic!"));
+        exit;
+    }
+    if ($_GET['action'] === 'assign_all_unassigned_ai') {
+        $conn->query("UPDATE master_mapel SET metode_belajar = 'ai_agentic' WHERE pengampu_id IS NULL OR pengampu_id = 0");
+        header("Location: master-mapel.php?sukses=" . urlencode("Seluruh mata pelajaran tanpa guru fisik berhasil dialihkan ke Team Pengajar AI Agentic!"));
+        exit;
+    }
+}
 
 $pesan_sukses = "";
 $pesan_error = "";
@@ -124,11 +141,14 @@ if (isset($_GET['edit_id'])) {
     }
 }
 
-// 5. Ambil Statistik Ringkasan
+// 5. Ambil Statistik Ringkasan & Klasifikasi AI Agentic
 $tot_mapel = $conn->query("SELECT COUNT(id) as total FROM master_mapel")->fetch_assoc()['total'] ?? 0;
 $tot_aktif = $conn->query("SELECT COUNT(id) as total FROM master_mapel WHERE status_aktif = 1")->fetch_assoc()['total'] ?? 0;
-$tot_offline = $conn->query("SELECT COUNT(id) as total FROM master_mapel WHERE metode_belajar = 'offline'")->fetch_assoc()['total'] ?? 0;
-$tot_online = $conn->query("SELECT COUNT(id) as total FROM master_mapel WHERE metode_belajar = 'online'")->fetch_assoc()['total'] ?? 0;
+$tot_guru_fisik = $conn->query("SELECT COUNT(id) as total FROM master_mapel WHERE pengampu_id IS NOT NULL AND pengampu_id > 0")->fetch_assoc()['total'] ?? 0;
+$tot_ai_agentic = $conn->query("SELECT COUNT(id) as total FROM master_mapel WHERE metode_belajar = 'ai_agentic' OR pengampu_id IS NULL OR pengampu_id = 0")->fetch_assoc()['total'] ?? 0;
+$tot_diknas = $conn->query("SELECT COUNT(id) as total FROM master_mapel WHERE kategori_mapel = 'Diknas'")->fetch_assoc()['total'] ?? 0;
+$tot_diniyah = $conn->query("SELECT COUNT(id) as total FROM master_mapel WHERE kategori_mapel = 'Diniyah'")->fetch_assoc()['total'] ?? 0;
+$estimasi_hemat_gaji = $tot_ai_agentic * 750000; // Asumsi rata-rata honor guru per mapel Rp 750.000/bln
 
 // Ambil list semua kelas untuk checkbox
 $kelas_list = [];
@@ -195,35 +215,64 @@ $active_menu = 'master_mapel';
                 </div>
             <?php endif; ?>
 
+            <!-- BANNER TAHAP 1: PEMETAAN & KLASIFIKASI MASTER MAPEL -->
+            <div class="mb-6 bg-gradient-to-r from-slate-900 via-purple-950 to-slate-900 rounded-2xl p-5 border border-purple-800/50 shadow-xl text-white flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-xl bg-purple-600/30 border border-purple-400/40 text-amber-300 flex items-center justify-center text-2xl flex-shrink-0 shadow-inner">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">Tahap 1 Aktif</span>
+                            <span class="text-xs text-purple-200 font-bold">Pemetaan & Klasifikasi Master Mapel</span>
+                        </div>
+                        <h2 class="text-base sm:text-lg font-black text-white mt-0.5">Struktur Guru Fisik vs Team Pengajar AI Agentic</h2>
+                        <p class="text-xs text-slate-300 mt-0.5">Mapel tanpa guru fisik otomatis ditandai untuk diorkestrasi oleh 7 Dewan Pakar AI (Modul, Video & Kuis Mandiri).</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 self-start md:self-auto flex-wrap">
+                    <a href="master-mapel.php?action=assign_all_unassigned_ai" onclick="return confirm('Alihkan seluruh mapel yang belum memiliki pengampu ke Team AI Agentic?')" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-1.5 border border-purple-400/30">
+                        <i class="fas fa-wand-magic-sparkles"></i> <span>Tugaskan Semua ke AI</span>
+                    </a>
+                    <a href="elearning-yayasan.php" class="bg-amber-400 hover:bg-amber-300 text-slate-950 font-black px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-1.5">
+                        <span>Lanjut ke Tahap 2 (Dewan Pakar)</span> <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+
             <!-- STATISTIK WIDGET -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="bg-white p-4 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between">
                     <div>
                         <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Mapel</span>
                         <span class="text-2xl font-black text-slate-800"><?= $tot_mapel ?></span>
+                        <span class="text-[10px] text-slate-400 block mt-0.5"><?= $tot_diknas ?> Diknas • <?= $tot_diniyah ?> Diniyah</span>
                     </div>
                     <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-lg"><i class="fas fa-atlas"></i></div>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between">
                     <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Aktif Tahun Ini</span>
-                        <span class="text-2xl font-black text-emerald-600"><?= $tot_aktif ?></span>
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Guru Fisik (Tatap Muka)</span>
+                        <span class="text-2xl font-black text-emerald-600"><?= $tot_guru_fisik ?></span>
+                        <span class="text-[10px] text-emerald-600 block mt-0.5 font-bold">Ustadz Pengampu Aktif</span>
                     </div>
-                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg"><i class="fas fa-calendar-check"></i></div>
+                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg"><i class="fas fa-chalkboard-teacher"></i></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-purple-200/80 shadow-sm flex items-center justify-between bg-gradient-to-br from-purple-50/50 to-white">
+                    <div>
+                        <span class="text-xs font-bold text-purple-700 uppercase tracking-wider block mb-1">Team AI Agentic</span>
+                        <span class="text-2xl font-black text-purple-700"><?= $tot_ai_agentic ?></span>
+                        <span class="text-[10px] text-purple-600 block mt-0.5 font-bold">Otomatis Tanpa Guru</span>
+                    </div>
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-lg"><i class="fas fa-robot"></i></div>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between">
                     <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Mapel Offline</span>
-                        <span class="text-2xl font-black text-indigo-600"><?= $tot_offline ?></span>
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Estimasi Hemat Kas</span>
+                        <span class="text-lg sm:text-xl font-black text-emerald-700">Rp <?= number_format($estimasi_hemat_gaji, 0, ',', '.') ?></span>
+                        <span class="text-[10px] text-slate-400 block mt-0.5">Efisiensi Gaji / Bulan</span>
                     </div>
-                    <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg"><i class="fas fa-users"></i></div>
-                </div>
-                <div class="bg-white p-4 rounded-xl border border-gray-150 shadow-sm flex items-center justify-between">
-                    <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Mapel Online</span>
-                        <span class="text-2xl font-black text-cyan-600"><?= $tot_online ?></span>
-                    </div>
-                    <div class="w-10 h-10 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center text-lg"><i class="fas fa-laptop-house"></i></div>
+                    <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg"><i class="fas fa-hand-holding-dollar"></i></div>
                 </div>
             </div>
 
@@ -265,9 +314,10 @@ $active_menu = 'master_mapel';
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-gray-600 uppercase tracking-wider mb-1.5">Metode Belajar</label>
-                                <select name="metode_belajar" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm">
-                                    <option value="offline" <?= ($edit_mode && $data_edit['metode_belajar'] === 'offline') ? 'selected' : '' ?>>Offline (Luring)</option>
-                                    <option value="online" <?= ($edit_mode && $data_edit['metode_belajar'] === 'online') ? 'selected' : '' ?>>Online (Daring)</option>
+                                <select name="metode_belajar" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm font-semibold">
+                                    <option value="offline" <?= ($edit_mode && $data_edit['metode_belajar'] === 'offline') ? 'selected' : '' ?>>Offline (Luring / Guru Fisik)</option>
+                                    <option value="online" <?= ($edit_mode && $data_edit['metode_belajar'] === 'online') ? 'selected' : '' ?>>Online (Daring Standar)</option>
+                                    <option value="ai_agentic" <?= ($edit_mode && $data_edit['metode_belajar'] === 'ai_agentic') ? 'selected' : '' ?>>🤖 Team AI Agentic (Otomatis)</option>
                                 </select>
                             </div>
                         </div>
@@ -334,14 +384,36 @@ $active_menu = 'master_mapel';
 
                 <!-- KANAN: TABEL DAFTAR MAPEL -->
                 <div class="xl:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200/80 overflow-hidden flex flex-col">
-                    <div class="px-6 py-4 border-b border-gray-150 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <h2 class="font-bold text-gray-800 text-sm">Daftar Mata Pelajaran Terdaftar</h2>
+                    <div class="px-6 py-4 border-b border-gray-150 bg-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h2 class="font-bold text-gray-800 text-sm">Daftar Mata Pelajaran Terdaftar</h2>
+                            <p class="text-[11px] text-gray-400">Total <?= $tot_mapel ?> mapel aktif terdata</p>
+                        </div>
                         <div class="relative max-w-xs w-full">
                             <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-xs">
                                 <i class="fas fa-search"></i>
                             </span>
-                            <input type="text" id="mapelSearchInput" onkeyup="filterMapelTable()" class="pl-9 pr-4 py-1.5 w-full border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none" placeholder="Cari mapel...">
+                            <input type="text" id="mapelSearchInput" onkeyup="filterMapelTable()" class="pl-9 pr-4 py-1.5 w-full border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none" placeholder="Cari nama mapel / kode...">
                         </div>
+                    </div>
+
+                    <!-- TAB FILTER KATEGORI & AI STATUS -->
+                    <div class="px-6 py-2.5 bg-slate-100/70 border-b border-gray-200 flex items-center gap-1.5 overflow-x-auto text-xs">
+                        <button type="button" onclick="setMapelFilter('all')" id="tabFilterAll" class="filter-tab-btn px-3 py-1 rounded-lg font-bold bg-white text-slate-800 shadow-xs border border-gray-200">
+                            Semua (<?= $tot_mapel ?>)
+                        </button>
+                        <button type="button" onclick="setMapelFilter('ai')" id="tabFilterAi" class="filter-tab-btn px-3 py-1 rounded-lg font-bold text-purple-700 hover:bg-white transition border border-transparent">
+                            🤖 Team AI (<?= $tot_ai_agentic ?>)
+                        </button>
+                        <button type="button" onclick="setMapelFilter('guru')" id="tabFilterGuru" class="filter-tab-btn px-3 py-1 rounded-lg font-bold text-emerald-700 hover:bg-white transition border border-transparent">
+                            👨‍🏫 Guru Fisik (<?= $tot_guru_fisik ?>)
+                        </button>
+                        <button type="button" onclick="setMapelFilter('diknas')" id="tabFilterDiknas" class="filter-tab-btn px-3 py-1 rounded-lg font-bold text-sky-700 hover:bg-white transition border border-transparent">
+                            Diknas (<?= $tot_diknas ?>)
+                        </button>
+                        <button type="button" onclick="setMapelFilter('diniyah')" id="tabFilterDiniyah" class="filter-tab-btn px-3 py-1 rounded-lg font-bold text-amber-700 hover:bg-white transition border border-transparent">
+                            Diniyah (<?= $tot_diniyah ?>)
+                        </button>
                     </div>
 
                     <div class="overflow-x-auto">
@@ -386,13 +458,17 @@ $active_menu = 'master_mapel';
                                                 </span>
                                             </td>
                                             <td class="px-5 py-3.5">
-                                                <?php if ($row['metode_belajar'] === 'offline'): ?>
+                                                <?php if ($row['metode_belajar'] === 'ai_agentic' || empty($row['pengampu_id'])): ?>
+                                                    <span class="px-2.5 py-1 text-[10px] font-black rounded-lg bg-gradient-to-r from-purple-900 to-indigo-900 text-amber-300 border border-purple-400/40 shadow-xs flex items-center gap-1.5 w-fit">
+                                                        <i class="fas fa-robot text-xs animate-pulse text-amber-300"></i> Team AI Agentic
+                                                    </span>
+                                                <?php elseif ($row['metode_belajar'] === 'offline'): ?>
                                                     <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center w-fit">
-                                                        <i class="fas fa-users mr-1"></i> Luring (Offline)
+                                                        <i class="fas fa-chalkboard-teacher mr-1"></i> Guru Fisik (Luring)
                                                     </span>
                                                 <?php else: ?>
                                                     <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-sky-100 text-sky-800 border border-sky-200 flex items-center w-fit">
-                                                        <i class="fas fa-laptop-house mr-1"></i> Daring (Online)
+                                                        <i class="fas fa-laptop mr-1"></i> Daring (Online)
                                                     </span>
                                                 <?php endif; ?>
                                             </td>
@@ -423,13 +499,27 @@ $active_menu = 'master_mapel';
                                             </td>
                                             <td class="px-5 py-3.5">
                                                 <?php if (!empty($row['nama_pengampu'])): ?>
-                                                    <span class="text-sm font-semibold text-gray-700"><i class="fas fa-chalkboard-teacher mr-1 text-amber-500"></i><?= htmlspecialchars($row['nama_pengampu']) ?></span>
+                                                    <span class="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                                        <i class="fas fa-chalkboard-user text-emerald-600"></i> <?= htmlspecialchars($row['nama_pengampu']) ?>
+                                                    </span>
+                                                <?php elseif ($row['metode_belajar'] === 'ai_agentic' || empty($row['pengampu_id'])): ?>
+                                                    <span class="text-[11px] font-extrabold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 flex items-center gap-1 w-fit">
+                                                        <i class="fas fa-microchip text-purple-600"></i> AI Virtual Teacher (Nol Gaji)
+                                                    </span>
                                                 <?php else: ?>
-                                                    <span class="text-xs text-gray-450 italic">Belum ditentukan</span>
+                                                    <span class="text-xs text-gray-400 italic">Belum ditentukan</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td class="px-5 py-3.5 text-center">
                                                 <div class="flex items-center justify-center space-x-1.5">
+                                                    <?php if (empty($row['pengampu_id']) && $row['metode_belajar'] !== 'ai_agentic'): ?>
+                                                        <a href="master-mapel.php?action=assign_ai&id=<?= $row['id'] ?>" class="text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 p-1.5 rounded transition text-xs font-bold" title="Tugaskan ke Team AI">
+                                                            <i class="fas fa-robot"></i>
+                                                        </a>
+                                                    <?php endif; ?>
+                                                    <a href="elearning-yayasan.php?mapel=<?= urlencode($row['nama_mapel']) ?>" class="text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 p-1.5 rounded transition text-xs" title="Buka di Dewan Pakar E-Learning">
+                                                        <i class="fas fa-graduation-cap"></i>
+                                                    </a>
                                                     <a href="master-mapel.php?edit_id=<?= $row['id'] ?>" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 p-1.5 rounded transition text-xs" title="Edit Mapel">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
@@ -486,6 +576,21 @@ $active_menu = 'master_mapel';
             }
         }
 
+        let currentCategoryFilter = 'all';
+
+        function setMapelFilter(cat) {
+            currentCategoryFilter = cat;
+            document.querySelectorAll('.filter-tab-btn').forEach(btn => {
+                btn.className = 'filter-tab-btn px-3 py-1 rounded-lg font-bold text-slate-600 hover:bg-white transition border border-transparent';
+            });
+            const activeId = cat === 'all' ? 'tabFilterAll' : (cat === 'ai' ? 'tabFilterAi' : (cat === 'guru' ? 'tabFilterGuru' : (cat === 'diknas' ? 'tabFilterDiknas' : 'tabFilterDiniyah')));
+            const el = document.getElementById(activeId);
+            if (el) {
+                el.className = 'filter-tab-btn px-3 py-1 rounded-lg font-bold bg-white text-slate-900 shadow-xs border border-gray-200';
+            }
+            filterMapelTable();
+        }
+
         // Live search filter table client-side
         function filterMapelTable() {
             const input = document.getElementById("mapelSearchInput");
@@ -497,15 +602,32 @@ $active_menu = 'master_mapel';
                 const tdCode = tr[i].getElementsByTagName("td")[0];
                 const tdName = tr[i].getElementsByTagName("td")[1];
                 const tdCat = tr[i].getElementsByTagName("td")[2];
+                const tdMode = tr[i].getElementsByTagName("td")[3];
                 const tdClasses = tr[i].getElementsByTagName("td")[5];
+                const tdTeacher = tr[i].getElementsByTagName("td")[6];
                 
                 if (tdCode || tdName || tdCat || tdClasses) {
                     const textCode = tdCode ? (tdCode.textContent || tdCode.innerText).toUpperCase() : "";
                     const textName = tdName ? (tdName.textContent || tdName.innerText).toUpperCase() : "";
                     const textCat = tdCat ? (tdCat.textContent || tdCat.innerText).toUpperCase() : "";
+                    const textMode = tdMode ? (tdMode.textContent || tdMode.innerText).toUpperCase() : "";
                     const textClasses = tdClasses ? (tdClasses.textContent || tdClasses.innerText).toUpperCase() : "";
+                    const textTeacher = tdTeacher ? (tdTeacher.textContent || tdTeacher.innerText).toUpperCase() : "";
                     
-                    if (textCode.indexOf(filter) > -1 || textName.indexOf(filter) > -1 || textCat.indexOf(filter) > -1 || textClasses.indexOf(filter) > -1) {
+                    const matchSearch = (textCode.indexOf(filter) > -1 || textName.indexOf(filter) > -1 || textCat.indexOf(filter) > -1 || textClasses.indexOf(filter) > -1);
+                    
+                    let matchTab = true;
+                    if (currentCategoryFilter === 'ai') {
+                        matchTab = (textMode.indexOf('TEAM AI') > -1 || textTeacher.indexOf('AI VIRTUAL') > -1);
+                    } else if (currentCategoryFilter === 'guru') {
+                        matchTab = (textTeacher.indexOf('USTADZ') > -1 || textMode.indexOf('GURU FISIK') > -1) && textTeacher.indexOf('AI VIRTUAL') === -1;
+                    } else if (currentCategoryFilter === 'diknas') {
+                        matchTab = (textCat.indexOf('DIKNAS') > -1);
+                    } else if (currentCategoryFilter === 'diniyah') {
+                        matchTab = (textCat.indexOf('DINIYAH') > -1);
+                    }
+
+                    if (matchSearch && matchTab) {
                         tr[i].style.display = "";
                     } else {
                         tr[i].style.display = "none";
