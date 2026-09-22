@@ -133,6 +133,35 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action']))
         $conn->query("DELETE FROM user_menu_preferences WHERE user_key = '" . $conn->real_escape_string($user_key) . "'");
         echo json_encode(['status' => 'success']);
         exit;
+    } elseif ($_POST['action'] === 'save_santri_menu_order') {
+        header('Content-Type: application/json');
+        $user_key = 'santri_order_' . ($user['id'] ?? $user['username'] ?? 'default');
+        $order_data = $_POST['menu_order'] ?? '[]';
+        $decoded = json_decode($order_data, true);
+        if (is_array($decoded)) {
+            $conn->query("CREATE TABLE IF NOT EXISTS user_menu_preferences (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                user_key VARCHAR(100) UNIQUE,
+                menu_order_json LONGTEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )");
+            $stmt = $conn->prepare("INSERT INTO user_menu_preferences (user_key, menu_order_json) VALUES (?, ?) ON DUPLICATE KEY UPDATE menu_order_json = VALUES(menu_order_json)");
+            if ($stmt) {
+                $stmt->bind_param("ss", $user_key, $order_data);
+                $stmt->execute();
+                $stmt->close();
+            }
+            echo json_encode(['status' => 'success']);
+            exit;
+        }
+        echo json_encode(['status' => 'error', 'message' => 'Format data tidak valid']);
+        exit;
+    } elseif ($_POST['action'] === 'reset_santri_menu_order') {
+        header('Content-Type: application/json');
+        $user_key = 'santri_order_' . ($user['id'] ?? $user['username'] ?? 'default');
+        $conn->query("DELETE FROM user_menu_preferences WHERE user_key = '" . $conn->real_escape_string($user_key) . "'");
+        echo json_encode(['status' => 'success']);
+        exit;
     }
 }
 
@@ -470,17 +499,16 @@ if (!$can_see_marketing) {
     }
 }
 
-// Role Santri (Ruang Siswa / Santri: E-Modul, Flipbook & E-Learning)
-$can_see_santri = $is_admin;
-if (!$can_see_santri) {
-    foreach ($roles as $r) {
-        $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
-        if (in_array($r_norm, array_merge($yayasan_core_roles, ['santri', 'santri_rijal', 'santri_nisa', 'siswa', 'orangtua']))) {
-            $can_see_santri = true;
-            break;
-        }
+// Role Santri (Ruang Santri: HANYA bisa dilihat oleh Role Santri Rijal dan Santri Nisa)
+$user_has_santri_role = false;
+foreach ($roles as $r) {
+    $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+    if (in_array($r_norm, ['santri_rijal', 'santri_nisa', 'santri'])) {
+        $user_has_santri_role = true;
+        break;
     }
 }
+$can_see_santri = $user_has_santri_role;
 
 // Sinkronisasi dengan Matrix Filter Simulasi Multi-Role di Header Dashboard
 if (!$is_all_view) {
@@ -497,8 +525,6 @@ if (!$is_all_view) {
             if (in_array($av_norm, $yayasan_core_roles) || ($av_norm === 'super_admin' && $is_admin)) {
                 $can_see_web = true;
                 $can_see_marketing = true;
-                $can_see_santri = true;
-                break;
             }
             if (in_array($av_norm, ['web', 'admin_web', 'admin'])) {
                 $can_see_web = true;
@@ -506,10 +532,16 @@ if (!$is_all_view) {
             if (in_array($av_norm, ['marketing'])) {
                 $can_see_marketing = true;
             }
-            if (in_array($av_norm, ['santri', 'santri_rijal', 'santri_nisa', 'siswa', 'orangtua'])) {
+            // HANYA aktif jika Santri Rijal atau Santri Nisa dipilih pada simulasi
+            if (in_array($av_norm, ['santri_rijal', 'santri_nisa', 'santri'])) {
                 $can_see_santri = true;
             }
         }
+    }
+} else {
+    // Mode "Semua Role": jika user memiliki peran santri atau super admin melihat semua
+    if ($is_admin || $user_has_santri_role) {
+        $can_see_santri = true;
     }
 }
 
@@ -547,33 +579,51 @@ $ruang_marketing_cards = [
     ['label' => 'Sosmed Workflow', 'icon' => 'fas fa-route', 'href' => 'admin-sosmed-workflow.php'],
 ];
 
-// Data Menu Grid Card Ruang Santri (15 Mata Pelajaran E-Modul & AI)
-$ruang_santri_cards = [
-    ['name' => 'B. Indonesia', 'param' => 'Bahasa Indonesia', 'icon' => 'fas fa-book-open', 'desc' => 'Bahasa Indonesia & Literasi'],
-    ['name' => 'Matematika', 'param' => 'Matematika', 'icon' => 'fas fa-square-root-variable', 'desc' => 'Matematika & Logika'],
-    ['name' => 'IPA', 'param' => 'IPA', 'icon' => 'fas fa-flask', 'desc' => 'Ilmu Pengetahuan Alam'],
-    ['name' => 'Fisika', 'param' => 'Fisika', 'icon' => 'fas fa-atom', 'desc' => 'Fisika Terapan'],
-    ['name' => 'Kimia', 'param' => 'Kimia', 'icon' => 'fas fa-vial', 'desc' => 'Kimia & Reaksi'],
-    ['name' => 'Biologi', 'param' => 'Biologi', 'icon' => 'fas fa-dna', 'desc' => 'Biologi Sains'],
-    ['name' => 'IPS', 'param' => 'IPS', 'icon' => 'fas fa-globe-asia', 'desc' => 'Ilmu Pengetahuan Sosial'],
-    ['name' => 'Ekonomi', 'param' => 'Ekonomi', 'icon' => 'fas fa-chart-line', 'desc' => 'Ekonomi & Manajemen'],
-    ['name' => 'Geografi', 'param' => 'Geografi', 'icon' => 'fas fa-map-marked-alt', 'desc' => 'Geografi & Kebumian'],
-    ['name' => 'Sejarah', 'param' => 'Sejarah', 'icon' => 'fas fa-landmark', 'desc' => 'Sejarah Kebangsaan'],
-    ['name' => 'Sosiologi', 'param' => 'Sosiologi', 'icon' => 'fas fa-users', 'desc' => 'Sosiologi & Masyarakat'],
-    ['name' => 'English', 'param' => 'Bahasa Inggris', 'icon' => 'fas fa-comments', 'desc' => 'Bahasa Inggris / English'],
-    ['name' => 'PPKn', 'param' => 'PPKn', 'icon' => 'fas fa-balance-scale', 'desc' => 'Pendidikan Pancasila & Kewarganegaraan'],
-    ['name' => 'Seni Budaya', 'param' => 'Seni Budaya', 'icon' => 'fas fa-palette', 'desc' => 'Seni Budaya & Apresiasi Karya'],
-    ['name' => 'Solopreneur', 'param' => 'Solopreneur', 'icon' => 'fas fa-lightbulb', 'desc' => 'Kewirausahaan Mandiri (AI)']
+// Data Menu Grid Card Ruang Santri (20 Menu: 5 Layanan Aktivitas + 15 Mapel E-Modul & AI)
+$default_santri_cards = [
+    'santri_ibadah'     => ['type' => 'link', 'label' => 'Ibadah Harian', 'icon' => 'fas fa-mosque', 'href' => 'ruang-santri.php?view=ibadah_harian'],
+    'santri_hafalan'    => ['type' => 'link', 'label' => 'Setoran Hafalan', 'icon' => 'fas fa-quran', 'href' => 'santri-laporan-hafalan.php'],
+    'santri_rapor_pkbm' => ['type' => 'link', 'label' => 'Rapor PKBM', 'icon' => 'fas fa-file-invoice', 'href' => 'santri-rapot.php?tab=pkbm'],
+    'santri_rapor_dini' => ['type' => 'link', 'label' => 'Rapot Diniyah', 'icon' => 'fas fa-book-quran', 'href' => 'santri-rapot.php?tab=diniyah'],
+    'santri_keuangan'   => ['type' => 'link', 'label' => 'Tabel Keuangan', 'icon' => 'fas fa-wallet', 'href' => 'ruang-santri-keuangan.php'],
+    'mapel_bindo'       => ['type' => 'modal', 'name' => 'B. Indonesia', 'param' => 'Bahasa Indonesia', 'icon' => 'fas fa-book-open', 'desc' => 'Bahasa Indonesia & Literasi'],
+    'mapel_mtk'         => ['type' => 'modal', 'name' => 'Matematika', 'param' => 'Matematika', 'icon' => 'fas fa-square-root-variable', 'desc' => 'Matematika & Logika'],
+    'mapel_ipa'         => ['type' => 'modal', 'name' => 'IPA', 'param' => 'IPA', 'icon' => 'fas fa-flask', 'desc' => 'Ilmu Pengetahuan Alam'],
+    'mapel_fisika'      => ['type' => 'modal', 'name' => 'Fisika', 'param' => 'Fisika', 'icon' => 'fas fa-atom', 'desc' => 'Fisika Terapan'],
+    'mapel_kimia'       => ['type' => 'modal', 'name' => 'Kimia', 'param' => 'Kimia', 'icon' => 'fas fa-vial', 'desc' => 'Kimia & Reaksi'],
+    'mapel_biologi'     => ['type' => 'modal', 'name' => 'Biologi', 'param' => 'Biologi', 'icon' => 'fas fa-dna', 'desc' => 'Biologi Sains'],
+    'mapel_ips'         => ['type' => 'modal', 'name' => 'IPS', 'param' => 'IPS', 'icon' => 'fas fa-globe-asia', 'desc' => 'Ilmu Pengetahuan Sosial'],
+    'mapel_ekonomi'     => ['type' => 'modal', 'name' => 'Ekonomi', 'param' => 'Ekonomi', 'icon' => 'fas fa-chart-line', 'desc' => 'Ekonomi & Manajemen'],
+    'mapel_geografi'    => ['type' => 'modal', 'name' => 'Geografi', 'param' => 'Geografi', 'icon' => 'fas fa-map-marked-alt', 'desc' => 'Geografi & Kebumian'],
+    'mapel_sejarah'     => ['type' => 'modal', 'name' => 'Sejarah', 'param' => 'Sejarah', 'icon' => 'fas fa-landmark', 'desc' => 'Sejarah Kebangsaan'],
+    'mapel_sosiologi'   => ['type' => 'modal', 'name' => 'Sosiologi', 'param' => 'Sosiologi', 'icon' => 'fas fa-users', 'desc' => 'Sosiologi & Masyarakat'],
+    'mapel_english'     => ['type' => 'modal', 'name' => 'English', 'param' => 'Bahasa Inggris', 'icon' => 'fas fa-comments', 'desc' => 'Bahasa Inggris / English'],
+    'mapel_ppkn'        => ['type' => 'modal', 'name' => 'PPKn', 'param' => 'PPKn', 'icon' => 'fas fa-balance-scale', 'desc' => 'Pendidikan Pancasila & Kewarganegaraan'],
+    'mapel_seni'        => ['type' => 'modal', 'name' => 'Seni Budaya', 'param' => 'Seni Budaya', 'icon' => 'fas fa-palette', 'desc' => 'Seni Budaya & Apresiasi Karya'],
+    'mapel_solopreneur' => ['type' => 'modal', 'name' => 'Solopreneur', 'param' => 'Solopreneur', 'icon' => 'fas fa-lightbulb', 'desc' => 'Kewirausahaan Mandiri (AI)']
 ];
 
-// Data Menu Grid Card Aktivitas & Layanan Santri (Ibadah, Hafalan, Rapor PKBM, Rapot Diniyah, Tabel Keuangan)
-$layanan_santri_cards = [
-    ['label' => 'Ibadah Harian', 'icon' => 'fas fa-mosque', 'href' => 'ruang-santri.php?view=ibadah_harian'],
-    ['label' => 'Setoran Hafalan', 'icon' => 'fas fa-quran', 'href' => 'santri-laporan-hafalan.php'],
-    ['label' => 'Rapor PKBM', 'icon' => 'fas fa-file-invoice', 'href' => 'santri-rapot.php?tab=pkbm'],
-    ['label' => 'Rapot Diniyah', 'icon' => 'fas fa-book-quran', 'href' => 'santri-rapot.php?tab=diniyah'],
-    ['label' => 'Tabel Keuangan', 'icon' => 'fas fa-wallet', 'href' => 'ruang-santri-keuangan.php'],
-];
+// Baca Urutan Preferensi Drag & Drop Menu Santri dari Database / Local
+$all_santri_cards = $default_santri_cards;
+$user_santri_key = 'santri_order_' . ($user['id'] ?? $user['username'] ?? 'default');
+$res_pref_s = $conn->query("SELECT menu_order_json FROM user_menu_preferences WHERE user_key = '$user_santri_key'");
+if ($res_pref_s && $row_ps = $res_pref_s->fetch_assoc()) {
+    $custom_santri_order = json_decode($row_ps['menu_order_json'], true);
+    if (is_array($custom_santri_order) && !empty($custom_santri_order)) {
+        $sorted_santri = [];
+        foreach ($custom_santri_order as $sk) {
+            if (isset($default_santri_cards[$sk])) {
+                $sorted_santri[$sk] = $default_santri_cards[$sk];
+            }
+        }
+        foreach ($default_santri_cards as $sk => $sitem) {
+            if (!isset($sorted_santri[$sk])) {
+                $sorted_santri[$sk] = $sitem;
+            }
+        }
+        $all_santri_cards = $sorted_santri;
+    }
+}
 
 // Sinkronisasi Sesi & Cek Status Realtime Absensi Hari Ini
 if ($user) {
@@ -1046,59 +1096,9 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 
             <?php if ($can_see_santri): ?>
             <!-- ========================================================= -->
-            <!-- FRAME KHUSUS: AKTIVITAS & LAYANAN SANTRI                  -->
-            <!-- (Ibadah Harian, Setoran Hafalan, Rapor PKBM,              -->
-            <!--  Rapot Diniyah, Tabel Keuangan)                           -->
-            <!-- ========================================================= -->
-            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-100/80 mt-6 sm:mt-7 transition-all duration-200 relative overflow-hidden">
-                <!-- Watermark Background Decorative Icon -->
-                <div class="absolute -right-6 -bottom-6 text-teal-100/20 pointer-events-none text-9xl">
-                    <i class="fas fa-clipboard-check"></i>
-                </div>
-
-                <!-- HEADER FRAME AKTIVITAS & LAYANAN SANTRI -->
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-3 border-b border-teal-100/70 relative z-10">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0d8276] flex items-center justify-center text-lg font-black shadow-inner flex-shrink-0">
-                            <i class="fas fa-clipboard-user"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
-                                Layanan Santri
-                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0d8276] border border-teal-200 uppercase tracking-wider">Aktivitas & Administrasi</span>
-                            </h3>
-                            <p class="text-[11px] text-slate-400 font-medium">Ibadah harian, setoran hafalan, e-rapor PKBM & Diniyah, serta tabel keuangan santri</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
-                            <i class="fas fa-check-double text-[#0d8276]"></i> 5 Layanan
-                        </span>
-                    </div>
-                </div>
-
-                <!-- GRID CARD LAYANAN SANTRI (5 GRID CARDS) -->
-                <div class="grid grid-cols-5 gap-y-6 sm:gap-y-8 gap-x-1 sm:gap-x-6 items-start justify-items-center relative z-10">
-                    <?php foreach ($layanan_santri_cards as $srv): ?>
-                    <div class="flex flex-col items-center group cursor-pointer w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
-                        <a href="<?= htmlspecialchars($srv['href']) ?>" class="flex flex-col items-center w-full focus:outline-none" draggable="false">
-                            <!-- Squircle Box Button (#0d8276) -->
-                            <div class="squircle-icon w-13 h-13 sm:w-16 sm:h-16 rounded-[18px] sm:rounded-[22px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-lg sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
-                                <i class="<?= $srv['icon'] ?>"></i>
-                            </div>
-                            <!-- Item Name -->
-                            <span class="text-[10px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight line-clamp-2 max-w-[70px] sm:max-w-[95px] text-center">
-                                <?= htmlspecialchars($srv['label']) ?>
-                            </span>
-                        </a>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-
-            <!-- ========================================================= -->
-            <!-- FRAME KHUSUS: RUANG SANTRI (E-MODUL & AI TUTOR)           -->
-            <!-- (Akses: Yayasan, Super Admin, Santri Rijal & Santri Nisa) -->
+            <!-- FRAME KHUSUS: RUANG SANTRI (LAYANAN & E-MODUL AI)         -->
+            <!-- (Akses Eksklusif: Role Santri Rijal & Santri Nisa)        -->
+            <!-- Fitur: Drag and drop reordering antar kartu               -->
             <!-- ========================================================= -->
             <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-100/80 mt-6 sm:mt-7 transition-all duration-200 relative overflow-hidden">
                 <!-- Watermark Background Decorative Icon -->
@@ -1115,9 +1115,9 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                         <div>
                             <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
                                 Ruang Santri
-                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0d8276] border border-teal-200 uppercase tracking-wider">E-Modul & AI Tutor</span>
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0d8276] border border-teal-200 uppercase tracking-wider">Santri Rijal & Santri Nisa</span>
                             </h3>
-                            <p class="text-[11px] text-slate-400 font-medium">15 Modul Pembelajaran Mandiri, Flipbook Digital Kemdikbud & Bimbingan AI</p>
+                            <p class="text-[11px] text-slate-400 font-medium">Layanan ibadah, hafalan, e-rapor, serta 15 modul kurikulum merdeka & bimbingan AI</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -1125,23 +1125,41 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                             <i class="fas fa-arrow-up-right-from-square text-[10px]"></i> Buka Ruang Santri
                         </a>
                         <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
-                            <i class="fas fa-book-reader text-[#0d8276]"></i> 15 Mapel
+                            <i class="fas fa-grip text-[#0d8276]"></i> <?= count($all_santri_cards) ?> Menu
                         </span>
+                        <button type="button" onclick="resetSantriMenuOrder()" class="text-[10px] font-bold text-teal-700 hover:text-[#086a60] hover:underline flex items-center gap-1 cursor-pointer transition ml-1">
+                            <i class="fas fa-rotate-left text-[9px]"></i> Reset Posisi
+                        </button>
                     </div>
                 </div>
 
-                <!-- GRID CARD RUANG SANTRI (15 MAPEL E-MODUL) -->
-                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center relative z-10">
-                    <?php foreach ($ruang_santri_cards as $s): ?>
-                    <div class="flex flex-col items-center group cursor-pointer w-full text-center tap-highlight-transparent select-none transition-transform duration-200" onclick="showSubjectModal('<?= addslashes($s['name']) ?>', '<?= addslashes($s['desc']) ?>', '<?= $s['icon'] ?>', '<?= addslashes($s['param'] ?? $s['name']) ?>')">
-                        <!-- Squircle Box Button (#0d8276) -->
-                        <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
-                            <i class="<?= $s['icon'] ?>"></i>
+                <!-- DRAGGABLE GRID CONTAINER RUANG SANTRI (20 MENU) -->
+                <div id="grid-santri-container" class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center relative z-10">
+                    <?php foreach ($all_santri_cards as $key => $item): ?>
+                    <div data-id="<?= htmlspecialchars($key) ?>" class="grid-santri-card flex flex-col items-center group cursor-grab active:cursor-grabbing w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <?php if (($item['type'] ?? 'link') === 'link'): ?>
+                        <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center w-full focus:outline-none" draggable="false">
+                            <!-- Squircle Box Button (#0d8276) -->
+                            <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= $item['icon'] ?>"></i>
+                            </div>
+                            <!-- Item Name -->
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight line-clamp-1 max-w-[85px] text-center">
+                                <?= htmlspecialchars($item['label']) ?>
+                            </span>
+                        </a>
+                        <?php else: ?>
+                        <div class="flex flex-col items-center w-full focus:outline-none cursor-pointer" onclick="showSubjectModal('<?= addslashes($item['name']) ?>', '<?= addslashes($item['desc'] ?? '') ?>', '<?= $item['icon'] ?>', '<?= addslashes($item['param'] ?? $item['name']) ?>')">
+                            <!-- Squircle Box Button (#0d8276) -->
+                            <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= $item['icon'] ?>"></i>
+                            </div>
+                            <!-- Subject Name -->
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight line-clamp-1 max-w-[85px] text-center">
+                                <?= htmlspecialchars($item['name']) ?>
+                            </span>
                         </div>
-                        <!-- Subject Name -->
-                        <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight line-clamp-1 max-w-[85px] text-center">
-                            <?= htmlspecialchars($s['name']) ?>
-                        </span>
+                        <?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -1665,9 +1683,6 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
         // INISIALISASI SORTABLEJS DRAG & DROP MIRIP ANDROID LAUNCHER
         // =========================================================
         document.addEventListener('DOMContentLoaded', function() {
-            const gridContainer = document.getElementById('grid-menu-container');
-            if (!gridContainer) return;
-
             let toastTimer = null;
             function showToast(msg) {
                 const toast = document.getElementById('saveToast');
@@ -1683,25 +1698,51 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 }, 2200);
             }
 
-            new Sortable(gridContainer, {
-                animation: 250, // Reordering animation speed (ms)
-                delay: 100, // 100ms delay on touch to prevent conflicts with normal clicks
-                delayOnTouchOnly: true,
-                touchStartThreshold: 5,
-                ghostClass: 'sortable-ghost',
-                chosenClass: 'sortable-chosen',
-                dragClass: 'sortable-drag',
-                onEnd: function(evt) {
-                    if (evt.oldIndex === evt.newIndex) return;
+            // 1. Sortable untuk Frame 2 (Menu Operasional)
+            const gridContainer = document.getElementById('grid-menu-container');
+            if (gridContainer) {
+                new Sortable(gridContainer, {
+                    animation: 250,
+                    delay: 100,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 5,
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    onEnd: function(evt) {
+                        if (evt.oldIndex === evt.newIndex) return;
 
-                    const cards = Array.from(gridContainer.querySelectorAll('.grid-menu-card'));
-                    const order = cards.map(c => c.getAttribute('data-id')).filter(Boolean);
+                        const cards = Array.from(gridContainer.querySelectorAll('.grid-menu-card'));
+                        const order = cards.map(c => c.getAttribute('data-id')).filter(Boolean);
 
-                    localStorage.setItem('sadigs_menu_order', JSON.stringify(order));
+                        localStorage.setItem('sadigs_menu_order', JSON.stringify(order));
 
+                        const formData = new FormData();
+                        formData.append('action', 'save_user_menu_order');
+                        formData.append('menu_order', JSON.stringify(order));
+
+                        fetch('dashboard.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                showToast('Tata letak menu tersimpan ✨');
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Gagal menyimpan tata letak menu:', err);
+                        });
+                    }
+                });
+
+                window.resetMenuOrder = function() {
+                    if (!confirm('Kembalikan tata letak menu ke urutan bawaan sistem?')) return;
+
+                    localStorage.removeItem('sadigs_menu_order');
                     const formData = new FormData();
-                    formData.append('action', 'save_user_menu_order');
-                    formData.append('menu_order', JSON.stringify(order));
+                    formData.append('action', 'reset_user_menu_order');
 
                     fetch('dashboard.php', {
                         method: 'POST',
@@ -1709,35 +1750,73 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                     })
                     .then(res => res.json())
                     .then(data => {
-                        if (data.status === 'success') {
-                            showToast('Tata letak menu tersimpan ✨');
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Gagal menyimpan tata letak menu:', err);
+                        showToast('Tata letak di-reset 🔄');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 400);
                     });
-                }
-            });
+                };
+            }
 
-            window.resetMenuOrder = function() {
-                if (!confirm('Kembalikan tata letak menu ke urutan bawaan sistem?')) return;
+            // 2. Sortable untuk Frame Ruang Santri (20 Menu Santri)
+            const santriContainer = document.getElementById('grid-santri-container');
+            if (santriContainer) {
+                new Sortable(santriContainer, {
+                    animation: 250,
+                    delay: 100,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 5,
+                    ghostClass: 'sortable-ghost',
+                    chosenClass: 'sortable-chosen',
+                    dragClass: 'sortable-drag',
+                    onEnd: function(evt) {
+                        if (evt.oldIndex === evt.newIndex) return;
 
-                localStorage.removeItem('sadigs_menu_order');
-                const formData = new FormData();
-                formData.append('action', 'reset_user_menu_order');
+                        const cards = Array.from(santriContainer.querySelectorAll('.grid-santri-card'));
+                        const order = cards.map(c => c.getAttribute('data-id')).filter(Boolean);
 
-                fetch('dashboard.php', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => {
-                    showToast('Tata letak di-reset 🔄');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 400);
+                        localStorage.setItem('sadigs_santri_menu_order', JSON.stringify(order));
+
+                        const formData = new FormData();
+                        formData.append('action', 'save_santri_menu_order');
+                        formData.append('menu_order', JSON.stringify(order));
+
+                        fetch('dashboard.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                showToast('Tata letak menu santri tersimpan ✨');
+                            }
+                        })
+                        .catch(err => {
+                            console.error('Gagal menyimpan tata letak santri:', err);
+                        });
+                    }
                 });
-            };
+
+                window.resetSantriMenuOrder = function() {
+                    if (!confirm('Kembalikan tata letak menu santri ke urutan bawaan?')) return;
+
+                    localStorage.removeItem('sadigs_santri_menu_order');
+                    const formData = new FormData();
+                    formData.append('action', 'reset_santri_menu_order');
+
+                    fetch('dashboard.php', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        showToast('Tata letak santri di-reset 🔄');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 400);
+                    });
+                };
+            }
         });
 
         // =========================================================
