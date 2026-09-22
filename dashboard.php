@@ -545,6 +545,56 @@ if (!$is_all_view) {
     }
 }
 
+// =========================================================
+// ATURAN EKSKLUSIF ROLE SANTRI RIJAL & SANTRI NISA:
+// Sembunyikan SEMUA frame lain saat user memiliki / menyimulasikan role Santri
+// =========================================================
+$is_santri_only = false;
+
+// 1. Cek peran pengguna asli (santri murni non-staf)
+$user_has_santri = false;
+$user_has_staff  = false;
+foreach ($roles as $r) {
+    $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+    if (in_array($r_norm, ['santri', 'santri_rijal', 'santri_nisa'])) {
+        $user_has_santri = true;
+    } elseif (!in_array($r_norm, ['orangtua', 'walisantri', ''])) {
+        $user_has_staff = true;
+    }
+}
+if ($user_has_santri && !$user_has_staff && !$is_admin) {
+    $is_santri_only = true;
+}
+
+// 2. Cek simulasi multi-role: jika simulasi hanya memilih Santri Rijal dan/atau Santri Nisa
+if (!$is_all_view && !$is_none_view) {
+    $sim_has_santri = false;
+    $sim_has_other  = false;
+    foreach ($active_views as $av) {
+        $av_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($av)));
+        if (in_array($av_norm, ['santri', 'santri_rijal', 'santri_nisa'])) {
+            $sim_has_santri = true;
+        } else {
+            $sim_has_other = true;
+        }
+    }
+    if ($sim_has_santri && !$sim_has_other) {
+        $is_santri_only = true;
+    }
+}
+
+// Jika role santri aktif murni (Santri Rijal / Santri Nisa), sembunyikan semua frame lain:
+if ($is_santri_only) {
+    $show_yayasan_frame    = false;
+    $visible_items         = [];
+    $can_see_web           = false;
+    $can_see_marketing     = false;
+    $show_absensi_pegawai  = false;
+    $show_absensi_mengajar = false;
+    $show_jurnal_mengajar  = false;
+    $can_see_santri        = true; // Pastikan Ruang Santri tampil
+}
+
 // Data Menu Grid Card Ruang Web (Pengaturan Web)
 $ruang_web_cards = [
     ['label' => 'Dashboard Web', 'icon' => 'fas fa-tachometer-alt', 'href' => 'admin.php'],
@@ -1055,7 +1105,8 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             <!-- ========================================================= -->
             <!-- FRAME 2: TATA LETAK MENU OPERASIONAL (DRAGGABLE)          -->
             <!-- ========================================================= -->
-            <div class="bg-white rounded-[36px] md:rounded-[40px] p-6 sm:p-10 shadow-xl shadow-teal-950/10 border border-teal-50">
+            <?php if (!empty($visible_items) && !$is_santri_only): ?>
+            <div class="bg-white rounded-[36px] md:rounded-[40px] p-6 sm:p-10 shadow-xl shadow-teal-950/10 border border-teal-50 mb-6 sm:mb-8">
                 
                 <!-- TOP HEADER DALAM KARTU DENGAN HINT & RESET -->
                 <div class="flex items-center justify-between mb-5 pb-3 border-b border-slate-100">
@@ -1093,6 +1144,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 
                 </div>
             </div>
+            <?php endif; ?>
 
             <?php if ($can_see_santri): ?>
             <!-- ========================================================= -->
@@ -1100,7 +1152,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             <!-- (Akses Eksklusif: Role Santri Rijal & Santri Nisa)        -->
             <!-- Fitur: Drag and drop reordering antar kartu               -->
             <!-- ========================================================= -->
-            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-100/80 mt-6 sm:mt-7 transition-all duration-200 relative overflow-hidden">
+            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-100/80 mb-6 sm:mb-8 transition-all duration-200 relative overflow-hidden">
                 <!-- Watermark Background Decorative Icon -->
                 <div class="absolute -right-6 -bottom-6 text-teal-100/20 pointer-events-none text-9xl">
                     <i class="fas fa-graduation-cap"></i>
