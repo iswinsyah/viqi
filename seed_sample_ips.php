@@ -756,4 +756,21 @@ foreach ($sample_ips_data as $data) {
     }
 }
 }
+
+// Jika diakses langsung lewat browser/HTTP (misal: seed_sample_ips.php?run=1)
+if (basename($_SERVER['SCRIPT_FILENAME'] ?? '') === 'seed_sample_ips.php') {
+    require_once __DIR__ . '/koneksi.php';
+    ensureIpsSampleSeeded($conn, true);
+    header('Content-Type: application/json');
+    $cnt_b = $conn->query("SELECT COUNT(*) AS total FROM elearning_bab WHERE mapel_nama = 'IPS'")->fetch_assoc();
+    $cnt_q = $conn->query("SELECT COUNT(*) AS total_q FROM elearning_kuis q JOIN elearning_bab b ON q.bab_id = b.id WHERE b.mapel_nama = 'IPS'")->fetch_assoc();
+    echo json_encode([
+        'status' => 'success',
+        'message' => 'Seeding Model Blueprint IPS Berhasil!',
+        'total_bab_ips' => (int)($cnt_b['total'] ?? 0),
+        'total_kuis_ips' => (int)($cnt_q['total_q'] ?? 0),
+        'timestamp' => date('Y-m-d H:i:s')
+    ], JSON_PRETTY_PRINT);
+    exit;
+}
 ?>
