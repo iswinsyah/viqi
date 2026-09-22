@@ -340,7 +340,9 @@ if ($materi_aktif) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
     </script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -574,9 +576,9 @@ if ($materi_aktif) {
 
                                     <div class="relative z-10 flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-white/10 text-[11px] text-rose-200">
                                         <span>Santri: <b><?= htmlspecialchars($santri_nama) ?></b> (<?= htmlspecialchars($kelas_santri) ?>)</span>
-                                        <span class="font-bold text-amber-300 flex items-center gap-1">
-                                            Klik tombol panah kanan untuk membuka materi <i class="fas fa-arrow-right"></i>
-                                        </span>
+                                        <button type="button" onclick="nextFlipPage()" class="font-bold text-amber-300 flex items-center gap-1 hover:underline cursor-pointer">
+                                            Buka Materi Halaman 2 <i class="fas fa-arrow-right"></i>
+                                        </button>
                                     </div>
                                 </div>
 
@@ -633,7 +635,7 @@ if ($materi_aktif) {
 
                                     <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
                                         <span>Modul Pembelajaran Mandiri SADIGS 4.0</span>
-                                        <span class="text-[#0d8276] font-bold">Lanjut Halaman 3 ➡</span>
+                                        <button type="button" onclick="goToFlipPage(3)" class="text-[#0d8276] font-bold hover:underline cursor-pointer">Lanjut Halaman 3 ➡</button>
                                     </div>
                                 </div>
 
@@ -677,7 +679,7 @@ if ($materi_aktif) {
 
                                     <div class="pt-3 mt-4 border-t border-slate-200 text-[11px] text-slate-400 flex items-center justify-between">
                                         <span>Sumber: Silabus Kemendikdasmen RI</span>
-                                        <span class="text-rose-600 font-bold">Lanjut ke Studi Kasus ➡</span>
+                                        <button type="button" onclick="goToFlipPage(4)" class="text-rose-600 font-bold hover:underline cursor-pointer">Lanjut ke Studi Kasus ➡</button>
                                     </div>
                                 </div>
 
@@ -714,7 +716,7 @@ if ($materi_aktif) {
 
                                     <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
                                         <span>Integrasi Kurikulum Nasional & Nilai Luhur</span>
-                                        <span class="text-indigo-600 font-bold">Lanjut ke Lembar Kerja ➡</span>
+                                        <button type="button" onclick="goToFlipPage(5)" class="text-indigo-600 font-bold hover:underline cursor-pointer">Lanjut ke Lembar Kerja ➡</button>
                                     </div>
                                 </div>
 
@@ -848,7 +850,8 @@ if ($materi_aktif) {
                                 $embedNocookie = str_replace('youtube.com/embed/', 'youtube-nocookie.com/embed/', $vItem['url']);
                             ?>
                             <button type="button" 
-                                    onclick="gantiVideoPembelajaran('<?= htmlspecialchars($embedNocookie) ?>', this)" 
+                                    data-video-url="<?= htmlspecialchars($embedNocookie, ENT_QUOTES) ?>"
+                                    onclick="gantiVideoPembelajaran(this.getAttribute('data-video-url'), this)" 
                                     class="video-tab-btn whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 <?= ($vIdx === 0) ? 'bg-red-600 text-white shadow-sm' : 'bg-white hover:bg-red-50 text-slate-700 border border-slate-200/80' ?>">
                                 <i class="fab fa-youtube text-sm"></i>
                                 <span><?= htmlspecialchars($vItem['title']) ?></span>
@@ -1189,9 +1192,10 @@ if ($materi_aktif) {
             }
         }
 
+        const lksTugasData = <?= json_encode($materi_aktif['lks_tugas'] ?? '') ?>;
         function konsultasiLksKeAI() {
             bukaUstadzAI();
-            kirimPesanOtomatis("Ustadz, bagaimana petunjuk dan langkah pengerjaan tugas LKS ini: '<?= addslashes($materi_aktif['lks_tugas'] ?? '') ?>'?");
+            kirimPesanOtomatis("Ustadz, bagaimana petunjuk dan langkah pengerjaan tugas LKS ini:\n" + lksTugasData);
         }
 
         function kirimPesanOtomatis(text) {
@@ -1229,23 +1233,26 @@ if ($materi_aktif) {
             `;
             container.scrollTop = container.scrollHeight;
 
-            const contextPrompt = `
-Anda adalah "Ustadz AI <?= addslashes($mapel) ?>", seorang guru dan ustadz pembimbing mata pelajaran <?= addslashes($mapel) ?> yang sangat ramah, santun, cerdas, komunikatif, dan penuh motivasi islami di platform e-learning SADIGS 4.0.
+            const promptMapel = <?= json_encode($mapel) ?>;
+            const promptJudulBab = <?= json_encode($materi_aktif['judul_bab'] ?? $mapel) ?>;
+            const promptSubjudul = <?= json_encode($materi_aktif['subjudul'] ?? '') ?>;
+            const promptSantriNama = <?= json_encode($santri_nama) ?>;
+
+            const contextPrompt = `Anda adalah "Ustadz AI ` + promptMapel + `", seorang guru dan ustadz pembimbing mata pelajaran ` + promptMapel + ` yang sangat ramah, santun, cerdas, komunikatif, dan penuh motivasi islami di platform e-learning SADIGS 4.0.
 
 Konteks Pembelajaran:
-- Mata Pelajaran: <?= addslashes($mapel) ?>
-- Bab Aktif: <?= addslashes($materi_aktif['judul_bab'] ?? $mapel) ?> (<?= addslashes($materi_aktif['subjudul'] ?? '') ?>)
-- Nama Santri: <?= addslashes($santri_nama) ?>
+- Mata Pelajaran: ` + promptMapel + `
+- Bab Aktif: ` + promptJudulBab + ` (` + promptSubjudul + `)
+- Nama Santri: ` + promptSantriNama + `
 
 Instruksi Anda:
-1. Sapa santri dengan ramah (misal: "Ahlan ananda <?= addslashes($santri_nama) ?>", "Masya Allah pertanyaan yang sangat bagus!").
+1. Sapa santri dengan ramah (misal: "Ahlan ananda ` + promptSantriNama + `", "Masya Allah pertanyaan yang sangat bagus!").
 2. Jelaskan materi dengan bahasa yang mudah dipahami anak sekolah/pesantren, gunakan analogi kehidupan nyata.
 3. Berikan poin-poin yang terstruktur rapi.
 4. Jawab secara jelas dan to-the-point.
 
 Pertanyaan Santri:
-"${text}"
-            `;
+"` + text + `"`;
 
             try {
                 const response = await fetch('api-gemini.php', {
@@ -1460,7 +1467,7 @@ Pertanyaan Santri:
         let pdfScale = 1.15;
         let isPdfRendering = false;
         let isPdfLoaded = false;
-        const pdfTargetUrl = '<?= addslashes($emodul_url) ?>';
+        const pdfTargetUrl = <?= json_encode($emodul_url ?? '') ?>;
 
         function switchFlipbookMode(mode) {
             const tabSummary = document.getElementById('tabModeSummary');
@@ -1589,11 +1596,11 @@ Pertanyaan Santri:
 
         function gantiVideoPembelajaran(videoUrl, btnElement) {
             const iframe = document.getElementById('mainVideoPlayer');
-            if (iframe) {
+            if (iframe && videoUrl) {
                 iframe.src = videoUrl;
             }
             const directLink = document.getElementById('directYoutubeLink');
-            if (directLink) {
+            if (directLink && videoUrl) {
                 directLink.href = videoUrl.replace('/embed/', '/watch?v=').replace('youtube-nocookie.com', 'youtube.com');
             }
             document.querySelectorAll('.video-tab-btn').forEach(btn => {
@@ -1603,6 +1610,11 @@ Pertanyaan Santri:
                 btnElement.className = 'video-tab-btn whitespace-nowrap px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 bg-red-600 text-white shadow-sm';
             }
         }
+
+        // Inisialisasi Flipbook UI pada saat DOM dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            updateFlipbookUI();
+        });
     </script>
 </body>
 </html>
