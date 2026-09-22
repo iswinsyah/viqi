@@ -566,14 +566,13 @@ $ruang_santri_cards = [
     ['name' => 'Solopreneur', 'param' => 'Solopreneur', 'icon' => 'fas fa-lightbulb', 'desc' => 'Kewirausahaan Mandiri (AI)']
 ];
 
-// Layanan Cepat Santri (Ibadah, Hafalan, Rapor, Kalender, Keuangan)
-$ruang_santri_services = [
+// Data Menu Grid Card Aktivitas & Layanan Santri (Ibadah, Hafalan, Rapor PKBM, Rapot Diniyah, Tabel Keuangan)
+$layanan_santri_cards = [
     ['label' => 'Ibadah Harian', 'icon' => 'fas fa-mosque', 'href' => 'ruang-santri.php?view=ibadah_harian'],
     ['label' => 'Setoran Hafalan', 'icon' => 'fas fa-quran', 'href' => 'santri-laporan-hafalan.php'],
     ['label' => 'Rapor PKBM', 'icon' => 'fas fa-file-invoice', 'href' => 'santri-rapot.php?tab=pkbm'],
-    ['label' => 'Rapor Diniyah', 'icon' => 'fas fa-book-quran', 'href' => 'santri-rapot.php?tab=diniyah'],
-    ['label' => 'Tabel Keuangan', 'icon' => 'fas fa-money-check-alt', 'href' => 'ruang-santri-keuangan.php'],
-    ['label' => 'Kalender Akademik', 'icon' => 'fas fa-calendar-alt', 'href' => 'kalender-akademik.php'],
+    ['label' => 'Rapot Diniyah', 'icon' => 'fas fa-book-quran', 'href' => 'santri-rapot.php?tab=diniyah'],
+    ['label' => 'Tabel Keuangan', 'icon' => 'fas fa-wallet', 'href' => 'ruang-santri-keuangan.php'],
 ];
 
 // Sinkronisasi Sesi & Cek Status Realtime Absensi Hari Ini
@@ -1098,7 +1097,58 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 
             <?php if ($can_see_santri): ?>
             <!-- ========================================================= -->
-            <!-- FRAME KHUSUS: RUANG SANTRI (E-MODUL & E-LEARNING)         -->
+            <!-- FRAME KHUSUS: AKTIVITAS & LAYANAN SANTRI                  -->
+            <!-- (Ibadah Harian, Setoran Hafalan, Rapor PKBM,              -->
+            <!--  Rapot Diniyah, Tabel Keuangan)                           -->
+            <!-- ========================================================= -->
+            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-100/80 mt-6 sm:mt-7 transition-all duration-200 relative overflow-hidden">
+                <!-- Watermark Background Decorative Icon -->
+                <div class="absolute -right-6 -bottom-6 text-teal-100/20 pointer-events-none text-9xl">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+
+                <!-- HEADER FRAME AKTIVITAS & LAYANAN SANTRI -->
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-3 border-b border-teal-100/70 relative z-10">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0d8276] flex items-center justify-center text-lg font-black shadow-inner flex-shrink-0">
+                            <i class="fas fa-clipboard-user"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
+                                Layanan Santri
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0d8276] border border-teal-200 uppercase tracking-wider">Aktivitas & Administrasi</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 font-medium">Ibadah harian, setoran hafalan, e-rapor PKBM & Diniyah, serta tabel keuangan santri</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
+                            <i class="fas fa-check-double text-[#0d8276]"></i> 5 Layanan
+                        </span>
+                    </div>
+                </div>
+
+                <!-- GRID CARD LAYANAN SANTRI (5 GRID CARDS) -->
+                <div class="grid grid-cols-5 gap-y-6 sm:gap-y-8 gap-x-1 sm:gap-x-6 items-start justify-items-center relative z-10">
+                    <?php foreach ($layanan_santri_cards as $srv): ?>
+                    <div class="flex flex-col items-center group cursor-pointer w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <a href="<?= htmlspecialchars($srv['href']) ?>" class="flex flex-col items-center w-full focus:outline-none" draggable="false">
+                            <!-- Squircle Box Button (#0d8276) -->
+                            <div class="squircle-icon w-13 h-13 sm:w-16 sm:h-16 rounded-[18px] sm:rounded-[22px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-lg sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= $srv['icon'] ?>"></i>
+                            </div>
+                            <!-- Item Name -->
+                            <span class="text-[10px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight line-clamp-2 max-w-[70px] sm:max-w-[95px] text-center">
+                                <?= htmlspecialchars($srv['label']) ?>
+                            </span>
+                        </a>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- FRAME KHUSUS: RUANG SANTRI (E-MODUL & AI TUTOR)           -->
             <!-- (Akses: Yayasan, Super Admin, Santri Rijal & Santri Nisa) -->
             <!-- ========================================================= -->
             <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-100/80 mt-6 sm:mt-7 transition-all duration-200 relative overflow-hidden">
@@ -1108,7 +1158,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 </div>
 
                 <!-- HEADER FRAME RUANG SANTRI -->
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-5 pb-3 border-b border-teal-100/70 relative z-10">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-3 border-b border-teal-100/70 relative z-10">
                     <div class="flex items-center gap-2.5">
                         <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0d8276] flex items-center justify-center text-lg font-black shadow-inner flex-shrink-0">
                             <i class="fas fa-graduation-cap"></i>
@@ -1129,16 +1179,6 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                             <i class="fas fa-book-reader text-[#0d8276]"></i> 15 Mapel
                         </span>
                     </div>
-                </div>
-
-                <!-- SUB-MENU / LAYANAN CEPAT SANTRI -->
-                <div class="flex items-center gap-2 mb-6 overflow-x-auto hide-scrollbar pb-1 relative z-10">
-                    <?php foreach ($ruang_santri_services as $srv): ?>
-                    <a href="<?= htmlspecialchars($srv['href']) ?>" class="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-[#0d8276] border border-slate-200/80 hover:border-teal-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
-                        <i class="<?= $srv['icon'] ?> text-[#0d8276] text-xs"></i>
-                        <span><?= htmlspecialchars($srv['label']) ?></span>
-                    </a>
-                    <?php endforeach; ?>
                 </div>
 
                 <!-- GRID CARD RUANG SANTRI (15 MAPEL E-MODUL) -->
