@@ -513,36 +513,36 @@ $curr_file = basename($_SERVER['PHP_SELF']);
 <!-- ========================================================= -->
 <!-- BOTTOM NAVIGATION BAR (HANYA MUNCUL DI MOBILE / md:hidden) -->
 <!-- ========================================================= -->
-<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-teal-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-around z-40 max-w-[440px] mx-auto px-2">
-    <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'dashboard.php') ? 'text-[#0b8478] font-black' : 'text-slate-500 hover:text-[#0b8478] font-bold' ?> text-[10px] transition">
-        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'dashboard.php') ? 'bg-teal-50' : '' ?> flex items-center justify-center mb-0.5">
-            <i class="fas fa-house text-base <?= ($curr_file === 'dashboard.php') ? 'text-[#0b8478]' : 'text-slate-500' ?>"></i>
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] flex items-center justify-around z-40 max-w-[440px] mx-auto px-2">
+    <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'dashboard.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'dashboard.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+            <i class="fas fa-house text-base <?= ($curr_file === 'dashboard.php') ? 'text-white' : 'text-teal-100' ?>"></i>
         </div>
-        <span>Beranda</span>
+        <span class="text-white">Beranda</span>
     </a>
-    <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'kalender-akademik.php') ? 'text-[#0b8478] font-black' : 'text-slate-500 hover:text-[#0b8478] font-bold' ?> text-[10px] transition">
-        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'kalender-akademik.php') ? 'bg-teal-50' : '' ?> flex items-center justify-center mb-0.5">
-            <i class="fas fa-calendar-alt text-base <?= ($curr_file === 'kalender-akademik.php') ? 'text-[#0b8478]' : 'text-slate-500' ?>"></i>
+    <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'kalender-akademik.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'kalender-akademik.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+            <i class="fas fa-calendar-alt text-base <?= ($curr_file === 'kalender-akademik.php') ? 'text-white' : 'text-teal-100' ?>"></i>
         </div>
-        <span>Kalender</span>
+        <span class="text-white">Kalender</span>
     </a>
-    <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'text-[#0b8478] font-black' : 'text-slate-500 hover:text-[#0b8478] font-bold' ?> text-[10px] transition">
-        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'bg-teal-50' : '' ?> flex items-center justify-center mb-0.5">
-            <i class="fas fa-clock text-base <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'text-[#0b8478]' : 'text-slate-500' ?>"></i>
+    <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+            <i class="fas fa-clock text-base <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'text-white' : 'text-teal-100' ?>"></i>
         </div>
-        <span>Jadwal</span>
+        <span class="text-white">Jadwal</span>
     </a>
-    <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'pengumuman.php') ? 'text-[#0b8478] font-black' : 'text-slate-500 hover:text-[#0b8478] font-bold' ?> text-[10px] transition">
-        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'pengumuman.php') ? 'bg-teal-50' : '' ?> flex items-center justify-center mb-0.5">
-            <i class="fas fa-bullhorn text-base <?= ($curr_file === 'pengumuman.php') ? 'text-[#0b8478]' : 'text-slate-500' ?>"></i>
+    <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'pengumuman.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+        <div class="w-9 h-7 rounded-full <?= ($curr_file === 'pengumuman.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+            <i class="fas fa-bullhorn text-base <?= ($curr_file === 'pengumuman.php') ? 'text-white' : 'text-teal-100' ?>"></i>
         </div>
-        <span>Info</span>
+        <span class="text-white">Info</span>
     </a>
-    <a href="logout-ustadz.php" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-rose-500 hover:text-rose-700 font-bold text-[10px] transition">
+    <a href="logout-ustadz.php" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-[10px] transition">
         <div class="w-9 h-7 rounded-full flex items-center justify-center mb-0.5">
-            <i class="fas fa-arrow-right-from-bracket text-base"></i>
+            <i class="fas fa-arrow-right-from-bracket text-base text-teal-100 hover:text-rose-200"></i>
         </div>
-        <span>Keluar</span>
+        <span class="text-white">Keluar</span>
     </a>
 </nav>
 

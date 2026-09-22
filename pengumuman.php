@@ -338,28 +338,28 @@ while ($row = $res_pengumuman->fetch_assoc()) {
         <!-- ========================================================= -->
         <!-- BOTTOM NAVIGATION BAR (HP)                                -->
         <!-- ========================================================= -->
-        <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-teal-100 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] flex items-center justify-around z-40 max-w-[440px] mx-auto px-2">
-            <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
-                <i class="fas fa-house text-lg mb-0.5"></i>
-                <span>Beranda</span>
+        <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] flex items-center justify-around z-40 max-w-[440px] mx-auto px-2">
+            <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
+                <i class="fas fa-house text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
+                <span class="text-white">Beranda</span>
             </a>
-            <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
-                <i class="fas fa-calendar-alt text-lg mb-0.5"></i>
-                <span>Kalender</span>
+            <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
+                <i class="fas fa-calendar-alt text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
+                <span class="text-white">Kalender</span>
             </a>
-            <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-slate-500 hover:text-[#0b8478] font-bold text-[10px] transition">
-                <i class="fas fa-clock text-lg mb-0.5"></i>
-                <span>Jadwal</span>
+            <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
+                <i class="fas fa-clock text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
+                <span class="text-white">Jadwal</span>
             </a>
-            <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 text-[#0b8478] font-black text-[10px]">
-                <div class="w-9 h-7 rounded-full bg-teal-50 flex items-center justify-center mb-0.5">
-                    <i class="fas fa-bullhorn text-base text-[#0b8478]"></i>
+            <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 text-white font-black text-[10px]">
+                <div class="w-9 h-7 rounded-full bg-white/20 flex items-center justify-center mb-0.5">
+                    <i class="fas fa-bullhorn text-base text-white"></i>
                 </div>
-                <span>Info</span>
+                <span class="text-white">Info</span>
             </a>
-            <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-rose-500 hover:text-rose-700 font-bold text-[10px] transition">
-                <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5"></i>
-                <span>Keluar</span>
+            <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-[10px] transition">
+                <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5 text-teal-100 hover:text-rose-200"></i>
+                <span class="text-white">Keluar</span>
             </a>
         </nav>
 
