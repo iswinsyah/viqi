@@ -470,19 +470,34 @@ if (!$can_see_marketing) {
     }
 }
 
+// Role Santri (Ruang Siswa / Santri: E-Modul, Flipbook & E-Learning)
+$can_see_santri = $is_admin;
+if (!$can_see_santri) {
+    foreach ($roles as $r) {
+        $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+        if (in_array($r_norm, array_merge($yayasan_core_roles, ['santri', 'santri_rijal', 'santri_nisa', 'siswa', 'orangtua']))) {
+            $can_see_santri = true;
+            break;
+        }
+    }
+}
+
 // Sinkronisasi dengan Matrix Filter Simulasi Multi-Role di Header Dashboard
 if (!$is_all_view) {
     if ($is_none_view) {
         $can_see_web = false;
         $can_see_marketing = false;
+        $can_see_santri = false;
     } else {
         $can_see_web = false;
         $can_see_marketing = false;
+        $can_see_santri = false;
         foreach ($active_views as $av) {
             $av_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($av)));
             if (in_array($av_norm, $yayasan_core_roles) || ($av_norm === 'super_admin' && $is_admin)) {
                 $can_see_web = true;
                 $can_see_marketing = true;
+                $can_see_santri = true;
                 break;
             }
             if (in_array($av_norm, ['web', 'admin_web', 'admin'])) {
@@ -490,6 +505,9 @@ if (!$is_all_view) {
             }
             if (in_array($av_norm, ['marketing'])) {
                 $can_see_marketing = true;
+            }
+            if (in_array($av_norm, ['santri', 'santri_rijal', 'santri_nisa', 'siswa', 'orangtua'])) {
+                $can_see_santri = true;
             }
         }
     }
@@ -527,6 +545,35 @@ $ruang_marketing_cards = [
     ['label' => 'Artikel SEO AI', 'icon' => 'fas fa-pen-nib', 'href' => 'admin-seo.php'],
     ['label' => 'Publisher AI', 'icon' => 'fas fa-paper-plane', 'href' => 'admin-publisher.php'],
     ['label' => 'Sosmed Workflow', 'icon' => 'fas fa-route', 'href' => 'admin-sosmed-workflow.php'],
+];
+
+// Data Menu Grid Card Ruang Santri (15 Mata Pelajaran E-Modul & AI)
+$ruang_santri_cards = [
+    ['name' => 'B. Indonesia', 'param' => 'Bahasa Indonesia', 'icon' => 'fas fa-book-open', 'desc' => 'Bahasa Indonesia & Literasi'],
+    ['name' => 'Matematika', 'param' => 'Matematika', 'icon' => 'fas fa-square-root-variable', 'desc' => 'Matematika & Logika'],
+    ['name' => 'IPA', 'param' => 'IPA', 'icon' => 'fas fa-flask', 'desc' => 'Ilmu Pengetahuan Alam'],
+    ['name' => 'Fisika', 'param' => 'Fisika', 'icon' => 'fas fa-atom', 'desc' => 'Fisika Terapan'],
+    ['name' => 'Kimia', 'param' => 'Kimia', 'icon' => 'fas fa-vial', 'desc' => 'Kimia & Reaksi'],
+    ['name' => 'Biologi', 'param' => 'Biologi', 'icon' => 'fas fa-dna', 'desc' => 'Biologi Sains'],
+    ['name' => 'IPS', 'param' => 'IPS', 'icon' => 'fas fa-globe-asia', 'desc' => 'Ilmu Pengetahuan Sosial'],
+    ['name' => 'Ekonomi', 'param' => 'Ekonomi', 'icon' => 'fas fa-chart-line', 'desc' => 'Ekonomi & Manajemen'],
+    ['name' => 'Geografi', 'param' => 'Geografi', 'icon' => 'fas fa-map-marked-alt', 'desc' => 'Geografi & Kebumian'],
+    ['name' => 'Sejarah', 'param' => 'Sejarah', 'icon' => 'fas fa-landmark', 'desc' => 'Sejarah Kebangsaan'],
+    ['name' => 'Sosiologi', 'param' => 'Sosiologi', 'icon' => 'fas fa-users', 'desc' => 'Sosiologi & Masyarakat'],
+    ['name' => 'English', 'param' => 'Bahasa Inggris', 'icon' => 'fas fa-comments', 'desc' => 'Bahasa Inggris / English'],
+    ['name' => 'PPKn', 'param' => 'PPKn', 'icon' => 'fas fa-balance-scale', 'desc' => 'Pendidikan Pancasila & Kewarganegaraan'],
+    ['name' => 'Seni Budaya', 'param' => 'Seni Budaya', 'icon' => 'fas fa-palette', 'desc' => 'Seni Budaya & Apresiasi Karya'],
+    ['name' => 'Solopreneur', 'param' => 'Solopreneur', 'icon' => 'fas fa-lightbulb', 'desc' => 'Kewirausahaan Mandiri (AI)']
+];
+
+// Layanan Cepat Santri (Ibadah, Hafalan, Rapor, Kalender, Keuangan)
+$ruang_santri_services = [
+    ['label' => 'Ibadah Harian', 'icon' => 'fas fa-mosque', 'href' => 'ruang-santri.php?view=ibadah_harian'],
+    ['label' => 'Setoran Hafalan', 'icon' => 'fas fa-quran', 'href' => 'santri-laporan-hafalan.php'],
+    ['label' => 'Rapor PKBM', 'icon' => 'fas fa-file-invoice', 'href' => 'santri-rapot.php?tab=pkbm'],
+    ['label' => 'Rapor Diniyah', 'icon' => 'fas fa-book-quran', 'href' => 'santri-rapot.php?tab=diniyah'],
+    ['label' => 'Tabel Keuangan', 'icon' => 'fas fa-money-check-alt', 'href' => 'ruang-santri-keuangan.php'],
+    ['label' => 'Kalender Akademik', 'icon' => 'fas fa-calendar-alt', 'href' => 'kalender-akademik.php'],
 ];
 
 // Sinkronisasi Sesi & Cek Status Realtime Absensi Hari Ini
@@ -1048,6 +1095,69 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 
                 </div>
             </div>
+
+            <?php if ($can_see_santri): ?>
+            <!-- ========================================================= -->
+            <!-- FRAME KHUSUS: RUANG SANTRI (E-MODUL & E-LEARNING)         -->
+            <!-- (Akses: Yayasan, Super Admin, Santri Rijal & Santri Nisa) -->
+            <!-- ========================================================= -->
+            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-100/80 mt-6 sm:mt-7 transition-all duration-200 relative overflow-hidden">
+                <!-- Watermark Background Decorative Icon -->
+                <div class="absolute -right-6 -bottom-6 text-teal-100/20 pointer-events-none text-9xl">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+
+                <!-- HEADER FRAME RUANG SANTRI -->
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-5 pb-3 border-b border-teal-100/70 relative z-10">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0d8276] flex items-center justify-center text-lg font-black shadow-inner flex-shrink-0">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
+                                Ruang Santri
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0d8276] border border-teal-200 uppercase tracking-wider">E-Modul & AI Tutor</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 font-medium">15 Modul Pembelajaran Mandiri, Flipbook Digital Kemdikbud & Bimbingan AI</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="ruang-santri.php" class="px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0d8276] font-bold text-[11px] flex items-center gap-1 border border-teal-200 transition">
+                            <i class="fas fa-arrow-up-right-from-square text-[10px]"></i> Buka Ruang Santri
+                        </a>
+                        <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
+                            <i class="fas fa-book-reader text-[#0d8276]"></i> 15 Mapel
+                        </span>
+                    </div>
+                </div>
+
+                <!-- SUB-MENU / LAYANAN CEPAT SANTRI -->
+                <div class="flex items-center gap-2 mb-6 overflow-x-auto hide-scrollbar pb-1 relative z-10">
+                    <?php foreach ($ruang_santri_services as $srv): ?>
+                    <a href="<?= htmlspecialchars($srv['href']) ?>" class="whitespace-nowrap px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-teal-50 text-slate-700 hover:text-[#0d8276] border border-slate-200/80 hover:border-teal-200 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs">
+                        <i class="<?= $srv['icon'] ?> text-[#0d8276] text-xs"></i>
+                        <span><?= htmlspecialchars($srv['label']) ?></span>
+                    </a>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- GRID CARD RUANG SANTRI (15 MAPEL E-MODUL) -->
+                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center relative z-10">
+                    <?php foreach ($ruang_santri_cards as $s): ?>
+                    <div class="flex flex-col items-center group cursor-pointer w-full text-center tap-highlight-transparent select-none transition-transform duration-200" onclick="showSubjectModal('<?= addslashes($s['name']) ?>', '<?= addslashes($s['desc']) ?>', '<?= $s['icon'] ?>', '<?= addslashes($s['param'] ?? $s['name']) ?>')">
+                        <!-- Squircle Box Button (#0d8276) -->
+                        <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                            <i class="<?= $s['icon'] ?>"></i>
+                        </div>
+                        <!-- Subject Name -->
+                        <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight line-clamp-1 max-w-[85px] text-center">
+                            <?= htmlspecialchars($s['name']) ?>
+                        </span>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <?php if ($can_see_web): ?>
             <!-- ========================================================= -->
@@ -1783,7 +1893,65 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 alert("QR Code (" + decodedText + ") tidak dikenali oleh sistem kelas. Pastikan Anda men-scan QR yang benar.");
             }
         }
+
+        // ==========================================
+        // MODAL DETAIL MATA PELAJARAN RUANG SANTRI
+        // ==========================================
+        function showSubjectModal(title, desc, iconClass, param) {
+            const mapelTarget = param || title;
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalDesc').innerText = desc;
+            document.getElementById('modalIcon').className = iconClass;
+            document.getElementById('modalStudyBtn').href = 'santri-belajar.php?mapel=' + encodeURIComponent(mapelTarget) + '&bab=1';
+            document.getElementById('subjectModal').classList.remove('hidden');
+        }
+
+        function closeSubjectModal() {
+            document.getElementById('subjectModal').classList.add('hidden');
+        }
+
+        document.addEventListener('click', function(e) {
+            const sm = document.getElementById('subjectModal');
+            if (sm && e.target === sm) {
+                closeSubjectModal();
+            }
+        });
     </script>
+
+    <!-- SUBJECT DETAIL MODAL RUANG SANTRI -->
+    <div id="subjectModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-teal-100 relative transform transition-all animate-in fade-in zoom-in duration-200">
+            <button type="button" onclick="closeSubjectModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="flex items-center space-x-4 mb-4">
+                <div id="modalIconBox" class="w-14 h-14 rounded-2xl bg-[#0d8276] text-white flex items-center justify-center text-2xl shadow-md">
+                    <i id="modalIcon" class="fas fa-book"></i>
+                </div>
+                <div>
+                    <h3 id="modalTitle" class="text-lg font-black text-slate-900">Mata Pelajaran</h3>
+                    <p id="modalDesc" class="text-xs text-slate-500 mt-0.5">Deskripsi modul belajar</p>
+                </div>
+            </div>
+            <div class="bg-[#e1f5f2]/60 p-3.5 rounded-2xl border border-teal-100 text-xs text-slate-700 mb-4">
+                <p class="font-semibold text-[#0d8276] mb-1"><i class="fas fa-graduation-cap mr-1"></i> E-Learning & Bimbingan AI</p>
+                <p class="text-[11px] text-slate-600 leading-relaxed">Pelajari modul rangkuman, tonton video materi, kerjakan LKS & latihan soal, serta konsultasi 24 jam dengan Ustadz AI.</p>
+            </div>
+            <div class="space-y-2">
+                <a id="modalStudyBtn" href="santri-belajar.php?mapel=IPS&bab=1" class="w-full bg-[#0d8276] hover:bg-[#0b6f65] text-white text-xs font-black py-3 px-4 rounded-2xl text-center shadow-md shadow-teal-900/10 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-book-reader text-sm"></i> Buka Ruang Belajar & Ustadz AI
+                </a>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <a href="santri-rapot.php?tab=pkbm" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-xl text-center transition flex items-center justify-center gap-1.5">
+                        <i class="fas fa-file-invoice"></i> Rapor PKBM
+                    </a>
+                    <a href="santri-rapot.php?tab=diniyah" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-xl text-center transition flex items-center justify-center gap-1.5">
+                        <i class="fas fa-book-quran"></i> Rapor Diniyah
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL POPUP FEEDBACK ABSENSI LANGSUNG -->
     <div id="dash-absen-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
