@@ -460,18 +460,7 @@ if ($view === 'ibadah_harian') {
                     </button>
                     <!-- Brand Icon (Sun/Book/Leaf) -->
                     <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
-                        <svg viewBox="0 0 100 100" class="w-full h-full">
-                            <!-- Radiant Sun Petals -->
-                            <circle cx="50" cy="45" r="12" fill="#f59e0b" />
-                            <path d="M50 12 L55 28 L45 28 Z" fill="#10b981" />
-                            <path d="M72 20 L66 34 L58 28 Z" fill="#10b981" />
-                            <path d="M84 40 L70 44 L68 36 Z" fill="#10b981" />
-                            <path d="M28 20 L42 28 L34 34 Z" fill="#10b981" />
-                            <path d="M16 40 L32 36 L30 44 Z" fill="#10b981" />
-                            <!-- Open Book Leaves / Foundation -->
-                            <path d="M22 64 C35 55, 48 60, 50 68 C52 60, 65 55, 78 64 C76 76, 52 82, 50 82 C48 82, 24 76, 22 64 Z" fill="#0d8276" />
-                            <path d="M30 68 C40 62, 48 66, 50 72 C52 66, 60 62, 70 68 C68 76, 52 80, 50 80 C48 80, 32 76, 30 68 Z" fill="#f59e0b" />
-                        </svg>
+                        <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-9 h-9 object-contain">
                     </div>
 
                     <div>

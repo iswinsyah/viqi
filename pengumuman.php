@@ -143,16 +143,7 @@ while ($row = $res_pengumuman->fetch_assoc()) {
         <!-- SIDEBAR TOP: BRAND LOGO SADIGS -->
         <div class="p-6 border-b border-teal-700/60 flex items-center space-x-3.5">
             <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
-                <svg viewBox="0 0 100 100" class="w-full h-full">
-                    <circle cx="50" cy="46" r="10" fill="#f59e0b" />
-                    <path d="M50 14 C47 24, 47 28, 50 32 C53 28, 53 24, 50 14 Z" fill="#10b981" />
-                    <path d="M68 20 C61 28, 59 32, 60 36 C64 33, 68 31, 74 24 Z" fill="#10b981" />
-                    <path d="M80 36 C71 40, 68 43, 67 48 C72 47, 76 46, 84 41 Z" fill="#10b981" />
-                    <path d="M32 20 C39 28, 41 32, 40 36 C36 33, 32 31, 26 24 Z" fill="#10b981" />
-                    <path d="M20 36 C29 40, 32 43, 33 48 C28 47, 24 46, 16 41 Z" fill="#10b981" />
-                    <path d="M30 62 C42 56, 48 60, 50 66 C52 60, 58 56, 70 62 C68 70, 52 74, 50 74 C48 74, 32 70, 30 62 Z" fill="#f59e0b" />
-                    <path d="M22 68 C36 58, 48 64, 50 72 C52 64, 64 58, 78 68 C75 80, 52 86, 50 86 C48 86, 25 80, 22 68 Z" fill="#0b8478" />
-                </svg>
+                <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-9 h-9 object-contain">
             </div>
             <div>
                 <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
