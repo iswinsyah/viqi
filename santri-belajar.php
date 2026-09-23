@@ -431,6 +431,52 @@ if ($materi_aktif) {
                     </div>
                 </div>
 
+                <?php if ($mapel === 'Sosiologi'): ?>
+                <!-- BANNER KHUSUS PENDAMPING BELAJAR: USTADZ IBNU KHALDUN -->
+                <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white rounded-3xl p-5 sm:p-6 shadow-lg border border-teal-500/30 mb-5 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-6 text-teal-500/10 text-8xl pointer-events-none">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3.5">
+                            <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-md flex-shrink-0">
+                                <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center text-2xl text-amber-300">
+                                    <i class="fas fa-user-tie"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 mb-0.5">
+                                    <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500 text-white uppercase tracking-wider">
+                                        🟢 Tutor AI Utama
+                                    </span>
+                                    <span class="text-[10px] text-teal-200 font-bold">Fase E & F (SMA IPS)</span>
+                                </div>
+                                <h3 class="font-black text-sm sm:text-base text-white leading-tight">
+                                    Didampingi oleh Ustadz Ibnu Khaldun
+                                </h3>
+                                <p class="text-[11px] text-amber-300 font-medium">Bapak Sosiologi & Sejarah Peradaban Dunia</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="button" 
+                                    id="btn-play-sapaan-santri"
+                                    onclick="putarSapaanSantri()"
+                                    class="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-400 hover:bg-amber-300 text-slate-950 transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
+                                <i class="fas fa-volume-high"></i>
+                                <span id="label-sapaan-santri">Sapaan Ustadz</span>
+                            </button>
+                            <button type="button" 
+                                    onclick="bukaUstadzAI()"
+                                    class="px-3.5 py-2 rounded-xl text-xs font-black bg-[#0d8276] hover:bg-[#0b6f65] text-white border border-teal-400/40 transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
+                                <i class="fas fa-comments"></i>
+                                <span>Tanya Diskusi</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- 2. BANNER JUDUL BAB AKTIF & STRUKTUR CP/ATP/KKTP -->
                 <div class="bg-white rounded-3xl p-5 sm:p-6 border border-teal-100 shadow-sm mb-6">
                     <!-- CP & ATP METADATA BADGE -->
@@ -1615,6 +1661,246 @@ Pertanyaan Santri:
         document.addEventListener('DOMContentLoaded', function() {
             updateFlipbookUI();
         });
+
+        // ==========================================
+        // FITUR INTERAKTIF USTADZ IBNU KHALDUN (TTS & DISKUSI)
+        // ==========================================
+        let isTutorSpeaking = false;
+
+        window.putarSapaanSantri = function() {
+            if (!('speechSynthesis' in window)) {
+                alert('Browser ini belum mendukung Text-to-Speech.');
+                return;
+            }
+            const btn = document.getElementById('btn-play-sapaan-santri');
+            const lbl = document.getElementById('label-sapaan-santri');
+
+            if (isTutorSpeaking) {
+                window.speechSynthesis.cancel();
+                isTutorSpeaking = false;
+                if (lbl) lbl.innerText = 'Sapaan Ustadz';
+                return;
+            }
+
+            const teks = "Assalamu'alaikum warahmatullahi wabarakatuh. Ahlan wa sahlan! Saya Ustadz Ibnu Khaldun, tutor AI pendamping belajarmu di mata pelajaran Sosiologi SMA. Mari kita pelajari bersama dinamika masyarakat, interaksi sosial, dan rahasia kejayaan peradaban manusia.";
+            const utterance = new SpeechSynthesisUtterance(teks);
+            utterance.lang = 'id-ID';
+            utterance.pitch = 0.70; // Bariton Pria
+            utterance.rate = 0.95;
+
+            const voices = window.speechSynthesis.getVoices();
+            const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+            if (idVoice) utterance.voice = idVoice;
+
+            utterance.onstart = function() {
+                isTutorSpeaking = true;
+                if (lbl) lbl.innerText = 'Mendengarkan...';
+            };
+            utterance.onend = function() {
+                isTutorSpeaking = false;
+                if (lbl) lbl.innerText = 'Sapaan Ustadz';
+            };
+            utterance.onerror = function() {
+                isTutorSpeaking = false;
+                if (lbl) lbl.innerText = 'Sapaan Ustadz';
+            };
+            window.speechSynthesis.speak(utterance);
+        };
+
+        window.bukaUstadzAI = function() {
+            const m = document.getElementById('modalUstadzAI');
+            if (m) m.classList.remove('hidden');
+        };
+
+        window.tutupUstadzAI = function() {
+            const m = document.getElementById('modalUstadzAI');
+            if (m) m.classList.add('hidden');
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        };
+
+        window.tanyaCepatUstadz = function(pertanyaan) {
+            const input = document.getElementById('inputTanyaUstadz');
+            if (input) {
+                input.value = pertanyaan;
+                kirimTanyaUstadz();
+            }
+        };
+
+        window.bacaJawabanUstadz = function(btn) {
+            const bubble = btn.closest('.bubble-wrapper')?.querySelector('.bubble-text');
+            if (!bubble) return;
+            const text = bubble.innerText;
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'id-ID';
+            utterance.pitch = 0.70;
+            utterance.rate = 0.95;
+            const voices = window.speechSynthesis.getVoices();
+            const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+            if (idVoice) utterance.voice = idVoice;
+            window.speechSynthesis.speak(utterance);
+        };
+
+        window.kirimTanyaUstadz = function() {
+            const input = document.getElementById('inputTanyaUstadz');
+            const chatArea = document.getElementById('ustadzChatArea');
+            if (!input || !chatArea) return;
+
+            const q = input.value.trim();
+            if (!q) return;
+
+            // Tambahkan bubble santri
+            const santriHtml = `
+                <div class="flex justify-end mb-3">
+                    <div class="bg-[#0d8276] text-white p-3.5 rounded-2xl rounded-tr-none max-w-[85%] text-xs shadow-xs font-medium">
+                        ${q.replace(/</g, "&lt;").replace(/>/g, "&gt;")}
+                    </div>
+                </div>
+            `;
+            chatArea.insertAdjacentHTML('beforeend', santriHtml);
+            input.value = '';
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            // Tambahkan placeholder mengetik
+            const typingId = 'typing-' + Date.now();
+            const typingHtml = `
+                <div id="${typingId}" class="flex items-start gap-2.5 mb-3">
+                    <div class="w-8 h-8 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center text-sm flex-shrink-0">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 text-xs text-slate-500 flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+                        <span>Ustadz Ibnu Khaldun sedang merumuskan jawaban...</span>
+                    </div>
+                </div>
+            `;
+            chatArea.insertAdjacentHTML('beforeend', typingHtml);
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            // Panggil API AI (api-gemini.php)
+            const prompt = `Anda adalah Ustadz Ibnu Khaldun, ulama besar dan bapak sosiologi dunia yang bertindak sebagai Guru AI pendamping santri di Pesantren Villa Quran Indonesia. Santri bertanya: "${q}". Berikan jawaban yang santun, mendalam, jelas, berbobot sosiologi SMA, dan selaras dengan nilai-nilai Islam. Jawab langsung secara ringkas (1-2 paragraf) tanpa basa-basi berlebihan.`;
+
+            fetch('api-gemini.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const elTyping = document.getElementById(typingId);
+                if (elTyping) elTyping.remove();
+
+                let ans = data.candidates?.[0]?.content?.parts?.[0]?.text || data.text || data.message || "Afwan ananda, ada kendala koneksi. Coba ulangi pertanyaan antum.";
+                // Bersihkan markdown bintang ganda sederhana
+                ans = ans.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+                const ansHtml = `
+                    <div class="flex items-start gap-2.5 mb-3 bubble-wrapper">
+                        <div class="w-8 h-8 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center text-sm flex-shrink-0 shadow-xs">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-teal-100 text-xs text-slate-800 shadow-sm max-w-[88%]">
+                            <div class="flex items-center justify-between gap-2 mb-1 pb-1 border-b border-slate-100">
+                                <span class="font-black text-slate-900 text-[11px]">Ustadz Ibnu Khaldun</span>
+                                <button type="button" onclick="bacaJawabanUstadz(this)" class="text-amber-700 hover:text-amber-900 text-[10px] font-bold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded cursor-pointer">
+                                    <i class="fas fa-volume-high"></i> Baca Suara
+                                </button>
+                            </div>
+                            <div class="bubble-text leading-relaxed font-medium">
+                                ${ans}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                chatArea.insertAdjacentHTML('beforeend', ansHtml);
+                chatArea.scrollTop = chatArea.scrollHeight;
+            })
+            .catch(err => {
+                const elTyping = document.getElementById(typingId);
+                if (elTyping) elTyping.remove();
+                chatArea.insertAdjacentHTML('beforeend', `
+                    <div class="text-xs text-rose-600 bg-rose-50 p-2.5 rounded-xl mb-3 text-center">
+                        Terjadi kesalahan koneksi. Silakan coba lagi beberapa saat lagi.
+                    </div>
+                `);
+            });
+        };
     </script>
+
+    <!-- MODAL DIALOG DISKUSI: USTADZ IBNU KHALDUN -->
+    <div id="modalUstadzAI" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 transition-all">
+        <div class="bg-slate-50 rounded-3xl max-w-lg w-full h-[580px] max-h-[90vh] shadow-2xl border border-teal-200 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            
+            <!-- HEADER MODAL -->
+            <div class="p-4 bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white flex items-center justify-between border-b border-teal-600/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shadow-md flex-shrink-0">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <h3 class="text-sm font-black text-white">Ustadz Ibnu Khaldun</h3>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+                        <p class="text-[10px] text-teal-200 font-medium">Tutor AI Sosiologi SMA • Bapak Sosiologi Dunia</p>
+                    </div>
+                </div>
+                <button type="button" onclick="tutupUstadzAI()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+
+            <!-- CHAT AREA -->
+            <div id="ustadzChatArea" class="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-100">
+                <!-- Welcome Bubble -->
+                <div class="flex items-start gap-2.5 mb-3 bubble-wrapper">
+                    <div class="w-8 h-8 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center text-sm flex-shrink-0 shadow-xs">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-teal-100 text-xs text-slate-800 shadow-sm max-w-[88%]">
+                        <div class="flex items-center justify-between gap-2 mb-1 pb-1 border-b border-slate-100">
+                            <span class="font-black text-slate-900 text-[11px]">Ustadz Ibnu Khaldun</span>
+                            <button type="button" onclick="bacaJawabanUstadz(this)" class="text-amber-700 hover:text-amber-900 text-[10px] font-bold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded cursor-pointer">
+                                <i class="fas fa-volume-high"></i> Baca Suara
+                            </button>
+                        </div>
+                        <p class="bubble-text leading-relaxed font-medium">
+                            Assalamu'alaikum ananda. Saya Ustadz Ibnu Khaldun. Ada materi sosiologi, interaksi masyarakat, atau konsep peradaban yang ingin antum diskusikan hari ini?
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK QUESTIONS PILLS -->
+            <div class="px-4 py-2 bg-white border-t border-slate-200 flex items-center gap-1.5 overflow-x-auto hide-scrollbar text-[10px]">
+                <span class="font-bold text-slate-400 whitespace-nowrap">Tanya Cepat:</span>
+                <button type="button" onclick="tanyaCepatUstadz('Ustadz, apa itu konsep Ashabiyah?')" class="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-lg whitespace-nowrap font-bold transition">
+                    Apa itu Ashabiyah?
+                </button>
+                <button type="button" onclick="tanyaCepatUstadz('Bagaimana cara mengatasi konflik sosial menurut Islam?')" class="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-lg whitespace-nowrap font-bold transition">
+                    Resolusi Konflik Sosial
+                </button>
+                <button type="button" onclick="tanyaCepatUstadz('Apa saja bentuk interaksi sosial disosiatif?')" class="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-800 rounded-lg whitespace-nowrap font-bold transition">
+                    Interaksi Disosiatif
+                </button>
+            </div>
+
+            <!-- INPUT BOX -->
+            <div class="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
+                <input type="text" 
+                       id="inputTanyaUstadz" 
+                       onkeypress="if(event.key==='Enter') kirimTanyaUstadz()"
+                       placeholder="Ketik pertanyaan untuk Ustadz Ibnu Khaldun..." 
+                       class="flex-1 px-4 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-[#0d8276] focus:bg-white transition">
+                <button type="button" 
+                        onclick="kirimTanyaUstadz()" 
+                        class="px-4 py-2.5 bg-[#0d8276] hover:bg-[#0b6f65] text-white rounded-xl text-xs font-black transition flex items-center gap-1 shadow-md active:scale-95 cursor-pointer">
+                    <i class="fas fa-paper-plane"></i>
+                    <span class="hidden sm:inline">Kirim</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

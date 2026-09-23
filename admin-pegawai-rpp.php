@@ -2,6 +2,8 @@
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
 $active_menu = 'ai_rpp';
+$target_mapel = trim($_GET['mapel'] ?? '');
+$target_kelas = ($target_mapel === 'Sosiologi') ? 'SMA (Fase E & F)' : '';
 
 // Ambil data silabus untuk dropdown
 $daftar_silabus = [];
@@ -14,7 +16,7 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Generator RPP | Portal Ustadz</title>
+    <title>AI Generator RPP & Modul Ajar | SADIGS 4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -37,13 +39,26 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-            <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-magic text-cyan-600 mr-2"></i>AI Generator RPP</h1><p class="text-sm text-gray-500">Asisten pembuat Rencana Pelaksanaan Pembelajaran dalam hitungan detik.</p></div>
+            <div class="mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-magic text-cyan-600 mr-2"></i>AI Generator Modul Ajar (RPP)</h1>
+                        <p class="text-sm text-gray-500">Asisten cerdas perancang modul ajar dan skenario KBM berbasis Kurikulum Merdeka.</p>
+                    </div>
+                    <?php if ($target_mapel === 'Sosiologi'): ?>
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-300 text-xs font-black shadow-xs">
+                        <i class="fas fa-user-tie text-amber-600"></i>
+                        <span>Co-Pilot AI Aktif: Ustadz Ibnu Khaldun (Bapak Sosiologi Dunia)</span>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Mata Pelajaran</label>
-                        <input type="text" id="rpp-mapel" list="daftar-mapel" onchange="pilihSilabus(this)" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Pilih dari daftar atau ketik baru...">
+                        <input type="text" id="rpp-mapel" list="daftar-mapel" value="<?= htmlspecialchars($target_mapel) ?>" onchange="pilihSilabus(this)" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Pilih dari daftar atau ketik baru...">
                         <datalist id="daftar-mapel">
                             <?php foreach($daftar_silabus as $s): ?>
                                 <option value="<?= htmlspecialchars($s['mata_pelajaran']) ?>" 
@@ -55,7 +70,7 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Kelas / Jenjang</label>
-                        <input type="text" id="rpp-kelas" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Otomatis terisi jika memilih mapel">
+                        <input type="text" id="rpp-kelas" value="<?= htmlspecialchars($target_kelas) ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-cyan-500" placeholder="Otomatis terisi jika memilih mapel">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Topik Utama</label>
@@ -132,6 +147,11 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
                 }
             }
 
+            let personaPrefix = "";
+            if (mapel.toLowerCase().includes('sosiologi')) {
+                personaPrefix = "Anda bertindak sebagai Ustadz Ibnu Khaldun (Bapak Sosiologi Dunia) yang menjadi Co-Pilot AI kurikulum Sosiologi SMA di Pesantren Villa Quran. Integrasikan ketajaman analisis sosial, konsep Ashabiyah (solidaritas masyarakat), serta nilai-nilai Al-Qur'an ke dalam modul ajar ini.\n\n";
+            }
+
             if (selectedOption) {
                 // --- MODE SILABUS (LEBIH AKURAT) ---
                 const deskripsiMapel = selectedOption.getAttribute('data-deskripsi');
@@ -144,7 +164,7 @@ if ($res_silabus) while($r = $res_silabus->fetch_assoc()) $daftar_silabus[] = $r
                     }
                 } catch (e) { /* Biarkan raw string */ }
 
-                prompt = `Anda adalah asisten ahli kurikulum untuk Pesantren Villa Quran. Buatlah Modul Ajar berformat Kurikulum Merdeka yang menarik dan modern berdasarkan konteks berikut:
+                prompt = personaPrefix + `Anda adalah asisten ahli kurikulum untuk Pesantren Villa Quran. Buatlah Modul Ajar berformat Kurikulum Merdeka yang menarik dan modern berdasarkan konteks berikut:
 - **Mata Pelajaran:** ${mapel}
 - **Fase / Kelas:** ${kelas}
 - **Deskripsi Umum Mapel:** ${deskripsiMapel}

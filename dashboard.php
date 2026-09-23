@@ -512,6 +512,19 @@ if (!$can_see_marketing) {
     }
 }
 
+// Role Dewan Tutor AI (Team Pengajar AI Diknas): HANYA bisa dilihat oleh Pengurus Yayasan dan Kepala Sekolah saja
+$yayasan_kepsek_core_roles = ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'kepala_sekolah', 'admin', 'yayasan'];
+$can_see_team_pengajar_ai = $is_admin;
+if (!$can_see_team_pengajar_ai) {
+    foreach ($roles as $r) {
+        $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+        if (in_array($r_norm, $yayasan_kepsek_core_roles)) {
+            $can_see_team_pengajar_ai = true;
+            break;
+        }
+    }
+}
+
 // Role Santri (Ruang Santri: HANYA bisa dilihat oleh Role Santri Rijal dan Santri Nisa)
 $user_has_santri_role = false;
 foreach ($roles as $r) {
@@ -539,11 +552,13 @@ if (!$is_all_view) {
     if ($is_none_view) {
         $can_see_web = false;
         $can_see_marketing = false;
+        $can_see_team_pengajar_ai = false;
         $can_see_santri = false;
         $can_see_orangtua = false;
     } else {
         $can_see_web = false;
         $can_see_marketing = false;
+        $can_see_team_pengajar_ai = false;
         $can_see_santri = false;
         $can_see_orangtua = false;
         foreach ($active_views as $av) {
@@ -551,6 +566,9 @@ if (!$is_all_view) {
             if (in_array($av_norm, $yayasan_core_roles) || ($av_norm === 'super_admin' && $is_admin)) {
                 $can_see_web = true;
                 $can_see_marketing = true;
+            }
+            if (in_array($av_norm, $yayasan_kepsek_core_roles) || ($av_norm === 'super_admin' && $is_admin)) {
+                $can_see_team_pengajar_ai = true;
             }
             if (in_array($av_norm, ['web', 'admin_web', 'admin'])) {
                 $can_see_web = true;
@@ -570,6 +588,9 @@ if (!$is_all_view) {
     }
 } else {
     // Mode "Semua Role": jika user memiliki peran santri atau super admin melihat semua
+    if ($is_admin || !empty(array_intersect($yayasan_kepsek_core_roles, $roles))) {
+        $can_see_team_pengajar_ai = true;
+    }
     if ($is_admin || $user_has_santri_role) {
         $can_see_santri = true;
     }
@@ -627,6 +648,7 @@ if ($is_santri_only) {
     $show_jurnal_mengajar  = false;
     $can_see_santri        = true; // Pastikan Ruang Santri tampil
     $can_see_orangtua      = false;
+    $can_see_team_pengajar_ai = false;
 }
 
 // Data Menu Grid Card Ruang Orangtua / Walisantri (7 Menu Esensial Fokus Ananda)
@@ -1121,6 +1143,108 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                         </a>
                     </div>
                     <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($can_see_team_pengajar_ai && !$is_santri_only): ?>
+            <!-- ========================================================= -->
+            <!-- FRAME KHUSUS: TEAM PENGAJAR AI (DEWAN TUTOR DIKNAS)       -->
+            <!-- (Akses Eksklusif: Pengurus Yayasan dan Kepala Sekolah)    -->
+            <!-- ========================================================= -->
+            <div class="bg-gradient-to-br from-white via-slate-50 to-teal-50/40 rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-100 mb-6 sm:mb-8 transition-all duration-200 relative overflow-hidden">
+                <!-- Background Decorative Watermark Icon -->
+                <div class="absolute -right-6 -bottom-6 text-teal-100/30 pointer-events-none text-9xl">
+                    <i class="fas fa-chalkboard-user"></i>
+                </div>
+
+                <!-- HEADER FRAME TEAM PENGAJAR AI -->
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-teal-100/80 relative z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-[#0b8478] text-white flex items-center justify-center text-xl font-black shadow-md shadow-teal-900/20 flex-shrink-0">
+                            <i class="fas fa-chalkboard-user"></i>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight">
+                                    Team Pengajar AI Diknas
+                                </h3>
+                                <span class="text-[9px] px-2.5 py-0.5 rounded-full font-black bg-amber-50 text-amber-900 border border-amber-300 uppercase tracking-wider">
+                                    <i class="fas fa-crown text-amber-500 mr-1 text-[8px]"></i> Khusus Yayasan & Kepala Sekolah
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Solusi cerdas krisis guru SMA IPS & dewan asisten pembelajaran berbasis ilmuwan emas Islam</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="yayasan2/team-pengajar-ai.php" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black bg-[#0b8478] hover:bg-[#086a60] text-white shadow-sm transition active:scale-95">
+                            <i class="fas fa-sliders"></i>
+                            <span>Buka Ruang Dewan Tutor AI</span>
+                            <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- SPOTLIGHT PILOT MODEL: SOSIOLOGI SMA (USTADZ IBNU KHALDUN) -->
+                <div class="bg-white rounded-2xl p-5 border border-teal-200/70 shadow-sm relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+                    
+                    <div class="flex items-start sm:items-center gap-4">
+                        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-500 via-amber-600 to-teal-800 p-0.5 shadow-md flex-shrink-0">
+                            <div class="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center text-2xl text-amber-300">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                <span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300 uppercase tracking-wider">
+                                    ⭐ Model Percontohan Aktif
+                                </span>
+                                <span class="px-2 py-0.5 rounded-md text-[9px] font-black bg-teal-50 text-teal-800 border border-teal-200 uppercase tracking-wider">
+                                    Sosiologi SMA (Fase E & F)
+                                </span>
+                            </div>
+                            <h4 class="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                                Ustadz Ibnu Khaldun
+                            </h4>
+                            <p class="text-xs font-bold text-amber-700 leading-tight mt-0.5">
+                                Bapak Sosiologi & Sejarah Peradaban Dunia
+                            </p>
+                            <p class="text-[11px] text-slate-500 font-medium mt-1">
+                                Status: <strong class="text-rose-600">Guru Fisik Kosong</strong> ➔ <span class="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">🟢 Mode Full Agentic Mengajar Mandiri</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full md:w-auto">
+                        <button type="button" 
+                                onclick="testSuaraDashIbnuKhaldun()"
+                                class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-black bg-amber-400 hover:bg-amber-300 text-slate-950 transition flex items-center justify-center gap-2 shadow-xs active:scale-95">
+                            <i class="fas fa-volume-high"></i>
+                            <span id="btn-dash-voice-text">Tes Suara Sapaan</span>
+                        </button>
+                        <a href="santri-belajar.php?mapel=Sosiologi" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-1.5">
+                            <i class="fas fa-graduation-cap"></i> Ruang Santri
+                        </a>
+                        <a href="admin-pegawai-rpp.php?mapel=Sosiologi" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center justify-center gap-1.5">
+                            <i class="fas fa-book-bookmark"></i> Modul Ajar
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ROADMAP MINI BADGES (13 MAPEL BERIKUTNYA) -->
+                <div class="mt-4 pt-3 border-t border-teal-100/60 relative z-10 flex flex-wrap items-center gap-2 text-[11px]">
+                    <span class="font-extrabold text-slate-600 flex items-center gap-1">
+                        <i class="fas fa-map-pin text-[#0b8478]"></i> Replikasi Tahap 2:
+                    </span>
+                    <span class="px-2 py-1 bg-white rounded-lg border border-slate-200 font-bold text-slate-600">🧮 Ust. Al-Khawarizmi (Matematika)</span>
+                    <span class="px-2 py-1 bg-white rounded-lg border border-slate-200 font-bold text-slate-600">💻 Ust. Al-Jazari (Informatika)</span>
+                    <span class="px-2 py-1 bg-white rounded-lg border border-slate-200 font-bold text-slate-600">🔬 Ust. Ibnu Al-Haitsam (Fisika)</span>
+                    <span class="px-2 py-1 bg-white rounded-lg border border-slate-200 font-bold text-slate-600">🌿 Ustdzh. Rufaidah (Biologi/IPA)</span>
+                    <span class="px-2 py-1 bg-white rounded-lg border border-slate-200 font-bold text-slate-600">🌍 Ustdzh. Fatimah Al-Fihri (B. Inggris)</span>
+                    <a href="yayasan2/team-pengajar-ai.php" class="text-[#0b8478] hover:underline font-extrabold ml-1">
+                        +8 Mapel Lainnya &rarr;
+                    </a>
                 </div>
             </div>
             <?php endif; ?>
@@ -2079,12 +2203,35 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
             document.getElementById('subjectModal').classList.add('hidden');
         }
 
-        document.addEventListener('click', function(e) {
-            const sm = document.getElementById('subjectModal');
-            if (sm && e.target === sm) {
-                closeSubjectModal();
+        // ==========================================
+        // TES SUARA VERBAL USTADZ IBNU KHALDUN (BARITON PRIA)
+        // ==========================================
+        window.testSuaraDashIbnuKhaldun = function() {
+            if (!('speechSynthesis' in window)) {
+                alert('Browser ini belum mendukung fitur Text-to-Speech.');
+                return;
             }
-        });
+            window.speechSynthesis.cancel();
+            const teks = "Assalamu'alaikum warahmatullahi wabarakatuh. Ahlan wa sahlan! Saya Ustadz Ibnu Khaldun, tutor AI pendamping belajarmu di mata pelajaran Sosiologi SMA. Mari kita pelajari bersama dinamika masyarakat dan rahasia kejayaan peradaban.";
+            const utterance = new SpeechSynthesisUtterance(teks);
+            utterance.lang = 'id-ID';
+            utterance.pitch = 0.70; // Bariton Pria
+            utterance.rate = 0.95;
+
+            const voices = window.speechSynthesis.getVoices();
+            const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+            if (idVoice) utterance.voice = idVoice;
+
+            const btnText = document.getElementById('btn-dash-voice-text');
+            if (btnText) btnText.innerText = 'Memutar Suara...';
+            utterance.onend = function() {
+                if (btnText) btnText.innerText = 'Tes Suara Sapaan';
+            };
+            utterance.onerror = function() {
+                if (btnText) btnText.innerText = 'Tes Suara Sapaan';
+            };
+            window.speechSynthesis.speak(utterance);
+        };
     </script>
 
     <!-- SUBJECT DETAIL MODAL RUANG SANTRI -->
