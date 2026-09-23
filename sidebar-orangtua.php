@@ -40,13 +40,17 @@
                 <i class="fas fa-mosque w-4 text-center"></i>
                 <span>Ibadah Harian Ananda</span>
             </a>
-            <a href="orangtua-rapot.php" class="<?= (isset($active_menu) && $active_menu == 'orangtua_rapot') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-graduation-cap w-4 text-center"></i>
-                <span>Rapor Akademik Ananda</span>
+            <a href="orangtua-rapot-diniyah.php" class="<?= (isset($active_menu) && $active_menu == 'orangtua_rapot_diniyah') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
+                <i class="fas fa-book-open-reader w-4 text-center"></i>
+                <span>Rapor Diniyah Ananda</span>
             </a>
             <a href="orangtua-rapot-pkbm.php" class="<?= (isset($active_menu) && $active_menu == 'orangtua_rapot_pkbm') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
                 <i class="fas fa-file-invoice w-4 text-center"></i>
                 <span>Raport Diknas PKBM</span>
+            </a>
+            <a href="orangtua-karir.php" class="<?= (isset($active_menu) && $active_menu == 'orangtua_karir') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
+                <i class="fas fa-route w-4 text-center"></i>
+                <span>Bimbingan Karir & AI</span>
             </a>
             <a href="pembayaran-spp.php" class="<?= (isset($active_menu) && $active_menu == 'pembayaran_keuangan') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
                 <i class="fas fa-money-bill-wave w-4 text-center"></i>

@@ -82,8 +82,8 @@ if ($res) while($r = $res->fetch_assoc()) $santri_list[] = $r;
                         </div>
                         <div class="bg-gray-50 px-6 py-3 flex justify-between items-center">
                             <div class="flex flex-col space-y-1">
-                                <a href="orangtua-rapot.php?id=<?= $s['id'] ?>" class="text-purple-600 text-xs font-bold hover:underline">
-                                    <i class="fas fa-graduation-cap mr-1"></i> Rapor Akademik
+                                <a href="orangtua-rapot-pkbm.php?santri_id=<?= $s['id'] ?>" class="text-purple-600 text-xs font-bold hover:underline">
+                                    <i class="fas fa-file-invoice mr-1"></i> Raport Diknas PKBM
                                 </a>
                                 <a href="orangtua-rapot-diniyah.php?id=<?= $s['id'] ?>" class="text-purple-600 text-xs font-bold hover:underline">
                                     <i class="fas fa-book-quran mr-1"></i> Rapor Diniyah
