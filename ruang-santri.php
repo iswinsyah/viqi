@@ -265,13 +265,13 @@ if ($view === 'ibadah_harian') {
         <!-- ================================================== -->
         <!-- HEADER FORM IBADAH HARIAN                          -->
         <!-- ================================================== -->
-        <header class="h-16 bg-[#0d8276] text-white shadow-md flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
+        <header class="h-16 bg-[#0b8478] text-white shadow-md flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
             <div class="flex items-center space-x-3">
                 <button id="open-sidebar-santri" class="text-white hover:text-teal-200 md:hidden p-2 rounded-xl focus:outline-none transition">
                     <i class="fas fa-bars text-lg"></i>
                 </button>
                 <div class="flex items-center space-x-2">
-                    <a href="ruang-santri.php" class="text-white hover:text-teal-200 text-sm font-bold flex items-center gap-1.5">
+                    <a href="dashboard.php" class="text-white hover:text-teal-200 text-sm font-bold flex items-center gap-1.5">
                         <i class="fas fa-arrow-left"></i> Beranda
                     </a>
                 </div>

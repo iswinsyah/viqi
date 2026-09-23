@@ -1,17 +1,20 @@
+<?php
+$curr_active = $active_menu ?? '';
+?>
 <!-- SIDEBAR OVERLAY -->
 <div id="sidebar-overlay-santri" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden md:hidden transition-opacity"></div>
 
-<!-- SIDEBAR KHUSUS SANTRI (#0b8478 TEAL THEME - SERAGAM DENGAN DASHBOARD) -->
+<!-- SIDEBAR KHUSUS SANTRI (#0b8478 TEAL THEME - SERAGAM 100% DENGAN DASHBOARD) -->
 <aside id="sidebar-santri" class="bg-[#0b8478] text-white w-64 lg:w-72 flex-shrink-0 hidden md:flex flex-col z-50 transition-all duration-300 fixed md:sticky top-0 h-screen shadow-2xl border-r border-teal-700/50 left-0">
     
-    <!-- SIDEBAR HEADER: BRAND LOGO VILLA QURAN -->
-    <div class="p-5 border-b border-teal-700/60 flex items-center justify-between bg-teal-900/40 flex-shrink-0">
-        <a href="dashboard.php" class="flex items-center space-x-3 group">
+    <!-- SIDEBAR HEADER: BRAND LOGO SADIGS (SERAGAM DENGAN DASHBOARD) -->
+    <div class="p-6 border-b border-teal-700/60 flex items-center justify-between flex-shrink-0">
+        <a href="dashboard.php" class="flex items-center space-x-3.5 group">
             <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
                 <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-9 h-9 object-contain">
             </div>
             <div>
-                <h1 class="font-black text-xl tracking-wide text-white leading-none">RUANG SANTRI</h1>
+                <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
                 <p class="text-[11px] text-teal-100 font-light italic tracking-tight mt-0.5">Sistem Administrasi Digital</p>
             </div>
         </a>
@@ -20,61 +23,54 @@
         </button>
     </div>
 
-    <!-- SIDEBAR NAVIGATION LINKS -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
-        <nav class="space-y-1">
-            <p class="px-2 text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-2 mt-1">Menu Utama</p>
-            <a href="dashboard.php" class="<?= (isset($active_menu) && ($active_menu == 'dashboard_santri' || $active_menu == 'dashboard')) ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-house w-4 text-center"></i>
-                <span>Dashboard Utama</span>
-            </a>
-            <a href="kalender-akademik.php" class="<?= (isset($active_menu) && $active_menu == 'kalender_akademik') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-calendar-alt w-4 text-center"></i>
-                <span>Kalender Akademik</span>
-            </a>
-            <a href="ruang-santri.php?view=ibadah_harian" class="<?= (isset($active_menu) && $active_menu == 'ibadah_harian') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-mosque w-4 text-center"></i>
-                <span>Ibadah Harian</span>
-            </a>
-            <a href="santri-laporan-hafalan.php" class="<?= (isset($active_menu) && $active_menu == 'santri_hafalan') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-book-quran w-4 text-center"></i>
-                <span>Setoran Hafalan Saya</span>
-            </a>
-            <a href="santri-rapot.php?tab=pkbm" class="<?= (isset($active_menu) && ($active_menu == 'rapot_pkbm_santri' || ($active_menu == 'rapot_santri' && ($tab ?? '') == 'pkbm'))) ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-file-invoice w-4 text-center"></i>
-                <span>Raport PKBM (Diknas)</span>
-            </a>
-            <a href="santri-rapot.php?tab=diniyah" class="<?= (isset($active_menu) && ($active_menu == 'rapot_diniyah' || ($active_menu == 'rapot_santri' && ($tab ?? '') == 'diniyah'))) ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-graduation-cap w-4 text-center"></i>
-                <span>Rapor Diniyah</span>
-            </a>
-            <a href="ruang-santri-keuangan.php" class="<?= (isset($active_menu) && $active_menu == 'tabel_keuangan') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-wallet w-4 text-center"></i>
-                <span>Tabel Keuangan</span>
-            </a>
-
-            <p class="px-2 text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-2 mt-6">Pengaturan Akun</p>
-            <a href="santri-ganti-password.php" class="<?= (isset($active_menu) && $active_menu == 'ganti_password_santri') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-key w-4 text-center"></i>
-                <span>Ganti Password</span>
-            </a>
-            <a href="santri-profil.php" class="<?= (isset($active_menu) && $active_menu == 'edit_profil_santri') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-user-edit w-4 text-center"></i>
-                <span>Edit Profil</span>
-            </a>
-        </nav>
-    </div>
-
-    <!-- SIDEBAR FOOTER -->
-    <div class="p-4 border-t border-teal-700/60 space-y-2 bg-teal-900/30">
-        <a href="dashboard.php" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow transition">
-            <i class="fas fa-house"></i> Beranda Utama
+    <!-- SIDEBAR NAVIGATION LINKS (PERSIS SEPERTI DASHBOARD) -->
+    <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
+        <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_active === 'dashboard_santri' || $curr_active === 'dashboard') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-house w-4 text-center"></i>
+            <span>Beranda</span>
         </a>
-        <a href="logout-santri.php" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
+        <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_active === 'kalender_akademik') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-calendar-alt w-4 text-center"></i>
+            <span>Kalender</span>
+        </a>
+        <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_active === 'jadwal_pelajaran') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-clock w-4 text-center"></i>
+            <span>Jadwal</span>
+        </a>
+        <a href="pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_active === 'pengumuman') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-bullhorn w-4 text-center"></i>
+            <span>Info</span>
+        </a>
+    </nav>
+
+    <!-- SIDEBAR FOOTER: LOGOUT (PERSIS SEPERTI DASHBOARD) -->
+    <div class="p-4 border-t border-teal-700/60">
+        <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
             <i class="fas fa-arrow-right-from-bracket"></i> Keluar
         </a>
     </div>
 </aside>
+
+<script>
+// Toggle Drawer Sidebar untuk Mobile
+document.addEventListener('DOMContentLoaded', function() {
+    const openBtn = document.getElementById('open-sidebar-santri');
+    const closeBtn = document.getElementById('close-sidebar-santri');
+    const sidebar = document.getElementById('sidebar-santri');
+    const overlay = document.getElementById('sidebar-overlay-santri');
+
+    function toggleSidebar() {
+        if (sidebar && overlay) {
+            sidebar.classList.toggle('hidden');
+            overlay.classList.toggle('hidden');
+        }
+    }
+
+    if (openBtn) openBtn.addEventListener('click', toggleSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', toggleSidebar);
+    if (overlay) overlay.addEventListener('click', toggleSidebar);
+});
+</script>
 
 <?php if (isset($_SESSION['is_impersonating']) && $_SESSION['is_impersonating'] === true): ?>
 <div class="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-purple-900 via-indigo-900 to-purple-900 text-white px-4 py-2 text-xs shadow-2xl flex items-center justify-between border-b border-purple-400">
