@@ -76,9 +76,21 @@ function ensureSantriDatabaseSchema() {
         @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN password VARCHAR(255) NULL AFTER username");
     }
 
-    // 3. Pastikan username & password default jika kosong
+    // 3. Pastikan minimal data santri tersedia (seed jika masih kosong di Hostinger)
+    $cnt_check = $conn->query("SELECT COUNT(*) as c FROM buku_induk_santri");
+    $total_santri = $cnt_check ? (int)$cnt_check->fetch_assoc()['c'] : 0;
+    if ($total_santri === 0) {
+        $conn->query("INSERT INTO buku_induk_santri (id, nama_lengkap, nis, nisn, username, password, kelas_sekarang, kamar_asrama, jenis_kelamin, status_santri) VALUES 
+            (1, 'Ahmad Fauzan (Kakak)', '2024001', '0081234001', 'fauzan', '123456', 'Kelas X-A', 'Abu Bakar 01', 'Laki-laki', 'Aktif'),
+            (2, 'Muhammad Rayhan (Adik)', '2024002', '0081234002', 'rayhan', '123456', 'Kelas VII-B', 'Abu Bakar 02', 'Laki-laki', 'Aktif'),
+            (3, 'Zaid bin Tsabit', '2024003', '0081234003', 'zaid', '123456', 'Kelas IX-C', 'Utsman 04', 'Laki-laki', 'Aktif')
+        ");
+    }
+
+    // 4. Pastikan username & password default jika kosong
     @$conn->query("UPDATE buku_induk_santri SET 
         username = CASE 
+            WHEN (username IS NOT NULL AND username != '') THEN username
             WHEN (nisn IS NOT NULL AND nisn != '') THEN nisn 
             WHEN (nis IS NOT NULL AND nis != '') THEN nis 
             ELSE CONCAT('santri_', id) 
@@ -86,6 +98,24 @@ function ensureSantriDatabaseSchema() {
         WHERE username IS NULL OR username = ''");
         
     @$conn->query("UPDATE buku_induk_santri SET password = '123456' WHERE password IS NULL OR password = ''");
+
+    // 5. Pastikan semua santri tersinkronisasi ke app_users
+    @$conn->query("INSERT INTO app_users (username, password, nama_lengkap, roles, user_type, ref_id, status_aktif)
+        SELECT 
+            username,
+            password,
+            nama_lengkap,
+            IF(LOWER(TRIM(jenis_kelamin)) = 'perempuan', 'santri_nisa,santri', 'santri_rijal,santri'),
+            'santri',
+            id,
+            1
+        FROM buku_induk_santri
+        ON DUPLICATE KEY UPDATE 
+            nama_lengkap = VALUES(nama_lengkap),
+            roles = VALUES(roles),
+            ref_id = VALUES(ref_id),
+            status_aktif = 1
+    ");
 }
 
 function bridgeActiveLegacySessions() {
