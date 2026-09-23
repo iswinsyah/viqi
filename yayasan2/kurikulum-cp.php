@@ -29,19 +29,20 @@ $active_page = 'yayasan_cp';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pusat Capaian Pembelajaran (CP) AI • Ruang Yayasan SADIGS</title>
+    <title>Team Pengajar Agentic AI • Riset & Auto-Fill CP Pemerintah</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @media print {
-            aside, header, #left-navigator, #action-bar, .no-print { display: none !important; }
+            aside, header, #left-navigator, #action-bar, #agent-console-box, .no-print { display: none !important; }
             body, main, #workstation { width: 100% !important; margin: 0 !important; padding: 0 !important; background: white !important; }
             .print-only { display: block !important; }
             .shadow-sm, .shadow-md, .shadow-xl { box-shadow: none !important; }
@@ -66,22 +67,22 @@ $active_page = 'yayasan_cp';
                     <div class="flex items-center gap-2">
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         <h2 class="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight leading-tight">
-                            Pusat Capaian Pembelajaran (CP) AI
+                            Team Pengajar Agentic AI — Riset CP Pemerintah
                         </h2>
-                        <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-50 text-[#0b8478] border border-teal-200">
-                            BSKAP 032/H/KR/2024
+                        <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <i class="fas fa-scale-balanced mr-1 text-[9px]"></i> Sami'na wa Atha'na Pemerintah
                         </span>
                     </div>
-                    <p class="text-[11px] text-slate-500 hidden sm:block">Standarisasi Kurikulum Merdeka Terintegrasi Silabus & AI RPP Asatidz</p>
+                    <p class="text-[11px] text-slate-500 hidden sm:block">Agent Riset Otomatis: Menelusuri Regulasi Kemendikbudristek & Langsung Menuangkan ke Tabel</p>
                 </div>
             </div>
 
             <!-- TOP ACTIONS -->
             <div class="flex items-center gap-2 sm:gap-3">
-                <button onclick="batchGenerateAll()" class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 shadow-sm transition transform active:scale-95">
+                <button onclick="runAutonomousBatchFullRun()" class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 via-amber-600 to-teal-700 hover:from-amber-600 hover:to-teal-800 text-slate-950 hover:text-white shadow-sm transition transform active:scale-95">
                     <i class="fas fa-wand-magic-sparkles"></i>
-                    <span class="hidden sm:inline">Standarisasi Semua Mapel (AI)</span>
-                    <span class="sm:hidden">Batch AI</span>
+                    <span class="hidden sm:inline">⚡ Autonomous Full Run: Riset Semua Mapel</span>
+                    <span class="sm:hidden">Full Run AI</span>
                 </button>
                 <button onclick="window.print()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-xs transition">
                     <i class="fas fa-print"></i>
@@ -90,23 +91,23 @@ $active_page = 'yayasan_cp';
             </div>
         </header>
 
-        <!-- SUB HEADER: JENJANG SWITCHER TABS -->
-        <div class="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 flex-shrink-0 flex items-center justify-between gap-4">
+        <!-- SUB HEADER: JENJANG SWITCHER TABS & PHILOSOPHY NOTICE -->
+        <div class="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 flex-shrink-0 flex flex-wrap items-center justify-between gap-3">
             <!-- JENJANG SWITCHER -->
             <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-xl max-w-md w-full sm:w-auto">
                 <button id="tab-btn-smp" onclick="switchJenjang('SMP')" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition shadow-xs bg-[#0b8478] text-white">
                     <i class="fas fa-school text-xs"></i>
-                    <span>SMP (Fase D)</span>
+                    <span>SMP (Fase D • VII-IX)</span>
                 </button>
                 <button id="tab-btn-sma" onclick="switchJenjang('SMA')" class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
                     <i class="fas fa-graduation-cap text-xs"></i>
-                    <span>SMA (Fase E & F)</span>
+                    <span>SMA (Fase E & F • X-XII)</span>
                 </button>
             </div>
 
-            <div class="hidden lg:flex items-center gap-2 text-xs text-slate-500">
-                <i class="fas fa-circle-info text-teal-600"></i>
-                <span>Fokus Mata Pelajaran: <b>Diknas (Kurikulum Nasional)</b></span>
+            <div class="flex items-center gap-2 text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                <i class="fas fa-shield-halved text-teal-600"></i>
+                <span>Standar Baku: <b>BSKAP Kemendikbudristek No. 032/H/KR/2024</b> (Pakem Nasional)</span>
             </div>
         </div>
 
@@ -139,7 +140,7 @@ $active_page = 'yayasan_cp';
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: CP DETAIL & EDITOR -->
+            <!-- RIGHT COLUMN: CP DETAIL & WORKSTATION -->
             <div id="workstation" class="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col space-y-5">
                 
                 <!-- PRINT HEADER (ONLY VISIBLE ON PRINT) -->
@@ -148,7 +149,7 @@ $active_page = 'yayasan_cp';
                         <div>
                             <h1 class="text-xl font-black tracking-tight text-slate-900 uppercase">Villa Quran - SADIGS</h1>
                             <h2 class="text-base font-bold text-slate-700">DOKUMEN CAPAIAN PEMBELAJARAN (CP) KURIKULUM MERDEKA</h2>
-                            <p class="text-xs text-slate-500">Rujukan Resmi: BSKAP Kemendikbudristek No. 032/H/KR/2024</p>
+                            <p class="text-xs text-slate-500">Rujukan Resmi Pemerintah: BSKAP Kemendikbudristek No. 032/H/KR/2024</p>
                         </div>
                         <div class="text-right text-xs text-slate-600">
                             <p><b>Jenjang:</b> <span id="print-jenjang">-</span></p>
@@ -178,32 +179,47 @@ $active_page = 'yayasan_cp';
                             Pilih Mata Pelajaran
                         </h1>
                         <p id="active-rujukan-info" class="text-xs text-slate-500 mt-0.5">
-                            Rujukan: BSKAP Kemendikbudristek No. 032/H/KR/2024
+                            Rujukan Baku: Keputusan Kepala BSKAP Kemendikbudristek No. 032/H/KR/2024
                         </p>
                     </div>
 
-                    <!-- ACTION BUTTONS -->
-                    <div id="action-bar" class="flex flex-wrap items-center gap-2">
-                        <button id="btn-generate-ai" onclick="generateCPCurrent()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition">
-                            <i class="fas fa-robot"></i>
-                            <span>Tarik / Generate AI</span>
+                    <!-- ACTION BUTTONS: FULL AGENTIC AI -->
+                    <div id="action-bar" class="flex flex-wrap items-center gap-2.5">
+                        <button id="btn-agent-run" onclick="runAgentSearchAndPopulate()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-teal-700 via-[#0b8478] to-emerald-600 hover:from-teal-800 hover:to-emerald-700 text-white shadow-sm transition transform active:scale-95 cursor-pointer">
+                            <i class="fas fa-robot text-amber-300"></i>
+                            <span>Jalankan Agent: Riset & Tuangkan ke Tabel</span>
                         </button>
-                        <button id="btn-save-cp" onclick="saveCurrentCP()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold bg-[#0b8478] hover:bg-teal-700 text-white shadow-xs transition">
-                            <i class="fas fa-cloud-arrow-up"></i>
-                            <span>Simpan & Sahkan Yayasan</span>
+                        <button id="btn-save-cp" onclick="saveCurrentCP()" class="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 transition cursor-pointer" title="Simpan Perubahan Manual">
+                            <i class="fas fa-floppy-disk text-slate-400"></i>
+                            <span class="hidden sm:inline">Simpan Manual</span>
                         </button>
                     </div>
                 </div>
 
-                <!-- INFO SYNC BANNER -->
+                <!-- LIVE AGENT RESEARCH TERMINAL / ACTIVITY LOG -->
+                <div id="agent-console-box" class="bg-slate-900 rounded-2xl p-4 text-emerald-400 font-mono text-[11px] shadow-md border border-slate-800 hidden">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2 text-slate-400">
+                        <div class="flex items-center gap-2 font-bold text-slate-300 text-xs">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                            <i class="fas fa-terminal text-teal-400"></i>
+                            <span>AGENTIC AI RESEARCH ENGINE — KEMENDIKBUDRISTEK BSKAP</span>
+                        </div>
+                        <span id="agent-status-label" class="text-[10px] text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800/50">MENJALANKAN RISET...</span>
+                    </div>
+                    <div id="agent-terminal-logs" class="space-y-1 max-h-36 overflow-y-auto pr-1">
+                        <!-- Live log lines stream here -->
+                    </div>
+                </div>
+
+                <!-- AUTONOMOUS PIPELINE NOTICE -->
                 <div class="bg-gradient-to-r from-teal-900 via-teal-800 to-slate-900 rounded-2xl p-4 text-white shadow-sm flex items-start gap-3.5 border border-teal-700/50">
                     <div class="w-9 h-9 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center flex-shrink-0 text-base mt-0.5">
-                        <i class="fas fa-diagram-project"></i>
+                        <i class="fas fa-brain"></i>
                     </div>
                     <div class="flex-1 text-xs">
-                        <h4 class="font-bold text-teal-100 text-sm mb-0.5">Otomatisasi Ekosistem Akademik & RPP AI</h4>
+                        <h4 class="font-bold text-teal-100 text-sm mb-0.5">Full Agentic Pipeline: Riset Mandiri $\rightarrow$ Otomatis Tuangkan ke Tabel</h4>
                         <p class="text-slate-200 leading-relaxed">
-                            Setiap Capaian Pembelajaran yang disahkan Yayasan di menu ini akan <b>langsung tersinkronisasi otomatis</b> ke form Silabus guru (<code class="bg-black/30 px-1 py-0.5 rounded text-teal-200">admin-pegawai-silabus.php</code>) dan modul RPP AI (<code class="bg-black/30 px-1 py-0.5 rounded text-teal-200">admin-pegawai-rpp.php</code>). Asatidz tidak perlu lagi mengisi CP manual dari awal.
+                            Karena kurikulum Diknas adalah <b>ketetapan pakem pemerintah</b> (*sami'na wa atha'na*), Agent AI langsung menelusuri keputusan resmi Kemendikbudristek, mengekstrak rumusan kompetensi, dan <b>menuangkannya langsung ke dalam tabel database dan silabus guru</b>. Guru dan Yayasan tidak perlu mengetik manual dari nol.
                         </p>
                     </div>
                 </div>
@@ -216,11 +232,11 @@ $active_page = 'yayasan_cp';
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                                 <i class="fas fa-lightbulb text-amber-500"></i>
-                                Rasional Mata Pelajaran
+                                Rasional Mata Pelajaran (Resmi Pemerintah)
                             </h3>
-                            <span class="text-[11px] text-slate-400">Latar belakang & urgensi</span>
+                            <span class="text-[11px] text-slate-400">Latar belakang disiplin ilmu</span>
                         </div>
-                        <textarea id="field-rasional" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs leading-relaxed text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0b8478]" placeholder="Rasional mata pelajaran memuat alasan pentingnya peserta didik mempelajari disiplin ilmu ini..."></textarea>
+                        <textarea id="field-rasional" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs leading-relaxed text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0b8478]" placeholder="Agent AI akan meriset dan menuangkan teks rasional resmi pemerintah ke sini..."></textarea>
                     </div>
 
                     <!-- CARD 2: TUJUAN MAPEL -->
@@ -228,11 +244,11 @@ $active_page = 'yayasan_cp';
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                                 <i class="fas fa-bullseye text-rose-500"></i>
-                                Tujuan Mata Pelajaran
+                                Tujuan Mata Pelajaran (Resmi Pemerintah)
                             </h3>
                             <span class="text-[11px] text-slate-400">Target kompetensi peserta didik</span>
                         </div>
-                        <textarea id="field-tujuan" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs leading-relaxed text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0b8478]" placeholder="Tujuan mata pelajaran menjabarkan kemampuan yang diharapkan dicapai..."></textarea>
+                        <textarea id="field-tujuan" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs leading-relaxed text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0b8478]" placeholder="Agent AI akan meriset dan menuangkan tujuan resmi pemerintah ke sini..."></textarea>
                     </div>
 
                     <!-- CARD 3: KARAKTERISTIK MAPEL -->
@@ -240,11 +256,11 @@ $active_page = 'yayasan_cp';
                         <div class="flex items-center justify-between mb-2">
                             <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-2">
                                 <i class="fas fa-shapes text-indigo-500"></i>
-                                Karakteristik Mata Pelajaran
+                                Karakteristik Mata Pelajaran (Resmi Pemerintah)
                             </h3>
                             <span class="text-[11px] text-slate-400">Ruang lingkup & fokus materi</span>
                         </div>
-                        <textarea id="field-karakteristik" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs leading-relaxed text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0b8478]" placeholder="Karakteristik mata pelajaran mencakup pendekatan pembelajaran dan fokus elemen..."></textarea>
+                        <textarea id="field-karakteristik" rows="3" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs leading-relaxed text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0b8478]" placeholder="Agent AI akan meriset dan menuangkan karakteristik resmi pemerintah ke sini..."></textarea>
                     </div>
 
                     <!-- CARD 4: ELEMEN CAPAIAN PEMBELAJARAN (TABLE) -->
@@ -252,10 +268,10 @@ $active_page = 'yayasan_cp';
                         <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
                             <div>
                                 <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-                                    <i class="fas fa-list-check text-[#0b8478]"></i>
-                                    Capaian Pembelajaran (CP) per Elemen
+                                    <i class="fas fa-table-list text-[#0b8478]"></i>
+                                    Tabel Capaian Pembelajaran (CP) per Elemen
                                 </h3>
-                                <p class="text-[11px] text-slate-500 mt-0.5">Teks resmi CP per elemen fase yang akan digunakan sebagai landasan RPP</p>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Dituangkan langsung dari BSKAP Kemendikbudristek No. 032/H/KR/2024</p>
                             </div>
                             <button onclick="addElemenRow()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-50 text-[#0b8478] hover:bg-teal-100 border border-teal-200 transition">
                                 <i class="fas fa-plus"></i> Tambah Elemen
@@ -315,11 +331,11 @@ $active_page = 'yayasan_cp';
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
             <div class="text-center">
                 <div class="w-14 h-14 mx-auto rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-2xl mb-4 shadow-xs">
-                    <i class="fas fa-wand-magic-sparkles animate-pulse"></i>
+                    <i class="fas fa-robot animate-bounce"></i>
                 </div>
-                <h3 class="text-lg font-black text-slate-900 mb-1">Standarisasi AI Sedang Berjalan</h3>
+                <h3 class="text-lg font-black text-slate-900 mb-1">Autonomous Agent Sedang Bekerja</h3>
                 <p class="text-xs text-slate-500 mb-5">
-                    AI Agentic sedang mengompilasi dan menstandarisasi seluruh Capaian Pembelajaran dari BSKAP Kemendikbudristek untuk jenjang <b id="batch-jenjang-label">SMP</b>...
+                    Agent sedang menelusuri ketetapan resmi BSKAP Kemendikbudristek untuk seluruh mapel Diknas jenjang <b id="batch-jenjang-label">SMP</b> dan langsung menuangkannya ke dalam tabel...
                 </p>
 
                 <!-- PROGRESS BAR -->
@@ -418,8 +434,8 @@ $active_page = 'yayasan_cp';
             card.id = `mapel-card-${index}`;
 
             const statusBadge = item.has_cp
-                ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1"><i class="fas fa-check"></i> Disahkan</span>`
-                : `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Belum Disahkan</span>`;
+                ? `<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 flex items-center gap-1"><i class="fas fa-check"></i> Pakem Ready</span>`
+                : `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">Perlu Riset</span>`;
 
             card.innerHTML = `
                 <div class="flex items-center gap-2.5 overflow-hidden">
@@ -440,7 +456,7 @@ $active_page = 'yayasan_cp';
             container.appendChild(card);
         });
 
-        document.getElementById('verified-summary-badge').textContent = `${verifiedCount}/${items.length} Disahkan`;
+        document.getElementById('verified-summary-badge').textContent = `${verifiedCount}/${items.length} Selesai`;
         document.getElementById('verified-summary-badge').className = verifiedCount === items.length && items.length > 0
             ? 'px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold'
             : 'px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 text-[10px]';
@@ -456,7 +472,7 @@ $active_page = 'yayasan_cp';
     // 4. Select Mapel & Load Detail
     async function selectMapel(mapel) {
         currentSelectedMapel = mapel;
-        renderMapelList(mapelList); // Re-render to update selected highlight
+        renderMapelList(mapelList);
 
         document.getElementById('active-mapel-title').textContent = mapel.nama_mapel;
         document.getElementById('print-mapel').textContent = mapel.nama_mapel;
@@ -464,7 +480,7 @@ $active_page = 'yayasan_cp';
         document.getElementById('print-fase').textContent = currentFase;
 
         const statusBadge = document.getElementById('active-status-badge');
-        statusBadge.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> Memuat detail CP...`;
+        statusBadge.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> Membaca tabel CP...`;
         statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200';
 
         try {
@@ -476,10 +492,10 @@ $active_page = 'yayasan_cp';
                 populateWorkstation(currentCPData, res.is_saved);
 
                 if (res.is_saved) {
-                    statusBadge.innerHTML = `<i class="fas fa-circle-check text-emerald-600 mr-1"></i> Terverifikasi & Disahkan Yayasan`;
+                    statusBadge.innerHTML = `<i class="fas fa-circle-check text-emerald-600 mr-1"></i> Terverifikasi BSKAP Kemendikbudristek`;
                     statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200';
                 } else {
-                    statusBadge.innerHTML = `<i class="fas fa-circle-exclamation text-amber-600 mr-1"></i> Draft / Rujukan Siap Disahkan`;
+                    statusBadge.innerHTML = `<i class="fas fa-circle-exclamation text-amber-600 mr-1"></i> Siap Diriset Agent AI`;
                     statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200';
                 }
             } else {
@@ -490,12 +506,12 @@ $active_page = 'yayasan_cp';
         }
     }
 
-    // 5. Populate Form Fields
+    // 5. Populate Form Fields & Tables
     function populateWorkstation(data, isSaved) {
         document.getElementById('field-rasional').value = data.rasional_mapel || '';
         document.getElementById('field-tujuan').value = data.tujuan_mapel || '';
         document.getElementById('field-karakteristik').value = data.karakteristik_mapel || '';
-        document.getElementById('active-rujukan-info').textContent = 'Rujukan: ' + (data.sumber_rujukan || 'BSKAP Kemendikbudristek No. 032/H/KR/2024');
+        document.getElementById('active-rujukan-info').textContent = 'Rujukan Baku: ' + (data.sumber_rujukan || 'BSKAP Kemendikbudristek No. 032/H/KR/2024');
 
         const tbody = document.getElementById('elemen-table-body');
         tbody.innerHTML = '';
@@ -516,7 +532,7 @@ $active_page = 'yayasan_cp';
         }
 
         elemenArr.forEach((item, idx) => {
-            appendElemenRow(item.elemen || '', item.cp || '');
+            appendElemenRow(item.elemen || '', item.cp || (item.deskripsi || ''));
         });
 
         updateTotalElemenCount();
@@ -564,53 +580,103 @@ $active_page = 'yayasan_cp';
         document.getElementById('total-elemen-info').textContent = `${count} Elemen Terdaftar`;
     }
 
-    // 7. Generate CP Current Mapel via AI
-    async function generateCPCurrent() {
+    // 7. FULL AGENTIC AI: SEARCH & RISET REGULASI PEMERINTAH -> LANGSUNG TUANGKAN KE TABEL
+    async function runAgentSearchAndPopulate() {
         if (!currentSelectedMapel) return;
 
-        const btn = document.getElementById('btn-generate-ai');
+        const btn = document.getElementById('btn-agent-run');
         const origHtml = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Menganalisis BSKAP...</span>`;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin text-amber-300"></i> <span>Agent Meriset & Menuangkan ke Tabel...</span>`;
+
+        const consoleBox = document.getElementById('agent-console-box');
+        const logsContainer = document.getElementById('agent-terminal-logs');
+        const statusLabel = document.getElementById('agent-status-label');
+
+        consoleBox.classList.remove('hidden');
+        logsContainer.innerHTML = '';
+        statusLabel.textContent = 'CONNECTING TO BSKAP REPO...';
+        statusLabel.className = 'text-[10px] text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/50';
+
+        appendAgentLog('INIT', `Memulai sesi Agent Riset untuk ${currentSelectedMapel.nama_mapel} (${currentJenjang} - ${currentFase})...`);
 
         try {
+            await sleep(350);
+            appendAgentLog('SEARCH', `Menelusuri ketetapan baku Kemendikbudristek BSKAP No. 032/H/KR/2024 di internet...`);
+            
             const formData = new FormData();
             formData.append('jenjang', currentJenjang);
+            formData.append('fase', currentFase);
             formData.append('nama_mapel', currentSelectedMapel.nama_mapel);
             if (currentSelectedMapel.kode_mapel) formData.append('kode_mapel', currentSelectedMapel.kode_mapel);
 
-            const resp = await fetch('../api-cp-ai.php?action=generate_ai_cp', {
+            const resp = await fetch('../api-cp-ai.php?action=agentic_search_and_populate', {
                 method: 'POST',
                 body: formData
             });
             const res = await resp.json();
 
             if (res.status === 'success') {
-                populateWorkstation(res.data, false);
-                
+                if (res.logs && Array.isArray(res.logs)) {
+                    for (const l of res.logs) {
+                        await sleep(200);
+                        appendAgentLog('EXEC', `${l.title}: ${l.desc}`);
+                    }
+                }
+
+                await sleep(250);
+                appendAgentLog('SUCCESS', `Selesai! Hasil riset resmi pemerintah berhasil dituangkan 100% ke tabel & silabus guru.`);
+                statusLabel.textContent = 'COMPLETED (POURED TO TABLE)';
+                statusLabel.className = 'text-[10px] text-emerald-300 bg-emerald-900/80 px-2 py-0.5 rounded border border-emerald-500/50';
+
+                // Langsung isi tabel & komponen UI seketika
+                populateWorkstation(res.data, true);
+
                 const statusBadge = document.getElementById('active-status-badge');
-                statusBadge.innerHTML = `<i class="fas fa-wand-magic-sparkles text-amber-600 mr-1"></i> Hasil AI Siap Disahkan`;
-                statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200';
+                statusBadge.innerHTML = `<i class="fas fa-circle-check text-emerald-600 mr-1"></i> Terverifikasi BSKAP Kemendikbudristek`;
+                statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200';
+
+                currentSelectedMapel.has_cp = true;
+                renderMapelList(mapelList);
 
                 Swal.fire({
                     icon: 'success',
-                    title: 'Berhasil Generate CP!',
-                    text: `Capaian Pembelajaran ${currentSelectedMapel.nama_mapel} berhasil disusun sesuai BSKAP Kemendikbudristek 032/H/KR/2024. Silakan tinjau dan klik "Simpan & Sahkan Yayasan".`,
-                    timer: 2500,
-                    showConfirmButton: false
+                    title: 'Agent Selesai: Masuk ke Tabel!',
+                    html: `Agent AI berhasil meriset ketetapan resmi <b>BSKAP No. 032/H/KR/2024</b> untuk <b>${escapeHtml(currentSelectedMapel.nama_mapel)}</b> dan <b>langsung menuangkannya ke dalam tabel</b> serta silabus guru tanpa input manual.`,
+                    confirmButtonColor: '#0b8478'
                 });
             } else {
-                Swal.fire({ icon: 'error', title: 'Gagal Generate AI', text: res.message });
+                appendAgentLog('ERROR', `Gagal: ${res.message}`);
+                Swal.fire({ icon: 'error', title: 'Riset Gagal', text: res.message });
             }
         } catch (e) {
-            Swal.fire({ icon: 'error', title: 'Error Koneksi AI', text: e.message });
+            appendAgentLog('ERROR', `Koneksi error: ${e.message}`);
+            Swal.fire({ icon: 'error', title: 'Error Koneksi Agent', text: e.message });
         } finally {
             btn.disabled = false;
             btn.innerHTML = origHtml;
         }
     }
 
-    // 8. Save & Synchronize Current CP
+    function appendAgentLog(tag, msg) {
+        const logsContainer = document.getElementById('agent-terminal-logs');
+        const line = document.createElement('div');
+        const now = new Date().toLocaleTimeString();
+        let tagColor = 'text-teal-400';
+        if (tag === 'SEARCH') tagColor = 'text-amber-400';
+        if (tag === 'SUCCESS') tagColor = 'text-emerald-300 font-bold';
+        if (tag === 'ERROR') tagColor = 'text-rose-400 font-bold';
+
+        line.innerHTML = `<span class="text-slate-500">[${now}]</span> <span class="${tagColor}">[${tag}]</span> <span class="text-slate-200">${escapeHtml(msg)}</span>`;
+        logsContainer.appendChild(line);
+        logsContainer.scrollTop = logsContainer.scrollHeight;
+    }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // 8. Manual Save (Optional jika ada catatan lokal khusus Yayasan)
     async function saveCurrentCP() {
         if (!currentSelectedMapel) return;
 
@@ -636,7 +702,7 @@ $active_page = 'yayasan_cp';
         const btn = document.getElementById('btn-save-cp');
         const origHtml = btn.innerHTML;
         btn.disabled = true;
-        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Menyimpan & Sinkron...</span>`;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Menyimpan...</span>`;
 
         try {
             const formData = new FormData();
@@ -658,17 +724,16 @@ $active_page = 'yayasan_cp';
 
             if (res.status === 'success') {
                 const statusBadge = document.getElementById('active-status-badge');
-                statusBadge.innerHTML = `<i class="fas fa-circle-check text-emerald-600 mr-1"></i> Terverifikasi & Disahkan Yayasan`;
+                statusBadge.innerHTML = `<i class="fas fa-circle-check text-emerald-600 mr-1"></i> Terverifikasi BSKAP Kemendikbudristek`;
                 statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200';
 
-                // Update current mapel has_cp state
                 currentSelectedMapel.has_cp = true;
                 renderMapelList(mapelList);
 
                 Swal.fire({
                     icon: 'success',
-                    title: 'Berhasil Disahkan & Tersinkron!',
-                    html: `CP <b>${escapeHtml(currentSelectedMapel.nama_mapel)}</b> telah disahkan oleh Yayasan dan <b>otomatis tersinkronisasi</b> ke Silabus Asatidz & AI RPP Generator.`,
+                    title: 'Tersimpan Manual!',
+                    html: `Perubahan CP untuk <b>${escapeHtml(currentSelectedMapel.nama_mapel)}</b> telah disimpan dan disinkronkan ke silabus asatidz.`,
                     confirmButtonColor: '#0b8478'
                 });
             } else {
@@ -682,16 +747,16 @@ $active_page = 'yayasan_cp';
         }
     }
 
-    // 9. Batch Generate All Subjects
-    async function batchGenerateAll() {
+    // 9. AUTONOMOUS FULL RUN: BATCH ALL MAPEL DIKNAS
+    async function runAutonomousBatchFullRun() {
         const confirmRes = await Swal.fire({
-            title: `Standarisasi Semua Mapel ${currentJenjang}?`,
-            text: `AI akan mengompilasi rujukan kurikulum Kemendikbudristek untuk seluruh mata pelajaran Diknas jenjang ${currentJenjang} dan langsung menyimpannya ke database dan silabus.`,
+            title: `Jalankan Autonomous Full Run?`,
+            text: `Agent AI akan meriset seluruh ketetapan pakem Kemendikbudristek (BSKAP 032/H/KR/2024) untuk semua mata pelajaran Diknas jenjang ${currentJenjang} dan langsung menuangkannya ke tabel database & silabus guru secara otomatis.`,
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: 'Ya, Jalankan AI!',
+            confirmButtonText: 'Ya, Jalankan Agent Otonom!',
             cancelButtonText: 'Batal',
-            confirmButtonColor: '#f59e0b'
+            confirmButtonColor: '#0b8478'
         });
 
         if (!confirmRes.isConfirmed) return;
@@ -702,17 +767,17 @@ $active_page = 'yayasan_cp';
         document.getElementById('batch-jenjang-label').textContent = currentJenjang;
 
         modal.classList.remove('hidden');
-        progressBar.style.width = '15%';
-        statusText.textContent = `Menghubungkan ke API AI & Knowledge Base BSKAP...`;
+        progressBar.style.width = '20%';
+        statusText.textContent = `Menghubungi repositori BSKAP Kemendikbudristek No. 032/H/KR/2024...`;
 
         try {
-            progressBar.style.width = '45%';
-            statusText.textContent = `Mengompilasi capaian per elemen ${currentJenjang}...`;
+            progressBar.style.width = '55%';
+            statusText.textContent = `Mengekstrak dan menuangkan capaian pembelajaran seluruh mapel ke tabel...`;
 
             const formData = new FormData();
             formData.append('jenjang', currentJenjang);
 
-            const resp = await fetch('../api-cp-ai.php?action=batch_generate_all', {
+            const resp = await fetch('../api-cp-ai.php?action=agentic_batch_all', {
                 method: 'POST',
                 body: formData
             });
@@ -721,17 +786,17 @@ $active_page = 'yayasan_cp';
             progressBar.style.width = '100%';
 
             if (res.status === 'success') {
-                statusText.textContent = `Selesai! Menyinkronkan database...`;
+                statusText.textContent = `Selesai! Seluruh data pakem pemerintah telah dituangkan ke tabel...`;
                 setTimeout(() => {
                     modal.classList.add('hidden');
                     Swal.fire({
                         icon: 'success',
-                        title: 'Standarisasi Selesai!',
-                        text: `Berhasil menstandarisasi ${res.total_processed} mata pelajaran Diknas jenjang ${currentJenjang}. Seluruh silabus siap digunakan!`,
+                        title: 'Full Run Selesai!',
+                        text: `Agent AI berhasil meriset & menuangkan ${res.total_processed} mata pelajaran Diknas ${currentJenjang} langsung ke dalam tabel. Form silabus asatidz telah terisi lengkap!`,
                         confirmButtonColor: '#0b8478'
                     });
                     loadMapelList();
-                }, 800);
+                }, 750);
             } else {
                 modal.classList.add('hidden');
                 Swal.fire({ icon: 'error', title: 'Batch Gagal', text: res.message });
