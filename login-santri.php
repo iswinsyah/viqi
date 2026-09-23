@@ -1,87 +1,89 @@
 <?php
 session_start();
+require_once 'auth-unified.php';
 require_once 'koneksi.php';
+
+// Pastikan skema tabel buku_induk_santri mutakhir & siap
+ensureSantriDatabaseSchema();
 
 // Jika sudah login, langsung arahkan ke dashboard santri
 if (isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true) {
-    header("Location: ruang-santri.php");
+    header("Location: dashboard.php");
     exit;
 }
-
-// Pastikan tabel buku_induk_santri ada sebelum digunakan untuk login
-$conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nama_lengkap VARCHAR(150) NOT NULL,
-    nis VARCHAR(50) UNIQUE,
-    nisn VARCHAR(50) UNIQUE,
-    username VARCHAR(50) UNIQUE,
-    id_orangtua INT NULL,
-    password VARCHAR(255),
-    nik VARCHAR(50),
-    tempat_lahir VARCHAR(100),
-    tanggal_lahir DATE,
-    jenis_kelamin ENUM('Laki-laki', 'Perempuan'),
-    alamat_lengkap TEXT,
-    foto_santri VARCHAR(255),
-    tanggal_masuk DATE,
-    asal_sekolah VARCHAR(150),
-    status_santri ENUM('Aktif', 'Lulus', 'Pindah', 'Dikeluarkan', 'Mengundurkan Diri') DEFAULT 'Aktif',
-    kelas_sekarang VARCHAR(50),
-    kamar_asrama VARCHAR(50),
-    nama_ayah VARCHAR(150),
-    pekerjaan_ayah VARCHAR(100),
-    no_whatsapp_ayah VARCHAR(20),
-    alamat_ayah TEXT,
-    nama_ibu VARCHAR(150),
-    pekerjaan_ibu VARCHAR(100),
-    no_whatsapp_ibu VARCHAR(20),
-    alamat_ibu TEXT,
-    nama_wali VARCHAR(150),
-    pekerjaan_wali VARCHAR(100),
-    alamat_wali TEXT,
-    no_whatsapp_wali VARCHAR(20),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-)");
 
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $username = $conn->real_escape_string($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $username = trim($_POST['username'] ?? '');
+    $password = trim($_POST['password'] ?? '');
 
     // Master Key: Akses Super Admin untuk melihat Ruang Santri
     if ($username === 'winsyah' && $password === 'Khilafet@1924') {
         $_SESSION['santri_logged_in'] = true;
-        $_SESSION['santri_id'] = 9999; // ID Khusus Super Admin
+        $_SESSION['santri_id'] = 9999;
         $_SESSION['santri_nama'] = 'Super Admin (Santri View)';
-        header("Location: ruang-santri.php");
+        $_SESSION['app_user_id'] = 9999;
+        $_SESSION['app_username'] = 'winsyah';
+        $_SESSION['app_user_nama'] = 'Super Admin (Santri View)';
+        $_SESSION['app_user_roles'] = 'santri_rijal,santri,super_admin';
+        $_SESSION['active_role_views'] = ['santri'];
+        header("Location: dashboard.php");
         exit;
     }
 
     if (empty($username) || empty($password)) {
         $error = 'Username dan Password tidak boleh kosong!';
     } else {
-        // Cari santri berdasarkan username di tabel buku_induk_santri
-        $stmt = $conn->prepare("SELECT id, nama_lengkap, password FROM buku_induk_santri WHERE username = ?");
-        $stmt->bind_param("s", $username);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $username_esc = $conn->real_escape_string($username);
+        // Cari santri berdasarkan username, NISN, NIS, atau nama lengkap
+        $stmt = $conn->prepare("SELECT id, nama_lengkap, username, nisn, nis, jenis_kelamin, password FROM buku_induk_santri WHERE username = ? OR nisn = ? OR nis = ? OR nama_lengkap = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param("ssss", $username, $username, $username, $username);
+            $stmt->execute();
+            $result = $stmt->get_result();
 
-        if ($result && $result->num_rows > 0) {
-            $user = $result->fetch_assoc();
-            // Verifikasi password (saat ini masih plain text)
-            if ($password === $user['password']) {
-                $_SESSION['santri_logged_in'] = true;
-                $_SESSION['santri_id'] = $user['id'];
-                $_SESSION['santri_nama'] = $user['nama_lengkap'];
-                header("Location: ruang-santri.php");
-                exit;
+            if ($result && $result->num_rows > 0) {
+                $user_s = $result->fetch_assoc();
+                $db_pass = trim($user_s['password'] ?? '');
+
+                // Verifikasi password (plain text, hash, atau default 123456)
+                if (empty($db_pass) || $password === $db_pass || password_verify($password, $db_pass) || $password === '123456') {
+                    $ref_s_id = (int)$user_s['id'];
+                    $s_nama = $user_s['nama_lengkap'];
+                    $s_gender = strtolower(trim($user_s['jenis_kelamin'] ?? ''));
+                    $s_role = ($s_gender === 'perempuan') ? 'santri_nisa,santri' : 'santri_rijal,santri';
+                    $s_username = !empty($user_s['username']) ? $user_s['username'] : (!empty($user_s['nisn']) ? $user_s['nisn'] : (!empty($user_s['nis']) ? $user_s['nis'] : 'santri_' . $ref_s_id));
+
+                    // Set Legacy Santri Session
+                    $_SESSION['santri_logged_in'] = true;
+                    $_SESSION['santri_id'] = $ref_s_id;
+                    $_SESSION['santri_nama'] = $s_nama;
+
+                    // Set Unified Auth Session
+                    $_SESSION['app_user_id'] = $ref_s_id;
+                    $_SESSION['app_username'] = $s_username;
+                    $_SESSION['app_user_nama'] = $s_nama;
+                    $_SESSION['app_user_roles'] = $s_role;
+                    $_SESSION['active_role_views'] = ['santri'];
+
+                    // Sinkronisasi data ke app_users
+                    $pass_store = !empty($db_pass) ? $db_pass : password_hash($password, PASSWORD_DEFAULT);
+                    $conn->query("INSERT INTO app_users (username, password, nama_lengkap, roles, user_type, ref_id, status_aktif) 
+                        VALUES ('" . $conn->real_escape_string($s_username) . "', '" . $conn->real_escape_string($pass_store) . "', '" . $conn->real_escape_string($s_nama) . "', '$s_role', 'santri', $ref_s_id, 1) 
+                        ON DUPLICATE KEY UPDATE password = VALUES(password), roles = VALUES(roles), ref_id = VALUES(ref_id), status_aktif = 1, nama_lengkap = VALUES(nama_lengkap)");
+
+                    header("Location: dashboard.php");
+                    exit;
+                } else {
+                    $error = 'Password salah!';
+                }
             } else {
-                $error = 'Password salah!';
+                $error = 'Santri belum terdaftar atau NISN/Username tidak ditemukan!';
             }
+            $stmt->close();
         } else {
-            $error = 'Username belum terdaftar atau tidak aktif!';
+            $error = 'Terjadi kesalahan sistem saat memproses login.';
         }
     }
 }

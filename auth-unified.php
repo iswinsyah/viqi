@@ -48,8 +48,104 @@ function normalizeCanonicalRole($role) {
     return $r;
 }
 
+function ensureSantriDatabaseSchema() {
+    global $conn;
+    if (!$conn || !($conn instanceof mysqli)) return;
+    
+    // 1. Cek apakah buku_induk_santri ada
+    $check_table = $conn->query("SHOW TABLES LIKE 'buku_induk_santri'");
+    if (!$check_table || $check_table->num_rows === 0) return;
+
+    // 2. Cek kolom-kolom penting
+    $cols = [];
+    $r = $conn->query("SHOW COLUMNS FROM buku_induk_santri");
+    if ($r) {
+        while ($c = $r->fetch_assoc()) $cols[] = $c['Field'];
+    }
+
+    if (!in_array('nis', $cols)) {
+        @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nis VARCHAR(50) NULL AFTER nama_lengkap");
+    }
+    if (!in_array('nisn', $cols)) {
+        @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nisn VARCHAR(50) NULL AFTER nis");
+    }
+    if (!in_array('username', $cols)) {
+        @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN username VARCHAR(50) NULL AFTER nisn");
+    }
+    if (!in_array('password', $cols)) {
+        @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN password VARCHAR(255) NULL AFTER username");
+    }
+
+    // 3. Pastikan username & password default jika kosong
+    @$conn->query("UPDATE buku_induk_santri SET 
+        username = CASE 
+            WHEN (nisn IS NOT NULL AND nisn != '') THEN nisn 
+            WHEN (nis IS NOT NULL AND nis != '') THEN nis 
+            ELSE CONCAT('santri_', id) 
+        END 
+        WHERE username IS NULL OR username = ''");
+        
+    @$conn->query("UPDATE buku_induk_santri SET password = '123456' WHERE password IS NULL OR password = ''");
+}
+
+function bridgeActiveLegacySessions() {
+    global $conn;
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    
+    // Auto-bridge Sesi Santri (misal login dari login-santri.php atau login-as-santri.php)
+    if ((!isset($_SESSION['app_user_id']) || empty($_SESSION['app_user_id'])) && isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true) {
+        $santri_id = (int)($_SESSION['santri_id'] ?? 0);
+        if ($santri_id > 0 && $conn && $conn instanceof mysqli) {
+            ensureSantriDatabaseSchema();
+            $r_s = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $santri_id LIMIT 1");
+            if ($r_s && $r_s->num_rows > 0) {
+                $s_row = $r_s->fetch_assoc();
+                $s_gender = strtolower(trim($s_row['jenis_kelamin'] ?? ''));
+                $s_role = ($s_gender === 'perempuan') ? 'santri_nisa,santri' : 'santri_rijal,santri';
+                $s_uname = !empty($s_row['username']) ? $s_row['username'] : (!empty($s_row['nisn']) ? $s_row['nisn'] : (!empty($s_row['nis']) ? $s_row['nis'] : 'santri_' . $santri_id));
+                
+                $_SESSION['app_user_id'] = $santri_id;
+                $_SESSION['app_username'] = $s_uname;
+                $_SESSION['app_user_nama'] = $s_row['nama_lengkap'];
+                $_SESSION['app_user_roles'] = $s_role;
+                if (!isset($_SESSION['active_role_views']) || empty($_SESSION['active_role_views'])) {
+                    $_SESSION['active_role_views'] = ['santri'];
+                }
+            }
+        }
+    }
+
+    // Auto-bridge Sesi Walisantri
+    if ((!isset($_SESSION['app_user_id']) || empty($_SESSION['app_user_id'])) && isset($_SESSION['orangtua_logged_in']) && $_SESSION['orangtua_logged_in'] === true) {
+        $orangtua_id = (int)($_SESSION['orangtua_id'] ?? 0);
+        if ($orangtua_id > 0 && $conn && $conn instanceof mysqli) {
+            $r_o = $conn->query("SELECT * FROM akun_orangtua WHERE id = $orangtua_id LIMIT 1");
+            if ($r_o && $r_o->num_rows > 0) {
+                $o_row = $r_o->fetch_assoc();
+                $o_uname = !empty($o_row['username']) ? $o_row['username'] : 'orangtua_' . $orangtua_id;
+                $o_nama = $o_row['nama_orangtua'] ?? $o_row['nama_lengkap'] ?? 'Orang Tua / Wali';
+                
+                $_SESSION['app_user_id'] = $orangtua_id;
+                $_SESSION['app_username'] = $o_uname;
+                $_SESSION['app_user_nama'] = $o_nama;
+                $_SESSION['app_user_roles'] = 'orangtua,walisantri';
+                if (!isset($_SESSION['active_role_views']) || empty($_SESSION['active_role_views'])) {
+                    $_SESSION['active_role_views'] = ['orangtua'];
+                }
+            }
+        }
+    }
+}
+
+// Inisialisasi schema & bridge otomatis saat file auth dimuat
+ensureSantriDatabaseSchema();
+bridgeActiveLegacySessions();
+
 function getCurrentUser() {
     global $conn;
+    bridgeActiveLegacySessions();
     if (!isset($_SESSION['app_user_id']) && !isset($_SESSION['app_username'])) {
         return null;
     }
@@ -71,21 +167,27 @@ function getCurrentUser() {
         }
     }
     
-    // 2. Fallback tangguh dari SESSION jika record DB belum sinkron / id 9999
+    // 2. Fallback tangguh dari SESSION jika record DB belum sinkron / id 9999 / santri
     if (!empty($sessionUsername)) {
         $session_roles = $_SESSION['app_user_roles'] ?? '';
         if (empty($_SESSION['is_impersonating']) && in_array(strtolower($sessionUsername), ['viqi', 'winsyah'])) {
             $session_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,kepala_sekolah,tutor,musyrif,ustadz,walisantri,web,marketing';
         }
+        $user_type = 'pegawai';
+        if (isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true) {
+            $user_type = 'santri';
+        } elseif (isset($_SESSION['orangtua_logged_in']) && $_SESSION['orangtua_logged_in'] === true) {
+            $user_type = 'walisantri';
+        }
         return [
             'id' => $userId > 0 ? $userId : 1,
-            'ref_id' => isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : ($userId > 0 ? $userId : 1),
+            'ref_id' => isset($_SESSION['santri_id']) ? (int)$_SESSION['santri_id'] : (isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : ($userId > 0 ? $userId : 1)),
             'username' => $sessionUsername,
             'nama_lengkap' => $_SESSION['app_user_nama'] ?? $sessionUsername,
             'roles' => $session_roles,
             'roles_array' => array_map('trim', explode(',', strtolower($session_roles))),
             'foto_profil' => '',
-            'user_type' => 'pegawai',
+            'user_type' => $user_type,
             'status_aktif' => 1
         ];
     }
@@ -109,6 +211,16 @@ function getUserRoles() {
 }
 
 function isSuperAdmin() {
+    // Santri murni dan Walisantri murni BUKAN Super Admin
+    if ((isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true) && empty($_SESSION['is_impersonating'])) {
+        $roles = getUserRoles();
+        return in_array('super_admin', $roles);
+    }
+    if ((isset($_SESSION['orangtua_logged_in']) && $_SESSION['orangtua_logged_in'] === true) && empty($_SESSION['is_impersonating'])) {
+        $roles = getUserRoles();
+        return in_array('super_admin', $roles);
+    }
+
     $roles = getUserRoles();
     if (in_array('super_admin', $roles)) {
         return true;
@@ -124,8 +236,14 @@ function isSuperAdmin() {
     if (in_array($uname, ['viqi', 'winsyah'])) {
         return true;
     }
+    $curr_user = getCurrentUser();
+    if ($curr_user && ($curr_user['user_type'] === 'santri' || $curr_user['user_type'] === 'walisantri')) {
+        return false;
+    }
     if (isset($_SESSION['app_user_id']) && in_array((int)$_SESSION['app_user_id'], [1, 9999])) {
-        return true;
+        if (!$curr_user || ($curr_user['user_type'] ?? '') === 'pegawai') {
+            return true;
+        }
     }
     return false;
 }
@@ -170,6 +288,7 @@ function setActiveRoleViews($roleViews) {
 }
 
 function requireLogin() {
+    bridgeActiveLegacySessions();
     if (!isset($_SESSION['app_user_id']) && !isset($_SESSION['app_username'])) {
         header("Location: login.php");
         exit;

@@ -56,8 +56,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS buku_induk_santri (
 @$conn->query("ALTER TABLE buku_induk_santri ADD CONSTRAINT fk_id_orangtua FOREIGN KEY (id_orangtua) REFERENCES akun_orangtua(id) ON DELETE SET NULL ON UPDATE CASCADE");
 
 // 4. Pastikan semua kolom ada (self-healing untuk update struktur tabel lama)
-@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN username VARCHAR(50) UNIQUE AFTER nisn");
-@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN password VARCHAR(255) AFTER username");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nis VARCHAR(50) NULL AFTER nama_lengkap");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nisn VARCHAR(50) NULL AFTER nis");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN username VARCHAR(50) NULL AFTER nisn");
+@$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN password VARCHAR(255) NULL AFTER username");
 @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN id_orangtua INT NULL AFTER password");
 @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nik VARCHAR(50) AFTER id_orangtua");
 @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN tempat_lahir VARCHAR(100) AFTER nik");

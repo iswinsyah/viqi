@@ -48,18 +48,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        // 3. Fallback cerdas: Cari di buku_induk_santri (NISN / No. Induk / Nama)
+        // 3. Fallback cerdas: Cari di buku_induk_santri (Username / NISN / NIS / Nama Lengkap)
         if (!$login_success) {
-            $res_s = $conn->query("SELECT * FROM buku_induk_santri WHERE nisn = '$username_esc' OR no_induk = '$username_esc' OR nama_lengkap = '$username_esc' LIMIT 1");
+            if (function_exists('ensureSantriDatabaseSchema')) {
+                ensureSantriDatabaseSchema();
+            }
+            $res_s = $conn->query("SELECT * FROM buku_induk_santri WHERE 
+                username = '$username_esc' 
+                OR nisn = '$username_esc' 
+                OR nis = '$username_esc' 
+                OR nama_lengkap = '$username_esc' 
+                OR nama_lengkap LIKE '%$username_esc%' 
+                LIMIT 1");
+
             if ($res_s && $res_s->num_rows > 0) {
                 $s = $res_s->fetch_assoc();
-                if ($password === $s['password'] || password_verify($password, $s['password']) || $password === '123456') {
+                $db_pass = trim($s['password'] ?? '');
+
+                if (empty($db_pass) || $password === $db_pass || password_verify($password, $db_pass) || $password === '123456') {
                     $login_success = true;
                     $s_nama = $s['nama_lengkap'] ?? $username;
                     $ref_s_id = (int)$s['id'];
-                    $conn->query("INSERT INTO app_users (username, password, nama_lengkap, roles, user_type, ref_id, status_aktif) VALUES ('$username_esc', '".$conn->real_escape_string($s['password'] ?? '123456')."', '".$conn->real_escape_string($s_nama)."', 'santri', 'santri', $ref_s_id, 1) ON DUPLICATE KEY UPDATE password = VALUES(password), roles = VALUES(roles)");
-                    $res_re = $conn->query("SELECT * FROM app_users WHERE username = '$username_esc' LIMIT 1");
-                    $user_data = $res_re ? $res_re->fetch_assoc() : null;
+                    $s_gender = strtolower(trim($s['jenis_kelamin'] ?? ''));
+                    $s_role = ($s_gender === 'perempuan') ? 'santri_nisa,santri' : 'santri_rijal,santri';
+                    $s_username = !empty($s['username']) ? $s['username'] : (!empty($s['nisn']) ? $s['nisn'] : (!empty($s['nis']) ? $s['nis'] : 'santri_' . $ref_s_id));
+
+                    $pass_store = !empty($db_pass) ? $db_pass : password_hash($password, PASSWORD_DEFAULT);
+                    $conn->query("INSERT INTO app_users (username, password, nama_lengkap, roles, user_type, ref_id, status_aktif) 
+                        VALUES ('" . $conn->real_escape_string($s_username) . "', '" . $conn->real_escape_string($pass_store) . "', '" . $conn->real_escape_string($s_nama) . "', '$s_role', 'santri', $ref_s_id, 1) 
+                        ON DUPLICATE KEY UPDATE password = VALUES(password), roles = VALUES(roles), ref_id = VALUES(ref_id), status_aktif = 1, nama_lengkap = VALUES(nama_lengkap)");
+
+                    $res_re = $conn->query("SELECT * FROM app_users WHERE username = '" . $conn->real_escape_string($s_username) . "' LIMIT 1");
+                    $user_data = $res_re ? $res_re->fetch_assoc() : [
+                        'id' => $ref_s_id,
+                        'username' => $s_username,
+                        'nama_lengkap' => $s_nama,
+                        'roles' => $s_role,
+                        'user_type' => 'santri',
+                        'ref_id' => $ref_s_id,
+                        'status_aktif' => 1
+                    ];
                 }
             }
         }
@@ -120,7 +148,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if ($login_success && $user_data) {
-            $_SESSION['active_role_views'] = ['all'];
+            $is_santri = ($user_data['user_type'] === 'santri') || strpos($user_data['roles'] ?? '', 'santri') !== false;
+            $is_orangtua = ($user_data['user_type'] === 'walisantri') || strpos($user_data['roles'] ?? '', 'orangtua') !== false || strpos($user_data['roles'] ?? '', 'walisantri') !== false;
+
+            if ($is_santri) {
+                $_SESSION['active_role_views'] = ['santri'];
+            } elseif ($is_orangtua) {
+                $_SESSION['active_role_views'] = ['orangtua'];
+            } else {
+                $_SESSION['active_role_views'] = ['all'];
+            }
             syncLegacySessions($user_data);
             header("Location: dashboard.php");
             exit;
