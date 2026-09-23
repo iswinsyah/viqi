@@ -62,12 +62,9 @@ $santri_list = getOrangtuaSantriList($conn, $orangtua_id);
                         <?php endif; ?>
                     </div>
                 <?php else: ?>
-                    <div class="flex items-center gap-2 flex-wrap mt-1">
-                        <p class="text-amber-800 font-bold text-xs flex items-center gap-1.5">
-                            <i class="fas fa-hand-pointer text-amber-600"></i> Silakan pilih menu ananda di bawah untuk pertama kali, atau pilih beberapa saudara sekaligus:
-                        </p>
-                        <button type="button" onclick="openPilihAnandaModal()" class="px-3 py-1 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1 transition">
-                            <i class="fas fa-users-viewfinder"></i> Pilih Ananda (Bisa >1 Anak)
+                    <div class="flex items-center gap-2 flex-wrap mt-2">
+                        <button type="button" onclick="openPilihAnandaModal()" class="px-4 py-2 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2 transition">
+                            <i class="fas fa-child"></i> Pilih Ananda
                         </button>
                     </div>
                 <?php endif; ?>

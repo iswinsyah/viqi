@@ -214,26 +214,11 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
-                        <!-- BELUM TERKUNCI: TAMPILKAN DROPDOWN DAN TOMBOL PILIH LEBIH DARI 1 -->
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <form method="GET" class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-teal-800 uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
-                                    <i class="fas fa-child text-[#0b8478]"></i> Ananda:
-                                </span>
-                                <select name="santri_id" onchange="this.form.submit()" class="bg-teal-50/50 border border-teal-300 text-teal-950 font-bold text-xs rounded-xl px-3.5 py-2 focus:ring-2 focus:ring-teal-500 shadow-xs cursor-pointer">
-                                    <option value="">-- Pilih 1 Ananda Langsung --</option>
-                                    <?php foreach ($santri_list as $s): ?>
-                                        <option value="<?= $s['id'] ?>">
-                                            <?= htmlspecialchars($s['nama_lengkap']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </form>
-                            <button type="button" onclick="openPilihAnandaModal()" class="px-3 py-1.5 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition">
-                                <i class="fas fa-users-viewfinder"></i>
-                                <span>Pilih Lebih dari 1 (Bersaudara)</span>
-                            </button>
-                        </div>
+                        <!-- BELUM TERKUNCI: 1 KOLOM / TOMBOL PILIH ANANDA (BUKA MODAL PILIH 1 ATAU LEBIH) -->
+                        <button type="button" onclick="openPilihAnandaModal()" class="px-4 py-2 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-2 transition cursor-pointer">
+                            <i class="fas fa-child"></i>
+                            <span>Pilih Ananda</span>
+                        </button>
                     <?php endif; ?>
                 </div>
             </div>
@@ -257,12 +242,20 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                         <!-- Baris Rincian 1 -->
                         <div class="rincian-row relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
                             <div class="lg:col-span-2">
-                                <label class="block text-xs font-medium text-gray-700 mb-1">Pilih Ananda</label>
-                                <select name="santri_id[]" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-teal-500">
-                                    <?php foreach($santri_list as $s): ?>
-                                        <option value="<?= $s['id'] ?>" <?= ($s['id'] == $selected_santri_id) ? 'selected' : '' ?>><?= htmlspecialchars($s['nama_lengkap']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Ananda</label>
+                                <?php if (count($santri_list) === 1): ?>
+                                    <input type="hidden" name="santri_id[]" value="<?= $santri_list[0]['id'] ?>">
+                                    <div class="w-full px-3 py-2 bg-teal-50/70 border border-teal-200 rounded-lg text-xs font-bold text-teal-950 flex items-center gap-1.5">
+                                        <i class="fas fa-lock text-[#0b8478] text-[10px]"></i>
+                                        <span><?= htmlspecialchars($santri_list[0]['nama_lengkap']) ?></span>
+                                    </div>
+                                <?php else: ?>
+                                    <select name="santri_id[]" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-teal-500 font-bold">
+                                        <?php foreach($santri_list as $s): ?>
+                                            <option value="<?= $s['id'] ?>" <?= ($s['id'] == $selected_santri_id) ? 'selected' : '' ?>><?= htmlspecialchars($s['nama_lengkap']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                <?php endif; ?>
                             </div>
                             <div class="lg:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Jenis Pembayaran</label>

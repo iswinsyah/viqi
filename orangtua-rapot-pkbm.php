@@ -179,28 +179,11 @@ $active_menu = 'orangtua_rapot_pkbm';
                             <?php endif; ?>
                         </div>
                     <?php else: ?>
-                        <!-- BELUM TERKUNCI: TAMPILKAN DROPDOWN DAN TOMBOL PILIH LEBIH DARI 1 -->
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <form method="GET" class="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-teal-100 shadow-xs">
-                                <label class="text-xs font-bold text-[#0b8478] whitespace-nowrap flex items-center gap-1.5">
-                                    <i class="fas fa-child"></i> Pilih Ananda:
-                                </label>
-                                <input type="hidden" name="tahun_ajaran" value="<?= htmlspecialchars($filters['tahun_ajaran']) ?>">
-                                <input type="hidden" name="semester" value="<?= htmlspecialchars($filters['semester']) ?>">
-                                <select name="santri_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:ring-2 focus:ring-[#0b8478] focus:border-[#0b8478] font-bold text-slate-800 transition">
-                                    <option value="">-- Pilih 1 Ananda Langsung --</option>
-                                    <?php foreach ($santri_anak as $sa): ?>
-                                        <option value="<?= $sa['id'] ?>">
-                                            <?= htmlspecialchars($sa['nama_lengkap']) ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </form>
-                            <button type="button" onclick="openPilihAnandaModal()" class="px-3.5 py-2 bg-[#0b8478] hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition">
-                                <i class="fas fa-users-viewfinder"></i>
-                                <span>Pilih Lebih dari 1 Anak (Bersaudara)</span>
-                            </button>
-                        </div>
+                        <!-- BELUM TERKUNCI: 1 KOLOM / TOMBOL PILIH ANANDA (BUKA MODAL PILIH 1 ATAU LEBIH) -->
+                        <button type="button" onclick="openPilihAnandaModal()" class="px-4 py-2 bg-[#0b8478] hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-xs flex items-center gap-2 transition cursor-pointer">
+                            <i class="fas fa-child"></i>
+                            <span>Pilih Ananda</span>
+                        </button>
                     <?php endif; ?>
                 </div>
 
