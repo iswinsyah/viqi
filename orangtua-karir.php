@@ -3,33 +3,24 @@ require_once 'auth-orangtua.php';
 require_once 'koneksi.php';
 
 $orangtua_id = $_SESSION['orangtua_id'];
-$santri_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$active_menu = 'dashboard_orangtua';
+$is_super_admin = ($orangtua_id == 9999);
+$active_menu = 'orangtua_karir';
 
-// Fallback jika id santri belum dipilih dari URL
-if ($santri_id <= 0) {
-    if ($orangtua_id == 9999) {
-        $first_s = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC LIMIT 1");
-        if ($first_s && $row_f = $first_s->fetch_assoc()) $santri_id = (int)$row_f['id'];
-    } else {
-        $first_s = $conn->query("SELECT s.id FROM buku_induk_santri s LEFT JOIN santri_orangtua_link sol ON s.id = sol.santri_id WHERE sol.orangtua_id = $orangtua_id OR s.id_orangtua = $orangtua_id ORDER BY s.nama_lengkap ASC LIMIT 1");
-        if ($first_s && $row_f = $first_s->fetch_assoc()) $santri_id = (int)$row_f['id'];
-    }
-}
+// Ambil daftar ananda yang sah & tentukan Ananda Aktif (Persisten Session + Cookie 30 Hari)
+$santri_anak = getOrangtuaSantriList($conn, $orangtua_id);
+$selected_child = getOrangtuaActiveSantri($conn, $orangtua_id, $santri_anak);
+$santri_id = $selected_child ? (int)$selected_child['id'] : 0;
+$data_santri = $selected_child;
 
-// 1. Keamanan: Cek apakah santri ini milik orang tua yang login
-if ($orangtua_id != 9999) {
-    $check = $conn->query("SELECT s.id FROM buku_induk_santri s JOIN santri_orangtua_link sol ON s.id = sol.santri_id WHERE s.id = $santri_id AND sol.orangtua_id = $orangtua_id");
-    if (!$check || $check->num_rows == 0) {
+// Keamanan: Cek apakah santri ini milik orang tua yang login
+if (!$is_super_admin && $santri_id > 0) {
+    $valid_ids = array_map('intval', array_column($santri_anak, 'id'));
+    if (!in_array($santri_id, $valid_ids)) {
         die("Akses Ditolak: Anda tidak memiliki otoritas melihat data santri ini.");
     }
 }
-
-// 2. Ambil data santri
-$res_s = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $santri_id");
-$data_santri = $res_s->fetch_assoc();
 if (!$data_santri) {
-    die("Santri tidak ditemukan.");
+    die("Data Ananda tidak ditemukan.");
 }
 
 // 3. Ambil data konseling karir & AI

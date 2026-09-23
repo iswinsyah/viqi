@@ -4,49 +4,12 @@ require_once 'koneksi.php';
 
 $orangtua_id = $_SESSION['orangtua_id'];
 $orangtua_nama = $_SESSION['orangtua_nama'];
-
 $is_super_admin = ($orangtua_id == 9999);
 
-// Fetch children of this parent
-$santri_anak = [];
-if ($is_super_admin) {
-    $res_s = $conn->query("SELECT id, nama_lengkap, kelas_sekarang FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC");
-} else {
-    $res_s = $conn->query("
-        SELECT s.id, s.nama_lengkap, s.kelas_sekarang 
-        FROM buku_induk_santri s 
-        LEFT JOIN santri_orangtua_link sol ON s.id = sol.santri_id 
-        WHERE sol.orangtua_id = $orangtua_id OR s.id_orangtua = $orangtua_id 
-        ORDER BY s.nama_lengkap ASC
-    ");
-}
-
-if ($res_s) {
-    while ($r = $res_s->fetch_assoc()) {
-        $santri_anak[] = $r;
-    }
-}
-
-// Active child filter
-$selected_santri_id = isset($_GET['santri_id']) ? (int)$_GET['santri_id'] : ($santri_anak[0]['id'] ?? 0);
-
-// Cari data santri terpilih
-$selected_child = null;
-if (!empty($santri_anak)) {
-    foreach ($santri_anak as $sa) {
-        if ((int)$sa['id'] === $selected_santri_id) {
-            $selected_child = $sa;
-            break;
-        }
-    }
-}
-
-if (!$selected_child && $selected_santri_id > 0) {
-    $res_c = $conn->query("SELECT id, nama_lengkap, kelas_sekarang FROM buku_induk_santri WHERE id = $selected_santri_id LIMIT 1");
-    if ($res_c && $res_c->num_rows > 0) {
-        $selected_child = $res_c->fetch_assoc();
-    }
-}
+// Ambil daftar ananda yang sah & tentukan Ananda Aktif (Persisten Session + Cookie 30 Hari)
+$santri_anak = getOrangtuaSantriList($conn, $orangtua_id);
+$selected_child = getOrangtuaActiveSantri($conn, $orangtua_id, $santri_anak);
+$selected_santri_id = $selected_child ? (int)$selected_child['id'] : 0;
 
 // Query Setoran Hafalan dengan penanganan kebal Collation Mismatch
 // (HINDARI JOIN STRING l.nama_santri = s.nama_lengkap karena perbedaan utf8mb4_uca1400 vs utf8mb4_unicode_ci)
@@ -59,18 +22,16 @@ if ($selected_santri_id > 0) {
         $where_parts[] = "LOWER(TRIM(l.nama_santri)) = LOWER(TRIM('$c_name'))";
     }
     $where_clause = "(" . implode(' OR ', $where_parts) . ")";
-} else {
-    if (!empty($santri_anak)) {
-        $child_ids = array_map('intval', array_column($santri_anak, 'id'));
-        $id_list_str = implode(',', $child_ids);
-        $where_parts = ["l.santri_id IN ($id_list_str)"];
-        foreach ($santri_anak as $sa) {
-            $nm_esc = $conn->real_escape_string($sa['nama_lengkap']);
-            $where_parts[] = "l.nama_santri = '$nm_esc'";
-            $where_parts[] = "LOWER(TRIM(l.nama_santri)) = LOWER(TRIM('$nm_esc'))";
-        }
-        $where_clause = "(" . implode(' OR ', $where_parts) . ")";
+} elseif (!empty($santri_anak)) {
+    $child_ids = array_map('intval', array_column($santri_anak, 'id'));
+    $id_list_str = implode(',', $child_ids);
+    $where_parts = ["l.santri_id IN ($id_list_str)"];
+    foreach ($santri_anak as $sa) {
+        $nm_esc = $conn->real_escape_string($sa['nama_lengkap']);
+        $where_parts[] = "l.nama_santri = '$nm_esc'";
+        $where_parts[] = "LOWER(TRIM(l.nama_santri)) = LOWER(TRIM('$nm_esc'))";
     }
+    $where_clause = "(" . implode(' OR ', $where_parts) . ")";
 }
 
 $query = "SELECT l.*, COALESCE(s.nama_lengkap, l.nama_santri) AS nama_santri_display, s.kelas_sekarang 
@@ -158,7 +119,7 @@ $active_menu = 'orangtua_hafalan';
                     </p>
                 </div>
 
-                <!-- SANTRI SELECTOR IF MULTIPLE -->
+                <!-- SELECTOR ANANDA (HANYA MUNCUL JIKA LEBIH DARI 1 ANAK ATAU SUPER ADMIN) -->
                 <?php if (count($santri_anak) > 1): ?>
                     <form method="GET" class="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-teal-100 shadow-xs">
                         <label class="text-xs font-bold text-[#0b8478] whitespace-nowrap flex items-center gap-1.5">
@@ -172,6 +133,14 @@ $active_menu = 'orangtua_hafalan';
                             <?php endforeach; ?>
                         </select>
                     </form>
+                <?php elseif (!empty($selected_child)): ?>
+                    <div class="flex items-center gap-2 bg-teal-50/80 px-4 py-2 rounded-2xl border border-teal-200/80 text-xs font-bold text-teal-950 shadow-xs">
+                        <i class="fas fa-child text-[#0b8478]"></i>
+                        <span>Ananda: <strong class="text-[#0b8478]"><?= htmlspecialchars($selected_child['nama_lengkap']) ?></strong></span>
+                        <?php if (!empty($selected_child['kelas_sekarang'])): ?>
+                            <span class="text-[10px] bg-white text-teal-800 px-2 py-0.5 rounded-full border border-teal-200 font-semibold"><?= htmlspecialchars($selected_child['kelas_sekarang']) ?></span>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             </div>
 

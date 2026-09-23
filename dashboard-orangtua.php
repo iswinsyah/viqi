@@ -5,21 +5,8 @@ require_once 'koneksi.php';
 $orangtua_id = $_SESSION['orangtua_id'];
 $active_menu = 'dashboard_orangtua';
 
-// Ambil data santri yang terhubung
-$santri_list = [];
-if ($orangtua_id == 9999) {
-    // Jika Super Admin yang masuk, tampilkan 12 santri aktif terbaru sebagai pratinjau
-    $res = $conn->query("SELECT * FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY created_at DESC LIMIT 12");
-} else {
-    // Jika Orang Tua asli, tampilkan anak-anak mereka saja
-    $res = $conn->query("
-        SELECT s.* 
-        FROM buku_induk_santri s 
-        JOIN santri_orangtua_link sol ON s.id = sol.santri_id 
-        WHERE sol.orangtua_id = $orangtua_id
-    ");
-}
-if ($res) while($r = $res->fetch_assoc()) $santri_list[] = $r;
+// Ambil data santri yang terhubung dengan akun orang tua ini
+$santri_list = getOrangtuaSantriList($conn, $orangtua_id);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -41,58 +28,99 @@ if ($res) while($r = $res->fetch_assoc()) $santri_list[] = $r;
             </div>
             <div class="flex items-center space-x-4">
                 <span class="text-sm text-gray-600 hidden md:block">Selamat Datang, <b><?= htmlspecialchars($_SESSION['orangtua_nama']) ?></b></span>
-                <div class="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-bold shadow-sm">
+                <div class="h-8 w-8 rounded-full bg-[#0b8478] flex items-center justify-center text-white font-bold shadow-sm">
                     <?= strtoupper(substr($_SESSION['orangtua_nama'], 0, 1)) ?>
                 </div>
             </div>
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold text-gray-800">Daftar Ananda</h2>
-            <?php if($orangtua_id == 9999): ?>
-                <p class="text-purple-600 font-medium italic">Mode Super Admin: Menampilkan daftar seluruh santri aktif.</p>
-            <?php else: ?>
-                <p class="text-gray-500">Berikut adalah data putra-putri Anda yang terdaftar di Villa Quran.</p>
-            <?php endif; ?>
+        <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <h2 class="text-2xl font-black text-gray-900">Data Ananda Tercinta</h2>
+                <?php if($orangtua_id == 9999): ?>
+                    <p class="text-teal-700 font-medium text-xs mt-1"><i class="fas fa-info-circle mr-1"></i> Mode Super Admin: Menampilkan seluruh santri aktif.</p>
+                <?php else: ?>
+                    <p class="text-gray-500 text-xs mt-1">Pilih menu di bawah setiap ananda untuk memantau capaian hafalan, ibadah, rapor, hingga keuangan.</p>
+                <?php endif; ?>
+            </div>
+            <a href="dashboard.php" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:text-[#0b8478] hover:border-teal-300 rounded-xl text-xs font-bold shadow-xs transition">
+                <i class="fas fa-arrow-left"></i> Kembali ke Beranda Utama
+            </a>
         </div>
 
         <?php if(empty($santri_list)): ?>
-            <div class="bg-white p-10 rounded-2xl shadow-sm text-center border border-gray-200">
-                <i class="fas fa-user-graduate text-6xl text-gray-200 mb-4"></i>
-                <p class="text-gray-500">Belum ada data santri yang dihubungkan dengan akun Anda.<br>Silakan hubungi admin kesantrian.</p>
+            <div class="bg-white p-12 rounded-3xl shadow-sm text-center border border-gray-100 max-w-lg mx-auto">
+                <div class="w-20 h-20 bg-teal-50 text-[#0b8478] rounded-3xl flex items-center justify-center mx-auto mb-4 text-3xl shadow-inner">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-1">Belum Ada Data Ananda Terhubung</h3>
+                <p class="text-xs text-gray-500 leading-relaxed">Akun Anda belum terhubung dengan santri manapun di buku induk.<br>Silakan hubungi admin kesantrian pesantren untuk verifikasi data wali.</p>
             </div>
         <?php else: ?>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <?php foreach($santri_list as $s): ?>
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition">
+                    <div class="bg-white rounded-3xl shadow-sm border border-teal-100/80 overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
                         <div class="p-6">
-                            <div class="flex items-center mb-4">
-                                <img src="<?= !empty($s['foto_santri']) ? $s['foto_santri'] : 'https://via.placeholder.com/100' ?>" class="w-16 h-16 rounded-full object-cover border-2 border-purple-100 mr-4">
-                                <div>
-                                    <h3 class="font-bold text-gray-900 leading-tight"><?= htmlspecialchars($s['nama_lengkap']) ?></h3>
-                                    <p class="text-xs text-purple-600 font-bold uppercase tracking-wider mt-1"><?= htmlspecialchars($s['kelas_sekarang']) ?></p>
+                            <div class="flex items-center mb-5">
+                                <img src="<?= !empty($s['foto_santri']) ? htmlspecialchars($s['foto_santri']) : 'upload/default-avatar.png' ?>" onerror="this.src='https://ui-avatars.com/api/?name=<?= urlencode($s['nama_lengkap']) ?>&background=0b8478&color=fff'" class="w-16 h-16 rounded-2xl object-cover border-2 border-teal-100 shadow-sm mr-4 flex-shrink-0">
+                                <div class="overflow-hidden">
+                                    <h3 class="font-black text-gray-900 leading-tight truncate text-base"><?= htmlspecialchars($s['nama_lengkap']) ?></h3>
+                                    <p class="text-[11px] text-[#0b8478] font-black uppercase tracking-wider mt-1"><?= htmlspecialchars($s['kelas_sekarang'] ?? 'Santri') ?></p>
+                                    <div class="flex items-center gap-1.5 mt-1.5">
+                                        <span class="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold"><?= htmlspecialchars($s['status_santri'] ?? 'Aktif') ?></span>
+                                        <span class="px-2 py-0.5 bg-teal-50 text-[#0b8478] border border-teal-200 rounded-full text-[10px] font-bold truncate">Kamar <?= htmlspecialchars($s['kamar_asrama'] ?? '-') ?></span>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="space-y-2 text-sm text-gray-600 border-t pt-4">
-                                <div class="flex justify-between"><span>NIS / NISN</span> <span class="font-mono"><?= $s['nis'] ?> / <?= $s['nisn'] ?></span></div>
-                                <div class="flex justify-between"><span>Kamar</span> <span class="font-bold"><?= $s['kamar_asrama'] ?></span></div>
-                                <div class="flex justify-between"><span>Status</span> <span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-bold"><?= $s['status_santri'] ?></span></div>
+
+                            <div class="space-y-2 text-xs text-gray-600 border-t border-gray-100 pt-4 bg-slate-50/50 -mx-6 px-6 pb-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 font-medium">NIS / NISN</span>
+                                    <span class="font-mono font-bold text-gray-800"><?= htmlspecialchars($s['nis'] ?? '-') ?> / <?= htmlspecialchars($s['nisn'] ?? '-') ?></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 font-medium">Target Hafalan</span>
+                                    <span class="font-bold text-teal-800"><?= htmlspecialchars($s['target_tahfidz'] ?? '30 Juz') ?></span>
+                                </div>
                             </div>
                         </div>
-                        <div class="bg-gray-50 px-6 py-3 flex justify-between items-center">
-                            <div class="flex flex-col space-y-1">
-                                <a href="orangtua-rapot-pkbm.php?santri_id=<?= $s['id'] ?>" class="text-purple-600 text-xs font-bold hover:underline">
-                                    <i class="fas fa-file-invoice mr-1"></i> Raport Diknas PKBM
+
+                        <!-- GRID MENU ORANG TUA UNTUK ANANDA INI -->
+                        <div class="bg-teal-50/40 p-4 border-t border-teal-100">
+                            <p class="text-[10px] font-bold text-teal-800 uppercase tracking-wider mb-2.5 flex items-center gap-1">
+                                <i class="fas fa-arrow-pointer text-[#0b8478]"></i> Akses Menu Ananda Ini:
+                            </p>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <a href="orangtua-hafalan.php?santri_id=<?= $s['id'] ?>" class="flex items-center gap-2 p-2 rounded-xl bg-white hover:bg-teal-600 hover:text-white border border-teal-100 font-bold text-gray-700 transition shadow-2xs group">
+                                    <i class="fas fa-book-quran text-[#0b8478] group-hover:text-white"></i>
+                                    <span class="truncate">Hafalan</span>
                                 </a>
-                                <a href="orangtua-rapot-diniyah.php?id=<?= $s['id'] ?>" class="text-purple-600 text-xs font-bold hover:underline">
-                                    <i class="fas fa-book-quran mr-1"></i> Rapor Diniyah
+                                <a href="orangtua-ibadah-harian.php?santri_id=<?= $s['id'] ?>" class="flex items-center gap-2 p-2 rounded-xl bg-white hover:bg-teal-600 hover:text-white border border-teal-100 font-bold text-gray-700 transition shadow-2xs group">
+                                    <i class="fas fa-mosque text-[#0b8478] group-hover:text-white"></i>
+                                    <span class="truncate">Ibadah</span>
                                 </a>
-                                <a href="orangtua-karir.php?id=<?= $s['id'] ?>" class="text-purple-600 text-xs font-bold hover:underline">
-                                    <i class="fas fa-route mr-1"></i> Rencana Karir & PTN (AI)
+                                <a href="orangtua-rapot-diniyah.php?id=<?= $s['id'] ?>" class="flex items-center gap-2 p-2 rounded-xl bg-white hover:bg-teal-600 hover:text-white border border-teal-100 font-bold text-gray-700 transition shadow-2xs group">
+                                    <i class="fas fa-book-open-reader text-[#0b8478] group-hover:text-white"></i>
+                                    <span class="truncate">Rapor Diniyah</span>
+                                </a>
+                                <a href="orangtua-rapot-pkbm.php?santri_id=<?= $s['id'] ?>" class="flex items-center gap-2 p-2 rounded-xl bg-white hover:bg-teal-600 hover:text-white border border-teal-100 font-bold text-gray-700 transition shadow-2xs group">
+                                    <i class="fas fa-file-invoice text-[#0b8478] group-hover:text-white"></i>
+                                    <span class="truncate">Raport PKBM</span>
+                                </a>
+                                <a href="orangtua-karir.php?id=<?= $s['id'] ?>" class="flex items-center gap-2 p-2 rounded-xl bg-white hover:bg-teal-600 hover:text-white border border-teal-100 font-bold text-gray-700 transition shadow-2xs group">
+                                    <i class="fas fa-route text-[#0b8478] group-hover:text-white"></i>
+                                    <span class="truncate">Karir AI</span>
+                                </a>
+                                <a href="pembayaran-spp.php?santri_id=<?= $s['id'] ?>" class="flex items-center gap-2 p-2 rounded-xl bg-white hover:bg-teal-600 hover:text-white border border-teal-100 font-bold text-gray-700 transition shadow-2xs group">
+                                    <i class="fas fa-money-bill-wave text-[#0b8478] group-hover:text-white"></i>
+                                    <span class="truncate">Bayar SPP</span>
+                                </a>
+                                <a href="kirim-uang-saku.php?santri_id=<?= $s['id'] ?>" class="col-span-2 flex items-center justify-center gap-2 p-2 rounded-xl bg-white hover:bg-teal-600 hover:text-white border border-teal-100 font-bold text-gray-700 transition shadow-2xs group">
+                                    <i class="fas fa-wallet text-[#0b8478] group-hover:text-white"></i>
+                                    <span class="truncate">Kirim Uang Saku</span>
                                 </a>
                             </div>
-                            <button class="text-purple-600 text-xs font-bold hover:underline">Mutaba'ah Harian</button>
                         </div>
                     </div>
                 <?php endforeach; ?>

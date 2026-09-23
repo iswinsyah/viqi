@@ -7,32 +7,11 @@ $orangtua_nama = $_SESSION['orangtua_nama'];
 
 $is_super_admin = ($orangtua_id == 9999);
 
-// Fetch children of this parent
-$santri_anak = [];
-if ($is_super_admin) {
-    $res_s = $conn->query("SELECT id, nama_lengkap, kelas_sekarang FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC LIMIT 20");
-} else {
-    $res_s = $conn->query("
-        SELECT s.id, s.nama_lengkap, s.kelas_sekarang 
-        FROM buku_induk_santri s 
-        LEFT JOIN santri_orangtua_link sol ON s.id = sol.santri_id 
-        WHERE sol.orangtua_id = $orangtua_id OR s.id_orangtua = $orangtua_id 
-        ORDER BY s.nama_lengkap ASC
-    ");
-}
-
-if ($res_s) {
-    while ($r = $res_s->fetch_assoc()) $santri_anak[] = $r;
-}
-
-$selected_santri_id = isset($_GET['santri_id']) ? (int)$_GET['santri_id'] : ($santri_anak[0]['id'] ?? 0);
-
-// Selected santri info
-$data_santri = null;
-if ($selected_santri_id > 0) {
-    $res_sel = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $selected_santri_id");
-    if ($res_sel) $data_santri = $res_sel->fetch_assoc();
-}
+// Ambil daftar ananda yang sah & tentukan Ananda Aktif (Persisten Session + Cookie 30 Hari)
+$santri_anak = getOrangtuaSantriList($conn, $orangtua_id);
+$selected_child = getOrangtuaActiveSantri($conn, $orangtua_id, $santri_anak);
+$selected_santri_id = $selected_child ? (int)$selected_child['id'] : 0;
+$data_santri = $selected_child;
 
 $kelas_santri = $data_santri['kelas_sekarang'] ?? 'Paket B';
 $paket_tipe = 'Paket B';

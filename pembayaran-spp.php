@@ -29,14 +29,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS pembayaran_spp (
 @$conn->query("ALTER TABLE pembayaran_spp ADD COLUMN jenis_pembayaran VARCHAR(100) AFTER santri_id");
 @$conn->query("ALTER TABLE pembayaran_spp ADD COLUMN keterangan_lainnya TEXT AFTER jenis_pembayaran");
 
-// 2. Ambil daftar santri yang terhubung
-$santri_list = [];
-if ($orangtua_id == 9999) {
-    $res_s = $conn->query("SELECT id, nama_lengkap FROM buku_induk_santri WHERE status_santri = 'Aktif' LIMIT 15");
-} else {
-    $res_s = $conn->query("SELECT s.id, s.nama_lengkap FROM buku_induk_santri s JOIN santri_orangtua_link sol ON s.id = sol.santri_id WHERE sol.orangtua_id = $orangtua_id");
-}
-if ($res_s) while($r = $res_s->fetch_assoc()) $santri_list[] = $r;
+// 2. Ambil daftar santri yang terhubung & santri aktif persisten
+$santri_list = getOrangtuaSantriList($conn, $orangtua_id);
+$active_santri = getOrangtuaActiveSantri($conn, $orangtua_id, $santri_list);
+$selected_santri_id = $active_santri ? (int)$active_santri['id'] : 0;
 
 // 3. Proses Simpan Konfirmasi
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -122,12 +118,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 // 4. Ambil Riwayat
 if ($orangtua_id == 9999) {
-    $sql_h = "SELECT p.*, s.nama_lengkap FROM pembayaran_spp p JOIN buku_induk_santri s ON p.santri_id = s.id ORDER BY p.created_at DESC LIMIT 50";
+    if ($selected_santri_id > 0) {
+        $sql_h = "SELECT p.*, s.nama_lengkap FROM pembayaran_spp p JOIN buku_induk_santri s ON p.santri_id = s.id WHERE p.santri_id = $selected_santri_id ORDER BY p.created_at DESC";
+    } else {
+        $sql_h = "SELECT p.*, s.nama_lengkap FROM pembayaran_spp p JOIN buku_induk_santri s ON p.santri_id = s.id ORDER BY p.created_at DESC LIMIT 50";
+    }
 } else {
-    $sql_h = "SELECT p.*, s.nama_lengkap FROM pembayaran_spp p 
-              JOIN buku_induk_santri s ON p.santri_id = s.id 
-              JOIN santri_orangtua_link sol ON s.id = sol.santri_id
-              WHERE sol.orangtua_id = $orangtua_id ORDER BY p.created_at DESC";
+    if ($selected_santri_id > 0) {
+        $sql_h = "SELECT p.*, s.nama_lengkap FROM pembayaran_spp p 
+                  JOIN buku_induk_santri s ON p.santri_id = s.id 
+                  JOIN santri_orangtua_link sol ON s.id = sol.santri_id
+                  WHERE sol.orangtua_id = $orangtua_id AND p.santri_id = $selected_santri_id ORDER BY p.created_at DESC";
+    } else {
+        $sql_h = "SELECT p.*, s.nama_lengkap FROM pembayaran_spp p 
+                  JOIN buku_induk_santri s ON p.santri_id = s.id 
+                  JOIN santri_orangtua_link sol ON s.id = sol.santri_id
+                  WHERE sol.orangtua_id = $orangtua_id ORDER BY p.created_at DESC";
+    }
 }
 $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
 ?>
@@ -151,10 +158,46 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
             <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
             <?php if(isset($pesan_error)) echo "<div class='bg-rose-100 text-rose-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-exclamation-circle mr-2'></i> $pesan_error</div>"; ?>
 
+            <!-- HEADER CARD: INFO & SELECTOR ANANDA -->
+            <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-teal-100 flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-teal-50 border border-teal-200 flex items-center justify-center text-[#0b8478] shadow-xs">
+                        <i class="fas fa-money-bill-wave text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-black text-gray-900 leading-tight">Pembayaran SPP & Keuangan</h1>
+                        <p class="text-xs text-gray-500">Konfirmasi setoran infaq bulanan & administrasi santri</p>
+                    </div>
+                </div>
+                
+                <!-- SELECTOR ANANDA -->
+                <div>
+                    <?php if (count($santri_list) > 1): ?>
+                        <form method="GET" class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-teal-800 uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap">
+                                <i class="fas fa-child text-[#0b8478]"></i> Ananda:
+                            </span>
+                            <select name="santri_id" onchange="this.form.submit()" class="bg-teal-50/50 border border-teal-300 text-teal-950 font-bold text-xs rounded-xl px-3.5 py-2 focus:ring-2 focus:ring-teal-500 shadow-xs cursor-pointer">
+                                <?php foreach ($santri_list as $s): ?>
+                                    <option value="<?= $s['id'] ?>" <?= ($s['id'] == $selected_santri_id) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($s['nama_lengkap']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </form>
+                    <?php elseif ($active_santri): ?>
+                        <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 font-bold text-xs shadow-xs">
+                            <i class="fas fa-user-check text-[#0b8478]"></i>
+                            <span>Ananda: <strong class="text-teal-950"><?= htmlspecialchars($active_santri['nama_lengkap']) ?></strong></span>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
             <!-- TAB NAVIGATION -->
             <div class="flex border-b border-gray-200 gap-3 mb-6 bg-white px-6 pt-4 rounded-xl shadow-sm">
-                <button onclick="switchTab('form')" id="btn-tab-form" class="pb-3 px-4 text-sm font-bold border-b-2 border-purple-600 text-purple-600 flex items-center gap-2 transition">
-                    <i class="fas fa-file-invoice-dollar text-purple-500"></i> Form Konfirmasi
+                <button onclick="switchTab('form')" id="btn-tab-form" class="pb-3 px-4 text-sm font-bold border-b-2 border-[#0b8478] text-[#0b8478] flex items-center gap-2 transition">
+                    <i class="fas fa-file-invoice-dollar text-[#0b8478]"></i> Form Konfirmasi
                 </button>
                 <button onclick="switchTab('riwayat')" id="btn-tab-riwayat" class="pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 flex items-center gap-2 transition">
                     <i class="fas fa-history text-gray-400"></i> Riwayat Pembayaran
@@ -164,20 +207,22 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
             <!-- FORMULIR KONFIRMASI -->
             <div id="tab-content-form" class="block">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
-                <div class="px-6 py-4 bg-purple-50 border-b border-purple-100"><h2 class="font-bold text-purple-800"><i class="fas fa-file-invoice-dollar mr-2"></i>Konfirmasi Pembayaran Keuangan</h2></div>
+                <div class="px-6 py-4 bg-teal-50/70 border-b border-teal-100"><h2 class="font-bold text-teal-900"><i class="fas fa-file-invoice-dollar text-[#0b8478] mr-2"></i>Konfirmasi Pembayaran Keuangan</h2></div>
                 <form action="" method="POST" enctype="multipart/form-data" class="p-6">
                     <div id="rincian-container" class="space-y-4 mb-6">
                         <!-- Baris Rincian 1 -->
                         <div class="rincian-row relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
                             <div class="lg:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Pilih Ananda</label>
-                                <select name="santri_id[]" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500">
-                                    <?php foreach($santri_list as $s): ?><option value="<?= $s['id'] ?>"><?= htmlspecialchars($s['nama_lengkap']) ?></option><?php endforeach; ?>
+                                <select name="santri_id[]" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-teal-500">
+                                    <?php foreach($santri_list as $s): ?>
+                                        <option value="<?= $s['id'] ?>" <?= ($s['id'] == $selected_santri_id) ? 'selected' : '' ?>><?= htmlspecialchars($s['nama_lengkap']) ?></option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="lg:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Jenis Pembayaran</label>
-                                <select name="jenis_pembayaran[]" required onchange="toggleLainnyaRow(this)" class="jenis-select w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500">
+                                <select name="jenis_pembayaran[]" required onchange="toggleLainnyaRow(this)" class="jenis-select w-full px-3 py-2 border rounded-lg text-sm focus:ring-teal-500">
                                     <option value="Infaq Bulanan (SPP)">Infaq Bulanan (SPP)</option>
                                     <option value="Wakaf Pesantren">Wakaf Pesantren</option>
                                     <option value="Uang Kegiatan">Uang Kegiatan</option>
@@ -186,21 +231,21 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                                     <option value="Uang Buku">Uang Buku</option>
                                     <option value="lainnya">Lainnya...</option>
                                 </select>
-                                <input type="text" name="keterangan_lainnya[]" class="keterangan-input hidden w-full mt-2 px-3 py-2 border rounded-lg text-sm focus:ring-purple-500" placeholder="Sebutkan...">
+                                <input type="text" name="keterangan_lainnya[]" class="keterangan-input hidden w-full mt-2 px-3 py-2 border rounded-lg text-sm focus:ring-teal-500" placeholder="Sebutkan...">
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Bulan</label>
-                                <select name="bulan[]" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500">
+                                <select name="bulan[]" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-teal-500">
                                     <?php $bln=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']; foreach($bln as $b): echo "<option value='$b' ".(date('F')==$b?'selected':'').">$b</option>"; endforeach; ?>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Tahun</label>
-                                <input type="number" name="tahun[]" value="<?= date('Y') ?>" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500">
+                                <input type="number" name="tahun[]" value="<?= date('Y') ?>" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-teal-500">
                             </div>
                             <div class="lg:col-span-2">
                                 <label class="block text-xs font-medium text-gray-700 mb-1">Jumlah Bayar (Rp)</label>
-                                <input type="text" name="jumlah[]" required oninput="formatRupiah(this); hitungTotal();" class="jumlah-input w-full px-3 py-2 border rounded-lg text-sm focus:ring-purple-500" placeholder="Contoh: 500.000">
+                                <input type="text" name="jumlah[]" required oninput="formatRupiah(this); hitungTotal();" class="jumlah-input w-full px-3 py-2 border rounded-lg text-sm focus:ring-teal-500" placeholder="Contoh: 500.000">
                             </div>
                             <!-- Hapus Button for additional rows -->
                             <div class="lg:col-span-4 flex items-end justify-end">
@@ -213,21 +258,21 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                         <button type="button" onclick="tambahBaris()" class="bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-semibold py-2 px-4 rounded-lg transition"><i class="fas fa-plus mr-1"></i> Tambah Rincian Lain</button>
                         <div class="text-right">
                             <span class="text-gray-500 text-sm">Total Keseluruhan:</span>
-                            <div class="text-2xl font-bold text-purple-700">Rp <span id="total_tagihan">0</span></div>
+                            <div class="text-2xl font-bold text-[#0b8478]">Rp <span id="total_tagihan">0</span></div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 bg-purple-50/50 p-5 rounded-lg border border-purple-100">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 bg-teal-50/40 p-5 rounded-lg border border-teal-100">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Transfer</label>
-                            <input type="date" name="tanggal_bayar" value="<?= date('Y-m-d') ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500">
+                            <input type="date" name="tanggal_bayar" value="<?= date('Y-m-d') ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-teal-500">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Upload Bukti Transfer (Satu untuk semua rincian di atas)</label>
-                            <input type="file" name="bukti_transfer" accept="image/*" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700">
+                            <input type="file" name="bukti_transfer" accept="image/*" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#0b8478] file:text-white hover:file:bg-teal-700">
                         </div>
                     </div>
-                    <div class="text-right"><button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition"><i class="fas fa-paper-plane mr-2"></i> Kirim Konfirmasi</button></div>
+                    <div class="text-right"><button type="submit" class="bg-[#0b8478] hover:bg-teal-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition"><i class="fas fa-paper-plane mr-2"></i> Kirim Konfirmasi</button></div>
                 </form>
             </div>
 
@@ -356,12 +401,12 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
         const contentForm = document.getElementById('tab-content-form');
         const contentRiwayat = document.getElementById('tab-content-riwayat');
 
-        const activeClass = "pb-3 px-4 text-sm font-bold border-b-2 border-purple-600 text-purple-600 flex items-center gap-2 transition";
+        const activeClass = "pb-3 px-4 text-sm font-bold border-b-2 border-[#0b8478] text-[#0b8478] flex items-center gap-2 transition";
         const inactiveClass = "pb-3 px-4 text-sm font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-800 flex items-center gap-2 transition";
 
         if (tabName === 'form') {
             btnForm.className = activeClass;
-            btnForm.querySelector('i').className = "fas fa-file-invoice-dollar text-purple-500";
+            btnForm.querySelector('i').className = "fas fa-file-invoice-dollar text-[#0b8478]";
             btnRiwayat.className = inactiveClass;
             btnRiwayat.querySelector('i').className = "fas fa-history text-gray-400";
             contentForm.classList.remove('hidden');
@@ -370,7 +415,7 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
             contentRiwayat.classList.add('hidden');
         } else {
             btnRiwayat.className = activeClass;
-            btnRiwayat.querySelector('i').className = "fas fa-history text-purple-500";
+            btnRiwayat.querySelector('i').className = "fas fa-history text-[#0b8478]";
             btnForm.className = inactiveClass;
             btnForm.querySelector('i').className = "fas fa-file-invoice-dollar text-gray-400";
             contentRiwayat.classList.remove('hidden');
