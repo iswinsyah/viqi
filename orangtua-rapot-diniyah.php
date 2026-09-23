@@ -6,6 +6,17 @@ $orangtua_id = $_SESSION['orangtua_id'];
 $santri_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $active_menu = 'dashboard_orangtua';
 
+// Fallback jika id santri belum dipilih dari URL
+if ($santri_id <= 0) {
+    if ($orangtua_id == 9999) {
+        $first_s = $conn->query("SELECT id FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC LIMIT 1");
+        if ($first_s && $row_f = $first_s->fetch_assoc()) $santri_id = (int)$row_f['id'];
+    } else {
+        $first_s = $conn->query("SELECT s.id FROM buku_induk_santri s LEFT JOIN santri_orangtua_link sol ON s.id = sol.santri_id WHERE sol.orangtua_id = $orangtua_id OR s.id_orangtua = $orangtua_id ORDER BY s.nama_lengkap ASC LIMIT 1");
+        if ($first_s && $row_f = $first_s->fetch_assoc()) $santri_id = (int)$row_f['id'];
+    }
+}
+
 // 1. Keamanan
 if ($orangtua_id != 9999) {
     $check = $conn->query("SELECT s.id FROM buku_induk_santri s JOIN santri_orangtua_link sol ON s.id = sol.santri_id WHERE s.id = $santri_id AND sol.orangtua_id = $orangtua_id");

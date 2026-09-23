@@ -616,16 +616,16 @@ if ($is_santri_only) {
     $can_see_orangtua      = false;
 }
 
-// Data Menu Grid Card Ruang Orangtua / Walisantri (8 Menu Lengkap dari Sidebar Ortu)
+// Data Menu Grid Card Ruang Orangtua / Walisantri (8 Menu Esensial Fokus Ananda)
 $ruang_orangtua_cards = [
-    ['label' => 'Dashboard Ortu', 'icon' => 'fas fa-house-user', 'href' => 'dashboard-orangtua.php', 'desc' => 'Dashboard Utama & Ringkasan Ananda'],
-    ['label' => 'Kalender Akademik', 'icon' => 'fas fa-calendar-alt', 'href' => 'kalender-akademik.php', 'desc' => 'Kalender Akademik & Agenda Kegiatan'],
     ['label' => 'Setoran Hafalan', 'icon' => 'fas fa-book-quran', 'href' => 'orangtua-hafalan.php', 'desc' => 'Setoran Hafalan Al-Qur\'an Ananda'],
     ['label' => 'Ibadah Harian', 'icon' => 'fas fa-mosque', 'href' => 'orangtua-ibadah-harian.php', 'desc' => 'Monitoring Ibadah Harian Ananda'],
-    ['label' => 'Rapor Akademik', 'icon' => 'fas fa-graduation-cap', 'href' => 'orangtua-rapot.php', 'desc' => 'Rapor Hasil Belajar Ananda'],
+    ['label' => 'Rapor Akademik', 'icon' => 'fas fa-graduation-cap', 'href' => 'orangtua-rapot.php', 'desc' => 'Rapor Hasil Belajar Ananda (Diknas)'],
+    ['label' => 'Rapor Diniyah', 'icon' => 'fas fa-book-open-reader', 'href' => 'orangtua-rapot-diniyah.php', 'desc' => 'Rapor Kepesantrenan & Kitab Kuning'],
     ['label' => 'Raport PKBM', 'icon' => 'fas fa-file-invoice', 'href' => 'orangtua-rapot-pkbm.php', 'desc' => 'Raport Diknas Kesetaraan PKBM'],
+    ['label' => 'Bimbingan Karir', 'icon' => 'fas fa-route', 'href' => 'orangtua-karir.php', 'desc' => 'Bimbingan Karir & Rekomendasi PTN AI'],
     ['label' => 'Pembayaran SPP', 'icon' => 'fas fa-money-bill-wave', 'href' => 'pembayaran-spp.php', 'desc' => 'Informasi & Pembayaran SPP Bulanan'],
-    ['label' => 'Kirim Uang Saku', 'icon' => 'fas fa-wallet', 'href' => 'kirim-uang-saku.php', 'desc' => 'Top Up & Transfer Saldo Uang Saku Digital'],
+    ['label' => 'Kirim Uang Saku', 'icon' => 'fas fa-wallet', 'href' => 'kirim-uang-saku.php', 'desc' => 'Top Up Saldo & Rekap Uang Saku Digital'],
 ];
 
 // Data Menu Grid Card Ruang Web (Pengaturan Web)
@@ -1251,12 +1251,12 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                                 Ruang Orangtua / Walisantri
                                 <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0b8478] border border-teal-200 uppercase tracking-wider">Akses Orang Tua & Wali</span>
                             </h3>
-                            <p class="text-[11px] text-slate-400 font-medium">Monitoring hafalan, ibadah, rapor ananda, kalender akademik, serta pembayaran SPP & uang saku</p>
+                            <p class="text-[11px] text-slate-400 font-medium">Monitoring hafalan, ibadah harian, rapor akademik & diniyah, karir, serta SPP & uang saku ananda</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <a href="dashboard-orangtua.php" class="px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] font-bold text-[11px] flex items-center gap-1 border border-teal-200 transition">
-                            <i class="fas fa-arrow-up-right-from-square text-[10px]"></i> Buka Portal Ortu
+                        <a href="kalender-akademik.php" class="px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] font-bold text-[11px] flex items-center gap-1 border border-teal-200 transition">
+                            <i class="fas fa-calendar-alt text-[10px]"></i> Kalender Akademik
                         </a>
                         <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
                             <i class="fas fa-grip text-[#0b8478]"></i> <?= count($ruang_orangtua_cards) ?> Menu
