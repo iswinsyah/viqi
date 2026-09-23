@@ -5,14 +5,21 @@
 
 require_once __DIR__ . '/koneksi.php';
 
-// Atur CORS & JSON header
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
+$is_api_request = (isset($_SERVER['SCRIPT_FILENAME']) && basename($_SERVER['SCRIPT_FILENAME']) === 'api-cp-ai.php')
+    || (isset($_SERVER['SCRIPT_NAME']) && basename($_SERVER['SCRIPT_NAME']) === 'api-cp-ai.php')
+    || (isset($_SERVER['PHP_SELF']) && basename($_SERVER['PHP_SELF']) === 'api-cp-ai.php')
+    || !empty($_GET['action']) || !empty($_POST['action']);
 
-if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
+if ($is_api_request) {
+    // Atur CORS & JSON header
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Headers: Content-Type");
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    header("Content-Type: application/json; charset=UTF-8");
+
+    if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        exit(0);
+    }
 }
 
 // Inisialisasi Tabel Otomatis
@@ -510,10 +517,12 @@ function getOfficialCPKnowledgeBase($mapel, $jenjang, $fase = '') {
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
+// Jika di-include oleh script lain tanpa action API, cukup return agar fungsi-fungsinya bisa dipakai
+if (!$is_api_request) {
+    return;
+}
+
 if (empty($action)) {
-    if (php_sapi_name() === 'cli' && empty($_SERVER['HTTP_HOST'])) {
-        return;
-    }
     echo json_encode(['status' => 'error', 'message' => 'Action tidak valid.']);
     exit;
 }

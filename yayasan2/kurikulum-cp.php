@@ -1,6 +1,6 @@
 <?php
-require_once 'auth.php';
-require_once '../koneksi.php';
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/../koneksi.php';
 
 // Pastikan tabel master_cp_kurikulum terpasang otomatis (Self-Healing)
 $conn->query("CREATE TABLE IF NOT EXISTS master_cp_kurikulum (
