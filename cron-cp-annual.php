@@ -32,7 +32,8 @@ $current_year_num = (int)date('Y');
 $tahun_ajaran_aktif = ((int)$current_month_num >= 7) ? $current_year_num . '/' . ($current_year_num + 1) : ($current_year_num - 1) . '/' . $current_year_num;
 
 $is_cli = (php_sapi_name() === 'cli');
-$is_force = isset($_GET['force']) && ($_GET['force'] === '1' || $_GET['force'] === 'true');
+$is_force = (isset($_GET['force']) && ($_GET['force'] === '1' || $_GET['force'] === 'true'))
+    || ($is_cli && isset($argv[1]) && in_array(strtolower($argv[1]), ['force', '1', '--force', '-f']));
 $is_query_status = isset($_GET['action']) && $_GET['action'] === 'get_annual_status';
 
 // Jika dipanggil via AJAX untuk cek status di UI
@@ -61,6 +62,11 @@ if ($is_query_status) {
     exit;
 }
 
+// Cek jumlah data CP di database
+$res_count_cp = $conn->query("SELECT COUNT(*) as cnt FROM master_cp_kurikulum WHERE status_verifikasi = 'terverifikasi'");
+$total_cp_in_db = $res_count_cp ? (int)$res_count_cp->fetch_assoc()['cnt'] : 0;
+$need_initial_populate = ($total_cp_in_db < 20);
+
 // Cek apakah hari ini 1 Juli atau jika force run
 $is_july_first = ($current_month_num === '07' && $current_day_num === '01');
 
@@ -68,12 +74,14 @@ $is_july_first = ($current_month_num === '07' && $current_day_num === '01');
 $chk_run = $conn->query("SELECT COUNT(*) as cnt FROM log_cp_agent_annual WHERE tahun_ajaran = '$tahun_ajaran_aktif'");
 $already_executed = ($chk_run && $chk_run->fetch_assoc()['cnt'] > 0);
 
-if (!$is_july_first && !$is_force && $already_executed) {
+// Jika bukan 1 Juli, bukan force, sudah pernah dieksekusi, dan data CP sudah lengkap terisi di menu CP -> skip
+if (!$is_july_first && !$is_force && $already_executed && !$need_initial_populate) {
     if (!$is_cli) header('Content-Type: application/json');
     echo json_encode([
         'status' => 'skipped',
-        'message' => "Tugas tahunan untuk Tahun Ajaran {$tahun_ajaran_aktif} sudah selesai dieksekusi pada 1 Juli. Jadwal berikutnya: 1 Juli mendatang.",
-        'tahun_ajaran' => $tahun_ajaran_aktif
+        'message' => "Tugas tahunan untuk Tahun Ajaran {$tahun_ajaran_aktif} sudah selesai dieksekusi. Jadwal berikutnya: 1 Juli mendatang.",
+        'tahun_ajaran' => $tahun_ajaran_aktif,
+        'total_cp_ready' => $total_cp_in_db
     ]);
     exit;
 }
@@ -144,8 +152,9 @@ foreach ($jenjang_list as $jjg) {
         }
     }
 
+    $executed_by = $is_force ? 'Manual Trigger (Yayasan)' : ($need_initial_populate ? 'Initial Direct Execution' : 'Scheduler 1 Juli');
     $conn->query("INSERT INTO log_cp_agent_annual (tahun_ajaran, tanggal_eksekusi, jenjang, total_mapel, keterangan, executed_by) 
-        VALUES ('$tahun_ajaran_aktif', NOW(), '$jjg', $jjg_count, 'Penyelarasan Baku CP BSKAP 032/H/KR/2024', '" . ($is_force ? 'Manual Trigger (Yayasan)' : 'Scheduler 1 Juli') . "')");
+        VALUES ('$tahun_ajaran_aktif', NOW(), '$jjg', $jjg_count, 'Penyelarasan Baku CP BSKAP 032/H/KR/2024', '$executed_by')");
 
     $execution_report[$jjg] = $jjg_count;
     $grand_total += $jjg_count;

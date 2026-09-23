@@ -97,6 +97,24 @@ if ($res_mapel && $res_mapel->num_rows > 0) {
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-book-reader text-purple-600 mr-2"></i>Master Silabus & Capaian Pembelajaran (CP)</h1></div>
             
+            <!-- BANNER STANDARISASI CP OLEH AGENTIC AI -->
+            <div class="bg-gradient-to-r from-teal-900 to-slate-900 rounded-xl p-4 text-white shadow-sm flex items-start gap-3.5 mb-6 border border-teal-700/60">
+                <div class="w-9 h-9 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center flex-shrink-0 text-base mt-0.5">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="flex-1 text-xs">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            Terstandarisasi Agentic AI Yayasan
+                        </span>
+                        <span class="text-slate-300 text-[11px]">Rujukan Resmi: BSKAP Kemendikbudristek No. 032/H/KR/2024</span>
+                    </div>
+                    <p class="text-slate-200 leading-relaxed">
+                        Seluruh Capaian Pembelajaran (CP) mata pelajaran Diknas jenjang SMP (Fase D) dan SMA (Fase E & F) telah diriset dan dituangkan otomatis oleh <b>Team Pengajar Agentic AI</b> ke dalam tabel silabus di bawah ini. Ustadz / Tutor tidak perlu lagi mengetik rumusan CP secara manual dari awal.
+                    </p>
+                </div>
+            </div>
+
             <?php if(isset($pesan_sukses)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">

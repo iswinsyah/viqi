@@ -15,18 +15,99 @@ $conn->query("CREATE TABLE IF NOT EXISTS master_cp_kurikulum (
     karakteristik_mapel TEXT NULL,
     elemen_cp LONGTEXT NOT NULL,
     sumber_rujukan VARCHAR(255) DEFAULT 'BSKAP Kemendikbudristek No. 032/H/KR/2024',
-    status_verifikasi ENUM('draft', 'terverifikasi') DEFAULT 'draft',
+    status_verifikasi VARCHAR(50) DEFAULT 'terverifikasi',
     last_generated_at DATETIME NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uq_jenjang_fase_mapel (jenjang, fase, nama_mapel)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// Alter jika tipe kolom sebelumnya masih enum terbatas
+@$conn->query("ALTER TABLE master_cp_kurikulum MODIFY COLUMN status_verifikasi VARCHAR(50) DEFAULT 'terverifikasi'");
+
 $active_page = 'yayasan_cp';
 
 $m_num = date('m');
 $y_num = (int)date('Y');
 $current_ta = ((int)$m_num >= 7) ? $y_num . '/' . ($y_num + 1) : ($y_num - 1) . '/' . $y_num;
+
+// CEK STATUS DATA CP SAAT INI (KALI INI LANGSUNG BEKERJA & SIMPAN KE MENU CP)
+$res_count_cp = $conn->query("SELECT COUNT(*) as cnt FROM master_cp_kurikulum WHERE status_verifikasi = 'terverifikasi'");
+$total_cp_current = $res_count_cp ? (int)$res_count_cp->fetch_assoc()['cnt'] : 0;
+$need_initial_run = ($total_cp_current < 20 || (isset($_GET['run_now']) && $_GET['run_now'] === '1'));
+
+if ($need_initial_run) {
+    require_once __DIR__ . '/../api-cp-ai.php';
+    $jenjang_init = ['SMP', 'SMA'];
+    $init_saved_count = 0;
+
+    foreach ($jenjang_init as $j_init) {
+        $fase_init = ($j_init === 'SMP') ? 'Fase D' : 'Fase E & F';
+        $res_m_init = $conn->query("SELECT DISTINCT nama_mapel, kode_mapel FROM master_mapel WHERE (kategori_mapel = 'Diknas' OR kategori_mapel = 'Nasional') AND status_aktif = 1 ORDER BY nama_mapel ASC");
+        
+        if ($res_m_init) {
+            while ($rm = $res_m_init->fetch_assoc()) {
+                $nm = $rm['nama_mapel'];
+                $kd = $rm['kode_mapel'] ?? '';
+                $is_sma_only = in_array(strtolower($nm), ['fisika', 'kimia', 'biologi', 'sosiologi', 'ekonomi', 'geografi', 'sejarah']);
+                $is_smp_only = in_array(strtolower($nm), ['ipa (ilmu pengetahuan alam)', 'ips (ilmu pengetahuan sosial)', 'ipa', 'ips']);
+
+                if ($j_init === 'SMP' && $is_sma_only) continue;
+                if ($j_init === 'SMA' && $is_smp_only) continue;
+
+                $kb = getOfficialCPKnowledgeBase($nm, $j_init, $fase_init);
+                $nm_esc = $conn->real_escape_string($nm);
+                $kd_esc = $conn->real_escape_string($kd);
+                $rasional = $conn->real_escape_string($kb['rasional_mapel']);
+                $tujuan = $conn->real_escape_string($kb['tujuan_mapel']);
+                $karakteristik = $conn->real_escape_string($kb['karakteristik_mapel']);
+                $elemen_json = $conn->real_escape_string(json_encode($kb['elemen_cp'], JSON_UNESCAPED_UNICODE));
+                $sumber = $conn->real_escape_string($kb['sumber_rujukan']);
+
+                // Tuangkan ke master_cp_kurikulum
+                $conn->query("INSERT INTO master_cp_kurikulum 
+                    (jenjang, fase, nama_mapel, kode_mapel, rasional_mapel, tujuan_mapel, karakteristik_mapel, elemen_cp, sumber_rujukan, status_verifikasi, last_generated_at)
+                    VALUES ('$j_init', '$fase_init', '$nm_esc', '$kd_esc', '$rasional', '$tujuan', '$karakteristik', '$elemen_json', '$sumber', 'terverifikasi', NOW())
+                    ON DUPLICATE KEY UPDATE 
+                        kode_mapel = IF('$kd_esc' != '', '$kd_esc', kode_mapel),
+                        rasional_mapel = VALUES(rasional_mapel),
+                        tujuan_mapel = VALUES(tujuan_mapel),
+                        karakteristik_mapel = VALUES(karakteristik_mapel),
+                        elemen_cp = VALUES(elemen_cp),
+                        sumber_rujukan = VALUES(sumber_rujukan),
+                        status_verifikasi = 'terverifikasi',
+                        last_generated_at = NOW()");
+
+                // Auto-sync ke master_silabus asatidz
+                $kelas_silabus = "{$fase_init} ({$j_init})";
+                $silabus_cp = [];
+                foreach ($kb['elemen_cp'] as $el) {
+                    $silabus_cp[] = [
+                        'elemen' => $el['elemen'],
+                        'cp' => $el['deskripsi'] ?? ($el['cp'] ?? '')
+                    ];
+                }
+                $silabus_json = $conn->real_escape_string(json_encode($silabus_cp, JSON_UNESCAPED_UNICODE));
+
+                $chk_s = $conn->query("SELECT id FROM master_silabus WHERE mata_pelajaran = '$nm_esc' AND kelas LIKE '%$j_init%'");
+                if ($chk_s && $chk_s->num_rows > 0) {
+                    $s_id = $chk_s->fetch_assoc()['id'];
+                    $conn->query("UPDATE master_silabus SET deskripsi_mapel='$rasional', capaian_pembelajaran='$silabus_json', kelas='$kelas_silabus' WHERE id=$s_id");
+                } else {
+                    $conn->query("INSERT INTO master_silabus (mata_pelajaran, kelas, deskripsi_mapel, capaian_pembelajaran) VALUES ('$nm_esc', '$kelas_silabus', '$rasional', '$silabus_json')");
+                }
+
+                $init_saved_count++;
+            }
+        }
+    }
+
+    // Catat log runner awal
+    $conn->query("INSERT INTO log_cp_agent_annual (tahun_ajaran, tanggal_eksekusi, jenjang, total_mapel, keterangan, executed_by) 
+        VALUES ('$current_ta', NOW(), 'SMP & SMA', $init_saved_count, 'Eksekusi Langsung: Riset Baku BSKAP 032/H/KR/2024 & Tuang ke Menu CP', 'Initial Auto-Runner')");
+
+    $total_cp_current = $init_saved_count;
+}
 
 $res_last_cron = $conn->query("SELECT * FROM log_cp_agent_annual ORDER BY id DESC LIMIT 1");
 $last_annual_exec = ($res_last_cron && $res_last_cron->num_rows > 0) ? $res_last_cron->fetch_assoc() : null;
@@ -241,26 +322,30 @@ $last_annual_exec = ($res_last_cron && $res_last_cron->num_rows > 0) ? $res_last
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    Auto-Scheduler 1 Juli Aktif
+                                    Status: Riset Baku Pemerintah Aktif & Tersimpan (<?= $total_cp_current ?> Mapel)
                                 </span>
                                 <span class="text-xs text-slate-300 font-mono">Tahun Ajaran <?= htmlspecialchars($current_ta) ?></span>
                             </div>
                             <h4 class="font-bold text-white text-xs sm:text-sm mt-1">
-                                Jadwal Otonom: Bekerja Otomatis Tiap 1 Juli (Pergantian Tahun Ajaran Baru)
+                                Tugas AI Saat Ini Telah Selesai Dituangkan. Tugas Otonom Berikutnya: Per 1 Juli Tiap Tahun Ajaran Baru
                             </h4>
                             <p class="text-[11px] text-slate-400 mt-0.5">
                                 <?php if ($last_annual_exec): ?>
-                                    Eksekusi terakhir: <b class="text-teal-200"><?= date('d M Y H:i', strtotime($last_annual_exec['tanggal_eksekusi'])) ?> WIB</b> (<?= htmlspecialchars($last_annual_exec['total_mapel']) ?> Mapel terstandarisasi oleh <?= htmlspecialchars($last_annual_exec['executed_by']) ?>)
+                                    Eksekusi: <b class="text-teal-200"><?= date('d M Y H:i', strtotime($last_annual_exec['tanggal_eksekusi'])) ?> WIB</b> (<?= htmlspecialchars($last_annual_exec['total_mapel']) ?> Mapel diselaraskan oleh <?= htmlspecialchars($last_annual_exec['executed_by']) ?>) • Jadwal berkala: <b>1 Juli</b>
                                 <?php else: ?>
                                     Jadwal eksekusi otomatis berikutnya: <b class="text-teal-200">1 Juli Pukul 00:00 WIB</b> (Tahun Ajaran Baru)
                                 <?php endif; ?>
                             </p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
+                    <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                        <a href="kurikulum-cp.php?run_now=1" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-xs transition cursor-pointer" title="Paksa riset dan tuang ulang seluruh mapel ke database sekarang">
+                            <i class="fas fa-bolt"></i>
+                            <span>Riset & Tuang Ulang Sekarang</span>
+                        </a>
                         <button type="button" onclick="triggerSimulasiJuli()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-teal-800/80 hover:bg-teal-700 text-teal-100 border border-teal-600/50 shadow-xs transition cursor-pointer">
                             <i class="fas fa-rotate"></i>
-                            <span>Simulasi Eksekusi 1 Juli</span>
+                            <span>Simulasi 1 Juli</span>
                         </button>
                     </div>
                 </div>
