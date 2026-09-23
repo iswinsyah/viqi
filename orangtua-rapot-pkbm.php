@@ -139,14 +139,28 @@ $active_menu = 'orangtua_rapot_pkbm';
                 <form method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                     <?php if (count($santri_anak) > 1): ?>
                         <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-purple-900 mb-1.5">Pilih Ananda</label>
-                            <select name="santri_id" onchange="this.form.submit()" class="w-full px-3 py-2 border border-purple-200 rounded-xl text-xs bg-white font-bold text-purple-950">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-teal-900 mb-1.5">Pilih Ananda</label>
+                            <select name="santri_id" onchange="this.form.submit()" class="w-full px-3 py-2 border border-teal-200 rounded-xl text-xs bg-white font-bold text-teal-950">
+                                <option value="">-- Pilih Ananda (Pilihan 1x Terkunci) --</option>
                                 <?php foreach ($santri_anak as $sa): ?>
-                                    <option value="<?= $sa['id'] ?>" <?= ($sa['id'] == $selected_santri_id) ? 'selected' : '' ?>>
+                                    <option value="<?= $sa['id'] ?>">
                                         <?= htmlspecialchars($sa['nama_lengkap']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
+                        </div>
+                    <?php else: ?>
+                        <div class="sm:col-span-3 pb-2">
+                            <div class="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 text-teal-900 px-3.5 py-1.5 rounded-xl text-xs font-bold">
+                                <i class="fas fa-lock text-[#0b8478]"></i>
+                                <span>Ananda: <strong class="text-teal-950"><?= htmlspecialchars($selected_child['nama_lengkap'] ?? 'Santri') ?></strong></span>
+                                <span class="text-[10px] bg-teal-200/80 text-teal-900 px-2 py-0.5 rounded-full font-bold">Terkunci</span>
+                                <?php if ($is_super_admin): ?>
+                                    <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-teal-700 hover:text-rose-600 underline font-semibold ml-1.5" title="Ganti Ananda (Khusus Super Admin)">
+                                        <i class="fas fa-key text-[9px]"></i> Ganti Ananda
+                                    </a>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     <?php endif; ?>
 

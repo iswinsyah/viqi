@@ -3,6 +3,7 @@ require_once 'auth-orangtua.php';
 require_once 'koneksi.php';
 
 $orangtua_id = $_SESSION['orangtua_id'];
+$is_super_admin = ($orangtua_id == 9999 || (isset($_SESSION['app_username']) && in_array(strtolower($_SESSION['app_username']), ['winsyah', 'viqi'])));
 $active_menu = 'kirim_uang_saku';
 
 // 1. Buat Tabel Otomatis jika belum ada
@@ -99,7 +100,7 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                     </div>
                 </div>
                 
-                <!-- SELECTOR ANANDA -->
+                <!-- SELECTOR ANANDA (HANYA MUNCUL JIKA BELUM MEMILIH / BELUM DIKUNCI) -->
                 <div>
                     <?php if (count($santri_list) > 1): ?>
                         <form method="GET" class="flex items-center gap-2">
@@ -107,8 +108,9 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                                 <i class="fas fa-child text-[#0b8478]"></i> Ananda:
                             </span>
                             <select name="santri_id" onchange="this.form.submit()" class="bg-teal-50/50 border border-teal-300 text-teal-950 font-bold text-xs rounded-xl px-3.5 py-2 focus:ring-2 focus:ring-teal-500 shadow-xs cursor-pointer">
+                                <option value="">-- Pilih Ananda (Pilihan 1x Terkunci) --</option>
                                 <?php foreach ($santri_list as $s): ?>
-                                    <option value="<?= $s['id'] ?>" <?= ($s['id'] == $selected_santri_id) ? 'selected' : '' ?>>
+                                    <option value="<?= $s['id'] ?>">
                                         <?= htmlspecialchars($s['nama_lengkap']) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -116,8 +118,14 @@ $riwayat = $conn->query($sql_h)->fetch_all(MYSQLI_ASSOC);
                         </form>
                     <?php elseif ($active_santri): ?>
                         <div class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 font-bold text-xs shadow-xs">
-                            <i class="fas fa-user-check text-[#0b8478]"></i>
+                            <i class="fas fa-lock text-[#0b8478]"></i>
                             <span>Ananda: <strong class="text-teal-950"><?= htmlspecialchars($active_santri['nama_lengkap']) ?></strong></span>
+                            <span class="text-[10px] bg-teal-200/80 text-teal-900 px-2 py-0.5 rounded-full font-bold">Terkunci</span>
+                            <?php if ($is_super_admin): ?>
+                                <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-teal-700 hover:text-rose-600 underline font-semibold ml-1.5" title="Ganti Ananda (Khusus Super Admin)">
+                                    <i class="fas fa-key text-[9px]"></i> Ganti Ananda
+                                </a>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>

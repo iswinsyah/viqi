@@ -113,7 +113,7 @@ if ($santri_id > 0 && $ta && $sem) {
                         <p class="text-xs text-slate-500 mt-1">Capaian kurikulum kepesantrenan, kitab kuning, tajwid, dan ilmu syar'i</p>
                     </div>
 
-                    <!-- SELECTOR ANANDA -->
+                    <!-- SELECTOR ANANDA (HANYA MUNCUL JIKA BELUM MEMILIH / BELUM DIKUNCI) -->
                     <?php if (count($santri_anak) > 1): ?>
                         <form method="GET" class="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-teal-100 shadow-xs">
                             <label class="text-xs font-bold text-[#0b8478] whitespace-nowrap flex items-center gap-1.5">
@@ -122,8 +122,9 @@ if ($santri_id > 0 && $ta && $sem) {
                             <input type="hidden" name="tahun_ajaran" value="<?= htmlspecialchars($ta) ?>">
                             <input type="hidden" name="semester" value="<?= htmlspecialchars($sem) ?>">
                             <select name="santri_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:ring-2 focus:ring-[#0b8478] focus:border-[#0b8478] font-bold text-slate-800 transition">
+                                <option value="">-- Pilih Ananda (Pilihan 1x Terkunci) --</option>
                                 <?php foreach ($santri_anak as $sa): ?>
-                                    <option value="<?= $sa['id'] ?>" <?= ($sa['id'] == $santri_id) ? 'selected' : '' ?>>
+                                    <option value="<?= $sa['id'] ?>">
                                         <?= htmlspecialchars($sa['nama_lengkap']) ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -131,8 +132,14 @@ if ($santri_id > 0 && $ta && $sem) {
                         </form>
                     <?php elseif (!empty($selected_child)): ?>
                         <div class="flex items-center gap-2 bg-teal-50/80 px-4 py-2 rounded-2xl border border-teal-200/80 text-xs font-bold text-teal-950 shadow-xs">
-                            <i class="fas fa-child text-[#0b8478]"></i>
+                            <i class="fas fa-lock text-[#0b8478]"></i>
                             <span>Ananda: <strong class="text-[#0b8478]"><?= htmlspecialchars($selected_child['nama_lengkap']) ?></strong></span>
+                            <span class="text-[10px] bg-teal-200/80 text-teal-900 px-2 py-0.5 rounded-full font-bold">Terkunci</span>
+                            <?php if ($is_super_admin): ?>
+                                <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-teal-700 hover:text-rose-600 underline font-semibold ml-1.5" title="Ganti Ananda (Khusus Super Admin)">
+                                    <i class="fas fa-key text-[9px]"></i> Ganti Ananda
+                                </a>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>

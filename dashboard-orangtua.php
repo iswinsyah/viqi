@@ -3,9 +3,10 @@ require_once 'auth-orangtua.php';
 require_once 'koneksi.php';
 
 $orangtua_id = $_SESSION['orangtua_id'];
+$is_super_admin = ($orangtua_id == 9999 || (isset($_SESSION['app_username']) && in_array(strtolower($_SESSION['app_username']), ['winsyah', 'viqi'])));
 $active_menu = 'dashboard_orangtua';
 
-// Ambil data santri yang terhubung dengan akun orang tua ini
+$locked_id = getLockedSantriId($conn, $orangtua_id);
 $santri_list = getOrangtuaSantriList($conn, $orangtua_id);
 ?>
 <!DOCTYPE html>
@@ -38,10 +39,20 @@ $santri_list = getOrangtuaSantriList($conn, $orangtua_id);
         <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h2 class="text-2xl font-black text-gray-900">Data Ananda Tercinta</h2>
-                <?php if($orangtua_id == 9999): ?>
-                    <p class="text-teal-700 font-medium text-xs mt-1"><i class="fas fa-info-circle mr-1"></i> Mode Super Admin: Menampilkan seluruh santri aktif.</p>
+                <?php if($locked_id > 0 && !empty($santri_list)): ?>
+                    <p class="text-[#0b8478] font-bold text-xs mt-1 flex items-center gap-1.5 flex-wrap">
+                        <i class="fas fa-lock"></i> Ananda Terpilih & Terkunci Permanen: 
+                        <span class="bg-teal-100 text-teal-900 px-2 py-0.5 rounded-full"><?= htmlspecialchars($santri_list[0]['nama_lengkap']) ?></span>
+                        <?php if ($is_super_admin): ?>
+                            <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih santri lain kembali (Khusus Super Admin).')" class="text-[11px] text-teal-700 hover:text-rose-600 underline font-semibold ml-2">
+                                <i class="fas fa-key text-[9px]"></i> Ganti Ananda
+                            </a>
+                        <?php endif; ?>
+                    </p>
                 <?php else: ?>
-                    <p class="text-gray-500 text-xs mt-1">Pilih menu di bawah setiap ananda untuk memantau capaian hafalan, ibadah, rapor, hingga keuangan.</p>
+                    <p class="text-amber-800 font-bold text-xs mt-1 flex items-center gap-1.5">
+                        <i class="fas fa-hand-pointer text-amber-600"></i> Silakan pilih menu ananda di bawah untuk pertama kali (Pilihan akan dikunci permanen selamanya).
+                    </p>
                 <?php endif; ?>
             </div>
             <a href="dashboard.php" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:text-[#0b8478] hover:border-teal-300 rounded-xl text-xs font-bold shadow-xs transition">

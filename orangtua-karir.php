@@ -84,6 +84,38 @@ if ($res_g) {
         <!-- MAIN LAYOUT -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             
+            <!-- SELECTOR ANANDA (HANYA MUNCUL JIKA BELUM MEMILIH / BELUM DIKUNCI) -->
+            <?php if (count($santri_anak) > 1): ?>
+                <div class="bg-white p-4 rounded-2xl border border-teal-100 shadow-xs mb-6 flex items-center justify-between">
+                    <form method="GET" class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-[#0b8478] whitespace-nowrap flex items-center gap-1.5">
+                            <i class="fas fa-child"></i> Pilih Ananda:
+                        </label>
+                        <select name="id" onchange="this.form.submit()" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:ring-2 focus:ring-[#0b8478] focus:border-[#0b8478] font-bold text-slate-800 transition">
+                            <option value="">-- Pilih Ananda (Pilihan 1x Terkunci) --</option>
+                            <?php foreach ($santri_anak as $sa): ?>
+                                <option value="<?= $sa['id'] ?>">
+                                    <?= htmlspecialchars($sa['nama_lengkap']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </form>
+                </div>
+            <?php else: ?>
+                <div class="mb-4 flex items-center justify-between">
+                    <div class="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 text-teal-900 px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs">
+                        <i class="fas fa-lock text-[#0b8478]"></i>
+                        <span>Ananda: <strong class="text-teal-950"><?= htmlspecialchars($data_santri['nama_lengkap'] ?? 'Santri') ?></strong></span>
+                        <span class="text-[10px] bg-teal-200/80 text-teal-900 px-2 py-0.5 rounded-full font-bold">Terkunci</span>
+                        <?php if ($is_super_admin): ?>
+                            <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-teal-700 hover:text-rose-600 underline font-semibold ml-1.5" title="Ganti Ananda (Khusus Super Admin)">
+                                <i class="fas fa-key text-[9px]"></i> Ganti Ananda
+                            </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
+
             <!-- Profil Singkat Anak -->
             <div class="bg-white rounded-2xl p-6 border border-gray-200/80 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div class="flex items-center">
