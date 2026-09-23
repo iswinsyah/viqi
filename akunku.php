@@ -337,27 +337,29 @@ $tab = $_GET['tab'] ?? 'profil';
         </main>
 
         <!-- BOTTOM NAVIGATION BAR (HP) -->
-        <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] flex items-center justify-around z-40 max-w-[440px] mx-auto px-2">
-            <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
-                <i class="fas fa-house text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
-                <span class="text-white">Beranda</span>
-            </a>
-            <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
-                <i class="fas fa-calendar-alt text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
-                <span class="text-white">Kalender</span>
-            </a>
-            <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
-                <i class="fas fa-clock text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
-                <span class="text-white">Jadwal</span>
-            </a>
-            <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
-                <i class="fas fa-bullhorn text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
-                <span class="text-white">Info</span>
-            </a>
-            <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-[10px] transition">
-                <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5 text-teal-100 hover:text-rose-200"></i>
-                <span class="text-white">Keluar</span>
-            </a>
+        <nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
+            <div class="w-full max-w-md mx-auto flex items-center justify-around">
+                <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
+                    <i class="fas fa-house text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
+                    <span class="text-white">Beranda</span>
+                </a>
+                <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
+                    <i class="fas fa-calendar-alt text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
+                    <span class="text-white">Kalender</span>
+                </a>
+                <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
+                    <i class="fas fa-clock text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
+                    <span class="text-white">Jadwal</span>
+                </a>
+                <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
+                    <i class="fas fa-bullhorn text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
+                    <span class="text-white">Info</span>
+                </a>
+                <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-[10px] transition">
+                    <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5 text-teal-100 hover:text-rose-200"></i>
+                    <span class="text-white">Keluar</span>
+                </a>
+            </div>
         </nav>
 
     </div>

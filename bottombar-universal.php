@@ -12,7 +12,7 @@ if (isset($is_santri_only) && $is_santri_only) {
 }
 ?>
 
-<nav class="md:hidden fixed bottom-0 left-0 right-0 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 py-1.5 transition-all">
+<nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 py-1.5 transition-all" style="left:0; right:0; width:100vw; max-width:100%;">
     <div class="max-w-md mx-auto grid grid-cols-5 gap-1 items-center">
         <?php if ($is_santri_role): ?>
             <!-- 1. BERANDA SANTRI -->
