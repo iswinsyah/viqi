@@ -11,11 +11,14 @@ $is_api_request = (isset($_SERVER['SCRIPT_FILENAME']) && basename($_SERVER['SCRI
     || !empty($_GET['action']) || !empty($_POST['action']);
 
 if ($is_api_request) {
-    // Atur CORS & JSON header
+    // Atur CORS & JSON header & Nonaktifkan cache server/browser
     header("Access-Control-Allow-Origin: *");
     header("Access-Control-Allow-Headers: Content-Type");
     header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
     header("Content-Type: application/json; charset=UTF-8");
+    header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+    header("Pragma: no-cache");
+    header("Expires: 0");
 
     if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         exit(0);

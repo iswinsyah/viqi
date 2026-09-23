@@ -446,7 +446,7 @@ $last_annual_exec = ($res_last_cron && $res_last_cron->num_rows > 0) ? $res_last
         `;
 
         try {
-            const resp = await fetch(`../api-cp-ai.php?action=get_mapel_list&jenjang=${encodeURIComponent(currentJenjang)}`);
+            const resp = await fetch(`../api-cp-ai.php?action=get_mapel_list&jenjang=${encodeURIComponent(currentJenjang)}&_t=${Date.now()}`);
             const res = await resp.json();
 
             if (res.status === 'success') {
@@ -538,7 +538,7 @@ $last_annual_exec = ($res_last_cron && $res_last_cron->num_rows > 0) ? $res_last
         statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200';
 
         try {
-            const resp = await fetch(`../api-cp-ai.php?action=get_cp_detail&jenjang=${encodeURIComponent(currentJenjang)}&nama_mapel=${encodeURIComponent(mapel.nama_mapel)}`);
+            const resp = await fetch(`../api-cp-ai.php?action=get_cp_detail&jenjang=${encodeURIComponent(currentJenjang)}&nama_mapel=${encodeURIComponent(mapel.nama_mapel)}&_t=${Date.now()}`);
             const res = await resp.json();
 
             if (res.status === 'success') {
