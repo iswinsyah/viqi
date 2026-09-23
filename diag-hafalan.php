@@ -5,54 +5,50 @@ header('Content-Type: application/json');
 
 $out = [];
 
-// 1. Check Tables
-$tables = [];
-$res = $conn->query("SHOW TABLES");
-if ($res) {
-    while ($r = $res->fetch_row()) {
-        $tables[] = $r[0];
-    }
-}
-$out['matching_tables'] = array_values(array_filter($tables, function($t) {
-    return stripos($t, 'hafalan') !== false || stripos($t, 'mutabaah') !== false || stripos($t, 'santri') !== false || stripos($t, 'orangtua') !== false;
-}));
-
-// 2. Counts
-$check_counts = ['laporan_setoran_hafalan', 'setoran_hafalan', 'buku_mutabaah', 'buku_induk_santri', 'santri_orangtua_link', 'akun_orangtua'];
-foreach ($check_counts as $tbl) {
-    if (in_array($tbl, $tables)) {
-        $c = $conn->query("SELECT COUNT(*) FROM `$tbl`");
-        $out['counts'][$tbl] = $c ? (int)$c->fetch_row()[0] : 'err: ' . $conn->error;
-    } else {
-        $out['counts'][$tbl] = 'TABLE_NOT_FOUND';
-    }
+// 1. All santri in buku_induk_santri
+$res = $conn->query("SELECT id, nama_lengkap, status_santri, id_orangtua FROM buku_induk_santri ORDER BY nama_lengkap ASC");
+$out['santri_list'] = [];
+while ($r = $res->fetch_assoc()) {
+    $out['santri_list'][] = $r;
 }
 
-// 3. Samples from laporan_setoran_hafalan
-if (in_array('laporan_setoran_hafalan', $tables)) {
-    $s = $conn->query("SELECT * FROM laporan_setoran_hafalan ORDER BY id DESC LIMIT 5");
-    $out['sample_laporan_setoran_hafalan'] = [];
-    if ($s) {
-        while ($row = $s->fetch_assoc()) $out['sample_laporan_setoran_hafalan'][] = $row;
-    }
+// 2. Count distinct santri_id and NULL count in laporan_setoran_hafalan
+$c_null = $conn->query("SELECT COUNT(*) FROM laporan_setoran_hafalan WHERE santri_id IS NULL OR santri_id = 0");
+$out['hafalan_null_santri_id_count'] = $c_null ? (int)$c_null->fetch_row()[0] : 0;
+
+$c_distinct = $conn->query("SELECT santri_id, nama_santri, COUNT(*) as cnt FROM laporan_setoran_hafalan GROUP BY santri_id, nama_santri ORDER BY cnt DESC LIMIT 15");
+$out['top_hafalan_santri'] = [];
+while ($r = $c_distinct->fetch_assoc()) {
+    $out['top_hafalan_santri'][] = $r;
 }
 
-// 4. Samples from setoran_hafalan
-if (in_array('setoran_hafalan', $tables)) {
-    $s = $conn->query("SELECT * FROM setoran_hafalan ORDER BY id DESC LIMIT 5");
-    $out['sample_setoran_hafalan'] = [];
-    if ($s) {
-        while ($row = $s->fetch_assoc()) $out['sample_setoran_hafalan'][] = $row;
-    }
-}
+// 3. Test query when selecting santri_id = 9 (Afiya Shidqia Dylan)
+$test_id = 9;
+$q1 = "SELECT l.*, s.nama_lengkap FROM laporan_setoran_hafalan l LEFT JOIN buku_induk_santri s ON (l.santri_id = s.id OR l.nama_santri = s.nama_lengkap) WHERE (l.santri_id = $test_id OR s.id = $test_id) ORDER BY l.created_at DESC, l.id DESC";
+$res_q1 = $conn->query($q1);
+$out['test_query_result_count_for_id_9'] = $res_q1 ? $res_q1->num_rows : 'err: ' . $conn->error;
 
-// 5. Sample santri from buku_induk_santri
-if (in_array('buku_induk_santri', $tables)) {
-    $s = $conn->query("SELECT id, nama_lengkap, status_santri, id_orangtua FROM buku_induk_santri WHERE status_santri = 'Aktif' LIMIT 5");
-    $out['sample_santri'] = [];
-    if ($s) {
-        while ($row = $s->fetch_assoc()) $out['sample_santri'][] = $row;
-    }
+// 4. Test query for other santri IDs
+$out['test_counts_by_id'] = [];
+foreach ($out['santri_list'] as $s) {
+    $sid = (int)$s['id'];
+    $sname = $s['nama_lengkap'];
+    $q_old = "SELECT COUNT(*) FROM laporan_setoran_hafalan l LEFT JOIN buku_induk_santri s ON (l.santri_id = s.id OR l.nama_santri = s.nama_lengkap) WHERE (l.santri_id = $sid OR s.id = $sid)";
+    $r_old = $conn->query($q_old);
+    $cnt_old = $r_old ? (int)$r_old->fetch_row()[0] : -1;
+    
+    // Check how many match by name directly:
+    $sname_esc = $conn->real_escape_string($sname);
+    $q_name = "SELECT COUNT(*) FROM laporan_setoran_hafalan WHERE santri_id = $sid OR nama_santri = '$sname_esc' OR LOWER(TRIM(nama_santri)) = LOWER(TRIM('$sname_esc'))";
+    $r_name = $conn->query($q_name);
+    $cnt_name = $r_name ? (int)$r_name->fetch_row()[0] : -1;
+
+    $out['test_counts_by_id'][] = [
+        'id' => $sid,
+        'nama' => $sname,
+        'count_with_old_query' => $cnt_old,
+        'count_with_name_match' => $cnt_name
+    ];
 }
 
 echo json_encode($out, JSON_PRETTY_PRINT);
