@@ -232,10 +232,14 @@ $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
 $log_file = __DIR__ . '/agent_cron_log.txt';
 $monthly_log_file = __DIR__ . '/agent_monthly_log.txt';
 $daily_log_file = __DIR__ . '/agent_daily_log.txt';
+$annual_cp_log_file = __DIR__ . '/agent_annual_cp_log.txt';
 
 // Waktu saat ini bagi Sang Agent
 $today = date('Y-m-d');
 $current_month = date('Y-m');
+$current_month_num = date('m');
+$current_year_num = (int)date('Y');
+$tahun_ajaran_aktif = ((int)$current_month_num >= 7) ? $current_year_num . '/' . ($current_year_num + 1) : ($current_year_num - 1) . '/' . $current_year_num;
 $current_day = date('d');
 $current_hour = date('H');
 $current_minute = date('i');
@@ -528,7 +532,114 @@ function perbaikiGambarCoverRusak() {
         }
     }
 }
-perbaikiGambarCoverRusak();
+// =========================================================================================
+// TUGAS TAHUNAN (Tiap Tanggal 1 Juli - Tahun Ajaran Baru): AGENTIC AI RISET CP PEMERINTAH
+// =========================================================================================
+$is_july_1 = ($current_month_num === '07' && $current_day === '01');
+$force_cp = (isset($_GET['force']) && ($_GET['force'] === 'cp' || $_GET['force'] === 'annual_cp'));
+$annual_cp_done = false;
+
+if (file_exists($annual_cp_log_file)) {
+    if (strpos(file_get_contents($annual_cp_log_file), "SUCCESS_{$tahun_ajaran_aktif}") !== false) {
+        $annual_cp_done = true;
+    }
+}
+
+if (($is_july_1 || $force_cp) && (!$annual_cp_done || $force_cp)) {
+    logAgent("=================================================================================");
+    logAgent("🎓 [TAHUN AJARAN BARU $tahun_ajaran_aktif] MEMULAI RISET OTOMATIS CP PEMERINTAH (1 JULI)");
+    logAgent("=================================================================================");
+    
+    pastikanKoneksiDb();
+    require_once __DIR__ . '/api-cp-ai.php';
+
+    // Inisialisasi tabel log tahunan
+    $conn->query("CREATE TABLE IF NOT EXISTS log_cp_agent_annual (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        tahun_ajaran VARCHAR(20) NOT NULL,
+        tanggal_eksekusi DATETIME NOT NULL,
+        jenjang VARCHAR(50) NOT NULL,
+        total_mapel INT NOT NULL,
+        keterangan TEXT NULL,
+        executed_by VARCHAR(50) DEFAULT 'Agentic AI Scheduler',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    $jenjang_list = ['SMP', 'SMA'];
+    $grand_total = 0;
+
+    foreach ($jenjang_list as $jjg) {
+        $fase = ($jjg === 'SMP') ? 'Fase D' : 'Fase E & F';
+        $res_m = $conn->query("SELECT DISTINCT nama_mapel, kode_mapel FROM master_mapel WHERE (kategori_mapel = 'Diknas' OR kategori_mapel = 'Nasional') AND status_aktif = 1 ORDER BY nama_mapel ASC");
+        
+        $jjg_count = 0;
+        if ($res_m) {
+            while ($rm = $res_m->fetch_assoc()) {
+                $nm = $rm['nama_mapel'];
+                $kd = $rm['kode_mapel'] ?? '';
+                $is_sma_only = in_array(strtolower($nm), ['fisika', 'kimia', 'biologi', 'sosiologi', 'ekonomi', 'geografi', 'sejarah']);
+                $is_smp_only = in_array(strtolower($nm), ['ipa (ilmu pengetahuan alam)', 'ips (ilmu pengetahuan sosial)', 'ipa', 'ips']);
+
+                if ($jjg === 'SMP' && $is_sma_only) continue;
+                if ($jjg === 'SMA' && $is_smp_only) continue;
+
+                $kb = getOfficialCPKnowledgeBase($nm, $jjg, $fase);
+                $nm_esc = $conn->real_escape_string($nm);
+                $kd_esc = $conn->real_escape_string($kd);
+                $rasional = $conn->real_escape_string($kb['rasional_mapel']);
+                $tujuan = $conn->real_escape_string($kb['tujuan_mapel']);
+                $karakteristik = $conn->real_escape_string($kb['karakteristik_mapel']);
+                $elemen_json = $conn->real_escape_string(json_encode($kb['elemen_cp'], JSON_UNESCAPED_UNICODE));
+                $sumber = $conn->real_escape_string($kb['sumber_rujukan']);
+
+                $conn->query("INSERT INTO master_cp_kurikulum 
+                    (jenjang, fase, nama_mapel, kode_mapel, rasional_mapel, tujuan_mapel, karakteristik_mapel, elemen_cp, sumber_rujukan, status_verifikasi, last_generated_at)
+                    VALUES ('$jjg', '$fase', '$nm_esc', '$kd_esc', '$rasional', '$tujuan', '$karakteristik', '$elemen_json', '$sumber', 'terverifikasi', NOW())
+                    ON DUPLICATE KEY UPDATE 
+                        kode_mapel = IF('$kd_esc' != '', '$kd_esc', kode_mapel),
+                        rasional_mapel = VALUES(rasional_mapel),
+                        tujuan_mapel = VALUES(tujuan_mapel),
+                        karakteristik_mapel = VALUES(karakteristik_mapel),
+                        elemen_cp = VALUES(elemen_cp),
+                        sumber_rujukan = VALUES(sumber_rujukan),
+                        status_verifikasi = 'terverifikasi',
+                        last_generated_at = NOW()");
+
+                // Auto-sync ke master_silabus
+                $kelas_silabus = "{$fase} ({$jjg})";
+                $silabus_cp = [];
+                foreach ($kb['elemen_cp'] as $el) {
+                    $silabus_cp[] = ['elemen' => $el['elemen'], 'cp' => $el['deskripsi'] ?? ($el['cp'] ?? '')];
+                }
+                $silabus_json = $conn->real_escape_string(json_encode($silabus_cp, JSON_UNESCAPED_UNICODE));
+
+                $chk_s = $conn->query("SELECT id FROM master_silabus WHERE mata_pelajaran = '$nm_esc' AND kelas LIKE '%$jjg%'");
+                if ($chk_s && $chk_s->num_rows > 0) {
+                    $s_id = $chk_s->fetch_assoc()['id'];
+                    $conn->query("UPDATE master_silabus SET deskripsi_mapel='$rasional', capaian_pembelajaran='$silabus_json', kelas='$kelas_silabus' WHERE id=$s_id");
+                } else {
+                    $conn->query("INSERT INTO master_silabus (mata_pelajaran, kelas, deskripsi_mapel, capaian_pembelajaran) VALUES ('$nm_esc', '$kelas_silabus', '$rasional', '$silabus_json')");
+                }
+
+                $jjg_count++;
+            }
+        }
+
+        $conn->query("INSERT INTO log_cp_agent_annual (tahun_ajaran, tanggal_eksekusi, jenjang, total_mapel, keterangan) 
+            VALUES ('$tahun_ajaran_aktif', NOW(), '$jjg', $jjg_count, 'Penyelarasan Baku CP BSKAP 032/H/KR/2024')");
+        
+        logAgent("-> Sukses menstandarisasi $jjg_count mapel $jjg untuk Tahun Ajaran $tahun_ajaran_aktif.");
+        $grand_total += $jjg_count;
+    }
+
+    file_put_contents($annual_cp_log_file, "SUCCESS_{$tahun_ajaran_aktif}_" . date('Y-m-d H:i:s') . "\n", FILE_APPEND);
+    logAgent("🎉 TUGAS TAHUNAN SELESAI: Berhasil menstandarisasi total $grand_total mapel Diknas untuk Tahun Ajaran Baru $tahun_ajaran_aktif!");
+
+    if ($force_cp) {
+        echo "<br><b>🎉 Selesai memproses CP Tahunan ($tahun_ajaran_aktif). Total $grand_total Mapel diperbarui dan tersinkron ke Silabus Guru.</b><br>";
+        exit;
+    }
+}
 
 // =========================================================================================
 // TUGAS BULANAN (Tiap Tanggal 1, Jam 05:00) : PERSONA, TREND MAKRO & KALENDER 30 HARI

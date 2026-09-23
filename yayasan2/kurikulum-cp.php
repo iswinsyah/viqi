@@ -23,6 +23,13 @@ $conn->query("CREATE TABLE IF NOT EXISTS master_cp_kurikulum (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
 $active_page = 'yayasan_cp';
+
+$m_num = date('m');
+$y_num = (int)date('Y');
+$current_ta = ((int)$m_num >= 7) ? $y_num . '/' . ($y_num + 1) : ($y_num - 1) . '/' . $y_num;
+
+$res_last_cron = $conn->query("SELECT * FROM log_cp_agent_annual ORDER BY id DESC LIMIT 1");
+$last_annual_exec = ($res_last_cron && $res_last_cron->num_rows > 0) ? $res_last_cron->fetch_assoc() : null;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -221,6 +228,40 @@ $active_page = 'yayasan_cp';
                         <p class="text-slate-200 leading-relaxed">
                             Karena kurikulum Diknas adalah <b>ketetapan pakem pemerintah</b> (*sami'na wa atha'na*), Agent AI langsung menelusuri keputusan resmi Kemendikbudristek, mengekstrak rumusan kompetensi, dan <b>menuangkannya langsung ke dalam tabel database dan silabus guru</b>. Guru dan Yayasan tidak perlu mengetik manual dari nol.
                         </p>
+                    </div>
+                </div>
+
+                <!-- AUTONOMOUS ANNUAL SCHEDULER WIDGET (1 JULI) -->
+                <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 border border-teal-700/60 rounded-2xl p-4 text-white shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div class="flex items-center gap-3.5">
+                        <div class="w-10 h-10 rounded-xl bg-teal-500/20 text-teal-300 flex items-center justify-center text-lg flex-shrink-0 border border-teal-500/30">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                    Auto-Scheduler 1 Juli Aktif
+                                </span>
+                                <span class="text-xs text-slate-300 font-mono">Tahun Ajaran <?= htmlspecialchars($current_ta) ?></span>
+                            </div>
+                            <h4 class="font-bold text-white text-xs sm:text-sm mt-1">
+                                Jadwal Otonom: Bekerja Otomatis Tiap 1 Juli (Pergantian Tahun Ajaran Baru)
+                            </h4>
+                            <p class="text-[11px] text-slate-400 mt-0.5">
+                                <?php if ($last_annual_exec): ?>
+                                    Eksekusi terakhir: <b class="text-teal-200"><?= date('d M Y H:i', strtotime($last_annual_exec['tanggal_eksekusi'])) ?> WIB</b> (<?= htmlspecialchars($last_annual_exec['total_mapel']) ?> Mapel terstandarisasi oleh <?= htmlspecialchars($last_annual_exec['executed_by']) ?>)
+                                <?php else: ?>
+                                    Jadwal eksekusi otomatis berikutnya: <b class="text-teal-200">1 Juli Pukul 00:00 WIB</b> (Tahun Ajaran Baru)
+                                <?php endif; ?>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <button type="button" onclick="triggerSimulasiJuli()" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-teal-800/80 hover:bg-teal-700 text-teal-100 border border-teal-600/50 shadow-xs transition cursor-pointer">
+                            <i class="fas fa-rotate"></i>
+                            <span>Simulasi Eksekusi 1 Juli</span>
+                        </button>
                     </div>
                 </div>
 
@@ -804,6 +845,46 @@ $active_page = 'yayasan_cp';
         } catch (e) {
             modal.classList.add('hidden');
             Swal.fire({ icon: 'error', title: 'Error Koneksi Batch', text: e.message });
+        }
+    }
+
+    // 10. SIMULASI / TRIGGER OTONOM 1 JULI (TAHUN AJARAN BARU)
+    async function triggerSimulasiJuli() {
+        const confirmRes = await Swal.fire({
+            title: 'Jalankan Tugas Tahunan 1 Juli?',
+            text: 'Ini akan menjalankan simulasi tugas otonom 1 Juli: Agent AI akan meriset seluruh ketetapan BSKAP Kemendikbudristek untuk seluruh mapel SMP & SMA Tahun Ajaran baru dan mencatat ke riwayat eksekusi tahunan.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Jalankan!',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#0b8478'
+        });
+
+        if (!confirmRes.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Agent Sedang Bekerja...',
+            html: '<p class="text-xs text-slate-500">Mengeksekusi runner 1 Juli untuk Tahun Ajaran Baru...</p>',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            const resp = await fetch('../cron-cp-annual.php?force=1');
+            const res = await resp.json();
+
+            if (res.status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Tugas 1 Juli Selesai!',
+                    html: `Agent AI berhasil menstandarisasi <b>${res.total_mapel_diperbarui} mata pelajaran</b> untuk Tahun Ajaran <b>${res.tahun_ajaran}</b>!<br><span class="text-xs text-slate-500">Waktu: ${res.executed_at}</span>`,
+                    confirmButtonColor: '#0b8478'
+                }).then(() => location.reload());
+            } else {
+                Swal.fire({ icon: 'info', title: 'Status', text: res.message });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Error Koneksi', text: e.message });
         }
     }
 
