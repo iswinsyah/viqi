@@ -6,7 +6,7 @@ $orangtua_id = $_SESSION['orangtua_id'];
 $is_super_admin = ($orangtua_id == 9999 || (isset($_SESSION['app_username']) && in_array(strtolower($_SESSION['app_username']), ['winsyah', 'viqi'])));
 $active_menu = 'dashboard_orangtua';
 
-$locked_id = getLockedSantriId($conn, $orangtua_id);
+$locked_ids = getLockedSantriIds($conn, $orangtua_id);
 $santri_list = getOrangtuaSantriList($conn, $orangtua_id);
 ?>
 <!DOCTYPE html>
@@ -39,20 +39,37 @@ $santri_list = getOrangtuaSantriList($conn, $orangtua_id);
         <div class="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
                 <h2 class="text-2xl font-black text-gray-900">Data Ananda Tercinta</h2>
-                <?php if($locked_id > 0 && !empty($santri_list)): ?>
-                    <p class="text-[#0b8478] font-bold text-xs mt-1 flex items-center gap-1.5 flex-wrap">
-                        <i class="fas fa-lock"></i> Ananda Terpilih & Terkunci Permanen: 
-                        <span class="bg-teal-100 text-teal-900 px-2 py-0.5 rounded-full"><?= htmlspecialchars($santri_list[0]['nama_lengkap']) ?></span>
+                <?php if(!empty($locked_ids) && !empty($santri_list)): ?>
+                    <div class="text-[#0b8478] font-bold text-xs mt-1 flex items-center gap-1.5 flex-wrap">
+                        <i class="fas fa-lock"></i> 
+                        <?php if (count($santri_list) > 1): ?>
+                            <span><?= count($santri_list) ?> Ananda Bersaudara Terkunci:</span>
+                            <?php foreach ($santri_list as $sl): ?>
+                                <span class="bg-teal-100 text-teal-900 px-2 py-0.5 rounded-full"><?= htmlspecialchars($sl['nama_lengkap']) ?></span>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <span>Ananda Terpilih & Terkunci Permanen:</span>
+                            <span class="bg-teal-100 text-teal-900 px-2 py-0.5 rounded-full"><?= htmlspecialchars($santri_list[0]['nama_lengkap']) ?></span>
+                        <?php endif; ?>
+                        
+                        <button type="button" onclick="openPilihAnandaModal()" class="text-[11px] text-teal-800 hover:text-teal-950 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-xl font-bold ml-1.5 flex items-center gap-1 transition" title="Kelola / Tambah Saudara">
+                            <i class="fas fa-user-plus text-[10px]"></i> Kelola Saudara
+                        </button>
                         <?php if ($is_super_admin): ?>
-                            <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih santri lain kembali (Khusus Super Admin).')" class="text-[11px] text-teal-700 hover:text-rose-600 underline font-semibold ml-2">
-                                <i class="fas fa-key text-[9px]"></i> Ganti Ananda
+                            <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih santri lain kembali (Khusus Super Admin).')" class="text-[11px] text-rose-600 hover:text-rose-800 underline font-semibold ml-1">
+                                <i class="fas fa-key text-[9px]"></i> Reset Kunci
                             </a>
                         <?php endif; ?>
-                    </p>
+                    </div>
                 <?php else: ?>
-                    <p class="text-amber-800 font-bold text-xs mt-1 flex items-center gap-1.5">
-                        <i class="fas fa-hand-pointer text-amber-600"></i> Silakan pilih menu ananda di bawah untuk pertama kali (Pilihan akan dikunci permanen selamanya).
-                    </p>
+                    <div class="flex items-center gap-2 flex-wrap mt-1">
+                        <p class="text-amber-800 font-bold text-xs flex items-center gap-1.5">
+                            <i class="fas fa-hand-pointer text-amber-600"></i> Silakan pilih menu ananda di bawah untuk pertama kali, atau pilih beberapa saudara sekaligus:
+                        </p>
+                        <button type="button" onclick="openPilihAnandaModal()" class="px-3 py-1 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1 transition">
+                            <i class="fas fa-users-viewfinder"></i> Pilih Ananda (Bisa >1 Anak)
+                        </button>
+                    </div>
                 <?php endif; ?>
             </div>
             <a href="dashboard.php" class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 hover:text-[#0b8478] hover:border-teal-300 rounded-xl text-xs font-bold shadow-xs transition">

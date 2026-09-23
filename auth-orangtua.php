@@ -27,9 +27,10 @@ function initOrangtuaLockTable($conn) {
     if ($done) return;
     $conn->query("CREATE TABLE IF NOT EXISTS orangtua_locked_santri (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        user_key VARCHAR(100) NOT NULL UNIQUE,
+        user_key VARCHAR(100) NOT NULL,
         santri_id INT NOT NULL,
         locked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uq_user_santri (user_key, santri_id),
         INDEX idx_santri (santri_id)
     )");
     $done = true;
@@ -56,88 +57,130 @@ function getOrangtuaUserKey($orangtua_id) {
 }
 
 /**
- * Cek apakah user/orangtua ini sudah mengunci Ananda miliknya.
- * Mengembalikan ID santri jika sudah terkunci, atau 0 jika belum.
+ * Mengambil daftar ID santri yang telah dikunci oleh orang tua ini (Bisa 1 atau Lebih jika bersaudara).
+ * @return int[] Array ID santri terkunci
  */
-function getLockedSantriId($conn, $orangtua_id) {
+function getLockedSantriIds($conn, $orangtua_id) {
     initOrangtuaLockTable($conn);
 
     // 1. Cek Session
-    if (!empty($_SESSION['orangtua_locked_santri_id']) && (int)$_SESSION['orangtua_locked_santri_id'] > 0) {
-        return (int)$_SESSION['orangtua_locked_santri_id'];
+    if (!empty($_SESSION['orangtua_locked_santri_ids']) && is_array($_SESSION['orangtua_locked_santri_ids'])) {
+        return array_map('intval', $_SESSION['orangtua_locked_santri_ids']);
     }
 
     // 2. Cek Database
     $user_key = $conn->real_escape_string(getOrangtuaUserKey($orangtua_id));
-    $res = $conn->query("SELECT santri_id FROM orangtua_locked_santri WHERE user_key = '$user_key' LIMIT 1");
-    if ($res && $row = $res->fetch_assoc()) {
-        $sid = (int)$row['santri_id'];
-        $_SESSION['orangtua_locked_santri_id'] = $sid;
-        $_SESSION['orangtua_active_santri_id'] = $sid;
-        if (!headers_sent()) {
-            setcookie('_vqi_locked_santri_id', $sid, time() + (86400 * 365 * 10), "/");
-            setcookie('orangtua_active_santri_id', $sid, time() + (86400 * 365 * 10), "/");
+    $res = $conn->query("SELECT santri_id FROM orangtua_locked_santri WHERE user_key = '$user_key'");
+    if ($res && $res->num_rows > 0) {
+        $ids = [];
+        while ($r = $res->fetch_assoc()) {
+            $ids[] = (int)$r['santri_id'];
         }
-        return $sid;
+        $_SESSION['orangtua_locked_santri_ids'] = $ids;
+        if (!headers_sent()) {
+            setcookie('_vqi_locked_santri_ids', implode(',', $ids), time() + (86400 * 365 * 10), "/");
+        }
+        return $ids;
     }
 
-    // 3. Cek Cookie 10 Tahun
+    // 3. Cek Cookie 10 Tahun (Multi-IDs)
+    if (!empty($_COOKIE['_vqi_locked_santri_ids'])) {
+        $ids = array_filter(array_map('intval', explode(',', $_COOKIE['_vqi_locked_santri_ids'])));
+        if (!empty($ids)) {
+            foreach ($ids as $id) {
+                $conn->query("INSERT IGNORE INTO orangtua_locked_santri (user_key, santri_id) VALUES ('$user_key', $id)");
+            }
+            $_SESSION['orangtua_locked_santri_ids'] = $ids;
+            return $ids;
+        }
+    }
+
+    // 4. Fallback legacy single-cookie
     if (!empty($_COOKIE['_vqi_locked_santri_id']) && (int)$_COOKIE['_vqi_locked_santri_id'] > 0) {
         $sid = (int)$_COOKIE['_vqi_locked_santri_id'];
-        $conn->query("INSERT INTO orangtua_locked_santri (user_key, santri_id) VALUES ('$user_key', $sid) ON DUPLICATE KEY UPDATE santri_id = $sid");
-        $_SESSION['orangtua_locked_santri_id'] = $sid;
-        $_SESSION['orangtua_active_santri_id'] = $sid;
-        return $sid;
+        $conn->query("INSERT IGNORE INTO orangtua_locked_santri (user_key, santri_id) VALUES ('$user_key', $sid)");
+        $_SESSION['orangtua_locked_santri_ids'] = [$sid];
+        return [$sid];
     }
 
-    return 0;
+    return [];
 }
 
 /**
- * Mengunci santri yang dipilih oleh orang tua SECARA PERMANEN (SELAMANYA).
+ * Mengunci santri yang dipilih oleh orang tua SECARA PERMANEN (Mendukung 1 atau Banyak Anak).
+ * @param mysqli $conn
+ * @param int $orangtua_id
+ * @param int|int[] $santri_ids
  */
-function lockSantriForOrangtua($conn, $orangtua_id, $santri_id) {
-    $santri_id = (int)$santri_id;
-    if ($santri_id <= 0) return false;
+function lockSantriForOrangtua($conn, $orangtua_id, $santri_ids) {
+    if (!is_array($santri_ids)) {
+        $santri_ids = [(int)$santri_ids];
+    }
+    $santri_ids = array_unique(array_filter(array_map('intval', $santri_ids)));
+    if (empty($santri_ids)) return false;
 
     initOrangtuaLockTable($conn);
     $user_key = $conn->real_escape_string(getOrangtuaUserKey($orangtua_id));
 
-    // Simpan ke DB secara permanen
-    $conn->query("INSERT INTO orangtua_locked_santri (user_key, santri_id) VALUES ('$user_key', $santri_id) ON DUPLICATE KEY UPDATE santri_id = $santri_id");
-
-    // Simpan relasi resmi jika orang tua biasa
-    if ((int)$orangtua_id > 0 && (int)$orangtua_id !== 9999) {
-        @$conn->query("INSERT IGNORE INTO santri_orangtua_link (santri_id, orangtua_id) VALUES ($santri_id, ".(int)$orangtua_id.")");
+    // Reset dan simpan daftar ananda yang dikunci untuk akun ini
+    $conn->query("DELETE FROM orangtua_locked_santri WHERE user_key = '$user_key'");
+    foreach ($santri_ids as $sid) {
+        $conn->query("INSERT IGNORE INTO orangtua_locked_santri (user_key, santri_id) VALUES ('$user_key', $sid)");
+        
+        // Simpan relasi resmi jika akun orang tua biasa
+        if ((int)$orangtua_id > 0 && (int)$orangtua_id !== 9999) {
+            @$conn->query("INSERT IGNORE INTO santri_orangtua_link (santri_id, orangtua_id) VALUES ($sid, ".(int)$orangtua_id.")");
+        }
     }
 
     // Simpan ke Session & Cookie 10 Tahun
-    $_SESSION['orangtua_locked_santri_id'] = $santri_id;
-    $_SESSION['orangtua_active_santri_id'] = $santri_id;
+    $_SESSION['orangtua_locked_santri_ids'] = $santri_ids;
+    $_SESSION['orangtua_active_santri_id'] = $santri_ids[0];
     if (!headers_sent()) {
-        setcookie('_vqi_locked_santri_id', $santri_id, time() + (86400 * 365 * 10), "/");
-        setcookie('orangtua_active_santri_id', $santri_id, time() + (86400 * 365 * 10), "/");
+        setcookie('_vqi_locked_santri_ids', implode(',', $santri_ids), time() + (86400 * 365 * 10), "/");
+        setcookie('orangtua_active_santri_id', $santri_ids[0], time() + (86400 * 365 * 10), "/");
     }
 
     return true;
 }
 
-// Handler Reset Kunci khusus Super Admin
+/**
+ * Membuka / Reset kunci ananda
+ */
+function unlockSantriForOrangtua($conn, $orangtua_id) {
+    initOrangtuaLockTable($conn);
+    $user_key = $conn->real_escape_string(getOrangtuaUserKey($orangtua_id));
+    $conn->query("DELETE FROM orangtua_locked_santri WHERE user_key = '$user_key'");
+    unset($_SESSION['orangtua_locked_santri_ids']);
+    unset($_SESSION['orangtua_locked_santri_id']);
+    unset($_SESSION['orangtua_active_santri_id']);
+    if (!headers_sent()) {
+        setcookie('_vqi_locked_santri_ids', '', time() - 3600, "/");
+        setcookie('_vqi_locked_santri_id', '', time() - 3600, "/");
+        setcookie('orangtua_active_santri_id', '', time() - 3600, "/");
+    }
+    return true;
+}
+
+// 1. Handler Form Kunci Multi-Ananda (POST dari Modal / Checkbox)
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'lock_multiple_ananda') {
+    $p_ids = array_filter(array_map('intval', $_POST['santri_ids'] ?? []));
+    if (!empty($p_ids)) {
+        lockSantriForOrangtua($conn, $_SESSION['orangtua_id'] ?? 0, $p_ids);
+        $redirect = strtok($_SERVER["REQUEST_URI"], '?');
+        header("Location: " . $redirect);
+        exit;
+    }
+}
+
+// 2. Handler Reset Kunci khusus Super Admin
 if (isset($_GET['action']) && $_GET['action'] === 'unlock_ananda') {
     $is_admin = (
         ((int)($_SESSION['orangtua_id'] ?? 0) === 9999) ||
         (isset($_SESSION['app_username']) && in_array(strtolower($_SESSION['app_username']), ['winsyah', 'viqi']))
     );
     if ($is_admin) {
-        initOrangtuaLockTable($conn);
-        $user_key = $conn->real_escape_string(getOrangtuaUserKey($_SESSION['orangtua_id'] ?? 9999));
-        $conn->query("DELETE FROM orangtua_locked_santri WHERE user_key = '$user_key'");
-        unset($_SESSION['orangtua_locked_santri_id']);
-        unset($_SESSION['orangtua_active_santri_id']);
-        if (!headers_sent()) {
-            setcookie('_vqi_locked_santri_id', '', time() - 3600, "/");
-            setcookie('orangtua_active_santri_id', '', time() - 3600, "/");
-        }
+        unlockSantriForOrangtua($conn, $_SESSION['orangtua_id'] ?? 9999);
         $redirect = strtok($_SERVER["REQUEST_URI"], '?');
         header("Location: " . $redirect);
         exit;
@@ -146,16 +189,21 @@ if (isset($_GET['action']) && $_GET['action'] === 'unlock_ananda') {
 
 /**
  * Mengambil daftar santri yang SAH milik orang tua yang sedang login.
- * JIKA SUDAH DIKUNCI: HANYA mengembalikan 1 santri tersebut selamanya!
- * JIKA BELUM DIKUNCI: Mengembalikan daftar pilihan santri untuk pemilihan 1x.
+ * JIKA SUDAH DIKUNCI: HANYA mengembalikan anak-anak yang dikunci tersebut (1 atau Banyak Bersaudara).
+ * JIKA BELUM DIKUNCI: Mengembalikan daftar pilihan santri untuk pemilihan awal.
  */
 function getOrangtuaSantriList($conn, $orangtua_id) {
     // 1. Cek apakah orang tua sudah pernah memilih dan terkunci permanen
-    $locked_id = getLockedSantriId($conn, $orangtua_id);
-    if ($locked_id > 0) {
-        $res = $conn->query("SELECT id, nama_lengkap, kelas_sekarang, kamar_asrama, foto_santri FROM buku_induk_santri WHERE id = $locked_id");
-        if ($res && $r = $res->fetch_assoc()) {
-            return [$r]; // Kembalikan HANYA 1 santri ini selamanya!
+    $locked_ids = getLockedSantriIds($conn, $orangtua_id);
+    if (!empty($locked_ids)) {
+        $in = implode(',', $locked_ids);
+        $res = $conn->query("SELECT id, nama_lengkap, kelas_sekarang, kamar_asrama, foto_santri FROM buku_induk_santri WHERE id IN ($in) ORDER BY nama_lengkap ASC");
+        if ($res && $res->num_rows > 0) {
+            $list = [];
+            while ($r = $res->fetch_assoc()) {
+                $list[] = $r;
+            }
+            return $list; // Kembalikan HANYA anak-anak mereka saja selamanya!
         }
     }
 
@@ -186,15 +234,18 @@ function getOrangtuaSantriList($conn, $orangtua_id) {
 
 /**
  * Menentukan Ananda Aktif:
- * - Jika ada pilihan baru saat belum dikunci -> langsung kunci sekarang selamanya & reload.
- * - Jika sudah dikunci -> kunci permanen santri tersebut dan abaikan manipulasi URL.
+ * - Jika memilih dari URL (?santri_id=...):
+ *   - Jika belum dikunci -> langsung kunci anak ini dan reload.
+ *   - Jika sudah dikunci -> pastikan santri tersebut ada di daftar ananda sahnya (tamper-proof).
+ * - Mengembalikan data lengkap ananda yang sedang aktif.
  */
 function getOrangtuaActiveSantri($conn, $orangtua_id, $santri_list) {
     if (empty($santri_list)) {
         return null;
     }
 
-    $locked_id = getLockedSantriId($conn, $orangtua_id);
+    $valid_ids = array_map('intval', array_column($santri_list, 'id'));
+    $locked_ids = getLockedSantriIds($conn, $orangtua_id);
 
     // Ambil parameter jika ada yang memilih dari URL
     $req_id = 0;
@@ -204,28 +255,38 @@ function getOrangtuaActiveSantri($conn, $orangtua_id, $santri_list) {
         $req_id = (int)$_GET['id'];
     }
 
-    // Jika BELUM dikunci dan orang tua memilih salah satu anak: KUNCI SEKARANG SELAMANYA!
-    if ($locked_id <= 0 && $req_id > 0) {
-        lockSantriForOrangtua($conn, $orangtua_id, $req_id);
-        $locked_id = $req_id;
+    // Jika BELUM dikunci dan orang tua memilih 1 anak via GET: Langsung kunci 1 anak ini
+    if (empty($locked_ids) && $req_id > 0) {
+        lockSantriForOrangtua($conn, $orangtua_id, [$req_id]);
         $redirect = strtok($_SERVER["REQUEST_URI"], '?');
         header("Location: " . $redirect);
         exit;
     }
 
-    // Jika SUDAH DIKUNCI: Selalu gunakan santri yang terkunci (Tamper-proof)
-    if ($locked_id > 0) {
-        foreach ($santri_list as $s) {
-            if ((int)$s['id'] === $locked_id) {
-                return $s;
-            }
-        }
-        $res = $conn->query("SELECT id, nama_lengkap, kelas_sekarang, kamar_asrama, foto_santri FROM buku_induk_santri WHERE id = $locked_id");
-        if ($res && $r = $res->fetch_assoc()) {
-            return $r;
+    // Tentukan ananda yang sedang aktif di antara ananda sah
+    $active_id = 0;
+    if ($req_id > 0 && in_array($req_id, $valid_ids)) {
+        $active_id = $req_id;
+    } elseif (isset($_SESSION['orangtua_active_santri_id']) && in_array((int)$_SESSION['orangtua_active_santri_id'], $valid_ids)) {
+        $active_id = (int)$_SESSION['orangtua_active_santri_id'];
+    } elseif (isset($_COOKIE['orangtua_active_santri_id']) && in_array((int)$_COOKIE['orangtua_active_santri_id'], $valid_ids)) {
+        $active_id = (int)$_COOKIE['orangtua_active_santri_id'];
+    } else {
+        $active_id = $valid_ids[0];
+    }
+
+    // Perbarui session & cookie active child
+    $_SESSION['orangtua_active_santri_id'] = $active_id;
+    if (!headers_sent()) {
+        setcookie('orangtua_active_santri_id', $active_id, time() + (86400 * 30), "/");
+    }
+
+    // Kembalikan objek data santri aktif
+    foreach ($santri_list as $s) {
+        if ((int)$s['id'] === $active_id) {
+            return $s;
         }
     }
 
-    // Fallback jika belum pernah memilih sama sekali
     return $santri_list[0];
 }

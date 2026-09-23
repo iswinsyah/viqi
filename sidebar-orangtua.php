@@ -72,6 +72,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
+<!-- MODAL PILIH ANANDA (BISA LEBIH DARI 1 ANAK BERSAUDARA) -->
+<?php include_once __DIR__ . '/modal-pilih-ananda.php'; ?>
+
 <!-- BOTTOMBAR UNIVERSAL (MOBILE) -->
 <?php include_once __DIR__ . '/bottombar-universal.php'; ?>
 

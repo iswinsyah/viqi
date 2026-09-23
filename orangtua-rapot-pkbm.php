@@ -135,34 +135,77 @@ $active_menu = 'orangtua_rapot_pkbm';
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-purple-50/20 p-4 sm:p-6 lg:p-8">
             
             <!-- FILTER BAR -->
-            <div class="bg-white p-5 rounded-2xl border border-purple-100 shadow-sm mb-6 no-print max-w-4xl mx-auto">
-                <form method="GET" class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                    <?php if (count($santri_anak) > 1): ?>
-                        <div>
-                            <label class="block text-xs font-bold uppercase tracking-wider text-teal-900 mb-1.5">Pilih Ananda</label>
-                            <select name="santri_id" onchange="this.form.submit()" class="w-full px-3 py-2 border border-teal-200 rounded-xl text-xs bg-white font-bold text-teal-950">
-                                <option value="">-- Pilih Ananda (Pilihan 1x Terkunci) --</option>
-                                <?php foreach ($santri_anak as $sa): ?>
-                                    <option value="<?= $sa['id'] ?>">
-                                        <?= htmlspecialchars($sa['nama_lengkap']) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                <div class="mb-4">
+                    <?php 
+                    $is_locked = !empty(getLockedSantriIds($conn, $orangtua_id));
+                    ?>
+                    <?php if ($is_locked && count($santri_anak) > 1): ?>
+                        <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-teal-100 shadow-xs flex-wrap">
+                            <label class="text-xs font-bold text-[#0b8478] whitespace-nowrap flex items-center gap-1.5">
+                                <i class="fas fa-child"></i> Pilih Ananda:
+                            </label>
+                            <form method="GET" class="inline-flex items-center gap-2">
+                                <input type="hidden" name="tahun_ajaran" value="<?= htmlspecialchars($filters['tahun_ajaran']) ?>">
+                                <input type="hidden" name="semester" value="<?= htmlspecialchars($filters['semester']) ?>">
+                                <select name="santri_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:ring-2 focus:ring-[#0b8478] focus:border-[#0b8478] font-bold text-slate-800 transition">
+                                    <?php foreach ($santri_anak as $sa): ?>
+                                        <option value="<?= $sa['id'] ?>" <?= ($sa['id'] == $santri_id) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($sa['nama_lengkap']) ?> (<?= htmlspecialchars($sa['kelas_sekarang'] ?? 'Santri') ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </form>
+                            <button type="button" onclick="openPilihAnandaModal()" class="text-[10px] text-teal-800 hover:text-teal-950 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-xl font-bold ml-1 flex items-center gap-1 transition" title="Kelola Ananda Bersaudara">
+                                <i class="fas fa-users text-[10px]"></i> Kelola Saudara
+                            </button>
+                            <?php if ($is_super_admin): ?>
+                                <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-rose-600 hover:text-rose-800 underline font-semibold ml-1" title="Reset Kunci (Khusus Super Admin)">
+                                    <i class="fas fa-key text-[9px]"></i> Reset
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php elseif ($is_locked && !empty($selected_child)): ?>
+                        <div class="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 text-teal-900 px-3.5 py-2 rounded-xl text-xs font-bold flex-wrap">
+                            <i class="fas fa-lock text-[#0b8478]"></i>
+                            <span>Ananda: <strong class="text-teal-950"><?= htmlspecialchars($selected_child['nama_lengkap'] ?? 'Santri') ?></strong></span>
+                            <span class="text-[10px] bg-teal-200/80 text-teal-900 px-2 py-0.5 rounded-full font-bold">Terkunci</span>
+                            <button type="button" onclick="openPilihAnandaModal()" class="text-[10px] text-teal-700 hover:text-teal-900 underline font-semibold ml-1.5 flex items-center gap-1" title="Tambah Saudara Kandung">
+                                <i class="fas fa-user-plus text-[9px]"></i> Tambah Saudara
+                            </button>
+                            <?php if ($is_super_admin): ?>
+                                <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-rose-600 hover:text-rose-800 underline font-semibold ml-1" title="Reset Kunci (Khusus Super Admin)">
+                                    <i class="fas fa-key text-[9px]"></i> Reset
+                                </a>
+                            <?php endif; ?>
                         </div>
                     <?php else: ?>
-                        <div class="sm:col-span-3 pb-2">
-                            <div class="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 text-teal-900 px-3.5 py-1.5 rounded-xl text-xs font-bold">
-                                <i class="fas fa-lock text-[#0b8478]"></i>
-                                <span>Ananda: <strong class="text-teal-950"><?= htmlspecialchars($selected_child['nama_lengkap'] ?? 'Santri') ?></strong></span>
-                                <span class="text-[10px] bg-teal-200/80 text-teal-900 px-2 py-0.5 rounded-full font-bold">Terkunci</span>
-                                <?php if ($is_super_admin): ?>
-                                    <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-teal-700 hover:text-rose-600 underline font-semibold ml-1.5" title="Ganti Ananda (Khusus Super Admin)">
-                                        <i class="fas fa-key text-[9px]"></i> Ganti Ananda
-                                    </a>
-                                <?php endif; ?>
-                            </div>
+                        <!-- BELUM TERKUNCI: TAMPILKAN DROPDOWN DAN TOMBOL PILIH LEBIH DARI 1 -->
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <form method="GET" class="flex items-center gap-2 bg-white px-3 py-2 rounded-2xl border border-teal-100 shadow-xs">
+                                <label class="text-xs font-bold text-[#0b8478] whitespace-nowrap flex items-center gap-1.5">
+                                    <i class="fas fa-child"></i> Pilih Ananda:
+                                </label>
+                                <input type="hidden" name="tahun_ajaran" value="<?= htmlspecialchars($filters['tahun_ajaran']) ?>">
+                                <input type="hidden" name="semester" value="<?= htmlspecialchars($filters['semester']) ?>">
+                                <select name="santri_id" onchange="this.form.submit()" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50/50 focus:ring-2 focus:ring-[#0b8478] focus:border-[#0b8478] font-bold text-slate-800 transition">
+                                    <option value="">-- Pilih 1 Ananda Langsung --</option>
+                                    <?php foreach ($santri_anak as $sa): ?>
+                                        <option value="<?= $sa['id'] ?>">
+                                            <?= htmlspecialchars($sa['nama_lengkap']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </form>
+                            <button type="button" onclick="openPilihAnandaModal()" class="px-3.5 py-2 bg-[#0b8478] hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition">
+                                <i class="fas fa-users-viewfinder"></i>
+                                <span>Pilih Lebih dari 1 Anak (Bersaudara)</span>
+                            </button>
                         </div>
                     <?php endif; ?>
+                </div>
+
+                <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+                    <input type="hidden" name="santri_id" value="<?= htmlspecialchars($santri_id) ?>">
 
                     <div>
                         <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Tahun Ajaran</label>
