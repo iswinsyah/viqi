@@ -31,83 +31,11 @@ $m_num = date('m');
 $y_num = (int)date('Y');
 $current_ta = ((int)$m_num >= 7) ? $y_num . '/' . ($y_num + 1) : ($y_num - 1) . '/' . $y_num;
 
-// CEK STATUS DATA CP SAAT INI (KALI INI LANGSUNG BEKERJA & SIMPAN KE MENU CP)
-$res_count_cp = $conn->query("SELECT COUNT(*) as cnt FROM master_cp_kurikulum WHERE status_verifikasi = 'terverifikasi'");
-$total_cp_current = $res_count_cp ? (int)$res_count_cp->fetch_assoc()['cnt'] : 0;
-$need_initial_run = ($total_cp_current < 20 || (isset($_GET['run_now']) && $_GET['run_now'] === '1'));
+require_once __DIR__ . '/../api-cp-ai.php';
 
-if ($need_initial_run) {
-    require_once __DIR__ . '/../api-cp-ai.php';
-    $jenjang_init = ['SMP', 'SMA'];
-    $init_saved_count = 0;
-
-    foreach ($jenjang_init as $j_init) {
-        $fase_init = ($j_init === 'SMP') ? 'Fase D' : 'Fase E & F';
-        $res_m_init = $conn->query("SELECT DISTINCT nama_mapel, kode_mapel FROM master_mapel WHERE (kategori_mapel = 'Diknas' OR kategori_mapel = 'Nasional') AND status_aktif = 1 ORDER BY nama_mapel ASC");
-        
-        if ($res_m_init) {
-            while ($rm = $res_m_init->fetch_assoc()) {
-                $nm = $rm['nama_mapel'];
-                $kd = $rm['kode_mapel'] ?? '';
-                $is_sma_only = in_array(strtolower($nm), ['fisika', 'kimia', 'biologi', 'sosiologi', 'ekonomi', 'geografi', 'sejarah']);
-                $is_smp_only = in_array(strtolower($nm), ['ipa (ilmu pengetahuan alam)', 'ips (ilmu pengetahuan sosial)', 'ipa', 'ips']);
-
-                if ($j_init === 'SMP' && $is_sma_only) continue;
-                if ($j_init === 'SMA' && $is_smp_only) continue;
-
-                $kb = getOfficialCPKnowledgeBase($nm, $j_init, $fase_init);
-                $nm_esc = $conn->real_escape_string($nm);
-                $kd_esc = $conn->real_escape_string($kd);
-                $rasional = $conn->real_escape_string($kb['rasional_mapel']);
-                $tujuan = $conn->real_escape_string($kb['tujuan_mapel']);
-                $karakteristik = $conn->real_escape_string($kb['karakteristik_mapel']);
-                $elemen_json = $conn->real_escape_string(json_encode($kb['elemen_cp'], JSON_UNESCAPED_UNICODE));
-                $sumber = $conn->real_escape_string($kb['sumber_rujukan']);
-
-                // Tuangkan ke master_cp_kurikulum
-                $conn->query("INSERT INTO master_cp_kurikulum 
-                    (jenjang, fase, nama_mapel, kode_mapel, rasional_mapel, tujuan_mapel, karakteristik_mapel, elemen_cp, sumber_rujukan, status_verifikasi, last_generated_at)
-                    VALUES ('$j_init', '$fase_init', '$nm_esc', '$kd_esc', '$rasional', '$tujuan', '$karakteristik', '$elemen_json', '$sumber', 'terverifikasi', NOW())
-                    ON DUPLICATE KEY UPDATE 
-                        kode_mapel = IF('$kd_esc' != '', '$kd_esc', kode_mapel),
-                        rasional_mapel = VALUES(rasional_mapel),
-                        tujuan_mapel = VALUES(tujuan_mapel),
-                        karakteristik_mapel = VALUES(karakteristik_mapel),
-                        elemen_cp = VALUES(elemen_cp),
-                        sumber_rujukan = VALUES(sumber_rujukan),
-                        status_verifikasi = 'terverifikasi',
-                        last_generated_at = NOW()");
-
-                // Auto-sync ke master_silabus asatidz
-                $kelas_silabus = "{$fase_init} ({$j_init})";
-                $silabus_cp = [];
-                foreach ($kb['elemen_cp'] as $el) {
-                    $silabus_cp[] = [
-                        'elemen' => $el['elemen'],
-                        'cp' => $el['deskripsi'] ?? ($el['cp'] ?? '')
-                    ];
-                }
-                $silabus_json = $conn->real_escape_string(json_encode($silabus_cp, JSON_UNESCAPED_UNICODE));
-
-                $chk_s = $conn->query("SELECT id FROM master_silabus WHERE mata_pelajaran = '$nm_esc' AND kelas LIKE '%$j_init%'");
-                if ($chk_s && $chk_s->num_rows > 0) {
-                    $s_id = $chk_s->fetch_assoc()['id'];
-                    $conn->query("UPDATE master_silabus SET deskripsi_mapel='$rasional', capaian_pembelajaran='$silabus_json', kelas='$kelas_silabus' WHERE id=$s_id");
-                } else {
-                    $conn->query("INSERT INTO master_silabus (mata_pelajaran, kelas, deskripsi_mapel, capaian_pembelajaran) VALUES ('$nm_esc', '$kelas_silabus', '$rasional', '$silabus_json')");
-                }
-
-                $init_saved_count++;
-            }
-        }
-    }
-
-    // Catat log runner awal
-    $conn->query("INSERT INTO log_cp_agent_annual (tahun_ajaran, tanggal_eksekusi, jenjang, total_mapel, keterangan, executed_by) 
-        VALUES ('$current_ta', NOW(), 'SMP & SMA', $init_saved_count, 'Eksekusi Langsung: Riset Baku BSKAP 032/H/KR/2024 & Tuang ke Menu CP', 'Initial Auto-Runner')");
-
-    $total_cp_current = $init_saved_count;
-}
+// Pastikan seluruh 27 CP resmi pemerintah tertuang lengkap ke database & silabus
+$is_force_run = isset($_GET['run_now']) && $_GET['run_now'] === '1';
+$total_cp_current = ensureOfficialCPPopulated($conn, $is_force_run);
 
 $res_last_cron = $conn->query("SELECT * FROM log_cp_agent_annual ORDER BY id DESC LIMIT 1");
 $last_annual_exec = ($res_last_cron && $res_last_cron->num_rows > 0) ? $res_last_cron->fetch_assoc() : null;
