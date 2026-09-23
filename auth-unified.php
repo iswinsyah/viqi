@@ -222,8 +222,8 @@ function syncLegacySessions($user) {
     // 3. Sesi Walisantri
     if ($user_type === 'walisantri' || hasRole('orangtua')) {
         $_SESSION['orangtua_logged_in'] = true;
-        $_SESSION['orangtua_id'] = $ref_id;
-        $_SESSION['orangtua_nama'] = $user['nama_lengkap'] ?? '';
+        $_SESSION['orangtua_id'] = (isSuperAdmin() && empty($_SESSION['is_impersonating'])) ? 9999 : $ref_id;
+        $_SESSION['orangtua_nama'] = $user['nama_lengkap'] ?? 'Orang Tua';
     }
 }
 ?>

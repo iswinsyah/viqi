@@ -510,16 +510,29 @@ foreach ($roles as $r) {
 }
 $can_see_santri = $user_has_santri_role;
 
+// Role Orang Tua / Walisantri (Ruang Orang Tua: bisa dilihat oleh Role Orang Tua / Wali Santri atau Super Admin)
+$user_has_orangtua_role = false;
+foreach ($roles as $r) {
+    $r_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+    if (in_array($r_norm, ['orangtua', 'orang_tua', 'wali_santri', 'walisantri'])) {
+        $user_has_orangtua_role = true;
+        break;
+    }
+}
+$can_see_orangtua = $user_has_orangtua_role;
+
 // Sinkronisasi dengan Matrix Filter Simulasi Multi-Role di Header Dashboard
 if (!$is_all_view) {
     if ($is_none_view) {
         $can_see_web = false;
         $can_see_marketing = false;
         $can_see_santri = false;
+        $can_see_orangtua = false;
     } else {
         $can_see_web = false;
         $can_see_marketing = false;
         $can_see_santri = false;
+        $can_see_orangtua = false;
         foreach ($active_views as $av) {
             $av_norm = str_replace([" ", "'"], ["_", ""], strtolower(trim($av)));
             if (in_array($av_norm, $yayasan_core_roles) || ($av_norm === 'super_admin' && $is_admin)) {
@@ -536,12 +549,19 @@ if (!$is_all_view) {
             if (in_array($av_norm, ['santri_rijal', 'santri_nisa', 'santri'])) {
                 $can_see_santri = true;
             }
+            // Aktif jika Orang Tua / Walisantri dipilih pada simulasi
+            if (in_array($av_norm, ['orangtua', 'orang_tua', 'wali_santri', 'walisantri'])) {
+                $can_see_orangtua = true;
+            }
         }
     }
 } else {
     // Mode "Semua Role": jika user memiliki peran santri atau super admin melihat semua
     if ($is_admin || $user_has_santri_role) {
         $can_see_santri = true;
+    }
+    if ($is_admin || $user_has_orangtua_role) {
+        $can_see_orangtua = true;
     }
 }
 
@@ -593,7 +613,20 @@ if ($is_santri_only) {
     $show_absensi_mengajar = false;
     $show_jurnal_mengajar  = false;
     $can_see_santri        = true; // Pastikan Ruang Santri tampil
+    $can_see_orangtua      = false;
 }
+
+// Data Menu Grid Card Ruang Orangtua / Walisantri (8 Menu Lengkap dari Sidebar Ortu)
+$ruang_orangtua_cards = [
+    ['label' => 'Dashboard Ortu', 'icon' => 'fas fa-house-user', 'href' => 'dashboard-orangtua.php', 'desc' => 'Dashboard Utama & Ringkasan Ananda'],
+    ['label' => 'Kalender Akademik', 'icon' => 'fas fa-calendar-alt', 'href' => 'kalender-akademik.php', 'desc' => 'Kalender Akademik & Agenda Kegiatan'],
+    ['label' => 'Setoran Hafalan', 'icon' => 'fas fa-book-quran', 'href' => 'orangtua-hafalan.php', 'desc' => 'Setoran Hafalan Al-Qur\'an Ananda'],
+    ['label' => 'Ibadah Harian', 'icon' => 'fas fa-mosque', 'href' => 'orangtua-ibadah-harian.php', 'desc' => 'Monitoring Ibadah Harian Ananda'],
+    ['label' => 'Rapor Akademik', 'icon' => 'fas fa-graduation-cap', 'href' => 'orangtua-rapot.php', 'desc' => 'Rapor Hasil Belajar Ananda'],
+    ['label' => 'Raport PKBM', 'icon' => 'fas fa-file-invoice', 'href' => 'orangtua-rapot-pkbm.php', 'desc' => 'Raport Diknas Kesetaraan PKBM'],
+    ['label' => 'Pembayaran SPP', 'icon' => 'fas fa-money-bill-wave', 'href' => 'pembayaran-spp.php', 'desc' => 'Informasi & Pembayaran SPP Bulanan'],
+    ['label' => 'Kirim Uang Saku', 'icon' => 'fas fa-wallet', 'href' => 'kirim-uang-saku.php', 'desc' => 'Top Up & Transfer Saldo Uang Saku Digital'],
+];
 
 // Data Menu Grid Card Ruang Web (Pengaturan Web)
 $ruang_web_cards = [
@@ -1190,6 +1223,62 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                             </span>
                         </div>
                         <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ($can_see_orangtua && !$is_santri_only): ?>
+            <!-- ========================================================= -->
+            <!-- FRAME KHUSUS: RUANG ORANGTUA / WALISANTRI                 -->
+            <!-- (Akses: Role Orang Tua, Wali Santri, dan Super Admin)     -->
+            <!-- ========================================================= -->
+            <div class="bg-white rounded-[32px] md:rounded-[36px] p-6 sm:p-8 shadow-xl shadow-teal-950/5 border border-teal-50 mt-6 sm:mt-7 transition-all duration-200 relative overflow-hidden">
+                <!-- Watermark Background Decorative Icon -->
+                <div class="absolute -right-6 -bottom-6 text-teal-100/20 pointer-events-none text-9xl">
+                    <i class="fas fa-hands-holding-child"></i>
+                </div>
+
+                <!-- HEADER FRAME RUANG ORANG TUA -->
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-6 pb-3 border-b border-teal-100/70 relative z-10">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg font-black shadow-inner flex-shrink-0">
+                            <i class="fas fa-hands-holding-child"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-slate-800 text-sm sm:text-base tracking-tight flex items-center gap-2">
+                                Ruang Orangtua / Walisantri
+                                <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0b8478] border border-teal-200 uppercase tracking-wider">Akses Orang Tua & Wali</span>
+                            </h3>
+                            <p class="text-[11px] text-slate-400 font-medium">Monitoring hafalan, ibadah, rapor ananda, kalender akademik, serta pembayaran SPP & uang saku</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="dashboard-orangtua.php" class="px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] font-bold text-[11px] flex items-center gap-1 border border-teal-200 transition">
+                            <i class="fas fa-arrow-up-right-from-square text-[10px]"></i> Buka Portal Ortu
+                        </a>
+                        <span class="hidden sm:inline-flex items-center gap-1.5 text-[10px] font-bold text-teal-800 bg-teal-50/90 px-3 py-1 rounded-xl border border-teal-200/80 shadow-xs">
+                            <i class="fas fa-grip text-[#0b8478]"></i> <?= count($ruang_orangtua_cards) ?> Menu
+                        </span>
+                    </div>
+                </div>
+
+                <!-- GRID CARD CONTAINER RUANG ORANG TUA (4 KOLOM) -->
+                <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 gap-y-6 sm:gap-y-8 gap-x-2 sm:gap-x-6 items-start justify-items-center relative z-10">
+                    <?php foreach ($ruang_orangtua_cards as $card): ?>
+                    <div class="flex flex-col items-center group w-full text-center tap-highlight-transparent select-none transition-transform duration-200">
+                        <a href="<?= htmlspecialchars($card['href']) ?>" class="flex flex-col items-center w-full focus:outline-none" title="<?= htmlspecialchars($card['desc'] ?? $card['label']) ?>">
+                            <!-- Squircle Box Button (#0b8478 gradient) -->
+                            <div class="squircle-icon w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-gradient-to-br from-[#0b8478] to-[#065e55] group-hover:from-[#097368] group-hover:to-[#044a43] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/15 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
+                                <i class="<?= htmlspecialchars($card['icon']) ?>"></i>
+                            </div>
+
+                            <!-- Label Menu -->
+                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0b8478] transition-colors leading-tight line-clamp-2 max-w-[85px] text-center">
+                                <?= htmlspecialchars($card['label']) ?>
+                            </span>
+                        </a>
                     </div>
                     <?php endforeach; ?>
                 </div>
