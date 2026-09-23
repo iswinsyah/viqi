@@ -222,7 +222,8 @@ if ($cnt_yayasan < 20) {
         ['yayasan_struktur', 'Ruang Yayasan', 23, 'fas fa-sitemap', 'yayasan2/struktur-jobdesc.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Struktur', 'Struktur Organisasi'],
         ['yayasan_jobdesc', 'Ruang Yayasan', 24, 'fas fa-id-card', 'yayasan2/jobdesc.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Jobdesc', 'Job Description Pegawai'],
         ['yayasan_peraturan', 'Ruang Yayasan', 25, 'fas fa-gavel', 'yayasan2/admin-peraturan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SOP', 'SOP & Peraturan Yayasan'],
-        ['yayasan_solopreneur', 'Ruang Yayasan', 26, 'fas fa-rocket', 'yayasan2/kurikulum-solopreneur.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Solopreneur', 'Inkubator Kurikulum Solopreneur']
+        ['yayasan_solopreneur', 'Ruang Yayasan', 26, 'fas fa-rocket', 'yayasan2/kurikulum-solopreneur.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Solopreneur', 'Inkubator Kurikulum Solopreneur'],
+        ['yayasan_cp', 'Ruang Yayasan', 6, 'fas fa-brain', 'yayasan2/kurikulum-cp.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'CP (AI)', 'Capaian Pembelajaran (CP) AI']
     ];
     foreach ($master_seed_menus as $m) {
         list($key, $grp, $ord, $ico, $hrf, $al_roles, $sh_lbl, $fl_lbl) = $m;
@@ -258,6 +259,17 @@ $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles)
 $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
     VALUES ('kpi_musyrif', 'KPI Musyrif Asrama', 'KPI Musyrif') 
     ON DUPLICATE KEY UPDATE custom_label='KPI Musyrif Asrama', short_label='KPI Musyrif'");
+
+// Pastikan yayasan_cp terdaftar di Ruang Yayasan (Capaian Pembelajaran AI)
+$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+    VALUES ('Ruang Yayasan', 'yayasan_cp', 6, 'fas fa-brain', 'yayasan2/kurikulum-cp.php') 
+    ON DUPLICATE KEY UPDATE menu_group='Ruang Yayasan', icon='fas fa-brain', href='yayasan2/kurikulum-cp.php'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+    VALUES ('yayasan_cp', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan') 
+    ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan'");
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('yayasan_cp', 'Capaian Pembelajaran (CP) AI', 'CP (AI)') 
+    ON DUPLICATE KEY UPDATE custom_label='Capaian Pembelajaran (CP) AI', short_label='CP (AI)'");
 
 $db_permissions = [];
 $res_perm = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
@@ -308,6 +320,7 @@ $default_1word_labels = [
     'yayasan_jobdesc'    => 'Jobdesc',
     'yayasan_peraturan'  => 'SOP',
     'yayasan_solopreneur'=> 'Solopreneur',
+    'yayasan_cp'         => 'CP (AI)',
     'emodul'             => 'E-Modul',
     'promes'             => 'Promes',
     'jurnal'             => 'Jurnal',

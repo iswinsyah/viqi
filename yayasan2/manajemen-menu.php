@@ -259,6 +259,7 @@ if ($res_db_menus) {
             'kpi_musyrif' => 'KPI Musyrif',
             'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
             'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)',
+            'yayasan_cp' => 'Capaian Pembelajaran (CP) AI',
             'ruang_web' => 'Ruang Web (CMS & Website)',
             'ruang_marketing' => 'Ruang Marketing & AI'
         ];

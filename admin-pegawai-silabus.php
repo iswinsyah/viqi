@@ -146,7 +146,12 @@ if ($res_mapel && $res_mapel->num_rows > 0) {
                         <textarea name="deskripsi_mapel" rows="2" class="w-full px-4 py-2 border rounded-lg focus:ring-purple-500" placeholder="Jelaskan tujuan utama dari mata pelajaran ini..."><?= $edit_mode ? htmlspecialchars($data_edit['deskripsi_mapel']) : '' ?></textarea>
                     </div>
                     <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Capaian Pembelajaran (CP) per Elemen <span class="text-xs text-gray-500 font-normal">(Format Kurikulum Merdeka)</span></label>
+                        <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                            <label class="block text-sm font-medium text-gray-700">Capaian Pembelajaran (CP) per Elemen <span class="text-xs text-gray-500 font-normal">(Format Kurikulum Merdeka)</span></label>
+                            <button type="button" onclick="tarikCPYayasan()" class="px-3 py-1.5 bg-gradient-to-r from-teal-600 to-[#0b8478] hover:from-teal-700 hover:to-teal-800 text-white rounded-lg text-xs font-bold shadow-xs flex items-center gap-1.5 transition cursor-pointer">
+                                <i class="fas fa-wand-magic-sparkles"></i> Tarik CP Resmi Yayasan (AI)
+                            </button>
+                        </div>
                         <div class="border border-gray-200 rounded-lg overflow-hidden">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
@@ -250,6 +255,77 @@ if ($res_mapel && $res_mapel->num_rows > 0) {
         function hapusBarisCP(btn) {
             const row = btn.closest('tr');
             if (document.querySelectorAll('.cp-row').length > 1) { row.remove(); } else { alert('Minimal harus ada 1 elemen Capaian Pembelajaran.'); }
+        }
+
+        async function tarikCPYayasan() {
+            const mapelEl = document.querySelector('select[name="mata_pelajaran"]');
+            const kelasEl = document.querySelector('select[name="kelas"]');
+            const mapel = mapelEl ? mapelEl.value : '';
+            const kelas = kelasEl ? kelasEl.value : '';
+
+            if (!mapel) {
+                alert('Silakan pilih Mata Pelajaran terlebih dahulu!');
+                if (mapelEl) mapelEl.focus();
+                return;
+            }
+
+            // Tentukan jenjang dari kelas
+            let jenjang = 'SMP';
+            const kLower = kelas.toLowerCase();
+            if (kLower.includes('sma') || kLower.includes('10') || kLower.includes('11') || kLower.includes('12') || kLower.includes('x') || kLower.includes('xi') || kLower.includes('xii')) {
+                jenjang = 'SMA';
+            }
+
+            try {
+                const resp = await fetch(`api-cp-ai.php?action=get_cp_detail&jenjang=${encodeURIComponent(jenjang)}&nama_mapel=${encodeURIComponent(mapel)}`);
+                const res = await resp.json();
+
+                if (res.status === 'success' && res.data) {
+                    const cpData = res.data;
+                    const deskripsiEl = document.querySelector('textarea[name="deskripsi_mapel"]');
+                    if (cpData.rasional_mapel && deskripsiEl && !deskripsiEl.value.trim()) {
+                        deskripsiEl.value = cpData.rasional_mapel;
+                    }
+
+                    let elemenArr = [];
+                    if (Array.isArray(cpData.elemen_cp)) {
+                        elemenArr = cpData.elemen_cp;
+                    } else if (typeof cpData.elemen_cp === 'string') {
+                        try {
+                            elemenArr = JSON.parse(cpData.elemen_cp);
+                        } catch (e) {
+                            elemenArr = [{ elemen: 'Umum', cp: cpData.elemen_cp }];
+                        }
+                    }
+
+                    if (elemenArr.length > 0) {
+                        const container = document.getElementById('cp-container');
+                        container.innerHTML = '';
+                        elemenArr.forEach(item => {
+                            const tr = document.createElement('tr');
+                            tr.className = 'cp-row';
+                            tr.innerHTML = `
+                                <td class="p-2 align-top"><input type="text" name="elemen[]" value="${escapeHtml(item.elemen || '')}" class="w-full px-3 py-2 border rounded focus:ring-purple-500 text-sm font-semibold" placeholder="Cth: Menyimak / Bilangan" required></td>
+                                <td class="p-2 align-top"><textarea name="cp_elemen[]" rows="3" class="w-full px-3 py-2 border rounded focus:ring-purple-500 text-sm" placeholder="Peserta didik mampu..." required>${escapeHtml(item.cp || '')}</textarea></td>
+                                <td class="p-2 align-top text-center"><button type="button" onclick="hapusBarisCP(this)" class="mt-1 text-red-500 hover:text-red-700 p-2" title="Hapus Baris"><i class="fas fa-trash"></i></button></td>
+                            `;
+                            container.appendChild(tr);
+                        });
+                        alert(`Berhasil memuat ${elemenArr.length} Elemen CP Resmi Kemendikbudristek untuk ${mapel} (${jenjang})!`);
+                    } else {
+                        alert('Belum ada data CP untuk mata pelajaran ini di Yayasan.');
+                    }
+                } else {
+                    alert(res.message || 'Data CP belum tersedia.');
+                }
+            } catch (err) {
+                alert('Gagal mengambil data CP: ' + err.message);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
     </script>
 </body>
