@@ -46,7 +46,7 @@ if (!$cek_pilot || $cek_pilot->num_rows === 0) {
     $avatar = 'upload/logo-villa-quran.png';
     $mode = 'agentic';
     $sapaan = "Assalamu'alaikum warahmatullahi wabarakatuh. Ahlan wa sahlan! Saya Ustadz Ibnu Khaldun, tutor AI pendamping belajarmu di mata pelajaran Sosiologi SMA. Mari kita pelajari bersama dinamika masyarakat, interaksi sosial, dan rahasia kejayaan peradaban manusia.";
-    $stmt->bind_param("ssssssssddsss", $m_nama, $k_mapel, $t_tingkat, $f_fase, $n_tutor, $t_rujukan, $b_keahlian, $d_singkat, $gender, $pitch, $rate, $avatar, $mode, $sapaan);
+    $stmt->bind_param("ssssssssddssss", $m_nama, $k_mapel, $t_tingkat, $f_fase, $n_tutor, $t_rujukan, $b_keahlian, $d_singkat, $gender, $pitch, $rate, $avatar, $mode, $sapaan);
     $stmt->execute();
     $stmt->close();
 }
