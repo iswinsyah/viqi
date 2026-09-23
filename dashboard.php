@@ -616,13 +616,12 @@ if ($is_santri_only) {
     $can_see_orangtua      = false;
 }
 
-// Data Menu Grid Card Ruang Orangtua / Walisantri (8 Menu Esensial Fokus Ananda)
+// Data Menu Grid Card Ruang Orangtua / Walisantri (7 Menu Esensial Fokus Ananda)
 $ruang_orangtua_cards = [
     ['label' => 'Setoran Hafalan', 'icon' => 'fas fa-book-quran', 'href' => 'orangtua-hafalan.php', 'desc' => 'Setoran Hafalan Al-Qur\'an Ananda'],
     ['label' => 'Ibadah Harian', 'icon' => 'fas fa-mosque', 'href' => 'orangtua-ibadah-harian.php', 'desc' => 'Monitoring Ibadah Harian Ananda'],
     ['label' => 'Rapor Diniyah', 'icon' => 'fas fa-book-open-reader', 'href' => 'orangtua-rapot-diniyah.php', 'desc' => 'Rapor Kepesantrenan & Kitab Kuning'],
     ['label' => 'Raport PKBM', 'icon' => 'fas fa-file-invoice', 'href' => 'orangtua-rapot-pkbm.php', 'desc' => 'Raport Diknas Kesetaraan PKBM'],
-    ['label' => 'Kalender Akademik', 'icon' => 'fas fa-calendar-alt', 'href' => 'kalender-akademik.php', 'desc' => 'Kalender Akademik & Agenda Kegiatan'],
     ['label' => 'Bimbingan Karir', 'icon' => 'fas fa-route', 'href' => 'orangtua-karir.php', 'desc' => 'Bimbingan Karir & Rekomendasi PTN AI'],
     ['label' => 'Pembayaran SPP', 'icon' => 'fas fa-money-bill-wave', 'href' => 'pembayaran-spp.php', 'desc' => 'Informasi & Pembayaran SPP Bulanan'],
     ['label' => 'Kirim Uang Saku', 'icon' => 'fas fa-wallet', 'href' => 'kirim-uang-saku.php', 'desc' => 'Top Up Saldo & Rekap Uang Saku Digital'],
@@ -1251,7 +1250,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                                 Ruang Orangtua / Walisantri
                                 <span class="text-[9px] px-2 py-0.5 rounded-full font-extrabold bg-teal-50 text-[#0b8478] border border-teal-200 uppercase tracking-wider">Akses Orang Tua & Wali</span>
                             </h3>
-                            <p class="text-[11px] text-slate-400 font-medium">Monitoring hafalan, ibadah harian, rapor PKBM & diniyah, karir, kalender, serta SPP & uang saku ananda</p>
+                            <p class="text-[11px] text-slate-400 font-medium">Monitoring hafalan, ibadah harian, rapor PKBM & diniyah, karir, serta SPP & uang saku ananda</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
