@@ -7,12 +7,45 @@ require_once 'koneksi.php';
 
 // Ambil Pengaturan Brosur Dinamis dari Database
 $cols_brosur_check = [
-    "body_bg_url" => "ALTER TABLE pengaturan_brosur ADD COLUMN body_bg_url TEXT AFTER cover_overlay_opacity",
+    "body_bg_url"          => "ALTER TABLE pengaturan_brosur ADD COLUMN body_bg_url TEXT AFTER cover_overlay_opacity",
     "body_overlay_opacity" => "ALTER TABLE pengaturan_brosur ADD COLUMN body_overlay_opacity DECIMAL(3,2) DEFAULT 0.92 AFTER body_bg_url",
-    "countdown_mode" => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_mode VARCHAR(20) DEFAULT 'auto' AFTER diskon_gelombang",
-    "countdown_target" => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_target DATETIME DEFAULT '2026-12-31 23:59:59' AFTER countdown_mode",
-    "countdown_title" => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_title VARCHAR(150) DEFAULT '⏳ Sisa Waktu Pendaftaran Berakhir:' AFTER countdown_target",
-    "show_countdown" => "ALTER TABLE pengaturan_brosur ADD COLUMN show_countdown TINYINT(1) DEFAULT 1 AFTER countdown_title"
+    "countdown_mode"       => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_mode VARCHAR(20) DEFAULT 'auto' AFTER diskon_gelombang",
+    "countdown_target"     => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_target DATETIME DEFAULT '2026-12-31 23:59:59' AFTER countdown_mode",
+    "countdown_title"      => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_title VARCHAR(150) DEFAULT '⏳ Sisa Waktu Pendaftaran Berakhir:' AFTER countdown_target",
+    "show_countdown"       => "ALTER TABLE pengaturan_brosur ADD COLUMN show_countdown TINYINT(1) DEFAULT 1 AFTER countdown_title",
+    "cover_elements_pos"   => "ALTER TABLE pengaturan_brosur ADD COLUMN cover_elements_pos TEXT AFTER show_countdown",
+    "theme_color_mode"     => "ALTER TABLE pengaturan_brosur ADD COLUMN theme_color_mode VARCHAR(50) DEFAULT 'emerald_gold' AFTER cover_elements_pos",
+    "text_color"           => "ALTER TABLE pengaturan_brosur ADD COLUMN text_color VARCHAR(30) DEFAULT '#ffffff' AFTER theme_color_mode",
+    "accent_color"         => "ALTER TABLE pengaturan_brosur ADD COLUMN accent_color VARCHAR(30) DEFAULT '#fbbf24' AFTER text_color",
+    "btn_bg_color"         => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_bg_color VARCHAR(100) DEFAULT '#d97706' AFTER accent_color",
+    "btn_text_color"       => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_text_color VARCHAR(30) DEFAULT '#022d27' AFTER btn_bg_color",
+    "card_bg_style"        => "ALTER TABLE pengaturan_brosur ADD COLUMN card_bg_style VARCHAR(30) DEFAULT 'glass_dark' AFTER btn_text_color",
+    "font_family"          => "ALTER TABLE pengaturan_brosur ADD COLUMN font_family VARCHAR(50) DEFAULT 'Plus Jakarta Sans' AFTER card_bg_style",
+    "judul_utama"          => "ALTER TABLE pengaturan_brosur ADD COLUMN judul_utama VARCHAR(150) DEFAULT 'Villa Quran Indonesia' AFTER font_family",
+    "subjudul"             => "ALTER TABLE pengaturan_brosur ADD COLUMN subjudul VARCHAR(200) DEFAULT 'Sekolah Tahfidz Berasrama Nyaman Ala Villa' AFTER judul_utama",
+    "bismillah_text"       => "ALTER TABLE pengaturan_brosur ADD COLUMN bismillah_text VARCHAR(150) DEFAULT 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ' AFTER subjudul",
+    "tamu_header_text"     => "ALTER TABLE pengaturan_brosur ADD COLUMN tamu_header_text VARCHAR(150) DEFAULT 'Kepada Yth. Calon Wali Santri:' AFTER bismillah_text",
+    "tamu_sambutan_text"   => "ALTER TABLE pengaturan_brosur ADD COLUMN tamu_sambutan_text TEXT AFTER tamu_header_text",
+    "btn_text"             => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_text VARCHAR(100) DEFAULT 'Buka Brosur & Undangan' AFTER tamu_sambutan_text",
+    "show_bismillah"       => "ALTER TABLE pengaturan_brosur ADD COLUMN show_bismillah TINYINT(1) DEFAULT 1 AFTER btn_text",
+    "show_subjudul"        => "ALTER TABLE pengaturan_brosur ADD COLUMN show_subjudul TINYINT(1) DEFAULT 1 AFTER show_bismillah",
+    "show_logo"            => "ALTER TABLE pengaturan_brosur ADD COLUMN show_logo TINYINT(1) DEFAULT 1 AFTER show_subjudul",
+    "show_sambutan"        => "ALTER TABLE pengaturan_brosur ADD COLUMN show_sambutan TINYINT(1) DEFAULT 1 AFTER show_logo",
+    "logo_size"            => "ALTER TABLE pengaturan_brosur ADD COLUMN logo_size INT DEFAULT 80 AFTER show_sambutan",
+    "card_width"           => "ALTER TABLE pengaturan_brosur ADD COLUMN card_width INT DEFAULT 100 AFTER logo_size",
+    "card_padding"         => "ALTER TABLE pengaturan_brosur ADD COLUMN card_padding INT DEFAULT 20 AFTER card_width",
+    "btn_width"            => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_width INT DEFAULT 100 AFTER card_padding",
+    "btn_height"           => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_height INT DEFAULT 52 AFTER btn_width",
+    "text_title_size"      => "ALTER TABLE pengaturan_brosur ADD COLUMN text_title_size INT DEFAULT 22 AFTER btn_height",
+    "text_sub_size"        => "ALTER TABLE pengaturan_brosur ADD COLUMN text_sub_size INT DEFAULT 12 AFTER text_title_size",
+    "show_video"           => "ALTER TABLE pengaturan_brosur ADD COLUMN show_video TINYINT(1) DEFAULT 1 AFTER text_sub_size",
+    "video_url"            => "ALTER TABLE pengaturan_brosur ADD COLUMN video_url TEXT AFTER show_video",
+    "video_width"          => "ALTER TABLE pengaturan_brosur ADD COLUMN video_width INT DEFAULT 100 AFTER video_url",
+    "video_height"         => "ALTER TABLE pengaturan_brosur ADD COLUMN video_height INT DEFAULT 240 AFTER video_width",
+    "show_maps"            => "ALTER TABLE pengaturan_brosur ADD COLUMN show_maps TINYINT(1) DEFAULT 1 AFTER video_height",
+    "maps_url"             => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_url TEXT AFTER show_maps",
+    "maps_width"           => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_width INT DEFAULT 100 AFTER maps_url",
+    "maps_height"          => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_height INT DEFAULT 220 AFTER maps_width"
 ];
 $res_c = $conn->query("DESCRIBE pengaturan_brosur");
 $curr_cols = [];
@@ -42,6 +75,53 @@ $countdown_mode       = !empty($cfg_brosur['countdown_mode']) ? $cfg_brosur['cou
 $countdown_target     = !empty($cfg_brosur['countdown_target']) ? $cfg_brosur['countdown_target'] : '2026-12-31 23:59:59';
 $countdown_title      = !empty($cfg_brosur['countdown_title']) ? htmlspecialchars($cfg_brosur['countdown_title']) : '⏳ Sisa Waktu Pendaftaran Berakhir:';
 $show_countdown       = isset($cfg_brosur['show_countdown']) ? (int)$cfg_brosur['show_countdown'] : 1;
+
+// Tipografi & Redaksi Teks
+$font_family        = !empty($cfg_brosur['font_family']) ? $cfg_brosur['font_family'] : 'Plus Jakarta Sans';
+$judul_utama        = !empty($cfg_brosur['judul_utama']) ? htmlspecialchars($cfg_brosur['judul_utama']) : 'Villa Quran Indonesia';
+$subjudul           = !empty($cfg_brosur['subjudul']) ? htmlspecialchars($cfg_brosur['subjudul']) : 'Sekolah Tahfidz Berasrama Nyaman Ala Villa';
+$bismillah_text     = !empty($cfg_brosur['bismillah_text']) ? htmlspecialchars($cfg_brosur['bismillah_text']) : 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+$tamu_header_text   = !empty($cfg_brosur['tamu_header_text']) ? htmlspecialchars($cfg_brosur['tamu_header_text']) : 'Kepada Yth. Calon Wali Santri:';
+$tamu_sambutan_text = !empty($cfg_brosur['tamu_sambutan_text']) ? $cfg_brosur['tamu_sambutan_text'] : 'Undangan Mahabbah Silaturahmi & Brosur Informasi Pendidikan Putra-Putri Generasi Qur\'ani.';
+$btn_text           = !empty($cfg_brosur['btn_text']) ? htmlspecialchars($cfg_brosur['btn_text']) : 'Buka Brosur & Undangan';
+
+$show_bismillah     = isset($cfg_brosur['show_bismillah']) ? (int)$cfg_brosur['show_bismillah'] : 1;
+$show_subjudul      = isset($cfg_brosur['show_subjudul']) ? (int)$cfg_brosur['show_subjudul'] : 1;
+$show_logo          = isset($cfg_brosur['show_logo']) ? (int)$cfg_brosur['show_logo'] : 1;
+$show_sambutan      = isset($cfg_brosur['show_sambutan']) ? (int)$cfg_brosur['show_sambutan'] : 1;
+
+// Dimensi Ukuran (Lebar & Tinggi)
+$logo_size       = isset($cfg_brosur['logo_size']) ? (int)$cfg_brosur['logo_size'] : 80;
+$card_width      = isset($cfg_brosur['card_width']) ? (int)$cfg_brosur['card_width'] : 100;
+$card_padding    = isset($cfg_brosur['card_padding']) ? (int)$cfg_brosur['card_padding'] : 20;
+$btn_width       = isset($cfg_brosur['btn_width']) ? (int)$cfg_brosur['btn_width'] : 100;
+$btn_height      = isset($cfg_brosur['btn_height']) ? (int)$cfg_brosur['btn_height'] : 52;
+$text_title_size = isset($cfg_brosur['text_title_size']) ? (int)$cfg_brosur['text_title_size'] : 22;
+$text_sub_size   = isset($cfg_brosur['text_sub_size']) ? (int)$cfg_brosur['text_sub_size'] : 12;
+
+// Warna & Kontras
+$text_color     = !empty($cfg_brosur['text_color']) ? htmlspecialchars($cfg_brosur['text_color']) : '#ffffff';
+$accent_color   = !empty($cfg_brosur['accent_color']) ? htmlspecialchars($cfg_brosur['accent_color']) : '#fbbf24';
+$btn_bg_color   = !empty($cfg_brosur['btn_bg_color']) ? htmlspecialchars($cfg_brosur['btn_bg_color']) : '#d97706';
+$btn_text_color = !empty($cfg_brosur['btn_text_color']) ? htmlspecialchars($cfg_brosur['btn_text_color']) : '#022d27';
+$card_bg_style  = !empty($cfg_brosur['card_bg_style']) ? $cfg_brosur['card_bg_style'] : 'glass_dark';
+
+// Video & Maps
+$show_video   = isset($cfg_brosur['show_video']) ? (int)$cfg_brosur['show_video'] : 1;
+$video_url    = !empty($cfg_brosur['video_url']) ? $cfg_brosur['video_url'] : 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+$video_width  = isset($cfg_brosur['video_width']) ? (int)$cfg_brosur['video_width'] : 100;
+$video_height = isset($cfg_brosur['video_height']) ? (int)$cfg_brosur['video_height'] : 240;
+
+$show_maps    = isset($cfg_brosur['show_maps']) ? (int)$cfg_brosur['show_maps'] : 1;
+$maps_url     = !empty($cfg_brosur['maps_url']) ? $cfg_brosur['maps_url'] : 'https://maps.google.com/maps?q=Villa+Quran+Indonesia&t=&z=14&ie=UTF8&iwloc=&output=embed';
+$maps_width   = isset($cfg_brosur['maps_width']) ? (int)$cfg_brosur['maps_width'] : 100;
+$maps_height  = isset($cfg_brosur['maps_height']) ? (int)$cfg_brosur['maps_height'] : 220;
+
+// Posisi Elemen Cover
+$pos_cover = !empty($cfg_brosur['cover_elements_pos']) ? json_decode($cfg_brosur['cover_elements_pos'], true) : [];
+$header_y  = $pos_cover['header_y'] ?? 12;
+$guest_y   = $pos_cover['guest_y'] ?? 45;
+$btn_y     = $pos_cover['btn_y'] ?? 82;
 
 $biaya_pendaftaran = isset($cfg_brosur['biaya_pendaftaran']) ? number_format($cfg_brosur['biaya_pendaftaran'], 0, ',', '.') : '350.000';
 $biaya_pangkal     = isset($cfg_brosur['biaya_pangkal']) ? number_format($cfg_brosur['biaya_pangkal'], 0, ',', '.') : '12.500.000';
@@ -78,10 +158,10 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <meta property="og:image" content="https://villaquranindonesia.com/upload/logo-villa-quran.png">
     <meta property="og:type" content="website">
 
-    <!-- Google Fonts: Plus Jakarta Sans & Amiri Calligraphy -->
+    <!-- Google Fonts Multi-Family: Dynamic Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;700;900&family=Inter:wght@400;600;700&family=Outfit:wght@400;600;800&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -104,7 +184,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                         }
                     },
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"<?= $font_family ?>"', '"Plus Jakarta Sans"', 'sans-serif'],
                         arabic: ['"Amiri"', 'serif'],
                     }
                 }
@@ -117,35 +197,17 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
     <style>
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: '<?= $font_family ?>', 'Plus Jakarta Sans', sans-serif;
             background-color: #f6f7f5;
-            color: #1f2937;
+            color: #1e293b;
             overflow-x: hidden;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Background Islamic Geometric Pattern */
-        .bg-pattern {
-            background-image: radial-gradient(rgba(11, 132, 120, 0.08) 1.5px, transparent 1.5px), radial-gradient(rgba(217, 119, 6, 0.08) 1.5px, #f6f7f5 1.5px);
-            background-size: 36px 36px;
-            background-position: 0 0, 18px 18px;
+        .font-arabic {
+            font-family: 'Amiri', serif;
         }
 
-        /* Gold Gradient Elements */
-        .text-gold-gradient {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .border-gold-gradient {
-            border-image: linear-gradient(135deg, #fbbf24, #d97706, #78350f) 1;
-        }
-
-        .gold-border {
-            border: 1px solid rgba(217, 119, 6, 0.35);
-        }
-
+        /* Gold Glow Effect */
         .gold-glow {
             box-shadow: 0 0 25px rgba(245, 158, 11, 0.25);
         }
@@ -189,7 +251,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- ============================================================ -->
     <!-- 1. FULLSCREEN COVER AMPLOP DIGITAL (OPENING EXPERIENCE)      -->
     <!-- ============================================================ -->
-    <div id="envelope-cover" class="fixed inset-0 z-50 flex items-center justify-center text-white p-4 overflow-y-auto bg-cover bg-center transition-all duration-700" style="background-image: url('<?= $cover_bg_url ?>');">
+    <div id="envelope-cover" class="fixed inset-0 z-50 flex items-center justify-center text-white p-4 overflow-y-auto bg-cover bg-center transition-all duration-700 select-none" style="background-image: url('<?= $cover_bg_url ?>');">
         
         <!-- Ornamen Latar & Overlay Dinamis -->
         <div class="absolute inset-0 bg-gradient-to-br from-[#022c22] via-[#043d35] to-[#021d19]" style="opacity: <?= $cover_opacity ?>;"></div>
@@ -201,43 +263,70 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <div class="relative w-full max-w-md my-auto rounded-3xl p-6 sm:p-8 text-center border border-amber-500/30 shadow-2xl glass-dark backdrop-blur-2xl">
             
             <!-- Ornamen Bismillah -->
-            <p class="font-arabic text-xl sm:text-2xl text-amber-300/90 mb-3 tracking-wide">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+            <?php if ($show_bismillah): ?>
+            <p class="font-arabic text-xl sm:text-2xl mb-3 tracking-wide transition-colors" style="color: <?= $accent_color ?>;">
+                <?= $bismillah_text ?>
+            </p>
+            <?php endif; ?>
             
-            <!-- Logo Villa Quran -->
-            <div class="relative inline-block mb-4">
-                <div class="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-2xl p-2 bg-gradient-to-b from-amber-400/20 to-transparent border border-amber-400/40 flex items-center justify-center shadow-lg">
-                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-md">
+            <!-- Logo Villa Quran (Bulat Sempurna sesuai Lingkaran Logo) -->
+            <?php if ($show_logo): ?>
+            <div class="relative inline-block mb-4" id="cover-logo-block">
+                <div class="mx-auto rounded-full p-1 bg-white border-2 border-emerald-600 shadow-xl overflow-hidden aspect-square flex items-center justify-center transition-all" style="width: <?= $logo_size ?>px; height: <?= $logo_size ?>px;">
+                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-full h-full object-cover rounded-full">
                 </div>
-                <span class="absolute -bottom-2 bg-gradient-to-r from-amber-500 to-amber-600 text-[10px] font-extrabold uppercase px-3 py-0.5 rounded-full text-emerald-950 tracking-wider shadow">Resmi SPMB</span>
+                <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-[10px] font-extrabold uppercase px-3 py-0.5 rounded-full text-emerald-950 tracking-wider shadow whitespace-nowrap">Resmi SPMB</span>
             </div>
+            <?php endif; ?>
 
-            <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">Villa Quran Indonesia</h1>
-            <p class="text-xs text-amber-200/80 font-medium mb-1">Sekolah Tahfidz Berasrama Nyaman Ala Villa</p>
-            <p class="text-[11px] text-amber-300 font-extrabold uppercase tracking-wider mb-6"><?= $periode_gelombang ?> &bull; TA <?= $tahun_ajaran ?></p>
+            <!-- Judul Utama & Subjudul -->
+            <h1 class="font-black tracking-tight leading-tight transition-colors" style="color: <?= $text_color ?>; font-size: <?= $text_title_size ?>px;">
+                <?= $judul_utama ?>
+            </h1>
 
-            <!-- Segel Nama Tamu Calon Wali Santri -->
-            <div class="bg-black/30 border border-amber-500/30 rounded-2xl p-5 mb-6 shadow-inner relative overflow-hidden">
+            <?php if ($show_subjudul): ?>
+            <p class="font-medium mb-1 transition-colors leading-relaxed" style="color: <?= $accent_color ?>; font-size: <?= $text_sub_size ?>px;">
+                <?= $subjudul ?>
+            </p>
+            <?php endif; ?>
+
+            <p class="text-[11px] font-extrabold uppercase tracking-wider mb-6 transition-colors" style="color: <?= $accent_color ?>;">
+                <?= $periode_gelombang ?> &bull; TA <?= $tahun_ajaran ?>
+            </p>
+
+            <!-- Segel Nama Tamu Calon Wali Santri (Ukuran & Lebar Sesuai Pengaturan) -->
+            <div class="mx-auto rounded-2xl mb-6 shadow-inner relative overflow-hidden transition-all <?= ($card_bg_style === 'glass_light') ? 'bg-white/85 border border-emerald-600/40 text-slate-800' : 'bg-black/35 border border-amber-500/30 text-white' ?>" style="width: <?= $card_width ?>%; padding: <?= $card_padding ?>px;">
                 <div class="absolute top-0 right-0 transform translate-x-3 -translate-y-3 w-12 h-12 bg-amber-400/10 rounded-full blur-lg"></div>
-                <p class="text-[11px] uppercase tracking-widest text-amber-300 font-semibold mb-1">Kepada Yth. Calon Wali Santri:</p>
-                <div class="text-lg sm:text-xl font-extrabold text-white leading-snug py-1">
+                
+                <p class="text-[11px] uppercase tracking-widest font-semibold mb-1" style="color: <?= $accent_color ?>;">
+                    <?= $tamu_header_text ?>
+                </p>
+                <div class="text-lg sm:text-xl font-extrabold leading-snug py-1" style="color: <?= ($card_bg_style === 'glass_light') ? '#022d27' : '#ffffff' ?>;">
                     <?= $nama_tamu ?>
                 </div>
                 <?php if (!empty($nama_agen_pengundang)): ?>
-                    <p class="text-[11px] text-emerald-300/90 mt-1 italic"><i class="fas fa-hand-holding-heart mr-1"></i> Rekomendasi: <?= htmlspecialchars($nama_agen_pengundang) ?></p>
+                    <p class="text-[11px] mt-1 italic" style="color: <?= $accent_color ?>;"><i class="fas fa-hand-holding-heart mr-1"></i> Rekomendasi: <?= htmlspecialchars($nama_agen_pengundang) ?></p>
                 <?php endif; ?>
-                <div class="mt-3 pt-3 border-t border-white/10 text-[11px] text-gray-300 leading-relaxed">
-                    Undangan Mahabbah Silaturahmi & Brosur Informasi Pendidikan Putra-Putri Generasi Qur'ani.
+                
+                <?php if ($show_sambutan && !empty($tamu_sambutan_text)): ?>
+                <div class="mt-3 pt-3 border-t border-white/10 text-[11px] leading-relaxed <?= ($card_bg_style === 'glass_light') ? 'text-slate-600' : 'text-gray-300' ?>">
+                    <?= nl2br(htmlspecialchars($tamu_sambutan_text)) ?>
                 </div>
+                <?php endif; ?>
             </div>
 
-            <!-- Tombol Buka Undangan -->
-            <button onclick="bukaUndangan()" class="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-black text-base sm:text-lg py-3.5 px-6 rounded-2xl shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-3 gold-glow group">
-                <span class="w-7 h-7 rounded-full bg-emerald-950 text-amber-400 flex items-center justify-center text-xs group-hover:rotate-12 transition"><i class="fas fa-envelope-open-text"></i></span>
-                <span>Buka Brosur & Undangan</span>
-            </button>
+            <!-- Tombol Buka Undangan (Lebar & Tinggi Dinamis) -->
+            <div class="flex justify-center w-full">
+                <button onclick="bukaUndangan()" class="rounded-2xl shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-3 gold-glow group font-black" style="width: <?= $btn_width ?>%; height: <?= $btn_height ?>px; background: <?= $btn_bg_color ?>; color: <?= $btn_text_color ?>;">
+                    <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs group-hover:rotate-12 transition" style="background: <?= $btn_text_color ?>; color: <?= $btn_bg_color ?>;">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </span>
+                    <span class="text-sm sm:text-base"><?= $btn_text ?></span>
+                </button>
+            </div>
             
-            <p class="text-[11px] text-gray-400 mt-4 flex items-center justify-center gap-1.5">
-                <i class="fas fa-volume-up text-amber-400 text-xs"></i> <span>Dilengkapi alunan backsound syahdu</span>
+            <p class="text-[11px] mt-4 flex items-center justify-center gap-1.5 opacity-80" style="color: <?= $text_color ?>;">
+                <i class="fas fa-volume-up text-xs" style="color: <?= $accent_color ?>;"></i> <span>Dilengkapi alunan backsound syahdu</span>
             </p>
         </div>
     </div>
@@ -263,7 +352,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- ============================================================ -->
     <?php if (!empty($body_bg_url)): ?>
     <div id="inner-bg-layer" class="fixed inset-0 pointer-events-none -z-10 bg-cover bg-center bg-fixed transition-all duration-700" style="background-image: url('<?= $body_bg_url ?>');">
-        <!-- Overlay transparan agar teks tetap sangat jelas terbaca dan kontras -->
         <div class="absolute inset-0 bg-[#f6f7f5]" style="opacity: <?= $body_overlay_opacity ?>;"></div>
     </div>
     <?php endif; ?>
@@ -273,15 +361,20 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- ============================================================ -->
     <div id="main-content" class="max-w-xl mx-auto px-4 pt-6 pb-28 min-h-screen">
 
-        <!-- HEADER BRANDING -->
+        <!-- HEADER BRANDING (LOGO BULAT SEMPURNA LINGKARAN) -->
         <header class="text-center mb-8">
             <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold mb-3 shadow-sm">
                 <i class="fas fa-star text-amber-600"></i>
                 <span>Tahun Ajaran <?= $tahun_ajaran ?> &bull; <?= $periode_gelombang ?></span>
             </div>
-            <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-16 h-16 mx-auto mb-2 drop-shadow">
-            <h1 class="text-2xl sm:text-3xl font-black text-emerald-950 tracking-tight">Villa Quran Indonesia</h1>
-            <p class="text-sm text-emerald-700 font-semibold">Pesantren Tahfidz Berasrama Nyaman Ala Villa</p>
+            
+            <!-- Logo Bulat Lingkaran Sempurna -->
+            <div class="w-16 h-16 rounded-full mx-auto mb-2 p-1 bg-white border-2 border-emerald-600 shadow-md overflow-hidden aspect-square flex items-center justify-center">
+                <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-full h-full object-cover rounded-full">
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl font-black text-emerald-950 tracking-tight"><?= $judul_utama ?></h1>
+            <p class="text-sm text-emerald-700 font-semibold"><?= $subjudul ?></p>
             <div class="w-16 h-1 bg-gradient-to-r from-amber-400 to-amber-600 mx-auto rounded-full mt-3"></div>
         </header>
 
@@ -292,7 +385,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             <p class="text-center font-arabic text-2xl text-emerald-900 font-bold mb-2 leading-loose">السَّلاَمُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ</p>
             
             <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 mb-4 text-center">
-                <p class="text-xs uppercase tracking-wider font-bold text-emerald-800">Spesial Untuk:</p>
+                <p class="text-xs uppercase tracking-wider font-bold text-emerald-800"><?= $tamu_header_text ?></p>
                 <p class="text-lg font-black text-emerald-950 mt-0.5"><?= $nama_tamu ?></p>
             </div>
 
@@ -311,7 +404,29 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         </section>
 
         <!-- ============================================================ -->
-        <!-- 2. TARGET KOMPETENSI LULUSAN (USER PROMPT NO 2)             -->
+        <!-- VIDEO PROFIL / FASILITAS PESANTREN (LEBAR & TINGGI DINAMIS)  -->
+        <!-- ============================================================ -->
+        <?php if ($show_video && !empty($video_url)): ?>
+        <section class="mb-8" id="brosur-video-section">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="w-8 h-8 rounded-xl bg-rose-600 text-white flex items-center justify-center font-bold text-sm shadow">
+                    <i class="fas fa-play text-xs"></i>
+                </span>
+                <div>
+                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Video Profil & Suasana Pesantren</h2>
+                    <p class="text-xs text-gray-500">Kenali lingkungan asri, kegiatan tahfidz & fasilitas santri</p>
+                </div>
+            </div>
+            <div class="glass-card rounded-3xl p-4 shadow-lg border border-emerald-100 flex flex-col items-center">
+                <div class="rounded-2xl overflow-hidden shadow-md border border-gray-200 transition-all mx-auto" style="width: <?= $video_width ?>%; height: <?= $video_height ?>px; max-width: 100%;">
+                    <iframe src="<?= htmlspecialchars($video_url) ?>" class="w-full h-full" style="border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+        </section>
+        <?php endif; ?>
+
+        <!-- ============================================================ -->
+        <!-- TARGET KOMPETENSI LULUSAN                                    -->
         <!-- ============================================================ -->
         <section class="mb-8">
             <div class="flex items-center gap-2 mb-4">
@@ -323,8 +438,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <!-- Kompetensi 1 -->
-                <div class="glass-card rounded-2xl p-4.5 p-4 border border-emerald-100 hover:shadow-md transition">
+                <div class="glass-card rounded-2xl p-4 border border-emerald-100 hover:shadow-md transition">
                     <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg mb-3">
                         <i class="fas fa-quran"></i>
                     </div>
@@ -332,7 +446,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     <p class="text-xs text-gray-600 leading-relaxed">Hafal kuat dengan standar tahsin fashahah, tajwid mutqin, dan berhak mengantongi sanad qira'ah bersambung.</p>
                 </div>
 
-                <!-- Kompetensi 2 -->
                 <div class="glass-card rounded-2xl p-4 border border-emerald-100 hover:shadow-md transition">
                     <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg mb-3">
                         <i class="fas fa-graduation-cap"></i>
@@ -341,7 +454,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     <p class="text-xs text-gray-600 leading-relaxed">Lulus mengantongi legalitas ijazah negara terakreditasi, bebas tembus PTN, PTKIN, kedinasan & kampus luar negeri.</p>
                 </div>
 
-                <!-- Kompetensi 3 -->
                 <div class="glass-card rounded-2xl p-4 border border-emerald-100 hover:shadow-md transition">
                     <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-lg mb-3">
                         <i class="fas fa-laptop-code"></i>
@@ -350,7 +462,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     <p class="text-xs text-gray-600 leading-relaxed">Menguasai keterampilan digital marketing, content creator dakwah, serta AI terapan untuk produktivitas masa depan.</p>
                 </div>
 
-                <!-- Kompetensi 4 -->
                 <div class="glass-card rounded-2xl p-4 border border-emerald-100 hover:shadow-md transition">
                     <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center text-lg mb-3">
                         <i class="fas fa-hands-holding-child"></i>
@@ -362,7 +473,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         </section>
 
         <!-- ============================================================ -->
-        <!-- 3. TIGA PILAR UTAMA VILLA QURAN (USER PROMPT NO 3 KOREKSI)  -->
+        <!-- TIGA PILAR UTAMA KURIKULUM                                   -->
         <!-- ============================================================ -->
         <section class="mb-8">
             <div class="flex items-center gap-2 mb-4">
@@ -374,52 +485,49 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             </div>
 
             <div class="space-y-4">
-                <!-- Pilar 1 -->
                 <div class="rounded-3xl p-5 bg-gradient-to-br from-emerald-900 to-emerald-950 text-white shadow-xl relative overflow-hidden border border-emerald-700/50">
                     <div class="absolute -right-4 -bottom-4 text-emerald-800/30 text-8xl font-black pointer-events-none select-none">1</div>
                     <div class="flex items-start gap-3.5 relative z-10">
-                        <div class="w-12 h-12 rounded-2xl bg-amber-400 text-emerald-950 flex-shrink-0 flex items-center justify-center text-xl font-extrabold shadow-md">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-400 text-emerald-950 flex items-center justify-center text-xl flex-shrink-0 font-bold shadow-md">
                             <i class="fas fa-book-quran"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">Pilar 1</span>
-                            <h3 class="text-base sm:text-lg font-black text-amber-300 mt-1 mb-1.5 leading-snug">Tahfidz Mutqin 15 s/d 30 Juz Bersanad</h3>
-                            <p class="text-xs text-emerald-100 leading-relaxed">
-                                Pendampingan talaqqi intensif dari asatidz hafizh mutqin. Menggunakan metode sima'an berjenjang, karantina tahfidz, dan ujian tasmi' terbuka sehingga hafalan benar-benar menancap kuat di dada ananda.
+                            <span class="text-[10px] font-extrabold tracking-widest text-amber-300 uppercase">Pilar Pertama</span>
+                            <h3 class="text-base font-black text-white mt-0.5">Tahfidz Al-Qur'an Bersanad & Mutqin</h3>
+                            <p class="text-xs text-emerald-100/90 mt-1 leading-relaxed">
+                                Metode bimbingan talaqqi bersanad setiap hari, target mutqin 15-30 juz dengan fashahah tajwid terstandar.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Pilar 2 -->
-                <div class="rounded-3xl p-5 bg-gradient-to-br from-teal-900 to-emerald-900 text-white shadow-xl relative overflow-hidden border border-teal-700/50">
+                <div class="rounded-3xl p-5 bg-gradient-to-br from-[#064e45] to-teal-950 text-white shadow-xl relative overflow-hidden border border-emerald-700/50">
                     <div class="absolute -right-4 -bottom-4 text-teal-800/30 text-8xl font-black pointer-events-none select-none">2</div>
                     <div class="flex items-start gap-3.5 relative z-10">
-                        <div class="w-12 h-12 rounded-2xl bg-teal-400 text-emerald-950 flex-shrink-0 flex items-center justify-center text-xl font-extrabold shadow-md">
-                            <i class="fas fa-certificate"></i>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-400 text-emerald-950 flex items-center justify-center text-xl flex-shrink-0 font-bold shadow-md">
+                            <i class="fas fa-graduation-cap"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-teal-400/20 text-teal-300 border border-teal-400/30">Pilar 2</span>
-                            <h3 class="text-base sm:text-lg font-black text-teal-300 mt-1 mb-1.5 leading-snug">Berijazah Resmi Negara Setara SMP dan SMA</h3>
-                            <p class="text-xs text-teal-100 leading-relaxed">
-                                Memadukan kurikulum nasional resmi Kemendikbudristek. Santri memiliki hak akademik penuh yang setara dengan sekolah negeri umum, sehingga masa depan pendidikan formal ananda tetap terjamin aman dan legal.
+                            <span class="text-[10px] font-extrabold tracking-widest text-amber-300 uppercase">Pilar Kedua</span>
+                            <h3 class="text-base font-black text-white mt-0.5">Kurikulum Nasional & Ijazah Resmi (SMP/SMA)</h3>
+                            <p class="text-xs text-emerald-100/90 mt-1 leading-relaxed">
+                                Legalitas pendidikan terakreditasi negara. Santri bebas melanjutkan kuliah ke PTN, PTKIN, luar negeri, maupun sekolah kedinasan.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Pilar 3 -->
-                <div class="rounded-3xl p-5 bg-gradient-to-br from-amber-900 to-amber-950 text-white shadow-xl relative overflow-hidden border border-amber-700/50">
-                    <div class="absolute -right-4 -bottom-4 text-amber-800/30 text-8xl font-black pointer-events-none select-none">3</div>
+                <div class="rounded-3xl p-5 bg-gradient-to-br from-amber-700 to-amber-950 text-white shadow-xl relative overflow-hidden border border-amber-600/50">
+                    <div class="absolute -right-4 -bottom-4 text-amber-600/20 text-8xl font-black pointer-events-none select-none">3</div>
                     <div class="flex items-start gap-3.5 relative z-10">
-                        <div class="w-12 h-12 rounded-2xl bg-amber-400 text-amber-950 flex-shrink-0 flex items-center justify-center text-xl font-extrabold shadow-md">
-                            <i class="fas fa-bullhorn"></i>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-300 text-amber-950 flex items-center justify-center text-xl flex-shrink-0 font-bold shadow-md">
+                            <i class="fas fa-chart-line"></i>
                         </div>
                         <div>
-                            <span class="text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">Pilar 3</span>
-                            <h3 class="text-base sm:text-lg font-black text-amber-300 mt-1 mb-1.5 leading-snug">Digital Marketing (Content Creator, AI Terapan, Solopreneur)</h3>
-                            <p class="text-xs text-amber-100 leading-relaxed">
-                                Membekali santri dengan keahlian abad 21: pembuatan konten dakwah multimedia, pemanfaatan AI cerdas untuk riset materi, serta mentalitas wirausaha (solopreneur) agar santri mandiri finansial di era digital.
+                            <span class="text-[10px] font-extrabold tracking-widest text-amber-200 uppercase">Pilar Ketiga</span>
+                            <h3 class="text-base font-black text-white mt-0.5">Ekosistem Solopreneur & Kecerdasan Buatan (AI)</h3>
+                            <p class="text-xs text-amber-100/90 mt-1 leading-relaxed">
+                                Praktek langsung digital marketing, copywriting, e-commerce, content creator, dan penerapan prompt engineering AI.
                             </p>
                         </div>
                     </div>
@@ -428,104 +536,11 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         </section>
 
         <!-- ============================================================ -->
-        <!-- 4. FASILITAS & SUASANA VILLA (USER PROMPT NO 4)             -->
-        <!-- ============================================================ -->
-        <section class="mb-8">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-emerald-800 text-amber-400 flex items-center justify-center font-bold text-sm shadow">03</span>
-                <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Fasilitas & Suasana Nyaman</h2>
-                    <p class="text-xs text-gray-500">Lingkungan sejuk & asri untuk konsentrasi menghafal</p>
-                </div>
-            </div>
-
-            <!-- Kartu Sorotan Suasana Villa -->
-            <div class="glass-card rounded-3xl p-5 shadow-lg border border-emerald-100 mb-4">
-                <div class="flex items-center gap-3 mb-3 text-emerald-800">
-                    <i class="fas fa-mountain-sun text-2xl text-amber-500"></i>
-                    <h3 class="font-extrabold text-sm text-emerald-950">Kenapa Konsep Ala Villa Sangat Efektif?</h3>
-                </div>
-                <p class="text-xs text-gray-600 leading-relaxed mb-4">
-                    Menghafal Al-Qur'an memerlukan ketenangan batin dan kejernihan pikiran. Berbeda dari pesantren padat perkotaan, Villa Quran berlokasi di lingkungan sejuk perbukitan bebas polusi dan kebisingan, sehingga akselerasi hafalan santri meningkat hingga <strong>200% lebih cepat dan betah</strong>.
-                </p>
-
-                <!-- Grid Fasilitas -->
-                <div class="grid grid-cols-2 gap-3 text-xs">
-                    <div class="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100/80 flex items-center gap-2.5">
-                        <i class="fas fa-bed text-emerald-700 text-base"></i>
-                        <span class="font-semibold text-emerald-950">Asrama Nyaman & Bersih</span>
-                    </div>
-                    <div class="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100/80 flex items-center gap-2.5">
-                        <i class="fas fa-mosque text-emerald-700 text-base"></i>
-                        <span class="font-semibold text-emerald-950">Masjid Jami' 24 Jam</span>
-                    </div>
-                    <div class="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100/80 flex items-center gap-2.5">
-                        <i class="fas fa-utensils text-emerald-700 text-base"></i>
-                        <span class="font-semibold text-emerald-950">Makan Bergizi 3x Sehari</span>
-                    </div>
-                    <div class="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100/80 flex items-center gap-2.5">
-                        <i class="fas fa-microchip text-emerald-700 text-base"></i>
-                        <span class="font-semibold text-emerald-950">Studio AI & Multimedia</span>
-                    </div>
-                    <div class="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100/80 flex items-center gap-2.5">
-                        <i class="fas fa-tshirt text-emerald-700 text-base"></i>
-                        <span class="font-semibold text-emerald-950">Layanan Laundry Santri</span>
-                    </div>
-                    <div class="bg-emerald-50/70 p-3 rounded-2xl border border-emerald-100/80 flex items-center gap-2.5">
-                        <i class="fas fa-futbol text-emerald-700 text-base"></i>
-                        <span class="font-semibold text-emerald-950">Olahraga & Outbound</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============================================================ -->
-        <!-- 5. DEWAN PENGASUH & ASATIDZ (USER PROMPT NO 5)               -->
-        <!-- ============================================================ -->
-        <section class="mb-8">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-emerald-800 text-amber-400 flex items-center justify-center font-bold text-sm shadow">04</span>
-                <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Dewan Pengasuh & Asatidz</h2>
-                    <p class="text-xs text-gray-500">Membimbing santri dengan ketulusan & keilmuan</p>
-                </div>
-            </div>
-
-            <!-- Card Profil Pengasuh Manusia -->
-            <div class="glass-card rounded-3xl p-5 shadow-lg border border-emerald-100 mb-3.5">
-                <div class="flex items-start gap-4">
-                    <div class="w-16 h-16 rounded-2xl bg-emerald-100 border-2 border-emerald-600 flex items-center justify-center text-emerald-800 text-2xl flex-shrink-0 shadow">
-                        <i class="fas fa-user-tie"></i>
-                    </div>
-                    <div>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Talaqqi Bersanad</span>
-                        <h3 class="font-black text-base text-emerald-950 mt-1">Tim Asatidz Hafizh Mukim</h3>
-                        <p class="text-xs text-gray-600 leading-relaxed mt-1">
-                            Didampingi oleh para asatidz mukim bersanad Al-Qur'an 30 Juz yang menginap bersama santri 24 jam untuk membina kedisiplinan adab, qiyamul lail, dan kesehatan mental santri.
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Inovasi: Kolaborasi Dewan Tutor AI -->
-            <div class="rounded-3xl p-5 bg-gradient-to-br from-emerald-950 via-[#064e45] to-teal-950 text-white shadow-xl border border-amber-400/40 relative overflow-hidden">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-emerald-950 text-[10px] font-extrabold uppercase shadow">Inovasi Pesantren</span>
-                    <span class="text-xs text-amber-300 font-bold"><i class="fas fa-robot mr-1"></i> Dewan Tutor AI Diknas</span>
-                </div>
-                <h3 class="text-sm sm:text-base font-extrabold text-white mb-1.5">Sinergi Asatidz Manusia & AI Interaktif</h3>
-                <p class="text-xs text-emerald-100 leading-relaxed">
-                    Untuk mata pelajaran umum (Diknas), santri didampingi Dewan Tutor AI berkepribadian ilmuwan Muslim ternama (seperti <em>Ustadz Ibnu Khaldun</em> untuk Sosiologi SMA). Santri dapat berdiskusi verbal dan tanya-jawab materi pelajaran 24/7 kapan pun dibutuhkan.
-                </p>
-            </div>
-        </section>
-
-        <!-- ============================================================ -->
-        <!-- 6. TABEL INVESTASI PENDIDIKAN (BIAYA) (USER PROMPT NO 6)    -->
+        <!-- INVESTASI PENDIDIKAN (BIAYA)                                 -->
         <!-- ============================================================ -->
         <section class="mb-8" id="biaya-section">
             <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold text-sm shadow">05</span>
+                <span class="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold text-sm shadow">03</span>
                 <div>
                     <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Investasi Pendidikan (Biaya)</h2>
                     <p class="text-xs text-gray-500">Transparan, terjangkau, dan sepadan dengan mutu</p>
@@ -534,7 +549,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
             <div class="glass-card rounded-3xl p-5 shadow-lg border border-emerald-100">
                 <div class="divide-y divide-gray-100 text-xs sm:text-sm">
-                    <!-- Komponen 1: Pendaftaran -->
                     <div class="py-3 flex justify-between items-center">
                         <div>
                             <span class="font-bold text-gray-900 block">1. Biaya Pendaftaran & Observasi</span>
@@ -543,7 +557,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                         <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_pendaftaran ?></span>
                     </div>
 
-                    <!-- Komponen 2: Uang Pangkal -->
                     <div class="py-3 flex justify-between items-center">
                         <div>
                             <span class="font-bold text-gray-900 block">2. Uang Pangkal / Sarana Masuk</span>
@@ -552,7 +565,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                         <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_pangkal ?></span>
                     </div>
 
-                    <!-- Komponen 3: Biaya Tahunan -->
                     <div class="py-3 flex justify-between items-center">
                         <div>
                             <span class="font-bold text-gray-900 block">3. Biaya Pengembangan Tahunan</span>
@@ -561,7 +573,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                         <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_tahunan ?></span>
                     </div>
 
-                    <!-- Komponen 4: SPP Bulanan -->
                     <div class="py-3.5 bg-emerald-50/80 -mx-5 px-5 rounded-2xl border border-emerald-200/60 flex justify-between items-center mt-2">
                         <div>
                             <span class="font-extrabold text-emerald-950 block text-sm">4. SPP All-in Per Bulan</span>
@@ -574,7 +585,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </div>
                 </div>
 
-                <!-- Info Keringanan & Diskon -->
                 <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-amber-800 bg-amber-50/70 p-3 rounded-xl border border-amber-200">
                     <span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-600"></i> <strong>Diskon <?= $periode_gelombang ?></strong> potongan Rp <?= $diskon_gelombang ?> Uang Pangkal</span>
                 </div>
@@ -582,7 +592,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         </section>
 
         <!-- ============================================================ -->
-        <!-- COUNTDOWN TIMER SPMB (DISINKRONKAN DENGAN BERANDA SEKOLAH)   -->
+        <!-- COUNTDOWN TIMER SPMB                                         -->
         <!-- ============================================================ -->
         <?php if ($show_countdown): ?>
         <section class="mb-8 text-center" id="brosur-countdown-section">
@@ -599,9 +609,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     <?= $countdown_title ?>
                 </h3>
 
-                <!-- KOTAK COUNTDOWN: SAMA PERSIS DENGAN INDEX.HTML SEKOLAH -->
+                <!-- KOTAK COUNTDOWN -->
                 <div class="flex justify-center items-center space-x-2 sm:space-x-4">
-                    <!-- HARI -->
                     <div class="flex flex-col items-center">
                         <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-hari">
                             00
@@ -611,7 +620,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
                     <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
 
-                    <!-- JAM -->
                     <div class="flex flex-col items-center">
                         <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-jam">
                             00
@@ -621,7 +629,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
                     <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
 
-                    <!-- MENIT -->
                     <div class="flex flex-col items-center">
                         <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-menit">
                             00
@@ -631,7 +638,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
                     <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
 
-                    <!-- DETIK (ROSE RED DYNAMIC SHADOW DENGAN PULSE) -->
                     <div class="flex flex-col items-center">
                         <div class="bg-white text-rose-600 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(225,29,72,1)] border-2 border-rose-200 font-mono tracking-tight animate-pulse" id="cd-detik">
                             00
@@ -649,12 +655,10 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <?php endif; ?>
 
         <!-- ============================================================ -->
-        <!-- 7. FORM PENDAFTARAN & AUTO-NOTIF WA (USER PROMPT NO 7)      -->
+        <!-- FORM PENDAFTARAN & AUTO-NOTIF WA                             -->
         <!-- ============================================================ -->
         <section class="mb-10" id="form-daftar-section">
             <div class="rounded-3xl p-6 sm:p-7 bg-gradient-to-br from-[#064e45] via-[#043d36] to-[#022823] text-white shadow-2xl border border-amber-500/40 relative overflow-hidden">
-                
-                <!-- Background Accent -->
                 <div class="absolute -top-12 -right-12 w-44 h-44 bg-amber-400/10 rounded-full blur-2xl"></div>
 
                 <div class="text-center mb-6">
@@ -667,7 +671,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </p>
                 </div>
 
-                <!-- Formulir Pendaftaran Cepat -->
                 <form id="form-reservasi" onsubmit="submitReservasi(event)" class="space-y-4 text-left">
                     <input type="hidden" name="kode_ref" id="input-ref" value="<?= $kode_ref ?>">
 
@@ -717,7 +720,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </p>
                 </form>
 
-                <!-- Pop-up Sukses Setelah Submit -->
                 <div id="sukses-reservasi-modal" class="hidden bg-emerald-900 border border-amber-400/50 rounded-2xl p-5 text-center mt-4 animate-fade-in">
                     <div class="w-14 h-14 rounded-full bg-amber-400 text-emerald-950 flex items-center justify-center mx-auto mb-3 text-2xl shadow-lg">
                         <i class="fas fa-check"></i>
@@ -740,11 +742,11 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         </section>
 
         <!-- ============================================================ -->
-        <!-- 8. TESTIMONI WALISANTRI (USER PROMPT NO 8)                  -->
+        <!-- TESTIMONI WALISANTRI                                         -->
         <!-- ============================================================ -->
         <section class="mb-8">
             <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-emerald-800 text-amber-400 flex items-center justify-center font-bold text-sm shadow">06</span>
+                <span class="w-8 h-8 rounded-xl bg-emerald-800 text-amber-400 flex items-center justify-center font-bold text-sm shadow">04</span>
                 <div>
                     <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Testimoni Walisantri</h2>
                     <p class="text-xs text-gray-500">Kisah nyata transformasi putra-putri di Villa Quran</p>
@@ -752,8 +754,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             </div>
 
             <div class="space-y-3.5">
-                <!-- Testimoni 1 -->
-                <div class="glass-card rounded-2xl p-4.5 p-4 border border-emerald-100 shadow-sm relative">
+                <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm relative">
                     <div class="flex items-center gap-3 mb-2.5">
                         <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
                             <i class="fas fa-user-check"></i>
@@ -771,7 +772,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </p>
                 </div>
 
-                <!-- Testimoni 2 -->
                 <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm relative">
                     <div class="flex items-center gap-3 mb-2.5">
                         <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
@@ -793,19 +793,20 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         </section>
 
         <!-- ============================================================ -->
-        <!-- 9. PETA LOKASI & ALAMAT (USER PROMPT NO 9)                  -->
+        <!-- PETA LOKASI GOOGLE MAPS (LEBAR & TINGGI DINAMIS)             -->
         <!-- ============================================================ -->
-        <section class="mb-12">
+        <?php if ($show_maps): ?>
+        <section class="mb-12" id="brosur-maps-section">
             <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-emerald-800 text-amber-400 flex items-center justify-center font-bold text-sm shadow">07</span>
+                <span class="w-8 h-8 rounded-xl bg-emerald-800 text-amber-400 flex items-center justify-center font-bold text-sm shadow">05</span>
                 <div>
                     <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Lokasi & Kunjungan Silaturahmi</h2>
                     <p class="text-xs text-gray-500">Rute mudah menuju kampus Villa Quran Indonesia</p>
                 </div>
             </div>
 
-            <div class="glass-card rounded-3xl p-5 shadow-lg border border-emerald-100">
-                <div class="flex items-start gap-3 mb-4">
+            <div class="glass-card rounded-3xl p-5 shadow-lg border border-emerald-100 flex flex-col items-center">
+                <div class="flex items-start gap-3 mb-4 w-full">
                     <i class="fas fa-map-marker-alt text-amber-600 text-xl flex-shrink-0 mt-0.5"></i>
                     <div>
                         <h4 class="font-bold text-xs sm:text-sm text-emerald-950">Kampus Villa Quran Indonesia</h4>
@@ -815,9 +816,9 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </div>
                 </div>
 
-                <!-- Google Maps Frame Interaktif -->
-                <div class="w-full h-44 rounded-2xl overflow-hidden border border-gray-200 mb-3 shadow-inner">
-                    <iframe src="https://maps.google.com/maps?q=Villa+Quran+Indonesia&t=&z=14&ie=UTF8&iwloc=&output=embed" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                <!-- Google Maps Frame Interaktif dengan Lebar & Tinggi Dinamis -->
+                <div class="rounded-2xl overflow-hidden border border-gray-200 mb-3 shadow-inner transition-all mx-auto" style="width: <?= $maps_width ?>%; height: <?= $maps_height ?>px; max-width: 100%;">
+                    <iframe src="<?= htmlspecialchars(!empty($maps_url) ? $maps_url : 'https://maps.google.com/maps?q=Villa+Quran+Indonesia&t=&z=14&ie=UTF8&iwloc=&output=embed') ?>" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                 </div>
 
                 <a href="https://maps.google.com/maps?q=Villa+Quran+Indonesia" target="_blank" class="w-full bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition">
@@ -825,10 +826,11 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 </a>
             </div>
         </section>
+        <?php endif; ?>
 
-        <!-- FOOTER & UNDUH PDF -->
+        <!-- FOOTER -->
         <footer class="text-center text-xs text-gray-500 pt-6 border-t border-gray-200 space-y-3">
-            <p>&copy; <?= date('Y') ?> <strong>Villa Quran Indonesia</strong>. All Rights Reserved.</p>
+            <p>&copy; <?= date('Y') ?> <strong><?= $judul_utama ?></strong>. All Rights Reserved.</p>
             <p class="text-[11px] text-gray-400">Mencetak Generasi Hafidz Mutqin Bersanad, Berijazah Resmi Negara & Berjiwa Solopreneur.</p>
         </footer>
 
@@ -840,19 +842,16 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-emerald-100 py-2.5 px-4 shadow-2xl">
         <div class="max-w-xl mx-auto flex items-center justify-between gap-2 text-center">
             
-            <!-- Tombol 1: Chat CS WA -->
             <a href="https://wa.me/6285189918115?text=Assalamu%27alaikum%20Panitia%20SPMB%20Villa%20Quran,%20saya%20<?= urlencode($nama_tamu) ?>%20ingin%20bertanya%20informasi%20pendaftaran" target="_blank" class="flex-1 py-2 px-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-[11px] font-bold flex flex-col items-center justify-center transition">
                 <i class="fab fa-whatsapp text-emerald-600 text-base mb-0.5"></i>
                 <span>Tanya CS</span>
             </a>
 
-            <!-- Tombol 2: Daftar Sekarang (Scroll ke Form) -->
             <button onclick="scrollToForm()" class="flex-[1.8] py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-emerald-950 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition">
                 <i class="fas fa-edit"></i>
                 <span>Daftar Sekarang</span>
             </button>
 
-            <!-- Tombol 3: Viral Bagikan Link Personal -->
             <button onclick="bukaModalShare()" class="flex-1 py-2 px-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-[11px] font-bold flex flex-col items-center justify-center transition">
                 <i class="fas fa-share-alt text-amber-600 text-base mb-0.5"></i>
                 <span>Bagikan</span>
@@ -862,7 +861,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     </div>
 
     <!-- ============================================================ -->
-    <!-- MODAL SHARE UNDANGAN PERSONAL (VIRAL MARKETING LOOP)         -->
+    <!-- MODAL SHARE UNDANGAN PERSONAL                                -->
     <!-- ============================================================ -->
     <div id="modal-share" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-emerald-100 relative">
@@ -902,7 +901,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         const audioLabel = document.getElementById('audio-label');
         let isAudioPlaying = false;
 
-        // Cek kode referral dari URL dan simpan ke localStorage
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const refFromUrl = urlParams.get('ref');
@@ -918,23 +916,20 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             }
         });
 
-        // 1. Membuka amplop undangan
         function bukaUndangan() {
             const cover = document.getElementById('envelope-cover');
             cover.classList.add('cover-hidden');
 
-            // Mulai putar audio setelah interaksi user
             audio.play().then(() => {
                 isAudioPlaying = true;
                 audioControl.classList.remove('hidden');
                 updateAudioUI();
-            }).catch(err => {
-                console.log('Autoplay dicegah browser:', err);
+            }).catch(e => {
+                console.log("Audio autoplay prevented, user can click floating button:", e);
                 audioControl.classList.remove('hidden');
             });
         }
 
-        // 2. Kontrol On/Off Audio
         function toggleAudio() {
             if (isAudioPlaying) {
                 audio.pause();
@@ -950,15 +945,14 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             if (isAudioPlaying) {
                 audioIcon.classList.add('animate-spin-slow');
                 audioIcon.innerHTML = '<i class="fas fa-music text-[10px]"></i>';
-                audioLabel.innerText = 'Audio On';
+                audioLabel.innerText = "Audio On";
             } else {
                 audioIcon.classList.remove('animate-spin-slow');
                 audioIcon.innerHTML = '<i class="fas fa-volume-mute text-[10px]"></i>';
-                audioLabel.innerText = 'Audio Off';
+                audioLabel.innerText = "Audio Off";
             }
         }
 
-        // 3. Scroll ke Form Pendaftaran
         function scrollToForm() {
             const el = document.getElementById('form-daftar-section');
             if (el) {
@@ -967,49 +961,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             }
         }
 
-        // 4. Submit Formulir Pendaftaran Cepat (AJAX ke simpan-brosur.php)
-        function submitReservasi(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-submit-reservasi');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Mengirim data & menyiapkan WA...';
-            btn.disabled = true;
-
-            const form = document.getElementById('form-reservasi');
-            const fd = new FormData(form);
-
-            fetch('simpan-brosur.php', {
-                method: 'POST',
-                body: fd
-            })
-            .then(res => res.json())
-            .then(data => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-
-                if (data.status === 'success') {
-                    form.classList.add('hidden');
-                    const modal = document.getElementById('sukses-reservasi-modal');
-                    modal.classList.remove('hidden');
-                    document.getElementById('sukses-modal-pesan').innerText = data.message;
-                    
-                    // Siapkan tombol direct WA
-                    const noWaTarget = data.wa || '';
-                    const directBtn = document.getElementById('btn-wa-direct');
-                    directBtn.href = `https://wa.me/6285189918115?text=Assalamu%27alaikum%20Panitia%20SPMB,%20saya%20${encodeURIComponent(data.nama_wali)}%20baru%20saja%20mengisi%20reservasi%20untuk%20ananda%20${encodeURIComponent(data.nama_santri)}%20(${encodeURIComponent(data.jenjang)}).%20Mohon%20informasi%20selanjutnya.`;
-                } else {
-                    alert(data.message || 'Terjadi kendala saat mengirim. Silakan coba lagi.');
-                }
-            })
-            .catch(err => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                alert('Terjadi kesalahan koneksi. Silakan periksa jaringan internet Anda.');
-                console.error(err);
-            });
-        }
-
-        // 5. Modal Share Undangan Personal
         function bukaModalShare() {
             document.getElementById('modal-share').classList.remove('hidden');
         }
@@ -1018,95 +969,128 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             document.getElementById('modal-share').classList.add('hidden');
         }
 
-        function kirimShareWhatsApp() {
-            const nama = document.getElementById('share-nama-tamu').value.trim() || 'Bapak/Ibu Calon Wali Santri';
-            const refCode = localStorage.getItem('agen_ref') || 'organik';
-            const currentUrlBase = window.location.origin + window.location.pathname;
-            const inviteUrl = `${currentUrlBase}?to=${encodeURIComponent(nama)}&ref=${encodeURIComponent(refCode)}`;
+        function buatLinkPersonal() {
+            let nama = document.getElementById('share-nama-tamu').value.trim();
+            if (!nama) nama = "Sahabat Villa Quran";
             
-            const waText = `🌸 *Assalamu'alaikum Warahmatullahi Wabarakatuh*\n\n`
-                         + `Kepada Yth. *${nama}* & Segenap Keluarga,\n\n`
-                         + `Dengan rasa hormat dan mahabbah, kami membagikan *Undangan Silaturahmi & Brosur Digital Villa Quran Indonesia*:\n`
-                         + `🌿 *Sekolah Tahfidz Berasrama Nyaman Ala Villa*\n`
-                         + `• Tahfidz Mutqin 15–30 Juz Bersanad\n`
-                         + `• Berijazah Resmi Negara Setara SMP & SMA\n`
-                         + `• Digital Marketing, AI Terapan & Solopreneur\n\n`
-                         + `Buka tautan undangan khusus untuk Bapak/Ibu di sini:\n`
-                         + `${inviteUrl}\n\n`
-                         + `_Jazakumullahu Khairan Katsiran._`;
-
-            window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`, '_blank');
-            tutupModalShare();
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('to', nama);
+            
+            const savedRef = localStorage.getItem('agen_ref');
+            if (savedRef) {
+                currentUrl.searchParams.set('ref', savedRef);
+            }
+            return { nama, url: currentUrl.toString() };
         }
 
         function salinLinkPersonal() {
-            const nama = document.getElementById('share-nama-tamu').value.trim() || 'Bapak/Ibu Calon Wali Santri';
-            const refCode = localStorage.getItem('agen_ref') || 'organik';
-            const currentUrlBase = window.location.origin + window.location.pathname;
-            const inviteUrl = `${currentUrlBase}?to=${encodeURIComponent(nama)}&ref=${encodeURIComponent(refCode)}`;
-
-            navigator.clipboard.writeText(inviteUrl).then(() => {
-                alert('Link undangan personal berhasil disalin ke clipboard!');
+            const data = buatLinkPersonal();
+            navigator.clipboard.writeText(data.url).then(() => {
+                alert("Link undangan khusus untuk " + data.nama + " berhasil disalin ke clipboard!");
                 tutupModalShare();
-            }).catch(err => {
-                prompt('Salin link undangan ini:', inviteUrl);
             });
         }
 
-        // 6. Countdown SPMB - Sesuai Pengaturan Web Sekolah
-        function initBrosurCountdown() {
-            const mode = "<?= $countdown_mode ?>";
-            const customTargetStr = "<?= $countdown_target ?>";
+        function kirimShareWhatsApp() {
+            const data = buatLinkPersonal();
+            const textWa = `*Assalamu'alaikum Warahmatullahi Wabarakatuh*\n\n`
+                         + `Kepada Yth. *${data.nama}* & Segenap Keluarga,\n\n`
+                         + `Dengan rasa syukur dan memohon ridho Allah SWT, kami mengundang Bapak/Ibu untuk melihat *Brosur & Undangan Pendidikan Generasi Qur'ani* di Kampus Villa Quran Indonesia (Tahfidz Bersanad 30 Juz & Ijazah Resmi SMP/SMA):\n\n`
+                         + `👉 *Buka Brosur Khusus Anda:*\n`
+                         + `${data.url}\n\n`
+                         + `Semoga ikhtiar kita dalam mendidik putra-putri menjadi ahlul Qur'an senantiasa dimudahkan oleh Allah SWT. Barakallahu fiikum.`;
+            
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textWa)}`, '_blank');
+            tutupModalShare();
+        }
 
-            function updateCD() {
+        // Handle AJAX Submit Reservasi
+        function submitReservasi(e) {
+            e.preventDefault();
+            const form = document.getElementById('form-reservasi');
+            const btn = document.getElementById('btn-submit-reservasi');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Mengirim Data...';
+
+            const formData = new FormData(form);
+
+            fetch('simpan-brosur.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i> Kirim Reservasi & Dapatkan E-Brosur';
+
+                if (data.status === 'success') {
+                    document.getElementById('sukses-modal-pesan').innerText = data.message;
+                    if (data.wa_link) {
+                        document.getElementById('btn-wa-direct').href = data.wa_link;
+                    }
+                    document.getElementById('sukses-reservasi-modal').classList.remove('hidden');
+                    form.reset();
+                } else {
+                    alert("Mohon maaf: " + (data.message || 'Terjadi kesalahan sistem'));
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i> Kirim Reservasi & Dapatkan E-Brosur';
+                alert("Terjadi kesalahan koneksi internet.");
+            });
+        }
+
+        // ==========================================
+        // COUNTDOWN TIMER LOGIC
+        // ==========================================
+        <?php if ($show_countdown): ?>
+        (function() {
+            const mode = "<?= $countdown_mode ?>";
+            let endDate;
+
+            if (mode === 'custom') {
+                endDate = new Date("<?= str_replace(' ', 'T', $countdown_target) ?>");
+            } else {
                 const now = new Date();
                 const year = now.getFullYear();
-                const month = now.getMonth() + 1; // 1 - 12
-                let endDate, wave;
-
-                if (mode === 'custom' && customTargetStr) {
-                    endDate = new Date(customTargetStr.replace(/-/g, "/"));
-                    wave = "<?= $periode_gelombang ?>";
+                const month = now.getMonth() + 1;
+                if (month >= 7 && month <= 12) {
+                    endDate = new Date(year, 11, 31, 23, 59, 59);
+                } else if (month >= 1 && month <= 3) {
+                    endDate = new Date(year, 2, 31, 23, 59, 59);
                 } else {
-                    // Logika Penentuan Gelombang Tahunan (Persis seperti index.html)
-                    if (month >= 7 && month <= 12) {
-                        endDate = new Date(year, 11, 31, 23, 59, 59); // 31 Desember
-                        wave = "Gelombang 1";
-                    } else if (month >= 1 && month <= 3) {
-                        endDate = new Date(year, 2, 31, 23, 59, 59); // 31 Maret
-                        wave = "Gelombang 2";
-                    } else {
-                        endDate = new Date(year, 5, 30, 23, 59, 59); // 30 Juni
-                        wave = "Gelombang 3";
-                    }
-                }
-
-                const diff = endDate.getTime() - now.getTime();
-                if (diff > 0) {
-                    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
-                    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-                    const s = Math.floor((diff % (1000 * 60)) / 1000);
-
-                    if(document.getElementById('cd-hari')) document.getElementById('cd-hari').innerText = d.toString().padStart(2, '0');
-                    if(document.getElementById('cd-jam')) document.getElementById('cd-jam').innerText = h.toString().padStart(2, '0');
-                    if(document.getElementById('cd-menit')) document.getElementById('cd-menit').innerText = m.toString().padStart(2, '0');
-                    if(document.getElementById('cd-detik')) document.getElementById('cd-detik').innerText = s.toString().padStart(2, '0');
-                    if(document.getElementById('cd-text') && mode !== 'custom') {
-                        document.getElementById('cd-text').innerText = `⏳ Sisa Waktu Pendaftaran ${wave} Berakhir:`;
-                    }
-                } else {
-                    if(document.getElementById('cd-hari')) document.getElementById('cd-hari').innerText = '00';
-                    if(document.getElementById('cd-jam')) document.getElementById('cd-jam').innerText = '00';
-                    if(document.getElementById('cd-menit')) document.getElementById('cd-menit').innerText = '00';
-                    if(document.getElementById('cd-detik')) document.getElementById('cd-detik').innerText = '00';
-                    if(document.getElementById('cd-text')) document.getElementById('cd-text').innerText = `⏳ Pendaftaran Periode Ini Telah Berakhir`;
+                    endDate = new Date(year, 5, 30, 23, 59, 59);
                 }
             }
-            updateCD();
-            setInterval(updateCD, 1000);
-        }
-        initBrosurCountdown();
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = endDate.getTime() - now;
+
+                if (distance < 0) {
+                    if (document.getElementById('cd-hari')) document.getElementById('cd-hari').innerText = "00";
+                    if (document.getElementById('cd-jam')) document.getElementById('cd-jam').innerText = "00";
+                    if (document.getElementById('cd-menit')) document.getElementById('cd-menit').innerText = "00";
+                    if (document.getElementById('cd-detik')) document.getElementById('cd-detik').innerText = "00";
+                    return;
+                }
+
+                const d = Math.floor(distance / (1000 * 60 * 60 * 24));
+                const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const s = Math.floor((distance % (1000 * 60)) / 1000);
+
+                if (document.getElementById('cd-hari')) document.getElementById('cd-hari').innerText = d.toString().padStart(2, '0');
+                if (document.getElementById('cd-jam')) document.getElementById('cd-jam').innerText = h.toString().padStart(2, '0');
+                if (document.getElementById('cd-menit')) document.getElementById('cd-menit').innerText = m.toString().padStart(2, '0');
+                if (document.getElementById('cd-detik')) document.getElementById('cd-detik').innerText = s.toString().padStart(2, '0');
+            }
+
+            setInterval(updateCountdown, 1000);
+            updateCountdown();
+        })();
+        <?php endif; ?>
     </script>
 </body>
 </html>

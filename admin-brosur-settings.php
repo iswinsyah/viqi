@@ -1,6 +1,6 @@
 <?php
 // admin-brosur-settings.php
-// Panel Pengaturan Brosur PSB Digital, Background Custom (URL & Upload), Drag Posisi Elemen, & Tema Warna
+// Panel Pengaturan Brosur PSB Digital: Custom Sizing (Lebar/Tinggi), Tipografi & Redaksi, Tema Warna, Drag Elemen & Multimedia
 // Villa Quran Indonesia
 
 require_once 'auth.php';
@@ -34,10 +34,36 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     btn_bg_color VARCHAR(100) DEFAULT '#d97706',
     btn_text_color VARCHAR(30) DEFAULT '#022d27',
     card_bg_style VARCHAR(30) DEFAULT 'glass_dark',
+    font_family VARCHAR(50) DEFAULT 'Plus Jakarta Sans',
+    judul_utama VARCHAR(150) DEFAULT 'Villa Quran Indonesia',
+    subjudul VARCHAR(200) DEFAULT 'Sekolah Tahfidz Berasrama Nyaman Ala Villa',
+    bismillah_text VARCHAR(150) DEFAULT 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+    tamu_header_text VARCHAR(150) DEFAULT 'Kepada Yth. Calon Wali Santri:',
+    tamu_sambutan_text TEXT,
+    btn_text VARCHAR(100) DEFAULT 'Buka Brosur & Undangan',
+    show_bismillah TINYINT(1) DEFAULT 1,
+    show_subjudul TINYINT(1) DEFAULT 1,
+    show_logo TINYINT(1) DEFAULT 1,
+    show_sambutan TINYINT(1) DEFAULT 1,
+    logo_size INT DEFAULT 80,
+    card_width INT DEFAULT 100,
+    card_padding INT DEFAULT 20,
+    btn_width INT DEFAULT 100,
+    btn_height INT DEFAULT 52,
+    text_title_size INT DEFAULT 22,
+    text_sub_size INT DEFAULT 12,
+    show_video TINYINT(1) DEFAULT 1,
+    video_url TEXT,
+    video_width INT DEFAULT 100,
+    video_height INT DEFAULT 240,
+    show_maps TINYINT(1) DEFAULT 1,
+    maps_url TEXT,
+    maps_width INT DEFAULT 100,
+    maps_height INT DEFAULT 220,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
-// Self-healing migration jika kolom baru belum ada di database lama
+// Self-healing migration jika kolom baru belum ada di database
 $cols_needed = [
     "body_bg_url"          => "ALTER TABLE pengaturan_brosur ADD COLUMN body_bg_url TEXT AFTER cover_overlay_opacity",
     "body_overlay_opacity" => "ALTER TABLE pengaturan_brosur ADD COLUMN body_overlay_opacity DECIMAL(3,2) DEFAULT 0.92 AFTER body_bg_url",
@@ -51,7 +77,33 @@ $cols_needed = [
     "accent_color"         => "ALTER TABLE pengaturan_brosur ADD COLUMN accent_color VARCHAR(30) DEFAULT '#fbbf24' AFTER text_color",
     "btn_bg_color"         => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_bg_color VARCHAR(100) DEFAULT '#d97706' AFTER accent_color",
     "btn_text_color"       => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_text_color VARCHAR(30) DEFAULT '#022d27' AFTER btn_bg_color",
-    "card_bg_style"        => "ALTER TABLE pengaturan_brosur ADD COLUMN card_bg_style VARCHAR(30) DEFAULT 'glass_dark' AFTER btn_text_color"
+    "card_bg_style"        => "ALTER TABLE pengaturan_brosur ADD COLUMN card_bg_style VARCHAR(30) DEFAULT 'glass_dark' AFTER btn_text_color",
+    "font_family"          => "ALTER TABLE pengaturan_brosur ADD COLUMN font_family VARCHAR(50) DEFAULT 'Plus Jakarta Sans' AFTER card_bg_style",
+    "judul_utama"          => "ALTER TABLE pengaturan_brosur ADD COLUMN judul_utama VARCHAR(150) DEFAULT 'Villa Quran Indonesia' AFTER font_family",
+    "subjudul"             => "ALTER TABLE pengaturan_brosur ADD COLUMN subjudul VARCHAR(200) DEFAULT 'Sekolah Tahfidz Berasrama Nyaman Ala Villa' AFTER judul_utama",
+    "bismillah_text"       => "ALTER TABLE pengaturan_brosur ADD COLUMN bismillah_text VARCHAR(150) DEFAULT 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ' AFTER subjudul",
+    "tamu_header_text"     => "ALTER TABLE pengaturan_brosur ADD COLUMN tamu_header_text VARCHAR(150) DEFAULT 'Kepada Yth. Calon Wali Santri:' AFTER bismillah_text",
+    "tamu_sambutan_text"   => "ALTER TABLE pengaturan_brosur ADD COLUMN tamu_sambutan_text TEXT AFTER tamu_header_text",
+    "btn_text"             => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_text VARCHAR(100) DEFAULT 'Buka Brosur & Undangan' AFTER tamu_sambutan_text",
+    "show_bismillah"       => "ALTER TABLE pengaturan_brosur ADD COLUMN show_bismillah TINYINT(1) DEFAULT 1 AFTER btn_text",
+    "show_subjudul"        => "ALTER TABLE pengaturan_brosur ADD COLUMN show_subjudul TINYINT(1) DEFAULT 1 AFTER show_bismillah",
+    "show_logo"            => "ALTER TABLE pengaturan_brosur ADD COLUMN show_logo TINYINT(1) DEFAULT 1 AFTER show_subjudul",
+    "show_sambutan"        => "ALTER TABLE pengaturan_brosur ADD COLUMN show_sambutan TINYINT(1) DEFAULT 1 AFTER show_logo",
+    "logo_size"            => "ALTER TABLE pengaturan_brosur ADD COLUMN logo_size INT DEFAULT 80 AFTER show_sambutan",
+    "card_width"           => "ALTER TABLE pengaturan_brosur ADD COLUMN card_width INT DEFAULT 100 AFTER logo_size",
+    "card_padding"         => "ALTER TABLE pengaturan_brosur ADD COLUMN card_padding INT DEFAULT 20 AFTER card_width",
+    "btn_width"            => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_width INT DEFAULT 100 AFTER card_padding",
+    "btn_height"           => "ALTER TABLE pengaturan_brosur ADD COLUMN btn_height INT DEFAULT 52 AFTER btn_width",
+    "text_title_size"      => "ALTER TABLE pengaturan_brosur ADD COLUMN text_title_size INT DEFAULT 22 AFTER btn_height",
+    "text_sub_size"        => "ALTER TABLE pengaturan_brosur ADD COLUMN text_sub_size INT DEFAULT 12 AFTER text_title_size",
+    "show_video"           => "ALTER TABLE pengaturan_brosur ADD COLUMN show_video TINYINT(1) DEFAULT 1 AFTER text_sub_size",
+    "video_url"            => "ALTER TABLE pengaturan_brosur ADD COLUMN video_url TEXT AFTER show_video",
+    "video_width"          => "ALTER TABLE pengaturan_brosur ADD COLUMN video_width INT DEFAULT 100 AFTER video_url",
+    "video_height"         => "ALTER TABLE pengaturan_brosur ADD COLUMN video_height INT DEFAULT 240 AFTER video_width",
+    "show_maps"            => "ALTER TABLE pengaturan_brosur ADD COLUMN show_maps TINYINT(1) DEFAULT 1 AFTER video_height",
+    "maps_url"             => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_url TEXT AFTER show_maps",
+    "maps_width"           => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_width INT DEFAULT 100 AFTER maps_url",
+    "maps_height"          => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_height INT DEFAULT 220 AFTER maps_width"
 ];
 $res_c = $conn->query("DESCRIBE pengaturan_brosur");
 $curr_cols = [];
@@ -65,8 +117,8 @@ foreach ($cols_needed as $col => $sql) {
 }
 
 // Pastikan baris id=1 ada
-$conn->query("INSERT IGNORE INTO pengaturan_brosur (id, tahun_ajaran, periode_gelombang, kuota_santri, cover_bg_url, cover_overlay_opacity, body_bg_url, body_overlay_opacity, theme_preset, music_url, biaya_pendaftaran, biaya_pangkal, biaya_tahunan, biaya_spp, diskon_gelombang, countdown_mode, countdown_target, countdown_title, show_countdown, cover_elements_pos, theme_color_mode, text_color, accent_color, btn_bg_color, btn_text_color, card_bg_style)
-VALUES (1, '2026/2027', 'Gelombang 1 — Kuota Terbatas', 20, 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80', 0.85, 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80', 0.92, 'madinah', 'upload/backsound.mp3', 350000, 12500000, 2500000, 1650000, 2000000, 'auto', '2026-12-31 23:59:59', '⏳ Sisa Waktu Pendaftaran Berakhir:', 1, '{\"header_y\":12,\"guest_y\":45,\"btn_y\":82}', 'emerald_gold', '#ffffff', '#fbbf24', '#d97706', '#022d27', 'glass_dark')");
+$conn->query("INSERT IGNORE INTO pengaturan_brosur (id, tahun_ajaran, periode_gelombang, kuota_santri, cover_bg_url, cover_overlay_opacity, body_bg_url, body_overlay_opacity, theme_preset, music_url, biaya_pendaftaran, biaya_pangkal, biaya_tahunan, biaya_spp, diskon_gelombang, countdown_mode, countdown_target, countdown_title, show_countdown, cover_elements_pos, theme_color_mode, text_color, accent_color, btn_bg_color, btn_text_color, card_bg_style, font_family, judul_utama, subjudul, bismillah_text, tamu_header_text, tamu_sambutan_text, btn_text, show_bismillah, show_subjudul, show_logo, show_sambutan, logo_size, card_width, card_padding, btn_width, btn_height, text_title_size, text_sub_size, show_video, video_url, video_width, video_height, show_maps, maps_url, maps_width, maps_height)
+VALUES (1, '2026/2027', 'Gelombang 1 — Kuota Terbatas', 20, 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80', 0.85, 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80', 0.92, 'madinah', 'upload/backsound.mp3', 350000, 12500000, 2500000, 1650000, 2000000, 'auto', '2026-12-31 23:59:59', '⏳ Sisa Waktu Pendaftaran Berakhir:', 1, '{\"header_y\":12,\"guest_y\":45,\"btn_y\":82}', 'emerald_gold', '#ffffff', '#fbbf24', '#d97706', '#022d27', 'glass_dark', 'Plus Jakarta Sans', 'Villa Quran Indonesia', 'Sekolah Tahfidz Berasrama Nyaman Ala Villa', 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ', 'Kepada Yth. Calon Wali Santri:', 'Undangan Mahabbah Silaturahmi & Brosur Informasi Pendidikan Putra-Putri Generasi Qur\'ani.', 'Buka Brosur & Undangan', 1, 1, 1, 1, 80, 100, 20, 100, 52, 22, 12, 1, 'https://www.youtube.com/embed/dQw4w9WgXcQ', 100, 240, 1, 'https://maps.google.com/maps?q=Villa+Quran+Indonesia&t=&z=14&ie=UTF8&iwloc=&output=embed', 100, 220)");
 
 $pesan_sukses = '';
 $pesan_error  = '';
@@ -127,13 +179,47 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         'btn_y'    => $btn_y
     ]);
 
-    // 4. Handle Tema Warna & Sinkronisasi
+    // 3. Handle Tema Warna & Kontras
     $theme_color_mode = $conn->real_escape_string($_POST['theme_color_mode'] ?? 'emerald_gold');
     $text_color       = $conn->real_escape_string($_POST['text_color'] ?? '#ffffff');
     $accent_color     = $conn->real_escape_string($_POST['accent_color'] ?? '#fbbf24');
     $btn_bg_color     = $conn->real_escape_string($_POST['btn_bg_color'] ?? '#d97706');
     $btn_text_color   = $conn->real_escape_string($_POST['btn_text_color'] ?? '#022d27');
     $card_bg_style    = $conn->real_escape_string($_POST['card_bg_style'] ?? 'glass_dark');
+
+    // 4. Handle Redaksi Teks, Font & Visibilitas (Bisa Diedit, Ganti Font, Sembunyikan/Hapus)
+    $font_family        = $conn->real_escape_string($_POST['font_family'] ?? 'Plus Jakarta Sans');
+    $judul_utama        = $conn->real_escape_string($_POST['judul_utama'] ?? 'Villa Quran Indonesia');
+    $subjudul           = $conn->real_escape_string($_POST['subjudul'] ?? 'Sekolah Tahfidz Berasrama Nyaman Ala Villa');
+    $bismillah_text     = $conn->real_escape_string($_POST['bismillah_text'] ?? 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ');
+    $tamu_header_text   = $conn->real_escape_string($_POST['tamu_header_text'] ?? 'Kepada Yth. Calon Wali Santri:');
+    $tamu_sambutan_text = $conn->real_escape_string($_POST['tamu_sambutan_text'] ?? 'Undangan Mahabbah Silaturahmi & Brosur Informasi Pendidikan Putra-Putri Generasi Qur\'ani.');
+    $btn_text           = $conn->real_escape_string($_POST['btn_text'] ?? 'Buka Brosur & Undangan');
+
+    $show_bismillah     = isset($_POST['show_bismillah']) ? 1 : 0;
+    $show_subjudul      = isset($_POST['show_subjudul']) ? 1 : 0;
+    $show_logo          = isset($_POST['show_logo']) ? 1 : 0;
+    $show_sambutan      = isset($_POST['show_sambutan']) ? 1 : 0;
+
+    // 5. Handle Sizing: Lebar & Tinggi (Dilebarkan / Disempitkan)
+    $logo_size       = max(40, min(160, (int)($_POST['logo_size'] ?? 80)));
+    $card_width      = max(50, min(100, (int)($_POST['card_width'] ?? 100)));
+    $card_padding    = max(8, min(50, (int)($_POST['card_padding'] ?? 20)));
+    $btn_width       = max(40, min(100, (int)($_POST['btn_width'] ?? 100)));
+    $btn_height      = max(34, min(80, (int)($_POST['btn_height'] ?? 52)));
+    $text_title_size = max(14, min(36, (int)($_POST['text_title_size'] ?? 22)));
+    $text_sub_size   = max(9, min(22, (int)($_POST['text_sub_size'] ?? 12)));
+
+    // 6. Handle Video & Maps Sizing
+    $show_video   = isset($_POST['show_video']) ? 1 : 0;
+    $video_url    = $conn->real_escape_string(trim($_POST['video_url'] ?? ''));
+    $video_width  = max(40, min(100, (int)($_POST['video_width'] ?? 100)));
+    $video_height = max(140, min(500, (int)($_POST['video_height'] ?? 240)));
+
+    $show_maps    = isset($_POST['show_maps']) ? 1 : 0;
+    $maps_url     = $conn->real_escape_string(trim($_POST['maps_url'] ?? ''));
+    $maps_width   = max(40, min(100, (int)($_POST['maps_width'] ?? 100)));
+    $maps_height  = max(140, min(500, (int)($_POST['maps_height'] ?? 220)));
 
     $sql_update = "UPDATE pengaturan_brosur SET 
                     tahun_ajaran = '$tahun_ajaran',
@@ -160,11 +246,37 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                     accent_color = '$accent_color',
                     btn_bg_color = '$btn_bg_color',
                     btn_text_color = '$btn_text_color',
-                    card_bg_style = '$card_bg_style'
+                    card_bg_style = '$card_bg_style',
+                    font_family = '$font_family',
+                    judul_utama = '$judul_utama',
+                    subjudul = '$subjudul',
+                    bismillah_text = '$bismillah_text',
+                    tamu_header_text = '$tamu_header_text',
+                    tamu_sambutan_text = '$tamu_sambutan_text',
+                    btn_text = '$btn_text',
+                    show_bismillah = $show_bismillah,
+                    show_subjudul = $show_subjudul,
+                    show_logo = $show_logo,
+                    show_sambutan = $show_sambutan,
+                    logo_size = $logo_size,
+                    card_width = $card_width,
+                    card_padding = $card_padding,
+                    btn_width = $btn_width,
+                    btn_height = $btn_height,
+                    text_title_size = $text_title_size,
+                    text_sub_size = $text_sub_size,
+                    show_video = $show_video,
+                    video_url = '$video_url',
+                    video_width = $video_width,
+                    video_height = $video_height,
+                    show_maps = $show_maps,
+                    maps_url = '$maps_url',
+                    maps_width = $maps_width,
+                    maps_height = $maps_height
                    WHERE id = 1";
 
     if ($conn->query($sql_update)) {
-        $pesan_sukses = "Alhamdulillah! Pengaturan Brosur PSB, Background Custom, Posisi Elemen & Warna berhasil disimpan.";
+        $pesan_sukses = "Alhamdulillah! Pengaturan Brosur PSB, Dimensi Ukuran (Lebar/Tinggi), Redaksi Teks, Font & Warna berhasil diperbarui.";
     } else {
         $pesan_error = "Gagal menyimpan: " . $conn->error;
     }
@@ -190,7 +302,11 @@ $active_menu = 'brosur_settings';
     <title>Pengaturan Brosur PSB Digital & Customizer | Admin Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Amiri:wght@700&display=swap" rel="stylesheet">
+    <!-- Google Fonts Multi-Family untuk Customizer -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cinzel:wght@500;700;900&family=Inter:wght@400;600;700&family=Outfit:wght@400;600;800&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
         .font-arabic { font-family: 'Amiri', serif; }
@@ -219,10 +335,9 @@ $active_menu = 'brosur_settings';
 
         /* Garis Bantuan & Grid Canvas Alignment */
         .canvas-grid-bg {
+            background-image: linear-gradient(to right, rgba(14, 165, 233, 0.12) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(14, 165, 233, 0.12) 1px, transparent 1px);
             background-size: 20px 20px;
-            background-image: 
-                linear-gradient(to right, rgba(245, 158, 11, 0.15) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(245, 158, 11, 0.15) 1px, transparent 1px);
         }
         .center-guide-line {
             position: absolute;
@@ -230,7 +345,7 @@ $active_menu = 'brosur_settings';
             bottom: 0;
             left: 50%;
             width: 1px;
-            border-left: 1px dashed rgba(245, 158, 11, 0.85);
+            background: rgba(239, 68, 68, 0.6);
             pointer-events: none;
             z-index: 40;
         }
@@ -239,292 +354,437 @@ $active_menu = 'brosur_settings';
             left: 0;
             right: 0;
             height: 1px;
-            border-top: 1px dashed #38bdf8;
+            background: rgba(14, 165, 233, 0.9);
+            box-shadow: 0 0 6px rgba(14, 165, 233, 0.8);
             pointer-events: none;
-            z-index: 40;
+            z-index: 45;
         }
 
-        /* Draggable Element Box Hover */
         .drag-box {
-            cursor: grab;
-            transition: outline 0.15s ease, transform 0.05s ease;
             position: absolute;
-            left: 12px;
-            right: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: grab;
             user-select: none;
+            transition: box-shadow 0.2s;
         }
-        .drag-box:hover {
-            outline: 2px dashed #f59e0b;
-            outline-offset: 4px;
-        }
-        .drag-box.dragging {
+        .drag-box:active, .drag-box.dragging {
             cursor: grabbing;
-            outline: 2px solid #38bdf8;
-            outline-offset: 4px;
-            z-index: 45 !important;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 0 2px #0ea5e9, 0 10px 20px -5px rgba(0,0,0,0.5);
+            z-index: 50;
         }
     </style>
 </head>
-<body class="flex min-h-screen bg-slate-50 text-slate-800">
+<body class="flex h-screen overflow-hidden text-slate-800">
 
     <!-- SIDEBAR -->
     <?php include 'sidebar.php'; ?>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto overflow-y-auto">
+    <main class="flex-1 flex flex-col h-screen overflow-y-auto">
         
-        <!-- HEADER -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
-            <div>
-                <div class="flex items-center gap-2">
-                    <span class="px-3 py-1 rounded-full text-xs font-black bg-amber-100 text-amber-800 border border-amber-300">
-                        <i class="fas fa-wand-magic-sparkles mr-1"></i> Brosur PSB Digital Customizer
-                    </span>
-                    <span class="text-xs text-slate-400">Visual Layout Drag & Color Harmonizer</span>
+        <!-- HEADER TOPBAR -->
+        <header class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-xs">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-xl shadow-xs">
+                    <i class="fas fa-sliders"></i>
                 </div>
-                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">Pengaturan Brosur & Background Gambar</h1>
-                <p class="text-xs sm:text-sm text-slate-500">Upload background custom atau tempel URL Pinterest, atur letak tulisan/tombol dengan drag posisi & garis bantu, serta sinkronkan warna agar jelas terbaca.</p>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-black text-slate-900 leading-tight">Pengaturan Brosur & Undangan Digital</h1>
+                    <p class="text-xs text-slate-500">Atur Lebar, Tinggi, Redaksi, Font, Warna & Posisi Visual Interaktif</p>
+                </div>
             </div>
-
             <div class="flex items-center gap-2">
-                <a href="brosur.php" target="_blank" class="bg-[#0b8478] hover:bg-[#086a60] text-white px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shadow-sm transition">
-                    <i class="fas fa-external-link-alt"></i> Buka Brosur Live
+                <a href="brosur.php" target="_blank" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow-md transition flex items-center gap-1.5">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>Buka Brosur Publik</span>
                 </a>
             </div>
+        </header>
+
+        <!-- NOTIFIKASI SUKSES / ERROR -->
+        <div class="px-6 pt-5">
+            <?php if (!empty($pesan_sukses)): ?>
+            <div class="mb-4 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2.5 shadow-xs">
+                <i class="fas fa-circle-check text-emerald-600 text-base"></i>
+                <span><?= htmlspecialchars($pesan_sukses) ?></span>
+            </div>
+            <?php endif; ?>
+
+            <?php if (!empty($pesan_error)): ?>
+            <div class="mb-4 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2.5 shadow-xs">
+                <i class="fas fa-circle-exclamation text-rose-600 text-base"></i>
+                <span><?= htmlspecialchars($pesan_error) ?></span>
+            </div>
+            <?php endif; ?>
         </div>
 
-        <!-- NOTIFIKASI -->
-        <?php if (!empty($pesan_sukses)): ?>
-            <div class="p-4 mb-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs sm:text-sm flex items-center gap-3 shadow-sm animate-fade-in">
-                <i class="fas fa-check-circle text-emerald-600 text-xl"></i>
-                <div class="font-bold"><?= $pesan_sukses ?></div>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($pesan_error)): ?>
-            <div class="p-4 mb-6 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs sm:text-sm flex items-center gap-3 shadow-sm">
-                <i class="fas fa-exclamation-triangle text-rose-600 text-xl"></i>
-                <div class="font-bold"><?= $pesan_error ?></div>
-            </div>
-        <?php endif; ?>
-
-        <!-- GRID UTAMA: FORM PENGATURAN (KIRI) + LIVE SMARTPHONE PREVIEW (KANAN) -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        <!-- FORM & INTERACTIVE VISUAL WORKSPACE (SPLIT LAYOUT) -->
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- FORM PENGATURAN (8 KOLOM) -->
+            <!-- PANEL KIRI: FORM PENGATURAN LENGKAP (7 - 8 KOLOM) -->
             <div class="lg:col-span-7 xl:col-span-8 space-y-6">
-                
-                <form method="POST" id="form-pengaturan-brosur" enctype="multipart/form-data" class="space-y-6">
-                    
+
+                <form action="" method="POST" enctype="multipart/form-data" class="space-y-6">
+
                     <!-- ============================================================ -->
-                    <!-- KARTU 1: BACKGROUND COVER AMPLOP (URL & UPLOAD FILE)         -->
+                    <!-- KARTU 1: BACKGROUND COVER & LAMAN DALAM (PINTEREST / UPLOAD) -->
                     <!-- ============================================================ -->
                     <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-5">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div class="flex items-center gap-2.5">
                                 <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
-                                    <i class="fab fa-pinterest"></i>
+                                    <i class="fas fa-image"></i>
                                 </div>
                                 <div>
-                                    <h2 class="font-bold text-base text-slate-900">1. Background Cover Amplop (URL & Upload File)</h2>
-                                    <p class="text-xs text-slate-500">Tampilan saat pertama kali calon wali membuka link undangan</p>
+                                    <h2 class="font-bold text-base text-slate-900">1. Background Cover & Halaman Dalam</h2>
+                                    <p class="text-xs text-slate-500">Gunakan link Pinterest, Unsplash, atau upload foto sendiri</p>
                                 </div>
                             </div>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                                <i class="fas fa-envelope-open-text mr-1"></i> Opening Cover
-                            </span>
                         </div>
 
-                        <!-- INPUT DIRECT URL -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Opsi A: Tempel Direct URL (Pinterest / Unsplash / Web):</label>
+                        <!-- 1.1 BACKGROUND COVER AMPLOP -->
+                        <div class="space-y-2">
+                            <label class="block text-xs font-bold text-slate-700">Link URL Background Cover (Pinterest / Web):</label>
                             <div class="flex gap-2">
-                                <input type="url" name="cover_bg_url" id="input-cover-bg-url" value="<?= htmlspecialchars($cfg['cover_bg_url'] ?? '') ?>" placeholder="https://i.pinimg.com/... atau https://images.unsplash.com/..." oninput="updateLivePreview()" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:border-[#0b8478] focus:ring-1 focus:ring-[#0b8478] bg-slate-50 font-mono">
-                                <button type="button" onclick="setPhoneTab('cover'); updateLivePreview();" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5">
-                                    <i class="fas fa-eye text-amber-600"></i> Tes
-                                </button>
+                                <input type="text" name="cover_bg_url" id="input-cover-bg-url" value="<?= htmlspecialchars($cfg['cover_bg_url'] ?? '') ?>" oninput="updateLivePreview()" placeholder="https://images.unsplash.com/... atau link Pinterest" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-[#0b8478] focus:outline-none">
+                                <label class="cursor-pointer px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition">
+                                    <i class="fas fa-upload"></i>
+                                    <span>Upload</span>
+                                    <input type="file" name="cover_bg_file" accept="image/*" class="hidden" onchange="previewUploadedFile(this, 'cover')">
+                                </label>
                             </div>
                         </div>
 
-                        <!-- INPUT UPLOAD FILE LOKAL -->
-                        <div class="p-3.5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 hover:border-amber-400 transition">
-                            <label class="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                                <i class="fas fa-cloud-arrow-up text-amber-600"></i> Opsi B: Upload File Gambar Sendiri (Laptop/HP):
-                            </label>
-                            <input type="file" name="cover_bg_file" id="input-cover-bg-file" accept="image/png,image/jpeg,image/webp,image/jpg" onchange="previewUploadedFile(this, 'cover')" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-500 file:text-slate-950 hover:file:bg-amber-600 file:cursor-pointer cursor-pointer">
-                            <p class="text-[10px] text-slate-400 mt-1">Format: JPG, PNG, WEBP (maks. 5MB). Gambar otomatis tersimpan dan aktif seketika.</p>
-                        </div>
-
-                        <!-- PRESET CEPAT PILIHAN (COVER) -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-2">Atau Pilih Preset Gambar Siap Pakai (1-Klik):</label>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                <button type="button" onclick="pilihPresetCover('https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-emerald-700">Masjid Kubah</span>
-                                        <span class="text-[9px] text-slate-400">Emerald Syahdu</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetCover('https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-emerald-700">Alam Villa</span>
-                                        <span class="text-[9px] text-slate-400">Pegunungan Pinus</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetCover('https://images.unsplash.com/photo-1564769625905-50e93615e769?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1564769625905-50e93615e769?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-emerald-700">Madinah Emas</span>
-                                        <span class="text-[9px] text-slate-400">Arabesque Luxury</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetCover('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-emerald-700">Puncak Asri</span>
-                                        <span class="text-[9px] text-slate-400">Udara Sejuk Villa</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetCover('https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-emerald-700">Nabawi Twilight</span>
-                                        <span class="text-[9px] text-slate-400">Senja Madinah</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetCover('https://images.unsplash.com/photo-1519741497674-611481863552?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-emerald-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-emerald-700">Sage Botanical</span>
-                                        <span class="text-[9px] text-slate-400">Eucalyptus Alami</span>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- SLIDER KEGELAPAN OVERLAY COVER (0% SAMPAI 100%) -->
+                        <!-- SLIDER KEGELAPAN OVERLAY COVER -->
                         <div class="pt-2 border-t border-slate-100">
                             <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs font-bold text-slate-700">Tingkat Kegelapan Overlay Cover (Bisa 0% - Tanpa Digelapkan):</label>
-                                <span id="cover-opacity-val" class="text-xs font-extrabold text-emerald-800"><?= round((float)($cfg['cover_overlay_opacity'] ?? 0.85) * 100) ?>%</span>
+                                <label class="text-xs font-bold text-slate-700">Tingkat Kegelapan Lapis Cover (Bisa 0% - Tanpa Lapis):</label>
+                                <span id="cover-opacity-val" class="text-xs font-extrabold text-teal-800"><?= round((float)($cfg['cover_overlay_opacity'] ?? 0.85) * 100) ?>%</span>
                             </div>
                             <input type="range" name="cover_overlay_opacity" id="input-cover-opacity" min="0.00" max="1.00" step="0.01" value="<?= $cfg['cover_overlay_opacity'] ?? 0.85 ?>" oninput="updateLiveCoverOpacity(this.value)" class="w-full accent-[#0b8478] cursor-pointer">
-                            <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
-                                <span>0% (Asli / Terang)</span>
-                                <span>50% (Sedang)</span>
-                                <span>100% (Gelap Solid)</span>
+                        </div>
+
+                        <!-- 1.2 BACKGROUND LAMAN DALAM -->
+                        <div class="pt-3 border-t border-slate-100 space-y-2">
+                            <label class="block text-xs font-bold text-slate-700">Link URL Wallpaper Halaman Dalam (Pinterest / Web):</label>
+                            <div class="flex gap-2">
+                                <input type="text" name="body_bg_url" id="input-body-bg-url" value="<?= htmlspecialchars($cfg['body_bg_url'] ?? '') ?>" oninput="updateLiveBodyBg()" placeholder="Kosongkan jika ingin putih polos" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-[#0b8478] focus:outline-none">
+                                <label class="cursor-pointer px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 transition">
+                                    <i class="fas fa-upload"></i>
+                                    <span>Upload</span>
+                                    <input type="file" name="body_bg_file" accept="image/*" class="hidden" onchange="previewUploadedFile(this, 'body')">
+                                </label>
                             </div>
+
+                            <div class="flex justify-between items-center mb-1 pt-2">
+                                <label class="text-xs font-bold text-slate-700">Transparansi Lapis Terang Laman Dalam (0% = Asli Wallpaper):</label>
+                                <span id="body-opacity-val" class="text-xs font-extrabold text-teal-800"><?= round((float)($cfg['body_overlay_opacity'] ?? 0.92) * 100) ?>%</span>
+                            </div>
+                            <input type="range" name="body_overlay_opacity" id="input-body-opacity" min="0.00" max="1.00" step="0.01" value="<?= $cfg['body_overlay_opacity'] ?? 0.92 ?>" oninput="updateLiveBodyOpacity(this.value)" class="w-full accent-[#0b8478] cursor-pointer">
                         </div>
                     </div>
 
                     <!-- ============================================================ -->
-                    <!-- KARTU 2: BACKGROUND HALAMAN DALAM (URL & UPLOAD FILE)         -->
+                    <!-- KARTU 2: TIPOGRAFI, REDAKSI TULISAN & VISIBILITAS (EDIT/HAPUS) -->
                     <!-- ============================================================ -->
                     <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-5">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div class="flex items-center gap-2.5">
-                                <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center text-lg">
-                                    <i class="fas fa-file-invoice"></i>
+                                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                                    <i class="fas fa-font"></i>
                                 </div>
                                 <div>
-                                    <h2 class="font-bold text-base text-slate-900">2. Background Laman Dalam Brosur (URL & Upload File)</h2>
-                                    <p class="text-xs text-slate-500">Latar belakang seluruh konten brosur (kompetensi, biaya, countdown & formulir)</p>
+                                    <h2 class="font-bold text-base text-slate-900">2. Tipografi & Redaksi Tulisan</h2>
+                                    <p class="text-xs text-slate-500">Edit kata-kata, ubah jenis font Google Fonts, atau sembunyikan/hapus tulisan</p>
                                 </div>
                             </div>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-50 text-teal-800 border border-teal-200">
-                                <i class="fas fa-layer-group mr-1"></i> Inner Wallpaper
-                            </span>
                         </div>
 
-                        <!-- INPUT DIRECT URL -->
+                        <!-- 2.1 PILIHAN JENIS FONT -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Opsi A: Tempel Direct URL (Pinterest / Tekstur Motif):</label>
-                            <div class="flex gap-2">
-                                <input type="url" name="body_bg_url" id="input-body-bg-url" value="<?= htmlspecialchars($cfg['body_bg_url'] ?? '') ?>" placeholder="https://i.pinimg.com/... (pola wallpaper, tekstur marmer)" oninput="updateLiveBodyBg()" class="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:outline-none focus:border-[#0b8478] focus:ring-1 focus:ring-[#0b8478] bg-slate-50 font-mono">
-                                <button type="button" onclick="setPhoneTab('body'); updateLiveBodyBg();" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5">
-                                    <i class="fas fa-eye text-teal-700"></i> Tes
-                                </button>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">Pilihan Jenis Font (Typography):</label>
+                            <select name="font_family" id="input-font-family" onchange="updateLiveFont(this.value)" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-semibold text-slate-800 focus:border-[#0b8478] focus:outline-none">
+                                <?php
+                                $fonts = [
+                                    'Plus Jakarta Sans' => 'Plus Jakarta Sans (Modern, Bersih, Elegan)',
+                                    'Amiri'             => 'Amiri (Klasik Kaligrafi Islami & Pesantren)',
+                                    'Playfair Display'  => 'Playfair Display (Mewah, Elegan, Royal Undangan)',
+                                    'Outfit'            => 'Outfit (Modern Geometris & Segar)',
+                                    'Poppins'           => 'Poppins (Ramah, Kokoh & Populer)',
+                                    'Cinzel'            => 'Cinzel (Klasik Monumental & Berwibawa)',
+                                    'Inter'             => 'Inter (Minimalis Digital & Tech)'
+                                ];
+                                $cur_font = $cfg['font_family'] ?? 'Plus Jakarta Sans';
+                                foreach ($fonts as $fk => $flabel) {
+                                    $sel = ($cur_font === $fk) ? 'selected' : '';
+                                    echo "<option value='$fk' $sel>$flabel</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+
+                        <!-- 2.2 BISMILLAH -->
+                        <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fas fa-quran text-amber-500"></i> Tulisan Bismillah:
+                                </label>
+                                <label class="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 cursor-pointer">
+                                    <input type="checkbox" name="show_bismillah" value="1" <?= (!isset($cfg['show_bismillah']) || $cfg['show_bismillah'] == 1) ? 'checked' : '' ?> onchange="toggleElemVisibility('bismillah', this.checked)" class="rounded text-[#0b8478] focus:ring-0">
+                                    <span>Tampilkan (Uncheck untuk Hapus)</span>
+                                </label>
+                            </div>
+                            <input type="text" name="bismillah_text" id="input-bismillah" value="<?= htmlspecialchars($cfg['bismillah_text'] ?? 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ') ?>" oninput="updateLiveTextRedaksi()" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 font-arabic text-sm text-center bg-white focus:outline-none focus:border-[#0b8478]">
+                        </div>
+
+                        <!-- 2.3 JUDUL UTAMA & SUBJUDUL -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">Judul Utama Sekolah:</label>
+                                <input type="text" name="judul_utama" id="input-judul-utama" value="<?= htmlspecialchars($cfg['judul_utama'] ?? 'Villa Quran Indonesia') ?>" oninput="updateLiveTextRedaksi()" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm font-black focus:outline-none focus:border-[#0b8478]">
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label class="text-xs font-bold text-slate-700">Subjudul / Slogan:</label>
+                                    <label class="flex items-center gap-1 text-[10px] font-bold text-slate-500 cursor-pointer">
+                                        <input type="checkbox" name="show_subjudul" value="1" <?= (!isset($cfg['show_subjudul']) || $cfg['show_subjudul'] == 1) ? 'checked' : '' ?> onchange="toggleElemVisibility('subjudul', this.checked)" class="rounded text-[#0b8478] focus:ring-0">
+                                        <span>Aktif</span>
+                                    </label>
+                                </div>
+                                <input type="text" name="subjudul" id="input-subjudul" value="<?= htmlspecialchars($cfg['subjudul'] ?? 'Sekolah Tahfidz Berasrama Nyaman Ala Villa') ?>" oninput="updateLiveTextRedaksi()" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-[#0b8478]">
                             </div>
                         </div>
 
-                        <!-- INPUT UPLOAD FILE LOKAL -->
-                        <div class="p-3.5 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 hover:border-teal-400 transition">
-                            <label class="block text-xs font-bold text-slate-800 mb-1 flex items-center gap-1.5">
-                                <i class="fas fa-cloud-arrow-up text-teal-700"></i> Opsi B: Upload File Wallpaper Laman Dalam (Laptop/HP):
-                            </label>
-                            <input type="file" name="body_bg_file" id="input-body-bg-file" accept="image/png,image/jpeg,image/webp,image/jpg" onchange="previewUploadedFile(this, 'body')" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-teal-700 file:text-white hover:file:bg-teal-800 file:cursor-pointer cursor-pointer">
-                            <p class="text-[10px] text-slate-400 mt-1">Upload foto gedung, alam asri, atau motif khusus sekolah dari laptop Anda.</p>
+                        <!-- 2.4 KARTU TAMU & SAMBUTAN -->
+                        <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fas fa-envelope-open text-emerald-600"></i> Redaksi Kartu Undangan Tamu:
+                                </label>
+                                <label class="flex items-center gap-1 text-[11px] font-bold text-slate-600 cursor-pointer">
+                                    <input type="checkbox" name="show_sambutan" value="1" <?= (!isset($cfg['show_sambutan']) || $cfg['show_sambutan'] == 1) ? 'checked' : '' ?> onchange="toggleElemVisibility('sambutan', this.checked)" class="rounded text-[#0b8478] focus:ring-0">
+                                    <span>Tampilkan Teks Sambutan</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-600 font-semibold mb-1">Header Tamu:</label>
+                                <input type="text" name="tamu_header_text" id="input-tamu-header" value="<?= htmlspecialchars($cfg['tamu_header_text'] ?? 'Kepada Yth. Calon Wali Santri:') ?>" oninput="updateLiveTextRedaksi()" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0b8478]">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] text-slate-600 font-semibold mb-1">Teks Sambutan / Catatan:</label>
+                                <textarea name="tamu_sambutan_text" id="input-tamu-sambutan" rows="2" oninput="updateLiveTextRedaksi()" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0b8478]"><?= htmlspecialchars($cfg['tamu_sambutan_text'] ?? 'Undangan Mahabbah Silaturahmi & Brosur Informasi Pendidikan Putra-Putri Generasi Qur\'ani.') ?></textarea>
+                            </div>
                         </div>
 
-                        <!-- PRESET CEPAT PILIHAN (INNER BODY) -->
+                        <!-- 2.5 REDAKSI TOMBOL BUKA -->
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-2">Atau Pilih Preset Tekstur Siap Pakai (1-Klik):</label>
-                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                                <button type="button" onclick="pilihPresetBody('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-teal-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-teal-700">Arabesque Seni</span>
-                                        <span class="text-[9px] text-slate-400">Tekstur Emas Lembut</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetBody('https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-teal-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-teal-700">Marmer Putih</span>
-                                        <span class="text-[9px] text-slate-400">Clean & Mewah</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetBody('https://images.unsplash.com/photo-1511497584788-87676104235f?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-teal-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1511497584788-87676104235f?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-teal-700">Hutan Pinus</span>
-                                        <span class="text-[9px] text-slate-400">Alam Asri Villa</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetBody('https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-teal-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-teal-700">Masjid Emerald</span>
-                                        <span class="text-[9px] text-slate-400">Nuansa Syahdu</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetBody('https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-teal-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-teal-700">Kertas Mushaf</span>
-                                        <span class="text-[9px] text-slate-400">Hangat Klasik</span>
-                                    </div>
-                                </button>
-                                <button type="button" onclick="pilihPresetBody('https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=1200&auto=format&fit=crop&q=80')" class="text-left p-2 rounded-xl border border-slate-200 hover:border-teal-600 bg-slate-50 text-[11px] transition flex items-center gap-2 group">
-                                    <img src="https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=120&auto=format&fit=crop&q=80" class="w-10 h-10 rounded-lg object-cover">
-                                    <div>
-                                        <span class="font-bold block text-slate-800 group-hover:text-teal-700">Senja Madinah</span>
-                                        <span class="text-[9px] text-slate-400">Twilight Nabawi</span>
-                                    </div>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- SLIDER KEGELAPAN OVERLAY HALAMAN DALAM (0% SAMPAI 100%) -->
-                        <div class="pt-2 border-t border-slate-100">
-                            <div class="flex justify-between items-center mb-1">
-                                <label class="text-xs font-bold text-slate-700">Transparansi Lapis Terang Laman Dalam (Bisa 0% - Tanpa Lapis):</label>
-                                <span id="body-opacity-val" class="text-xs font-extrabold text-teal-800"><?= round((float)($cfg['body_overlay_opacity'] ?? 0.92) * 100) ?>%</span>
-                            </div>
-                            <input type="range" name="body_overlay_opacity" id="input-body-opacity" min="0.00" max="1.00" step="0.01" value="<?= $cfg['body_overlay_opacity'] ?? 0.92 ?>" oninput="updateLiveBodyOpacity(this.value)" class="w-full accent-[#0b8478] cursor-pointer">
-                            <div class="flex justify-between text-[10px] text-slate-400 mt-0.5">
-                                <span>0% (Asli Wallpaper)</span>
-                                <span>50% (Transparan)</span>
-                                <span>100% (Solid Putih/Krem)</span>
-                            </div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Redaksi Tulisan Tombol Buka Undangan:</label>
+                            <input type="text" name="btn_text" id="input-btn-text" value="<?= htmlspecialchars($cfg['btn_text'] ?? 'Buka Brosur & Undangan') ?>" oninput="updateLiveTextRedaksi()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm font-bold focus:border-[#0b8478] focus:outline-none">
                         </div>
                     </div>
 
                     <!-- ============================================================ -->
-                    <!-- KARTU 3: SINKRONISASI WARNA TULISAN & TOMBOL DENGAN BACKGROUND-->
+                    <!-- KARTU 3: PENGATURAN UKURAN (LEBAR & TINGGI TULISAN, GAMBAR,  -->
+                    <!--          TOMBOL, VIDEO & MAPS - DILEBARKAN / DILEMPITKAN)    -->
+                    <!-- ============================================================ -->
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-5">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg">
+                                    <i class="fas fa-up-right-and-down-left-from-center"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-bold text-base text-slate-900">3. Atur Tinggi & Lebar (Dilebarkan / Disempitkan)</h2>
+                                    <p class="text-xs text-slate-500">Sesuaikan ukuran logo, kartu tulisan, tombol, video, dan Google Maps secara leluasa</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3.1 GAMBAR LOGO (BULAT SESUAI LINGKARAN LOGO) -->
+                        <div class="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/80 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-full bg-white p-0.5 border border-emerald-600 shadow-xs overflow-hidden aspect-square">
+                                        <img src="upload/logo-villa-quran.png" class="w-full h-full object-cover rounded-full">
+                                    </div>
+                                    <span class="text-xs font-black text-emerald-950">Gambar Logo (Bulat Sempurna Lingkaran):</span>
+                                </div>
+                                <label class="flex items-center gap-1.5 text-xs font-bold text-emerald-800 cursor-pointer">
+                                    <input type="checkbox" name="show_logo" value="1" <?= (!isset($cfg['show_logo']) || $cfg['show_logo'] == 1) ? 'checked' : '' ?> onchange="toggleElemVisibility('logo', this.checked)" class="rounded text-[#0b8478] focus:ring-0">
+                                    <span>Tampilkan Logo</span>
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Ukuran Logo (Lebar & Tinggi Proporsional):</label>
+                                        <span id="val-logo-size" class="text-xs font-mono font-bold text-emerald-800"><?= $cfg['logo_size'] ?? 80 ?> px</span>
+                                    </div>
+                                    <input type="range" name="logo_size" id="input-logo-size" min="40" max="150" step="2" value="<?= $cfg['logo_size'] ?? 80 ?>" oninput="updateLiveLogoSize(this.value)" class="w-full accent-emerald-600 cursor-pointer">
+                                </div>
+                                <p class="text-[11px] text-emerald-900 leading-relaxed bg-white/70 p-2.5 rounded-xl border border-emerald-200">
+                                    <i class="fas fa-check-circle text-emerald-600 mr-1"></i> Logo otomatis dipotong bulat rapi mengikuti lingkaran hijau logo resmi Villa Quran tanpa bingkai kotak.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 3.2 TULISAN JUDUL & KARTU TAMU (LEBAR & TINGGI) -->
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                            <span class="text-xs font-black text-slate-800 block flex items-center gap-1.5">
+                                <i class="fas fa-text-width text-blue-600"></i> Dimensi Tulisan & Kartu Tamu:
+                            </span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <!-- Lebar Kartu Tamu -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Lebar Kartu Tamu:</label>
+                                        <span id="val-card-width" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['card_width'] ?? 100 ?>%</span>
+                                    </div>
+                                    <input type="range" name="card_width" id="input-card-width" min="60" max="100" step="1" value="<?= $cfg['card_width'] ?? 100 ?>" oninput="updateLiveCardWidth(this.value)" class="w-full accent-blue-600 cursor-pointer">
+                                    <div class="flex justify-between text-[9px] text-slate-400 mt-0.5">
+                                        <span>60% (Sempit)</span>
+                                        <span>100% (Lebar Penuh)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Tinggi / Padding Kartu Tamu -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Tinggi / Padding Kartu Tamu:</label>
+                                        <span id="val-card-padding" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['card_padding'] ?? 20 ?> px</span>
+                                    </div>
+                                    <input type="range" name="card_padding" id="input-card-padding" min="10" max="40" step="1" value="<?= $cfg['card_padding'] ?? 20 ?>" oninput="updateLiveCardPadding(this.value)" class="w-full accent-blue-600 cursor-pointer">
+                                    <div class="flex justify-between text-[9px] text-slate-400 mt-0.5">
+                                        <span>10px (Tipis)</span>
+                                        <span>40px (Tinggi/Tebal)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Ukuran Font Judul -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Ukuran Huruf Judul Utama:</label>
+                                        <span id="val-text-title-size" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['text_title_size'] ?? 22 ?> px</span>
+                                    </div>
+                                    <input type="range" name="text_title_size" id="input-text-title-size" min="14" max="32" step="1" value="<?= $cfg['text_title_size'] ?? 22 ?>" oninput="updateLiveTitleSize(this.value)" class="w-full accent-blue-600 cursor-pointer">
+                                </div>
+
+                                <!-- Ukuran Font Subjudul -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Ukuran Huruf Subjudul:</label>
+                                        <span id="val-text-sub-size" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['text_sub_size'] ?? 12 ?> px</span>
+                                    </div>
+                                    <input type="range" name="text_sub_size" id="input-text-sub-size" min="9" max="18" step="1" value="<?= $cfg['text_sub_size'] ?? 12 ?>" oninput="updateLiveSubSize(this.value)" class="w-full accent-blue-600 cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3.3 TOMBOL (LEBAR & TINGGI) -->
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                            <span class="text-xs font-black text-slate-800 block flex items-center gap-1.5">
+                                <i class="fas fa-hand-pointer text-rose-500"></i> Dimensi Tombol Buka Undangan:
+                            </span>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <!-- Lebar Tombol -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Lebar Tombol:</label>
+                                        <span id="val-btn-width" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['btn_width'] ?? 100 ?>%</span>
+                                    </div>
+                                    <input type="range" name="btn_width" id="input-btn-width" min="50" max="100" step="1" value="<?= $cfg['btn_width'] ?? 100 ?>" oninput="updateLiveBtnWidth(this.value)" class="w-full accent-rose-500 cursor-pointer">
+                                    <div class="flex justify-between text-[9px] text-slate-400 mt-0.5">
+                                        <span>50% (Sempit Tengah)</span>
+                                        <span>100% (Lebar Penuh)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Tinggi Tombol -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Tinggi Tombol:</label>
+                                        <span id="val-btn-height" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['btn_height'] ?? 52 ?> px</span>
+                                    </div>
+                                    <input type="range" name="btn_height" id="input-btn-height" min="36" max="70" step="1" value="<?= $cfg['btn_height'] ?? 52 ?>" oninput="updateLiveBtnHeight(this.value)" class="w-full accent-rose-500 cursor-pointer">
+                                    <div class="flex justify-between text-[9px] text-slate-400 mt-0.5">
+                                        <span>36px (Ramping)</span>
+                                        <span>70px (Tinggi/Tebal)</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3.4 VIDEO PROFIL PESANTREN (LEBAR & TINGGI) -->
+                        <div class="p-4 bg-rose-50/50 rounded-2xl border border-rose-200/80 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black text-rose-950 flex items-center gap-1.5">
+                                    <i class="fab fa-youtube text-red-600 text-sm"></i> Video Profil / Kegiatan Santri:
+                                </span>
+                                <label class="flex items-center gap-1.5 text-xs font-bold text-rose-900 cursor-pointer">
+                                    <input type="checkbox" name="show_video" value="1" <?= (!isset($cfg['show_video']) || $cfg['show_video'] == 1) ? 'checked' : '' ?> onchange="toggleElemVisibility('video', this.checked)" class="rounded text-rose-600 focus:ring-0">
+                                    <span>Tampilkan Video di Brosur</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">Link Embed Video (YouTube / MP4):</label>
+                                <input type="text" name="video_url" id="input-video-url" value="<?= htmlspecialchars($cfg['video_url'] ?? 'https://www.youtube.com/embed/dQw4w9WgXcQ') ?>" oninput="updateLiveVideoUrl(this.value)" placeholder="https://www.youtube.com/embed/..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-rose-500">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Lebar Video:</label>
+                                        <span id="val-video-width" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['video_width'] ?? 100 ?>%</span>
+                                    </div>
+                                    <input type="range" name="video_width" id="input-video-width" min="50" max="100" step="1" value="<?= $cfg['video_width'] ?? 100 ?>" oninput="updateLiveVideoWidth(this.value)" class="w-full accent-red-600 cursor-pointer">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Tinggi Video:</label>
+                                        <span id="val-video-height" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['video_height'] ?? 240 ?> px</span>
+                                    </div>
+                                    <input type="range" name="video_height" id="input-video-height" min="150" max="450" step="5" value="<?= $cfg['video_height'] ?? 240 ?>" oninput="updateLiveVideoHeight(this.value)" class="w-full accent-red-600 cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3.5 GOOGLE MAPS LOKASI (LEBAR & TINGGI) -->
+                        <div class="p-4 bg-teal-50/50 rounded-2xl border border-teal-200/80 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-black text-teal-950 flex items-center gap-1.5">
+                                    <i class="fas fa-map-location-dot text-[#0b8478] text-sm"></i> Google Maps Frame Lokasi:
+                                </span>
+                                <label class="flex items-center gap-1.5 text-xs font-bold text-teal-900 cursor-pointer">
+                                    <input type="checkbox" name="show_maps" value="1" <?= (!isset($cfg['show_maps']) || $cfg['show_maps'] == 1) ? 'checked' : '' ?> onchange="toggleElemVisibility('maps', this.checked)" class="rounded text-[#0b8478] focus:ring-0">
+                                    <span>Tampilkan Maps di Brosur</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1">URL Iframe / Lokasi Maps:</label>
+                                <input type="text" name="maps_url" id="input-maps-url" value="<?= htmlspecialchars(!empty($cfg['maps_url']) ? $cfg['maps_url'] : 'https://maps.google.com/maps?q=Villa+Quran+Indonesia&t=&z=14&ie=UTF8&iwloc=&output=embed') ?>" oninput="updateLiveMapsUrl(this.value)" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs bg-white focus:outline-none focus:border-[#0b8478]">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Lebar Maps:</label>
+                                        <span id="val-maps-width" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['maps_width'] ?? 100 ?>%</span>
+                                    </div>
+                                    <input type="range" name="maps_width" id="input-maps-width" min="50" max="100" step="1" value="<?= $cfg['maps_width'] ?? 100 ?>" oninput="updateLiveMapsWidth(this.value)" class="w-full accent-teal-600 cursor-pointer">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between items-center mb-1">
+                                        <label class="text-[11px] font-bold text-slate-700">Tinggi Maps:</label>
+                                        <span id="val-maps-height" class="text-xs font-mono font-bold text-slate-800"><?= $cfg['maps_height'] ?? 220 ?> px</span>
+                                    </div>
+                                    <input type="range" name="maps_height" id="input-maps-height" min="140" max="450" step="5" value="<?= $cfg['maps_height'] ?? 220 ?>" oninput="updateLiveMapsHeight(this.value)" class="w-full accent-teal-600 cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- ============================================================ -->
+                    <!-- KARTU 4: SINKRONISASI WARNA TULISAN & PENYESUAIAN OTOMATIS   -->
                     <!-- ============================================================ -->
                     <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-5">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -533,22 +793,19 @@ $active_menu = 'brosur_settings';
                                     <i class="fas fa-palette"></i>
                                 </div>
                                 <div>
-                                    <h2 class="font-bold text-base text-slate-900">3. Warna Tulisan, Tombol & Harmoni Kontras</h2>
-                                    <p class="text-xs text-slate-500">Sesuaikan warna teks dan tombol agar harmonis dan jelas terbaca di atas background</p>
+                                    <h2 class="font-bold text-base text-slate-900">4. Warna Tulisan, Tombol & Penyesuaian Otomatis</h2>
+                                    <p class="text-xs text-slate-500">Sesuaikan warna teks secara manual atau gunakan tombol pintar otomatis</p>
                                 </div>
                             </div>
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                <i class="fas fa-eye mr-1"></i> High Contrast
-                            </span>
                         </div>
 
                         <!-- TOMBOL SINKRONISASI CEPAT (SMART AUTO SYNC) -->
                         <div class="p-3.5 bg-gradient-to-r from-amber-50 to-emerald-50 rounded-2xl border border-amber-200/80 flex flex-col sm:flex-row items-center justify-between gap-3">
                             <div>
                                 <span class="text-xs font-black text-slate-900 block flex items-center gap-1.5">
-                                    <i class="fas fa-wand-magic-sparkles text-amber-600"></i> Sinkronisasi Cerdas 1-Klik:
+                                    <i class="fas fa-wand-magic-sparkles text-amber-600"></i> Penyesuaian Otomatis Cerdas (Smart Auto):
                                 </span>
-                                <span class="text-[11px] text-slate-600">Jika background terang (opacity 0%), gunakan mode terang agar tulisan hitam/zamrud pekat.</span>
+                                <span class="text-[11px] text-slate-600">Otomatis tentukan kontras ideal agar tulisan terbaca sangat jelas di atas background.</span>
                             </div>
                             <div class="flex gap-2">
                                 <button type="button" onclick="terapkanTemaWarna('light_ivory')" class="px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-emerald-950 font-bold text-xs hover:bg-slate-100 shadow-sm flex items-center gap-1.5 transition">
@@ -560,53 +817,10 @@ $active_menu = 'brosur_settings';
                             </div>
                         </div>
 
-                        <!-- PRESET TEMA WARNA HARMONIS -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-2">Pilihan Tema Warna Harmonis:</label>
-                            <input type="hidden" name="theme_color_mode" id="input-theme-color-mode" value="<?= htmlspecialchars($cfg['theme_color_mode'] ?? 'emerald_gold') ?>">
-                            
-                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                                <button type="button" onclick="terapkanTemaWarna('emerald_gold')" class="p-2.5 rounded-2xl border-2 text-left transition <?= (($cfg['theme_color_mode'] ?? 'emerald_gold') === 'emerald_gold') ? 'border-[#0b8478] bg-teal-50/60' : 'border-slate-200' ?>" id="btn-theme-emerald_gold">
-                                    <div class="flex items-center gap-1 mb-1">
-                                        <span class="w-3.5 h-3.5 rounded-full bg-[#022c22] border border-amber-400 inline-block"></span>
-                                        <span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span>
-                                    </div>
-                                    <span class="font-black text-xs text-slate-900 block">Emerald Gold</span>
-                                    <span class="text-[9px] text-slate-500 block">Mewah syahdu</span>
-                                </button>
-
-                                <button type="button" onclick="terapkanTemaWarna('light_ivory')" class="p-2.5 rounded-2xl border-2 text-left transition <?= (($cfg['theme_color_mode'] ?? '') === 'light_ivory') ? 'border-[#0b8478] bg-teal-50/60' : 'border-slate-200' ?>" id="btn-theme-light_ivory">
-                                    <div class="flex items-center gap-1 mb-1">
-                                        <span class="w-3.5 h-3.5 rounded-full bg-[#ffffff] border border-slate-300 inline-block"></span>
-                                        <span class="w-3.5 h-3.5 rounded-full bg-[#064e45] inline-block"></span>
-                                    </div>
-                                    <span class="font-black text-xs text-slate-900 block">Light Ivory</span>
-                                    <span class="text-[9px] text-slate-500 block">Latar Terang (0%)</span>
-                                </button>
-
-                                <button type="button" onclick="terapkanTemaWarna('midnight_luxe')" class="p-2.5 rounded-2xl border-2 text-left transition <?= (($cfg['theme_color_mode'] ?? '') === 'midnight_luxe') ? 'border-[#0b8478] bg-teal-50/60' : 'border-slate-200' ?>" id="btn-theme-midnight_luxe">
-                                    <div class="flex items-center gap-1 mb-1">
-                                        <span class="w-3.5 h-3.5 rounded-full bg-[#0f172a] inline-block"></span>
-                                        <span class="w-3.5 h-3.5 rounded-full bg-[#f8fafc] border border-slate-300 inline-block"></span>
-                                    </div>
-                                    <span class="font-black text-xs text-slate-900 block">Midnight Luxe</span>
-                                    <span class="text-[9px] text-slate-500 block">Modern pekat</span>
-                                </button>
-
-                                <button type="button" onclick="terapkanTemaWarna('royal_maroon')" class="p-2.5 rounded-2xl border-2 text-left transition <?= (($cfg['theme_color_mode'] ?? '') === 'royal_maroon') ? 'border-[#0b8478] bg-teal-50/60' : 'border-slate-200' ?>" id="btn-theme-royal_maroon">
-                                    <div class="flex items-center gap-1 mb-1">
-                                        <span class="w-3.5 h-3.5 rounded-full bg-[#7f1d1d] inline-block"></span>
-                                        <span class="w-3.5 h-3.5 rounded-full bg-[#fbbf24] inline-block"></span>
-                                    </div>
-                                    <span class="font-black text-xs text-slate-900 block">Royal Maroon</span>
-                                    <span class="text-[9px] text-slate-500 block">Klasik anggun</span>
-                                </button>
-                            </div>
-                        </div>
-
                         <!-- PALET WARNA KUSTOM MANUAL -->
                         <div class="pt-3 border-t border-slate-100">
                             <label class="block text-xs font-bold text-slate-700 mb-2">Penyesuaian Warna Mandiri (Color Picker):</label>
+                            <input type="hidden" name="theme_color_mode" id="input-theme-color-mode" value="<?= htmlspecialchars($cfg['theme_color_mode'] ?? 'emerald_gold') ?>">
                             
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div>
@@ -653,7 +867,7 @@ $active_menu = 'brosur_settings';
                     </div>
 
                     <!-- ============================================================ -->
-                    <!-- KARTU 4: PENGATURAN POSISI GESER ELEMEN & GARIS BANTUAN      -->
+                    <!-- KARTU 5: PENGATURAN POSISI GESER ELEMEN (DRAG & SLIDER)      -->
                     <!-- ============================================================ -->
                     <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-5">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -662,7 +876,7 @@ $active_menu = 'brosur_settings';
                                     <i class="fas fa-arrows-up-down-left-right"></i>
                                 </div>
                                 <div>
-                                    <h2 class="font-bold text-base text-slate-900">4. Atur Posisi Tulisan, Gambar & Tombol (Drag & Slider)</h2>
+                                    <h2 class="font-bold text-base text-slate-900">5. Atur Posisi Tulisan, Gambar & Tombol (Drag & Slider)</h2>
                                     <p class="text-xs text-slate-500">Geser langsung di layar HP simulasi atau gunakan slider presisi di bawah</p>
                                 </div>
                             </div>
@@ -711,7 +925,7 @@ $active_menu = 'brosur_settings';
 
                         <div class="flex items-center justify-between text-xs pt-1">
                             <span class="text-slate-400 text-[11px]">
-                                <i class="fas fa-hand-back-fist text-amber-500 mr-1"></i> Tips: Anda juga bisa <strong>menekan & menggeser langsung</strong> elemen di dalam layar HP sebelah kanan.
+                                <i class="fas fa-hand-back-fist text-amber-500 mr-1"></i> Tips: Anda juga bisa <strong>menekan & menggeser langsung</strong> elemen di dalam layar HP simulasi.
                             </span>
                             <button type="button" onclick="resetDefaultPositions()" class="text-amber-700 font-bold hover:underline flex items-center gap-1 text-[11px]">
                                 <i class="fas fa-rotate-left"></i> Reset Posisi Seimbang
@@ -720,7 +934,7 @@ $active_menu = 'brosur_settings';
                     </div>
 
                     <!-- ============================================================ -->
-                    <!-- KARTU 5: PENGATURAN COUNTDOWN TIMER (SAMA DENGAN WEB SEKOLAH) -->
+                    <!-- KARTU 6: COUNTDOWN TIMER & PERIODE BIAYA SPMB                -->
                     <!-- ============================================================ -->
                     <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-5">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -729,8 +943,8 @@ $active_menu = 'brosur_settings';
                                     <i class="fas fa-stopwatch"></i>
                                 </div>
                                 <div>
-                                    <h2 class="font-bold text-base text-slate-900">5. Pengaturan Countdown Timer SPMB</h2>
-                                    <p class="text-xs text-slate-500">Hitung mundur sisa waktu pendaftaran (sama dengan beranda web sekolah)</p>
+                                    <h2 class="font-bold text-base text-slate-900">6. Countdown Timer & Periode Biaya SPMB</h2>
+                                    <p class="text-xs text-slate-500">Hitung mundur sisa waktu pendaftaran & rincian biaya pendidikan</p>
                                 </div>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
@@ -741,36 +955,30 @@ $active_menu = 'brosur_settings';
                         </div>
 
                         <!-- PILIHAN MODE COUNTDOWN -->
-                        <div class="space-y-3">
-                            <label class="block text-xs font-bold text-slate-700">Mode Perhitungan Countdown:</label>
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <!-- Opsi 1: Otomatis Sama dengan Web Sekolah -->
-                                <label class="border-2 rounded-2xl p-3.5 cursor-pointer flex items-start gap-3 transition <?= (($cfg['countdown_mode'] ?? 'auto') === 'auto') ? 'border-[#0b8478] bg-teal-50/50' : 'border-slate-200 bg-white' ?>" id="mode-label-auto">
-                                    <input type="radio" name="countdown_mode" value="auto" <?= (($cfg['countdown_mode'] ?? 'auto') === 'auto') ? 'checked' : '' ?> onchange="changeCountdownMode('auto')" class="mt-1 text-[#0b8478] focus:ring-[#0b8478]">
-                                    <div>
-                                        <span class="font-bold text-xs text-slate-900 block flex items-center gap-1.5">
-                                            <i class="fas fa-magic text-[#0b8478]"></i> Otomatis Siklus Gelombang
-                                        </span>
-                                        <span class="text-[11px] text-slate-500 leading-relaxed block mt-0.5">
-                                            Sama persis dengan beranda web sekolah: <strong>Gelombang 1</strong> (s/d 31 Des), <strong>Gelombang 2</strong> (s/d 31 Mar), <strong>Gelombang 3</strong> (s/d 30 Jun).
-                                        </span>
-                                    </div>
-                                </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="border-2 rounded-2xl p-3.5 cursor-pointer flex items-start gap-3 transition <?= (($cfg['countdown_mode'] ?? 'auto') === 'auto') ? 'border-[#0b8478] bg-teal-50/50' : 'border-slate-200 bg-white' ?>" id="mode-label-auto">
+                                <input type="radio" name="countdown_mode" value="auto" <?= (($cfg['countdown_mode'] ?? 'auto') === 'auto') ? 'checked' : '' ?> onchange="changeCountdownMode('auto')" class="mt-1 text-[#0b8478] focus:ring-[#0b8478]">
+                                <div>
+                                    <span class="font-bold text-xs text-slate-900 block flex items-center gap-1.5">
+                                        <i class="fas fa-magic text-[#0b8478]"></i> Otomatis Siklus Gelombang
+                                    </span>
+                                    <span class="text-[11px] text-slate-500 leading-relaxed block mt-0.5">
+                                        Sama persis web sekolah: Gelombang 1 (s/d 31 Des), Gelombang 2 (s/d 31 Mar), Gelombang 3 (s/d 30 Jun).
+                                    </span>
+                                </div>
+                            </label>
 
-                                <!-- Opsi 2: Kustom Tanggal Tertentu -->
-                                <label class="border-2 rounded-2xl p-3.5 cursor-pointer flex items-start gap-3 transition <?= (($cfg['countdown_mode'] ?? 'auto') === 'custom') ? 'border-[#0b8478] bg-teal-50/50' : 'border-slate-200 bg-white' ?>" id="mode-label-custom">
-                                    <input type="radio" name="countdown_mode" value="custom" <?= (($cfg['countdown_mode'] ?? 'auto') === 'custom') ? 'checked' : '' ?> onchange="changeCountdownMode('custom')" class="mt-1 text-[#0b8478] focus:ring-[#0b8478]">
-                                    <div>
-                                        <span class="font-bold text-xs text-slate-900 block flex items-center gap-1.5">
-                                            <i class="fas fa-calendar-day text-amber-600"></i> Kustom Batas Waktu
-                                        </span>
-                                        <span class="text-[11px] text-slate-500 leading-relaxed block mt-0.5">
-                                            Tentukan tanggal & jam batas penutupan khusus secara manual (misal perpanjangan khusus).
-                                        </span>
-                                    </div>
-                                </label>
-                            </div>
+                            <label class="border-2 rounded-2xl p-3.5 cursor-pointer flex items-start gap-3 transition <?= (($cfg['countdown_mode'] ?? 'auto') === 'custom') ? 'border-[#0b8478] bg-teal-50/50' : 'border-slate-200 bg-white' ?>" id="mode-label-custom">
+                                <input type="radio" name="countdown_mode" value="custom" <?= (($cfg['countdown_mode'] ?? 'auto') === 'custom') ? 'checked' : '' ?> onchange="changeCountdownMode('custom')" class="mt-1 text-[#0b8478] focus:ring-[#0b8478]">
+                                <div>
+                                    <span class="font-bold text-xs text-slate-900 block flex items-center gap-1.5">
+                                        <i class="fas fa-calendar-day text-amber-600"></i> Kustom Batas Waktu
+                                    </span>
+                                    <span class="text-[11px] text-slate-500 leading-relaxed block mt-0.5">
+                                        Tentukan tanggal & jam batas penutupan khusus secara manual.
+                                    </span>
+                                </div>
+                            </label>
                         </div>
 
                         <!-- INPUT TANGGAL KUSTOM -->
@@ -779,35 +987,14 @@ $active_menu = 'brosur_settings';
                             <input type="datetime-local" name="countdown_target" id="input-countdown-target" value="<?= date('Y-m-d\TH:i', strtotime($cfg['countdown_target'] ?? '2026-12-31 23:59:59')) ?>" oninput="updateAdminCountdownWidget()" class="w-full sm:w-72 px-4 py-2 rounded-xl border border-amber-300 bg-white text-xs font-mono font-bold text-slate-800">
                         </div>
 
-                        <!-- JUDUL COUNTDOWN -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1">Judul / Teks Countdown:</label>
-                            <input type="text" name="countdown_title" id="input-countdown-title" value="<?= htmlspecialchars($cfg['countdown_title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:') ?>" oninput="updateAdminCountdownWidget()" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm focus:border-[#0b8478] focus:outline-none">
-                        </div>
-                    </div>
-
-                    <!-- ============================================================ -->
-                    <!-- KARTU 6: TAHUN AJARAN & RINCIAN BIAYA PENDIDIKAN             -->
-                    <!-- ============================================================ -->
-                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex items-center gap-2.5 border-b border-slate-100 pb-3">
-                            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-lg">
-                                <i class="fas fa-hand-holding-dollar"></i>
-                            </div>
-                            <div>
-                                <h2 class="font-bold text-base text-slate-900">6. Periode SPMB & Biaya Pendidikan</h2>
-                                <p class="text-xs text-slate-500">Data ini otomatis tampil pada teks amplop dan tabel biaya brosur</p>
-                            </div>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Tahun Ajaran:</label>
-                                <input type="text" name="tahun_ajaran" id="input-tahun" value="<?= htmlspecialchars($cfg['tahun_ajaran'] ?? '2026/2027') ?>" oninput="updateLiveText()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none">
+                                <input type="text" name="tahun_ajaran" id="input-tahun" value="<?= htmlspecialchars($cfg['tahun_ajaran'] ?? '2026/2027') ?>" oninput="updateLiveTextRedaksi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Nama Gelombang:</label>
-                                <input type="text" name="periode_gelombang" id="input-gelombang" value="<?= htmlspecialchars($cfg['periode_gelombang'] ?? 'Gelombang 1 — Kuota Terbatas') ?>" oninput="updateLiveText()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none">
+                                <input type="text" name="periode_gelombang" id="input-gelombang" value="<?= htmlspecialchars($cfg['periode_gelombang'] ?? 'Gelombang 1 — Kuota Terbatas') ?>" oninput="updateLiveTextRedaksi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">Kuota Santri:</label>
@@ -833,14 +1020,9 @@ $active_menu = 'brosur_settings';
                                 <input type="number" name="biaya_spp" value="<?= $cfg['biaya_spp'] ?? 1650000 ?>" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
                             </div>
                         </div>
-
-                        <div class="pt-2">
-                            <label class="block text-xs font-bold text-amber-800 mb-1">Potongan / Diskon Khusus Gelombang (Rp):</label>
-                            <input type="number" name="diskon_gelombang" value="<?= $cfg['diskon_gelombang'] ?? 2000000 ?>" required class="w-full px-4 py-2 rounded-xl border border-amber-300 bg-amber-50 text-xs font-bold text-amber-900">
-                        </div>
                     </div>
 
-                    <!-- TOMBOL SIMPAN -->
+                    <!-- TOMBOL SIMPAN UTAMA -->
                     <div class="sticky bottom-4 z-20">
                         <button type="submit" class="w-full py-4 px-6 rounded-2xl bg-[#0b8478] hover:bg-[#075f56] text-white font-black text-sm sm:text-base shadow-xl flex items-center justify-center gap-2 transform active:scale-95 transition">
                             <i class="fas fa-save text-lg"></i>
@@ -852,7 +1034,7 @@ $active_menu = 'brosur_settings';
 
             </div>
 
-            <!-- SIMULASI SMARTPHONE LIVE PREVIEW & VISUAL CANVAS DRAG (4 KOLOM) -->
+            <!-- SIMULASI SMARTPHONE LIVE PREVIEW & VISUAL CANVAS (4 - 5 KOLOM) -->
             <div class="lg:col-span-5 xl:col-span-4 sticky top-6 flex flex-col items-center">
                 
                 <!-- TAB SWITCHER: COVER VS INNER -->
@@ -871,16 +1053,13 @@ $active_menu = 'brosur_settings';
                 </div>
 
                 <!-- PHONE MOCKUP -->
-                <div class="phone-mockup bg-slate-900 text-white flex flex-col relative" id="phone-container">
+                <div class="phone-mockup bg-slate-900 text-white flex flex-col relative" id="phone-container" style="font-family: '<?= htmlspecialchars($cfg['font_family'] ?? 'Plus Jakarta Sans') ?>', sans-serif;">
                     <div class="phone-speaker"></div>
 
                     <!-- GARIS BANTUAN (GUIDELINES & GRID) -->
                     <div id="grid-overlay" class="absolute inset-0 canvas-grid-bg pointer-events-none z-30 transition-opacity duration-300">
-                        <!-- Garis Tengah Presisi X=50% -->
                         <div class="center-guide-line"></div>
-                        <!-- Garis Horizontal Aktif saat Dragging -->
                         <div id="guide-horizontal" class="active-horizontal-guide hidden"></div>
-                        <!-- Indikator Y floating badge -->
                         <div id="guide-badge-y" class="absolute top-2 left-2 px-2 py-0.5 rounded bg-cyan-900/90 text-cyan-200 text-[9px] font-mono font-bold hidden border border-cyan-400/50 z-50">
                             Y: 0%
                         </div>
@@ -892,65 +1071,93 @@ $active_menu = 'brosur_settings';
                         <!-- OVERLAY DINAMIS COVER -->
                         <div id="preview-cover-overlay" class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all duration-300" style="opacity: <?= $cfg['cover_overlay_opacity'] ?? 0.85 ?>;"></div>
 
-                        <!-- BLOK 1: HEADER LOGO & BISMILLAH (DRAGGABLE) -->
-                        <div id="preview-elem-header" class="drag-box z-20 text-center" style="top: <?= $header_y ?>%;" data-elem="header">
-                            <span class="absolute -top-3 right-0 text-[8px] bg-amber-500/90 text-slate-950 px-1.5 py-0.2 rounded font-extrabold shadow opacity-0 group-hover:opacity-100 hover:opacity-100">
-                                <i class="fas fa-grip-vertical mr-0.5"></i>Logo
-                            </span>
-                            <p class="font-arabic text-sm transition-colors" id="view-bismillah" style="color: <?= htmlspecialchars($cfg['accent_color'] ?? '#fbbf24') ?>;">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-                            <img src="upload/logo-villa-quran.png" class="w-11 h-11 mx-auto mt-1 drop-shadow pointer-events-none">
-                            <h3 class="font-extrabold text-xs mt-1 transition-colors" id="view-title" style="color: <?= htmlspecialchars($cfg['text_color'] ?? '#ffffff') ?>;">Villa Quran Indonesia</h3>
-                            <p id="preview-sub" class="text-[9px] font-medium transition-colors" style="color: <?= htmlspecialchars($cfg['accent_color'] ?? '#fbbf24') ?>;"><?= htmlspecialchars($cfg['periode_gelombang'] ?? 'Gelombang 1 — Kuota Terbatas') ?></p>
+                        <!-- BLOK 1: HEADER LOGO, BISMILLAH, JUDUL (DRAGGABLE) -->
+                        <div id="preview-elem-header" class="drag-box z-20 text-center w-full px-2" style="top: <?= $header_y ?>%;" data-elem="header">
+                            
+                            <!-- Bismillah -->
+                            <p class="font-arabic text-sm transition-colors <?= (isset($cfg['show_bismillah']) && $cfg['show_bismillah'] == 0) ? 'hidden' : '' ?>" id="view-bismillah" style="color: <?= htmlspecialchars($cfg['accent_color'] ?? '#fbbf24') ?>;">
+                                <?= htmlspecialchars($cfg['bismillah_text'] ?? 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ') ?>
+                            </p>
+                            
+                            <!-- Gambar Logo (Bulat Sempurna sesuai Lingkaran Logo) -->
+                            <div id="view-logo-container" class="my-1 <?= (isset($cfg['show_logo']) && $cfg['show_logo'] == 0) ? 'hidden' : '' ?>">
+                                <div id="preview-logo-wrapper" class="rounded-full p-0.5 bg-white border-2 border-emerald-600 shadow-md overflow-hidden aspect-square mx-auto flex items-center justify-center transition-all" style="width: <?= round(($cfg['logo_size'] ?? 80) * 0.55) ?>px; height: round(($cfg['logo_size'] ?? 80) * 0.55)px;">
+                                    <img src="upload/logo-villa-quran.png" class="w-full h-full object-cover rounded-full pointer-events-none">
+                                </div>
+                            </div>
+
+                            <!-- Judul Utama -->
+                            <h3 class="font-black mt-1 transition-all leading-tight" id="view-title" style="color: <?= htmlspecialchars($cfg['text_color'] ?? '#ffffff') ?>; font-size: <?= round(($cfg['text_title_size'] ?? 22) * 0.7) ?>px;">
+                                <?= htmlspecialchars($cfg['judul_utama'] ?? 'Villa Quran Indonesia') ?>
+                            </h3>
+
+                            <!-- Subjudul -->
+                            <p id="view-subjudul" class="text-[9px] font-medium transition-all <?= (isset($cfg['show_subjudul']) && $cfg['show_subjudul'] == 0) ? 'hidden' : '' ?>" style="color: <?= htmlspecialchars($cfg['accent_color'] ?? '#fbbf24') ?>; font-size: <?= round(($cfg['text_sub_size'] ?? 12) * 0.8) ?>px;">
+                                <?= htmlspecialchars($cfg['subjudul'] ?? 'Sekolah Tahfidz Berasrama Nyaman Ala Villa') ?>
+                            </p>
+
+                            <p id="preview-sub" class="text-[8px] font-bold uppercase tracking-wider mt-0.5 transition-colors" style="color: <?= htmlspecialchars($cfg['accent_color'] ?? '#fbbf24') ?>;">
+                                <?= htmlspecialchars($cfg['periode_gelombang'] ?? 'Gelombang 1 — Kuota Terbatas') ?>
+                            </p>
                         </div>
 
-                        <!-- BLOK 2: KARTU TAMU CALON WALI (DRAGGABLE) -->
-                        <div id="preview-elem-guest" class="drag-box z-20 border rounded-2xl p-3 backdrop-blur-md shadow-lg transition-colors <?= (($cfg['card_bg_style'] ?? 'glass_dark') === 'glass_light') ? 'bg-white/85 border-emerald-600/40 text-slate-800' : 'bg-black/45 border-amber-400/40 text-white' ?>" style="top: <?= $guest_y ?>%;" data-elem="guest">
-                            <span class="absolute -top-3 right-0 text-[8px] bg-teal-500/90 text-white px-1.5 py-0.2 rounded font-extrabold shadow">
-                                <i class="fas fa-grip-vertical mr-0.5"></i>Tamu
+                        <!-- BLOK 2: KARTU TAMU CALON WALI (DRAGGABLE & RESIZABLE) -->
+                        <div id="preview-elem-guest" class="drag-box z-20 border rounded-2xl backdrop-blur-md shadow-lg transition-all <?= (($cfg['card_bg_style'] ?? 'glass_dark') === 'glass_light') ? 'bg-white/85 border-emerald-600/40 text-slate-800' : 'bg-black/45 border-amber-400/40 text-white' ?>" style="top: <?= $guest_y ?>%; width: <?= $cfg['card_width'] ?? 100 ?>%; padding: <?= round(($cfg['card_padding'] ?? 20) * 0.6) ?>px;" data-elem="guest">
+                            <span class="text-[8px] uppercase tracking-wider font-bold block" id="view-guest-sub" style="color: <?= htmlspecialchars($cfg['accent_color'] ?? '#fbbf24') ?>;">
+                                <?= htmlspecialchars($cfg['tamu_header_text'] ?? 'Kepada Yth. Calon Wali:') ?>
                             </span>
-                            <span class="text-[8px] uppercase tracking-wider font-bold block" id="view-guest-sub" style="color: <?= htmlspecialchars($cfg['accent_color'] ?? '#fbbf24') ?>;">Kepada Yth. Calon Wali:</span>
                             <div class="text-xs font-black mt-0.5 transition-colors" id="view-guest-name">Bpk. Hendy Pratama</div>
-                            <p class="text-[8px] text-slate-300 mt-0.5 leading-tight opacity-90">Undangan Silaturahmi Mahabbah & Brosur Pendidikan Generasi Qur'ani.</p>
+                            
+                            <!-- Teks Sambutan Tamu -->
+                            <p class="text-[8px] mt-0.5 leading-tight opacity-90 transition-all <?= (isset($cfg['show_sambutan']) && $cfg['show_sambutan'] == 0) ? 'hidden' : '' ?>" id="view-tamu-sambutan">
+                                <?= htmlspecialchars($cfg['tamu_sambutan_text'] ?? 'Undangan Silaturahmi Mahabbah & Brosur Pendidikan Generasi Qur\'ani.') ?>
+                            </p>
+
                             <div class="mt-1.5 pt-1.5 border-t border-white/10 text-[8px] font-semibold" id="preview-tahun-txt" style="color: <?= htmlspecialchars($cfg['accent_color'] ?? '#fbbf24') ?>;">
                                 Tahun Ajaran <?= htmlspecialchars($cfg['tahun_ajaran'] ?? '2026/2027') ?>
                             </div>
                         </div>
 
-                        <!-- BLOK 3: TOMBOL BUKA UNDANGAN (DRAGGABLE) -->
-                        <div id="preview-elem-btn" class="drag-box z-20" style="top: <?= $btn_y ?>%;" data-elem="btn">
-                            <span class="absolute -top-3 right-0 text-[8px] bg-rose-500/90 text-white px-1.5 py-0.2 rounded font-extrabold shadow">
-                                <i class="fas fa-grip-vertical mr-0.5"></i>Tombol
-                            </span>
-                            <button type="button" onclick="setPhoneTab('body')" id="view-btn-preview" class="w-full py-2.5 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all" style="background: <?= htmlspecialchars($cfg['btn_bg_color'] ?? '#d97706') ?>; color: <?= htmlspecialchars($cfg['btn_text_color'] ?? '#022d27') ?>;">
-                                <i class="fas fa-envelope-open-text"></i>
-                                <span>Buka Brosur & Undangan</span>
+                        <!-- BLOK 3: TOMBOL BUKA UNDANGAN (DRAGGABLE & RESIZABLE) -->
+                        <div id="preview-elem-btn" class="drag-box z-20 flex flex-col items-center" style="top: <?= $btn_y ?>%; width: 100%;" data-elem="btn">
+                            <button type="button" onclick="setPhoneTab('body')" id="view-btn-preview" class="rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all" style="width: <?= $cfg['btn_width'] ?? 100 ?>%; height: <?= round(($cfg['btn_height'] ?? 52) * 0.8) ?>px; background: <?= htmlspecialchars($cfg['btn_bg_color'] ?? '#d97706') ?>; color: <?= htmlspecialchars($cfg['btn_text_color'] ?? '#022d27') ?>;">
+                                <i class="fas fa-envelope-open-text text-[10px]"></i>
+                                <span id="view-btn-label"><?= htmlspecialchars($cfg['btn_text'] ?? 'Buka Brosur & Undangan') ?></span>
                             </button>
                             <p class="text-[8px] mt-1 text-center opacity-80" id="view-audio-note" style="color: <?= htmlspecialchars($cfg['text_color'] ?? '#ffffff') ?>;"><i class="fas fa-music mr-1"></i> Alunan Backsound Syahdu</p>
                         </div>
                     </div>
 
                     <!-- 2. SCREEN VIEW: SIMULASI HALAMAN DALAM -->
-                    <div id="preview-screen-body" class="hidden relative w-full h-full p-4 overflow-y-auto bg-cover bg-center transition-all duration-500 select-none" style="background-image: url('<?= htmlspecialchars($cfg['body_bg_url'] ?? '') ?>');">
+                    <div id="preview-screen-body" class="hidden relative w-full h-full p-4 overflow-y-auto bg-cover bg-center transition-all duration-500 select-none text-slate-800" style="background-image: url('<?= htmlspecialchars($cfg['body_bg_url'] ?? '') ?>');">
                         
                         <!-- OVERLAY DINAMIS HALAMAN DALAM -->
                         <div id="preview-body-overlay" class="absolute inset-0 bg-[#f6f7f5] transition-all duration-300" style="opacity: <?= $cfg['body_overlay_opacity'] ?? 0.92 ?>;"></div>
 
                         <!-- KONTEN HALAMAN DALAM -->
-                        <div class="relative z-10 space-y-3 pt-4 text-slate-800 text-left">
+                        <div class="relative z-10 space-y-3 pt-3 text-left">
                             
-                            <!-- Header Mini -->
+                            <!-- Header Mini Bulat Sempurna -->
                             <div class="text-center">
-                                <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-[9px] font-bold">
-                                    TA <span id="preview-body-tahun"><?= htmlspecialchars($cfg['tahun_ajaran'] ?? '2026/2027') ?></span>
-                                </span>
-                                <h4 class="font-black text-sm text-emerald-950 mt-1">Villa Quran Indonesia</h4>
-                                <p class="text-[9px] text-emerald-700">Pesantren Tahfidz Berasrama Nyaman Ala Villa</p>
+                                <div class="w-10 h-10 rounded-full mx-auto mb-1 p-0.5 bg-white border border-emerald-600 shadow-sm overflow-hidden aspect-square flex items-center justify-center">
+                                    <img src="upload/logo-villa-quran.png" class="w-full h-full object-cover rounded-full">
+                                </div>
+                                <h4 class="font-black text-xs text-emerald-950"><?= htmlspecialchars($cfg['judul_utama'] ?? 'Villa Quran Indonesia') ?></h4>
+                                <p class="text-[8px] text-emerald-700"><?= htmlspecialchars($cfg['subjudul'] ?? 'Pesantren Tahfidz Berasrama Nyaman Ala Villa') ?></p>
+                            </div>
+
+                            <!-- Simulasi Video Profil -->
+                            <div id="preview-video-container" class="rounded-2xl p-2 bg-white/90 border border-slate-200 shadow-sm text-center <?= (isset($cfg['show_video']) && $cfg['show_video'] == 0) ? 'hidden' : '' ?>">
+                                <span class="text-[8px] font-bold text-slate-700 block mb-1"><i class="fab fa-youtube text-red-600 mr-1"></i> Video Profil Santri</span>
+                                <div id="preview-video-box" class="mx-auto rounded-xl bg-slate-900 text-white flex items-center justify-center text-[9px] shadow-inner transition-all" style="width: <?= $cfg['video_width'] ?? 100 ?>%; height: <?= round(($cfg['video_height'] ?? 240) * 0.45) ?>px;">
+                                    <i class="fas fa-play-circle text-rose-500 text-lg mr-1.5"></i> Video Player Frame
+                                </div>
                             </div>
 
                             <!-- Simulasi Countdown Timer di HP -->
-                            <div id="preview-countdown-box" class="p-3 rounded-2xl bg-gradient-to-b from-white to-emerald-50/90 border border-amber-500/30 shadow-md text-center">
+                            <div id="preview-countdown-box" class="p-2.5 rounded-2xl bg-gradient-to-b from-white to-emerald-50/90 border border-amber-500/30 shadow-md text-center">
                                 <span class="text-[8px] font-extrabold uppercase tracking-wider text-amber-800 block">⏳ Batas Akhir Pendaftaran</span>
-                                <div class="flex justify-center items-center space-x-1.5 mt-2">
+                                <div class="flex justify-center items-center space-x-1.5 mt-1.5">
                                     <div class="bg-emerald-900 text-amber-300 font-black text-xs w-7 h-7 flex items-center justify-center rounded-lg font-mono" id="phone-cd-hari">00</div>
                                     <span class="text-[7px] text-emerald-900 font-bold">:</span>
                                     <div class="bg-emerald-900 text-amber-300 font-black text-xs w-7 h-7 flex items-center justify-center rounded-lg font-mono" id="phone-cd-jam">00</div>
@@ -961,15 +1168,15 @@ $active_menu = 'brosur_settings';
                                 </div>
                             </div>
 
-                            <!-- Kartu Muqaddimah -->
-                            <div class="p-3 rounded-2xl bg-white/90 border border-emerald-100 shadow-sm text-[10px] leading-relaxed text-slate-700">
-                                <span class="font-bold text-emerald-950 block text-xs mb-1">Target Kompetensi Santri:</span>
-                                <p>• Tahfidz Mutqin 15-30 Juz Bersanad</p>
-                                <p>• Ijazah Resmi Negara Setara SMP/SMA</p>
-                                <p>• Digital Marketing, AI Terapan & Solopreneur</p>
+                            <!-- Simulasi Google Maps Frame -->
+                            <div id="preview-maps-container" class="rounded-2xl p-2 bg-white/90 border border-slate-200 shadow-sm text-center <?= (isset($cfg['show_maps']) && $cfg['show_maps'] == 0) ? 'hidden' : '' ?>">
+                                <span class="text-[8px] font-bold text-slate-700 block mb-1"><i class="fas fa-map-marker-alt text-emerald-600 mr-1"></i> Google Maps Lokasi</span>
+                                <div id="preview-maps-box" class="mx-auto rounded-xl bg-emerald-100 text-emerald-900 flex items-center justify-center text-[9px] font-bold border border-emerald-300 shadow-inner transition-all" style="width: <?= $cfg['maps_width'] ?? 100 ?>%; height: <?= round(($cfg['maps_height'] ?? 220) * 0.45) ?>px;">
+                                    <i class="fas fa-location-arrow text-emerald-700 text-xs mr-1"></i> Interactive Maps Frame
+                                </div>
                             </div>
 
-                            <div class="text-center pt-2">
+                            <div class="text-center pt-2 pb-4">
                                 <button type="button" onclick="setPhoneTab('cover')" class="text-[10px] text-emerald-700 font-bold underline">
                                     &larr; Kembali ke Cover Amplop
                                 </button>
@@ -980,7 +1187,7 @@ $active_menu = 'brosur_settings';
                 </div>
 
                 <p class="text-[11px] text-slate-400 mt-3 text-center">
-                    <i class="fas fa-check-circle text-emerald-500 mr-1"></i> Preview otomatis ter-update secara real-time saat gambar, warna, atau posisi diubah.
+                    <i class="fas fa-check-circle text-emerald-500 mr-1"></i> Dimensi lebar, tinggi, font & warna ter-update secara real-time.
                 </p>
             </div>
 
@@ -988,7 +1195,7 @@ $active_menu = 'brosur_settings';
 
     </main>
 
-    <!-- SCRIPT INTERAKTIF DRAG & DROP, GUIDELINES, COLOR SYNC & REALTIME PREVIEW -->
+    <!-- SCRIPT INTERAKTIF REALTIME WORKSPACE -->
     <script>
         let activePhoneTab = 'cover';
         let showGuidelines = true;
@@ -1013,7 +1220,6 @@ $active_menu = 'brosur_settings';
             }
         }
 
-        // Toggle Grid & Alignment Guidelines
         function toggleGuidelines() {
             showGuidelines = !showGuidelines;
             const grid = document.getElementById('grid-overlay');
@@ -1047,27 +1253,12 @@ $active_menu = 'brosur_settings';
             }
         }
 
-        function pilihPresetCover(url) {
-            document.getElementById('input-cover-bg-url').value = url;
-            setPhoneTab('cover');
-            updateLivePreview();
-        }
-
-        function pilihPresetBody(url) {
-            document.getElementById('input-body-bg-url').value = url;
-            setPhoneTab('body');
-            updateLiveBodyBg();
-        }
-
         function updateLivePreview() {
             const url = document.getElementById('input-cover-bg-url').value.trim();
             const screen = document.getElementById('preview-screen-cover');
-            if (url) {
-                screen.style.backgroundImage = `url('${url}')`;
-            }
+            if (url) screen.style.backgroundImage = `url('${url}')`;
         }
 
-        // 3. Opacity Control (Bisa 0% - Tanpa Digelapkan)
         function updateLiveCoverOpacity(val) {
             const pct = Math.round(val * 100);
             document.getElementById('cover-opacity-val').innerText = (pct === 0) ? '0% (Tanpa Digelapkan)' : pct + '%';
@@ -1077,9 +1268,7 @@ $active_menu = 'brosur_settings';
         function updateLiveBodyBg() {
             const url = document.getElementById('input-body-bg-url').value.trim();
             const screen = document.getElementById('preview-screen-body');
-            if (url) {
-                screen.style.backgroundImage = `url('${url}')`;
-            }
+            if (url) screen.style.backgroundImage = `url('${url}')`;
         }
 
         function updateLiveBodyOpacity(val) {
@@ -1088,60 +1277,142 @@ $active_menu = 'brosur_settings';
             document.getElementById('preview-body-overlay').style.opacity = val;
         }
 
-        function updateLiveText() {
-            const gelombang = document.getElementById('input-gelombang').value;
-            const tahun = document.getElementById('input-tahun').value;
-            
-            document.getElementById('preview-sub').innerText = gelombang;
-            document.getElementById('preview-tahun-txt').innerText = 'Tahun Ajaran ' + tahun;
-            document.getElementById('preview-body-tahun').innerText = tahun;
+        // 2. Realtime Font & Redaksi Teks
+        function updateLiveFont(fontFamily) {
+            document.getElementById('phone-container').style.fontFamily = `'${fontFamily}', sans-serif`;
         }
 
-        // 4. Color Theme Harmonization & Sync
+        function updateLiveTextRedaksi() {
+            const bismillah = document.getElementById('input-bismillah').value;
+            const judul = document.getElementById('input-judul-utama').value;
+            const subjudul = document.getElementById('input-subjudul').value;
+            const gelombang = document.getElementById('input-gelombang').value;
+            const tahun = document.getElementById('input-tahun').value;
+            const headerTamu = document.getElementById('input-tamu-header').value;
+            const sambutan = document.getElementById('input-tamu-sambutan').value;
+            const btnText = document.getElementById('input-btn-text').value;
+
+            document.getElementById('view-bismillah').innerText = bismillah;
+            document.getElementById('view-title').innerText = judul;
+            document.getElementById('view-subjudul').innerText = subjudul;
+            document.getElementById('preview-sub').innerText = gelombang;
+            document.getElementById('preview-tahun-txt').innerText = 'Tahun Ajaran ' + tahun;
+            document.getElementById('view-guest-sub').innerText = headerTamu;
+            document.getElementById('view-tamu-sambutan').innerText = sambutan;
+            document.getElementById('view-btn-label').innerText = btnText;
+        }
+
+        // 3. Realtime Sizing: Lebar & Tinggi (Dilebarkan / Disempitkan)
+        function updateLiveLogoSize(val) {
+            document.getElementById('val-logo-size').innerText = val + ' px';
+            const scaled = Math.round(val * 0.55);
+            const wrapper = document.getElementById('preview-logo-wrapper');
+            if (wrapper) {
+                wrapper.style.width = scaled + 'px';
+                wrapper.style.height = scaled + 'px';
+            }
+        }
+
+        function updateLiveCardWidth(val) {
+            document.getElementById('val-card-width').innerText = val + '%';
+            const card = document.getElementById('preview-elem-guest');
+            if (card) card.style.width = val + '%';
+        }
+
+        function updateLiveCardPadding(val) {
+            document.getElementById('val-card-padding').innerText = val + ' px';
+            const scaled = Math.round(val * 0.6);
+            const card = document.getElementById('preview-elem-guest');
+            if (card) card.style.padding = scaled + 'px';
+        }
+
+        function updateLiveBtnWidth(val) {
+            document.getElementById('val-btn-width').innerText = val + '%';
+            const btn = document.getElementById('view-btn-preview');
+            if (btn) btn.style.width = val + '%';
+        }
+
+        function updateLiveBtnHeight(val) {
+            document.getElementById('val-btn-height').innerText = val + ' px';
+            const scaled = Math.round(val * 0.8);
+            const btn = document.getElementById('view-btn-preview');
+            if (btn) btn.style.height = scaled + 'px';
+        }
+
+        function updateLiveTitleSize(val) {
+            document.getElementById('val-text-title-size').innerText = val + ' px';
+            const scaled = Math.round(val * 0.7);
+            document.getElementById('view-title').style.fontSize = scaled + 'px';
+        }
+
+        function updateLiveSubSize(val) {
+            document.getElementById('val-text-sub-size').innerText = val + ' px';
+            const scaled = Math.round(val * 0.8);
+            document.getElementById('view-subjudul').style.fontSize = scaled + 'px';
+        }
+
+        function updateLiveVideoWidth(val) {
+            document.getElementById('val-video-width').innerText = val + '%';
+            const box = document.getElementById('preview-video-box');
+            if (box) box.style.width = val + '%';
+        }
+
+        function updateLiveVideoHeight(val) {
+            document.getElementById('val-video-height').innerText = val + ' px';
+            const scaled = Math.round(val * 0.45);
+            const box = document.getElementById('preview-video-box');
+            if (box) box.style.height = scaled + 'px';
+        }
+
+        function updateLiveMapsWidth(val) {
+            document.getElementById('val-maps-width').innerText = val + '%';
+            const box = document.getElementById('preview-maps-box');
+            if (box) box.style.width = val + '%';
+        }
+
+        function updateLiveMapsHeight(val) {
+            document.getElementById('val-maps-height').innerText = val + ' px';
+            const scaled = Math.round(val * 0.45);
+            const box = document.getElementById('preview-maps-box');
+            if (box) box.style.height = scaled + 'px';
+        }
+
+        // Toggle Sembunyikan / Hapus Elemen
+        function toggleElemVisibility(key, isVisible) {
+            let targetEl = null;
+            if (key === 'bismillah') targetEl = document.getElementById('view-bismillah');
+            if (key === 'logo')      targetEl = document.getElementById('view-logo-container');
+            if (key === 'subjudul')  targetEl = document.getElementById('view-subjudul');
+            if (key === 'sambutan')  targetEl = document.getElementById('view-tamu-sambutan');
+            if (key === 'video')     targetEl = document.getElementById('preview-video-container');
+            if (key === 'maps')      targetEl = document.getElementById('preview-maps-container');
+
+            if (targetEl) {
+                if (isVisible) {
+                    targetEl.classList.remove('hidden');
+                } else {
+                    targetEl.classList.add('hidden');
+                }
+            }
+        }
+
+        // 4. Penyesuaian Warna Cerdas (Smart Auto Contrast) & Color Picker
         function terapkanTemaWarna(mode) {
             document.getElementById('input-theme-color-mode').value = mode;
-            
-            // Set styles per theme
             if (mode === 'light_ivory') {
-                // Untuk Latar Terang / Opacity 0%
                 document.getElementById('input-text-color').value = '#064e45';
                 document.getElementById('input-accent-color').value = '#b45309';
                 document.getElementById('input-btn-bg-color').value = '#064e45';
                 document.getElementById('input-btn-text-color').value = '#fcd34d';
                 document.getElementById('input-card-bg-style').value = 'glass_light';
-            } else if (mode === 'midnight_luxe') {
-                document.getElementById('input-text-color').value = '#f8fafc';
-                document.getElementById('input-accent-color').value = '#fcd34d';
-                document.getElementById('input-btn-bg-color').value = '#0f172a';
-                document.getElementById('input-btn-text-color').value = '#fbbf24';
-                document.getElementById('input-card-bg-style').value = 'glass_dark';
-            } else if (mode === 'royal_maroon') {
-                document.getElementById('input-text-color').value = '#ffffff';
-                document.getElementById('input-accent-color').value = '#fbbf24';
-                document.getElementById('input-btn-bg-color').value = '#7f1d1d';
-                document.getElementById('input-btn-text-color').value = '#fbbf24';
-                document.getElementById('input-card-bg-style').value = 'glass_dark';
             } else {
-                // Default: Emerald Gold
+                // Default: Emerald Gold (Dark Mode)
                 document.getElementById('input-text-color').value = '#ffffff';
                 document.getElementById('input-accent-color').value = '#fbbf24';
                 document.getElementById('input-btn-bg-color').value = '#d97706';
                 document.getElementById('input-btn-text-color').value = '#022d27';
                 document.getElementById('input-card-bg-style').value = 'glass_dark';
             }
-
-            // Update UI buttons active state
-            ['emerald_gold', 'light_ivory', 'midnight_luxe', 'royal_maroon'].forEach(m => {
-                const btn = document.getElementById('btn-theme-' + m);
-                if (btn) {
-                    if (m === mode) {
-                        btn.className = 'p-2.5 rounded-2xl border-2 text-left transition border-[#0b8478] bg-teal-50/60';
-                    } else {
-                        btn.className = 'p-2.5 rounded-2xl border-2 text-left transition border-slate-200';
-                    }
-                }
-            });
-
             updateLiveColors();
         }
 
@@ -1152,16 +1423,15 @@ $active_menu = 'brosur_settings';
             const btnTxtColor = document.getElementById('input-btn-text-color').value;
             const cardStyle   = document.getElementById('input-card-bg-style').value;
 
-            // Labels
             document.getElementById('label-text-color').innerText = textColor;
             document.getElementById('label-accent-color').innerText = accentColor;
             document.getElementById('label-btn-bg-color').innerText = btnBgColor;
             document.getElementById('label-btn-text-color').innerText = btnTxtColor;
 
-            // Apply to Phone Mockup
             document.getElementById('view-title').style.color = textColor;
             document.getElementById('view-audio-note').style.color = textColor;
             document.getElementById('view-bismillah').style.color = accentColor;
+            document.getElementById('view-subjudul').style.color = accentColor;
             document.getElementById('preview-sub').style.color = accentColor;
             document.getElementById('view-guest-sub').style.color = accentColor;
             document.getElementById('preview-tahun-txt').style.color = accentColor;
@@ -1172,26 +1442,20 @@ $active_menu = 'brosur_settings';
 
             const guestCard = document.getElementById('preview-elem-guest');
             if (cardStyle === 'glass_light') {
-                guestCard.className = 'drag-box z-20 border rounded-2xl p-3 backdrop-blur-md shadow-lg transition-colors bg-white/85 border-emerald-600/40 text-slate-900';
+                guestCard.className = 'drag-box z-20 border rounded-2xl backdrop-blur-md shadow-lg transition-all bg-white/85 border-emerald-600/40 text-slate-900';
             } else {
-                guestCard.className = 'drag-box z-20 border rounded-2xl p-3 backdrop-blur-md shadow-lg transition-colors bg-black/45 border-amber-400/40 text-white';
+                guestCard.className = 'drag-box z-20 border rounded-2xl backdrop-blur-md shadow-lg transition-all bg-black/45 border-amber-400/40 text-white';
             }
         }
 
-        // 2. Interactive Drag & Drop + Slider Positioning
+        // 5. Interactive Drag & Drop + Slider Positioning
         function applyElementPosition(elemKey, percentVal) {
             const elem = document.getElementById('preview-elem-' + elemKey);
-            if (elem) {
-                elem.style.top = percentVal + '%';
-            }
+            if (elem) elem.style.top = percentVal + '%';
             const label = document.getElementById('val-pos-' + elemKey);
-            if (label) {
-                label.innerText = percentVal + '%';
-            }
+            if (label) label.innerText = percentVal + '%';
             const input = document.getElementById('input-pos-' + elemKey);
-            if (input && input.value != percentVal) {
-                input.value = percentVal;
-            }
+            if (input && input.value != percentVal) input.value = percentVal;
         }
 
         function resetDefaultPositions() {
@@ -1200,7 +1464,6 @@ $active_menu = 'brosur_settings';
             applyElementPosition('btn', 82);
         }
 
-        // Enable Dragging directly inside Phone Mockup
         (function initDraggableElements() {
             const phoneScreen = document.getElementById('preview-screen-cover');
             const guideH = document.getElementById('guide-horizontal');
@@ -1235,7 +1498,6 @@ $active_menu = 'brosur_settings';
                 const deltaPct = (deltaY / screenH) * 100;
                 let newPct = Math.round(startTopPct + deltaPct);
 
-                // Batasan batas drag
                 const key = currentDragElem.dataset.elem;
                 if (key === 'header') newPct = Math.max(2, Math.min(38, newPct));
                 if (key === 'guest')  newPct = Math.max(18, Math.min(72, newPct));
@@ -1243,7 +1505,6 @@ $active_menu = 'brosur_settings';
 
                 applyElementPosition(key, newPct);
 
-                // Update garis bantuan horizontal
                 guideH.style.top = currentDragElem.offsetTop + 'px';
                 badgeY.style.top = (currentDragElem.offsetTop - 20) + 'px';
                 badgeY.innerText = 'Posisi Y: ' + newPct + '%';
@@ -1279,9 +1540,7 @@ $active_menu = 'brosur_settings';
 
         function toggleCountdownVisibility(isChecked) {
             const box = document.getElementById('preview-countdown-box');
-            if (box) {
-                box.style.display = isChecked ? 'block' : 'none';
-            }
+            if (box) box.style.display = isChecked ? 'block' : 'none';
         }
 
         function updateAdminCountdownWidget() {
