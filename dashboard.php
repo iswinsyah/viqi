@@ -677,12 +677,14 @@ $ruang_web_cards = [
     ['label' => 'Artikel Blog', 'icon' => 'fas fa-file-alt', 'href' => 'admin-artikel.php'],
     ['label' => 'Lead Magnet', 'icon' => 'fas fa-bullhorn', 'href' => 'admin-popup.php'],
     ['label' => 'Media', 'icon' => 'fas fa-folder-open', 'href' => 'admin-media.php'],
+    ['label' => 'Brosur Digital', 'icon' => 'fas fa-envelope-open-text', 'href' => 'admin-brosur-settings.php'],
     ['label' => 'Pengaturan', 'icon' => 'fas fa-cog', 'href' => 'admin-pengaturan.php'],
 ];
 
 // Data Menu Grid Card Ruang Marketing (AI & Prospek)
 $ruang_marketing_cards = [
     ['label' => 'Dashboard Mkt', 'icon' => 'fas fa-tachometer-alt', 'href' => 'dashboard-marketing.php'],
+    ['label' => 'Brosur Digital', 'icon' => 'fas fa-envelope-open-text', 'href' => 'admin-brosur-settings.php'],
     ['label' => 'Pipeline', 'icon' => 'fas fa-filter', 'href' => 'data-pipeline.php'],
     ['label' => 'Data Agen', 'icon' => 'fas fa-users', 'href' => 'data-agen.php'],
     ['label' => 'Pendaftar SPMB', 'icon' => 'fas fa-user-graduate', 'href' => 'admin-spmb.php'],

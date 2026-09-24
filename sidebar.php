@@ -76,6 +76,10 @@
                 <i class="fas fa-folder-open w-4 text-center"></i>
                 <span>Penyimpanan Media</span>
             </a>
+            <a href="admin-brosur-settings.php" class="<?= (isset($active_menu) && $active_menu == 'brosur_settings') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
+                <i class="fas fa-envelope-open-text w-4 text-center text-amber-300"></i>
+                <span>Brosur PSB Digital</span>
+            </a>
             <a href="admin-pengaturan.php" class="<?= (isset($active_menu) && $active_menu == 'pengaturan') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
                 <i class="fas fa-cog w-4 text-center"></i>
                 <span>Pengaturan Web</span>

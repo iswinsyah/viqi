@@ -5,6 +5,20 @@
 
 require_once 'koneksi.php';
 
+// Ambil Pengaturan Brosur Dinamis dari Database
+$q_brosur = $conn->query("SELECT * FROM pengaturan_brosur WHERE id = 1 LIMIT 1");
+$cfg_brosur = ($q_brosur && $q_brosur->num_rows > 0) ? $q_brosur->fetch_assoc() : [];
+
+$tahun_ajaran      = !empty($cfg_brosur['tahun_ajaran']) ? htmlspecialchars($cfg_brosur['tahun_ajaran']) : '2026/2027';
+$periode_gelombang = !empty($cfg_brosur['periode_gelombang']) ? htmlspecialchars($cfg_brosur['periode_gelombang']) : 'Gelombang 1 — Kuota Terbatas';
+$cover_bg_url      = !empty($cfg_brosur['cover_bg_url']) ? htmlspecialchars($cfg_brosur['cover_bg_url']) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
+$cover_opacity     = isset($cfg_brosur['cover_overlay_opacity']) ? (float)$cfg_brosur['cover_overlay_opacity'] : 0.85;
+$biaya_pendaftaran = isset($cfg_brosur['biaya_pendaftaran']) ? number_format($cfg_brosur['biaya_pendaftaran'], 0, ',', '.') : '350.000';
+$biaya_pangkal     = isset($cfg_brosur['biaya_pangkal']) ? number_format($cfg_brosur['biaya_pangkal'], 0, ',', '.') : '12.500.000';
+$biaya_tahunan     = isset($cfg_brosur['biaya_tahunan']) ? number_format($cfg_brosur['biaya_tahunan'], 0, ',', '.') : '2.500.000';
+$biaya_spp         = isset($cfg_brosur['biaya_spp']) ? number_format($cfg_brosur['biaya_spp'], 0, ',', '.') : '1.650.000';
+$diskon_gelombang  = isset($cfg_brosur['diskon_gelombang']) ? number_format($cfg_brosur['diskon_gelombang'], 0, ',', '.') : '2.000.000';
+
 // Ambil parameter personalisasi & afiliasi
 $to_param   = isset($_GET['to']) ? trim($_GET['to']) : '';
 $nama_tamu  = !empty($to_param) ? htmlspecialchars($to_param) : 'Bapak / Ibu Calon Wali Santri & Keluarga';
@@ -145,9 +159,10 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- ============================================================ -->
     <!-- 1. FULLSCREEN COVER AMPLOP DIGITAL (OPENING EXPERIENCE)      -->
     <!-- ============================================================ -->
-    <div id="envelope-cover" class="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#032621] via-[#064e45] to-[#021d19] text-white p-4 overflow-y-auto">
+    <div id="envelope-cover" class="fixed inset-0 z-50 flex items-center justify-center text-white p-4 overflow-y-auto bg-cover bg-center transition-all duration-700" style="background-image: url('<?= $cover_bg_url ?>');">
         
-        <!-- Ornamen Latar & Lingkaran Emas -->
+        <!-- Ornamen Latar & Overlay Dinamis -->
+        <div class="absolute inset-0 bg-gradient-to-br from-[#022c22] via-[#043d35] to-[#021d19]" style="opacity: <?= $cover_opacity ?>;"></div>
         <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('https://www.transparenttextures.com/patterns/arabesque.png');"></div>
         <div class="absolute -top-24 -left-24 w-80 h-80 bg-amber-500/15 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-24 -right-24 w-80 h-80 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
@@ -167,7 +182,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             </div>
 
             <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">Villa Quran Indonesia</h1>
-            <p class="text-xs text-amber-200/80 font-medium mb-6">Sekolah Tahfidz Berasrama Nyaman Ala Villa</p>
+            <p class="text-xs text-amber-200/80 font-medium mb-1">Sekolah Tahfidz Berasrama Nyaman Ala Villa</p>
+            <p class="text-[11px] text-amber-300 font-extrabold uppercase tracking-wider mb-6"><?= $periode_gelombang ?> &bull; TA <?= $tahun_ajaran ?></p>
 
             <!-- Segel Nama Tamu Calon Wali Santri -->
             <div class="bg-black/30 border border-amber-500/30 rounded-2xl p-5 mb-6 shadow-inner relative overflow-hidden">
@@ -221,7 +237,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <header class="text-center mb-8">
             <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold mb-3 shadow-sm">
                 <i class="fas fa-star text-amber-600"></i>
-                <span>Tahun Ajaran Baru &bull; Kuota Terbatas</span>
+                <span>Tahun Ajaran <?= $tahun_ajaran ?> &bull; <?= $periode_gelombang ?></span>
             </div>
             <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-16 h-16 mx-auto mb-2 drop-shadow">
             <h1 class="text-2xl sm:text-3xl font-black text-emerald-950 tracking-tight">Villa Quran Indonesia</h1>
@@ -484,7 +500,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             <span class="font-bold text-gray-900 block">1. Biaya Pendaftaran & Observasi</span>
                             <span class="text-[11px] text-gray-500">Pemeriksaan kesehatan, tes minat & bakat</span>
                         </div>
-                        <span class="font-extrabold text-emerald-700 text-sm">Rp 350.000</span>
+                        <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_pendaftaran ?></span>
                     </div>
 
                     <!-- Komponen 2: Uang Pangkal -->
@@ -493,7 +509,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             <span class="font-bold text-gray-900 block">2. Uang Pangkal / Sarana Masuk</span>
                             <span class="text-[11px] text-gray-500">Lemari, ranjang kasur, seragam, modul</span>
                         </div>
-                        <span class="font-extrabold text-emerald-700 text-sm">Rp 12.500.000</span>
+                        <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_pangkal ?></span>
                     </div>
 
                     <!-- Komponen 3: Biaya Tahunan -->
@@ -502,7 +518,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             <span class="font-bold text-gray-900 block">3. Biaya Pengembangan Tahunan</span>
                             <span class="text-[11px] text-gray-500">Karantina tahfidz, ekstrakurikuler & rihlah</span>
                         </div>
-                        <span class="font-extrabold text-emerald-700 text-sm">Rp 2.500.000</span>
+                        <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_tahunan ?></span>
                     </div>
 
                     <!-- Komponen 4: SPP Bulanan -->
@@ -512,7 +528,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             <span class="text-[11px] text-emerald-800">Makan 3x/hari bergizi, asrama, laundry & bimbingan</span>
                         </div>
                         <div class="text-right">
-                            <span class="font-black text-emerald-800 text-base">Rp 1.650.000</span>
+                            <span class="font-black text-emerald-800 text-base">Rp <?= $biaya_spp ?></span>
                             <span class="block text-[10px] text-emerald-600">/ bulan</span>
                         </div>
                     </div>
@@ -520,7 +536,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
                 <!-- Info Keringanan & Diskon -->
                 <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-amber-800 bg-amber-50/70 p-3 rounded-xl border border-amber-200">
-                    <span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-600"></i> <strong>Diskon Gelombang 1</strong> potongan Rp 2.000.000 Uang Pangkal</span>
+                    <span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-600"></i> <strong>Diskon <?= $periode_gelombang ?></strong> potongan Rp <?= $diskon_gelombang ?> Uang Pangkal</span>
                 </div>
             </div>
         </section>
