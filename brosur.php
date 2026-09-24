@@ -196,8 +196,11 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         </div>
     </div>
 
-    <!-- Audio Element untuk Backsound (Local Hostinger, 0 Buffering!) -->
-    <audio id="audio-backsound" src="upload/backsound.mp3" loop preload="auto"></audio>
+    <!-- Audio Element untuk Backsound (Multi-source Fallback) -->
+    <audio id="audio-backsound" loop preload="auto">
+        <source src="upload/backsound.mp3" type="audio/mpeg">
+        <source src="https://archive.org/download/IslamicBackgroundSoundsAahat/28-ISLAMIC%20BACKGROUND%20SOUNDS.mp3" type="audio/mpeg">
+    </audio>
 
     <!-- Floating Audio Control Button -->
     <div id="audio-control" class="fixed top-4 right-4 z-40 hidden">
