@@ -7,9 +7,29 @@ $santri_nama = $_SESSION['santri_nama'] ?? 'Santri';
 $active_menu = 'dashboard_santri';
 
 // ==============================================================
-// AJAX HANDLER: SIMPAN PROGRES BELAJAR & KETUNTASAN KUIS SANTRI
+// DETEKSI HAK AKSES PENGURUS / GURU UNTUK EDIT MODUL & VIDEO
+// (Hanya Super Admin, Pimpinan Yayasan, Kepala Sekolah, dan Guru)
+// ==============================================================
+$can_edit_materi = false;
+$app_roles = isset($_SESSION['app_user_roles']) ? explode(',', $_SESSION['app_user_roles']) : [];
+$ust_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
+$all_sess_roles = array_map('strtolower', array_map('trim', array_merge($app_roles, $ust_roles)));
+
+if (
+    !empty($_SESSION['admin_logged_in']) ||
+    !empty($_SESSION['yayasan_logged_in']) ||
+    !empty($_SESSION['yayasan2_logged_in']) ||
+    in_array(strtolower($_SESSION['app_username'] ?? ''), ['winsyah', 'viqi']) ||
+    !empty(array_intersect(['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan', 'kepala_sekolah', 'admin_sekolah', 'tutor', 'ustadz', 'guru', 'pengajar'], $all_sess_roles))
+) {
+    $can_edit_materi = true;
+}
+
+// ==============================================================
+// AJAX HANDLERS
 // ==============================================================
 if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST" && isset($_POST['action'])) {
+    // 1. Simpan Progres Kuis Santri
     if ($_POST['action'] === 'simpan_progres_kuis') {
         header('Content-Type: application/json');
         $b_id = (int)($_POST['bab_id'] ?? 0);
@@ -62,6 +82,8 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST" && isset($_POST['action'])) {
             updated_at = CURRENT_TIMESTAMP");
         $stmt_ins->bind_param("iisis", $santri_id, $b_id, $m_nama, $skor, $status_tuntas, $jawaban_json);
         
+        $panggilan_guru = (strpos(strtolower($m_nama), 'sosiologi') !== false) ? 'Ustadz Ibnu' : 'Ustadz Pengampu';
+
         if ($stmt_ins->execute()) {
             echo json_encode([
                 'status' => 'success',
@@ -70,12 +92,41 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST" && isset($_POST['action'])) {
                 'status_ketuntasan' => $status_tuntas,
                 'message' => ($status_tuntas === 'tuntas') 
                     ? "Masya Allah, Alhamdulillah! Nilai antum $skor/100 telah mencapai batas ketuntasan belajar (KKTP: $kktp). Silakan lanjut ke bab berikutnya!" 
-                    : "Nilai antum $skor/100 belum mencapai standar ketuntasan (KKTP: $kktp). Jangan berkecil hati, yuk pelajari kembali materinya atau minta penjelasan ke Ustadz AI lalu coba lagi!"
+                    : "Nilai antum $skor/100 belum mencapai standar ketuntasan (KKTP: $kktp). Jangan berkecil hati, yuk pelajari kembali materinya atau minta bimbingan ke $panggilan_guru lalu coba lagi!"
             ]);
         } else {
             echo json_encode(['status' => 'error', 'message' => $conn->error]);
         }
         $stmt_ins->close();
+        exit;
+    }
+
+    // 2. Simpan Edit Link Modul (PDF) & Video Pembelajaran (Khusus Guru / Admin)
+    if ($_POST['action'] === 'simpan_edit_materi') {
+        header('Content-Type: application/json');
+        if (!$can_edit_materi) {
+            echo json_encode(['status' => 'error', 'message' => 'Akses ditolak: Hanya pengurus dan guru yang dapat mengedit materi.']);
+            exit;
+        }
+
+        $b_id = (int)($_POST['bab_id'] ?? 0);
+        $pdf_url = trim($_POST['pdf_url'] ?? '');
+        $v_urls = $_POST['v_urls'] ?? [];
+        $clean_vids = [];
+        if (is_array($v_urls)) {
+            foreach ($v_urls as $v) {
+                $v = trim($v);
+                if (!empty($v)) $clean_vids[] = $v;
+            }
+        }
+        $video_urls_json = json_encode($clean_vids);
+
+        $stmt_up = $conn->prepare("UPDATE elearning_bab SET pdf_url = ?, video_urls = ? WHERE id = ?");
+        $stmt_up->bind_param("ssi", $pdf_url, $video_urls_json, $b_id);
+        $ok = $stmt_up->execute();
+        $stmt_up->close();
+
+        echo json_encode(['status' => $ok ? 'success' : 'error', 'message' => $ok ? 'Materi berhasil diperbarui!' : $conn->error]);
         exit;
     }
 }
@@ -119,6 +170,24 @@ if ($raw_mapel_lower === 'bahasa' || strpos($raw_mapel_lower, 'indo') !== false)
 
 $mapel_esc = $conn->real_escape_string($mapel);
 $bab_no = (int)($_GET['bab'] ?? 1);
+
+// Ambil info pendamping belajar dari database tutor_ai_mapel
+$tutor_info = null;
+$res_tinfo = $conn->query("SELECT * FROM tutor_ai_mapel WHERE mapel_nama = '$mapel_esc' LIMIT 1");
+if ($res_tinfo && $res_tinfo->num_rows > 0) {
+    $tutor_info = $res_tinfo->fetch_assoc();
+}
+
+$nama_tutor_lengkap = $tutor_info['nama_tutor'] ?? ('Ustadz ' . $mapel);
+if ($mapel === 'Sosiologi') {
+    $nama_panggilan_tutor = 'Ustadz Ibnu';
+    $nama_singkat_tutor = 'Ust. Ibnu';
+} else {
+    $nama_panggilan_tutor = $tutor_info['nama_tutor'] ?? 'Ustadz Pembimbing';
+    $nama_singkat_tutor = 'Ustadz';
+}
+$tutor_pitch = (float)($tutor_info['suara_pitch'] ?? 0.70);
+$tutor_rate = (float)($tutor_info['suara_rate'] ?? 0.95);
 
 // Data Profil Santri
 $res_s = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $santri_id LIMIT 1");
@@ -370,15 +439,15 @@ if ($materi_aktif) {
                     </div>
                     <div>
                         <h1 class="font-black text-sm sm:text-base leading-tight">E-Learning <?= htmlspecialchars($mapel) ?></h1>
-                        <p class="text-[10px] text-teal-100"><?= htmlspecialchars($kelas_santri) ?> • Mandiri & Terbimbing AI</p>
+                        <p class="text-[10px] text-teal-100"><?= htmlspecialchars($kelas_santri) ?> • Mandiri & Didampingi <?= htmlspecialchars($nama_panggilan_tutor) ?></p>
                     </div>
                 </div>
             </div>
             
             <div class="flex items-center space-x-2">
-                <button onclick="bukaUstadzAI()" class="bg-amber-400 hover:bg-amber-300 text-teal-950 font-black px-3.5 py-1.5 rounded-full text-xs shadow-md transition flex items-center gap-1.5 animate-pulse">
-                    <i class="fas fa-robot"></i>
-                    <span class="hidden sm:inline">Tanya</span> Ustadz AI
+                <button onclick="bukaUstadzAI()" class="bg-amber-400 hover:bg-amber-300 text-teal-950 font-black px-3.5 py-1.5 rounded-full text-xs shadow-md transition flex items-center gap-1.5 animate-pulse cursor-pointer">
+                    <i class="fas fa-comments"></i>
+                    <span>Tanya <?= htmlspecialchars($nama_panggilan_tutor) ?></span>
                 </button>
             </div>
         </header>
@@ -447,12 +516,12 @@ if ($materi_aktif) {
                             <div>
                                 <div class="flex items-center gap-2 mb-0.5">
                                     <span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-500 text-white uppercase tracking-wider">
-                                        🟢 Tutor AI Utama
+                                        🟢 Guru Pengampu Utama
                                     </span>
                                     <span class="text-[10px] text-teal-200 font-bold">Fase E & F (SMA IPS)</span>
                                 </div>
                                 <h3 class="font-black text-sm sm:text-base text-white leading-tight">
-                                    Didampingi oleh Ustadz Ibnu Khaldun
+                                    Didampingi oleh <?= htmlspecialchars($nama_tutor_lengkap) ?>
                                 </h3>
                                 <p class="text-[11px] text-amber-300 font-medium">Bapak Sosiologi & Sejarah Peradaban Dunia</p>
                             </div>
@@ -464,7 +533,7 @@ if ($materi_aktif) {
                                     onclick="putarSapaanSantri()"
                                     class="px-3.5 py-2 rounded-xl text-xs font-black bg-amber-400 hover:bg-amber-300 text-slate-950 transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer">
                                 <i class="fas fa-volume-high"></i>
-                                <span id="label-sapaan-santri">Sapaan Ustadz</span>
+                                <span id="label-sapaan-santri">Sapaan <?= htmlspecialchars($nama_panggilan_tutor) ?></span>
                             </button>
                             <button type="button" 
                                     onclick="bukaUstadzAI()"
@@ -553,6 +622,11 @@ if ($materi_aktif) {
                                 <span>1. E-Modul & Digital Flipbook Resmi</span>
                             </h3>
                             <div class="flex items-center gap-2">
+                                <?php if ($can_edit_materi): ?>
+                                <button type="button" onclick="bukaModalEditMateri()" class="text-xs font-black text-amber-950 bg-amber-300 hover:bg-amber-400 px-3 py-1.5 rounded-xl border border-amber-400 shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                                    <i class="fas fa-edit"></i> <span>Edit Modul & Video</span>
+                                </button>
+                                <?php endif; ?>
                                 <button type="button" onclick="toggleFullscreenFlipbook()" class="text-xs font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-xl border border-rose-200 transition flex items-center gap-1.5">
                                     <i class="fas fa-expand"></i> <span>Layar Penuh</span>
                                 </button>
@@ -669,7 +743,7 @@ if ($materi_aktif) {
                                                 </div>
                                                 <i class="fas fa-chevron-right text-slate-400 hidden sm:inline"></i>
                                                 <div class="w-full sm:w-auto flex-1 bg-white p-2.5 rounded-xl border border-slate-200 text-center shadow-2xs">
-                                                    3. Diskusi Ustadz AI
+                                                    3. Diskusi <?= htmlspecialchars($nama_panggilan_tutor) ?>
                                                 </div>
                                                 <i class="fas fa-chevron-right text-slate-400 hidden sm:inline"></i>
                                                 <div class="w-full sm:w-auto flex-1 bg-white p-2.5 rounded-xl border border-slate-200 text-center shadow-2xs">
@@ -781,13 +855,13 @@ if ($materi_aktif) {
                                                 <?= htmlspecialchars($materi_aktif['lks_judul'] ?? 'Tugas Pengamatan Mandiri') ?>
                                             </h5>
                                             <p class="text-xs text-slate-700 leading-relaxed">
-                                                <?= nl2br(htmlspecialchars($materi_aktif['lks_tugas'] ?? 'Tuliskan rangkuman 3 poin penting yang kamu pelajari dari bab ini di buku catatanmu, lalu diskusikan contohnya dengan Ustadz AI!')) ?>
+                                                <?= nl2br(htmlspecialchars($materi_aktif['lks_tugas'] ?? ('Tuliskan rangkuman 3 poin penting yang kamu pelajari dari bab ini di buku catatanmu, lalu diskusikan contohnya dengan ' . $nama_panggilan_tutor . '!'))) ?>
                                             </p>
                                         </div>
 
                                         <div class="flex flex-wrap items-center gap-2.5">
-                                            <button type="button" onclick="bukaUstadzAI()" class="bg-[#0d8276] hover:bg-[#0b6f65] text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center gap-1.5">
-                                                <i class="fas fa-robot"></i> Tanya Ustadz AI
+                                            <button type="button" onclick="bukaUstadzAI()" class="bg-[#0d8276] hover:bg-[#0b6f65] text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                                                <i class="fas fa-comments"></i> Tanya <?= htmlspecialchars($nama_panggilan_tutor) ?>
                                             </button>
                                             <a href="#quizSection" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-sm transition flex items-center gap-1.5">
                                                 <i class="fas fa-check-circle"></i> Kerjakan Kuis di Bawah
@@ -959,9 +1033,9 @@ if ($materi_aktif) {
                             <p class="text-xs text-amber-800 leading-relaxed"><?= nl2br(htmlspecialchars($materi_aktif['lks_tugas'])) ?></p>
                             
                             <div class="mt-4 pt-3 border-t border-amber-200/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <span class="text-[11px] text-amber-700 italic">Kerjakan di buku catatan atau diskusikan langsung dengan Ustadz AI!</span>
-                                <button onclick="konsultasiLksKeAI()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm self-start sm:self-auto flex items-center gap-1.5">
-                                    <i class="fas fa-magic"></i> Diskusikan Jawaban ke AI
+                                <span class="text-[11px] text-amber-700 italic">Kerjakan di buku catatan atau diskusikan langsung dengan <?= htmlspecialchars($nama_panggilan_tutor) ?>!</span>
+                                <button onclick="bukaUstadzAI()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-sm self-start sm:self-auto flex items-center gap-1.5 cursor-pointer">
+                                    <i class="fas fa-comments"></i> Diskusikan Jawaban ke <?= htmlspecialchars($nama_singkat_tutor) ?>
                                 </button>
                             </div>
                         </div>
@@ -1014,11 +1088,11 @@ if ($materi_aktif) {
                                 </p>
                                 
                                 <div class="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2.5" id="quizActionButtons">
-                                    <button type="button" onclick="ulangKuis()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5">
+                                    <button type="button" onclick="ulangKuis()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer">
                                         <i class="fas fa-rotate"></i> Ulangi Kuis
                                     </button>
-                                    <button type="button" onclick="bukaUstadzAI()" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow transition flex items-center gap-1.5">
-                                        <i class="fas fa-robot"></i> Tanya Ustadz AI
+                                    <button type="button" onclick="bukaUstadzAI()" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow transition flex items-center gap-1.5 cursor-pointer">
+                                        <i class="fas fa-comments"></i> Tanya <?= htmlspecialchars($nama_panggilan_tutor) ?>
                                     </button>
                                     <?php if ($bab_no < count($list_bab)): ?>
                                     <a href="santri-belajar.php?mapel=<?= urlencode($mapel) ?>&bab=<?= $bab_no + 1 ?>" id="btnLanjutBab" class="px-5 py-2 rounded-xl bg-[#0d8276] hover:bg-[#0b6f65] text-white font-extrabold text-xs shadow-md transition flex items-center gap-1.5">
@@ -1054,31 +1128,31 @@ if ($materi_aktif) {
     </div>
 
     <!-- ================================================== -->
-    <!-- MODAL USTADZ AI TUTOR (INTERAKTIF CHAT + SUARA)    -->
+    <!-- MODAL USTADZ PEMBIMBING (INTERAKTIF CHAT + SUARA)  -->
     <!-- ================================================== -->
     <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
         <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl border border-teal-100 flex flex-col h-[85vh] sm:h-[600px] overflow-hidden animate-in slide-in-from-bottom duration-300">
             
             <!-- Modal Header -->
-            <div class="bg-[#0d8276] text-white p-4 flex items-center justify-between flex-shrink-0">
+            <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 text-white p-4 flex items-center justify-between flex-shrink-0">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-2xl bg-amber-400 text-teal-950 flex items-center justify-center text-lg font-black shadow-md">
-                        <i class="fas fa-robot"></i>
+                    <div class="w-10 h-10 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center text-lg font-black shadow-md">
+                        <i class="fas fa-user-tie"></i>
                     </div>
                     <div>
                         <h3 class="font-black text-sm leading-tight flex items-center gap-1.5">
-                            Ustadz AI <?= htmlspecialchars($mapel) ?>
-                            <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+                            <?= htmlspecialchars($nama_tutor_lengkap) ?>
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         </h3>
-                        <p class="text-[10px] text-teal-100"><?= htmlspecialchars($materi_aktif['judul_bab'] ?? $mapel) ?></p>
+                        <p class="text-[10px] text-teal-200">Guru Pengampu <?= htmlspecialchars($mapel) ?> • <?= htmlspecialchars($materi_aktif['judul_bab'] ?? $mapel) ?></p>
                     </div>
                 </div>
                 
                 <div class="flex items-center space-x-1">
-                    <button onclick="toggleSound()" id="soundToggleBtn" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition" title="Suara AI Aktif">
+                    <button onclick="toggleSound()" id="soundToggleBtn" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition" title="Suara Ustadz Aktif">
                         <i class="fas fa-volume-up text-xs"></i>
                     </button>
-                    <button onclick="tutupUstadzAI()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition">
+                    <button onclick="tutupUstadzAI()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition cursor-pointer">
                         <i class="fas fa-times text-sm"></i>
                     </button>
                 </div>
@@ -1087,13 +1161,13 @@ if ($materi_aktif) {
             <!-- Chat Messages Body -->
             <div class="flex-1 overflow-y-auto p-4 space-y-3 bg-[#e1f5f2]/30" id="chatContainer">
                 <div class="flex items-start gap-2.5">
-                    <div class="w-7 h-7 rounded-xl bg-[#0d8276] text-white flex items-center justify-center text-xs flex-shrink-0">
-                        <i class="fas fa-robot"></i>
+                    <div class="w-7 h-7 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center text-xs flex-shrink-0 shadow-xs">
+                        <i class="fas fa-user-tie"></i>
                     </div>
                     <div class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-teal-100 shadow-2xs text-xs text-slate-800 max-w-[85%] leading-relaxed">
                         <p class="font-bold text-[#0d8276] mb-1">Ahlan Wa Sahlan, <?= htmlspecialchars($santri_nama) ?>! 🌸</p>
-                        <p>Saya <b>Ustadz AI Pembimbing <?= htmlspecialchars($mapel) ?></b>. Saya siap membantumu memahami materi <b><?= htmlspecialchars($materi_aktif['judul_bab'] ?? $mapel) ?></b>.</p>
-                        <p class="mt-2 text-slate-600">Silakan tanyakan materi yang belum jelas, minta penjelasan rumus/konsep, atau bimbingan LKS!</p>
+                        <p>Saya <b><?= htmlspecialchars($nama_panggilan_tutor) ?></b>. Saya siap membantumu memahami materi <b><?= htmlspecialchars($materi_aktif['judul_bab'] ?? $mapel) ?></b>.</p>
+                        <p class="mt-2 text-slate-600">Silakan tanyakan materi yang belum jelas, minta penjelasan konsep, atau bimbingan tugas LKS!</p>
                     </div>
                 </div>
             </div>
@@ -1103,8 +1177,8 @@ if ($materi_aktif) {
                 <button onclick="kirimPesanOtomatis('Ustadz, tolong jelaskan konsep utama bab ini dengan contoh sehari-hari!')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
                     💡 Konsep Utama
                 </button>
-                <button onclick="kirimPesanOtomatis('Bagaimana tips mudah menghafal materi ini?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
-                    📖 Tips Mudah
+                <button onclick="kirimPesanOtomatis('Bagaimana tips mudah memahami materi ini?')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
+                    📖 Tips Belajar
                 </button>
                 <button onclick="kirimPesanOtomatis('Beri contoh kasus nyata di lingkungan pesantren!')" class="whitespace-nowrap px-2.5 py-1 rounded-full bg-teal-50 text-[#0d8276] hover:bg-teal-100 border border-teal-100 font-bold transition">
                     🕌 Contoh Nyata
@@ -1117,15 +1191,88 @@ if ($materi_aktif) {
                     <i class="fas fa-microphone text-base"></i>
                 </button>
 
-                <input type="text" id="userInput" placeholder="Tanya Ustadz AI tentang <?= htmlspecialchars($mapel) ?>..." class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-teal-500 focus:bg-white" onkeydown="if(event.key==='Enter') kirimPesan()">
+                <input type="text" id="userInput" placeholder="Tanya <?= htmlspecialchars($nama_panggilan_tutor) ?> tentang <?= htmlspecialchars($mapel) ?>..." class="flex-1 bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-teal-500 focus:bg-white" onkeydown="if(event.key==='Enter') kirimPesan()">
 
-                <button onclick="kirimPesan()" id="sendBtn" class="w-10 h-10 rounded-2xl bg-[#0d8276] hover:bg-[#0b6f65] text-white flex items-center justify-center shadow-md transition flex-shrink-0">
+                <button onclick="kirimPesan()" id="sendBtn" class="w-10 h-10 rounded-2xl bg-[#0d8276] hover:bg-[#0b6f65] text-white flex items-center justify-center shadow-md transition flex-shrink-0 cursor-pointer">
                     <i class="fas fa-paper-plane text-sm"></i>
                 </button>
             </div>
 
         </div>
     </div>
+
+    <?php if ($can_edit_materi): ?>
+    <!-- ========================================================================= -->
+    <!-- MODAL EDIT LINK MODUL & VIDEO PEMBELAJARAN (KHUSUS SUPER ADMIN & GURU)    -->
+    <!-- (Akses Eksklusif: Tersembunyi dari Santri & Walisantri)                    -->
+    <!-- ========================================================================= -->
+    <div id="modalEditMateri" class="fixed inset-0 bg-slate-900/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4 transition-all">
+        <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] shadow-2xl border border-amber-300 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+            
+            <!-- HEADER MODAL EDIT -->
+            <div class="p-4 bg-gradient-to-r from-amber-500 via-amber-600 to-teal-800 text-white flex items-center justify-between border-b border-amber-400">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-white/20 text-white flex items-center justify-center text-sm font-black shadow-inner">
+                        <i class="fas fa-edit"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-black text-white leading-tight">Edit Modul PDF & Video Bab <?= htmlspecialchars($materi_aktif['nomor_bab'] ?? 1) ?></h3>
+                        <p class="text-[10px] text-amber-100 font-medium">Khusus Super Admin, Guru Pengampu, & Kepala Sekolah</p>
+                    </div>
+                </div>
+                <button type="button" onclick="tutupModalEditMateri()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition cursor-pointer">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+
+            <!-- FORM BODY -->
+            <div class="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 text-xs">
+                <div class="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-[11px] text-amber-900">
+                    <i class="fas fa-info-circle mr-1"></i> Edit link di bawah ini jika terdapat link modul PKBM atau link video YouTube yang error/rusak.
+                </div>
+
+                <!-- Input PDF E-Modul -->
+                <div>
+                    <label class="block font-black text-slate-700 mb-1">Link File / URL PDF E-Modul Resmi:</label>
+                    <input type="text" id="edit-pdf-url" value="<?= htmlspecialchars($materi_aktif['pdf_url'] ?? '') ?>" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:border-[#0d8276] text-xs font-mono" placeholder="https://modul.pkbm.id/... atau namafile.pdf">
+                    <span class="text-[10px] text-slate-400 mt-0.5 block">Biarkan kosong jika ingin menggunakan katalog otomatis PKBM.</span>
+                </div>
+
+                <!-- Input Video YouTube (Multi Video 1 s/d 5) -->
+                <div class="space-y-2.5 pt-2 border-t border-slate-100">
+                    <label class="block font-black text-slate-700">Daftar Link Video YouTube Pembelajaran:</label>
+                    
+                    <?php 
+                    $curr_vids = [];
+                    if (!empty($materi_aktif['video_urls'])) {
+                        $decoded_vids = json_decode($materi_aktif['video_urls'], true);
+                        if (is_array($decoded_vids)) $curr_vids = $decoded_vids;
+                    }
+                    $v_labels = ['Video 1 (Konsep Inti)', 'Video 2 (Pendalaman & Kasus)', 'Video 3 (Contoh Soal)', 'Video 4 (Wawasan Pembanding)', 'Video 5 (Praktik Lapangan)'];
+                    for ($v_i = 0; $v_i < 5; $v_i++): 
+                        $v_val = $curr_vids[$v_i] ?? '';
+                    ?>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-500 block mb-0.5"><?= $v_labels[$v_i] ?>:</span>
+                        <input type="text" value="<?= htmlspecialchars($v_val) ?>" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:border-[#0d8276] text-xs font-mono edit-vid-input" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                    <?php endfor; ?>
+                </div>
+            </div>
+
+            <!-- FOOTER BUTTONS -->
+            <div class="p-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
+                <button type="button" onclick="tutupModalEditMateri()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 transition cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="simpanEditMateri(<?= (int)($materi_aktif['id'] ?? 0) ?>)" class="px-5 py-2 rounded-xl text-xs font-black bg-[#0d8276] hover:bg-[#0b6f65] text-white shadow-md active:scale-95 transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fas fa-floppy-disk"></i>
+                    <span>Simpan Perubahan</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- BOTTOM NAVBAR MOBILE -->
     <?php include 'bottombar-santri.php'; ?>
@@ -1187,7 +1334,7 @@ if ($materi_aktif) {
                         iconBox.innerHTML = '<i class="fas fa-rotate"></i>';
                         badgeStatus.className = "inline-block px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-2 bg-rose-100 text-rose-800 border border-rose-200";
                         badgeStatus.innerHTML = '<i class="fas fa-exclamation-triangle mr-1 text-rose-600"></i> STATUS: REMEDIAL (BELUM TUNTAS)';
-                        msgBox.innerText = res.message || `Nilai antum (${finalScore}) belum mencapai standar ketuntasan (${kktp}). Jangan berkecil hati, yuk pelajari materinya atau tanya Ustadz AI!`;
+                        msgBox.innerText = res.message || `Nilai antum (${finalScore}) belum mencapai standar ketuntasan (${kktp}). Jangan berkecil hati, yuk pelajari materinya atau minta bimbingan ke <?= addslashes($nama_panggilan_tutor) ?>!`;
                     }
 
                     summaryBox.classList.remove('hidden');
@@ -1212,7 +1359,7 @@ if ($materi_aktif) {
             if (qBox) qBox.scrollIntoView({ behavior: 'smooth' });
         }
 
-        // --- LOGIC USTADZ AI ---
+        // --- LOGIC PENDAMPING BELAJAR SANTRI ---
         let isVoiceActive = true;
         let recognition = null;
         let isListening = false;
@@ -1269,11 +1416,11 @@ if ($materi_aktif) {
             const typingId = 'typing_' + Date.now();
             container.innerHTML += `
                 <div class="flex items-start gap-2.5" id="${typingId}">
-                    <div class="w-7 h-7 rounded-xl bg-[#0d8276] text-white flex items-center justify-center text-xs flex-shrink-0">
-                        <i class="fas fa-robot"></i>
+                    <div class="w-7 h-7 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center text-xs flex-shrink-0 shadow-xs">
+                        <i class="fas fa-user-tie"></i>
                     </div>
                     <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-teal-100 text-xs text-slate-500 italic">
-                        <i class="fas fa-circle-notch fa-spin text-[#0d8276] mr-1"></i> Ustadz AI sedang menyiapkan penjelasan...
+                        <i class="fas fa-circle-notch fa-spin text-[#0d8276] mr-1"></i> <?= htmlspecialchars($nama_panggilan_tutor) ?> sedang menyiapkan penjelasan...
                     </div>
                 </div>
             `;
@@ -1284,7 +1431,7 @@ if ($materi_aktif) {
             const promptSubjudul = <?= json_encode($materi_aktif['subjudul'] ?? '') ?>;
             const promptSantriNama = <?= json_encode($santri_nama) ?>;
 
-            const contextPrompt = `Anda adalah "Ustadz AI ` + promptMapel + `", seorang guru dan ustadz pembimbing mata pelajaran ` + promptMapel + ` yang sangat ramah, santun, cerdas, komunikatif, dan penuh motivasi islami di platform e-learning SADIGS 4.0.
+            const contextPrompt = `Anda adalah "<?= addslashes($nama_tutor_lengkap) ?>", seorang ulama dan guru ustadz pembimbing mata pelajaran ` + promptMapel + ` di Pesantren Villa Quran Indonesia. Jangan pernah menyebut diri Anda sebagai AI atau robot. Bersikaplah sepenuhnya sebagai ustadz guru pengampu yang membimbing santri dengan santun, berwibawa, bijak, dan penuh kasih sayang.
 
 Konteks Pembelajaran:
 - Mata Pelajaran: ` + promptMapel + `
@@ -1292,10 +1439,10 @@ Konteks Pembelajaran:
 - Nama Santri: ` + promptSantriNama + `
 
 Instruksi Anda:
-1. Sapa santri dengan ramah (misal: "Ahlan ananda ` + promptSantriNama + `", "Masya Allah pertanyaan yang sangat bagus!").
-2. Jelaskan materi dengan bahasa yang mudah dipahami anak sekolah/pesantren, gunakan analogi kehidupan nyata.
+1. Sapa santri dengan hangat dan adab islami (misal: "Ahlan wa sahlan ananda ` + promptSantriNama + `", "Masya Allah pertanyaan yang sangat baik!").
+2. Jelaskan materi dengan bahasa yang mudah dipahami, gunakan analogi kehidupan nyata dan lingkungan pesantren.
 3. Berikan poin-poin yang terstruktur rapi.
-4. Jawab secara jelas dan to-the-point.
+4. Jawab secara jelas dan to-the-point tanpa istilah mekanis atau robotik.
 
 Pertanyaan Santri:
 "` + text + `"`;
@@ -1320,8 +1467,8 @@ Pertanyaan Santri:
 
                 container.innerHTML += `
                     <div class="flex items-start gap-2.5">
-                        <div class="w-7 h-7 rounded-xl bg-[#0d8276] text-white flex items-center justify-center text-xs flex-shrink-0">
-                            <i class="fas fa-robot"></i>
+                        <div class="w-7 h-7 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center text-xs flex-shrink-0 shadow-xs">
+                            <i class="fas fa-user-tie"></i>
                         </div>
                         <div class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-teal-100 shadow-2xs text-xs text-slate-800 max-w-[85%] leading-relaxed space-y-2">
                             ${formattedHtml}
@@ -1339,8 +1486,8 @@ Pertanyaan Santri:
                 if (typingElem) typingElem.remove();
                 container.innerHTML += `
                     <div class="flex items-start gap-2.5">
-                        <div class="w-7 h-7 rounded-xl bg-[#0d8276] text-white flex items-center justify-center text-xs flex-shrink-0">
-                            <i class="fas fa-robot"></i>
+                        <div class="w-7 h-7 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center text-xs flex-shrink-0 shadow-xs">
+                            <i class="fas fa-user-tie"></i>
                         </div>
                         <div class="bg-white p-3.5 rounded-2xl rounded-tl-none border border-teal-100 text-xs text-slate-800 max-w-[85%]">
                             Afwan ananda, terjadi kendala saat menghubungkan ke server. Silakan coba lagi.
@@ -1382,13 +1529,13 @@ Pertanyaan Santri:
                 recognition.onerror = function() {
                     isListening = false;
                     micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
-                    document.getElementById('userInput').placeholder = "Tanya Ustadz AI tentang <?= htmlspecialchars($mapel) ?>...";
+                    document.getElementById('userInput').placeholder = "Tanya <?= htmlspecialchars($nama_panggilan_tutor) ?> tentang <?= htmlspecialchars($mapel) ?>...";
                 };
 
                 recognition.onend = function() {
                     isListening = false;
                     micBtn.classList.remove('bg-rose-500', 'text-white', 'animate-pulse');
-                    document.getElementById('userInput').placeholder = "Tanya Ustadz AI tentang <?= htmlspecialchars($mapel) ?>...";
+                    document.getElementById('userInput').placeholder = "Tanya <?= htmlspecialchars($nama_panggilan_tutor) ?> tentang <?= htmlspecialchars($mapel) ?>...";
                 };
             }
 
@@ -1399,7 +1546,7 @@ Pertanyaan Santri:
             }
         }
 
-        // Web Speech Synthesis
+        // Web Speech Synthesis (Sesuai Konfigurasi Pitch & Speed Super Admin)
         function speakText(text) {
             if (!window.speechSynthesis) return;
             window.speechSynthesis.cancel();
@@ -1407,8 +1554,13 @@ Pertanyaan Santri:
             const cleanText = text.replace(/[*_#`]/g, '').replace(/<[^>]*>?/gm, '');
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'id-ID';
-            utterance.rate = 1.05;
-            utterance.pitch = 1.0;
+            utterance.rate = <?= $tutor_rate ?>;
+            utterance.pitch = <?= $tutor_pitch ?>;
+
+            const voices = window.speechSynthesis.getVoices();
+            const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
+            if (idVoice) utterance.voice = idVoice;
+
             window.speechSynthesis.speak(utterance);
         }
 
@@ -1663,7 +1815,7 @@ Pertanyaan Santri:
         });
 
         // ==========================================
-        // FITUR INTERAKTIF USTADZ IBNU KHALDUN (TTS & DISKUSI)
+        // FITUR INTERAKTIF PENDAMPING BELAJAR (TTS & DISKUSI)
         // ==========================================
         let isTutorSpeaking = false;
 
@@ -1678,15 +1830,15 @@ Pertanyaan Santri:
             if (isTutorSpeaking) {
                 window.speechSynthesis.cancel();
                 isTutorSpeaking = false;
-                if (lbl) lbl.innerText = 'Sapaan Ustadz';
+                if (lbl) lbl.innerText = 'Sapaan <?= addslashes($nama_panggilan_tutor) ?>';
                 return;
             }
 
-            const teks = "Assalamu'alaikum warahmatullahi wabarakatuh. Ahlan wa sahlan! Saya Ustadz Ibnu Khaldun, tutor AI pendamping belajarmu di mata pelajaran Sosiologi SMA. Mari kita pelajari bersama dinamika masyarakat, interaksi sosial, dan rahasia kejayaan peradaban manusia.";
+            const teks = "Assalamu'alaikum warahmatullahi wabarakatuh. Ahlan wa sahlan! Saya <?= addslashes($nama_tutor_lengkap) ?>, guru pengampu pendamping belajarmu di mata pelajaran <?= addslashes($mapel) ?>. Mari kita pelajari bersama rahasia ilmu dan hikmah yang terkandung di dalamnya.";
             const utterance = new SpeechSynthesisUtterance(teks);
             utterance.lang = 'id-ID';
-            utterance.pitch = 0.70; // Bariton Pria
-            utterance.rate = 0.95;
+            utterance.pitch = <?= $tutor_pitch ?>;
+            utterance.rate = <?= $tutor_rate ?>;
 
             const voices = window.speechSynthesis.getVoices();
             const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
@@ -1698,22 +1850,24 @@ Pertanyaan Santri:
             };
             utterance.onend = function() {
                 isTutorSpeaking = false;
-                if (lbl) lbl.innerText = 'Sapaan Ustadz';
+                if (lbl) lbl.innerText = 'Sapaan <?= addslashes($nama_panggilan_tutor) ?>';
             };
             utterance.onerror = function() {
                 isTutorSpeaking = false;
-                if (lbl) lbl.innerText = 'Sapaan Ustadz';
+                if (lbl) lbl.innerText = 'Sapaan <?= addslashes($nama_panggilan_tutor) ?>';
             };
             window.speechSynthesis.speak(utterance);
         };
 
         window.bukaUstadzAI = function() {
-            const m = document.getElementById('modalUstadzAI');
+            const m = document.getElementById('aiModal');
             if (m) m.classList.remove('hidden');
+            const input = document.getElementById('userInput');
+            if (input) input.focus();
         };
 
         window.tutupUstadzAI = function() {
-            const m = document.getElementById('modalUstadzAI');
+            const m = document.getElementById('aiModal');
             if (m) m.classList.add('hidden');
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         };
@@ -1734,8 +1888,8 @@ Pertanyaan Santri:
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'id-ID';
-            utterance.pitch = 0.70;
-            utterance.rate = 0.95;
+            utterance.pitch = <?= $tutor_pitch ?>;
+            utterance.rate = <?= $tutor_rate ?>;
             const voices = window.speechSynthesis.getVoices();
             const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
             if (idVoice) utterance.voice = idVoice;
@@ -1771,15 +1925,15 @@ Pertanyaan Santri:
                     </div>
                     <div class="bg-white p-3 rounded-2xl rounded-tl-none border border-slate-200 text-xs text-slate-500 flex items-center gap-2">
                         <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-                        <span>Ustadz Ibnu Khaldun sedang merumuskan jawaban...</span>
+                        <span><?= htmlspecialchars($nama_panggilan_tutor) ?> sedang merumuskan jawaban...</span>
                     </div>
                 </div>
             `;
             chatArea.insertAdjacentHTML('beforeend', typingHtml);
             chatArea.scrollTop = chatArea.scrollHeight;
 
-            // Panggil API AI (api-gemini.php)
-            const prompt = `Anda adalah Ustadz Ibnu Khaldun, ulama besar dan bapak sosiologi dunia yang bertindak sebagai Guru AI pendamping santri di Pesantren Villa Quran Indonesia. Santri bertanya: "${q}". Berikan jawaban yang santun, mendalam, jelas, berbobot sosiologi SMA, dan selaras dengan nilai-nilai Islam. Jawab langsung secara ringkas (1-2 paragraf) tanpa basa-basi berlebihan.`;
+            // Panggil API
+            const prompt = `Anda adalah <?= addslashes($nama_tutor_lengkap) ?>, ulama dan guru pembimbing santri di Pesantren Villa Quran Indonesia. Jangan pernah menyebut kata AI atau robot. Santri bertanya: "${q}". Berikan jawaban yang santun, mendalam, jelas, berbobot, dan selaras dengan nilai-nilai Islam. Jawab langsung secara ringkas (1-2 paragraf) tanpa basa-basi berlebihan.`;
 
             fetch('api-gemini.php', {
                 method: 'POST',
@@ -1792,7 +1946,6 @@ Pertanyaan Santri:
                 if (elTyping) elTyping.remove();
 
                 let ans = data.candidates?.[0]?.content?.parts?.[0]?.text || data.text || data.message || "Afwan ananda, ada kendala koneksi. Coba ulangi pertanyaan antum.";
-                // Bersihkan markdown bintang ganda sederhana
                 ans = ans.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
 
                 const ansHtml = `
@@ -1802,7 +1955,7 @@ Pertanyaan Santri:
                         </div>
                         <div class="bg-white p-4 rounded-2xl rounded-tl-none border border-teal-100 text-xs text-slate-800 shadow-sm max-w-[88%]">
                             <div class="flex items-center justify-between gap-2 mb-1 pb-1 border-b border-slate-100">
-                                <span class="font-black text-slate-900 text-[11px]">Ustadz Ibnu Khaldun</span>
+                                <span class="font-black text-slate-900 text-[11px]"><?= htmlspecialchars($nama_panggilan_tutor) ?></span>
                                 <button type="button" onclick="bacaJawabanUstadz(this)" class="text-amber-700 hover:text-amber-900 text-[10px] font-bold flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded cursor-pointer">
                                     <i class="fas fa-volume-high"></i> Baca Suara
                                 </button>
@@ -1824,6 +1977,52 @@ Pertanyaan Santri:
                         Terjadi kesalahan koneksi. Silakan coba lagi beberapa saat lagi.
                     </div>
                 `);
+            });
+        };
+
+        // ==========================================
+        // FITUR EDIT MODUL & VIDEO PEMBELAJARAN (KHUSUS STAFF / GURU)
+        // ==========================================
+        window.bukaModalEditMateri = function() {
+            const m = document.getElementById('modalEditMateri');
+            if (m) m.classList.remove('hidden');
+        };
+
+        window.tutupModalEditMateri = function() {
+            const m = document.getElementById('modalEditMateri');
+            if (m) m.classList.add('hidden');
+        };
+
+        window.simpanEditMateri = function(babId) {
+            const pdfUrl = document.getElementById('edit-pdf-url').value.trim();
+            const vidInputs = document.querySelectorAll('.edit-vid-input');
+            const vidUrls = [];
+            vidInputs.forEach(inp => {
+                if (inp.value.trim()) vidUrls.push(inp.value.trim());
+            });
+
+            const formData = new FormData();
+            formData.append('action', 'simpan_edit_materi');
+            formData.append('bab_id', babId);
+            formData.append('pdf_url', pdfUrl);
+            vidUrls.forEach(v => formData.append('v_urls[]', v));
+
+            fetch('santri-belajar.php?mapel=<?= urlencode($mapel) ?>&bab=<?= $bab_no ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Alhamdulillah! Link modul dan video berhasil diperbarui.');
+                    window.location.reload();
+                } else {
+                    alert('Gagal menyimpan: ' + (data.message || 'Terjadi kesalahan'));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Kesalahan jaringan saat menyimpan.');
             });
         };
     </script>

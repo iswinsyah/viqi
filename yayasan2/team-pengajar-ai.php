@@ -64,6 +64,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         echo json_encode(['status' => $ok ? 'success' : 'error', 'mode' => $new_mode]);
         exit;
     }
+    if ($_POST['action'] === 'update_voice_settings') {
+        $id = (int)($_POST['id'] ?? 0);
+        $pitch = (float)($_POST['pitch'] ?? 0.70);
+        $rate = (float)($_POST['rate'] ?? 0.95);
+        $stmt_u = $conn->prepare("UPDATE tutor_ai_mapel SET suara_pitch = ?, suara_rate = ? WHERE id = ?");
+        $stmt_u->bind_param("ddi", $pitch, $rate, $id);
+        $ok = $stmt_u->execute();
+        $stmt_u->close();
+        echo json_encode(['status' => $ok ? 'success' : 'error', 'pitch' => $pitch, 'rate' => $rate]);
+        exit;
+    }
     if ($_POST['action'] === 'update_detail') {
         $id = (int)($_POST['id'] ?? 0);
         $sapaan = trim($_POST['sapaan'] ?? '');
@@ -271,26 +282,96 @@ $roadmap_mapel = [
                         </div>
                     </div>
 
-                    <!-- TOMBOL AKSI & UJI COBA SUARA VERBAL -->
-                    <div class="bg-gradient-to-br from-slate-900 to-teal-950 text-white p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-lg">
+                    <!-- PANEL PENGATURAN SUARA MANUAL (SUPER ADMIN & KEPSEK) -->
+                    <div class="bg-gradient-to-br from-slate-900 to-teal-950 text-white p-5 rounded-2xl flex flex-col justify-between space-y-4 shadow-lg border border-teal-700/50">
                         <div>
-                            <span class="text-[10px] font-black text-amber-400 uppercase tracking-wider block mb-1">Simulasi Verbal Suara AI:</span>
-                            <h5 class="text-sm font-bold text-white">Uji Coba Suara Ustadz Ibnu Khaldun</h5>
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-[10px] font-black text-amber-400 uppercase tracking-wider block">
+                                    <i class="fas fa-sliders mr-1"></i> Pengaturan Suara Manual
+                                </span>
+                                <span class="text-[9px] font-bold text-teal-300 bg-teal-900/60 px-2 py-0.5 rounded-full border border-teal-600/40">
+                                    Khusus Super Admin
+                                </span>
+                            </div>
+                            <h5 class="text-sm font-bold text-white">Frekuensi Nada & Kecepatan Bicara</h5>
                             <p class="text-[11px] text-teal-200/80 font-medium mt-1 leading-snug">
-                                Suara otomatis disesuaikan dengan nada bariton khas pria, sehingga tetap bersuara pria berwibawa di semua HP santri.
+                                Atur karakter suara Ustadz Ibnu Khaldun agar berbeda dengan ustadz/ustadzah lainnya.
                             </p>
                         </div>
 
-                        <!-- TOMBOL SUARA VERBAL INTERAKTIF -->
-                        <button type="button" 
-                                id="btn-play-voice"
-                                onclick="putarSuaraUstadz()" 
-                                class="w-full py-3 px-4 rounded-xl font-black text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md active:scale-95 transition flex items-center justify-center gap-2">
-                            <i class="fas fa-volume-high text-sm"></i>
-                            <span id="btn-voice-label">🔊 Dengarkan Sapaan Ustadz Ibnu Khaldun</span>
-                        </button>
+                        <!-- SLIDER PITCH & SPEED CONTROLS -->
+                        <div class="space-y-3 bg-black/25 p-3.5 rounded-xl border border-teal-800/60">
+                            <!-- Slider 1: Pitch (Nada Suara) -->
+                            <div>
+                                <div class="flex items-center justify-between text-xs font-bold mb-1">
+                                    <span class="text-slate-300 flex items-center gap-1">
+                                        <i class="fas fa-music text-amber-400 text-[10px]"></i> Pitch (Nada):
+                                    </span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span id="label-pitch-val" class="font-mono text-amber-400 font-black text-xs"><?= number_format((float)($pilot_tutor['suara_pitch'] ?? 0.70), 2) ?></span>
+                                        <span id="label-pitch-desc" class="text-[9px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold">Bariton Pria</span>
+                                    </div>
+                                </div>
+                                <input type="range" 
+                                       id="slider-pitch" 
+                                       min="0.50" 
+                                       max="1.50" 
+                                       step="0.05" 
+                                       value="<?= (float)($pilot_tutor['suara_pitch'] ?? 0.70) ?>" 
+                                       oninput="updatePitchDisplay(this.value)"
+                                       class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-400">
+                                <div class="flex justify-between text-[9px] text-slate-400 mt-0.5">
+                                    <span>0.50 (Berat)</span>
+                                    <span>1.00 (Netral)</span>
+                                    <span>1.50 (Tinggi)</span>
+                                </div>
+                            </div>
 
-                        <div class="pt-3 border-t border-teal-800/60 grid grid-cols-2 gap-2 text-center text-xs">
+                            <!-- Slider 2: Rate (Kecepatan Bicara) -->
+                            <div>
+                                <div class="flex items-center justify-between text-xs font-bold mb-1">
+                                    <span class="text-slate-300 flex items-center gap-1">
+                                        <i class="fas fa-gauge-high text-cyan-400 text-[10px]"></i> Kecepatan:
+                                    </span>
+                                    <div class="flex items-center gap-1.5">
+                                        <span id="label-rate-val" class="font-mono text-cyan-400 font-black text-xs"><?= number_format((float)($pilot_tutor['suara_rate'] ?? 0.95), 2) ?></span>
+                                        <span id="label-rate-desc" class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-400/20 text-cyan-300 font-bold">Tenang/Alami</span>
+                                    </div>
+                                </div>
+                                <input type="range" 
+                                       id="slider-rate" 
+                                       min="0.60" 
+                                       max="1.40" 
+                                       step="0.05" 
+                                       value="<?= (float)($pilot_tutor['suara_rate'] ?? 0.95) ?>" 
+                                       oninput="updateRateDisplay(this.value)"
+                                       class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400">
+                                <div class="flex justify-between text-[9px] text-slate-400 mt-0.5">
+                                    <span>0.60 (Lambat)</span>
+                                    <span>1.00 (Sedang)</span>
+                                    <span>1.40 (Cepat)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TOMBOL AKSI TES & SIMPAN SUARA -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" 
+                                    id="btn-play-voice"
+                                    onclick="putarSuaraUstadzCustom()" 
+                                    class="py-2.5 px-3 rounded-xl font-black text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                                <i class="fas fa-volume-high text-xs"></i>
+                                <span id="btn-voice-label">🔊 Tes Suara</span>
+                            </button>
+                            <button type="button" 
+                                    onclick="simpanSettingSuara(<?= $pilot_tutor['id'] ?>)" 
+                                    class="py-2.5 px-3 rounded-xl font-black text-xs bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer">
+                                <i class="fas fa-floppy-disk text-xs"></i>
+                                <span>💾 Simpan</span>
+                            </button>
+                        </div>
+
+                        <div class="pt-2 border-t border-teal-800/60 grid grid-cols-2 gap-2 text-center text-xs">
                             <a href="../santri-belajar.php?mapel=Sosiologi" target="_blank" class="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition flex items-center justify-center gap-1.5 text-[11px]">
                                 <i class="fas fa-graduation-cap"></i> Ruang Santri
                             </a>
@@ -366,7 +447,39 @@ $roadmap_mapel = [
     <script>
         let isSpeaking = false;
 
-        function putarSuaraUstadz() {
+        function updatePitchDisplay(val) {
+            const v = parseFloat(val);
+            document.getElementById('label-pitch-val').innerText = v.toFixed(2);
+            const desc = document.getElementById('label-pitch-desc');
+            if (v < 0.80) {
+                desc.innerText = 'Bariton Pria';
+                desc.className = 'text-[9px] px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 font-bold';
+            } else if (v <= 1.05) {
+                desc.innerText = 'Nada Netral';
+                desc.className = 'text-[9px] px-1.5 py-0.2 rounded bg-slate-400/20 text-slate-300 font-bold';
+            } else {
+                desc.innerText = 'Nada Tinggi/Wanita';
+                desc.className = 'text-[9px] px-1.5 py-0.2 rounded bg-rose-400/20 text-rose-300 font-bold';
+            }
+        }
+
+        function updateRateDisplay(val) {
+            const v = parseFloat(val);
+            document.getElementById('label-rate-val').innerText = v.toFixed(2);
+            const desc = document.getElementById('label-rate-desc');
+            if (v < 0.85) {
+                desc.innerText = 'Khidmat/Lambat';
+                desc.className = 'text-[9px] px-1.5 py-0.2 rounded bg-purple-400/20 text-purple-300 font-bold';
+            } else if (v <= 1.05) {
+                desc.innerText = 'Tenang/Alami';
+                desc.className = 'text-[9px] px-1.5 py-0.2 rounded bg-cyan-400/20 text-cyan-300 font-bold';
+            } else {
+                desc.innerText = 'Cepat/Tegas';
+                desc.className = 'text-[9px] px-1.5 py-0.2 rounded bg-emerald-400/20 text-emerald-300 font-bold';
+            }
+        }
+
+        function putarSuaraUstadzCustom() {
             if (!('speechSynthesis' in window)) {
                 Swal.fire({
                     icon: 'warning',
@@ -383,46 +496,77 @@ $roadmap_mapel = [
             if (isSpeaking) {
                 window.speechSynthesis.cancel();
                 isSpeaking = false;
-                lbl.innerText = '🔊 Dengarkan Sapaan Ustadz Ibnu Khaldun';
-                btn.className = 'w-full py-3 px-4 rounded-xl font-black text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md active:scale-95 transition flex items-center justify-center gap-2';
+                lbl.innerText = '🔊 Tes Suara';
+                btn.className = 'py-2.5 px-3 rounded-xl font-black text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer';
                 return;
             }
 
-            const teks = <?= json_encode($pilot_tutor['sapaan_verbal'] ?? '') ?>;
-            const pitch = <?= (float)($pilot_tutor['suara_pitch'] ?? 0.70) ?>;
-            const rate = <?= (float)($pilot_tutor['suara_rate'] ?? 0.95) ?>;
+            const pitch = parseFloat(document.getElementById('slider-pitch').value || 0.70);
+            const rate = parseFloat(document.getElementById('slider-rate').value || 0.95);
+            const teks = "Assalamu'alaikum warahmatullahi wabarakatuh. Ahlan wa sahlan! Saya Ustadz Ibnu Khaldun. Ini adalah simulasi suara dengan nada " + pitch.toFixed(2) + " dan kecepatan " + rate.toFixed(2) + ".";
 
             const utterance = new SpeechSynthesisUtterance(teks);
             utterance.lang = 'id-ID';
-            utterance.pitch = pitch; // Mengubah nada suara jadi bariton pria
+            utterance.pitch = pitch;
             utterance.rate = rate;
 
-            // Cari suara id-ID jika tersedia di sistem
             const voices = window.speechSynthesis.getVoices();
             const idVoice = voices.find(v => v.lang.includes('id') || v.lang.includes('ID'));
-            if (idVoice) {
-                utterance.voice = idVoice;
-            }
+            if (idVoice) utterance.voice = idVoice;
 
             utterance.onstart = function() {
                 isSpeaking = true;
-                lbl.innerText = '⏹️ Hentikan Suara Ustadz';
-                btn.className = 'w-full py-3 px-4 rounded-xl font-black text-xs bg-rose-600 hover:bg-rose-500 text-white shadow-md active:scale-95 transition flex items-center justify-center gap-2 animate-pulse';
+                lbl.innerText = '⏹️ Hentikan';
+                btn.className = 'py-2.5 px-3 rounded-xl font-black text-xs bg-rose-600 hover:bg-rose-500 text-white shadow-md active:scale-95 transition flex items-center justify-center gap-1.5 animate-pulse cursor-pointer';
             };
 
             utterance.onend = function() {
                 isSpeaking = false;
-                lbl.innerText = '🔊 Dengarkan Sapaan Ustadz Ibnu Khaldun';
-                btn.className = 'w-full py-3 px-4 rounded-xl font-black text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md active:scale-95 transition flex items-center justify-center gap-2';
+                lbl.innerText = '🔊 Tes Suara';
+                btn.className = 'py-2.5 px-3 rounded-xl font-black text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer';
             };
 
-            utterance.onerror = function(e) {
+            utterance.onerror = function() {
                 isSpeaking = false;
-                lbl.innerText = '🔊 Dengarkan Sapaan Ustadz Ibnu Khaldun';
-                btn.className = 'w-full py-3 px-4 rounded-xl font-black text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md active:scale-95 transition flex items-center justify-center gap-2';
+                lbl.innerText = '🔊 Tes Suara';
+                btn.className = 'py-2.5 px-3 rounded-xl font-black text-xs bg-amber-400 hover:bg-amber-300 text-slate-950 shadow-md active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer';
             };
 
             window.speechSynthesis.speak(utterance);
+        }
+
+        function simpanSettingSuara(id) {
+            const pitch = parseFloat(document.getElementById('slider-pitch').value || 0.70);
+            const rate = parseFloat(document.getElementById('slider-rate').value || 0.95);
+
+            const formData = new FormData();
+            formData.append('action', 'update_voice_settings');
+            formData.append('id', id);
+            formData.append('pitch', pitch);
+            formData.append('rate', rate);
+
+            fetch('team-pengajar-ai.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Pengaturan Suara Disimpan!',
+                        html: 'Karakter suara Ustadz berhasil diperbarui ke database:<br><b>Pitch: ' + pitch.toFixed(2) + '</b> • <b>Speed: ' + rate.toFixed(2) + '</b>',
+                        confirmButtonColor: '#0b8478',
+                        timer: 2500
+                    });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Gagal Menyimpan', text: 'Terjadi kesalahan sistem.' });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire({ icon: 'error', title: 'Kesalahan Jaringan', text: 'Gagal terhubung ke server.' });
+            });
         }
 
         // Toggle Mode AI via AJAX

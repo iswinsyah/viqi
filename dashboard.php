@@ -2250,12 +2250,12 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 </div>
             </div>
             <div class="bg-[#e1f5f2]/60 p-3.5 rounded-2xl border border-teal-100 text-xs text-slate-700 mb-4">
-                <p class="font-semibold text-[#0d8276] mb-1"><i class="fas fa-graduation-cap mr-1"></i> E-Learning & Bimbingan AI</p>
-                <p class="text-[11px] text-slate-600 leading-relaxed">Pelajari modul rangkuman, tonton video materi, kerjakan LKS & latihan soal, serta konsultasi 24 jam dengan Ustadz AI.</p>
+                <p class="font-semibold text-[#0d8276] mb-1"><i class="fas fa-graduation-cap mr-1"></i> E-Learning & Bimbingan Belajar</p>
+                <p class="text-[11px] text-slate-600 leading-relaxed">Pelajari modul rangkuman, tonton video materi, kerjakan tugas mandiri & latihan soal, serta bimbingan langsung bersama Ustadz Pembimbing.</p>
             </div>
             <div class="space-y-2">
                 <a id="modalStudyBtn" href="santri-belajar.php?mapel=IPS&bab=1" class="w-full bg-[#0d8276] hover:bg-[#0b6f65] text-white text-xs font-black py-3 px-4 rounded-2xl text-center shadow-md shadow-teal-900/10 transition flex items-center justify-center gap-2">
-                    <i class="fas fa-book-reader text-sm"></i> Buka Ruang Belajar & Ustadz AI
+                    <i class="fas fa-book-reader text-sm"></i> Buka Ruang Belajar Santri
                 </a>
                 <div class="grid grid-cols-2 gap-2 pt-1">
                     <a href="santri-rapot.php?tab=pkbm" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 px-3 rounded-xl text-center transition flex items-center justify-center gap-1.5">
