@@ -45,7 +45,9 @@ $cols_brosur_check = [
     "show_maps"            => "ALTER TABLE pengaturan_brosur ADD COLUMN show_maps TINYINT(1) DEFAULT 1 AFTER video_height",
     "maps_url"             => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_url TEXT AFTER show_maps",
     "maps_width"           => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_width INT DEFAULT 100 AFTER maps_url",
-    "maps_height"          => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_height INT DEFAULT 220 AFTER maps_width"
+    "maps_height"          => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_height INT DEFAULT 220 AFTER maps_width",
+    "bottom_bar_bg_color"  => "ALTER TABLE pengaturan_brosur ADD COLUMN bottom_bar_bg_color VARCHAR(100) DEFAULT '#022d27' AFTER maps_height",
+    "bottom_bar_text_color"=> "ALTER TABLE pengaturan_brosur ADD COLUMN bottom_bar_text_color VARCHAR(30) DEFAULT '#ffffff' AFTER bottom_bar_bg_color"
 ];
 $res_c = $conn->query("DESCRIBE pengaturan_brosur");
 $curr_cols = [];
@@ -106,6 +108,10 @@ $btn_bg_color   = !empty($cfg_brosur['btn_bg_color']) ? htmlspecialchars($cfg_br
 $btn_text_color = !empty($cfg_brosur['btn_text_color']) ? htmlspecialchars($cfg_brosur['btn_text_color']) : '#022d27';
 $card_bg_style  = !empty($cfg_brosur['card_bg_style']) ? $cfg_brosur['card_bg_style'] : 'glass_dark';
 
+// Bottom Bar Kustomisasi Warna
+$bottom_bar_bg_color   = !empty($cfg_brosur['bottom_bar_bg_color']) ? htmlspecialchars($cfg_brosur['bottom_bar_bg_color']) : '#022d27';
+$bottom_bar_text_color = !empty($cfg_brosur['bottom_bar_text_color']) ? htmlspecialchars($cfg_brosur['bottom_bar_text_color']) : '#ffffff';
+
 // Video & Maps
 $show_video   = isset($cfg_brosur['show_video']) ? (int)$cfg_brosur['show_video'] : 1;
 $video_url    = !empty($cfg_brosur['video_url']) ? $cfg_brosur['video_url'] : 'https://www.youtube.com/embed/dQw4w9WgXcQ';
@@ -128,6 +134,41 @@ $biaya_pangkal     = isset($cfg_brosur['biaya_pangkal']) ? number_format($cfg_br
 $biaya_tahunan     = isset($cfg_brosur['biaya_tahunan']) ? number_format($cfg_brosur['biaya_tahunan'], 0, ',', '.') : '2.500.000';
 $biaya_spp         = isset($cfg_brosur['biaya_spp']) ? number_format($cfg_brosur['biaya_spp'], 0, ',', '.') : '1.650.000';
 $diskon_gelombang  = isset($cfg_brosur['diskon_gelombang']) ? number_format($cfg_brosur['diskon_gelombang'], 0, ',', '.') : '2.000.000';
+
+// Ambil Data Sinkron dari Database Web (Fasilitas, Pengajar, Kegiatan Santri, Biaya, Testimoni)
+// 1. Fasilitas
+$data_fasilitas = [];
+$q_fas = $conn->query("SELECT * FROM fasilitas ORDER BY id ASC");
+if ($q_fas && $q_fas->num_rows > 0) while ($rf = $q_fas->fetch_assoc()) $data_fasilitas[] = $rf;
+
+// 2. Dewan Pengasuh & Pengajar
+$data_pengajar = [];
+$q_peng = $conn->query("SELECT * FROM pengajar ORDER BY id ASC");
+if ($q_peng && $q_peng->num_rows > 0) while ($rp = $q_peng->fetch_assoc()) $data_pengajar[] = $rp;
+
+// 3. Kegiatan Santri (Galeri)
+$data_kegiatan = [];
+$q_keg = $conn->query("SELECT * FROM galeri ORDER BY id DESC LIMIT 8");
+if ($q_keg && $q_keg->num_rows > 0) while ($rk = $q_keg->fetch_assoc()) $data_kegiatan[] = $rk;
+
+// 4. Investasi / Komponen Biaya
+$data_biaya = ['pendaftaran' => [], 'pangkal' => [], 'tahunan' => [], 'spp' => []];
+$subtotal_biaya = ['pendaftaran' => 0, 'pangkal' => 0, 'tahunan' => 0, 'spp' => 0];
+$q_b = $conn->query("SELECT * FROM biaya ORDER BY id ASC");
+if ($q_b && $q_b->num_rows > 0) {
+    while ($rb = $q_b->fetch_assoc()) {
+        $k = strtolower(trim($rb['kategori']));
+        if (isset($data_biaya[$k])) {
+            $data_biaya[$k][] = $rb;
+            $subtotal_biaya[$k] += (int)$rb['nominal'];
+        }
+    }
+}
+
+// 5. Testimoni
+$data_testimoni = [];
+$q_testi = $conn->query("SELECT * FROM testimoni ORDER BY id DESC");
+if ($q_testi && $q_testi->num_rows > 0) while ($rt = $q_testi->fetch_assoc()) $data_testimoni[] = $rt;
 
 // Ambil parameter personalisasi & afiliasi
 $to_param   = isset($_GET['to']) ? trim($_GET['to']) : '';
@@ -259,6 +300,21 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             flex: 0 0 calc(25% - 6px);
             min-width: calc(25% - 6px);
             max-width: calc(25% - 6px);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        /* 1 Menu = 1 Halaman Ukuran Layar HP (Full Viewport Screen) */
+        .page-screen-mobile {
+            min-height: 100dvh;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            scroll-margin-top: 0;
+            padding-top: 2rem;
+            padding-bottom: 6rem;
+            position: relative;
         }
     </style>
 </head>
@@ -375,428 +431,423 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- ============================================================ -->
     <!-- MAIN CONTENT CONTAINER (MOBILE FIRST LAYOUT)                  -->
     <!-- ============================================================ -->
-    <div id="main-content" class="max-w-xl mx-auto px-4 pt-6 pb-32 min-h-screen">
+    <div id="main-content" class="max-w-xl mx-auto px-4 pt-2 pb-28 min-h-screen snap-y snap-mandatory scroll-smooth">
 
         <!-- ========================================== -->
-        <!-- MENU 1: HOME (HEADER BRANDING & LOGO)      -->
+        <!-- MENU 1: HOME (1 HALAMAN PENUH LAYAR HP)    -->
         <!-- ========================================== -->
-        <header id="brosur-home" class="text-center mb-8 scroll-mt-6">
-            <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-bold mb-3 shadow-sm">
-                <i class="fas fa-star text-amber-600"></i>
-                <span>Tahun Ajaran <?= $tahun_ajaran ?> &bull; <?= $periode_gelombang ?></span>
-            </div>
-            
-            <!-- Logo Bulat Lingkaran Sempurna -->
-            <div class="w-16 h-16 rounded-full mx-auto mb-2 p-1 bg-white border-2 border-emerald-600 shadow-md overflow-hidden aspect-square flex items-center justify-center">
-                <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-full h-full object-cover rounded-full">
-            </div>
+        <section id="brosur-home" class="page-screen-mobile snap-start text-center">
+            <div class="glass-card rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-xl my-auto text-center space-y-4">
+                
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-black shadow-xs">
+                    <i class="fas fa-certificate text-amber-600"></i>
+                    <span>Tahun Ajaran <?= $tahun_ajaran ?> &bull; <?= $periode_gelombang ?></span>
+                </div>
+                
+                <!-- Logo Bulat Lingkaran Sempurna -->
+                <div class="w-20 h-20 rounded-full mx-auto p-1 bg-white border-2 border-emerald-600 shadow-lg overflow-hidden aspect-square flex items-center justify-center">
+                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-full h-full object-cover rounded-full">
+                </div>
 
-            <h1 class="text-2xl sm:text-3xl font-black text-emerald-950 tracking-tight"><?= $judul_utama ?></h1>
-            <p class="text-sm text-emerald-700 font-semibold"><?= $subjudul ?></p>
-            <div class="w-16 h-1 bg-gradient-to-r from-amber-400 to-amber-600 mx-auto rounded-full mt-3"></div>
-        </header>
-
-        <!-- ========================================== -->
-        <!-- MENU 2: MENGAPA VQBM (MUQADDIMAH & PILAR)  -->
-        <!-- ========================================== -->
-        <section id="brosur-mengapa" class="scroll-mt-6 mb-8">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-emerald-800 text-amber-300 flex items-center justify-center font-bold text-sm shadow">
-                    <i class="fas fa-heart text-xs"></i>
-                </span>
                 <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Mengapa Villa Quran (VQBM)?</h2>
-                    <p class="text-xs text-gray-500">Mencetak generasi ahlul Qur'an dengan keunggulan masa depan</p>
-                </div>
-            </div>
-
-            <!-- Muqaddimah Card -->
-            <div class="glass-card rounded-3xl p-6 sm:p-7 shadow-lg mb-4 border border-emerald-100 relative overflow-hidden">
-                <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl"></div>
-                
-                <p class="text-center font-arabic text-2xl text-emerald-900 font-bold mb-2 leading-loose">السَّلاَمُ عَلَيْكُمْ وَرَحْمَةُ اللهِ وَبَرَكَاتُهُ</p>
-                
-                <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100 mb-4 text-center">
-                    <p class="text-xs uppercase tracking-wider font-bold text-emerald-800"><?= $tamu_header_text ?></p>
-                    <p class="text-lg font-black text-emerald-950 mt-0.5"><?= $nama_tamu ?></p>
+                    <h1 class="text-2xl sm:text-3xl font-black text-emerald-950 tracking-tight leading-tight"><?= $judul_utama ?></h1>
+                    <p class="text-sm text-emerald-700 font-bold mt-1"><?= $subjudul ?></p>
                 </div>
 
-                <p class="text-sm text-gray-700 leading-relaxed mb-4 text-justify">
-                    Segala puji bagi Allah Subhanahu wa Ta'ala. Merupakan impian terindah setiap orang tua muslim kelak di yaumil akhir disematkan <strong>Mahkota Kehormatan yang cahayanya lebih terang dari matahari</strong> karena ananda menghafal Al-Qur'an.
+                <div class="w-20 h-1 bg-gradient-to-r from-amber-400 to-amber-600 mx-auto rounded-full"></div>
+
+                <!-- Kartu Undangan Tamu -->
+                <div class="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-200/60 text-center">
+                    <span class="text-[11px] font-bold text-emerald-800 uppercase tracking-wider block"><?= $tamu_header_text ?></span>
+                    <h3 class="text-base sm:text-lg font-black text-emerald-950 mt-0.5"><?= $nama_tamu ?></h3>
+                    <p class="text-xs text-emerald-800/80 mt-1 leading-relaxed"><?= $tamu_sambutan_text ?></p>
+                </div>
+
+                <p class="text-xs text-slate-400 italic">
+                    <i class="fas fa-arrow-down animate-bounce text-amber-500 mr-1"></i> Geser layar ke bawah atau sentuh menu di bawah untuk melihat halaman berikutnya
                 </p>
-
-                <div class="border-l-4 border-amber-500 pl-4 py-2 bg-amber-50/60 rounded-r-xl italic text-xs text-amber-950 leading-relaxed mb-4">
-                    "Siapa yang membaca Al-Qur'an, mempelajarinya, dan mengamalkannya, maka pada hari kiamat dipakaikan kepada kedua orang tuanya mahkota dari cahaya..." 
-                    <span class="block font-bold mt-1 text-amber-800">— HR. Al-Hakim</span>
-                </div>
-
-                <p class="text-xs text-gray-600 leading-relaxed">
-                    Kami hadir untuk membersamai ikhtiar mulia Bapak/Ibu melalui kurikulum terpadu: <strong>Ketinggian Al-Qur'an, Legalitas Ijazah Resmi Negara, serta Penguasaan Teknologi & Wirausaha Modern.</strong>
-                </p>
-            </div>
-
-            <!-- Tiga Pilar Utama -->
-            <div class="space-y-3">
-                <div class="rounded-2xl p-4 bg-gradient-to-br from-emerald-900 to-emerald-950 text-white shadow-md border border-emerald-700/50 flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-400 text-emerald-950 flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
-                        <i class="fas fa-book-quran"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-black text-white">1. Tahfidz Al-Qur'an Bersanad & Mutqin</h3>
-                        <p class="text-xs text-emerald-100/90 mt-0.5 leading-relaxed">Talaqqi harian intensif, sanad qira'ah bersambung, dan bimbingan muroja'ah disiplin.</p>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl p-4 bg-gradient-to-br from-[#064e45] to-teal-950 text-white shadow-md border border-emerald-700/50 flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-400 text-emerald-950 flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-black text-white">2. Kurikulum Nasional & Ijazah Resmi (SMP/SMA)</h3>
-                        <p class="text-xs text-emerald-100/90 mt-0.5 leading-relaxed">Legalitas ijazah negara terakreditasi untuk tembus PTN, kedinasan, atau studi luar negeri.</p>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl p-4 bg-gradient-to-br from-amber-700 to-amber-950 text-white shadow-md border border-amber-600/50 flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-300 text-amber-950 flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-sm font-black text-white">3. Ekosistem Solopreneur & AI Terapan</h3>
-                        <p class="text-xs text-amber-100/90 mt-0.5 leading-relaxed">Praktek digital marketing, e-commerce, content creator, dan penerapan prompt AI.</p>
-                    </div>
-                </div>
             </div>
         </section>
 
-        <!-- Video Profil / Suasana Pesantren -->
-        <?php if ($show_video && !empty($video_url)): ?>
-        <section class="mb-8">
-            <div class="glass-card rounded-3xl p-4 shadow-lg border border-emerald-100 flex flex-col items-center">
-                <div class="flex items-center gap-2 mb-3 self-start">
-                    <i class="fab fa-youtube text-red-600 text-lg"></i>
-                    <h3 class="text-xs sm:text-sm font-bold text-emerald-950">Video Profil & Suasana Pesantren</h3>
+        <!-- ========================================== -->
+        <!-- MENU 2: MENGAPA VQBM (1 HALAMAN PENUH HP)  -->
+        <!-- ========================================== -->
+        <section id="brosur-mengapa" class="page-screen-mobile snap-start">
+            <div class="my-auto space-y-4">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <span class="w-9 h-9 rounded-2xl bg-amber-500 text-emerald-950 flex items-center justify-center font-black text-sm shadow">
+                        <i class="fas fa-heart"></i>
+                    </span>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-amber-700">Pilar Utama & Keunggulan</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-emerald-950">Mengapa Villa Quran?</h2>
+                    </div>
                 </div>
-                <div class="rounded-2xl overflow-hidden shadow-md border border-gray-200 transition-all mx-auto" style="width: <?= $video_width ?>%; height: <?= $video_height ?>px; max-width: 100%;">
-                    <iframe src="<?= htmlspecialchars($video_url) ?>" class="w-full h-full" style="border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+                <!-- 3 Pilar Keunggulan -->
+                <div class="space-y-3">
+                    <div class="rounded-2xl p-4 bg-gradient-to-br from-emerald-900 to-emerald-950 text-white shadow-md border border-emerald-700/50 flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-400 text-emerald-950 flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
+                            <i class="fas fa-book-quran"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-white">1. Tahfidz Al-Qur'an Bersanad & Mutqin</h3>
+                            <p class="text-xs text-emerald-100/90 mt-0.5 leading-relaxed">Talaqqi harian intensif, sanad qira'ah bersambung, dan bimbingan muroja'ah disiplin asatidz mukim.</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl p-4 bg-gradient-to-br from-[#064e45] to-teal-950 text-white shadow-md border border-emerald-700/50 flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-400 text-emerald-950 flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-white">2. Kurikulum Formal & Ijazah Negara (SMP/SMA)</h3>
+                            <p class="text-xs text-emerald-100/90 mt-0.5 leading-relaxed">Legalitas ijazah resmi negara terakreditasi untuk tembus PTN, kedinasan, atau studi luar negeri.</p>
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl p-4 bg-gradient-to-br from-amber-700 to-amber-950 text-white shadow-md border border-amber-600/50 flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-300 text-amber-950 flex items-center justify-center font-bold text-base flex-shrink-0 shadow">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black text-white">3. Ekosistem Solopreneur & AI Terapan</h3>
+                            <p class="text-xs text-amber-100/90 mt-0.5 leading-relaxed">Praktek digital marketing, konten kreatif dakwah, e-commerce, dan penerapan AI untuk produktivitas.</p>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Video Profil / Suasana Pesantren -->
+                <?php if ($show_video && !empty($video_url)): ?>
+                <div class="glass-card rounded-2xl p-3 shadow-md border border-emerald-100">
+                    <span class="text-xs font-bold text-emerald-950 block mb-2"><i class="fab fa-youtube text-red-600 mr-1.5"></i> Video Profil Suasana Pesantren</span>
+                    <div class="rounded-xl overflow-hidden shadow-inner border border-gray-200 transition-all mx-auto" style="width: <?= $video_width ?>%; height: <?= min(200, $video_height) ?>px; max-width: 100%;">
+                        <iframe src="<?= htmlspecialchars($video_url) ?>" class="w-full h-full" style="border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </section>
-        <?php endif; ?>
 
         <!-- ========================================== -->
         <!-- MENU 3: TARGET KOMPETENSI                  -->
         <!-- ========================================== -->
-        <section id="brosur-kompetensi" class="scroll-mt-6 mb-8">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow">
-                    <i class="fas fa-bullseye text-xs"></i>
-                </span>
-                <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Target Kompetensi Lulusan</h2>
-                    <p class="text-xs text-gray-500">Standar mutu & profil lulusan santri Villa Quran</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 hover:shadow-md transition">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg mb-3">
-                        <i class="fas fa-quran"></i>
-                    </div>
-                    <h3 class="font-bold text-sm text-emerald-950 mb-1">Mutqin 15 s/d 30 Juz Bersanad</h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">Hafal kuat dengan standar tahsin fashahah, tajwid mutqin, dan sanad qira'ah bersambung.</p>
-                </div>
-
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 hover:shadow-md transition">
-                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg mb-3">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <h3 class="font-bold text-sm text-emerald-950 mb-1">Ijazah Resmi Setara SMP/SMA</h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">Legalitas ijazah negara terakreditasi, bebas tembus PTN, kedinasan & kampus luar negeri.</p>
-                </div>
-
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 hover:shadow-md transition">
-                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-lg mb-3">
-                        <i class="fas fa-laptop-code"></i>
-                    </div>
-                    <h3 class="font-bold text-sm text-emerald-950 mb-1">Kecakapan Solopreneur & AI</h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">Keterampilan digital marketing, content creator dakwah, serta AI untuk produktivitas.</p>
-                </div>
-
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 hover:shadow-md transition">
-                    <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center text-lg mb-3">
-                        <i class="fas fa-hands-holding-child"></i>
-                    </div>
-                    <h3 class="font-bold text-sm text-emerald-950 mb-1">Adab Luhur & Mandiri</h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">Pribadi sholeh berkarakter mandiri, disiplin ibadah harian, dan santun berbakti.</p>
-                </div>
-            </div>
-        </section>
-
         <!-- ========================================== -->
-        <!-- MENU 4: FASILITAS PESANTREN ALA VILLA      -->
+        <!-- MENU 3: TARGET KOMPETENSI (1 HALAMAN PENUH)-->
         <!-- ========================================== -->
-        <section id="brosur-fasilitas" class="scroll-mt-6 mb-8">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-sm shadow">
-                    <i class="fas fa-hotel text-xs"></i>
-                </span>
-                <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Fasilitas Pesantren Nyaman</h2>
-                    <p class="text-xs text-gray-500">Sarana asri ala villa yang menunjang kenyamanan belajar santri</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <!-- Fasilitas 1 -->
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg mb-2.5">
-                        <i class="fas fa-bed"></i>
-                    </div>
-                    <h3 class="font-bold text-sm text-emerald-950 mb-1">Asrama Representatif & Kasur Nyaman</h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">Kamar asrama berkapasitas seimbang dengan ranjang kasur empuk, lemari pribadi, sirkulasi udara pegunungan yang sejuk dan bersih.</p>
-                </div>
-
-                <!-- Fasilitas 2 -->
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition">
-                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg mb-2.5">
-                        <i class="fas fa-mosque"></i>
-                    </div>
-                    <h3 class="font-bold text-sm text-emerald-950 mb-1">Masjid & Mushola Talaqqi 24 Jam</h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">Pusat halaqoh tahfidz Al-Qur'an bersanad, sholat berjamaah lima waktu, dan qiyamul lail syahdu berhawa sejuk asri.</p>
-                </div>
-
-                <!-- Fasilitas 3 -->
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition">
-                    <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-lg mb-2.5">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                    <h3 class="font-bold text-sm text-emerald-950 mb-1">Ruang Belajar & Lab Solopreneur AI</h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">Didukung akses internet terbimbing untuk praktek digital marketing, modul AI Dewan Tutor Diknas, dan pembelajaran modern.</p>
-                </div>
-
-                <!-- Fasilitas 4 -->
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition">
-                    <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center text-lg mb-2.5">
-                        <i class="fas fa-utensils"></i>
-                    </div>
-                    <h3 class="font-bold text-sm text-emerald-950 mb-1">Nutrisi Sehat 3x Sehari & Laundry</h3>
-                    <p class="text-xs text-gray-600 leading-relaxed">Menu makanan bergizi 3 kali sehari yang disukai santri, layanan laundry pakaian bersih terjadwal, dan kesehatan terpantau.</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- ========================================== -->
-        <!-- MENU 5: DEWAN PENGASUH & ASATIDZ           -->
-        <!-- ========================================== -->
-        <section id="brosur-pengasuh" class="scroll-mt-6 mb-8">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shadow">
-                    <i class="fas fa-user-graduate text-xs"></i>
-                </span>
-                <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Dewan Pengasuh & Asatidz</h2>
-                    <p class="text-xs text-gray-500">Membina 24 jam dengan penuh kasih sayang dan keteladanan</p>
-                </div>
-            </div>
-
-            <div class="space-y-3.5">
-                <!-- Pengasuh Mukim -->
-                <div class="glass-card rounded-2xl p-5 border border-emerald-100 shadow-sm flex items-start gap-3.5">
-                    <div class="w-12 h-12 rounded-2xl bg-emerald-800 text-amber-300 flex items-center justify-center text-xl flex-shrink-0 font-bold shadow-md">
-                        <i class="fas fa-users-gear"></i>
-                    </div>
+        <section id="brosur-kompetensi" class="page-screen-mobile snap-start">
+            <div class="my-auto space-y-4">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <span class="w-9 h-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow">
+                        <i class="fas fa-bullseye"></i>
+                    </span>
                     <div>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Talaqqi Bersanad</span>
-                        <h3 class="font-black text-sm sm:text-base text-emerald-950 mt-1">Tim Asatidz Hafizh Mukim 24 Jam</h3>
-                        <p class="text-xs text-gray-600 leading-relaxed mt-1">
-                            Didampingi asatidz mukim bersanad Al-Qur'an 30 Juz yang tinggal bersama santri untuk membina kedisiplinan adab, qiyamul lail, dan kehangatan keluarga.
-                        </p>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-blue-700">Standar Mutu Lulusan</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-emerald-950">Target Kompetensi Santri</h2>
                     </div>
                 </div>
 
-                <!-- Kolaborasi Dewan Tutor AI -->
-                <div class="rounded-2xl p-5 bg-gradient-to-br from-emerald-950 via-[#064e45] to-teal-950 text-white shadow-xl border border-amber-400/40 relative overflow-hidden">
-                    <div class="flex items-center gap-2 mb-1.5">
-                        <span class="px-2.5 py-0.5 rounded-full bg-amber-400 text-emerald-950 text-[10px] font-extrabold uppercase shadow">Inovasi Pesantren</span>
-                        <span class="text-xs text-amber-300 font-bold"><i class="fas fa-robot mr-1"></i> Dewan Tutor AI Diknas</span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg mb-2.5">
+                            <i class="fas fa-quran"></i>
+                        </div>
+                        <h3 class="font-bold text-sm text-emerald-950 mb-1">Mutqin 15 s/d 30 Juz Bersanad</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Hafal kuat dengan standar tahsin fashahah, tajwid mutqin, dan sanad qira'ah bersambung.</p>
                     </div>
-                    <h3 class="text-sm sm:text-base font-extrabold text-white mb-1">Sinergi Asatidz Manusia & AI Interaktif</h3>
-                    <p class="text-xs text-emerald-100 leading-relaxed">
-                        Untuk pelajaran umum Diknas, santri didampingi Dewan Tutor AI berkepribadian ilmuwan Muslim ternama (seperti Ustadz Ibnu Khaldun untuk Sosiologi). Santri dapat berdiskusi dan tanya jawab pelajaran 24/7 kapan pun.
-                    </p>
+
+                    <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center text-lg mb-2.5">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <h3 class="font-bold text-sm text-emerald-950 mb-1">Ijazah Formal SMP/SMA</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Legalitas resmi negara terakreditasi, bebas tembus PTN, kedinasan & kampus luar negeri.</p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition">
+                        <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-lg mb-2.5">
+                            <i class="fas fa-laptop-code"></i>
+                        </div>
+                        <h3 class="font-bold text-sm text-emerald-950 mb-1">Kecakapan Solopreneur & AI</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Keterampilan digital marketing, content creator dakwah, serta AI untuk produktivitas mandiri.</p>
+                    </div>
+
+                    <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition">
+                        <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center text-lg mb-2.5">
+                            <i class="fas fa-hands-holding-child"></i>
+                        </div>
+                        <h3 class="font-bold text-sm text-emerald-950 mb-1">Adab Luhur & Mandiri</h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">Pribadi sholeh berkarakter mandiri, disiplin ibadah harian, dan santun berbakti kepada orang tua.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- MENU 4: FASILITAS (1 HALAMAN PENUH - SINKRON WEB) -->
+        <!-- ========================================== -->
+        <section id="brosur-fasilitas" class="page-screen-mobile snap-start">
+            <div class="my-auto space-y-4">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <span class="w-9 h-9 rounded-2xl bg-teal-600 text-white flex items-center justify-center font-black text-sm shadow">
+                        <i class="fas fa-hotel"></i>
+                    </span>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-teal-700">Sarana Asri Ala Villa</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-emerald-950">Fasilitas Pesantren</h2>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-0.5 no-scrollbar">
+                    <?php if (!empty($data_fasilitas)): ?>
+                        <?php foreach ($data_fasilitas as $fas): ?>
+                            <div class="glass-card rounded-2xl overflow-hidden border border-emerald-100 shadow-sm hover:shadow-md transition flex flex-col">
+                                <?php if (!empty($fas['gambar_url'])): ?>
+                                    <div class="h-28 w-full overflow-hidden bg-slate-100">
+                                        <img src="<?= htmlspecialchars($fas['gambar_url']) ?>" alt="<?= htmlspecialchars($fas['judul']) ?>" class="w-full h-full object-cover">
+                                    </div>
+                                <?php endif; ?>
+                                <div class="p-3 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <h3 class="font-bold text-xs sm:text-sm text-emerald-950 mb-1"><?= htmlspecialchars($fas['judul']) ?></h3>
+                                        <p class="text-[11px] text-gray-600 leading-relaxed line-clamp-3"><?= htmlspecialchars($fas['deskripsi']) ?></p>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm">
+                            <h3 class="font-bold text-sm text-emerald-950 mb-1">Asrama Representatif & Kasur Nyaman</h3>
+                            <p class="text-xs text-gray-600">Kamar asrama berkapasitas seimbang dengan ranjang kasur empuk, lemari pribadi, sirkulasi udara pegunungan.</p>
+                        </div>
+                        <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm">
+                            <h3 class="font-bold text-sm text-emerald-950 mb-1">Masjid & Mushola Talaqqi 24 Jam</h3>
+                            <p class="text-xs text-gray-600">Pusat halaqoh tahfidz Al-Qur'an bersanad, sholat berjamaah lima waktu, dan qiyamul lail syahdu.</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Google Maps Frame jika diaktifkan -->
+                <?php if ($show_maps): ?>
+                <div class="glass-card rounded-2xl p-2.5 shadow-sm border border-emerald-100 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-location-dot text-emerald-600 text-base"></i>
+                        <span class="text-xs font-bold text-emerald-950">Lokasi Kampus Pegunungan Asri</span>
+                    </div>
+                    <a href="https://maps.google.com/maps?q=Villa+Quran+Indonesia" target="_blank" class="px-3 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold rounded-lg text-[10px] transition">
+                        Buka Maps &rarr;
+                    </a>
+                </div>
+                <?php endif; ?>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- MENU 5: DEWAN PENGASUH (1 HALAMAN PENUH - SINKRON WEB) -->
+        <!-- ========================================== -->
+        <section id="brosur-pengasuh" class="page-screen-mobile snap-start">
+            <div class="my-auto space-y-4">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <span class="w-9 h-9 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shadow">
+                        <i class="fas fa-user-graduate"></i>
+                    </span>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-purple-700">Keteladanan & Pembinaan 24 Jam</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-emerald-950">Dewan Pengasuh & Asatidz</h2>
+                    </div>
+                </div>
+
+                <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-0.5 no-scrollbar">
+                    <?php if (!empty($data_pengajar)): ?>
+                        <?php foreach ($data_pengajar as $p): ?>
+                            <div class="glass-card rounded-2xl p-4 border border-purple-100 shadow-sm flex items-start gap-3.5">
+                                <?php if (!empty($p['gambar_url'])): ?>
+                                    <img src="<?= htmlspecialchars($p['gambar_url']) ?>" alt="<?= htmlspecialchars($p['nama']) ?>" class="w-14 h-14 rounded-2xl object-cover border-2 border-purple-200 shadow-sm flex-shrink-0">
+                                <?php else: ?>
+                                    <div class="w-14 h-14 rounded-2xl bg-purple-100 text-purple-800 flex items-center justify-center text-xl font-bold flex-shrink-0"><i class="fas fa-user"></i></div>
+                                <?php endif; ?>
+                                <div class="overflow-hidden flex-1">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h3 class="font-black text-sm text-emerald-950"><?= htmlspecialchars($p['nama']) ?></h3>
+                                        <?php if (!empty($p['teks_badge'])): ?>
+                                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                                                <i class="<?= htmlspecialchars(!empty($p['ikon_badge']) ? $p['ikon_badge'] : 'fas fa-star') ?> text-[8px] mr-0.5"></i>
+                                                <?= htmlspecialchars($p['teks_badge']) ?>
+                                            </span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <p class="text-xs text-purple-700 font-bold mt-0.5"><?= htmlspecialchars($p['jabatan'] ?? '') ?></p>
+                                    <p class="text-[11px] text-gray-500 mt-0.5"><?= htmlspecialchars($p['almamater'] ?? '') ?></p>
+                                    <?php if (!empty($p['prestasi'])): ?>
+                                        <p class="text-[10px] text-gray-600 mt-1 line-clamp-2 italic">"<?= htmlspecialchars($p['prestasi']) ?>"</p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm">
+                            <h3 class="font-black text-sm text-emerald-950">Tim Asatidz Hafizh Mukim 24 Jam</h3>
+                            <p class="text-xs text-gray-600 mt-1">Didampingi asatidz mukim bersanad Al-Qur'an 30 Juz yang tinggal bersama santri untuk membina kedisiplinan adab dan muraja'ah.</p>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </section>
 
         <!-- ========================================== -->
-        <!-- MENU 6: INVESTASI PENDIDIKAN (BIAYA)       -->
+        <!-- MENU 6: KEGIATAN SANTRI (1 HALAMAN PENUH - SINKRON WEB) -->
         <!-- ========================================== -->
-        <section id="brosur-biaya" class="scroll-mt-6 mb-8">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-amber-600 text-white flex items-center justify-center font-bold text-sm shadow">
-                    <i class="fas fa-receipt text-xs"></i>
-                </span>
-                <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Investasi Pendidikan (Biaya)</h2>
-                    <p class="text-xs text-gray-500">Transparan, terjangkau, dan sepadan dengan mutu</p>
-                </div>
-            </div>
-
-            <div class="glass-card rounded-3xl p-5 shadow-lg border border-emerald-100">
-                <div class="divide-y divide-gray-100 text-xs sm:text-sm">
-                    <div class="py-3 flex justify-between items-center">
-                        <div>
-                            <span class="font-bold text-gray-900 block">1. Biaya Pendaftaran & Observasi</span>
-                            <span class="text-[11px] text-gray-500">Pemeriksaan kesehatan, tes minat & bakat</span>
-                        </div>
-                        <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_pendaftaran ?></span>
-                    </div>
-
-                    <div class="py-3 flex justify-between items-center">
-                        <div>
-                            <span class="font-bold text-gray-900 block">2. Uang Pangkal / Sarana Masuk</span>
-                            <span class="text-[11px] text-gray-500">Lemari, ranjang kasur, seragam, modul</span>
-                        </div>
-                        <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_pangkal ?></span>
-                    </div>
-
-                    <div class="py-3 flex justify-between items-center">
-                        <div>
-                            <span class="font-bold text-gray-900 block">3. Biaya Pengembangan Tahunan</span>
-                            <span class="text-[11px] text-gray-500">Karantina tahfidz, ekstrakurikuler & rihlah</span>
-                        </div>
-                        <span class="font-extrabold text-emerald-700 text-sm">Rp <?= $biaya_tahunan ?></span>
-                    </div>
-
-                    <div class="py-3.5 bg-emerald-50/80 -mx-5 px-5 rounded-2xl border border-emerald-200/60 flex justify-between items-center mt-2">
-                        <div>
-                            <span class="font-extrabold text-emerald-950 block text-sm">4. SPP All-in Per Bulan</span>
-                            <span class="text-[11px] text-emerald-800">Makan 3x/hari bergizi, asrama, laundry & bimbingan</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="font-black text-emerald-800 text-base">Rp <?= $biaya_spp ?></span>
-                            <span class="block text-[10px] text-emerald-600">/ bulan</span>
-                        </div>
+        <section id="brosur-kegiatan" class="page-screen-mobile snap-start">
+            <div class="my-auto space-y-4">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <span class="w-9 h-9 rounded-2xl bg-pink-600 text-white flex items-center justify-center font-black text-sm shadow">
+                        <i class="fas fa-camera-retro"></i>
+                    </span>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-pink-700">Dokumentasi & Potret Harian</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-emerald-950">Kegiatan Santri</h2>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-amber-800 bg-amber-50/70 p-3 rounded-xl border border-amber-200">
-                    <span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-600"></i> <strong>Diskon <?= $periode_gelombang ?></strong> potongan Rp <?= $diskon_gelombang ?> Uang Pangkal</span>
+                <div class="grid grid-cols-2 gap-2.5 max-h-[65vh] overflow-y-auto pr-0.5 no-scrollbar">
+                    <?php if (!empty($data_kegiatan)): ?>
+                        <?php foreach ($data_kegiatan as $keg): ?>
+                            <div class="rounded-2xl overflow-hidden shadow-sm relative group bg-emerald-50 border border-emerald-100 aspect-[4/3]">
+                                <img src="<?= htmlspecialchars(!empty($keg['gambar_url']) ? $keg['gambar_url'] : 'upload/logo-villa-quran.png') ?>" alt="<?= htmlspecialchars($keg['judul'] ?? '') ?>" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-2.5">
+                                    <h4 class="text-white font-black text-xs leading-tight"><?= htmlspecialchars($keg['judul'] ?? '') ?></h4>
+                                    <?php if (!empty($keg['caption'])): ?>
+                                        <p class="text-emerald-200 text-[9px] line-clamp-1 mt-0.5"><?= htmlspecialchars($keg['caption']) ?></p>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="col-span-2 glass-card rounded-2xl p-4 text-center text-xs text-gray-500">
+                            Potret kegiatan harian santri: Halaqah Tahfidz, KBM Kelas, Olahraga Sunnah, dan Qiyamul Lail.
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </section>
 
-        <!-- Countdown Timer SPMB -->
-        <?php if ($show_countdown): ?>
-        <section class="mb-8 text-center" id="brosur-countdown-section">
-            <div class="glass-card rounded-3xl p-5 sm:p-7 border border-amber-500/30 shadow-xl relative overflow-hidden bg-gradient-to-b from-white/95 to-emerald-50/90 backdrop-blur-xl">
-                <div class="absolute -top-10 -right-10 w-32 h-32 bg-amber-400/15 rounded-full blur-2xl pointer-events-none"></div>
-                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"></div>
-
-                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-extrabold uppercase tracking-wider mb-2 shadow-sm">
-                    <i class="fas fa-hourglass-half text-amber-600 animate-pulse"></i>
-                    <span>Batas Akhir <?= $periode_gelombang ?></span>
-                </div>
-
-                <h3 id="cd-text" class="text-emerald-950 font-black text-base sm:text-lg mb-4 tracking-tight">
-                    <?= $countdown_title ?>
-                </h3>
-
-                <!-- KOTAK COUNTDOWN -->
-                <div class="flex justify-center items-center space-x-2 sm:space-x-4">
-                    <div class="flex flex-col items-center">
-                        <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-hari">
-                            00
-                        </div>
-                        <span class="text-emerald-950 text-[10px] sm:text-xs mt-2.5 font-extrabold uppercase tracking-widest">Hari</span>
-                    </div>
-
-                    <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
-
-                    <div class="flex flex-col items-center">
-                        <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-jam">
-                            00
-                        </div>
-                        <span class="text-emerald-950 text-[10px] sm:text-xs mt-2.5 font-extrabold uppercase tracking-widest">Jam</span>
-                    </div>
-
-                    <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
-
-                    <div class="flex flex-col items-center">
-                        <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-menit">
-                            00
-                        </div>
-                        <span class="text-emerald-950 text-[10px] sm:text-xs mt-2.5 font-extrabold uppercase tracking-widest">Menit</span>
-                    </div>
-
-                    <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
-
-                    <div class="flex flex-col items-center">
-                        <div class="bg-white text-rose-600 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(225,29,72,1)] border-2 border-rose-200 font-mono tracking-tight animate-pulse" id="cd-detik">
-                            00
-                        </div>
-                        <span class="text-rose-700 text-[10px] sm:text-xs mt-2.5 font-extrabold uppercase tracking-widest">Detik</span>
+        <!-- ========================================== -->
+        <!-- MENU 7: INVESTASI PENDIDIKAN (1 HALAMAN PENUH - SINKRON WEB) -->
+        <!-- ========================================== -->
+        <section id="brosur-biaya" class="page-screen-mobile snap-start">
+            <div class="my-auto space-y-4">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <span class="w-9 h-9 rounded-2xl bg-amber-600 text-white flex items-center justify-center font-black text-sm shadow">
+                        <i class="fas fa-receipt"></i>
+                    </span>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-amber-700">Transparan & Terjangkau</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-emerald-950">Investasi Pendidikan</h2>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-emerald-100/80 flex items-center justify-center gap-1.5 text-[11px] text-gray-500">
-                    <i class="fas fa-bolt text-amber-500"></i>
-                    <span>Kuota santri terbatas. Segera amankan pendaftaran sebelum periode ini ditutup.</span>
+                <div class="glass-card rounded-3xl p-5 sm:p-6 shadow-lg border border-emerald-100 space-y-3">
+                    <div class="divide-y divide-gray-100 text-xs sm:text-sm">
+                        <div class="py-2.5 flex justify-between items-center">
+                            <div>
+                                <span class="font-bold text-gray-900 block">1. Biaya Pendaftaran & Observasi</span>
+                                <span class="text-[10px] text-gray-500">Formulir SPMB & observasi calon santri</span>
+                            </div>
+                            <span class="font-black text-emerald-800 text-sm">Rp <?= $biaya_pendaftaran ?></span>
+                        </div>
+
+                        <div class="py-2.5 flex justify-between items-center">
+                            <div>
+                                <span class="font-bold text-gray-900 block">2. Uang Pangkal Masuk</span>
+                                <span class="text-[10px] text-gray-500">Ranjang kasur empuk, lemari, seragam 4 stel & modul</span>
+                            </div>
+                            <span class="font-black text-emerald-800 text-sm">Rp <?= $biaya_pangkal ?></span>
+                        </div>
+
+                        <div class="py-2.5 flex justify-between items-center">
+                            <div>
+                                <span class="font-bold text-gray-900 block">3. Biaya Pengembangan Tahunan</span>
+                                <span class="text-[10px] text-gray-500">Karantina tahfidz, ekstrakurikuler & sarana</span>
+                            </div>
+                            <span class="font-black text-emerald-800 text-sm">Rp <?= $biaya_tahunan ?></span>
+                        </div>
+
+                        <div class="py-3 bg-emerald-50/80 -mx-5 px-5 rounded-2xl border border-emerald-200/60 flex justify-between items-center mt-2">
+                            <div>
+                                <span class="font-black text-emerald-950 block text-xs sm:text-sm">4. SPP All-in Per Bulan</span>
+                                <span class="text-[10px] text-emerald-800">Makan 3x sehari bergizi, asrama AC, laundry & bimbingan</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-black text-emerald-800 text-sm sm:text-base">Rp <?= $biaya_spp ?></span>
+                                <span class="block text-[9px] text-emerald-600">/ bulan</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex items-center justify-between text-xs text-amber-900 bg-amber-50/80 p-2.5 rounded-xl border border-amber-200">
+                        <span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-600"></i> <strong>Diskon <?= $periode_gelombang ?></strong>: Hemat Rp <?= $diskon_gelombang ?> Uang Pangkal</span>
+                    </div>
+
+                    <!-- Countdown Mini -->
+                    <?php if ($show_countdown): ?>
+                    <div class="p-3 rounded-2xl bg-gradient-to-r from-emerald-950 to-[#064e45] text-white text-center">
+                        <span class="text-[10px] text-amber-300 font-extrabold uppercase tracking-wider block mb-1">⏳ <?= $countdown_title ?></span>
+                        <div class="flex justify-center items-center gap-2 font-mono text-sm sm:text-base font-black text-amber-300">
+                            <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-hari">00</span> Hari : 
+                            <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-jam">00</span> Jam : 
+                            <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-menit">00</span> Menit : 
+                            <span class="bg-white text-rose-600 px-2 py-0.5 rounded-lg shadow-xs" id="cd-detik">00</span> Detik
+                        </div>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </section>
-        <?php endif; ?>
 
         <!-- ========================================== -->
-        <!-- MENU 7: TESTIMONI WALISANTRI               -->
+        <!-- MENU 8: TESTIMONI (1 HALAMAN PENUH - SINKRON WEB) -->
         <!-- ========================================== -->
-        <section id="brosur-testimoni" class="scroll-mt-6 mb-8">
-            <div class="flex items-center gap-2 mb-4">
-                <span class="w-8 h-8 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-sm shadow">
-                    <i class="fas fa-comments text-xs"></i>
-                </span>
-                <div>
-                    <h2 class="text-lg sm:text-xl font-extrabold text-emerald-950">Testimoni Walisantri</h2>
-                    <p class="text-xs text-gray-500">Kisah nyata transformasi putra-putri di Villa Quran</p>
-                </div>
-            </div>
-
-            <div class="space-y-3.5">
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm relative">
-                    <div class="flex items-center gap-3 mb-2.5">
-                        <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
-                            <i class="fas fa-user-check"></i>
-                        </div>
-                        <div>
-                            <h4 class="font-extrabold text-xs sm:text-sm text-emerald-950">Bpk. Hendra Gunawan</h4>
-                            <p class="text-[10px] text-gray-500">Wali Santri SMP — Asal Surabaya</p>
-                        </div>
-                        <div class="ml-auto flex text-amber-400 text-xs">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
+        <section id="brosur-testimoni" class="page-screen-mobile snap-start">
+            <div class="my-auto space-y-4">
+                <div class="flex items-center gap-2.5 mb-2">
+                    <span class="w-9 h-9 rounded-2xl bg-teal-700 text-white flex items-center justify-center font-black text-sm shadow">
+                        <i class="fas fa-comments"></i>
+                    </span>
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-wider text-teal-700">Kisah Nyata Transformasi</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-emerald-950">Testimoni Walisantri</h2>
                     </div>
-                    <p class="text-xs text-gray-700 italic leading-relaxed">
-                        "Alhamdulillah baru 8 bulan di Villa Quran, anak saya sudah menyelesaikan 6 juz mutqin dengan tajwid yang sangat rapi. Saat pulang liburan dia selalu bangun qiyamul lail sendiri tanpa perlu dibangunkan."
-                    </p>
                 </div>
 
-                <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm relative">
-                    <div class="flex items-center gap-3 mb-2.5">
-                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
-                            <i class="fas fa-user-check"></i>
+                <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-0.5 no-scrollbar">
+                    <?php if (!empty($data_testimoni)): ?>
+                        <?php foreach ($data_testimoni as $t): ?>
+                            <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm relative">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <?php if (!empty($t['gambar_url'])): ?>
+                                        <img src="<?= htmlspecialchars($t['gambar_url']) ?>" alt="<?= htmlspecialchars($t['nama']) ?>" class="w-10 h-10 rounded-full object-cover border border-emerald-200">
+                                    <?php else: ?>
+                                        <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs"><i class="fas fa-user-check"></i></div>
+                                    <?php endif; ?>
+                                    <div class="flex-1 overflow-hidden">
+                                        <h4 class="font-black text-xs sm:text-sm text-emerald-950 truncate"><?= htmlspecialchars($t['nama']) ?></h4>
+                                        <p class="text-[10px] text-gray-500 truncate"><?= htmlspecialchars($t['jabatan'] ?? '') ?></p>
+                                    </div>
+                                    <div class="flex text-amber-400 text-xs">
+                                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-gray-700 italic leading-relaxed">
+                                    "<?= htmlspecialchars($t['isi_testimoni']) ?>"
+                                </p>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm">
+                            <h4 class="font-extrabold text-xs text-emerald-950">Bpk. Hendra Gunawan (Wali Santri SMP)</h4>
+                            <p class="text-xs text-gray-700 italic mt-1">"Alhamdulillah anak kami betah sekali dan hafalan juz 30 hingga 6 sangat mutqin dengan bimbingan asatidz yang penuh kasih sayang."</p>
                         </div>
-                        <div>
-                            <h4 class="font-extrabold text-xs sm:text-sm text-emerald-950">Ibu dr. Nurul Aini</h4>
-                            <p class="text-[10px] text-gray-500">Wali Santri SMA — Asal Jakarta</p>
-                        </div>
-                        <div class="ml-auto flex text-amber-400 text-xs">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                    </div>
-                    <p class="text-xs text-gray-700 italic leading-relaxed">
-                        "Konsepnya sangat solutif. Anak kami tidak hanya hafal Al-Qur'an dan mengantongi ijazah resmi negara, tapi juga diajari AI dan digital marketing. Karakternya mandiri dan siap menghadapi tantangan zaman modern."
-                    </p>
+                    <?php endif; ?>
                 </div>
             </div>
         </section>
@@ -827,94 +878,91 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <?php endif; ?>
 
         <!-- ========================================== -->
-        <!-- MENU 8: FORMULIR PENDAFTARAN & RESERVASI   -->
+        <!-- MENU 9: FORMULIR PENDAFTARAN & RESERVASI   -->
         <!-- ========================================== -->
-        <section id="brosur-formulir" class="scroll-mt-6 mb-12">
-            <div class="rounded-3xl p-6 sm:p-7 bg-gradient-to-br from-[#064e45] via-[#043d36] to-[#022823] text-white shadow-2xl border border-amber-500/40 relative overflow-hidden">
-                <div class="absolute -top-12 -right-12 w-44 h-44 bg-amber-400/10 rounded-full blur-2xl"></div>
+        <section id="brosur-formulir" class="page-screen-mobile snap-start">
+            <div class="my-auto">
+                <div class="rounded-3xl p-5 sm:p-7 bg-gradient-to-br from-[#064e45] via-[#043d36] to-[#022823] text-white shadow-2xl border border-amber-500/40 relative overflow-hidden">
+                    <div class="absolute -top-12 -right-12 w-44 h-44 bg-amber-400/10 rounded-full blur-2xl"></div>
 
-                <div class="text-center mb-6">
-                    <span class="inline-block px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[11px] font-extrabold uppercase tracking-wider mb-2">
-                        Formulir Silaturahmi & Reservasi
-                    </span>
-                    <h2 class="text-xl sm:text-2xl font-black text-white">Amankan Kuota Santri Ananda</h2>
-                    <p class="text-xs text-emerald-100/90 mt-1 max-w-sm mx-auto">
-                        Kuota santri dibatasi maksimal 20 santri per angkatan untuk menjaga kualitas talaqqi intensif.
-                    </p>
-                </div>
-
-                <form id="form-reservasi" onsubmit="submitReservasi(event)" class="space-y-4 text-left">
-                    <input type="hidden" name="kode_ref" id="input-ref" value="<?= $kode_ref ?>">
-
-                    <div>
-                        <label class="block text-xs font-bold text-amber-200 mb-1">Nama Ayah / Ibu (Wali) <span class="text-red-400">*</span></label>
-                        <input type="text" id="reg-nama-wali" name="nama_wali" required placeholder="Contoh: Bpk. Hendy Pratama" value="<?= ($nama_tamu !== 'Bapak / Ibu Calon Wali Santri & Keluarga') ? $nama_tamu : '' ?>" class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-sm">
+                    <div class="text-center mb-5">
+                        <span class="inline-block px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-extrabold uppercase tracking-wider mb-1.5">
+                            Hal 9 &bull; Formulir SPMB
+                        </span>
+                        <h2 class="text-xl sm:text-2xl font-black text-white">Amankan Kuota Santri Ananda</h2>
+                        <p class="text-xs text-emerald-100/90 mt-1 max-w-sm mx-auto">
+                            Kuota terbatas maksimal 20 santri/angkatan untuk menjaga kualitas talaqqi intensif.
+                        </p>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-amber-200 mb-1">Nomor WhatsApp Aktif <span class="text-red-400">*</span></label>
-                        <input type="tel" id="reg-wa" name="whatsapp" required placeholder="Contoh: 081234567890" class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-sm">
-                        <span class="text-[10px] text-gray-300 mt-0.5 block"><i class="fab fa-whatsapp text-emerald-400 mr-1"></i> Notifikasi otomatis & E-Brosur resmi dikirim ke nomor ini</span>
-                    </div>
+                    <form id="form-reservasi" onsubmit="submitReservasi(event)" class="space-y-3.5 text-left">
+                        <input type="hidden" name="kode_ref" id="input-ref" value="<?= $kode_ref ?>">
 
-                    <div>
-                        <label class="block text-xs font-bold text-amber-200 mb-1">Nama Calon Santri (Ananda) <span class="text-red-400">*</span></label>
-                        <input type="text" id="reg-nama-santri" name="nama_santri" required placeholder="Contoh: Muhammad Al-Fatih" class="w-full px-4 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 text-sm">
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs font-bold text-amber-200 mb-1">Pilihan Jenjang <span class="text-red-400">*</span></label>
-                            <select id="reg-jenjang" name="jenjang" required class="w-full px-3 py-2.5 rounded-xl bg-emerald-950 border border-white/20 text-white text-xs sm:text-sm focus:outline-none focus:border-amber-400">
-                                <option value="SMP Tahfidz">SMP (Setara)</option>
-                                <option value="SMA Tahfidz & Solopreneur">SMA (Setara)</option>
-                                <option value="Takhassus 30 Juz">Takhassus 30 Juz</option>
-                            </select>
+                            <label class="block text-xs font-bold text-amber-200 mb-1">Nama Ayah / Ibu (Wali) <span class="text-red-400">*</span></label>
+                            <input type="text" id="reg-nama-wali" name="nama_wali" required placeholder="Contoh: Bpk. Hendy Pratama" value="<?= ($nama_tamu !== 'Bapak / Ibu Calon Wali Santri & Keluarga') ? $nama_tamu : '' ?>" class="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 text-xs sm:text-sm">
                         </div>
+
                         <div>
-                            <label class="block text-xs font-bold text-amber-200 mb-1">Kota Asal / Domisili <span class="text-red-400">*</span></label>
-                            <input type="text" id="reg-kota" name="kota" required placeholder="Contoh: Surabaya" class="w-full px-3 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 text-xs sm:text-sm">
+                            <label class="block text-xs font-bold text-amber-200 mb-1">Nomor WhatsApp Aktif <span class="text-red-400">*</span></label>
+                            <input type="tel" id="reg-wa" name="whatsapp" required placeholder="Contoh: 081234567890" class="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 text-xs sm:text-sm">
+                            <span class="text-[10px] text-gray-300 mt-0.5 block"><i class="fab fa-whatsapp text-emerald-400 mr-1"></i> Notifikasi otomatis & E-Brosur resmi dikirim ke nomor ini</span>
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-amber-200 mb-1">Catatan / Rencana Silaturahmi (Opsional)</label>
-                        <textarea id="reg-catatan" name="catatan" rows="2" placeholder="Contoh: Ingin menjadwalkan kunjungan survei pesantren hari Ahad ini..." class="w-full px-4 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 text-xs"></textarea>
-                    </div>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-200 mb-1">Nama Calon Santri (Ananda) <span class="text-red-400">*</span></label>
+                            <input type="text" id="reg-nama-santri" name="nama_santri" required placeholder="Contoh: Muhammad Al-Fatih" class="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 text-xs sm:text-sm">
+                        </div>
 
-                    <button type="submit" id="btn-submit-reservasi" class="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-black py-3.5 px-6 rounded-2xl shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-2 text-sm sm:text-base mt-2 gold-glow">
-                        <i class="fas fa-paper-plane"></i>
-                        <span>Kirim Reservasi & Dapatkan E-Brosur</span>
-                    </button>
-                    
-                    <p class="text-[10px] text-gray-300 text-center mt-2 flex items-center justify-center gap-1">
-                        <i class="fas fa-lock text-amber-400"></i> Data terlindungi & otomatis tersinkron ke WA Panitia SPMB
-                    </p>
-                </form>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-amber-200 mb-1">Pilihan Jenjang <span class="text-red-400">*</span></label>
+                                <select id="reg-jenjang" name="jenjang" required class="w-full px-3 py-2.5 rounded-xl bg-emerald-950 border border-white/20 text-white text-xs sm:text-sm focus:outline-none focus:border-amber-400">
+                                    <option value="SMP Tahfidz">SMP (Setara)</option>
+                                    <option value="SMA Tahfidz & Solopreneur">SMA (Setara)</option>
+                                    <option value="Takhassus 30 Juz">Takhassus 30 Juz</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-amber-200 mb-1">Kota Asal / Domisili <span class="text-red-400">*</span></label>
+                                <input type="text" id="reg-kota" name="kota" required placeholder="Contoh: Surabaya" class="w-full px-3 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 text-xs sm:text-sm">
+                            </div>
+                        </div>
 
-                <div id="sukses-reservasi-modal" class="hidden bg-emerald-900 border border-amber-400/50 rounded-2xl p-5 text-center mt-4 animate-fade-in">
-                    <div class="w-14 h-14 rounded-full bg-amber-400 text-emerald-950 flex items-center justify-center mx-auto mb-3 text-2xl shadow-lg">
-                        <i class="fas fa-check"></i>
-                    </div>
-                    <h3 class="text-base font-extrabold text-amber-300 mb-1">Alhamdulillah, Data Diterima!</h3>
-                    <p class="text-xs text-emerald-100 leading-relaxed mb-4" id="sukses-modal-pesan">
-                        Terima kasih Bapak/Ibu. Notifikasi konfirmasi dan link e-brosur resmi telah kami kirimkan ke nomor WhatsApp Anda.
-                    </p>
-                    <div class="flex flex-col sm:flex-row gap-2.5">
-                        <a id="btn-wa-direct" href="#" target="_blank" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow">
-                            <i class="fab fa-whatsapp text-sm"></i> Buka WhatsApp Sekarang
-                        </a>
-                        <a href="upload/logo-villa-quran.png" download class="flex-1 bg-white/10 hover:bg-white/20 text-amber-300 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border border-white/20">
-                            <i class="fas fa-file-download"></i> Unduh E-Brosur
-                        </a>
+                        <div>
+                            <label class="block text-xs font-bold text-amber-200 mb-1">Catatan / Rencana Silaturahmi (Opsional)</label>
+                            <textarea id="reg-catatan" name="catatan" rows="2" placeholder="Contoh: Ingin menjadwalkan kunjungan survei pesantren hari Ahad ini..." class="w-full px-3 py-2 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400 text-xs"></textarea>
+                        </div>
+
+                        <button type="submit" id="btn-submit-reservasi" class="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-emerald-950 font-black py-3 px-6 rounded-2xl shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-2 text-sm sm:text-base mt-2 gold-glow">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Kirim Reservasi & Dapatkan E-Brosur</span>
+                        </button>
+                    </form>
+
+                    <div id="sukses-reservasi-modal" class="hidden bg-emerald-900 border border-amber-400/50 rounded-2xl p-5 text-center mt-4 animate-fade-in">
+                        <div class="w-14 h-14 rounded-full bg-amber-400 text-emerald-950 flex items-center justify-center mx-auto mb-3 text-2xl shadow-lg">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <h3 class="text-base font-extrabold text-amber-300 mb-1">Alhamdulillah, Data Diterima!</h3>
+                        <p class="text-xs text-emerald-100 leading-relaxed mb-4" id="sukses-modal-pesan">
+                            Terima kasih Bapak/Ibu. Notifikasi konfirmasi dan link e-brosur resmi telah kami kirimkan ke nomor WhatsApp Anda.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-2.5">
+                            <a id="btn-wa-direct" href="#" target="_blank" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 shadow">
+                                <i class="fab fa-whatsapp text-sm"></i> Buka WhatsApp Sekarang
+                            </a>
+                            <a href="upload/logo-villa-quran.png" download class="flex-1 bg-white/10 hover:bg-white/20 text-amber-300 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border border-white/20">
+                                <i class="fas fa-file-download"></i> Unduh E-Brosur
+                            </a>
+                        </div>
                     </div>
                 </div>
-
             </div>
         </section>
 
         <!-- FOOTER -->
-        <footer class="text-center text-xs text-gray-500 pt-6 border-t border-gray-200 space-y-3">
+        <footer class="text-center text-xs text-gray-500 py-6 border-t border-gray-200 space-y-2">
             <p>&copy; <?= date('Y') ?> <strong><?= $judul_utama ?></strong>. All Rights Reserved.</p>
             <p class="text-[11px] text-gray-400">Mencetak Generasi Hafidz Mutqin Bersanad, Berijazah Resmi Negara & Berjiwa Solopreneur.</p>
         </footer>
@@ -922,92 +970,85 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     </div>
 
     <!-- ============================================================ -->
-    <!-- STICKY MOBILE BOTTOM BAR: 8 CARD MENUS (4 MENUS DEFAULT)    -->
-    <!-- DAPAT DIGESER KANAN-KIRI DENGAN HALUS                        -->
+    <!-- STICKY MOBILE BOTTOM BAR: 9 CARD MENUS (WARNA KUSTOM DINAMIS) -->
+    <!-- BEBAS FRAME KOTAK, 4 MENU SECARA DEFAULT, SWIPABLE KANAN-KIRI-->
     <!-- ============================================================ -->
-    <div class="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-emerald-100 shadow-[0_-8px_30px_rgba(0,0,0,0.12)] py-2 px-1">
+    <div id="brosur-bottom-bar" class="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.3)] py-1.5 px-1 backdrop-blur-xl transition-colors duration-300" style="background-color: <?= $bottom_bar_bg_color ?>; color: <?= $bottom_bar_text_color ?>;">
         <div class="max-w-xl mx-auto">
             
-            <!-- CAROUSEL TRACK: 4 CARDS PER SCREEN BY DEFAULT -->
-            <div id="brosur-bottom-track" class="flex items-center overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory gap-1.5 px-1 py-0.5">
+            <!-- CAROUSEL TRACK: 4 CARDS PER SCREEN BY DEFAULT, BEBAS FRAME KOTAK -->
+            <div id="brosur-bottom-track" class="flex items-center overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory gap-1 px-1 py-0.5">
                 
                 <!-- 1. Home -->
-                <a href="#brosur-home" onclick="navigasiKeSection('brosur-home', event)" class="bottom-card-menu-item snap-start p-1.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-950 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                    <div class="w-7 h-7 rounded-xl bg-emerald-700 text-amber-300 flex items-center justify-center text-xs mb-1 shadow-xs group-hover:scale-110 transition">
-                        <i class="fas fa-house"></i>
-                    </div>
-                    <span class="text-[9px] font-black leading-tight truncate w-full">Home</span>
+                <a href="#brosur-home" onclick="navigasiKeSection('brosur-home', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 text-amber-300">
+                    <i class="fas fa-house text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Home</span>
                 </a>
 
                 <!-- 2. Mengapa VQBM -->
-                <a href="#brosur-mengapa" onclick="navigasiKeSection('brosur-mengapa', event)" class="bottom-card-menu-item snap-start p-1.5 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                    <div class="w-7 h-7 rounded-xl bg-amber-500 text-emerald-950 flex items-center justify-center text-xs mb-1 shadow-xs group-hover:scale-110 transition">
-                        <i class="fas fa-heart"></i>
-                    </div>
-                    <span class="text-[9px] font-black leading-tight truncate w-full">Mengapa VQBM</span>
+                <a href="#brosur-mengapa" onclick="navigasiKeSection('brosur-mengapa', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                    <i class="fas fa-heart text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Mengapa</span>
                 </a>
 
                 <!-- 3. Target Kompetensi -->
-                <a href="#brosur-kompetensi" onclick="navigasiKeSection('brosur-kompetensi', event)" class="bottom-card-menu-item snap-start p-1.5 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                    <div class="w-7 h-7 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs mb-1 shadow-xs group-hover:scale-110 transition">
-                        <i class="fas fa-bullseye"></i>
-                    </div>
-                    <span class="text-[9px] font-black leading-tight truncate w-full">Target Kompetensi</span>
+                <a href="#brosur-kompetensi" onclick="navigasiKeSection('brosur-kompetensi', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                    <i class="fas fa-bullseye text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Kompetensi</span>
                 </a>
 
                 <!-- 4. Fasilitas -->
-                <a href="#brosur-fasilitas" onclick="navigasiKeSection('brosur-fasilitas', event)" class="bottom-card-menu-item snap-start p-1.5 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                    <div class="w-7 h-7 rounded-xl bg-teal-600 text-white flex items-center justify-center text-xs mb-1 shadow-xs group-hover:scale-110 transition">
-                        <i class="fas fa-hotel"></i>
-                    </div>
-                    <span class="text-[9px] font-black leading-tight truncate w-full">Fasilitas</span>
+                <a href="#brosur-fasilitas" onclick="navigasiKeSection('brosur-fasilitas', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                    <i class="fas fa-hotel text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Fasilitas</span>
                 </a>
 
                 <!-- 5. Dewan Pengasuh -->
-                <a href="#brosur-pengasuh" onclick="navigasiKeSection('brosur-pengasuh', event)" class="bottom-card-menu-item snap-start p-1.5 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                    <div class="w-7 h-7 rounded-xl bg-purple-600 text-white flex items-center justify-center text-xs mb-1 shadow-xs group-hover:scale-110 transition">
-                        <i class="fas fa-user-graduate"></i>
-                    </div>
-                    <span class="text-[9px] font-black leading-tight truncate w-full">Dewan Pengasuh</span>
+                <a href="#brosur-pengasuh" onclick="navigasiKeSection('brosur-pengasuh', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                    <i class="fas fa-user-graduate text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Pengasuh</span>
                 </a>
 
-                <!-- 6. Investasi -->
-                <a href="#brosur-biaya" onclick="navigasiKeSection('brosur-biaya', event)" class="bottom-card-menu-item snap-start p-1.5 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                    <div class="w-7 h-7 rounded-xl bg-amber-600 text-white flex items-center justify-center text-xs mb-1 shadow-xs group-hover:scale-110 transition">
-                        <i class="fas fa-receipt"></i>
-                    </div>
-                    <span class="text-[9px] font-black leading-tight truncate w-full">Investasi</span>
+                <!-- 6. Kegiatan Santri (NEW!) -->
+                <a href="#brosur-kegiatan" onclick="navigasiKeSection('brosur-kegiatan', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                    <i class="fas fa-camera-retro text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Kegiatan</span>
                 </a>
 
-                <!-- 7. Testimoni -->
-                <a href="#brosur-testimoni" onclick="navigasiKeSection('brosur-testimoni', event)" class="bottom-card-menu-item snap-start p-1.5 rounded-2xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                    <div class="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xs mb-1 shadow-xs group-hover:scale-110 transition">
-                        <i class="fas fa-comments"></i>
-                    </div>
-                    <span class="text-[9px] font-black leading-tight truncate w-full">Testimoni</span>
+                <!-- 7. Investasi -->
+                <a href="#brosur-biaya" onclick="navigasiKeSection('brosur-biaya', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                    <i class="fas fa-receipt text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Investasi</span>
                 </a>
 
-                <!-- 8. Formulir -->
-                <a href="#brosur-formulir" onclick="navigasiKeSection('brosur-formulir', event)" class="bottom-card-menu-item snap-start p-1.5 rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-emerald-950 border border-amber-300 flex flex-col items-center justify-center text-center transition group shadow-md active:scale-95">
-                    <div class="w-7 h-7 rounded-xl bg-emerald-950 text-amber-300 flex items-center justify-center text-xs mb-1 shadow-xs group-hover:scale-110 transition">
-                        <i class="fas fa-file-pen"></i>
-                    </div>
-                    <span class="text-[9px] font-black leading-tight truncate w-full">Formulir</span>
+                <!-- 8. Testimoni -->
+                <a href="#brosur-testimoni" onclick="navigasiKeSection('brosur-testimoni', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                    <i class="fas fa-comments text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Testimoni</span>
+                </a>
+
+                <!-- 9. Formulir -->
+                <a href="#brosur-formulir" onclick="navigasiKeSection('brosur-formulir', event, this)" class="bottom-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                    <i class="fas fa-file-pen text-xl mb-0.5 group-hover:scale-110 transition"></i>
+                    <span class="text-[9px] font-bold leading-tight truncate w-full">Formulir</span>
                 </a>
 
             </div>
 
-            <!-- CONTROLS GESER & INDIKATOR -->
-            <div class="flex items-center justify-between px-3 pt-1 text-[9px] text-slate-400 border-t border-slate-100 mt-1">
-                <button type="button" onclick="scrollBrosurBottomBar('left')" class="hover:text-emerald-700 font-bold flex items-center gap-1 transition">
-                    <i class="fas fa-chevron-left text-[8px]"></i> <span>Geser Kiri</span>
+            <!-- CONTROLS GESER KANAN KIRI & INDIKATOR HALAMAN (4 MENU PER TAMPILAN) -->
+            <div class="flex items-center justify-between px-3 pt-1 text-[8px] border-t border-white/10 mt-1 opacity-80">
+                <button type="button" onclick="scrollBrosurBottomBar('left')" class="hover:opacity-100 font-bold flex items-center gap-1 transition py-0.5">
+                    <i class="fas fa-chevron-left text-[7px]"></i> <span>Geser Kiri</span>
                 </button>
-                <div class="flex items-center gap-1" id="indicator-dots">
-                    <span class="w-2.5 h-1 rounded-full bg-emerald-600"></span>
-                    <span class="w-1.5 h-1 rounded-full bg-slate-300"></span>
+                
+                <div class="flex items-center gap-1.5" id="brosur-indicator-dots">
+                    <span class="w-3 h-1 rounded-full bg-amber-400 transition-all" id="b-dot-1"></span>
+                    <span class="w-1.5 h-1 rounded-full bg-white/40 transition-all" id="b-dot-2"></span>
+                    <span class="w-1.5 h-1 rounded-full bg-white/40 transition-all" id="b-dot-3"></span>
                 </div>
-                <button type="button" onclick="scrollBrosurBottomBar('right')" class="hover:text-emerald-700 font-bold flex items-center gap-1 transition">
-                    <span>Geser Kanan</span> <i class="fas fa-chevron-right text-[8px]"></i>
+
+                <button type="button" onclick="scrollBrosurBottomBar('right')" class="hover:opacity-100 font-bold flex items-center gap-1 transition py-0.5">
+                    <span>Geser Kanan</span> <i class="fas fa-chevron-right text-[7px]"></i>
                 </button>
             </div>
 
@@ -1076,12 +1117,20 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             }
         }
 
-        // Navigasi Smooth Scroll untuk 8 Menu Bottom Bar
-        function navigasiKeSection(sectionId, e) {
+        // Navigasi Smooth Scroll untuk 9 Menu Bottom Bar
+        function navigasiKeSection(sectionId, e, elem) {
             if (e) e.preventDefault();
             const el = document.getElementById(sectionId);
             if (el) {
                 el.scrollIntoView({ behavior: 'smooth' });
+            }
+            if (elem) {
+                document.querySelectorAll('#brosur-bottom-track .bottom-card-menu-item').forEach(b => {
+                    b.classList.remove('text-amber-300');
+                    b.classList.add('opacity-80');
+                });
+                elem.classList.remove('opacity-80');
+                elem.classList.add('text-amber-300');
             }
         }
 
@@ -1089,12 +1138,38 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         function scrollBrosurBottomBar(direction) {
             const track = document.getElementById('brosur-bottom-track');
             if (!track) return;
-            const scrollDistance = track.clientWidth * 0.75;
+            const scrollDistance = track.clientWidth * 0.85;
             if (direction === 'left') {
                 track.scrollBy({ left: -scrollDistance, behavior: 'smooth' });
             } else {
                 track.scrollBy({ left: scrollDistance, behavior: 'smooth' });
             }
+            setTimeout(updateBrosurDots, 300);
+        }
+
+        function updateBrosurDots() {
+            const track = document.getElementById('brosur-bottom-track');
+            const d1 = document.getElementById('b-dot-1');
+            const d2 = document.getElementById('b-dot-2');
+            const d3 = document.getElementById('b-dot-3');
+            if (!track || !d1 || !d2 || !d3) return;
+            const scrollLeft = track.scrollLeft;
+            const maxScroll = track.scrollWidth - track.clientWidth;
+            if (maxScroll <= 0) return;
+            const ratio = scrollLeft / maxScroll;
+            [d1, d2, d3].forEach(d => { d.className = 'w-1.5 h-1 rounded-full bg-white/40 transition-all'; });
+            if (ratio < 0.35) {
+                d1.className = 'w-3 h-1 rounded-full bg-amber-400 transition-all';
+            } else if (ratio < 0.7) {
+                d2.className = 'w-3 h-1 rounded-full bg-amber-400 transition-all';
+            } else {
+                d3.className = 'w-3 h-1 rounded-full bg-amber-400 transition-all';
+            }
+        }
+
+        const bottomTrack = document.getElementById('brosur-bottom-track');
+        if (bottomTrack) {
+            bottomTrack.addEventListener('scroll', updateBrosurDots, { passive: true });
         }
 
         // Handle AJAX Submit Reservasi

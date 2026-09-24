@@ -103,7 +103,9 @@ $cols_needed = [
     "show_maps"            => "ALTER TABLE pengaturan_brosur ADD COLUMN show_maps TINYINT(1) DEFAULT 1 AFTER video_height",
     "maps_url"             => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_url TEXT AFTER show_maps",
     "maps_width"           => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_width INT DEFAULT 100 AFTER maps_url",
-    "maps_height"          => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_height INT DEFAULT 220 AFTER maps_width"
+    "maps_height"          => "ALTER TABLE pengaturan_brosur ADD COLUMN maps_height INT DEFAULT 220 AFTER maps_width",
+    "bottom_bar_bg_color"  => "ALTER TABLE pengaturan_brosur ADD COLUMN bottom_bar_bg_color VARCHAR(100) DEFAULT '#022d27' AFTER maps_height",
+    "bottom_bar_text_color"=> "ALTER TABLE pengaturan_brosur ADD COLUMN bottom_bar_text_color VARCHAR(30) DEFAULT '#ffffff' AFTER bottom_bar_bg_color"
 ];
 $res_c = $conn->query("DESCRIBE pengaturan_brosur");
 $curr_cols = [];
@@ -221,6 +223,9 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     $maps_width   = max(40, min(100, (int)($_POST['maps_width'] ?? 100)));
     $maps_height  = max(140, min(500, (int)($_POST['maps_height'] ?? 220)));
 
+    $bottom_bar_bg_color   = $conn->real_escape_string($_POST['bottom_bar_bg_color'] ?? '#022d27');
+    $bottom_bar_text_color = $conn->real_escape_string($_POST['bottom_bar_text_color'] ?? '#ffffff');
+
     $sql_update = "UPDATE pengaturan_brosur SET 
                     tahun_ajaran = '$tahun_ajaran',
                     periode_gelombang = '$periode_gelombang',
@@ -272,11 +277,13 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                     show_maps = $show_maps,
                     maps_url = '$maps_url',
                     maps_width = $maps_width,
-                    maps_height = $maps_height
+                    maps_height = $maps_height,
+                    bottom_bar_bg_color = '$bottom_bar_bg_color',
+                    bottom_bar_text_color = '$bottom_bar_text_color'
                    WHERE id = 1";
 
     if ($conn->query($sql_update)) {
-        $pesan_sukses = "Alhamdulillah! Pengaturan Brosur PSB, Dimensi Ukuran (Lebar/Tinggi), Redaksi Teks, Font & Warna berhasil diperbarui.";
+        $pesan_sukses = "Alhamdulillah! Pengaturan Brosur PSB, Dimensi Ukuran, Warna Bottom Bar, Redaksi Teks, Font & Warna berhasil diperbarui.";
     } else {
         $pesan_error = "Gagal menyimpan: " . $conn->error;
     }
@@ -291,6 +298,36 @@ $pos = !empty($cfg['cover_elements_pos']) ? json_decode($cfg['cover_elements_pos
 $header_y = $pos['header_y'] ?? 12;
 $guest_y  = $pos['guest_y'] ?? 45;
 $btn_y    = $pos['btn_y'] ?? 82;
+
+// Ambil Data Pengaturan Web Sinkron (Fasilitas, Pengajar, Galeri/Kegiatan, Biaya, Testimoni)
+$web_fasilitas = [];
+$q_f = $conn->query("SELECT * FROM fasilitas ORDER BY id ASC");
+if ($q_f && $q_f->num_rows > 0) while ($r = $q_f->fetch_assoc()) $web_fasilitas[] = $r;
+
+$web_pengajar = [];
+$q_p = $conn->query("SELECT * FROM pengajar ORDER BY id ASC");
+if ($q_p && $q_p->num_rows > 0) while ($r = $q_p->fetch_assoc()) $web_pengajar[] = $r;
+
+$web_galeri = [];
+$q_g = $conn->query("SELECT * FROM galeri ORDER BY id DESC LIMIT 8");
+if ($q_g && $q_g->num_rows > 0) while ($r = $q_g->fetch_assoc()) $web_galeri[] = $r;
+
+$web_biaya = ['pendaftaran' => [], 'pangkal' => [], 'tahunan' => [], 'spp' => []];
+$web_biaya_subtotal = ['pendaftaran' => 0, 'pangkal' => 0, 'tahunan' => 0, 'spp' => 0];
+$q_b = $conn->query("SELECT * FROM biaya ORDER BY id ASC");
+if ($q_b && $q_b->num_rows > 0) {
+    while ($r = $q_b->fetch_assoc()) {
+        $k = strtolower(trim($r['kategori']));
+        if (isset($web_biaya[$k])) {
+            $web_biaya[$k][] = $r;
+            $web_biaya_subtotal[$k] += (int)$r['nominal'];
+        }
+    }
+}
+
+$web_testimoni = [];
+$q_t = $conn->query("SELECT * FROM testimoni ORDER BY id DESC");
+if ($q_t && $q_t->num_rows > 0) while ($r = $q_t->fetch_assoc()) $web_testimoni[] = $r;
 
 $active_menu = 'brosur_settings';
 ?>
@@ -881,6 +918,51 @@ $active_menu = 'brosur_settings';
                                     <option value="glass_light" <?= (($cfg['card_bg_style'] ?? '') === 'glass_light') ? 'selected' : '' ?>>Kaca Putih Bersih (Glass Light — Untuk Latar Terang)</option>
                                 </select>
                             </div>
+
+                            <!-- 4.5 KUSTOMISASI WARNA BOTTOM BAR & MENU -->
+                            <div class="mt-4 pt-4 border-t border-slate-200">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-xs font-black text-slate-800 flex items-center gap-1.5">
+                                        <i class="fas fa-bars text-[#0b8478]"></i> Kustomisasi Warna Bottom Bar (Menu HP):
+                                    </label>
+                                    <button type="button" onclick="autoContrastBottomBar()" class="text-[10px] text-teal-800 font-bold bg-teal-50 hover:bg-teal-100 px-2.5 py-1 rounded-lg border border-teal-200 transition flex items-center gap-1">
+                                        <i class="fas fa-wand-magic-sparkles"></i> Kontras Pintar
+                                    </button>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Warna Background Bottom Bar:</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" name="bottom_bar_bg_color" id="input-bottom-bar-bg-color" value="<?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>" oninput="updateLiveBottomBarColors()" class="w-8 h-8 rounded-lg cursor-pointer border border-slate-200">
+                                            <span id="label-bottom-bar-bg-color" class="text-xs font-mono font-bold"><?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?></span>
+                                        </div>
+                                        <!-- Quick Presets -->
+                                        <div class="flex items-center gap-1.5 mt-2">
+                                            <button type="button" onclick="setBottomBarColorPreset('#022d27', '#ffffff')" class="w-6 h-6 rounded-lg bg-[#022d27] border border-white/60 shadow-xs hover:scale-110 transition" title="Hijau Gelap"></button>
+                                            <button type="button" onclick="setBottomBarColorPreset('#064e45', '#ffffff')" class="w-6 h-6 rounded-lg bg-[#064e45] border border-white/60 shadow-xs hover:scale-110 transition" title="Emerald"></button>
+                                            <button type="button" onclick="setBottomBarColorPreset('#0f172a', '#ffffff')" class="w-6 h-6 rounded-lg bg-[#0f172a] border border-white/60 shadow-xs hover:scale-110 transition" title="Slate Gelap"></button>
+                                            <button type="button" onclick="setBottomBarColorPreset('#1e1b4b', '#ffffff')" class="w-6 h-6 rounded-lg bg-[#1e1b4b] border border-white/60 shadow-xs hover:scale-110 transition" title="Midnight Navy"></button>
+                                            <button type="button" onclick="setBottomBarColorPreset('#ffffff', '#0f172a')" class="w-6 h-6 rounded-lg bg-white border border-slate-400 shadow-xs hover:scale-110 transition" title="Putih Bersih"></button>
+                                            <button type="button" onclick="setBottomBarColorPreset('#78350f', '#ffffff')" class="w-6 h-6 rounded-lg bg-[#78350f] border border-white/60 shadow-xs hover:scale-110 transition" title="Emas Amber"></button>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Warna Icon & Tulisan Menu:</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" name="bottom_bar_text_color" id="input-bottom-bar-text-color" value="<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>" oninput="updateLiveBottomBarColors()" class="w-8 h-8 rounded-lg cursor-pointer border border-slate-200">
+                                            <span id="label-bottom-bar-text-color" class="text-xs font-mono font-bold"><?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?></span>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 mt-2">
+                                            <button type="button" onclick="setBottomBarTextColor('#ffffff')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-white border border-slate-700 hover:scale-105 transition">Putih</button>
+                                            <button type="button" onclick="setBottomBarTextColor('#fbbf24')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950 hover:scale-105 transition">Emas</button>
+                                            <button type="button" onclick="setBottomBarTextColor('#34d399')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-400 text-slate-950 hover:scale-105 transition">Emerald</button>
+                                            <button type="button" onclick="setBottomBarTextColor('#0f172a')" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-slate-900 border border-slate-300 hover:scale-105 transition">Gelap</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1146,268 +1228,391 @@ $active_menu = 'brosur_settings';
                         </div>
                     </div>
 
-                    <!-- 2. SCREEN VIEW: SIMULASI HALAMAN DALAM DENGAN BOTTOM BAR INTERAKTIF -->
+                    <!-- 2. SCREEN VIEW: SIMULASI HALAMAN DALAM DENGAN 9 MENU SATU LAYAR FULL & BOTTOM BAR INTERAKTIF -->
                     <div id="preview-screen-body" class="hidden relative w-full h-full flex flex-col bg-cover bg-center transition-all duration-500 select-none text-slate-800 overflow-hidden" style="background-image: url('<?= htmlspecialchars($cfg['body_bg_url'] ?? '') ?>');">
                         
                         <!-- OVERLAY DINAMIS HALAMAN DALAM -->
                         <div id="preview-body-overlay" class="absolute inset-0 bg-[#f6f7f5] transition-all duration-300" style="opacity: <?= $cfg['body_overlay_opacity'] ?? 0.92 ?>;"></div>
 
-                        <!-- KONTEN AREA HALAMAN DALAM (SCROLLABLE MENUJU 8 SECTION) -->
-                        <div id="sim-scroll-body" class="relative z-10 flex-1 overflow-y-auto p-3.5 space-y-3.5 text-left scroll-smooth no-scrollbar">
+                        <!-- KONTEN AREA HALAMAN DALAM (SNAP SCROLLING 9 SECTION: 1 SECTION = 1 LAYAR HP) -->
+                        <div id="sim-scroll-body" class="relative z-10 flex-1 overflow-y-auto p-3 space-y-3 text-left scroll-smooth snap-y snap-mandatory no-scrollbar">
                             
-                            <!-- 1. SECTION: HOME -->
-                            <div id="sim-sec-home" class="scroll-mt-3 text-center space-y-2">
-                                <div class="w-10 h-10 rounded-full mx-auto p-0.5 bg-white border border-emerald-600 shadow-sm overflow-hidden aspect-square flex items-center justify-center">
+                            <!-- 1. SECTION: HOME (1 HALAMAN PENUH HP) -->
+                            <div id="sim-sec-home" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-white/95 border border-emerald-100 shadow-sm text-center space-y-2.5">
+                                <div class="w-12 h-12 rounded-full mx-auto p-0.5 bg-white border-2 border-emerald-600 shadow-sm overflow-hidden aspect-square flex items-center justify-center">
                                     <img src="upload/logo-villa-quran.png" class="w-full h-full object-cover rounded-full">
                                 </div>
                                 <div>
-                                    <span class="inline-block px-2 py-0.5 rounded-full text-[7.5px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider mb-1">
-                                        Section 1 &bull; Home
+                                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[8px] font-black bg-emerald-100 text-emerald-900 uppercase tracking-wider mb-1">
+                                        Hal 1 &bull; Home Profil
                                     </span>
-                                    <h4 class="font-black text-xs text-emerald-950 leading-tight" id="sim-view-title"><?= htmlspecialchars($cfg['judul_utama'] ?? 'Villa Quran Indonesia') ?></h4>
-                                    <p class="text-[8px] text-emerald-700 font-medium" id="sim-view-subjudul"><?= htmlspecialchars($cfg['subjudul'] ?? 'Pesantren Tahfidz Berasrama Nyaman Ala Villa') ?></p>
+                                    <h4 class="font-black text-sm text-emerald-950 leading-tight" id="sim-view-title"><?= htmlspecialchars($cfg['judul_utama'] ?? 'Villa Quran Indonesia') ?></h4>
+                                    <p class="text-[9px] text-emerald-700 font-medium mt-0.5" id="sim-view-subjudul"><?= htmlspecialchars($cfg['subjudul'] ?? 'Pesantren Tahfidz Berasrama Nyaman Ala Villa') ?></p>
                                 </div>
 
-                                <!-- Countdown Timer di HP -->
-                                <div id="preview-countdown-box" class="p-2 rounded-xl bg-gradient-to-b from-white to-emerald-50/90 border border-amber-500/30 shadow-xs text-center">
-                                    <span class="text-[7.5px] font-extrabold uppercase tracking-wider text-amber-800 block">⏳ Batas Akhir Pendaftaran</span>
-                                    <div class="flex justify-center items-center space-x-1 mt-1">
-                                        <div class="bg-emerald-900 text-amber-300 font-black text-[10px] w-6 h-6 flex items-center justify-center rounded font-mono" id="phone-cd-hari">00</div>
-                                        <span class="text-[7px] text-emerald-900 font-bold">:</span>
-                                        <div class="bg-emerald-900 text-amber-300 font-black text-[10px] w-6 h-6 flex items-center justify-center rounded font-mono" id="phone-cd-jam">00</div>
-                                        <span class="text-[7px] text-emerald-900 font-bold">:</span>
-                                        <div class="bg-emerald-900 text-amber-300 font-black text-[10px] w-6 h-6 flex items-center justify-center rounded font-mono" id="phone-cd-menit">00</div>
-                                        <span class="text-[7px] text-emerald-900 font-bold">:</span>
-                                        <div class="bg-white text-rose-600 font-black text-[10px] w-6 h-6 flex items-center justify-center rounded border border-rose-200 font-mono shadow-xs" id="phone-cd-detik">00</div>
-                                    </div>
+                                <div class="p-2 rounded-xl bg-emerald-50/70 border border-emerald-200/60 text-[8px] text-emerald-900 leading-relaxed font-semibold">
+                                    <i class="fas fa-certificate text-amber-500 mr-1"></i> TA <?= htmlspecialchars($cfg['tahun_ajaran'] ?? '2026/2027') ?> &bull; <?= htmlspecialchars($cfg['periode_gelombang'] ?? 'Gelombang 1') ?>
                                 </div>
+
+                                <p class="text-[7.5px] text-slate-400 italic">Geser ke bawah atau klik tombol menu untuk melihat halaman berikutnya</p>
                             </div>
 
-                            <!-- 2. SECTION: MENGAPA VQBM -->
-                            <div id="sim-sec-mengapa" class="scroll-mt-3 p-2.5 rounded-xl bg-white/95 border border-emerald-100 shadow-xs space-y-1.5">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-lg bg-amber-500 text-white flex items-center justify-center text-[9px] shadow-xs">
+                            <!-- 2. SECTION: MENGAPA VQBM (1 HALAMAN PENUH HP) -->
+                            <div id="sim-sec-mengapa" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-white/95 border border-amber-100 shadow-sm space-y-2">
+                                <div class="flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                                    <span class="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center text-[10px] shadow-xs">
                                         <i class="fas fa-heart"></i>
                                     </span>
-                                    <h5 class="font-extrabold text-[10px] text-slate-800">2. Mengapa VQBM?</h5>
+                                    <div>
+                                        <span class="text-[7.5px] uppercase font-bold text-amber-600">Hal 2</span>
+                                        <h5 class="font-black text-[11px] text-slate-900 leading-tight">Mengapa Villa Quran?</h5>
+                                    </div>
                                 </div>
-                                <p class="text-[8px] text-slate-600 leading-relaxed">
-                                    Konsep pesantren modern bernuansa villa yang asri, sejuk, dan memadukan sanad Al-Qur'an 30 Juz dengan kurikulum resmi serta adab Islami luhur.
-                                </p>
+                                <div class="space-y-1.5 text-[8px]">
+                                    <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-950">
+                                        <strong>1. Tahfidz Mutqin 30 Juz Bersanad</strong>
+                                        <p class="text-slate-600 text-[7.5px] mt-0.5">Talaqqi harian asatidz mukim dan sanad muttashil.</p>
+                                    </div>
+                                    <div class="p-2 rounded-xl bg-teal-50 border border-teal-100 text-teal-950">
+                                        <strong>2. Ijazah Formal Resmi SMP/SMA</strong>
+                                        <p class="text-slate-600 text-[7.5px] mt-0.5">Legalitas ijazah negara terakreditasi untuk PTN & kedinasan.</p>
+                                    </div>
+                                    <div class="p-2 rounded-xl bg-amber-50 border border-amber-100 text-amber-950">
+                                        <strong>3. Solopreneur & AI Terapan</strong>
+                                        <p class="text-slate-600 text-[7.5px] mt-0.5">Literasi digital, prompt AI, dan kemandirian wirausaha.</p>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- 3. SECTION: TARGET KOMPETENSI -->
-                            <div id="sim-sec-kompetensi" class="scroll-mt-3 p-2.5 rounded-xl bg-white/95 border border-cyan-100 shadow-xs space-y-1.5">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-lg bg-cyan-600 text-white flex items-center justify-center text-[9px] shadow-xs">
+                            <!-- 3. SECTION: TARGET KOMPETENSI (1 HALAMAN PENUH HP) -->
+                            <div id="sim-sec-kompetensi" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-white/95 border border-cyan-100 shadow-sm space-y-2">
+                                <div class="flex items-center gap-1.5 border-b border-slate-100 pb-1.5">
+                                    <span class="w-6 h-6 rounded-lg bg-cyan-600 text-white flex items-center justify-center text-[10px] shadow-xs">
                                         <i class="fas fa-bullseye"></i>
                                     </span>
-                                    <h5 class="font-extrabold text-[10px] text-slate-800">3. Target Kompetensi</h5>
-                                </div>
-                                <div class="grid grid-cols-2 gap-1 text-[7.5px]">
-                                    <div class="p-1 rounded bg-cyan-50 text-cyan-900 font-bold">✨ Tahfidz 30 Juz Bersanad</div>
-                                    <div class="p-1 rounded bg-cyan-50 text-cyan-900 font-bold">🎓 Ijazah Formal SMP/SMA</div>
-                                    <div class="p-1 rounded bg-cyan-50 text-cyan-900 font-bold">🗣️ Aktif Arab & Inggris</div>
-                                    <div class="p-1 rounded bg-cyan-50 text-cyan-900 font-bold">💼 Jiwa Solopreneur Digital</div>
-                                </div>
-                            </div>
-
-                            <!-- 4. SECTION: FASILITAS -->
-                            <div id="sim-sec-fasilitas" class="scroll-mt-3 p-2.5 rounded-xl bg-white/95 border border-teal-100 shadow-xs space-y-1.5">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-lg bg-teal-600 text-white flex items-center justify-center text-[9px] shadow-xs">
-                                        <i class="fas fa-hotel"></i>
-                                    </span>
-                                    <h5 class="font-extrabold text-[10px] text-slate-800">4. Fasilitas Unggulan</h5>
-                                </div>
-                                <p class="text-[8px] text-slate-600">Asrama full AC, kolam renang, masjid megah, resto santri higienis & sarana olahraga lengkap.</p>
-                                
-                                <!-- Simulasi Video Profil -->
-                                <div id="preview-video-container" class="rounded-xl p-1.5 bg-slate-50 border border-slate-200 text-center <?= (isset($cfg['show_video']) && $cfg['show_video'] == 0) ? 'hidden' : '' ?>">
-                                    <span class="text-[7.5px] font-bold text-slate-700 block mb-1"><i class="fab fa-youtube text-red-600 mr-1"></i> Video Profil Santri</span>
-                                    <div id="preview-video-box" class="mx-auto rounded-lg bg-slate-900 text-white flex items-center justify-center text-[8px] shadow-inner transition-all" style="width: <?= $cfg['video_width'] ?? 100 ?>%; height: <?= round(($cfg['video_height'] ?? 240) * 0.35) ?>px;">
-                                        <i class="fas fa-play-circle text-rose-500 text-sm mr-1"></i> Video Player Frame
+                                    <div>
+                                        <span class="text-[7.5px] uppercase font-bold text-cyan-600">Hal 3</span>
+                                        <h5 class="font-black text-[11px] text-slate-900 leading-tight">Target Kompetensi</h5>
                                     </div>
                                 </div>
-
-                                <!-- Simulasi Google Maps Frame -->
-                                <div id="preview-maps-container" class="rounded-xl p-1.5 bg-slate-50 border border-slate-200 text-center <?= (isset($cfg['show_maps']) && $cfg['show_maps'] == 0) ? 'hidden' : '' ?>">
-                                    <span class="text-[7.5px] font-bold text-slate-700 block mb-1"><i class="fas fa-map-marker-alt text-emerald-600 mr-1"></i> Google Maps Lokasi</span>
-                                    <div id="preview-maps-box" class="mx-auto rounded-lg bg-emerald-100 text-emerald-900 flex items-center justify-center text-[8px] font-bold border border-emerald-300 shadow-inner transition-all" style="width: <?= $cfg['maps_width'] ?? 100 ?>%; height: <?= round(($cfg['maps_height'] ?? 220) * 0.35) ?>px;">
-                                        <i class="fas fa-location-arrow text-emerald-700 text-xs mr-1"></i> Interactive Maps Frame
+                                <div class="grid grid-cols-2 gap-1.5 text-[7.5px]">
+                                    <div class="p-2 rounded-xl bg-cyan-50 border border-cyan-100 text-cyan-950">
+                                        <i class="fas fa-quran text-cyan-600 mb-1 text-sm block"></i>
+                                        <strong class="block text-[8px]">Hafal 30 Juz</strong>
+                                        <span class="text-slate-600">Tahsin fashahah & sanad mutqin</span>
+                                    </div>
+                                    <div class="p-2 rounded-xl bg-cyan-50 border border-cyan-100 text-cyan-950">
+                                        <i class="fas fa-graduation-cap text-cyan-600 mb-1 text-sm block"></i>
+                                        <strong class="block text-[8px]">Ijazah SMP/SMA</strong>
+                                        <span class="text-slate-600">Kurikulum Diknas & Diniyah</span>
+                                    </div>
+                                    <div class="p-2 rounded-xl bg-cyan-50 border border-cyan-100 text-cyan-950">
+                                        <i class="fas fa-comments text-cyan-600 mb-1 text-sm block"></i>
+                                        <strong class="block text-[8px]">Bahasa Aktif</strong>
+                                        <span class="text-slate-600">Percakapan Arab & Inggris harian</span>
+                                    </div>
+                                    <div class="p-2 rounded-xl bg-cyan-50 border border-cyan-100 text-cyan-950">
+                                        <i class="fas fa-laptop-code text-cyan-600 mb-1 text-sm block"></i>
+                                        <strong class="block text-[8px]">Solopreneur AI</strong>
+                                        <span class="text-slate-600">Skill abad 21 & digital dakwah</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 5. SECTION: DEWAN PENGASUH -->
-                            <div id="sim-sec-pengasuh" class="scroll-mt-3 p-2.5 rounded-xl bg-white/95 border border-purple-100 shadow-xs space-y-1.5">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-lg bg-purple-600 text-white flex items-center justify-center text-[9px] shadow-xs">
-                                        <i class="fas fa-user-graduate"></i>
-                                    </span>
-                                    <h5 class="font-extrabold text-[10px] text-slate-800">5. Dewan Pengasuh & Asatidz</h5>
+                            <!-- 4. SECTION: FASILITAS (1 HALAMAN PENUH HP - SINKRON WEB) -->
+                            <div id="sim-sec-fasilitas" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-white/95 border border-teal-100 shadow-sm space-y-2">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-6 h-6 rounded-lg bg-teal-600 text-white flex items-center justify-center text-[10px] shadow-xs">
+                                            <i class="fas fa-hotel"></i>
+                                        </span>
+                                        <div>
+                                            <span class="text-[7.5px] uppercase font-bold text-teal-600">Hal 4</span>
+                                            <h5 class="font-black text-[11px] text-slate-900 leading-tight">Fasilitas Kampus</h5>
+                                        </div>
+                                    </div>
+                                    <a href="admin-fasilitas.php" target="_blank" class="text-[7.5px] text-teal-700 underline font-bold">Edit Web &rarr;</a>
                                 </div>
-                                <div class="flex items-center gap-2 p-1.5 rounded-lg bg-purple-50/70 border border-purple-100">
-                                    <div class="w-7 h-7 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 font-bold text-[9px]">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <div class="text-[7.5px]">
-                                        <p class="font-bold text-slate-900">Dr. KH. Pembina Tahfidz, Lc. MA</p>
-                                        <p class="text-slate-500">Alumni Timur Tengah & Pemegang Sanad Mutqin</p>
-                                    </div>
+
+                                <div class="space-y-1.5 max-h-[300px] overflow-y-auto pr-0.5 no-scrollbar text-[7.5px]">
+                                    <?php if (!empty($web_fasilitas)): ?>
+                                        <?php foreach (array_slice($web_fasilitas, 0, 4) as $wf): ?>
+                                            <div class="p-1.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-2">
+                                                <?php if (!empty($wf['gambar_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($wf['gambar_url']) ?>" class="w-10 h-10 rounded-lg object-cover flex-shrink-0">
+                                                <?php else: ?>
+                                                    <div class="w-10 h-10 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-building"></i></div>
+                                                <?php endif; ?>
+                                                <div class="overflow-hidden">
+                                                    <strong class="text-slate-900 block truncate"><?= htmlspecialchars($wf['judul']) ?></strong>
+                                                    <span class="text-slate-500 line-clamp-2"><?= htmlspecialchars($wf['deskripsi']) ?></span>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="p-2 rounded-xl bg-teal-50 text-teal-900">Asrama AC, Masjid Jami', Kolam Renang, Resto Santri.</div>
+                                    <?php endif; ?>
+                                </div>
+
+                                <!-- Simulasi Maps / Video Link -->
+                                <div id="preview-maps-container" class="rounded-xl p-1.5 bg-emerald-50 border border-emerald-200 text-center text-[7.5px] <?= (isset($cfg['show_maps']) && $cfg['show_maps'] == 0) ? 'hidden' : '' ?>">
+                                    <span class="font-bold text-emerald-900"><i class="fas fa-map-marker-alt text-emerald-600 mr-1"></i> Google Maps Lokasi Kampus</span>
                                 </div>
                             </div>
 
-                            <!-- 6. SECTION: INVESTASI PENDIDIKAN -->
-                            <div id="sim-sec-investasi" class="scroll-mt-3 p-2.5 rounded-xl bg-white/95 border border-amber-200 shadow-xs space-y-1.5">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-lg bg-amber-600 text-white flex items-center justify-center text-[9px] shadow-xs">
-                                        <i class="fas fa-receipt"></i>
-                                    </span>
-                                    <h5 class="font-extrabold text-[10px] text-slate-800">6. Investasi Pendidikan</h5>
+                            <!-- 5. SECTION: DEWAN PENGASUH (1 HALAMAN PENUH HP - SINKRON WEB) -->
+                            <div id="sim-sec-pengasuh" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-white/95 border border-purple-100 shadow-sm space-y-2">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center text-[10px] shadow-xs">
+                                            <i class="fas fa-user-graduate"></i>
+                                        </span>
+                                        <div>
+                                            <span class="text-[7.5px] uppercase font-bold text-purple-600">Hal 5</span>
+                                            <h5 class="font-black text-[11px] text-slate-900 leading-tight">Dewan Pengasuh</h5>
+                                        </div>
+                                    </div>
+                                    <a href="admin-pengajar.php" target="_blank" class="text-[7.5px] text-purple-700 underline font-bold">Edit Web &rarr;</a>
                                 </div>
+
+                                <div class="space-y-1.5 max-h-[300px] overflow-y-auto pr-0.5 no-scrollbar text-[7.5px]">
+                                    <?php if (!empty($web_pengajar)): ?>
+                                        <?php foreach (array_slice($web_pengajar, 0, 3) as $wp): ?>
+                                            <div class="p-2 rounded-xl bg-purple-50/60 border border-purple-100 flex items-center gap-2">
+                                                <?php if (!empty($wp['gambar_url'])): ?>
+                                                    <img src="<?= htmlspecialchars($wp['gambar_url']) ?>" class="w-10 h-10 rounded-full object-cover border border-purple-300 flex-shrink-0">
+                                                <?php else: ?>
+                                                    <div class="w-10 h-10 rounded-full bg-purple-200 text-purple-800 flex items-center justify-center text-xs flex-shrink-0 font-bold"><i class="fas fa-user"></i></div>
+                                                <?php endif; ?>
+                                                <div class="overflow-hidden">
+                                                    <strong class="text-slate-900 block truncate"><?= htmlspecialchars($wp['nama']) ?></strong>
+                                                    <span class="text-purple-700 font-bold block text-[7px] truncate"><?= htmlspecialchars($wp['jabatan'] ?? '') ?></span>
+                                                    <span class="text-slate-500 line-clamp-1"><?= htmlspecialchars($wp['almamater'] ?? '') ?></span>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="p-2 rounded-xl bg-purple-50 text-purple-900">Dr. KH. Pembina Tahfidz, Lc. MA & Dewan Asatidz Mukim 24 Jam.</div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- 6. SECTION: KEGIATAN SANTRI (1 HALAMAN PENUH HP - SINKRON WEB GALERI) -->
+                            <div id="sim-sec-kegiatan" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-white/95 border border-pink-100 shadow-sm space-y-2">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-6 h-6 rounded-lg bg-pink-600 text-white flex items-center justify-center text-[10px] shadow-xs">
+                                            <i class="fas fa-camera-retro"></i>
+                                        </span>
+                                        <div>
+                                            <span class="text-[7.5px] uppercase font-bold text-pink-600">Hal 6</span>
+                                            <h5 class="font-black text-[11px] text-slate-900 leading-tight">Kegiatan Santri</h5>
+                                        </div>
+                                    </div>
+                                    <a href="admin-galeri.php" target="_blank" class="text-[7.5px] text-pink-700 underline font-bold">Edit Web &rarr;</a>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-1.5 text-[7.5px] max-h-[300px] overflow-y-auto no-scrollbar">
+                                    <?php if (!empty($web_galeri)): ?>
+                                        <?php foreach (array_slice($web_galeri, 0, 4) as $wg): ?>
+                                            <div class="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 shadow-2xs">
+                                                <img src="<?= htmlspecialchars($wg['gambar_url'] ?? '') ?>" class="w-full h-16 object-cover">
+                                                <div class="p-1">
+                                                    <strong class="block truncate text-[7.5px] text-slate-900"><?= htmlspecialchars($wg['judul'] ?? '') ?></strong>
+                                                    <span class="text-slate-500 text-[6.5px] line-clamp-1"><?= htmlspecialchars($wg['caption'] ?? '') ?></span>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="col-span-2 p-2 rounded-xl bg-pink-50 text-pink-900">Halaqah Tahfidz, KBM Kelas, Olahraga Sunnah, Shalat Berjamaah.</div>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+
+                            <!-- 7. SECTION: INVESTASI PENDIDIKAN (1 HALAMAN PENUH HP - SINKRON WEB BIAYA) -->
+                            <div id="sim-sec-investasi" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-white/95 border border-amber-200 shadow-sm space-y-2">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center text-[10px] shadow-xs">
+                                            <i class="fas fa-receipt"></i>
+                                        </span>
+                                        <div>
+                                            <span class="text-[7.5px] uppercase font-bold text-amber-600">Hal 7</span>
+                                            <h5 class="font-black text-[11px] text-slate-900 leading-tight">Investasi Pendidikan</h5>
+                                        </div>
+                                    </div>
+                                    <a href="admin-biaya.php" target="_blank" class="text-[7.5px] text-amber-700 underline font-bold">Edit Web &rarr;</a>
+                                </div>
+
                                 <div class="space-y-1 text-[7.5px]">
-                                    <div class="flex justify-between items-center py-0.5 border-b border-slate-100">
-                                        <span class="text-slate-500">Pendaftaran:</span>
+                                    <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                                        <span class="text-slate-500">1. Pendaftaran:</span>
                                         <span class="font-bold text-slate-800" id="sim-val-pendaftaran">Rp <?= number_format($cfg['biaya_pendaftaran'] ?? 350000, 0, ',', '.') ?></span>
                                     </div>
-                                    <div class="flex justify-between items-center py-0.5 border-b border-slate-100">
-                                        <span class="text-slate-500">Uang Pangkal:</span>
+                                    <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                                        <span class="text-slate-500">2. Uang Pangkal:</span>
                                         <span class="font-bold text-emerald-700" id="sim-val-pangkal">Rp <?= number_format($cfg['biaya_pangkal'] ?? 12500000, 0, ',', '.') ?></span>
                                     </div>
-                                    <div class="flex justify-between items-center py-0.5">
-                                        <span class="text-slate-500">SPP Bulanan:</span>
-                                        <span class="font-bold text-amber-600" id="sim-val-spp">Rp <?= number_format($cfg['biaya_spp'] ?? 1650000, 0, ',', '.') ?>/bln</span>
+                                    <div class="flex justify-between items-center py-1 border-b border-slate-100">
+                                        <span class="text-slate-500">3. Biaya Tahunan:</span>
+                                        <span class="font-bold text-slate-800" id="sim-val-tahunan">Rp <?= number_format($cfg['biaya_tahunan'] ?? 2500000, 0, ',', '.') ?></span>
+                                    </div>
+                                    <div class="flex justify-between items-center py-1.5 bg-amber-50 rounded-lg px-2">
+                                        <span class="font-bold text-amber-950">4. SPP Bulanan (All-in):</span>
+                                        <span class="font-black text-amber-700" id="sim-val-spp">Rp <?= number_format($cfg['biaya_spp'] ?? 1650000, 0, ',', '.') ?>/bln</span>
+                                    </div>
+                                </div>
+
+                                <!-- Countdown Mini di Layar HP -->
+                                <div id="preview-countdown-box" class="p-1.5 rounded-xl bg-emerald-900 text-white text-center">
+                                    <span class="text-[7px] text-amber-300 font-bold block mb-0.5">⏳ Sisa Waktu Pendaftaran Gelombang</span>
+                                    <div class="flex justify-center items-center gap-1 font-mono text-[9px] font-black text-amber-300">
+                                        <span id="phone-cd-hari">00</span>h : <span id="phone-cd-jam">00</span>j : <span id="phone-cd-menit">00</span>m : <span id="phone-cd-detik" class="text-rose-400">00</span>s
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 7. SECTION: TESTIMONI -->
-                            <div id="sim-sec-testimoni" class="scroll-mt-3 p-2.5 rounded-xl bg-white/95 border border-teal-100 shadow-xs space-y-1.5">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-lg bg-teal-600 text-white flex items-center justify-center text-[9px] shadow-xs">
-                                        <i class="fas fa-comments"></i>
-                                    </span>
-                                    <h5 class="font-extrabold text-[10px] text-slate-800">7. Testimoni Wali Santri</h5>
+                            <!-- 8. SECTION: TESTIMONI (1 HALAMAN PENUH HP - SINKRON WEB) -->
+                            <div id="sim-sec-testimoni" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-white/95 border border-teal-100 shadow-sm space-y-2">
+                                <div class="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="w-6 h-6 rounded-lg bg-teal-600 text-white flex items-center justify-center text-[10px] shadow-xs">
+                                            <i class="fas fa-comments"></i>
+                                        </span>
+                                        <div>
+                                            <span class="text-[7.5px] uppercase font-bold text-teal-600">Hal 8</span>
+                                            <h5 class="font-black text-[11px] text-slate-900 leading-tight">Testimoni Walisantri</h5>
+                                        </div>
+                                    </div>
+                                    <a href="admin-testimoni.php" target="_blank" class="text-[7.5px] text-teal-700 underline font-bold">Edit Web &rarr;</a>
                                 </div>
-                                <div class="p-1.5 rounded-lg bg-teal-50/60 border border-teal-100 text-[7.5px] italic text-slate-600">
-                                    "Alhamdulillah, anak kami betah sekali dan hafalan juz 30 hingga juz 5 sangat mutqin dengan bimbingan asatidz yang penuh kasih sayang."
-                                    <p class="font-bold not-italic text-emerald-900 mt-1 text-[7px]">— Bpk. Hendrawan (Wali Santri)</p>
+
+                                <div class="space-y-1.5 max-h-[300px] overflow-y-auto no-scrollbar text-[7.5px]">
+                                    <?php if (!empty($web_testimoni)): ?>
+                                        <?php foreach (array_slice($web_testimoni, 0, 2) as $wt): ?>
+                                            <div class="p-2 rounded-xl bg-teal-50/60 border border-teal-100">
+                                                <div class="flex items-center justify-between mb-0.5">
+                                                    <strong class="text-emerald-950 block"><?= htmlspecialchars($wt['nama']) ?></strong>
+                                                    <span class="text-amber-500 text-[7px]"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></span>
+                                                </div>
+                                                <p class="text-slate-600 italic line-clamp-3">"<?= htmlspecialchars($wt['isi_testimoni']) ?>"</p>
+                                                <span class="text-[6.5px] text-slate-400 font-bold block mt-0.5"><?= htmlspecialchars($wt['jabatan'] ?? '') ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <div class="p-2 rounded-xl bg-teal-50 text-teal-900 italic">"Anak kami betah sekali dan hafalan juz 30 hingga 5 sangat mutqin." — Bpk. Hendrawan</div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
 
-                            <!-- 8. SECTION: FORMULIR -->
-                            <div id="sim-sec-formulir" class="scroll-mt-3 p-2.5 rounded-xl bg-gradient-to-br from-amber-50 to-white border border-amber-300 shadow-xs space-y-1.5">
-                                <div class="flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-lg bg-amber-500 text-emerald-950 flex items-center justify-center text-[9px] shadow-xs font-black">
+                            <!-- 9. SECTION: FORMULIR (1 HALAMAN PENUH HP) -->
+                            <div id="sim-sec-formulir" class="min-h-[480px] snap-start flex flex-col justify-center p-3.5 rounded-2xl bg-gradient-to-br from-amber-50 via-white to-emerald-50 border border-amber-300 shadow-sm space-y-2 text-slate-800">
+                                <div class="flex items-center gap-1.5 border-b border-amber-200/80 pb-1.5">
+                                    <span class="w-6 h-6 rounded-lg bg-amber-500 text-emerald-950 flex items-center justify-center text-[10px] shadow-xs font-black">
                                         <i class="fas fa-file-pen"></i>
                                     </span>
-                                    <h5 class="font-extrabold text-[10px] text-amber-950">8. Formulir Pendaftaran</h5>
-                                </div>
-                                <div class="space-y-1 text-[7.5px]">
-                                    <div class="p-1 bg-white rounded border border-slate-200 text-slate-400">Nama Calon Santri...</div>
-                                    <div class="p-1 bg-white rounded border border-slate-200 text-slate-400">WhatsApp Wali Santri...</div>
-                                    <div class="p-1.5 bg-gradient-to-r from-emerald-700 to-teal-800 text-white font-bold text-center rounded shadow-xs">
-                                        Kirim Formulir Online
+                                    <div>
+                                        <span class="text-[7.5px] uppercase font-bold text-amber-700">Hal 9</span>
+                                        <h5 class="font-black text-[11px] text-slate-900 leading-tight">Formulir Pendaftaran</h5>
                                     </div>
                                 </div>
-                            </div>
 
-                            <div class="text-center pt-2 pb-4">
-                                <button type="button" onclick="setPhoneTab('cover')" class="text-[9px] text-emerald-700 font-bold underline hover:text-emerald-900 transition">
-                                    &larr; Kembali ke Cover Amplop
-                                </button>
+                                <div class="space-y-1.5 text-[7.5px]">
+                                    <input type="text" placeholder="Nama Orang Tua..." disabled class="w-full p-1.5 bg-white rounded-lg border border-slate-200 text-slate-400">
+                                    <input type="text" placeholder="Nomor WhatsApp..." disabled class="w-full p-1.5 bg-white rounded-lg border border-slate-200 text-slate-400">
+                                    <input type="text" placeholder="Nama Calon Santri..." disabled class="w-full p-1.5 bg-white rounded-lg border border-slate-200 text-slate-400">
+                                    <div class="p-2 bg-gradient-to-r from-amber-400 to-amber-600 text-emerald-950 font-black text-center rounded-xl shadow-xs">
+                                        Kirim Reservasi Sekarang
+                                    </div>
+                                </div>
+
+                                <div class="text-center pt-2">
+                                    <button type="button" onclick="setPhoneTab('cover')" class="text-[8.5px] text-emerald-700 font-bold underline hover:text-emerald-900 transition">
+                                        &larr; Kembali ke Cover Amplop
+                                    </button>
+                                </div>
                             </div>
 
                         </div>
 
                         <!-- ============================================================ -->
-                        <!-- BOTTOM BAR SIMULASI: 8 CARD MENUS (4 MENUS DEFAULT)          -->
-                        <!-- DAPAT DIGESER KANAN-KIRI DENGAN TAMPILAN 4 MENU DEFAULT     -->
+                        <!-- BOTTOM BAR SIMULASI: 9 MENU TANPA FRAME KOTAK (WARNA KUSTOM)  -->
+                        <!-- 4 MENU TAMPIL SECARA DEFAULT & BISA DIGESER KANAN-KIRI        -->
                         <!-- ============================================================ -->
-                        <div class="relative z-30 bg-white/95 backdrop-blur-md border-t border-slate-200/90 shadow-2xl p-1.5 rounded-b-[28px]">
+                        <div id="sim-bottom-bar" class="relative z-30 shadow-2xl p-1 pb-1.5 rounded-b-[28px] border-t border-white/10 backdrop-blur-md transition-colors duration-300" style="background-color: <?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>; color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;">
                             
-                            <!-- CAROUSEL TRACK: 4 MENU SECARA DEFAULT -->
-                            <div id="sim-bottom-track" class="flex items-center overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory gap-1.5 px-0.5 py-0.5">
+                            <!-- CAROUSEL TRACK: 4 MENU SECARA DEFAULT, BEBAS FRAME KOTAK -->
+                            <div id="sim-bottom-track" class="flex items-center overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory gap-1 px-1 py-1">
                                 
                                 <!-- 1. Home -->
-                                <button type="button" onclick="navigasiSimulasi('sim-sec-home', this)" class="sim-card-menu-item snap-start p-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-950 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs ring-2 ring-emerald-500">
-                                    <div class="w-6 h-6 rounded-lg bg-emerald-700 text-amber-300 flex items-center justify-center text-[10px] mb-0.5 shadow-xs group-hover:scale-110 transition">
-                                        <i class="fas fa-house"></i>
-                                    </div>
-                                    <span class="text-[8px] font-black leading-tight truncate w-full">Home</span>
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-home', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 text-amber-300">
+                                    <i class="fas fa-house text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Home</span>
                                 </button>
 
                                 <!-- 2. Mengapa VQBM -->
-                                <button type="button" onclick="navigasiSimulasi('sim-sec-mengapa', this)" class="sim-card-menu-item snap-start p-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                                    <div class="w-6 h-6 rounded-lg bg-amber-500 text-emerald-950 flex items-center justify-center text-[10px] mb-0.5 shadow-xs group-hover:scale-110 transition">
-                                        <i class="fas fa-heart"></i>
-                                    </div>
-                                    <span class="text-[8px] font-black leading-tight truncate w-full">Mengapa</span>
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-mengapa', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                                    <i class="fas fa-heart text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Mengapa</span>
                                 </button>
 
                                 <!-- 3. Target Kompetensi -->
-                                <button type="button" onclick="navigasiSimulasi('sim-sec-kompetensi', this)" class="sim-card-menu-item snap-start p-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                                    <div class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-[10px] mb-0.5 shadow-xs group-hover:scale-110 transition">
-                                        <i class="fas fa-bullseye"></i>
-                                    </div>
-                                    <span class="text-[8px] font-black leading-tight truncate w-full">Kompetensi</span>
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-kompetensi', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                                    <i class="fas fa-bullseye text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Kompetensi</span>
                                 </button>
 
                                 <!-- 4. Fasilitas -->
-                                <button type="button" onclick="navigasiSimulasi('sim-sec-fasilitas', this)" class="sim-card-menu-item snap-start p-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                                    <div class="w-6 h-6 rounded-lg bg-teal-600 text-white flex items-center justify-center text-[10px] mb-0.5 shadow-xs group-hover:scale-110 transition">
-                                        <i class="fas fa-hotel"></i>
-                                    </div>
-                                    <span class="text-[8px] font-black leading-tight truncate w-full">Fasilitas</span>
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-fasilitas', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                                    <i class="fas fa-hotel text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Fasilitas</span>
                                 </button>
 
                                 <!-- 5. Dewan Pengasuh -->
-                                <button type="button" onclick="navigasiSimulasi('sim-sec-pengasuh', this)" class="sim-card-menu-item snap-start p-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                                    <div class="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center text-[10px] mb-0.5 shadow-xs group-hover:scale-110 transition">
-                                        <i class="fas fa-user-graduate"></i>
-                                    </div>
-                                    <span class="text-[8px] font-black leading-tight truncate w-full">Pengasuh</span>
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-pengasuh', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                                    <i class="fas fa-user-graduate text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Pengasuh</span>
                                 </button>
 
-                                <!-- 6. Investasi -->
-                                <button type="button" onclick="navigasiSimulasi('sim-sec-investasi', this)" class="sim-card-menu-item snap-start p-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                                    <div class="w-6 h-6 rounded-lg bg-amber-600 text-white flex items-center justify-center text-[10px] mb-0.5 shadow-xs group-hover:scale-110 transition">
-                                        <i class="fas fa-receipt"></i>
-                                    </div>
-                                    <span class="text-[8px] font-black leading-tight truncate w-full">Investasi</span>
+                                <!-- 6. Kegiatan Santri (NEW!) -->
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-kegiatan', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                                    <i class="fas fa-camera-retro text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Kegiatan</span>
                                 </button>
 
-                                <!-- 7. Testimoni -->
-                                <button type="button" onclick="navigasiSimulasi('sim-sec-testimoni', this)" class="sim-card-menu-item snap-start p-1.5 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200 text-slate-800 flex flex-col items-center justify-center text-center transition group active:scale-95 shadow-xs">
-                                    <div class="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-[10px] mb-0.5 shadow-xs group-hover:scale-110 transition">
-                                        <i class="fas fa-comments"></i>
-                                    </div>
-                                    <span class="text-[8px] font-black leading-tight truncate w-full">Testimoni</span>
+                                <!-- 7. Investasi -->
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-investasi', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                                    <i class="fas fa-receipt text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Investasi</span>
                                 </button>
 
-                                <!-- 8. Formulir -->
-                                <button type="button" onclick="navigasiSimulasi('sim-sec-formulir', this)" class="sim-card-menu-item snap-start p-1.5 rounded-xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-emerald-950 border border-amber-300 flex flex-col items-center justify-center text-center transition group shadow-xs active:scale-95">
-                                    <div class="w-6 h-6 rounded-lg bg-emerald-950 text-amber-300 flex items-center justify-center text-[10px] mb-0.5 shadow-xs group-hover:scale-110 transition">
-                                        <i class="fas fa-file-pen"></i>
-                                    </div>
-                                    <span class="text-[8px] font-black leading-tight truncate w-full">Formulir</span>
+                                <!-- 8. Testimoni -->
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-testimoni', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                                    <i class="fas fa-comments text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Testimoni</span>
+                                </button>
+
+                                <!-- 9. Formulir -->
+                                <button type="button" onclick="navigasiSimulasi('sim-sec-formulir', this)" class="sim-card-menu-item snap-start py-1 px-0.5 flex flex-col items-center justify-center text-center transition group active:scale-95 opacity-80 hover:opacity-100">
+                                    <i class="fas fa-file-pen text-lg mb-0.5 group-hover:scale-110 transition"></i>
+                                    <span class="text-[8px] font-bold leading-tight truncate w-full">Formulir</span>
                                 </button>
 
                             </div>
 
-                            <!-- CONTROLS GESER KANAN KIRI & INDIKATOR (4 MENU PER TAMPILAN) -->
-                            <div class="flex items-center justify-between px-2 pt-1 text-[8px] text-slate-500 border-t border-slate-100 mt-1">
-                                <button type="button" onclick="scrollSimulasiBottomBar('left')" class="hover:text-emerald-700 font-bold flex items-center gap-1 transition p-0.5">
+                            <!-- CONTROLS GESER KANAN KIRI & INDIKATOR HALAMAN (4 MENU PER TAMPILAN) -->
+                            <div class="flex items-center justify-between px-2 pt-1 text-[7.5px] border-t border-white/10 mt-0.5 opacity-80">
+                                <button type="button" onclick="scrollSimulasiBottomBar('left')" class="hover:opacity-100 font-bold flex items-center gap-1 transition p-0.5">
                                     <i class="fas fa-chevron-left text-[7px]"></i> <span>Geser Kiri</span>
                                 </button>
                                 
                                 <div class="flex items-center gap-1" id="sim-indicator-dots">
-                                    <span class="w-2.5 h-1 rounded-full bg-emerald-600 transition-all" id="sim-dot-1"></span>
-                                    <span class="w-1.5 h-1 rounded-full bg-slate-300 transition-all" id="sim-dot-2"></span>
+                                    <span class="w-2.5 h-1 rounded-full bg-amber-400 transition-all" id="sim-dot-1"></span>
+                                    <span class="w-1.5 h-1 rounded-full bg-white/40 transition-all" id="sim-dot-2"></span>
+                                    <span class="w-1.5 h-1 rounded-full bg-white/40 transition-all" id="sim-dot-3"></span>
                                 </div>
 
-                                <button type="button" onclick="scrollSimulasiBottomBar('right')" class="hover:text-emerald-700 font-bold flex items-center gap-1 transition p-0.5">
+                                <button type="button" onclick="scrollSimulasiBottomBar('right')" class="hover:opacity-100 font-bold flex items-center gap-1 transition p-0.5">
                                     <span>Geser Kanan</span> <i class="fas fa-chevron-right text-[7px]"></i>
                                 </button>
                             </div>
@@ -1855,16 +2060,59 @@ $active_menu = 'brosur_settings';
             const track = document.getElementById('sim-bottom-track');
             const dot1 = document.getElementById('sim-dot-1');
             const dot2 = document.getElementById('sim-dot-2');
+            const dot3 = document.getElementById('sim-dot-3');
             if (!track || !dot1 || !dot2) return;
             const scrollLeft = track.scrollLeft;
             const maxScroll = track.scrollWidth - track.clientWidth;
-            if (scrollLeft > maxScroll * 0.35) {
-                dot1.className = 'w-1.5 h-1 rounded-full bg-slate-300 transition-all';
-                dot2.className = 'w-2.5 h-1 rounded-full bg-emerald-600 transition-all';
+            if (maxScroll <= 0) return;
+            const ratio = scrollLeft / maxScroll;
+            
+            [dot1, dot2, dot3].forEach(d => { if (d) d.className = 'w-1.5 h-1 rounded-full bg-white/40 transition-all'; });
+            if (ratio < 0.35) {
+                if (dot1) dot1.className = 'w-2.5 h-1 rounded-full bg-amber-400 transition-all';
+            } else if (ratio < 0.7) {
+                if (dot2) dot2.className = 'w-2.5 h-1 rounded-full bg-amber-400 transition-all';
             } else {
-                dot1.className = 'w-2.5 h-1 rounded-full bg-emerald-600 transition-all';
-                dot2.className = 'w-1.5 h-1 rounded-full bg-slate-300 transition-all';
+                if (dot3) dot3.className = 'w-2.5 h-1 rounded-full bg-amber-400 transition-all';
             }
+        }
+
+        // Live Customizer Bottom Bar
+        function updateLiveBottomBarColors() {
+            const bgColor = document.getElementById('input-bottom-bar-bg-color').value;
+            const textColor = document.getElementById('input-bottom-bar-text-color').value;
+            
+            document.getElementById('label-bottom-bar-bg-color').innerText = bgColor;
+            document.getElementById('label-bottom-bar-text-color').innerText = textColor;
+            
+            const simBar = document.getElementById('sim-bottom-bar');
+            if (simBar) {
+                simBar.style.backgroundColor = bgColor;
+                simBar.style.color = textColor;
+            }
+        }
+
+        function setBottomBarColorPreset(bg, text) {
+            document.getElementById('input-bottom-bar-bg-color').value = bg;
+            document.getElementById('input-bottom-bar-text-color').value = text;
+            updateLiveBottomBarColors();
+        }
+
+        function setBottomBarTextColor(text) {
+            document.getElementById('input-bottom-bar-text-color').value = text;
+            updateLiveBottomBarColors();
+        }
+
+        function autoContrastBottomBar() {
+            const bgColor = document.getElementById('input-bottom-bar-bg-color').value;
+            const c = bgColor.replace('#', '');
+            const rgb = parseInt(c, 16);
+            const r = (rgb >> 16) & 0xff;
+            const g = (rgb >>  8) & 0xff;
+            const b = (rgb >>  0) & 0xff;
+            const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            const newText = (luma > 160) ? '#0f172a' : '#ffffff';
+            setBottomBarTextColor(newText);
         }
 
         function updateLiveInvestasi() {
