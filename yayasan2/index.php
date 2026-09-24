@@ -22,7 +22,7 @@ $total_asatidz = $q_asatidz ? ($q_asatidz->fetch_assoc()['tot'] ?? 0) : 0;
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
             <div class="flex items-center"><button id="open-sidebar-yayasan2" class="text-gray-500 hover:text-gray-700 md:hidden mr-4"><i class="fas fa-bars text-xl"></i></button><h2 class="font-bold text-gray-800 hidden sm:block">Panel Eksekutif Yayasan 2</h2></div>
             <div class="flex items-center space-x-4">
-                <a href="../index.html" target="_blank" class="text-sm text-amber-600 hover:text-amber-800 font-medium hidden sm:flex items-center"><i class="fas fa-external-link-alt mr-2"></i> Lihat Website</a>
+                <a href="https://villaquranindonesia.com" target="_blank" class="text-sm text-amber-600 hover:text-amber-800 font-medium hidden sm:flex items-center"><i class="fas fa-external-link-alt mr-2"></i> Lihat Website</a>
                 <div class="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center text-gray-900 font-bold shadow-sm">Y2</div>
             </div>
         </header>

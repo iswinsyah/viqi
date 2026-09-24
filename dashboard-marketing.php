@@ -117,7 +117,7 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
             </div>
             
             <div class="flex items-center space-x-4">
-                <a href="index.html" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium hidden sm:flex items-center">
+                <a href="https://villaquranindonesia.com" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium hidden sm:flex items-center">
                     <i class="fas fa-external-link-alt mr-2"></i> Lihat Website
                 </a>
                 <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-sm">

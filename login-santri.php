@@ -104,7 +104,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     <div class="bg-white/95 backdrop-blur-md p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md border border-teal-100 relative z-10">
         <div class="text-center mb-8">
-            <a href="index.html" class="inline-block group mb-3">
+            <a href="https://villaquranindonesia.com" class="inline-block group mb-3">
                 <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center p-2 mx-auto shadow-xl border-2 border-teal-100 group-hover:scale-105 transition-transform duration-300">
                     <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Indonesia" class="w-16 h-16 object-contain">
                 </div>
@@ -144,7 +144,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </button>
         </form>
         <div class="mt-6 text-center">
-            <a href="index.html" class="text-xs font-bold text-slate-500 hover:text-[#0b8478] transition flex items-center justify-center gap-1.5">
+            <a href="https://villaquranindonesia.com" class="text-xs font-bold text-slate-500 hover:text-[#0b8478] transition flex items-center justify-center gap-1.5">
                 <i class="fas fa-arrow-left text-[10px]"></i> Kembali ke Beranda
             </a>
         </div>
