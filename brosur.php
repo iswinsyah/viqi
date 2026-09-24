@@ -6,6 +6,25 @@
 require_once 'koneksi.php';
 
 // Ambil Pengaturan Brosur Dinamis dari Database
+$cols_brosur_check = [
+    "body_bg_url" => "ALTER TABLE pengaturan_brosur ADD COLUMN body_bg_url TEXT AFTER cover_overlay_opacity",
+    "body_overlay_opacity" => "ALTER TABLE pengaturan_brosur ADD COLUMN body_overlay_opacity DECIMAL(3,2) DEFAULT 0.92 AFTER body_bg_url",
+    "countdown_mode" => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_mode VARCHAR(20) DEFAULT 'auto' AFTER diskon_gelombang",
+    "countdown_target" => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_target DATETIME DEFAULT '2026-12-31 23:59:59' AFTER countdown_mode",
+    "countdown_title" => "ALTER TABLE pengaturan_brosur ADD COLUMN countdown_title VARCHAR(150) DEFAULT '⏳ Sisa Waktu Pendaftaran Berakhir:' AFTER countdown_target",
+    "show_countdown" => "ALTER TABLE pengaturan_brosur ADD COLUMN show_countdown TINYINT(1) DEFAULT 1 AFTER countdown_title"
+];
+$res_c = $conn->query("DESCRIBE pengaturan_brosur");
+$curr_cols = [];
+if ($res_c) {
+    while ($r = $res_c->fetch_assoc()) $curr_cols[] = $r['Field'];
+}
+foreach ($cols_brosur_check as $col => $sql) {
+    if (!in_array($col, $curr_cols)) {
+        $conn->query($sql);
+    }
+}
+
 $q_brosur = $conn->query("SELECT * FROM pengaturan_brosur WHERE id = 1 LIMIT 1");
 $cfg_brosur = ($q_brosur && $q_brosur->num_rows > 0) ? $q_brosur->fetch_assoc() : [];
 
@@ -13,6 +32,17 @@ $tahun_ajaran      = !empty($cfg_brosur['tahun_ajaran']) ? htmlspecialchars($cfg
 $periode_gelombang = !empty($cfg_brosur['periode_gelombang']) ? htmlspecialchars($cfg_brosur['periode_gelombang']) : 'Gelombang 1 — Kuota Terbatas';
 $cover_bg_url      = !empty($cfg_brosur['cover_bg_url']) ? htmlspecialchars($cfg_brosur['cover_bg_url']) : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
 $cover_opacity     = isset($cfg_brosur['cover_overlay_opacity']) ? (float)$cfg_brosur['cover_overlay_opacity'] : 0.85;
+
+// Background Laman Dalam Dinamis
+$body_bg_url          = !empty($cfg_brosur['body_bg_url']) ? htmlspecialchars($cfg_brosur['body_bg_url']) : '';
+$body_overlay_opacity = isset($cfg_brosur['body_overlay_opacity']) ? (float)$cfg_brosur['body_overlay_opacity'] : 0.92;
+
+// Pengaturan Countdown Dinamis
+$countdown_mode       = !empty($cfg_brosur['countdown_mode']) ? $cfg_brosur['countdown_mode'] : 'auto';
+$countdown_target     = !empty($cfg_brosur['countdown_target']) ? $cfg_brosur['countdown_target'] : '2026-12-31 23:59:59';
+$countdown_title      = !empty($cfg_brosur['countdown_title']) ? htmlspecialchars($cfg_brosur['countdown_title']) : '⏳ Sisa Waktu Pendaftaran Berakhir:';
+$show_countdown       = isset($cfg_brosur['show_countdown']) ? (int)$cfg_brosur['show_countdown'] : 1;
+
 $biaya_pendaftaran = isset($cfg_brosur['biaya_pendaftaran']) ? number_format($cfg_brosur['biaya_pendaftaran'], 0, ',', '.') : '350.000';
 $biaya_pangkal     = isset($cfg_brosur['biaya_pangkal']) ? number_format($cfg_brosur['biaya_pangkal'], 0, ',', '.') : '12.500.000';
 $biaya_tahunan     = isset($cfg_brosur['biaya_tahunan']) ? number_format($cfg_brosur['biaya_tahunan'], 0, ',', '.') : '2.500.000';
@@ -227,6 +257,16 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             <span id="audio-label" class="hidden sm:inline">Audio On</span>
         </button>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- BACKGROUND HALAMAN DALAM DINAMIS (PINTEREST / WALLPAPER)    -->
+    <!-- ============================================================ -->
+    <?php if (!empty($body_bg_url)): ?>
+    <div id="inner-bg-layer" class="fixed inset-0 pointer-events-none -z-10 bg-cover bg-center bg-fixed transition-all duration-700" style="background-image: url('<?= $body_bg_url ?>');">
+        <!-- Overlay transparan agar teks tetap sangat jelas terbaca dan kontras -->
+        <div class="absolute inset-0 bg-[#f6f7f5]" style="opacity: <?= $body_overlay_opacity ?>;"></div>
+    </div>
+    <?php endif; ?>
 
     <!-- ============================================================ -->
     <!-- MAIN CONTENT CONTAINER (MOBILE FIRST LAYOUT)                  -->
@@ -540,6 +580,73 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 </div>
             </div>
         </section>
+
+        <!-- ============================================================ -->
+        <!-- COUNTDOWN TIMER SPMB (DISINKRONKAN DENGAN BERANDA SEKOLAH)   -->
+        <!-- ============================================================ -->
+        <?php if ($show_countdown): ?>
+        <section class="mb-8 text-center" id="brosur-countdown-section">
+            <div class="glass-card rounded-3xl p-5 sm:p-7 border border-amber-500/30 shadow-xl relative overflow-hidden bg-gradient-to-b from-white/95 to-emerald-50/90 backdrop-blur-xl">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-amber-400/15 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-[11px] font-extrabold uppercase tracking-wider mb-2 shadow-sm">
+                    <i class="fas fa-hourglass-half text-amber-600 animate-pulse"></i>
+                    <span>Batas Akhir <?= $periode_gelombang ?></span>
+                </div>
+
+                <h3 id="cd-text" class="text-emerald-950 font-black text-base sm:text-lg mb-4 tracking-tight">
+                    <?= $countdown_title ?>
+                </h3>
+
+                <!-- KOTAK COUNTDOWN: SAMA PERSIS DENGAN INDEX.HTML SEKOLAH -->
+                <div class="flex justify-center items-center space-x-2 sm:space-x-4">
+                    <!-- HARI -->
+                    <div class="flex flex-col items-center">
+                        <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-hari">
+                            00
+                        </div>
+                        <span class="text-emerald-950 text-[10px] sm:text-xs mt-2.5 font-extrabold uppercase tracking-widest">Hari</span>
+                    </div>
+
+                    <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
+
+                    <!-- JAM -->
+                    <div class="flex flex-col items-center">
+                        <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-jam">
+                            00
+                        </div>
+                        <span class="text-emerald-950 text-[10px] sm:text-xs mt-2.5 font-extrabold uppercase tracking-widest">Jam</span>
+                    </div>
+
+                    <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
+
+                    <!-- MENIT -->
+                    <div class="flex flex-col items-center">
+                        <div class="bg-emerald-900 text-amber-300 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(6,78,69,1)] border-2 border-emerald-700/60 font-mono tracking-tight" id="cd-menit">
+                            00
+                        </div>
+                        <span class="text-emerald-950 text-[10px] sm:text-xs mt-2.5 font-extrabold uppercase tracking-widest">Menit</span>
+                    </div>
+
+                    <div class="text-emerald-800 font-black text-xl sm:text-2xl -mt-5">:</div>
+
+                    <!-- DETIK (ROSE RED DYNAMIC SHADOW DENGAN PULSE) -->
+                    <div class="flex flex-col items-center">
+                        <div class="bg-white text-rose-600 font-black text-2xl sm:text-3xl w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-2xl shadow-[0_6px_0_0_rgba(225,29,72,1)] border-2 border-rose-200 font-mono tracking-tight animate-pulse" id="cd-detik">
+                            00
+                        </div>
+                        <span class="text-rose-700 text-[10px] sm:text-xs mt-2.5 font-extrabold uppercase tracking-widest">Detik</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-emerald-100/80 flex items-center justify-center gap-1.5 text-[11px] text-gray-500">
+                    <i class="fas fa-bolt text-amber-500"></i>
+                    <span>Kuota santri terbatas. Segera amankan pendaftaran sebelum periode ini ditutup.</span>
+                </div>
+            </div>
+        </section>
+        <?php endif; ?>
 
         <!-- ============================================================ -->
         <!-- 7. FORM PENDAFTARAN & AUTO-NOTIF WA (USER PROMPT NO 7)      -->
@@ -945,6 +1052,61 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 prompt('Salin link undangan ini:', inviteUrl);
             });
         }
+
+        // 6. Countdown SPMB - Sesuai Pengaturan Web Sekolah
+        function initBrosurCountdown() {
+            const mode = "<?= $countdown_mode ?>";
+            const customTargetStr = "<?= $countdown_target ?>";
+
+            function updateCD() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth() + 1; // 1 - 12
+                let endDate, wave;
+
+                if (mode === 'custom' && customTargetStr) {
+                    endDate = new Date(customTargetStr.replace(/-/g, "/"));
+                    wave = "<?= $periode_gelombang ?>";
+                } else {
+                    // Logika Penentuan Gelombang Tahunan (Persis seperti index.html)
+                    if (month >= 7 && month <= 12) {
+                        endDate = new Date(year, 11, 31, 23, 59, 59); // 31 Desember
+                        wave = "Gelombang 1";
+                    } else if (month >= 1 && month <= 3) {
+                        endDate = new Date(year, 2, 31, 23, 59, 59); // 31 Maret
+                        wave = "Gelombang 2";
+                    } else {
+                        endDate = new Date(year, 5, 30, 23, 59, 59); // 30 Juni
+                        wave = "Gelombang 3";
+                    }
+                }
+
+                const diff = endDate.getTime() - now.getTime();
+                if (diff > 0) {
+                    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    if(document.getElementById('cd-hari')) document.getElementById('cd-hari').innerText = d.toString().padStart(2, '0');
+                    if(document.getElementById('cd-jam')) document.getElementById('cd-jam').innerText = h.toString().padStart(2, '0');
+                    if(document.getElementById('cd-menit')) document.getElementById('cd-menit').innerText = m.toString().padStart(2, '0');
+                    if(document.getElementById('cd-detik')) document.getElementById('cd-detik').innerText = s.toString().padStart(2, '0');
+                    if(document.getElementById('cd-text') && mode !== 'custom') {
+                        document.getElementById('cd-text').innerText = `⏳ Sisa Waktu Pendaftaran ${wave} Berakhir:`;
+                    }
+                } else {
+                    if(document.getElementById('cd-hari')) document.getElementById('cd-hari').innerText = '00';
+                    if(document.getElementById('cd-jam')) document.getElementById('cd-jam').innerText = '00';
+                    if(document.getElementById('cd-menit')) document.getElementById('cd-menit').innerText = '00';
+                    if(document.getElementById('cd-detik')) document.getElementById('cd-detik').innerText = '00';
+                    if(document.getElementById('cd-text')) document.getElementById('cd-text').innerText = `⏳ Pendaftaran Periode Ini Telah Berakhir`;
+                }
+            }
+            updateCD();
+            setInterval(updateCD, 1000);
+        }
+        initBrosurCountdown();
     </script>
 </body>
 </html>
