@@ -1138,6 +1138,10 @@ $active_menu = 'brosur_settings';
                                 <label class="block text-xs font-bold text-slate-700 mb-1">4. SPP All-in Bulanan (Rp):</label>
                                 <input type="number" name="biaya_spp" id="input-biaya-spp" value="<?= $biaya_spp_val ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
                             </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-bold text-amber-800 mb-1"><i class="fas fa-gift text-amber-500 mr-1"></i> Diskon Khusus Gelombang Uang Pangkal (Rp):</label>
+                                <input type="number" name="diskon_gelombang" id="input-diskon-gelombang" value="<?= $cfg['diskon_gelombang'] ?? 2000000 ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-amber-300 bg-amber-50/40 text-xs focus:border-[#0b8478]">
+                            </div>
                         </div>
                     </div>
 
@@ -1479,6 +1483,10 @@ $active_menu = 'brosur_settings';
                                     <div class="flex justify-between items-center py-1.5 bg-amber-50 rounded-lg px-2">
                                         <span class="font-bold text-amber-950">4. SPP Bulanan (All-in):</span>
                                         <span class="font-black text-amber-700" id="sim-val-spp">Rp <?= number_format($biaya_spp_val, 0, ',', '.') ?>/bln</span>
+                                    </div>
+                                    <div class="p-1.5 bg-amber-50/90 rounded-lg border border-amber-200 text-amber-900 flex items-center justify-between text-[7px] mt-1">
+                                        <span><i class="fas fa-gift text-amber-600 mr-1"></i> Diskon <?= htmlspecialchars($cfg['periode_gelombang'] ?? 'Gelombang 1') ?>:</span>
+                                        <strong id="sim-val-diskon">Hemat Rp <?= number_format($cfg['diskon_gelombang'] ?? 2000000, 0, ',', '.') ?></strong>
                                     </div>
                                 </div>
 
@@ -2139,16 +2147,19 @@ $active_menu = 'brosur_settings';
             const pangkal = parseInt(document.getElementById('input-biaya-pangkal')?.value) || 0;
             const tahunan = parseInt(document.getElementById('input-biaya-tahunan')?.value) || 0;
             const spp = parseInt(document.getElementById('input-biaya-spp')?.value) || 0;
+            const diskon = parseInt(document.getElementById('input-diskon-gelombang')?.value) || 0;
 
             const elPendaftaran = document.getElementById('sim-val-pendaftaran');
             const elPangkal = document.getElementById('sim-val-pangkal');
             const elTahunan = document.getElementById('sim-val-tahunan');
             const elSpp = document.getElementById('sim-val-spp');
+            const elDiskon = document.getElementById('sim-val-diskon');
 
             if (elPendaftaran) elPendaftaran.innerText = 'Rp ' + pendaftaran.toLocaleString('id-ID');
             if (elPangkal) elPangkal.innerText = 'Rp ' + pangkal.toLocaleString('id-ID');
             if (elTahunan) elTahunan.innerText = 'Rp ' + tahunan.toLocaleString('id-ID');
             if (elSpp) elSpp.innerText = 'Rp ' + spp.toLocaleString('id-ID') + '/bln';
+            if (elDiskon) elDiskon.innerText = 'Hemat Rp ' + diskon.toLocaleString('id-ID');
         }
 
         // Draggable / Swipable Track dengan Mouse
