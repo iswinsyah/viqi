@@ -443,7 +443,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- ============================================================ -->
     <!-- MAIN CONTENT CONTAINER (MOBILE FIRST LAYOUT)                  -->
     <!-- ============================================================ -->
-    <div id="main-content" class="max-w-xl mx-auto px-4 pt-2 pb-28 min-h-screen snap-y snap-mandatory scroll-smooth">
+    <div id="main-content" class="max-w-md mx-auto px-4 pt-2 pb-28 min-h-screen snap-y snap-mandatory scroll-smooth">
 
         <!-- ========================================== -->
         <!-- MENU 1: HOME (1 HALAMAN PENUH LAYAR HP)    -->
@@ -485,8 +485,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <!-- MENU 2: MENGAPA VQBM (1 HALAMAN PENUH HP)  -->
         <!-- ========================================== -->
         <section id="brosur-mengapa" class="page-screen-mobile snap-start">
-            <div class="my-auto space-y-4">
-                <div class="flex items-center gap-2.5 mb-2">
+            <div class="glass-card rounded-3xl p-5 sm:p-6 border border-emerald-100 shadow-xl my-auto space-y-4">
+                <div class="flex items-center gap-2.5 pb-2.5 border-b border-emerald-100">
                     <span class="w-9 h-9 rounded-2xl bg-amber-500 text-emerald-950 flex items-center justify-center font-black text-sm shadow">
                         <i class="fas fa-heart"></i>
                     </span>
@@ -542,14 +542,11 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         </section>
 
         <!-- ========================================== -->
-        <!-- MENU 3: TARGET KOMPETENSI                  -->
-        <!-- ========================================== -->
-        <!-- ========================================== -->
         <!-- MENU 3: TARGET KOMPETENSI (1 HALAMAN PENUH)-->
         <!-- ========================================== -->
         <section id="brosur-kompetensi" class="page-screen-mobile snap-start">
-            <div class="my-auto space-y-4">
-                <div class="flex items-center gap-2.5 mb-2">
+            <div class="glass-card rounded-3xl p-5 sm:p-6 border border-emerald-100 shadow-xl my-auto space-y-4">
+                <div class="flex items-center gap-2.5 pb-2.5 border-b border-emerald-100">
                     <span class="w-9 h-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-sm shadow">
                         <i class="fas fa-bullseye"></i>
                     </span>
@@ -599,8 +596,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <!-- MENU 4: FASILITAS (1 HALAMAN PENUH - SINKRON WEB) -->
         <!-- ========================================== -->
         <section id="brosur-fasilitas" class="page-screen-mobile snap-start">
-            <div class="my-auto space-y-4">
-                <div class="flex items-center gap-2.5 mb-2">
+            <div class="glass-card rounded-3xl p-5 sm:p-6 border border-emerald-100 shadow-xl my-auto space-y-4">
+                <div class="flex items-center gap-2.5 pb-2.5 border-b border-emerald-100">
                     <span class="w-9 h-9 rounded-2xl bg-teal-600 text-white flex items-center justify-center font-black text-sm shadow">
                         <i class="fas fa-hotel"></i>
                     </span>
@@ -610,7 +607,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-0.5 no-scrollbar">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[50vh] overflow-y-auto pr-0.5 no-scrollbar">
                     <?php if (!empty($data_fasilitas)): ?>
                         <?php foreach ($data_fasilitas as $fas): ?>
                             <div class="glass-card rounded-2xl overflow-hidden border border-emerald-100 shadow-sm hover:shadow-md transition flex flex-col">
@@ -658,8 +655,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <!-- MENU 5: DEWAN PENGASUH (1 HALAMAN PENUH - SINKRON WEB) -->
         <!-- ========================================== -->
         <section id="brosur-pengasuh" class="page-screen-mobile snap-start">
-            <div class="my-auto space-y-4">
-                <div class="flex items-center gap-2.5 mb-2">
+            <div class="glass-card rounded-3xl p-5 sm:p-6 border border-emerald-100 shadow-xl my-auto space-y-4">
+                <div class="flex items-center gap-2.5 pb-2.5 border-b border-emerald-100">
                     <span class="w-9 h-9 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-black text-sm shadow">
                         <i class="fas fa-user-graduate"></i>
                     </span>
@@ -669,7 +666,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </div>
                 </div>
 
-                <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-0.5 no-scrollbar">
+                <div class="space-y-3 max-h-[52vh] overflow-y-auto pr-0.5 no-scrollbar">
                     <?php if (!empty($data_pengajar)): ?>
                         <?php foreach ($data_pengajar as $p): ?>
                             <div class="glass-card rounded-2xl p-4 border border-purple-100 shadow-sm flex items-start gap-3.5">
@@ -710,8 +707,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <!-- MENU 6: KEGIATAN SANTRI (1 HALAMAN PENUH - SINKRON WEB) -->
         <!-- ========================================== -->
         <section id="brosur-kegiatan" class="page-screen-mobile snap-start">
-            <div class="my-auto space-y-4">
-                <div class="flex items-center gap-2.5 mb-2">
+            <div class="glass-card rounded-3xl p-5 sm:p-6 border border-emerald-100 shadow-xl my-auto space-y-4">
+                <div class="flex items-center gap-2.5 pb-2.5 border-b border-emerald-100">
                     <span class="w-9 h-9 rounded-2xl bg-pink-600 text-white flex items-center justify-center font-black text-sm shadow">
                         <i class="fas fa-camera-retro"></i>
                     </span>
@@ -721,7 +718,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2.5 max-h-[65vh] overflow-y-auto pr-0.5 no-scrollbar">
+                <div class="grid grid-cols-2 gap-2.5 max-h-[52vh] overflow-y-auto pr-0.5 no-scrollbar">
                     <?php if (!empty($data_kegiatan)): ?>
                         <?php foreach ($data_kegiatan as $keg): ?>
                             <div class="rounded-2xl overflow-hidden shadow-sm relative group bg-emerald-50 border border-emerald-100 aspect-[4/3]">
@@ -747,8 +744,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <!-- MENU 7: INVESTASI PENDIDIKAN (1 HALAMAN PENUH - SINKRON WEB) -->
         <!-- ========================================== -->
         <section id="brosur-biaya" class="page-screen-mobile snap-start">
-            <div class="my-auto space-y-4">
-                <div class="flex items-center gap-2.5 mb-2">
+            <div class="glass-card rounded-3xl p-5 sm:p-6 shadow-xl border border-emerald-100 my-auto space-y-3.5">
+                <div class="flex items-center gap-2.5 pb-2.5 border-b border-emerald-100">
                     <span class="w-9 h-9 rounded-2xl bg-amber-600 text-white flex items-center justify-center font-black text-sm shadow">
                         <i class="fas fa-receipt"></i>
                     </span>
@@ -758,105 +755,103 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </div>
                 </div>
 
-                <div class="glass-card rounded-3xl p-5 sm:p-6 shadow-lg border border-emerald-100 space-y-3">
-                    <div class="divide-y divide-gray-100 text-xs sm:text-sm">
-                        <div class="py-2.5 flex justify-between items-center">
-                            <div class="pr-2">
-                                <span class="font-bold text-gray-900 block">1. Biaya Pendaftaran & Observasi</span>
-                                <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_pendaftaran) ?></span>
-                            </div>
-                            <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_pendaftaran ?></span>
+                <div class="divide-y divide-gray-100 text-xs sm:text-sm">
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div class="pr-2">
+                            <span class="font-bold text-gray-900 block">1. Biaya Pendaftaran & Observasi</span>
+                            <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_pendaftaran) ?></span>
                         </div>
-
-                        <div class="py-2.5 flex justify-between items-center">
-                            <div class="pr-2">
-                                <span class="font-bold text-gray-900 block">2. Uang Pangkal Masuk</span>
-                                <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_pangkal) ?></span>
-                            </div>
-                            <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_pangkal ?></span>
-                        </div>
-
-                        <div class="py-2.5 flex justify-between items-center">
-                            <div class="pr-2">
-                                <span class="font-bold text-gray-900 block">3. Biaya Pengembangan Tahunan</span>
-                                <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_tahunan) ?></span>
-                            </div>
-                            <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_tahunan ?></span>
-                        </div>
-
-                        <div class="py-3 bg-emerald-50/80 -mx-5 px-5 rounded-2xl border border-emerald-200/60 flex justify-between items-center mt-2">
-                            <div class="pr-2">
-                                <span class="font-black text-emerald-950 block text-xs sm:text-sm">4. SPP All-in Per Bulan</span>
-                                <span class="text-[10px] text-emerald-800 line-clamp-1"><?= htmlspecialchars($desc_spp) ?></span>
-                            </div>
-                            <div class="text-right whitespace-nowrap">
-                                <span class="font-black text-emerald-800 text-sm sm:text-base">Rp <?= $biaya_spp ?></span>
-                                <span class="block text-[9px] text-emerald-600">/ bulan</span>
-                            </div>
-                        </div>
+                        <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_pendaftaran ?></span>
                     </div>
 
-                    <!-- Accordion Rincian Tiap Komponen (Sinkron Menu Pengaturan Info Biaya) -->
-                    <div class="pt-1">
-                        <button type="button" onclick="const r = document.getElementById('brosur-biaya-detail'); r.classList.toggle('hidden'); this.querySelector('.arrow-icon').classList.toggle('rotate-180');" class="w-full py-2 px-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center justify-between border border-emerald-200/80 transition">
-                            <span class="flex items-center gap-1.5">
-                                <i class="fas fa-list-ul text-emerald-600"></i>
-                                <span>Rincian Tiap Komponen Biaya</span>
-                            </span>
-                            <i class="fas fa-chevron-down arrow-icon text-[10px] text-emerald-600 transition-transform duration-200"></i>
-                        </button>
-                        
-                        <div id="brosur-biaya-detail" class="hidden mt-2 p-3 bg-white/95 rounded-2xl border border-emerald-100 text-xs space-y-3 max-h-52 overflow-y-auto shadow-inner">
-                            <?php 
-                            $list_kategori_label = [
-                                'pendaftaran' => '1. Biaya Pendaftaran',
-                                'pangkal'     => '2. Uang Pangkal',
-                                'tahunan'     => '3. Biaya Tahunan',
-                                'spp'         => '4. SPP Bulanan'
-                            ];
-                            foreach ($list_kategori_label as $k_kat => $l_kat): 
-                                if (!empty($data_biaya[$k_kat])): ?>
-                                <div class="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="font-extrabold text-[11px] text-emerald-900"><?= $l_kat ?></span>
-                                        <span class="font-bold text-[10px] text-emerald-700 font-mono">Total: Rp <?= number_format($subtotal_biaya[$k_kat], 0, ',', '.') ?></span>
-                                    </div>
-                                    <div class="space-y-1 pl-1 text-[11px]">
-                                        <?php foreach ($data_biaya[$k_kat] as $item): ?>
-                                        <div class="flex justify-between items-center text-gray-600">
-                                            <span>• <?= htmlspecialchars($item['nama_komponen']) ?></span>
-                                            <span class="font-mono text-gray-800 font-medium">Rp <?= number_format($item['nominal'], 0, ',', '.') ?></span>
-                                        </div>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                                <?php endif; 
-                            endforeach; ?>
-                            <div class="pt-1 text-center border-t border-gray-100">
-                                <a href="biaya.html" target="_blank" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-950 underline inline-flex items-center gap-1">
-                                    Lihat Penjelasan Detail di Halaman Info Biaya &rarr;
-                                </a>
-                            </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div class="pr-2">
+                            <span class="font-bold text-gray-900 block">2. Uang Pangkal Masuk</span>
+                            <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_pangkal) ?></span>
                         </div>
+                        <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_pangkal ?></span>
                     </div>
 
-                    <div class="pt-2 flex items-center justify-between text-xs text-amber-900 bg-amber-50/80 p-2.5 rounded-xl border border-amber-200">
-                        <span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-600"></i> <strong>Diskon <?= $periode_gelombang ?></strong>: Hemat Rp <?= $diskon_gelombang ?> Uang Pangkal</span>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div class="pr-2">
+                            <span class="font-bold text-gray-900 block">3. Biaya Pengembangan Tahunan</span>
+                            <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_tahunan) ?></span>
+                        </div>
+                        <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_tahunan ?></span>
                     </div>
 
-                    <!-- Countdown Mini -->
-                    <?php if ($show_countdown): ?>
-                    <div class="p-3 rounded-2xl bg-gradient-to-r from-emerald-950 to-[#064e45] text-white text-center">
-                        <span class="text-[10px] text-amber-300 font-extrabold uppercase tracking-wider block mb-1">⏳ <?= $countdown_title ?></span>
-                        <div class="flex justify-center items-center gap-2 font-mono text-sm sm:text-base font-black text-amber-300">
-                            <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-hari">00</span> Hari : 
-                            <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-jam">00</span> Jam : 
-                            <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-menit">00</span> Menit : 
-                            <span class="bg-white text-rose-600 px-2 py-0.5 rounded-lg shadow-xs" id="cd-detik">00</span> Detik
+                    <div class="py-3 bg-emerald-50/80 -mx-5 px-5 rounded-2xl border border-emerald-200/60 flex justify-between items-center mt-2">
+                        <div class="pr-2">
+                            <span class="font-black text-emerald-950 block text-xs sm:text-sm">4. SPP All-in Per Bulan</span>
+                            <span class="text-[10px] text-emerald-800 line-clamp-1"><?= htmlspecialchars($desc_spp) ?></span>
+                        </div>
+                        <div class="text-right whitespace-nowrap">
+                            <span class="font-black text-emerald-800 text-sm sm:text-base">Rp <?= $biaya_spp ?></span>
+                            <span class="block text-[9px] text-emerald-600">/ bulan</span>
                         </div>
                     </div>
-                    <?php endif; ?>
                 </div>
+
+                <!-- Accordion Rincian Tiap Komponen (Sinkron Menu Pengaturan Info Biaya) -->
+                <div class="pt-1">
+                    <button type="button" onclick="const r = document.getElementById('brosur-biaya-detail'); r.classList.toggle('hidden'); this.querySelector('.arrow-icon').classList.toggle('rotate-180');" class="w-full py-2 px-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center justify-between border border-emerald-200/80 transition">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fas fa-list-ul text-emerald-600"></i>
+                            <span>Rincian Tiap Komponen Biaya</span>
+                        </span>
+                        <i class="fas fa-chevron-down arrow-icon text-[10px] text-emerald-600 transition-transform duration-200"></i>
+                    </button>
+                    
+                    <div id="brosur-biaya-detail" class="hidden mt-2 p-3 bg-white/95 rounded-2xl border border-emerald-100 text-xs space-y-3 max-h-52 overflow-y-auto shadow-inner">
+                        <?php 
+                        $list_kategori_label = [
+                            'pendaftaran' => '1. Biaya Pendaftaran',
+                            'pangkal'     => '2. Uang Pangkal',
+                            'tahunan'     => '3. Biaya Tahunan',
+                            'spp'         => '4. SPP Bulanan'
+                        ];
+                        foreach ($list_kategori_label as $k_kat => $l_kat): 
+                            if (!empty($data_biaya[$k_kat])): ?>
+                            <div class="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="font-extrabold text-[11px] text-emerald-900"><?= $l_kat ?></span>
+                                    <span class="font-bold text-[10px] text-emerald-700 font-mono">Total: Rp <?= number_format($subtotal_biaya[$k_kat], 0, ',', '.') ?></span>
+                                </div>
+                                <div class="space-y-1 pl-1 text-[11px]">
+                                    <?php foreach ($data_biaya[$k_kat] as $item): ?>
+                                    <div class="flex justify-between items-center text-gray-600">
+                                        <span>• <?= htmlspecialchars($item['nama_komponen']) ?></span>
+                                        <span class="font-mono text-gray-800 font-medium">Rp <?= number_format($item['nominal'], 0, ',', '.') ?></span>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php endif; 
+                        endforeach; ?>
+                        <div class="pt-1 text-center border-t border-gray-100">
+                            <a href="biaya.html" target="_blank" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-950 underline inline-flex items-center gap-1">
+                                Lihat Penjelasan Detail di Halaman Info Biaya &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between text-xs text-amber-900 bg-amber-50/80 p-2.5 rounded-xl border border-amber-200">
+                    <span class="flex items-center gap-1.5"><i class="fas fa-gift text-amber-600"></i> <strong>Diskon <?= $periode_gelombang ?></strong>: Hemat Rp <?= $diskon_gelombang ?> Uang Pangkal</span>
+                </div>
+
+                <!-- Countdown Mini -->
+                <?php if ($show_countdown): ?>
+                <div class="p-3 rounded-2xl bg-gradient-to-r from-emerald-950 to-[#064e45] text-white text-center">
+                    <span class="text-[10px] text-amber-300 font-extrabold uppercase tracking-wider block mb-1">⏳ <?= $countdown_title ?></span>
+                    <div class="flex justify-center items-center gap-2 font-mono text-sm sm:text-base font-black text-amber-300">
+                        <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-hari">00</span> Hari : 
+                        <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-jam">00</span> Jam : 
+                        <span class="bg-black/30 px-2 py-0.5 rounded-lg" id="cd-menit">00</span> Menit : 
+                        <span class="bg-white text-rose-600 px-2 py-0.5 rounded-lg shadow-xs" id="cd-detik">00</span> Detik
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </section>
 
@@ -864,8 +859,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <!-- MENU 8: TESTIMONI (1 HALAMAN PENUH - SINKRON WEB) -->
         <!-- ========================================== -->
         <section id="brosur-testimoni" class="page-screen-mobile snap-start">
-            <div class="my-auto space-y-4">
-                <div class="flex items-center gap-2.5 mb-2">
+            <div class="glass-card rounded-3xl p-5 sm:p-6 border border-emerald-100 shadow-xl my-auto space-y-4">
+                <div class="flex items-center gap-2.5 pb-2.5 border-b border-emerald-100">
                     <span class="w-9 h-9 rounded-2xl bg-teal-700 text-white flex items-center justify-center font-black text-sm shadow">
                         <i class="fas fa-comments"></i>
                     </span>
@@ -875,7 +870,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </div>
                 </div>
 
-                <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-0.5 no-scrollbar">
+                <div class="space-y-3 max-h-[52vh] overflow-y-auto pr-0.5 no-scrollbar">
                     <?php if (!empty($data_testimoni)): ?>
                         <?php foreach ($data_testimoni as $t): ?>
                             <div class="glass-card rounded-2xl p-4 border border-emerald-100 shadow-sm relative">
@@ -1030,7 +1025,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- BEBAS FRAME KOTAK, 4 MENU SECARA DEFAULT, SWIPABLE KANAN-KIRI-->
     <!-- ============================================================ -->
     <div id="brosur-bottom-bar" class="fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.3)] py-1.5 px-1 backdrop-blur-xl transition-colors duration-300" style="background-color: <?= $bottom_bar_bg_color ?>; color: <?= $bottom_bar_text_color ?>;">
-        <div class="max-w-xl mx-auto">
+        <div class="max-w-md mx-auto">
             
             <!-- CAROUSEL TRACK: 4 CARDS PER SCREEN BY DEFAULT, BEBAS FRAME KOTAK -->
             <div id="brosur-bottom-track" class="flex items-center overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory gap-1 px-1 py-0.5">
