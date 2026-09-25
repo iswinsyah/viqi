@@ -130,9 +130,9 @@ $guest_y   = $pos_cover['guest_y'] ?? 45;
 $btn_y     = $pos_cover['btn_y'] ?? 82;
 
 $biaya_pendaftaran = isset($cfg_brosur['biaya_pendaftaran']) ? number_format($cfg_brosur['biaya_pendaftaran'], 0, ',', '.') : '350.000';
-$biaya_pangkal     = isset($cfg_brosur['biaya_pangkal']) ? number_format($cfg_brosur['biaya_pangkal'], 0, ',', '.') : '12.500.000';
-$biaya_tahunan     = isset($cfg_brosur['biaya_tahunan']) ? number_format($cfg_brosur['biaya_tahunan'], 0, ',', '.') : '2.500.000';
-$biaya_spp         = isset($cfg_brosur['biaya_spp']) ? number_format($cfg_brosur['biaya_spp'], 0, ',', '.') : '1.650.000';
+$biaya_pangkal     = isset($cfg_brosur['biaya_pangkal']) ? number_format($cfg_brosur['biaya_pangkal'], 0, ',', '.') : '13.500.000';
+$biaya_tahunan     = isset($cfg_brosur['biaya_tahunan']) ? number_format($cfg_brosur['biaya_tahunan'], 0, ',', '.') : '3.500.000';
+$biaya_spp         = isset($cfg_brosur['biaya_spp']) ? number_format($cfg_brosur['biaya_spp'], 0, ',', '.') : '1.500.000';
 $diskon_gelombang  = isset($cfg_brosur['diskon_gelombang']) ? number_format($cfg_brosur['diskon_gelombang'], 0, ',', '.') : '2.000.000';
 
 // Ambil Data Sinkron dari Database Web (Fasilitas, Pengajar, Kegiatan Santri, Biaya, Testimoni)
@@ -151,7 +151,7 @@ $data_kegiatan = [];
 $q_keg = $conn->query("SELECT * FROM galeri ORDER BY id DESC LIMIT 8");
 if ($q_keg && $q_keg->num_rows > 0) while ($rk = $q_keg->fetch_assoc()) $data_kegiatan[] = $rk;
 
-// 4. Investasi / Komponen Biaya
+// 4. Investasi / Komponen Biaya (Sinkron Langsung dari Tabel 'biaya' / Pengaturan Info Biaya)
 $data_biaya = ['pendaftaran' => [], 'pangkal' => [], 'tahunan' => [], 'spp' => []];
 $subtotal_biaya = ['pendaftaran' => 0, 'pangkal' => 0, 'tahunan' => 0, 'spp' => 0];
 $q_b = $conn->query("SELECT * FROM biaya ORDER BY id ASC");
@@ -164,6 +164,18 @@ if ($q_b && $q_b->num_rows > 0) {
         }
     }
 }
+
+// Sinkronkan nominal biaya Brosur dengan total komponen di Pengaturan Info Biaya (sebagai acuan utama)
+if ($subtotal_biaya['pendaftaran'] > 0) $biaya_pendaftaran = number_format($subtotal_biaya['pendaftaran'], 0, ',', '.');
+if ($subtotal_biaya['pangkal'] > 0)     $biaya_pangkal     = number_format($subtotal_biaya['pangkal'], 0, ',', '.');
+if ($subtotal_biaya['tahunan'] > 0)     $biaya_tahunan     = number_format($subtotal_biaya['tahunan'], 0, ',', '.');
+if ($subtotal_biaya['spp'] > 0)         $biaya_spp         = number_format($subtotal_biaya['spp'], 0, ',', '.');
+
+// Ringkasan nama komponen rincian dinamis
+$desc_pendaftaran = !empty($data_biaya['pendaftaran']) ? implode(' • ', array_map(function($x){ return $x['nama_komponen']; }, $data_biaya['pendaftaran'])) : 'Formulir SPMB & observasi calon santri';
+$desc_pangkal     = !empty($data_biaya['pangkal']) ? implode(' • ', array_map(function($x){ return $x['nama_komponen']; }, $data_biaya['pangkal'])) : 'Ranjang kasur empuk, lemari, seragam 4 stel & modul';
+$desc_tahunan     = !empty($data_biaya['tahunan']) ? implode(' • ', array_map(function($x){ return $x['nama_komponen']; }, $data_biaya['tahunan'])) : 'Karantina tahfidz, ekstrakurikuler & sarana';
+$desc_spp         = !empty($data_biaya['spp']) ? implode(' • ', array_map(function($x){ return $x['nama_komponen']; }, $data_biaya['spp'])) : 'Makan 3x sehari bergizi, asrama AC, laundry & bimbingan';
 
 // 5. Testimoni
 $data_testimoni = [];
@@ -749,37 +761,81 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 <div class="glass-card rounded-3xl p-5 sm:p-6 shadow-lg border border-emerald-100 space-y-3">
                     <div class="divide-y divide-gray-100 text-xs sm:text-sm">
                         <div class="py-2.5 flex justify-between items-center">
-                            <div>
+                            <div class="pr-2">
                                 <span class="font-bold text-gray-900 block">1. Biaya Pendaftaran & Observasi</span>
-                                <span class="text-[10px] text-gray-500">Formulir SPMB & observasi calon santri</span>
+                                <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_pendaftaran) ?></span>
                             </div>
-                            <span class="font-black text-emerald-800 text-sm">Rp <?= $biaya_pendaftaran ?></span>
+                            <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_pendaftaran ?></span>
                         </div>
 
                         <div class="py-2.5 flex justify-between items-center">
-                            <div>
+                            <div class="pr-2">
                                 <span class="font-bold text-gray-900 block">2. Uang Pangkal Masuk</span>
-                                <span class="text-[10px] text-gray-500">Ranjang kasur empuk, lemari, seragam 4 stel & modul</span>
+                                <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_pangkal) ?></span>
                             </div>
-                            <span class="font-black text-emerald-800 text-sm">Rp <?= $biaya_pangkal ?></span>
+                            <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_pangkal ?></span>
                         </div>
 
                         <div class="py-2.5 flex justify-between items-center">
-                            <div>
+                            <div class="pr-2">
                                 <span class="font-bold text-gray-900 block">3. Biaya Pengembangan Tahunan</span>
-                                <span class="text-[10px] text-gray-500">Karantina tahfidz, ekstrakurikuler & sarana</span>
+                                <span class="text-[10px] text-gray-500 line-clamp-1"><?= htmlspecialchars($desc_tahunan) ?></span>
                             </div>
-                            <span class="font-black text-emerald-800 text-sm">Rp <?= $biaya_tahunan ?></span>
+                            <span class="font-black text-emerald-800 text-sm whitespace-nowrap">Rp <?= $biaya_tahunan ?></span>
                         </div>
 
                         <div class="py-3 bg-emerald-50/80 -mx-5 px-5 rounded-2xl border border-emerald-200/60 flex justify-between items-center mt-2">
-                            <div>
+                            <div class="pr-2">
                                 <span class="font-black text-emerald-950 block text-xs sm:text-sm">4. SPP All-in Per Bulan</span>
-                                <span class="text-[10px] text-emerald-800">Makan 3x sehari bergizi, asrama AC, laundry & bimbingan</span>
+                                <span class="text-[10px] text-emerald-800 line-clamp-1"><?= htmlspecialchars($desc_spp) ?></span>
                             </div>
-                            <div class="text-right">
+                            <div class="text-right whitespace-nowrap">
                                 <span class="font-black text-emerald-800 text-sm sm:text-base">Rp <?= $biaya_spp ?></span>
                                 <span class="block text-[9px] text-emerald-600">/ bulan</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accordion Rincian Tiap Komponen (Sinkron Menu Pengaturan Info Biaya) -->
+                    <div class="pt-1">
+                        <button type="button" onclick="const r = document.getElementById('brosur-biaya-detail'); r.classList.toggle('hidden'); this.querySelector('.arrow-icon').classList.toggle('rotate-180');" class="w-full py-2 px-3 rounded-xl bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 text-xs font-bold flex items-center justify-between border border-emerald-200/80 transition">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fas fa-list-ul text-emerald-600"></i>
+                                <span>Rincian Tiap Komponen Biaya</span>
+                            </span>
+                            <i class="fas fa-chevron-down arrow-icon text-[10px] text-emerald-600 transition-transform duration-200"></i>
+                        </button>
+                        
+                        <div id="brosur-biaya-detail" class="hidden mt-2 p-3 bg-white/95 rounded-2xl border border-emerald-100 text-xs space-y-3 max-h-52 overflow-y-auto shadow-inner">
+                            <?php 
+                            $list_kategori_label = [
+                                'pendaftaran' => '1. Biaya Pendaftaran',
+                                'pangkal'     => '2. Uang Pangkal',
+                                'tahunan'     => '3. Biaya Tahunan',
+                                'spp'         => '4. SPP Bulanan'
+                            ];
+                            foreach ($list_kategori_label as $k_kat => $l_kat): 
+                                if (!empty($data_biaya[$k_kat])): ?>
+                                <div class="border-b border-gray-100 pb-2 last:border-0 last:pb-0">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <span class="font-extrabold text-[11px] text-emerald-900"><?= $l_kat ?></span>
+                                        <span class="font-bold text-[10px] text-emerald-700 font-mono">Total: Rp <?= number_format($subtotal_biaya[$k_kat], 0, ',', '.') ?></span>
+                                    </div>
+                                    <div class="space-y-1 pl-1 text-[11px]">
+                                        <?php foreach ($data_biaya[$k_kat] as $item): ?>
+                                        <div class="flex justify-between items-center text-gray-600">
+                                            <span>• <?= htmlspecialchars($item['nama_komponen']) ?></span>
+                                            <span class="font-mono text-gray-800 font-medium">Rp <?= number_format($item['nominal'], 0, ',', '.') ?></span>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php endif; 
+                            endforeach; ?>
+                            <div class="pt-1 text-center border-t border-gray-100">
+                                <a href="biaya.html" target="_blank" class="text-[10px] font-bold text-emerald-700 hover:text-emerald-950 underline inline-flex items-center gap-1">
+                                    Lihat Penjelasan Detail di Halaman Info Biaya &rarr;
+                                </a>
                             </div>
                         </div>
                     </div>

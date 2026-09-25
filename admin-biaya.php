@@ -25,10 +25,32 @@ if ($cek && $cek->fetch_assoc()['tot'] == 0) {
     ('spp', 'Laundry Pakaian (Standar)', 100000)");
 }
 
+// Fungsi Sinkronisasi Otomatis ke Pengaturan Brosur Digital
+function syncBiayaKeBrosur($conn) {
+    $check = $conn->query("SHOW TABLES LIKE 'pengaturan_brosur'");
+    if ($check && $check->num_rows > 0) {
+        $r_tot = $conn->query("SELECT kategori, SUM(nominal) as total FROM biaya GROUP BY kategori");
+        $tot = ['pendaftaran' => 0, 'pangkal' => 0, 'tahunan' => 0, 'spp' => 0];
+        if ($r_tot) {
+            while ($row = $r_tot->fetch_assoc()) {
+                $k = strtolower(trim($row['kategori']));
+                if (isset($tot[$k])) $tot[$k] = (int)$row['total'];
+            }
+        }
+        $conn->query("UPDATE pengaturan_brosur SET 
+            biaya_pendaftaran = {$tot['pendaftaran']},
+            biaya_pangkal = {$tot['pangkal']},
+            biaya_tahunan = {$tot['tahunan']},
+            biaya_spp = {$tot['spp']}
+            WHERE id = 1");
+    }
+}
+
 // 3. Proses Hapus Data
 if (isset($_GET['hapus_id'])) {
     $id = (int)$_GET['hapus_id'];
     $conn->query("DELETE FROM biaya WHERE id = $id");
+    syncBiayaKeBrosur($conn);
     header("Location: admin-biaya.php");
     exit;
 }
@@ -42,12 +64,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($id > 0) {
         $sql = "UPDATE biaya SET kategori='$kategori', nama_komponen='$nama_komponen', nominal=$nominal WHERE id=$id";
-        $pesan_sukses = "Komponen biaya berhasil diperbarui!";
+        $pesan_sukses = "Komponen biaya berhasil diperbarui dan tersinkron ke Brosur!";
     } else {
         $sql = "INSERT INTO biaya (kategori, nama_komponen, nominal) VALUES ('$kategori', '$nama_komponen', $nominal)";
-        $pesan_sukses = "Komponen biaya baru berhasil ditambahkan!";
+        $pesan_sukses = "Komponen biaya baru berhasil ditambahkan dan tersinkron ke Brosur!";
     }
     $conn->query($sql);
+    syncBiayaKeBrosur($conn);
 }
 
 // 5. Ambil data edit jika ada
@@ -58,6 +81,23 @@ if (isset($_GET['edit_id'])) {
     $id = (int)$_GET['edit_id'];
     $res = $conn->query("SELECT * FROM biaya WHERE id = $id");
     if($res) $data_edit = $res->fetch_assoc();
+}
+
+// Sinkronkan ke brosur jika perlu
+syncBiayaKeBrosur($conn);
+
+// Hitung total akumulasi per kategori untuk tampilan ringkasan
+$totals_kategori = ['pendaftaran' => 0, 'pangkal' => 0, 'tahunan' => 0, 'spp' => 0];
+$counts_kategori = ['pendaftaran' => 0, 'pangkal' => 0, 'tahunan' => 0, 'spp' => 0];
+$r_sub = $conn->query("SELECT kategori, COUNT(*) as jml, SUM(nominal) as total FROM biaya GROUP BY kategori");
+if ($r_sub) {
+    while($row = $r_sub->fetch_assoc()) {
+        $k = strtolower(trim($row['kategori']));
+        if (isset($totals_kategori[$k])) {
+            $totals_kategori[$k] = (int)$row['total'];
+            $counts_kategori[$k] = (int)$row['jml'];
+        }
+    }
 }
 
 $active_menu = 'biaya';
@@ -82,6 +122,70 @@ $active_menu = 'biaya';
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-money-bill-wave text-green-600 mr-2"></i>Pengaturan Biaya Pendidikan</h1></div>
             <?php if(isset($pesan_sukses)) echo "<div class='bg-green-100 text-green-700 px-4 py-3 rounded-lg mb-6 shadow-sm'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses</div>"; ?>
+
+            <!-- KARTU RINGKASAN AKUMULASI BIAYA & STATUS SINKRONISASI BROSUR -->
+            <div class="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-emerald-100/80">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-gray-100 gap-3">
+                    <div>
+                        <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                            <i class="fas fa-calculator text-emerald-600"></i>
+                            Total Akumulasi Biaya Pendidikan (Acuan Resmi Sistem)
+                        </h2>
+                        <p class="text-xs text-gray-500 mt-0.5">Jumlah akumulasi dari rincian di bawah ini otomatis menjadi acuan tampilan <strong>Brosur Digital (Menu Investasi Pendidikan)</strong> dan <strong>Halaman Publik Info Biaya</strong>.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 shadow-xs">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                            Tersinkron Otomatis ke Brosur
+                        </span>
+                        <a href="brosur.php#brosur-biaya" target="_blank" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-bold shadow-xs flex items-center gap-1.5 transition">
+                            <i class="fas fa-external-link-alt"></i> Cek Tampilan Brosur
+                        </a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
+                    <!-- 1. Pendaftaran -->
+                    <div class="bg-emerald-50/50 rounded-xl p-4 border border-emerald-200">
+                        <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-emerald-800">
+                            <span>1. Biaya Pendaftaran</span>
+                            <span class="bg-emerald-200/80 text-emerald-800 px-1.5 py-0.5 rounded text-[10px]"><?= $counts_kategori['pendaftaran'] ?> item</span>
+                        </div>
+                        <div class="text-xl font-black text-emerald-950 mt-1.5 font-mono">Rp <?= number_format($totals_kategori['pendaftaran'], 0, ',', '.') ?></div>
+                        <span class="text-[10px] text-emerald-600 mt-1 block">Tampil di Brosur Hal 7</span>
+                    </div>
+
+                    <!-- 2. Uang Pangkal -->
+                    <div class="bg-amber-50/50 rounded-xl p-4 border border-amber-200">
+                        <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                            <span>2. Uang Pangkal Masuk</span>
+                            <span class="bg-amber-200/80 text-amber-800 px-1.5 py-0.5 rounded text-[10px]"><?= $counts_kategori['pangkal'] ?> item</span>
+                        </div>
+                        <div class="text-xl font-black text-amber-950 mt-1.5 font-mono">Rp <?= number_format($totals_kategori['pangkal'], 0, ',', '.') ?></div>
+                        <span class="text-[10px] text-amber-600 mt-1 block">Tampil di Brosur Hal 7</span>
+                    </div>
+
+                    <!-- 3. Biaya Tahunan -->
+                    <div class="bg-purple-50/50 rounded-xl p-4 border border-purple-200">
+                        <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-purple-800">
+                            <span>3. Biaya Tahunan</span>
+                            <span class="bg-purple-200/80 text-purple-800 px-1.5 py-0.5 rounded text-[10px]"><?= $counts_kategori['tahunan'] ?> item</span>
+                        </div>
+                        <div class="text-xl font-black text-purple-950 mt-1.5 font-mono">Rp <?= number_format($totals_kategori['tahunan'], 0, ',', '.') ?></div>
+                        <span class="text-[10px] text-purple-600 mt-1 block">Tampil di Brosur Hal 7</span>
+                    </div>
+
+                    <!-- 4. SPP Bulanan -->
+                    <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-200">
+                        <div class="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-blue-800">
+                            <span>4. SPP All-in Bulanan</span>
+                            <span class="bg-blue-200/80 text-blue-800 px-1.5 py-0.5 rounded text-[10px]"><?= $counts_kategori['spp'] ?> item</span>
+                        </div>
+                        <div class="text-xl font-black text-blue-950 mt-1.5 font-mono">Rp <?= number_format($totals_kategori['spp'], 0, ',', '.') ?> <span class="text-xs font-normal text-blue-700">/bln</span></div>
+                        <span class="text-[10px] text-blue-600 mt-1 block">Tampil di Brosur Hal 7</span>
+                    </div>
+                </div>
+            </div>
 
             <!-- FORM INPUT -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
@@ -129,16 +233,29 @@ $active_menu = 'biaya';
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php
+                            $badge_map = [
+                                'pendaftaran' => ['bg' => 'bg-emerald-100 text-emerald-800 border-emerald-200', 'label' => '1. Pendaftaran'],
+                                'pangkal'     => ['bg' => 'bg-amber-100 text-amber-800 border-amber-200',     'label' => '2. Uang Pangkal'],
+                                'tahunan'     => ['bg' => 'bg-purple-100 text-purple-800 border-purple-200',   'label' => '3. Tahunan'],
+                                'spp'         => ['bg' => 'bg-blue-100 text-blue-800 border-blue-200',       'label' => '4. SPP Bulanan']
+                            ];
                             $res = $conn->query("SELECT * FROM biaya ORDER BY FIELD(kategori, 'pendaftaran', 'pangkal', 'tahunan', 'spp'), id ASC");
                             if ($res && $res->num_rows > 0) {
-                                while($row = $res->fetch_assoc()) { ?>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 text-sm font-semibold uppercase text-gray-500"><?= $row['kategori'] ?></td>
-                                    <td class="px-4 py-3 font-bold text-gray-900"><?= htmlspecialchars($row['nama_komponen']) ?></td>
-                                    <td class="px-4 py-3 text-right font-mono text-gray-700">Rp <?= number_format($row['nominal'], 0, ',', '.') ?></td>
+                                while($row = $res->fetch_assoc()) { 
+                                    $kat = strtolower(trim($row['kategori']));
+                                    $badge = $badge_map[$kat] ?? ['bg' => 'bg-gray-100 text-gray-800 border-gray-200', 'label' => $kat];
+                                ?>
+                                <tr class="hover:bg-gray-50/80 transition">
+                                    <td class="px-4 py-3 text-xs">
+                                        <span class="inline-flex items-center px-2.5 py-1 rounded-md font-bold border <?= $badge['bg'] ?>">
+                                            <?= $badge['label'] ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 font-bold text-gray-900 text-sm"><?= htmlspecialchars($row['nama_komponen']) ?></td>
+                                    <td class="px-4 py-3 text-right font-mono font-bold text-gray-800 text-sm">Rp <?= number_format($row['nominal'], 0, ',', '.') ?></td>
                                     <td class="px-4 py-3 text-center font-medium">
-                                        <a href="?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
-                                        <a href="?hapus_id=<?= $row['id'] ?>" onclick="return confirm('Yakin menghapus komponen biaya ini?')" class="text-rose-600 hover:text-rose-900" title="Hapus"><i class="fas fa-trash"></i></a>
+                                        <a href="?edit_id=<?= $row['id'] ?>" class="text-blue-600 hover:text-blue-900 mr-3 inline-flex items-center gap-1 font-bold text-xs" title="Edit"><i class="fas fa-edit"></i> Edit</a>
+                                        <a href="?hapus_id=<?= $row['id'] ?>" onclick="return confirm('Yakin menghapus komponen biaya ini? Nilai total pada Brosur dan Website akan otomatis terupdate.')" class="text-rose-600 hover:text-rose-900 inline-flex items-center gap-1 font-bold text-xs" title="Hapus"><i class="fas fa-trash"></i> Hapus</a>
                                     </td>
                                 </tr>
                             <?php } } else { echo "<tr><td colspan='4' class='text-center py-6 text-gray-500'>Belum ada data biaya.</td></tr>"; } ?>

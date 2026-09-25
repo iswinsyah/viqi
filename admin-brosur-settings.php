@@ -325,6 +325,12 @@ if ($q_b && $q_b->num_rows > 0) {
     }
 }
 
+// Acuan Utama dari Pengaturan Info Biaya
+$biaya_pendaftaran_val = ($web_biaya_subtotal['pendaftaran'] > 0) ? $web_biaya_subtotal['pendaftaran'] : ($cfg['biaya_pendaftaran'] ?? 350000);
+$biaya_pangkal_val     = ($web_biaya_subtotal['pangkal'] > 0) ? $web_biaya_subtotal['pangkal'] : ($cfg['biaya_pangkal'] ?? 13500000);
+$biaya_tahunan_val     = ($web_biaya_subtotal['tahunan'] > 0) ? $web_biaya_subtotal['tahunan'] : ($cfg['biaya_tahunan'] ?? 3500000);
+$biaya_spp_val         = ($web_biaya_subtotal['spp'] > 0) ? $web_biaya_subtotal['spp'] : ($cfg['biaya_spp'] ?? 1500000);
+
 $web_testimoni = [];
 $q_t = $conn->query("SELECT * FROM testimoni ORDER BY id DESC");
 if ($q_t && $q_t->num_rows > 0) while ($r = $q_t->fetch_assoc()) $web_testimoni[] = $r;
@@ -1102,22 +1108,35 @@ $active_menu = 'brosur_settings';
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <div class="mt-4 p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                            <div>
+                                <span class="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                                    <i class="fas fa-link text-emerald-600"></i>
+                                    Sinkron Otomatis dari Pengaturan Info Biaya
+                                </span>
+                                <p class="text-[11px] text-emerald-700 mt-0.5">Jumlah biaya di bawah ini otomatis dihitung dari akumulasi komponen di menu <strong>Info Biaya</strong>.</p>
+                            </div>
+                            <a href="admin-biaya.php" class="text-xs bg-white text-emerald-800 hover:text-emerald-950 font-bold px-3 py-1.5 rounded-xl border border-emerald-300 shadow-xs flex items-center gap-1 whitespace-nowrap transition">
+                                <i class="fas fa-edit"></i> Kelola Rincian Biaya &rarr;
+                            </a>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">1. Biaya Pendaftaran & Observasi (Rp):</label>
-                                <input type="number" name="biaya_pendaftaran" id="input-biaya-pendaftaran" value="<?= $cfg['biaya_pendaftaran'] ?? 350000 ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
+                                <input type="number" name="biaya_pendaftaran" id="input-biaya-pendaftaran" value="<?= $biaya_pendaftaran_val ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">2. Uang Pangkal Masuk (Rp):</label>
-                                <input type="number" name="biaya_pangkal" id="input-biaya-pangkal" value="<?= $cfg['biaya_pangkal'] ?? 12500000 ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
+                                <input type="number" name="biaya_pangkal" id="input-biaya-pangkal" value="<?= $biaya_pangkal_val ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">3. Biaya Tahunan (Rp):</label>
-                                <input type="number" name="biaya_tahunan" id="input-biaya-tahunan" value="<?= $cfg['biaya_tahunan'] ?? 2500000 ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
+                                <input type="number" name="biaya_tahunan" id="input-biaya-tahunan" value="<?= $biaya_tahunan_val ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 mb-1">4. SPP All-in Bulanan (Rp):</label>
-                                <input type="number" name="biaya_spp" id="input-biaya-spp" value="<?= $cfg['biaya_spp'] ?? 1650000 ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
+                                <input type="number" name="biaya_spp" id="input-biaya-spp" value="<?= $biaya_spp_val ?>" oninput="updateLiveInvestasi()" required class="w-full px-4 py-2 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478]">
                             </div>
                         </div>
                     </div>
@@ -1447,19 +1466,19 @@ $active_menu = 'brosur_settings';
                                 <div class="space-y-1 text-[7.5px]">
                                     <div class="flex justify-between items-center py-1 border-b border-slate-100">
                                         <span class="text-slate-500">1. Pendaftaran:</span>
-                                        <span class="font-bold text-slate-800" id="sim-val-pendaftaran">Rp <?= number_format($cfg['biaya_pendaftaran'] ?? 350000, 0, ',', '.') ?></span>
+                                        <span class="font-bold text-slate-800" id="sim-val-pendaftaran">Rp <?= number_format($biaya_pendaftaran_val, 0, ',', '.') ?></span>
                                     </div>
                                     <div class="flex justify-between items-center py-1 border-b border-slate-100">
                                         <span class="text-slate-500">2. Uang Pangkal:</span>
-                                        <span class="font-bold text-emerald-700" id="sim-val-pangkal">Rp <?= number_format($cfg['biaya_pangkal'] ?? 12500000, 0, ',', '.') ?></span>
+                                        <span class="font-bold text-emerald-700" id="sim-val-pangkal">Rp <?= number_format($biaya_pangkal_val, 0, ',', '.') ?></span>
                                     </div>
                                     <div class="flex justify-between items-center py-1 border-b border-slate-100">
                                         <span class="text-slate-500">3. Biaya Tahunan:</span>
-                                        <span class="font-bold text-slate-800" id="sim-val-tahunan">Rp <?= number_format($cfg['biaya_tahunan'] ?? 2500000, 0, ',', '.') ?></span>
+                                        <span class="font-bold text-slate-800" id="sim-val-tahunan">Rp <?= number_format($biaya_tahunan_val, 0, ',', '.') ?></span>
                                     </div>
                                     <div class="flex justify-between items-center py-1.5 bg-amber-50 rounded-lg px-2">
                                         <span class="font-bold text-amber-950">4. SPP Bulanan (All-in):</span>
-                                        <span class="font-black text-amber-700" id="sim-val-spp">Rp <?= number_format($cfg['biaya_spp'] ?? 1650000, 0, ',', '.') ?>/bln</span>
+                                        <span class="font-black text-amber-700" id="sim-val-spp">Rp <?= number_format($biaya_spp_val, 0, ',', '.') ?>/bln</span>
                                     </div>
                                 </div>
 
@@ -2118,14 +2137,17 @@ $active_menu = 'brosur_settings';
         function updateLiveInvestasi() {
             const pendaftaran = parseInt(document.getElementById('input-biaya-pendaftaran')?.value) || 0;
             const pangkal = parseInt(document.getElementById('input-biaya-pangkal')?.value) || 0;
+            const tahunan = parseInt(document.getElementById('input-biaya-tahunan')?.value) || 0;
             const spp = parseInt(document.getElementById('input-biaya-spp')?.value) || 0;
 
             const elPendaftaran = document.getElementById('sim-val-pendaftaran');
             const elPangkal = document.getElementById('sim-val-pangkal');
+            const elTahunan = document.getElementById('sim-val-tahunan');
             const elSpp = document.getElementById('sim-val-spp');
 
             if (elPendaftaran) elPendaftaran.innerText = 'Rp ' + pendaftaran.toLocaleString('id-ID');
             if (elPangkal) elPangkal.innerText = 'Rp ' + pangkal.toLocaleString('id-ID');
+            if (elTahunan) elTahunan.innerText = 'Rp ' + tahunan.toLocaleString('id-ID');
             if (elSpp) elSpp.innerText = 'Rp ' + spp.toLocaleString('id-ID') + '/bln';
         }
 
