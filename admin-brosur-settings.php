@@ -22,6 +22,22 @@ if (isset($_FILES['ajax_image_file']) && $_FILES['ajax_image_file']['error'] ===
     exit;
 }
 
+// Handler AJAX Upload Video Sisipan (Instant Upload)
+if (isset($_FILES['ajax_video_file']) && $_FILES['ajax_video_file']['error'] === UPLOAD_ERR_OK) {
+    header('Content-Type: application/json');
+    $ext = strtolower(pathinfo($_FILES['ajax_video_file']['name'], PATHINFO_EXTENSION));
+    if (in_array($ext, ['mp4', 'webm', 'ogg', 'mov', 'mkv'])) {
+        if (!is_dir('upload')) mkdir('upload', 0755, true);
+        $filename = 'upload/vid_layer_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+        if (move_uploaded_file($_FILES['ajax_video_file']['tmp_name'], $filename)) {
+            echo json_encode(['success' => true, 'url' => $filename]);
+            exit;
+        }
+    }
+    echo json_encode(['success' => false, 'error' => 'Format file video tidak didukung atau gagal upload.']);
+    exit;
+}
+
 // Pastikan baris pengaturan_brosur ada di database
 $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     id INT PRIMARY KEY DEFAULT 1,
@@ -81,10 +97,11 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
-// Pastikan kolom untuk custom text, images, dan multi-layer JSON tersedia di tabel pengaturan_brosur
+// Pastikan kolom untuk custom text, images, videos, dan multi-layer JSON tersedia di tabel pengaturan_brosur
 $columns_to_check = [
     'custom_text_items'   => "LONGTEXT",
     'custom_image_items'  => "LONGTEXT",
+    'custom_video_items'  => "LONGTEXT",
     'custom_text_content' => "TEXT",
     'custom_text_format'  => "VARCHAR(20) DEFAULT 'h2'",
     'custom_text_color'   => "VARCHAR(30) DEFAULT '#ffffff'",
@@ -138,13 +155,13 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_koleksi') {
 $pesan_sukses = (($_GET['msg'] ?? '') === 'koleksi_deleted') ? 'Background berhasil dihapus dari koleksi.' : '';
 $pesan_error  = '';
 
-// Tab Aktif (Tab 1: Background, Tab 2: Tulisan, Tab 3: Gambar)
+// Tab Aktif (Tab 1: Background, Tab 2: Tulisan, Tab 3: Gambar, Tab 4: Video)
 $current_tab = $_POST['active_tab'] ?? $_GET['tab'] ?? 'bg';
-if (!in_array($current_tab, ['bg', 'text', 'image'])) {
+if (!in_array($current_tab, ['bg', 'text', 'image', 'video'])) {
     $current_tab = 'bg';
 }
 
-// Proses Simpan Pengaturan (Background, Tulisan Dinamis & Gambar Sisipan)
+// Proses Simpan Pengaturan (Background, Tulisan Dinamis, Gambar Sisipan & Video Sisipan)
 if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     $action_type = $_POST['action_type'] ?? 'save_bg';
 
@@ -251,6 +268,45 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         } else {
             $pesan_error = "Gagal menyimpan gambar: " . $conn->error;
         }
+    } else if ($action_type === 'save_videos') {
+        $current_tab = 'video';
+        // Simpan Video Sisipan (Multi-Layer Videos)
+        $json_raw = $_POST['custom_video_items_json'] ?? '[]';
+        $decoded = json_decode($json_raw, true);
+        if (!is_array($decoded)) $decoded = [];
+
+        $clean_vid_items = [];
+        foreach ($decoded as $idx => $vid) {
+            if (empty($vid['url'])) continue;
+            $clean_vid_items[] = [
+                'id'            => !empty($vid['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $vid['id']) : 'vid_' . ($idx + 1),
+                'url'           => trim($vid['url']),
+                'shape'         => in_array($vid['shape'] ?? '', ['kotak', 'persegi_panjang', 'persegi_panjang_wide', 'rounded', 'bulat', 'oval', 'kubah', 'perisai', 'bintang']) ? $vid['shape'] : 'persegi_panjang_wide',
+                'border_enable' => !empty($vid['border_enable']) ? 1 : 0,
+                'border_width'  => max(0, min(20, (int)($vid['border_width'] ?? 2))),
+                'border_color'  => !empty($vid['border_color']) ? $vid['border_color'] : '#ffffff',
+                'border_style'  => in_array($vid['border_style'] ?? '', ['solid', 'dashed', 'double']) ? $vid['border_style'] : 'solid',
+                'shadow_style'  => in_array($vid['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'glow_gold', 'glow_teal']) ? $vid['shadow_style'] : 'soft',
+                'rotation'      => max(-180, min(180, (float)($vid['rotation'] ?? 0))),
+                'posX'          => round(max(0, min(100, (float)($vid['posX'] ?? 50.0))), 2),
+                'posY'          => round(max(0, min(100, (float)($vid['posY'] ?? 50.0))), 2),
+                'width'         => max(10, min(100, (int)($vid['width'] ?? 75))),
+                'autoplay'      => !empty($vid['autoplay']) ? 1 : 0,
+                'loop'          => !empty($vid['loop']) ? 1 : 0,
+                'muted'         => !empty($vid['muted']) ? 1 : 0,
+                'controls'      => !empty($vid['controls']) ? 1 : 0
+            ];
+        }
+
+        $final_vid_json = json_encode($clean_vid_items, JSON_UNESCAPED_UNICODE);
+        $final_vid_json_esc = $conn->real_escape_string($final_vid_json);
+
+        $sql_vid = "UPDATE pengaturan_brosur SET custom_video_items = '$final_vid_json_esc' WHERE id = 1";
+        if ($conn->query($sql_vid)) {
+            $pesan_sukses = "Alhamdulillah! Pengaturan video sisipan (" . count($clean_vid_items) . " video) berhasil disimpan.";
+        } else {
+            $pesan_error = "Gagal menyimpan video: " . $conn->error;
+        }
     } else {
         $current_tab = 'bg';
         // Simpan Background
@@ -333,6 +389,15 @@ if ($raw_images !== null && $raw_images !== '') {
     if (!is_array($image_items)) $image_items = [];
 } else {
     $image_items = [];
+}
+
+// Ambil daftar video items atau inisialisasi default
+$raw_videos = $cfg['custom_video_items'] ?? null;
+if ($raw_videos !== null && $raw_videos !== '') {
+    $video_items = json_decode($raw_videos, true);
+    if (!is_array($video_items)) $video_items = [];
+} else {
+    $video_items = [];
 }
 
 $active_menu = 'brosur_settings';
@@ -494,30 +559,39 @@ $active_menu = 'brosur_settings';
                 </div>
                 <?php endif; ?>
 
-                <!-- NAVIGASI TAB UTAMA (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR) -->
-                <div class="bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-1.5 sticky top-20 z-20">
+                <!-- NAVIGASI TAB UTAMA (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR, TAB 4: VIDEO) -->
+                <div class="bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-1 sm:gap-1.5 sticky top-20 z-20 overflow-x-auto">
                     
                     <!-- TAB 1: BACKGROUND BROSUR -->
-                    <button type="button" id="tab-btn-bg" onclick="switchTab('bg')" class="tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer">
+                    <button type="button" id="tab-btn-bg" onclick="switchTab('bg')" class="tab-nav-btn flex-1 min-w-[90px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer">
                         <i class="fas fa-image text-sm sm:text-base"></i>
                         <span>1. Background</span>
                     </button>
 
                     <!-- TAB 2: KOLOM TULISAN -->
-                    <button type="button" id="tab-btn-text" onclick="switchTab('text')" class="tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                    <button type="button" id="tab-btn-text" onclick="switchTab('text')" class="tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
                         <i class="fas fa-font text-sm sm:text-base"></i>
                         <span>2. Tulisan</span>
-                        <span id="tab-badge-text" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">
+                        <span id="tab-badge-text" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">
                             <?= count($text_items) ?>
                         </span>
                     </button>
 
                     <!-- TAB 3: SISIPKAN GAMBAR -->
-                    <button type="button" id="tab-btn-image" onclick="switchTab('image')" class="tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                    <button type="button" id="tab-btn-image" onclick="switchTab('image')" class="tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
                         <i class="fas fa-shapes text-sm sm:text-base"></i>
                         <span>3. Gambar</span>
-                        <span id="tab-badge-image" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-800">
+                        <span id="tab-badge-image" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-800">
                             <?= count($image_items) ?>
+                        </span>
+                    </button>
+
+                    <!-- TAB 4: SISIPKAN VIDEO -->
+                    <button type="button" id="tab-btn-video" onclick="switchTab('video')" class="tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                        <i class="fas fa-video text-sm sm:text-base"></i>
+                        <span>4. Video</span>
+                        <span id="tab-badge-video" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">
+                            <?= count($video_items) ?>
                         </span>
                     </button>
                 </div>
@@ -677,7 +751,7 @@ $active_menu = 'brosur_settings';
                                     <!-- Label Judul / Info -->
                                     <div class="p-2.5 bg-slate-900 border-t border-slate-800 text-white">
                                         <p class="text-[10.5px] font-bold truncate text-slate-200" title="<?= htmlspecialchars($kb['judul']) ?>">
-                                            <?= htmlspecialchars($kb['judul']) ?>
+                                             <?= htmlspecialchars($kb['judul']) ?>
                                         </p>
                                         <span class="text-[8.5px] text-slate-400 font-mono block mt-0.5">
                                             <?= date('d M Y', strtotime($kb['created_at'])) ?>
@@ -726,118 +800,184 @@ $active_menu = 'brosur_settings';
                             <!-- Tombol Tambah & Hapus Semua Tulisan -->
                             <div class="flex items-center gap-2 shrink-0">
                                 <button type="button" onclick="clearAllTextRows()" id="btn-clear-all-text" class="px-3 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer <?= empty($text_items) ? 'hidden' : '' ?>" title="Hapus semua kolom tulisan">
-                                <i class="fas fa-trash-can text-xs"></i>
-                                <span>Hapus Semua</span>
-                            </button>
-                            <button type="button" onclick="addNewTextRow()" class="px-4 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
-                                <i class="fas fa-plus text-xs"></i>
-                                <span>+ Tambah Kolom Tulisan</span>
-                            </button>
+                                    <i class="fas fa-trash-can text-xs"></i>
+                                    <span>Hapus Semua</span>
+                                </button>
+                                <button type="button" onclick="addNewTextRow()" class="px-4 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
+                                    <i class="fas fa-plus text-xs"></i>
+                                    <span>+ Tambah Kolom Tulisan</span>
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- FORM UTAMA TULISAN DINAMIS -->
+                        <form action="" method="POST" id="form-pengaturan-text" class="space-y-4">
+                            <input type="hidden" name="action_type" value="save_text">
+                            <input type="hidden" name="active_tab" value="text">
+                            <input type="hidden" name="custom_text_items_json" id="input-text-items-json" value="">
+
+                            <!-- DAFTAR BARIS KOLOM TULISAN (RINGKAS & SIMPEL 1 BARIS PER ITEM) -->
+                            <div id="text-rows-container" class="space-y-3">
+                                <!-- Diisi secara dinamis oleh Javascript renderRows() -->
+                            </div>
+
+                            <!-- PETUNJUK RINGKAS -->
+                            <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-amber-900 text-[11px] flex items-center gap-2.5">
+                                <i class="fas fa-arrows-up-down-left-right text-amber-600 text-sm shrink-0"></i>
+                                <span><strong>Tips:</strong> Setiap kolom tulisan dapat langsung <strong>diklik dan digeser (drag & drop)</strong> posisinya di layar simulasi HP sebelah kanan. Garis bantu tengah akan menyala otomatis saat presisi!</span>
+                            </div>
+
+                            <!-- TOMBOL AKSI BAWAH: TAMBAH & SIMPAN -->
+                            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <button type="button" onclick="addNewTextRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <i class="fas fa-plus text-xs text-teal-600"></i>
+                                    <span>Tambah Kolom Baru</span>
+                                </button>
+
+                                <button type="button" onclick="saveAllTextItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-base"></i>
+                                    <span>Simpan Semua Kolom Tulisan</span>
+                                </button>
+                            </div>
+
+                        </form>
                     </div>
 
-                    <!-- FORM UTAMA TULISAN DINAMIS -->
-                    <form action="" method="POST" id="form-pengaturan-text" class="space-y-4">
-                        <input type="hidden" name="action_type" value="save_text">
-                        <input type="hidden" name="active_tab" value="text">
-                        <input type="hidden" name="custom_text_items_json" id="input-text-items-json" value="">
-
-                        <!-- DAFTAR BARIS KOLOM TULISAN (RINGKAS & SIMPEL 1 BARIS PER ITEM) -->
-                        <div id="text-rows-container" class="space-y-3">
-                            <!-- Diisi secara dinamis oleh Javascript renderRows() -->
-                        </div>
-
-                        <!-- PETUNJUK RINGKAS -->
-                        <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-amber-900 text-[11px] flex items-center gap-2.5">
-                            <i class="fas fa-arrows-up-down-left-right text-amber-600 text-sm shrink-0"></i>
-                            <span><strong>Tips:</strong> Setiap kolom tulisan dapat langsung <strong>diklik dan digeser (drag & drop)</strong> posisinya di layar simulasi HP sebelah kanan. Garis bantu tengah akan menyala otomatis saat presisi!</span>
-                        </div>
-
-                        <!-- TOMBOL AKSI BAWAH: TAMBAH & SIMPAN -->
-                        <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <button type="button" onclick="addNewTextRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
-                                <i class="fas fa-plus text-xs text-teal-600"></i>
-                                <span>Tambah Kolom Baru</span>
-                            </button>
-
-                            <button type="button" onclick="saveAllTextItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
-                                <i class="fas fa-save text-base"></i>
-                                <span>Simpan Semua Kolom Tulisan</span>
-                            </button>
-                        </div>
-
-                    </form>
                 </div>
 
-            </div>
-
-            <!-- ========================================== -->
-            <!-- KONTEN TAB 3: PENGATURAN SISIPKAN GAMBAR   -->
-            <!-- ========================================== -->
-            <div id="tab-content-image" class="tab-pane hidden space-y-6">
-                
-                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
+                <!-- ========================================== -->
+                <!-- KONTEN TAB 3: PENGATURAN SISIPKAN GAMBAR   -->
+                <!-- ========================================== -->
+                <div id="tab-content-image" class="tab-pane hidden space-y-6">
                     
-                    <!-- Header Kartu Gambar -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg shadow-2xs">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Sisipkan Gambar / Foto Frame</h2>
-                                    <span id="img-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-sky-100 text-sky-800">
-                                        <?= count($image_items) ?> Gambar
-                                    </span>
-                                </div>
-                                <p class="text-xs text-slate-500">Bentuk bingkai (kotak, bulat, kubah, dll), garis tepi, bayangan, rotasi miring & drag bebas</p>
-                            </div>
-                        </div>
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
                         
-                        <!-- Tombol Tambah & Hapus Semua Gambar -->
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button type="button" onclick="clearAllImageRows()" id="btn-clear-all-images" class="px-3 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer <?= empty($image_items) ? 'hidden' : '' ?>" title="Hapus semua gambar yang disisipkan">
-                                <i class="fas fa-trash-can text-xs"></i>
-                                <span>Hapus Semua</span>
-                            </button>
-                            <button type="button" onclick="addNewImageRow()" class="px-4 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
-                                <i class="fas fa-plus text-xs"></i>
-                                <span>+ Sisipkan Gambar</span>
-                            </button>
+                        <!-- Header Kartu Gambar -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="font-black text-base sm:text-lg text-slate-900">Sisipkan Gambar / Foto Frame</h2>
+                                        <span id="img-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-sky-100 text-sky-800">
+                                            <?= count($image_items) ?> Gambar
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500">Bentuk bingkai (kotak, bulat, kubah, dll), garis tepi, bayangan, rotasi miring & drag bebas</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Tombol Tambah & Hapus Semua Gambar -->
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button type="button" onclick="clearAllImageRows()" id="btn-clear-all-images" class="px-3 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer <?= empty($image_items) ? 'hidden' : '' ?>" title="Hapus semua gambar yang disisipkan">
+                                    <i class="fas fa-trash-can text-xs"></i>
+                                    <span>Hapus Semua</span>
+                                </button>
+                                <button type="button" onclick="addNewImageRow()" class="px-4 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
+                                    <i class="fas fa-plus text-xs"></i>
+                                    <span>+ Sisipkan Gambar</span>
+                                </button>
+                            </div>
                         </div>
+
+                        <!-- FORM UTAMA GAMBAR SISIPAN -->
+                        <form action="" method="POST" id="form-pengaturan-images" class="space-y-4">
+                            <input type="hidden" name="action_type" value="save_images">
+                            <input type="hidden" name="active_tab" value="image">
+                            <input type="hidden" name="custom_image_items_json" id="input-image-items-json" value="">
+
+                            <!-- DAFTAR BARIS GAMBAR SISIPAN (RINGKAS & LENGKAP) -->
+                            <div id="image-rows-container" class="space-y-3">
+                                <!-- Diisi secara dinamis oleh Javascript renderImageRows() -->
+                            </div>
+
+                            <!-- TOMBOL AKSI BAWAH GAMBAR -->
+                            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <button type="button" onclick="addNewImageRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <i class="fas fa-plus text-xs text-sky-600"></i>
+                                    <span>Tambah Gambar Lain</span>
+                                </button>
+
+                                <button type="button" onclick="saveAllImageItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-teal-700 hover:from-sky-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-base"></i>
+                                    <span>Simpan Semua Gambar</span>
+                                </button>
+                            </div>
+
+                        </form>
                     </div>
 
-                    <!-- FORM UTAMA GAMBAR SISIPAN -->
-                    <form action="" method="POST" id="form-pengaturan-images" class="space-y-4">
-                        <input type="hidden" name="action_type" value="save_images">
-                        <input type="hidden" name="active_tab" value="image">
-                        <input type="hidden" name="custom_image_items_json" id="input-image-items-json" value="">
+                </div>
 
-                        <!-- DAFTAR BARIS GAMBAR SISIPAN (RINGKAS & LENGKAP) -->
-                        <div id="image-rows-container" class="space-y-3">
-                            <!-- Diisi secara dinamis oleh Javascript renderImageRows() -->
+                <!-- ========================================== -->
+                <!-- KONTEN TAB 4: PENGATURAN SISIPKAN VIDEO   -->
+                <!-- ========================================== -->
+                <div id="tab-content-video" class="tab-pane hidden space-y-6">
+                    
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
+                        
+                        <!-- Header Kartu Video -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="font-black text-base sm:text-lg text-slate-900">Sisipkan Video Frame Player</h2>
+                                        <span id="vid-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-rose-100 text-rose-800">
+                                            <?= count($video_items) ?> Video
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500">Bisa upload file MP4/WebM atau pasang link YouTube / Shorts / Direct Video dengan bingkai dan drag bebas</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Tombol Tambah & Hapus Semua Video -->
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button type="button" onclick="clearAllVideoRows()" id="btn-clear-all-videos" class="px-3 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer <?= empty($video_items) ? 'hidden' : '' ?>" title="Hapus semua video yang disisipkan">
+                                    <i class="fas fa-trash-can text-xs"></i>
+                                    <span>Hapus Semua</span>
+                                </button>
+                                <button type="button" onclick="addNewVideoRow()" class="px-4 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
+                                    <i class="fas fa-plus text-xs"></i>
+                                    <span>+ Sisipkan Video</span>
+                                </button>
+                            </div>
                         </div>
 
-                        <!-- TOMBOL AKSI BAWAH GAMBAR -->
-                        <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <button type="button" onclick="addNewImageRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
-                                <i class="fas fa-plus text-xs text-sky-600"></i>
-                                <span>Tambah Gambar Lain</span>
-                            </button>
+                        <!-- FORM UTAMA VIDEO SISIPAN -->
+                        <form action="" method="POST" id="form-pengaturan-videos" class="space-y-4">
+                            <input type="hidden" name="action_type" value="save_videos">
+                            <input type="hidden" name="active_tab" value="video">
+                            <input type="hidden" name="custom_video_items_json" id="input-video-items-json" value="">
 
-                            <button type="button" onclick="saveAllImageItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-teal-700 hover:from-sky-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
-                                <i class="fas fa-save text-base"></i>
-                                <span>Simpan Semua Gambar</span>
-                            </button>
-                        </div>
+                            <!-- DAFTAR BARIS VIDEO SISIPAN (RINGKAS & LENGKAP) -->
+                            <div id="video-rows-container" class="space-y-3">
+                                <!-- Diisi secara dinamis oleh Javascript renderVideoRows() -->
+                            </div>
 
-                    </form>
+                            <!-- TOMBOL AKSI BAWAH VIDEO -->
+                            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <button type="button" onclick="addNewVideoRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <i class="fas fa-plus text-xs text-rose-600"></i>
+                                    <span>Tambah Video Lain</span>
+                                </button>
+
+                                <button type="button" onclick="saveAllVideoItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 via-rose-700 to-amber-700 hover:from-rose-700 hover:to-amber-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-base"></i>
+                                    <span>Simpan Semua Video</span>
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+
                 </div>
 
             </div>
-
-        </div>
 
             <!-- PANEL KANAN: LAYAR SIMULASI INTERAKTIF (STICKY DI KANAN LAYAR PC) -->
             <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 self-start flex flex-col items-center lg:items-end">
@@ -858,7 +998,7 @@ $active_menu = 'brosur_settings';
                         </div>
                     </div>
 
-                    <!-- KANVAS SIMULASI BACKGROUND PORTRAIT MURNI DENGAN GAMBAR & TULISAN DRAGGABLE -->
+                    <!-- KANVAS SIMULASI BACKGROUND PORTRAIT MURNI DENGAN GAMBAR, VIDEO & TULISAN DRAGGABLE -->
                     <div class="bg-simulation-canvas relative w-full overflow-hidden transition-all duration-300" id="phone-container">
                         
                         <!-- GAMBAR BACKGROUND PORTRAIT -->
@@ -888,6 +1028,11 @@ $active_menu = 'brosur_settings';
                             <!-- CONTAINER LAYER GAMBAR SISIPAN DI LAYAR SIMULASI -->
                             <div id="sim-image-layers-container" class="absolute inset-0 pointer-events-none z-20">
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimImageLayers() -->
+                            </div>
+
+                            <!-- CONTAINER LAYER VIDEO SISIPAN DI LAYAR SIMULASI -->
+                            <div id="sim-video-layers-container" class="absolute inset-0 pointer-events-none z-25">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSimVideoLayers() -->
                             </div>
 
                             <!-- CONTAINER LAYER TULISAN DI LAYAR SIMULASI -->
@@ -946,22 +1091,28 @@ $active_menu = 'brosur_settings';
             imageItems = [];
         }
 
+        // State Array Video Sisipan
+        let videoItems = <?= json_encode($video_items, JSON_UNESCAPED_UNICODE) ?>;
+        if (!Array.isArray(videoItems)) {
+            videoItems = [];
+        }
+
         // Tab Aktif State
         let currentActiveTab = '<?= $current_tab ?>';
 
         function switchTab(tab) {
-            if (!['bg', 'text', 'image'].includes(tab)) tab = 'bg';
+            if (!['bg', 'text', 'image', 'video'].includes(tab)) tab = 'bg';
             currentActiveTab = tab;
 
-            const tabs = ['bg', 'text', 'image'];
+            const tabs = ['bg', 'text', 'image', 'video'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const pane = document.getElementById(`tab-content-${t}`);
                 if (btn) {
                     if (t === tab) {
-                        btn.className = 'tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer';
+                        btn.className = 'tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer';
                     } else {
-                        btn.className = 'tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
+                        btn.className = 'tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
                     }
                 }
                 if (pane) {
@@ -994,18 +1145,37 @@ $active_menu = 'brosur_settings';
             { id: 'Outfit',            name: 'Outfit (Trendy)' }
         ];
 
-        // Pilihan Bentuk Bingkai Gambar
+        // Pilihan Bentuk Bingkai Gambar & Video
         const frameShapes = [
+            { id: 'persegi_panjang_wide',  name: 'Persegi Panjang 16:9 (Cinema/Video)', icon: 'fa-tv' },
+            { id: 'persegi_panjang',       name: 'Persegi Panjang 4:3', icon: 'fa-rectangle-ad' },
             { id: 'rounded',               name: 'Sudut Lengkung (Squircle)', icon: 'fa-square' },
             { id: 'bulat',                 name: 'Bulat Lingkaran (Circle)', icon: 'fa-circle' },
             { id: 'kotak',                 name: 'Kotak Persegi 1:1', icon: 'fa-square-full' },
-            { id: 'persegi_panjang',       name: 'Persegi Panjang 4:3', icon: 'fa-rectangle-ad' },
-            { id: 'persegi_panjang_wide',  name: 'Persegi Panjang 16:9', icon: 'fa-tv' },
             { id: 'oval',                  name: 'Oval / Elips', icon: 'fa-egg' },
             { id: 'kubah',                 name: 'Kubah Lengkung Islami', icon: 'fa-mosque' },
             { id: 'perisai',               name: 'Perisai / Shield', icon: 'fa-shield-halved' },
             { id: 'bintang',               name: 'Bintang / Octagon Badge', icon: 'fa-certificate' }
         ];
+
+        // Helper YouTube / Video URL Detection
+        function parseVideoSource(url, options = {}) {
+            if (!url) return { type: 'empty', url: '' };
+            url = url.trim();
+
+            const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+            if (ytMatch && ytMatch[1]) {
+                const vidId = ytMatch[1];
+                const auto = options.autoplay ? 1 : 0;
+                const mute = options.muted ? 1 : 1; // youtube butuh mute untuk autoplay
+                const loop = options.loop ? `1&playlist=${vidId}` : '0';
+                const controls = options.controls ? 1 : 0;
+                const embedUrl = `https://www.youtube.com/embed/${vidId}?autoplay=${auto}&mute=${mute}&loop=${loop}&controls=${controls}&playsinline=1&enablejsapi=1`;
+                return { type: 'youtube', embedUrl, vidId };
+            }
+
+            return { type: 'direct', url: url };
+        }
 
         // Format Helper HTML Generator
         function getFormatHtml(content, format) {
@@ -1429,7 +1599,444 @@ $active_menu = 'brosur_settings';
         }
 
         // ==========================================
-        // 4. LOGIKA KOLOM TULISAN DINAMIS (TEXT ROWS)
+        // 4. LOGIKA VIDEO SISIPAN (MULTI-LAYER VIDEOS)
+        // ==========================================
+
+        function renderVideoRows() {
+            const container = document.getElementById('video-rows-container');
+            const badge = document.getElementById('vid-count-badge');
+            const tabBadge = document.getElementById('tab-badge-video');
+            const clearBtn = document.getElementById('btn-clear-all-videos');
+
+            if (badge) badge.innerText = `${videoItems.length} Video`;
+            if (tabBadge) tabBadge.innerText = videoItems.length;
+            if (clearBtn) {
+                if (videoItems.length > 0) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (videoItems.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                        <i class="fas fa-video text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700">Belum ada video yang disisipkan</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5 mb-3">Klik tombol <strong>+ Sisipkan Video</strong> untuk memasang video MP4 atau YouTube ke brosur.</p>
+                        <button type="button" onclick="addNewVideoRow()" class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            <i class="fas fa-plus text-xs"></i>
+                            <span>Sisipkan Video Sekarang</span>
+                        </button>
+                    </div>
+                `;
+                syncVideoJsonInput();
+                return;
+            }
+
+            videoItems.forEach((vid, index) => {
+                const row = document.createElement('div');
+                row.className = 'item-row-strip bg-white border border-slate-200/90 hover:border-rose-500 rounded-2xl p-2.5 sm:p-3 shadow-xs space-y-2';
+                row.id = `vid-row-item-${vid.id}`;
+
+                let shapeOptionsHtml = '';
+                frameShapes.forEach(s => {
+                    const sel = (vid.shape === s.id) ? 'selected' : '';
+                    shapeOptionsHtml += `<option value="${s.id}" ${sel}>${s.name}</option>`;
+                });
+
+                row.innerHTML = `
+                    <!-- BARIS UTAMA (1 BARIS RINGKAS) -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        
+                        <!-- Nomor Video & Icon Play -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="w-6 h-6 rounded-lg bg-rose-50 text-rose-800 font-black text-[11px] flex items-center justify-center border border-rose-100 shadow-2xs" title="Video #${index + 1}">
+                                ${index + 1}
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-rose-950 text-rose-300 flex items-center justify-center border border-rose-800 shrink-0">
+                                <i class="fas fa-play text-xs"></i>
+                            </div>
+                        </div>
+
+                        <!-- Input URL Video (YouTube / MP4) -->
+                        <div class="flex-1 min-w-[140px]">
+                            <input type="text" value="${escapeHtml(vid.url)}" oninput="updateVideoField('${vid.id}', 'url', this.value)" placeholder="Link YouTube / Direct MP4 URL..." class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-rose-500 focus:outline-none bg-slate-50/60 focus:bg-white transition">
+                        </div>
+
+                        <!-- Tombol Upload File Video MP4/WebM -->
+                        <div class="shrink-0">
+                            <label class="cursor-pointer px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 border border-slate-200 text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
+                                <i class="fas fa-cloud-arrow-up text-rose-600 text-xs"></i>
+                                <span class="hidden sm:inline text-[11px]">Upload MP4</span>
+                                <input type="file" accept="video/mp4,video/webm,video/ogg" class="hidden" onchange="uploadLayerVideo(this, '${vid.id}')">
+                            </label>
+                        </div>
+
+                        <!-- Pilihan Bentuk Bingkai (Shape) -->
+                        <div class="shrink-0 max-w-[130px]">
+                            <select onchange="updateVideoField('${vid.id}', 'shape', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-bold bg-white focus:border-rose-500 focus:outline-none cursor-pointer truncate" title="Pilih Bentuk Bingkai">
+                                ${shapeOptionsHtml}
+                            </select>
+                        </div>
+
+                        <!-- Rotasi Ringkas (Deg) -->
+                        <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-1 shrink-0 shadow-2xs" title="Rotasi Kemiringan (-180° s/d 180°)">
+                            <i class="fas fa-rotate text-rose-600 text-[10px]"></i>
+                            <input type="number" min="-180" max="180" value="${vid.rotation || 0}" oninput="updateVideoField('${vid.id}', 'rotation', parseFloat(this.value) || 0)" class="w-9 text-xs font-black text-rose-800 text-center focus:outline-none">
+                            <span class="text-[10px] text-slate-400 font-mono">°</span>
+                        </div>
+
+                        <!-- TOMBOL DUPLIKASI, SETTING DETAIL & HAPUS -->
+                        <div class="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
+                            <!-- Duplikasi -->
+                            <button type="button" onclick="duplicateVideoRow('${vid.id}')" title="Duplikasi Video Ini" class="w-7 h-7 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-copy text-[11px]"></i>
+                            </button>
+
+                            <!-- Toggle Setting Lengkap (Garis Tepi, Bayangan, Playback, Ukuran) -->
+                            <button type="button" onclick="toggleVideoDetails('${vid.id}')" title="Pengaturan Bingkai, Garis Tepi & Kontrol Playback" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-sliders text-[11px]"></i>
+                            </button>
+
+                            <!-- Hapus Video -->
+                            <button type="button" onclick="deleteVideoRow('${vid.id}')" title="Hapus Video Ini" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-trash-can text-[11px]"></i>
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- PANEL DETAIL BINGKAI, GARIS TEPI, BAYANGAN, PLAYBACK & ROTASI (EXPANDABLE) -->
+                    <div id="vid-details-${vid.id}" class="hidden pt-2.5 mt-2 border-t border-slate-100 bg-slate-50/70 p-3.5 rounded-xl space-y-3">
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            
+                            <!-- KONTROL 1: GARIS TEPI (BORDER ON/OFF & COLOR) -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="font-bold text-slate-700 text-[11px] flex items-center gap-1.5">
+                                        <input type="checkbox" ${vid.border_enable ? 'checked' : ''} onchange="updateVideoField('${vid.id}', 'border_enable', this.checked ? 1 : 0)" class="rounded text-rose-600">
+                                        <span>Garis Tepi (Border)</span>
+                                    </label>
+                                    <span class="text-[10px] text-slate-400 font-mono">${vid.border_width || 2}px</span>
+                                </div>
+                                <div class="flex items-center gap-2 pt-1">
+                                    <input type="color" value="${vid.border_color || '#ffffff'}" onchange="updateVideoField('${vid.id}', 'border_color', this.value)" class="w-6 h-6 rounded-lg border border-slate-200 cursor-pointer p-0.5" title="Warna Garis">
+                                    <input type="range" min="1" max="12" step="1" value="${vid.border_width || 2}" oninput="updateVideoField('${vid.id}', 'border_width', parseInt(this.value))" class="flex-1 accent-rose-600 cursor-pointer">
+                                </div>
+                            </div>
+
+                            <!-- KONTROL 2: BAYANGAN (SHADOW EFFECT) -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <label class="block font-bold text-slate-700 text-[11px]">Efek Bayangan (Shadow):</label>
+                                <select onchange="updateVideoField('${vid.id}', 'shadow_style', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white focus:outline-none">
+                                    <option value="none" ${vid.shadow_style === 'none' ? 'selected' : ''}>Tanpa Bayangan</option>
+                                    <option value="soft" ${vid.shadow_style === 'soft' ? 'selected' : ''}>Bayangan Halus (Soft)</option>
+                                    <option value="medium" ${vid.shadow_style === 'medium' ? 'selected' : ''}>Bayangan Sedang</option>
+                                    <option value="deep" ${vid.shadow_style === 'deep' ? 'selected' : ''}>Bayangan 3D Dalam</option>
+                                    <option value="glow_gold" ${vid.shadow_style === 'glow_gold' ? 'selected' : ''}>Glow Cahaya Emas</option>
+                                    <option value="glow_teal" ${vid.shadow_style === 'glow_teal' ? 'selected' : ''}>Glow Cahaya Emerald</option>
+                                </select>
+                            </div>
+
+                            <!-- KONTROL 3: UKURAN LEBAR -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <div class="flex justify-between items-center text-[11px] font-bold text-slate-700">
+                                    <span>Ukuran Lebar:</span>
+                                    <span class="font-mono text-rose-800">${vid.width || 75}%</span>
+                                </div>
+                                <input type="range" min="20" max="100" step="1" value="${vid.width || 75}" oninput="updateVideoField('${vid.id}', 'width', parseInt(this.value))" class="w-full accent-rose-600 cursor-pointer">
+                            </div>
+
+                        </div>
+
+                        <!-- KONTROL PLAYBACK / AUDIO OPTIONS -->
+                        <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 flex flex-wrap items-center gap-4 text-[11px] font-bold text-slate-700">
+                            <span class="text-slate-500 font-bold flex items-center gap-1"><i class="fas fa-sliders text-rose-600"></i> Kontrol Pemutar:</span>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" ${vid.autoplay !== 0 ? 'checked' : ''} onchange="updateVideoField('${vid.id}', 'autoplay', this.checked ? 1 : 0)" class="rounded text-rose-600">
+                                <span>Autoplay</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" ${vid.loop !== 0 ? 'checked' : ''} onchange="updateVideoField('${vid.id}', 'loop', this.checked ? 1 : 0)" class="rounded text-rose-600">
+                                <span>Loop (Ulang Terus)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" ${vid.muted !== 0 ? 'checked' : ''} onchange="updateVideoField('${vid.id}', 'muted', this.checked ? 1 : 0)" class="rounded text-rose-600">
+                                <span>Muted (Bisukan Awal)</span>
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="checkbox" ${vid.controls ? 'checked' : ''} onchange="updateVideoField('${vid.id}', 'controls', this.checked ? 1 : 0)" class="rounded text-rose-600">
+                                <span>Tombol Controls</span>
+                            </label>
+                        </div>
+
+                        <!-- PRESET ROTASI CEPAT & RESET -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10.5px] font-bold text-slate-500">Preset Rotasi:</span>
+                                <button type="button" onclick="updateVideoField('${vid.id}', 'rotation', 0)" class="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold">0° (Tegak)</button>
+                                <button type="button" onclick="updateVideoField('${vid.id}', 'rotation', -15)" class="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold">-15° (Miring Kiri)</button>
+                                <button type="button" onclick="updateVideoField('${vid.id}', 'rotation', 15)" class="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold">+15° (Miring Kanan)</button>
+                            </div>
+
+                            <button type="button" onclick="resetVideoCenter('${vid.id}')" class="text-[10px] text-rose-700 hover:underline font-bold">
+                                <i class="fas fa-crosshairs mr-1"></i>Reset Posisi Tengah (50%)
+                            </button>
+                        </div>
+
+                    </div>
+                `;
+
+                container.appendChild(row);
+            });
+
+            syncVideoJsonInput();
+        }
+
+        function toggleVideoDetails(id) {
+            const el = document.getElementById(`vid-details-${id}`);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        function updateVideoField(id, field, value) {
+            const vid = videoItems.find(v => v.id === id);
+            if (vid) {
+                vid[field] = value;
+                renderSimVideoLayers();
+                syncVideoJsonInput();
+            }
+        }
+
+        function resetVideoCenter(id) {
+            const vid = videoItems.find(v => v.id === id);
+            if (vid) {
+                vid.posX = 50;
+                vid.posY = 50;
+                renderSimVideoLayers();
+                syncVideoJsonInput();
+            }
+        }
+
+        function addNewVideoRow() {
+            const newIndex = videoItems.length + 1;
+            const sampleUrls = [
+                'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'
+            ];
+            const chosenUrl = sampleUrls[(newIndex - 1) % sampleUrls.length];
+
+            const newVid = {
+                id: 'vid_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                url: chosenUrl,
+                shape: 'persegi_panjang_wide',
+                border_enable: 1,
+                border_width: 3,
+                border_color: '#fbbf24',
+                border_style: 'solid',
+                shadow_style: 'medium',
+                rotation: 0,
+                posX: 50,
+                posY: Math.min(80, 30 + ((newIndex - 1) * 22)),
+                width: 75,
+                autoplay: 1,
+                loop: 1,
+                muted: 1,
+                controls: 1
+            };
+
+            videoItems.push(newVid);
+            renderVideoRows();
+            renderSimVideoLayers();
+
+            setTimeout(() => {
+                const el = document.getElementById(`vid-row-item-${newVid.id}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        function duplicateVideoRow(sourceId) {
+            const source = videoItems.find(v => v.id === sourceId);
+            if (!source) return;
+
+            const cloned = JSON.parse(JSON.stringify(source));
+            cloned.id = 'vid_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            cloned.posY = Math.min(88, (source.posY || 50) + 10);
+            cloned.posX = Math.min(88, (source.posX || 50) + 5);
+
+            const sourceIndex = videoItems.findIndex(v => v.id === sourceId);
+            if (sourceIndex >= 0) {
+                videoItems.splice(sourceIndex + 1, 0, cloned);
+            } else {
+                videoItems.push(cloned);
+            }
+
+            renderVideoRows();
+            renderSimVideoLayers();
+
+            setTimeout(() => {
+                const el = document.getElementById(`vid-row-item-${cloned.id}`);
+                if (el) {
+                    el.classList.add('active-layer');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    setTimeout(() => el.classList.remove('active-layer'), 1500);
+                }
+            }, 100);
+        }
+
+        function deleteVideoRow(id) {
+            if (confirm('Hapus video yang disisipkan ini?')) {
+                videoItems = videoItems.filter(v => v.id !== id);
+                renderVideoRows();
+                renderSimVideoLayers();
+            }
+        }
+
+        function clearAllVideoRows() {
+            if (videoItems.length === 0) return;
+            if (confirm(`Yakin ingin menghapus semua (${videoItems.length}) video yang disisipkan?`)) {
+                videoItems = [];
+                renderVideoRows();
+                renderSimVideoLayers();
+            }
+        }
+
+        // Instant Upload Layer Video via AJAX
+        function uploadLayerVideo(input, vidId) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+
+            // 1. Instant Live Preview via Object URL
+            const previewUrl = URL.createObjectURL(file);
+            updateVideoField(vidId, 'url', previewUrl);
+
+            // 2. Upload async ke server
+            const formData = new FormData();
+            formData.append('ajax_video_file', file);
+
+            fetch('admin-brosur-settings.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.url) {
+                    updateVideoField(vidId, 'url', res.url);
+                    const inp = document.querySelector(`#vid-row-item-${vidId} input[type="text"]`);
+                    if (inp) inp.value = res.url;
+                }
+            })
+            .catch(err => {
+                console.error('Upload video layer error:', err);
+            });
+        }
+
+        function syncVideoJsonInput() {
+            const inp = document.getElementById('input-video-items-json');
+            if (inp) {
+                inp.value = JSON.stringify(videoItems);
+            }
+        }
+
+        function saveAllVideoItems() {
+            syncVideoJsonInput();
+            document.getElementById('form-pengaturan-videos').submit();
+        }
+
+        // ==========================================
+        // 5. RENDER SIMULASI VIDEO SISIPAN & SMART DRAG
+        // ==========================================
+
+        function renderSimVideoLayers() {
+            const container = document.getElementById('sim-video-layers-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            videoItems.forEach((vid, index) => {
+                const box = document.createElement('div');
+                box.id = `sim-vid-box-${vid.id}`;
+                box.className = 'draggable-box absolute pointer-events-auto transition-shadow group/viddrag';
+                box.setAttribute('data-id', vid.id);
+                box.style.top = `${vid.posY || 50}%`;
+                box.style.left = `${vid.posX || 50}%`;
+                box.style.transform = `translate(-50%, -50%) rotate(${vid.rotation || 0}deg)`;
+                box.style.width = `${vid.width || 75}%`;
+                box.style.zIndex = 25 + index;
+
+                // Frame styling
+                const shapeClass = `shape-${vid.shape || 'persegi_panjang_wide'}`;
+                const shadowClass = (vid.shadow_style && vid.shadow_style !== 'none') ? `shadow-${vid.shadow_style}` : '';
+                
+                let borderStyle = '';
+                if (vid.border_enable) {
+                    const bw = vid.border_width || 2;
+                    const bc = vid.border_color || '#ffffff';
+                    const bs = vid.border_style || 'solid';
+                    borderStyle = `border: ${bw}px ${bs} ${bc};`;
+                }
+
+                const parsed = parseVideoSource(vid.url, {
+                    autoplay: vid.autoplay !== 0,
+                    muted: vid.muted !== 0,
+                    loop: vid.loop !== 0,
+                    controls: vid.controls ? 1 : 0
+                });
+
+                let videoInnerHtml = '';
+                if (parsed.type === 'youtube') {
+                    videoInnerHtml = `
+                        <iframe src="${parsed.embedUrl}" class="w-full h-full border-0 pointer-events-auto" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    `;
+                } else if (parsed.type === 'direct' && parsed.url) {
+                    const autoAttr = (vid.autoplay !== 0) ? 'autoplay' : '';
+                    const loopAttr = (vid.loop !== 0) ? 'loop' : '';
+                    const muteAttr = (vid.muted !== 0) ? 'muted' : '';
+                    const ctrlAttr = (vid.controls) ? 'controls' : '';
+                    videoInnerHtml = `
+                        <video src="${escapeHtml(parsed.url)}" ${autoAttr} ${loopAttr} ${muteAttr} ${ctrlAttr} playsinline class="w-full h-full object-cover pointer-events-auto"></video>
+                    `;
+                } else {
+                    videoInnerHtml = `
+                        <div class="w-full h-full bg-slate-900 flex flex-col items-center justify-center text-rose-400 p-2 text-center">
+                            <i class="fas fa-video-slash text-lg mb-1"></i>
+                            <span class="text-[9px] font-bold">Video Kosong / Link Belum Diisi</span>
+                        </div>
+                    `;
+                }
+
+                box.innerHTML = `
+                    <!-- Border indikator saat hover / drag -->
+                    <div class="absolute -inset-2 border-2 border-dashed border-rose-400 rounded-2xl pointer-events-none opacity-0 group-hover/viddrag:opacity-100 transition-opacity flex items-start justify-between p-1 z-30" style="transform: rotate(0deg);">
+                        <span class="bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                            Video #${index + 1}
+                        </span>
+                        <div class="flex items-center gap-1 pointer-events-auto">
+                            <span class="bg-slate-950/90 text-rose-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
+                                <i class="fas fa-arrows-up-down-left-right"></i> Geser
+                            </span>
+                            <button type="button" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); deleteVideoRow('${vid.id}')" title="Hapus Video Ini" class="w-5 h-5 rounded bg-rose-600 hover:bg-rose-700 text-white text-[9px] flex items-center justify-center shadow-xs cursor-pointer active:scale-90 transition">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Inner Frame dengan Shape & Shadow -->
+                    <div class="w-full h-full overflow-hidden ${shapeClass} ${shadowClass} transition-transform relative bg-black" style="${borderStyle}">
+                        ${videoInnerHtml}
+                    </div>
+                `;
+
+                // Pasang Event Dragging dengan Snap Guidelines
+                initDragForLayer(box, vid, 'video');
+
+                container.appendChild(box);
+            });
+        }
+
+        // ==========================================
+        // 6. LOGIKA KOLOM TULISAN DINAMIS (TEXT ROWS)
         // ==========================================
 
         function renderRows() {
@@ -1731,7 +2338,7 @@ $active_menu = 'brosur_settings';
         }
 
         // ==========================================
-        // 5. DRAGGABLE ENGINE DENGAN SMART SNAP & GARIS BANTU
+        // 7. DRAGGABLE ENGINE DENGAN SMART SNAP & GARIS BANTU
         // ==========================================
 
         function initDragForLayer(box, item, layerType) {
@@ -1755,10 +2362,12 @@ $active_menu = 'brosur_settings';
                 startY = clientY;
 
                 initialLeftPct = item.posX || 50;
-                initialTopPct  = item.posY || (layerType === 'image' ? 50 : 35);
+                initialTopPct  = item.posY || (layerType === 'text' ? 35 : 50);
 
                 // Auto switch to respective tab when interacting with element on canvas
-                if (layerType === 'image' && currentActiveTab !== 'image') {
+                if (layerType === 'video' && currentActiveTab !== 'video') {
+                    switchTab('video');
+                } else if (layerType === 'image' && currentActiveTab !== 'image') {
                     switchTab('image');
                 } else if (layerType === 'text' && currentActiveTab !== 'text') {
                     switchTab('text');
@@ -1768,7 +2377,10 @@ $active_menu = 'brosur_settings';
                 box.style.zIndex = 70;
 
                 // Highlight baris
-                const rowElId = (layerType === 'image') ? `img-row-item-${item.id}` : `row-item-${item.id}`;
+                let rowElId = `row-item-${item.id}`;
+                if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
+                if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
+                
                 const rowEl = document.getElementById(rowElId);
                 if (rowEl) rowEl.classList.add('active-layer');
 
@@ -1827,19 +2439,24 @@ $active_menu = 'brosur_settings';
                 if (!isDragging) return;
                 isDragging = false;
                 box.style.transition = '';
-                box.style.zIndex = layerType === 'image' ? 20 : 30;
+                box.style.zIndex = layerType === 'image' ? 20 : (layerType === 'video' ? 25 : 30);
 
                 // Sembunyikan garis snap
                 if (guideX) guideX.style.display = 'none';
                 if (guideY) guideY.style.display = 'none';
 
-                const rowElId = (layerType === 'image') ? `img-row-item-${item.id}` : `row-item-${item.id}`;
+                let rowElId = `row-item-${item.id}`;
+                if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
+                if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
+                
                 const rowEl = document.getElementById(rowElId);
                 if (rowEl) {
                     setTimeout(() => rowEl.classList.remove('active-layer'), 800);
                 }
 
-                if (layerType === 'image') {
+                if (layerType === 'video') {
+                    syncVideoJsonInput();
+                } else if (layerType === 'image') {
                     syncImageJsonInput();
                 } else {
                     syncJsonInput();
@@ -1878,7 +2495,7 @@ $active_menu = 'brosur_settings';
         }
 
         // ==========================================
-        // 6. LOGIKA BACKGROUND BROSUR
+        // 8. LOGIKA BACKGROUND BROSUR
         // ==========================================
 
         function previewBgFile(input) {
@@ -1941,15 +2558,17 @@ $active_menu = 'brosur_settings';
 
         // Inisialisasi awal saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
-            // Cek hash URL jika ada (#bg, #text, #image)
+            // Cek hash URL jika ada (#bg, #text, #image, #video)
             const hash = window.location.hash.replace('#', '');
-            if (['bg', 'text', 'image'].includes(hash)) {
+            if (['bg', 'text', 'image', 'video'].includes(hash)) {
                 currentActiveTab = hash;
             }
             switchTab(currentActiveTab);
 
             renderImageRows();
             renderSimImageLayers();
+            renderVideoRows();
+            renderSimVideoLayers();
             renderRows();
             renderSimLayers();
         });
