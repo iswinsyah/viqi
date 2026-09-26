@@ -909,6 +909,7 @@ $active_menu = 'brosur_settings';
                     <form action="" method="POST" enctype="multipart/form-data" id="form-pengaturan-bg" class="space-y-6">
                         <input type="hidden" name="action_type" value="save_bg">
                         <input type="hidden" name="active_tab" value="bg">
+                        <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
 
                         <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
                             
@@ -1199,6 +1200,7 @@ $active_menu = 'brosur_settings';
                         <form action="" method="POST" id="form-pengaturan-text" class="space-y-4">
                             <input type="hidden" name="action_type" value="save_text">
                             <input type="hidden" name="active_tab" value="text">
+                            <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
                             <input type="hidden" name="custom_text_items_json" id="input-text-items-json" value="">
 
                             <!-- DAFTAR BARIS KOLOM TULISAN (RINGKAS & SIMPEL 1 BARIS PER ITEM) -->
@@ -1271,6 +1273,7 @@ $active_menu = 'brosur_settings';
                         <form action="" method="POST" id="form-pengaturan-images" class="space-y-4">
                             <input type="hidden" name="action_type" value="save_images">
                             <input type="hidden" name="active_tab" value="image">
+                            <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
                             <input type="hidden" name="custom_image_items_json" id="input-image-items-json" value="">
 
                             <!-- DAFTAR BARIS GAMBAR SISIPAN (RINGKAS & LENGKAP) -->
@@ -1337,6 +1340,7 @@ $active_menu = 'brosur_settings';
                         <form action="" method="POST" id="form-pengaturan-videos" class="space-y-4">
                             <input type="hidden" name="action_type" value="save_videos">
                             <input type="hidden" name="active_tab" value="video">
+                            <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
                             <input type="hidden" name="custom_video_items_json" id="input-video-items-json" value="">
 
                             <!-- DAFTAR BARIS VIDEO SISIPAN (RINGKAS & LENGKAP) -->
@@ -1403,6 +1407,7 @@ $active_menu = 'brosur_settings';
                         <form action="" method="POST" id="form-pengaturan-button" class="space-y-4">
                             <input type="hidden" name="action_type" value="save_buttons">
                             <input type="hidden" name="active_tab" value="button">
+                            <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
                             <input type="hidden" name="custom_button_items_json" id="input-button-items-json" value="">
 
                             <!-- DAFTAR BARIS TOMBOL (RINGKAS & LENGKAP) -->
@@ -2170,6 +2175,9 @@ $active_menu = 'brosur_settings';
         }
 
         function syncImageJsonInput() {
+            if (typeof framesData !== 'undefined' && framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].images = imageItems;
+            }
             const inp = document.getElementById('input-image-items-json');
             if (inp) {
                 inp.value = JSON.stringify(imageItems);
@@ -2578,6 +2586,9 @@ $active_menu = 'brosur_settings';
         }
 
         function syncVideoJsonInput() {
+            if (typeof framesData !== 'undefined' && framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].videos = videoItems;
+            }
             const inp = document.getElementById('input-video-items-json');
             if (inp) {
                 inp.value = JSON.stringify(videoItems);
@@ -3361,6 +3372,9 @@ $active_menu = 'brosur_settings';
         }
 
         function syncButtonJsonInput() {
+            if (typeof framesData !== 'undefined' && framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].buttons = buttonItems;
+            }
             const inp = document.getElementById('input-button-items-json');
             if (inp) inp.value = JSON.stringify(buttonItems);
         }
@@ -3455,6 +3469,9 @@ $active_menu = 'brosur_settings';
         // ==========================================
 
         function syncJsonInput() {
+            if (typeof framesData !== 'undefined' && framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].texts = textItems;
+            }
             const inp = document.getElementById('input-text-items-json');
             if (inp) inp.value = JSON.stringify(textItems);
         }
@@ -3702,6 +3719,9 @@ $active_menu = 'brosur_settings';
         function updateLiveBgUrl(url) {
             const trimmed = url.trim();
             const finalUrl = trimmed ? trimmed : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
+            if (typeof framesData !== 'undefined' && framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].bgUrl = finalUrl;
+            }
             
             const thumbBox = document.getElementById('thumb-bg-box');
             const coverScreen = document.getElementById('preview-screen-cover');
@@ -3716,6 +3736,9 @@ $active_menu = 'brosur_settings';
             const pct = Math.round(val * 100);
             const valLabel = document.getElementById('val-bg-opacity');
             if (valLabel) valLabel.innerText = pct + '%';
+            if (typeof framesData !== 'undefined' && framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].bgOpacity = parseFloat(val);
+            }
 
             const thumbOverlay = document.getElementById('thumb-bg-overlay');
             const coverOverlay = document.getElementById('preview-cover-overlay');
@@ -3813,16 +3836,8 @@ $active_menu = 'brosur_settings';
             if (['bg', 'text', 'image', 'video', 'button'].includes(hash)) {
                 currentActiveTab = hash;
             }
+            switchFrame(currentActiveFrame);
             switchTab(currentActiveTab);
-
-            renderButtonRows();
-            renderSimButtonLayers();
-            renderImageRows();
-            renderSimImageLayers();
-            renderVideoRows();
-            renderSimVideoLayers();
-            renderRows();
-            renderSimLayers();
         });
     </script>
 </body>
