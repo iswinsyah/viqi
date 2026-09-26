@@ -214,13 +214,53 @@ $active_menu = 'brosur_settings';
             </div>
         </header>
 
-        <!-- WORKSPACE AREA (CENTERED SIMULATION ONLY) -->
-        <div class="flex-1 p-6 flex flex-col items-center justify-center min-h-0">
+        <!-- WORKSPACE AREA: 2 KOLOM (PAPAN PENGATURAN KIRI & SIMULASI KANAN) -->
+        <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <div class="w-full max-w-xl flex flex-col items-center">
+            <!-- PANEL KIRI: PAPAN PENGATURAN (KOSONG DULU UNTUK PENGEMBANGAN BERTAHAP) -->
+            <div class="lg:col-span-7 xl:col-span-7 space-y-6">
+                
+                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm min-h-[640px] flex flex-col">
+                    <!-- Header Papan Pengaturan -->
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
+                                <i class="fas fa-sliders"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-black text-base sm:text-lg text-slate-900">Papan Pengaturan Brosur</h2>
+                                <p class="text-xs text-slate-500">Panel konfigurasi untuk mengatur elemen brosur digital secara bertahap</p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/60">
+                            <i class="fas fa-circle-notch fa-spin text-amber-500"></i> Siap Dikonfigurasi
+                        </span>
+                    </div>
+
+                    <!-- Area Kosong / Placeholder Papan Pengaturan -->
+                    <div class="flex-1 flex flex-col items-center justify-center p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 my-auto">
+                        <div class="w-16 h-16 rounded-2xl bg-white border border-slate-200 text-teal-600 flex items-center justify-center text-2xl shadow-xs mb-3">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h3 class="font-bold text-sm text-slate-800 mb-1">Papan Pengaturan Masih Kosong</h3>
+                        <p class="text-xs text-slate-500 max-w-md leading-relaxed mb-4">
+                            Silakan instruksikan bagian atau pengaturan apa yang ingin Anda tambahkan ke sini terlebih dahulu (misal: Cover, Teks, Warna, Countdown, Biaya, dll) agar kita susun secara bertahap dan rapi.
+                        </p>
+                        <div class="flex items-center gap-2 text-[11px] text-teal-800 font-semibold bg-teal-50/80 border border-teal-200/80 px-3.5 py-1.5 rounded-xl">
+                            <i class="fas fa-circle-info text-teal-600"></i>
+                            <span>Siap menerima instruksi penambahan form langkah demi langkah</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- PANEL KANAN: LAYAR SIMULASI SMARTPHONE -->
+            <div class="lg:col-span-5 xl:col-span-5 sticky top-24 flex flex-col items-center">
                 
                 <!-- TOP CONTROLS: TAB SWITCHER & NAVIGATION SHORTCUTS -->
-                <div class="w-full max-w-[374px] flex items-center justify-between gap-2 mb-3 px-1">
+                <div class="w-full max-w-[350px] flex items-center justify-between gap-2 mb-3 px-1">
                     <div class="flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-2xl shadow-xs">
                         <button type="button" id="tab-btn-cover" onclick="setPhoneTab('cover')" class="px-4 py-1.5 rounded-xl font-bold text-xs bg-[#0b8478] text-white shadow-sm transition flex items-center gap-1.5">
                             <i class="fas fa-envelope-open-text text-amber-300"></i>
