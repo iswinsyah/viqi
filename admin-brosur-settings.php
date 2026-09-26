@@ -129,7 +129,13 @@ $columns_to_check = [
     'unggulan_text_items'      => "LONGTEXT",
     'unggulan_image_items'     => "LONGTEXT",
     'unggulan_video_items'     => "LONGTEXT",
-    'unggulan_button_items'    => "LONGTEXT"
+    'unggulan_button_items'    => "LONGTEXT",
+    'pengajar_bg_url'          => "TEXT",
+    'pengajar_overlay_opacity' => "DECIMAL(3,2) DEFAULT 0.88",
+    'pengajar_text_items'      => "LONGTEXT",
+    'pengajar_image_items'     => "LONGTEXT",
+    'pengajar_video_items'     => "LONGTEXT",
+    'pengajar_button_items'    => "LONGTEXT"
 ];
 foreach ($columns_to_check as $col => $type) {
     $res = $conn->query("SHOW COLUMNS FROM pengaturan_brosur LIKE '$col'");
@@ -198,7 +204,7 @@ $pesan_error  = '';
 
 // Tab Aktif & Frame Aktif
 $active_frame = $_POST['active_frame'] ?? $_GET['frame'] ?? 'home';
-if (!in_array($active_frame, ['home', 'prestasi', 'unggulan'])) {
+if (!in_array($active_frame, ['home', 'prestasi', 'unggulan', 'pengajar'])) {
     $active_frame = 'home';
 }
 
@@ -358,6 +364,18 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
                            WHERE id = 1";
+        } else if ($active_frame === 'pengajar') {
+            $sql_master = "UPDATE pengaturan_brosur SET 
+                            pengajar_bg_url = '$bg_url',
+                            pengajar_overlay_opacity = $bg_overlay_opacity,
+                            pengajar_text_items = '$final_text_json_esc',
+                            pengajar_image_items = '$final_img_json_esc',
+                            pengajar_video_items = '$final_vid_json_esc',
+                            pengajar_button_items = '$final_btn_json_esc',
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
         } else {
             $first = $clean_text_items[0] ?? [
                 'content' => '', 'format' => 'h2', 'color' => '#ffffff',
@@ -399,7 +417,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         }
 
         $ok = $conn->query($sql_master);
-        $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : 'Frame Home');
+        $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
         $msg = $ok ? "Alhamdulillah! Seluruh pengaturan {$frame_label} berhasil disimpan." : "Gagal menyimpan: " . $conn->error;
 
         if (isset($_POST['ajax_mode']) && $_POST['ajax_mode'] == '1') {
@@ -449,6 +467,10 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
 
         if ($active_frame === 'prestasi') {
             $sql_text = "UPDATE pengaturan_brosur SET prestasi_text_items = '$final_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'unggulan') {
+            $sql_text = "UPDATE pengaturan_brosur SET unggulan_text_items = '$final_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'pengajar') {
+            $sql_text = "UPDATE pengaturan_brosur SET pengajar_text_items = '$final_json_esc' WHERE id = 1";
         } else {
             // Update legacy columns dari item pertama sebagai fallback jika ada
             $first = $clean_items[0] ?? [
@@ -481,7 +503,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         }
 
         if ($conn->query($sql_text)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
             $pesan_sukses = "Alhamdulillah! Pengaturan kolom tulisan {$frame_label} (" . count($clean_items) . " kolom) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan tulisan: " . $conn->error;
@@ -518,12 +540,16 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
 
         if ($active_frame === 'prestasi') {
             $sql_img = "UPDATE pengaturan_brosur SET prestasi_image_items = '$final_img_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'unggulan') {
+            $sql_img = "UPDATE pengaturan_brosur SET unggulan_image_items = '$final_img_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'pengajar') {
+            $sql_img = "UPDATE pengaturan_brosur SET pengajar_image_items = '$final_img_json_esc' WHERE id = 1";
         } else {
             $sql_img = "UPDATE pengaturan_brosur SET custom_image_items = '$final_img_json_esc' WHERE id = 1";
         }
 
         if ($conn->query($sql_img)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
             $pesan_sukses = "Alhamdulillah! Pengaturan gambar sisipan {$frame_label} (" . count($clean_img_items) . " gambar) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan gambar: " . $conn->error;
@@ -563,12 +589,16 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
 
         if ($active_frame === 'prestasi') {
             $sql_vid = "UPDATE pengaturan_brosur SET prestasi_video_items = '$final_vid_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'unggulan') {
+            $sql_vid = "UPDATE pengaturan_brosur SET unggulan_video_items = '$final_vid_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'pengajar') {
+            $sql_vid = "UPDATE pengaturan_brosur SET pengajar_video_items = '$final_vid_json_esc' WHERE id = 1";
         } else {
             $sql_vid = "UPDATE pengaturan_brosur SET custom_video_items = '$final_vid_json_esc' WHERE id = 1";
         }
 
         if ($conn->query($sql_vid)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
             $pesan_sukses = "Alhamdulillah! Pengaturan video sisipan {$frame_label} (" . count($clean_vid_items) . " video) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan video: " . $conn->error;
@@ -609,12 +639,16 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
 
         if ($active_frame === 'prestasi') {
             $sql_btn = "UPDATE pengaturan_brosur SET prestasi_button_items = '$final_btn_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'unggulan') {
+            $sql_btn = "UPDATE pengaturan_brosur SET unggulan_button_items = '$final_btn_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'pengajar') {
+            $sql_btn = "UPDATE pengaturan_brosur SET pengajar_button_items = '$final_btn_json_esc' WHERE id = 1";
         } else {
             $sql_btn = "UPDATE pengaturan_brosur SET custom_button_items = '$final_btn_json_esc' WHERE id = 1";
         }
 
         if ($conn->query($sql_btn)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
             $pesan_sukses = "Alhamdulillah! Pengaturan tombol {$frame_label} (" . count($clean_btn_items) . " tombol) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan tombol: " . $conn->error;
@@ -648,6 +682,22 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
                            WHERE id = 1";
+        } else if ($active_frame === 'unggulan') {
+            $sql_update = "UPDATE pengaturan_brosur SET 
+                            unggulan_bg_url = '$bg_url',
+                            unggulan_overlay_opacity = $bg_overlay_opacity,
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
+        } else if ($active_frame === 'pengajar') {
+            $sql_update = "UPDATE pengaturan_brosur SET 
+                            pengajar_bg_url = '$bg_url',
+                            pengajar_overlay_opacity = $bg_overlay_opacity,
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
         } else {
             // Terapkan ke cover, body, dan bottom bar
             $sql_update = "UPDATE pengaturan_brosur SET 
@@ -670,7 +720,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 }
             }
 
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
             $pesan_sukses = "Alhamdulillah! Pengaturan Background {$frame_label} & Bottom Bar berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan background & bottom bar: " . $conn->error;
@@ -967,6 +1017,105 @@ if ($raw_unggulan_buttons !== null && $raw_unggulan_buttons !== '') {
     ];
 }
 
+// ==============================================================
+// 4. DATA FRAME PENGAJAR (ASATIDZ & DEWAN GURU)
+// ==============================================================
+$pengajar_bg_url = !empty($cfg['pengajar_bg_url']) ? $cfg['pengajar_bg_url'] : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
+$pengajar_overlay_opacity = isset($cfg['pengajar_overlay_opacity']) ? (float)$cfg['pengajar_overlay_opacity'] : 0.88;
+
+$raw_pengajar_texts = $cfg['pengajar_text_items'] ?? null;
+if ($raw_pengajar_texts !== null && $raw_pengajar_texts !== '') {
+    $pengajar_text_items = json_decode($raw_pengajar_texts, true);
+    if (!is_array($pengajar_text_items)) $pengajar_text_items = [];
+} else {
+    $pengajar_text_items = [
+        [
+            'id'      => 'text_pengajar_1',
+            'content' => 'Dewan Pengajar & Asatidz',
+            'format'  => 'h2',
+            'color'   => '#ffffff',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 24,
+            'posX'    => 50.0,
+            'posY'    => 18.0,
+            'width'   => 88
+        ],
+        [
+            'id'      => 'text_pengajar_2',
+            'content' => 'Dibimbing oleh Asatidz & Ustadzah Berpengalaman, Hafidz 30 Juz & Bersanad',
+            'format'  => 'h4',
+            'color'   => '#5eead4',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 13,
+            'posX'    => 50.0,
+            'posY'    => 28.0,
+            'width'   => 90
+        ]
+    ];
+}
+
+$raw_pengajar_images = $cfg['pengajar_image_items'] ?? null;
+if ($raw_pengajar_images !== null && $raw_pengajar_images !== '') {
+    $pengajar_image_items = json_decode($raw_pengajar_images, true);
+    if (!is_array($pengajar_image_items)) $pengajar_image_items = [];
+} else {
+    $pengajar_image_items = [
+        [
+            'id'            => 'img_pengajar_1',
+            'url'           => 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+            'shape'         => 'rounded',
+            'border_enable' => 1,
+            'border_width'  => 3,
+            'border_color'  => '#2dd4bf',
+            'border_style'  => 'solid',
+            'shadow_style'  => 'glow_teal',
+            'rotation'      => 0,
+            'posX'          => 50.0,
+            'posY'          => 53.0,
+            'width'         => 72
+        ]
+    ];
+}
+
+$raw_pengajar_videos = $cfg['pengajar_video_items'] ?? null;
+if ($raw_pengajar_videos !== null && $raw_pengajar_videos !== '') {
+    $pengajar_video_items = json_decode($raw_pengajar_videos, true);
+    if (!is_array($pengajar_video_items)) $pengajar_video_items = [];
+} else {
+    $pengajar_video_items = [];
+}
+
+$raw_pengajar_buttons = $cfg['pengajar_button_items'] ?? null;
+if ($raw_pengajar_buttons !== null && $raw_pengajar_buttons !== '') {
+    $pengajar_button_items = json_decode($raw_pengajar_buttons, true);
+    if (!is_array($pengajar_button_items)) $pengajar_button_items = [];
+} else {
+    $pengajar_button_items = [
+        [
+            'id'            => 'btn_pengajar_1',
+            'text'          => 'Konsultasi Bersama Asatidz',
+            'url'           => 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20konsultasi%20dengan%20asatidz%20Villa%20Quran',
+            'icon'          => 'fab fa-whatsapp',
+            'shape'         => 'rounded_pill',
+            'bg_color'      => '#25d366',
+            'text_color'    => '#ffffff',
+            'border_enable' => 0,
+            'border_width'  => 2,
+            'border_color'  => '#ffffff',
+            'shadow_style'  => 'glow_wa',
+            'font_size'     => 13,
+            'font'          => 'Plus Jakarta Sans',
+            'posX'          => 50.0,
+            'posY'          => 82.0,
+            'width'         => 82,
+            'height'        => 46,
+            'target'        => '_blank'
+        ]
+    ];
+}
+
 $active_menu = 'brosur_settings';
 ?>
 <!DOCTYPE html>
@@ -1176,6 +1325,13 @@ $active_menu = 'brosur_settings';
                         <i class="fas fa-star text-xs text-amber-400"></i>
                         <span>Unggulan</span>
                         <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-900/60 text-amber-200">Menu #3</span>
+                    </button>
+
+                    <!-- Tombol Frame 4: Pengajar -->
+                    <button type="button" id="frame-btn-pengajar" onclick="switchFrame('pengajar')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+                        <i class="fas fa-chalkboard-user text-xs text-teal-400"></i>
+                        <span>Pengajar</span>
+                        <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-900/60 text-teal-200">Menu #4</span>
                     </button>
                 </div>
 
@@ -1886,6 +2042,12 @@ $active_menu = 'brosur_settings';
                                     <i id="sim-menu-unggulan-icon" class="fas fa-star text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
                                     <span id="sim-menu-unggulan-label" class="text-[9.5px] font-bold tracking-wider leading-none">Unggulan</span>
                                 </button>
+
+                                <!-- Menu 4: Pengajar -->
+                                <button type="button" onclick="switchFrame('pengajar')" id="sim-menu-pengajar-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Pengajar (Frame Pengajar)">
+                                    <i id="sim-menu-pengajar-icon" class="fas fa-chalkboard-user text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                                    <span id="sim-menu-pengajar-label" class="text-[9.5px] font-bold tracking-wider leading-none">Pengajar</span>
+                                </button>
                             </div>
 
                         </div>
@@ -1967,6 +2129,23 @@ $active_menu = 'brosur_settings';
                 images: <?= json_encode($unggulan_image_items, JSON_UNESCAPED_UNICODE) ?>,
                 videos: <?= json_encode($unggulan_video_items, JSON_UNESCAPED_UNICODE) ?>,
                 buttons: <?= json_encode($unggulan_button_items, JSON_UNESCAPED_UNICODE) ?>
+            },
+            pengajar: {
+                id: 'pengajar',
+                name: 'Pengajar',
+                title: 'Frame: Pengajar',
+                subtitle: 'Frame ini mengatur tampilan profil asatidz, dewan guru & pengasuh (Menu <strong>Pengajar</strong> pada Bottom Navigation Bar).',
+                badge: 'Dewan Pengajar & Asatidz',
+                menuPill: 'Menu #4 di Bottom Bar',
+                icon: 'fa-chalkboard-user',
+                iconGradient: 'from-teal-500 via-emerald-600 to-cyan-600',
+                badgeClass: 'bg-teal-100 text-teal-900 border-teal-300',
+                bgUrl: <?= json_encode($pengajar_bg_url) ?>,
+                bgOpacity: <?= (float)$pengajar_overlay_opacity ?>,
+                texts: <?= json_encode($pengajar_text_items, JSON_UNESCAPED_UNICODE) ?>,
+                images: <?= json_encode($pengajar_image_items, JSON_UNESCAPED_UNICODE) ?>,
+                videos: <?= json_encode($pengajar_video_items, JSON_UNESCAPED_UNICODE) ?>,
+                buttons: <?= json_encode($pengajar_button_items, JSON_UNESCAPED_UNICODE) ?>
             }
         };
 
@@ -1980,7 +2159,7 @@ $active_menu = 'brosur_settings';
         let buttonItems = framesData[currentActiveFrame].buttons;
 
         function switchFrame(frame) {
-            if (!['home', 'prestasi', 'unggulan'].includes(frame)) frame = 'home';
+            if (!['home', 'prestasi', 'unggulan', 'pengajar'].includes(frame)) frame = 'home';
             currentActiveFrame = frame;
 
             const data = framesData[frame];
@@ -1993,17 +2172,20 @@ $active_menu = 'brosur_settings';
             const btnHome = document.getElementById('frame-btn-home');
             const btnPrestasi = document.getElementById('frame-btn-prestasi');
             const btnUnggulan = document.getElementById('frame-btn-unggulan');
+            const btnPengajar = document.getElementById('frame-btn-pengajar');
             
             const activeClassMap = {
                 home: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer',
                 prestasi: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md ring-2 ring-amber-400 cursor-pointer',
-                unggulan: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md ring-2 ring-orange-400 cursor-pointer'
+                unggulan: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md ring-2 ring-orange-400 cursor-pointer',
+                pengajar: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-md ring-2 ring-teal-400 cursor-pointer'
             };
             const inactiveClass = 'flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer';
 
             if (btnHome) btnHome.className = (frame === 'home') ? activeClassMap.home : inactiveClass;
             if (btnPrestasi) btnPrestasi.className = (frame === 'prestasi') ? activeClassMap.prestasi : inactiveClass;
             if (btnUnggulan) btnUnggulan.className = (frame === 'unggulan') ? activeClassMap.unggulan : inactiveClass;
+            if (btnPengajar) btnPengajar.className = (frame === 'pengajar') ? activeClassMap.pengajar : inactiveClass;
 
             // 2. Update Header Info Frame
             const headerTitle    = document.getElementById('frame-header-title');
@@ -2046,6 +2228,7 @@ $active_menu = 'brosur_settings';
             const navHome = document.getElementById('sim-menu-home-btn');
             const navPrestasi = document.getElementById('sim-menu-prestasi-btn');
             const navUnggulan = document.getElementById('sim-menu-unggulan-btn');
+            const navPengajar = document.getElementById('sim-menu-pengajar-btn');
             const activeColor = '<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>';
             const normalColor = '<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>';
 
@@ -2060,6 +2243,10 @@ $active_menu = 'brosur_settings';
             if (navUnggulan) {
                 navUnggulan.style.color = (frame === 'unggulan') ? activeColor : normalColor;
                 navUnggulan.classList.toggle('opacity-70', frame !== 'unggulan');
+            }
+            if (navPengajar) {
+                navPengajar.style.color = (frame === 'pengajar') ? activeColor : normalColor;
+                navPengajar.classList.toggle('opacity-70', frame !== 'pengajar');
             }
 
             // 7. Re-render Semua Tab Rows & Layar Simulasi
