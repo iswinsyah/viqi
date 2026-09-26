@@ -1217,46 +1217,46 @@ $active_menu = 'brosur_settings';
                         </div>
                     </div>
 
-                    <!-- NAVIGASI 5 SUB-TAB DALAM FRAME AKTIF (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR, TAB 4: VIDEO, TAB 5: TOMBOL) -->
+                    <!-- NAVIGASI 5 SUB-TAB DALAM FRAME AKTIF (TAB 1: LATAR, TAB 2: TULISAN, TAB 3: GAMBAR, TAB 4: VIDEO, TAB 5: TOMBOL) -->
                     <div class="bg-slate-100/95 p-1.5 rounded-2xl border border-slate-200 shadow-inner flex items-center gap-1.5 sticky top-16 z-20 overflow-x-auto">
                         
-                        <!-- TAB 1: BACKGROUND BROSUR -->
-                        <button type="button" id="tab-btn-bg" onclick="switchTab('bg')" class="tab-nav-btn flex-1 min-w-[110px] py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer whitespace-nowrap">
+                        <!-- TAB 1: LATAR BROSUR -->
+                        <button type="button" id="tab-btn-bg" onclick="switchTab('bg')" class="tab-nav-btn flex-1 min-w-[90px] sm:min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer whitespace-nowrap">
                             <i class="fas fa-image text-sm sm:text-base"></i>
-                            <span>1. Background</span>
+                            <span>Latar</span>
                         </button>
 
                         <!-- TAB 2: KOLOM TULISAN -->
-                        <button type="button" id="tab-btn-text" onclick="switchTab('text')" class="tab-nav-btn flex-1 min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
+                        <button type="button" id="tab-btn-text" onclick="switchTab('text')" class="tab-nav-btn flex-1 min-w-[90px] sm:min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
                             <i class="fas fa-font text-sm sm:text-base"></i>
-                            <span>2. Tulisan</span>
+                            <span>Tulisan</span>
                             <span id="tab-badge-text" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">
                                 <?= count($text_items) ?>
                             </span>
                         </button>
 
                         <!-- TAB 3: SISIPKAN GAMBAR -->
-                        <button type="button" id="tab-btn-image" onclick="switchTab('image')" class="tab-nav-btn flex-1 min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
+                        <button type="button" id="tab-btn-image" onclick="switchTab('image')" class="tab-nav-btn flex-1 min-w-[90px] sm:min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
                             <i class="fas fa-shapes text-sm sm:text-base"></i>
-                            <span>3. Gambar</span>
+                            <span>Gambar</span>
                             <span id="tab-badge-image" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-800">
                                 <?= count($image_items) ?>
                             </span>
                         </button>
 
                         <!-- TAB 4: SISIPKAN VIDEO -->
-                        <button type="button" id="tab-btn-video" onclick="switchTab('video')" class="tab-nav-btn flex-1 min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
+                        <button type="button" id="tab-btn-video" onclick="switchTab('video')" class="tab-nav-btn flex-1 min-w-[90px] sm:min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
                             <i class="fas fa-video text-sm sm:text-base"></i>
-                            <span>4. Video</span>
+                            <span>Video</span>
                             <span id="tab-badge-video" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">
                                 <?= count($video_items) ?>
                             </span>
                         </button>
 
                         <!-- TAB 5: PENGATURAN TOMBOL -->
-                        <button type="button" id="tab-btn-button" onclick="switchTab('button')" class="tab-nav-btn flex-1 min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
+                        <button type="button" id="tab-btn-button" onclick="switchTab('button')" class="tab-nav-btn flex-1 min-w-[90px] sm:min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
                             <i class="fas fa-hand-pointer text-sm sm:text-base"></i>
-                            <span>5. Tombol</span>
+                            <span>Tombol</span>
                             <span id="tab-badge-button" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
                                 <?= count($button_items) ?>
                             </span>
