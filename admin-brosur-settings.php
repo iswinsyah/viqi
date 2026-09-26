@@ -216,31 +216,33 @@ $active_menu = 'brosur_settings';
         
         /* Modern Smartphone Mockup Frame */
         .phone-mockup {
-            width: 350px;
-            height: 700px;
-            border: 12px solid #0f172a;
-            border-radius: 46px;
+            width: 340px;
+            max-width: 100%;
+            height: min(670px, calc(100vh - 130px));
+            min-height: 520px;
+            border: 10px solid #0f172a;
+            border-radius: 42px;
             overflow: hidden;
             box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
             position: relative;
         }
         .phone-speaker {
             position: absolute;
-            top: 12px;
+            top: 10px;
             left: 50%;
             transform: translateX(-50%);
-            width: 80px;
-            height: 5px;
+            width: 75px;
+            height: 4px;
             background: #334155;
             border-radius: 10px;
             z-index: 50;
         }
         .phone-camera {
             position: absolute;
-            top: 11px;
-            right: 105px;
-            width: 8px;
-            height: 8px;
+            top: 9px;
+            right: 100px;
+            width: 7px;
+            height: 7px;
             background: #1e293b;
             border-radius: 50%;
             z-index: 50;
@@ -320,25 +322,6 @@ $active_menu = 'brosur_settings';
                         <span><?= htmlspecialchars($pesan_error) ?></span>
                     </div>
                     <?php endif; ?>
-
-                    <!-- KARTU UTAMA: PENGATURAN BACKGROUND -->
-                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
-                        
-                        <!-- Header Kartu -->
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
-                                    <i class="fas fa-image"></i>
-                                </div>
-                                <div>
-                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Pengaturan Background Brosur</h2>
-                                    <p class="text-xs text-slate-500">Sesuaikan foto background format portrait HP via Upload atau Link URL</p>
-                                </div>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200/60 flex items-center gap-1">
-                                <i class="fas fa-mobile-screen-button text-teal-600"></i> Rasio Portrait HP (9:16)
-                            </span>
-                        </div>
 
                     <!-- KARTU UTAMA: PENGATURAN BACKGROUND (TUNGGAL UNTUK SEMUA HALAMAN) -->
                     <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
@@ -508,31 +491,33 @@ $active_menu = 'brosur_settings';
 
             </div>
 
-            <!-- PANEL KANAN: LAYAR SIMULASI SMARTPHONE -->
-            <div class="lg:col-span-5 xl:col-span-5 sticky top-24 flex flex-col items-center">
+            <!-- PANEL KANAN: LAYAR SIMULASI SMARTPHONE (STICKY DI KANAN LAYAR PC) -->
+            <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-4 self-start flex flex-col items-center lg:items-end">
                 
-                <!-- TOP CONTROLS: TAB SWITCHER & NAVIGATION SHORTCUTS -->
-                <div class="w-full max-w-[350px] flex items-center justify-between gap-2 mb-3 px-1">
-                    <div class="flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-2xl shadow-xs">
-                        <button type="button" id="tab-btn-cover" onclick="setPhoneTab('cover')" class="px-4 py-1.5 rounded-xl font-bold text-xs bg-[#0b8478] text-white shadow-sm transition flex items-center gap-1.5">
-                            <i class="fas fa-envelope-open-text text-amber-300"></i>
-                            <span>Cover Amplop</span>
-                        </button>
-                        <button type="button" id="tab-btn-body" onclick="setPhoneTab('body')" class="px-4 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
-                            <i class="fas fa-file-invoice text-teal-700"></i>
-                            <span>Laman Dalam</span>
-                        </button>
+                <div class="w-full max-w-[340px] flex flex-col items-center">
+                    
+                    <!-- TOP CONTROLS: TAB SWITCHER & NAVIGATION SHORTCUTS -->
+                    <div class="w-full flex items-center justify-between gap-2 mb-3 px-1">
+                        <div class="flex items-center gap-1 p-1 bg-white border border-slate-200 rounded-2xl shadow-xs">
+                            <button type="button" id="tab-btn-cover" onclick="setPhoneTab('cover')" class="px-4 py-1.5 rounded-xl font-bold text-xs bg-[#0b8478] text-white shadow-sm transition flex items-center gap-1.5">
+                                <i class="fas fa-envelope-open-text text-amber-300"></i>
+                                <span>Cover Amplop</span>
+                            </button>
+                            <button type="button" id="tab-btn-body" onclick="setPhoneTab('body')" class="px-4 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                                <i class="fas fa-file-invoice text-teal-700"></i>
+                                <span>Laman Dalam</span>
+                            </button>
+                        </div>
+
+                        <div class="flex items-center gap-1.5">
+                            <button type="button" onclick="location.reload()" title="Refresh Tampilan" class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-[#0b8478] hover:border-teal-300 flex items-center justify-center text-xs shadow-xs transition active:scale-90">
+                                <i class="fas fa-rotate"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="flex items-center gap-1.5">
-                        <button type="button" onclick="location.reload()" title="Refresh Tampilan" class="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-[#0b8478] hover:border-teal-300 flex items-center justify-center text-xs shadow-xs transition active:scale-90">
-                            <i class="fas fa-rotate"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- PHONE MOCKUP CONTAINER -->
-                <div class="phone-mockup bg-slate-900 text-white flex flex-col relative" id="phone-container" style="font-family: '<?= htmlspecialchars($cfg['font_family'] ?? 'Plus Jakarta Sans') ?>', sans-serif;">
+                    <!-- PHONE MOCKUP CONTAINER -->
+                    <div class="phone-mockup bg-slate-900 text-white flex flex-col relative" id="phone-container" style="font-family: '<?= htmlspecialchars($cfg['font_family'] ?? 'Plus Jakarta Sans') ?>', sans-serif;">
                     
                     <!-- Speaker & Camera -->
                     <div class="phone-speaker"></div>
@@ -991,7 +976,9 @@ $active_menu = 'brosur_settings';
                 <!-- FOOTER INFO BADGE -->
                 <div class="mt-4 flex items-center gap-2 text-xs text-slate-500 bg-white/80 backdrop-blur-xs px-4 py-2 rounded-full border border-slate-200 shadow-2xs">
                     <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Tersinkronisasi otomatis dengan data Fasilitas, Pengajar, Galeri, Biaya & Testimoni</span>
+                    <span>Tersinkronisasi otomatis dengan database</span>
+                </div>
+
                 </div>
 
             </div>
