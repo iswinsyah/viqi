@@ -161,6 +161,64 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_koleksi') {
     }
 }
 
+// Helper simpan dataURL base64 menjadi file fisik di upload/
+function saveBase64ImageIfAny($data_url) {
+    if (strpos($data_url, 'data:image/') === 0) {
+        if (preg_match('/^data:image\/(\w+);base64,/', $data_url, $type)) {
+            $data = substr($data_url, strpos($data_url, ',') + 1);
+            $type = strtolower($type[1]);
+            if ($type === 'jpeg') $type = 'jpg';
+            if (in_array($type, ['jpg', 'png', 'gif', 'webp', 'svg'])) {
+                $decoded = base64_decode($data);
+                if ($decoded !== false) {
+                    if (!is_dir('upload')) mkdir('upload', 0755, true);
+                    $file_name = 'upload/layer_img_' . time() . '_' . rand(1000, 9999) . '.' . $type;
+                    if (file_put_contents($file_name, $decoded)) {
+                        return $file_name;
+                    }
+                }
+            }
+        }
+    }
+    return $data_url;
+}
+
+// Handler Direct AJAX Image Upload
+if (!empty($_FILES['ajax_image_file']['name'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    if ($_FILES['ajax_image_file']['error'] === UPLOAD_ERR_OK) {
+        $ext = strtolower(pathinfo($_FILES['ajax_image_file']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) {
+            if (!is_dir('upload')) mkdir('upload', 0755, true);
+            $dest = 'upload/layer_img_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+            if (move_uploaded_file($_FILES['ajax_image_file']['tmp_name'], $dest)) {
+                echo json_encode(['success' => true, 'url' => $dest]);
+                exit;
+            }
+        }
+    }
+    echo json_encode(['success' => false, 'message' => 'Gagal upload file gambar']);
+    exit;
+}
+
+// Handler Direct AJAX Video Upload
+if (!empty($_FILES['ajax_video_file']['name'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    if ($_FILES['ajax_video_file']['error'] === UPLOAD_ERR_OK) {
+        $ext = strtolower(pathinfo($_FILES['ajax_video_file']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['mp4', 'webm', 'ogg', 'mov'])) {
+            if (!is_dir('upload')) mkdir('upload', 0755, true);
+            $dest = 'upload/layer_vid_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+            if (move_uploaded_file($_FILES['ajax_video_file']['tmp_name'], $dest)) {
+                echo json_encode(['success' => true, 'url' => $dest]);
+                exit;
+            }
+        }
+    }
+    echo json_encode(['success' => false, 'message' => 'Gagal upload file video']);
+    exit;
+}
+
 // Variabel Notifikasi
 $pesan_sukses = (($_GET['msg'] ?? '') === 'koleksi_deleted') ? 'Background berhasil dihapus dari koleksi.' : '';
 $pesan_error  = '';
@@ -180,7 +238,202 @@ if (!in_array($current_tab, ['bg', 'text', 'image', 'video', 'button'])) {
 if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     $action_type = $_POST['action_type'] ?? 'save_bg';
 
-    if ($action_type === 'save_text') {
+    if ($action_type === 'save_all') {
+        // Simpan Seluruh Pengaturan Sekaligus (Background, Warna Bottom Bar, Tulisan, Gambar, Video & Tombol)
+        $bg_url                  = $conn->real_escape_string(trim($_POST['bg_url'] ?? ''));
+        $bg_overlay_opacity      = (float)($_POST['bg_overlay_opacity'] ?? 0.88);
+        $bottom_bar_bg_color     = $conn->real_escape_string(trim($_POST['bottom_bar_bg_color'] ?? '#022d27'));
+        $bottom_bar_text_color   = $conn->real_escape_string(trim($_POST['bottom_bar_text_color'] ?? '#ffffff'));
+        $bottom_bar_active_color = $conn->real_escape_string(trim($_POST['bottom_bar_active_color'] ?? '#fbbf24'));
+
+        // Handle upload BG jika ada
+        if (!empty($_FILES['bg_file']['name']) && $_FILES['bg_file']['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES['bg_file']['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+                if (!is_dir('upload')) mkdir('upload', 0755, true);
+                $new_bg = 'upload/bg_brosur_' . time() . '_' . rand(100, 999) . '.' . $ext;
+                if (move_uploaded_file($_FILES['bg_file']['tmp_name'], $new_bg)) {
+                    $bg_url = $new_bg;
+                }
+            }
+        }
+
+        // 1. Text Items
+        $text_raw = $_POST['custom_text_items_json'] ?? '[]';
+        $decoded_text = json_decode($text_raw, true);
+        if (!is_array($decoded_text)) $decoded_text = [];
+        $clean_text_items = [];
+        foreach ($decoded_text as $idx => $it) {
+            $clean_text_items[] = [
+                'id'      => !empty($it['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $it['id']) : 'text_' . ($idx + 1),
+                'content' => trim($it['content'] ?? ''),
+                'format'  => in_array(strtolower($it['format'] ?? ''), ['h1','h2','h3','h4','h5','p']) ? strtolower($it['format']) : 'h2',
+                'color'   => !empty($it['color']) ? $it['color'] : '#ffffff',
+                'font'    => !empty($it['font']) ? trim($it['font']) : 'Plus Jakarta Sans',
+                'align'   => in_array(strtolower($it['align'] ?? ''), ['left','center','right','justify']) ? strtolower($it['align']) : 'center',
+                'size'    => max(8, min(120, (int)($it['size'] ?? 24))),
+                'posX'    => round(max(0, min(100, (float)($it['posX'] ?? 50.0))), 2),
+                'posY'    => round(max(0, min(100, (float)($it['posY'] ?? 35.0))), 2),
+                'width'   => max(10, min(100, (int)($it['width'] ?? 85)))
+            ];
+        }
+        $final_text_json_esc = $conn->real_escape_string(json_encode($clean_text_items, JSON_UNESCAPED_UNICODE));
+
+        // 2. Image Items (dengan filter base64)
+        $img_raw = $_POST['custom_image_items_json'] ?? '[]';
+        $decoded_img = json_decode($img_raw, true);
+        if (!is_array($decoded_img)) $decoded_img = [];
+        $clean_img_items = [];
+        foreach ($decoded_img as $idx => $img) {
+            if (empty($img['url'])) continue;
+            $saved_url = saveBase64ImageIfAny(trim($img['url']));
+            $clean_img_items[] = [
+                'id'            => !empty($img['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $img['id']) : 'img_' . ($idx + 1),
+                'url'           => $saved_url,
+                'shape'         => in_array($img['shape'] ?? '', ['kotak', 'persegi_panjang', 'persegi_panjang_wide', 'rounded', 'bulat', 'oval', 'kubah', 'perisai', 'bintang']) ? $img['shape'] : 'rounded',
+                'border_enable' => !empty($img['border_enable']) ? 1 : 0,
+                'border_width'  => max(0, min(20, (int)($img['border_width'] ?? 2))),
+                'border_color'  => !empty($img['border_color']) ? $img['border_color'] : '#ffffff',
+                'border_style'  => in_array($img['border_style'] ?? '', ['solid', 'dashed', 'double']) ? $img['border_style'] : 'solid',
+                'shadow_style'  => in_array($img['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'glow_gold', 'glow_teal']) ? $img['shadow_style'] : 'soft',
+                'rotation'      => max(-180, min(180, (float)($img['rotation'] ?? 0))),
+                'posX'          => round(max(0, min(100, (float)($img['posX'] ?? 50.0))), 2),
+                'posY'          => round(max(0, min(100, (float)($img['posY'] ?? 50.0))), 2),
+                'width'         => max(10, min(100, (int)($img['width'] ?? 50)))
+            ];
+        }
+        $final_img_json_esc = $conn->real_escape_string(json_encode($clean_img_items, JSON_UNESCAPED_UNICODE));
+
+        // 3. Video Items
+        $vid_raw = $_POST['custom_video_items_json'] ?? '[]';
+        $decoded_vid = json_decode($vid_raw, true);
+        if (!is_array($decoded_vid)) $decoded_vid = [];
+        $clean_vid_items = [];
+        foreach ($decoded_vid as $idx => $vid) {
+            if (empty($vid['url'])) continue;
+            $clean_vid_items[] = [
+                'id'            => !empty($vid['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $vid['id']) : 'vid_' . ($idx + 1),
+                'url'           => trim($vid['url']),
+                'shape'         => in_array($vid['shape'] ?? '', ['kotak', 'persegi_panjang', 'persegi_panjang_wide', 'rounded', 'bulat', 'oval', 'kubah', 'perisai', 'bintang']) ? $vid['shape'] : 'persegi_panjang_wide',
+                'border_enable' => !empty($vid['border_enable']) ? 1 : 0,
+                'border_width'  => max(0, min(20, (int)($vid['border_width'] ?? 2))),
+                'border_color'  => !empty($vid['border_color']) ? $vid['border_color'] : '#ffffff',
+                'border_style'  => in_array($vid['border_style'] ?? '', ['solid', 'dashed', 'double']) ? $vid['border_style'] : 'solid',
+                'shadow_style'  => in_array($vid['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'glow_gold', 'glow_teal']) ? $vid['shadow_style'] : 'soft',
+                'rotation'      => max(-180, min(180, (float)($vid['rotation'] ?? 0))),
+                'posX'          => round(max(0, min(100, (float)($vid['posX'] ?? 50.0))), 2),
+                'posY'          => round(max(0, min(100, (float)($vid['posY'] ?? 50.0))), 2),
+                'width'         => max(10, min(100, (int)($vid['width'] ?? 75))),
+                'autoplay'      => !empty($vid['autoplay']) ? 1 : 0,
+                'loop'          => !empty($vid['loop']) ? 1 : 0,
+                'muted'         => !empty($vid['muted']) ? 1 : 0,
+                'controls'      => !empty($vid['controls']) ? 1 : 0
+            ];
+        }
+        $final_vid_json_esc = $conn->real_escape_string(json_encode($clean_vid_items, JSON_UNESCAPED_UNICODE));
+
+        // 4. Button Items
+        $btn_raw = $_POST['custom_button_items_json'] ?? '[]';
+        $decoded_btn = json_decode($btn_raw, true);
+        if (!is_array($decoded_btn)) $decoded_btn = [];
+        $clean_btn_items = [];
+        foreach ($decoded_btn as $idx => $btn) {
+            $clean_btn_items[] = [
+                'id'            => !empty($btn['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $btn['id']) : 'btn_' . ($idx + 1),
+                'text'          => trim($btn['text'] ?? 'Tombol Aksi'),
+                'url'           => trim($btn['url'] ?? '#'),
+                'icon'          => trim($btn['icon'] ?? 'fab fa-whatsapp'),
+                'shape'         => in_array($btn['shape'] ?? '', ['rounded_pill', 'persegipanjang', 'bulat', 'rounded']) ? $btn['shape'] : 'rounded_pill',
+                'bg_color'      => !empty($btn['bg_color']) ? $btn['bg_color'] : '#25d366',
+                'text_color'    => !empty($btn['text_color']) ? $btn['text_color'] : '#ffffff',
+                'border_enable' => !empty($btn['border_enable']) ? 1 : 0,
+                'border_width'  => max(0, min(20, (int)($btn['border_width'] ?? 2))),
+                'border_color'  => !empty($btn['border_color']) ? $btn['border_color'] : '#ffffff',
+                'shadow_style'  => in_array($btn['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'floating', 'glow_gold', 'glow_teal', 'glow_wa', 'glow_rose', 'glow_sky']) ? $btn['shadow_style'] : 'soft',
+                'font_size'     => max(9, min(40, (int)($btn['font_size'] ?? 14))),
+                'font'          => !empty($btn['font']) ? $btn['font'] : 'Plus Jakarta Sans',
+                'posX'          => round(max(0, min(100, (float)($btn['posX'] ?? 50.0))), 2),
+                'posY'          => round(max(0, min(100, (float)($btn['posY'] ?? 80.0))), 2),
+                'width'         => max(10, min(100, (int)($btn['width'] ?? 80))),
+                'height'        => max(24, min(150, (int)($btn['height'] ?? 46))),
+                'target'        => ($btn['target'] ?? '_blank') === '_self' ? '_self' : '_blank'
+            ];
+        }
+        $final_btn_json_esc = $conn->real_escape_string(json_encode($clean_btn_items, JSON_UNESCAPED_UNICODE));
+
+        if ($active_frame === 'prestasi') {
+            $sql_master = "UPDATE pengaturan_brosur SET 
+                            prestasi_bg_url = '$bg_url',
+                            prestasi_overlay_opacity = $bg_overlay_opacity,
+                            prestasi_text_items = '$final_text_json_esc',
+                            prestasi_image_items = '$final_img_json_esc',
+                            prestasi_video_items = '$final_vid_json_esc',
+                            prestasi_button_items = '$final_btn_json_esc',
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
+        } else {
+            $first = $clean_text_items[0] ?? [
+                'content' => '', 'format' => 'h2', 'color' => '#ffffff',
+                'font' => 'Plus Jakarta Sans', 'align' => 'center', 'size' => 24,
+                'posX' => 50, 'posY' => 35, 'width' => 85
+            ];
+            $c_content = $conn->real_escape_string($first['content']);
+            $c_format  = $conn->real_escape_string($first['format']);
+            $c_color   = $conn->real_escape_string($first['color']);
+            $c_font    = $conn->real_escape_string($first['font']);
+            $c_align   = $conn->real_escape_string($first['align']);
+            $c_size    = (int)$first['size'];
+            $c_pos_x   = (float)$first['posX'];
+            $c_pos_y   = (float)$first['posY'];
+            $c_width   = (int)$first['width'];
+
+            $sql_master = "UPDATE pengaturan_brosur SET 
+                            cover_bg_url = '$bg_url',
+                            cover_overlay_opacity = $bg_overlay_opacity,
+                            body_bg_url = '$bg_url',
+                            body_overlay_opacity = $bg_overlay_opacity,
+                            custom_text_items = '$final_text_json_esc',
+                            custom_text_content = '$c_content',
+                            custom_text_format  = '$c_format',
+                            custom_text_color   = '$c_color',
+                            custom_text_font    = '$c_font',
+                            custom_text_align   = '$c_align',
+                            custom_text_size    = $c_size,
+                            custom_text_pos_x   = $c_pos_x,
+                            custom_text_pos_y   = $c_pos_y,
+                            custom_text_width   = $c_width,
+                            custom_image_items = '$final_img_json_esc',
+                            custom_video_items = '$final_vid_json_esc',
+                            custom_button_items = '$final_btn_json_esc',
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
+        }
+
+        $ok = $conn->query($sql_master);
+        $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+        $msg = $ok ? "Alhamdulillah! Seluruh pengaturan {$frame_label} berhasil disimpan." : "Gagal menyimpan: " . $conn->error;
+
+        if (isset($_POST['ajax_mode']) && $_POST['ajax_mode'] == '1') {
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'success' => (bool)$ok,
+                'message' => $msg,
+                'frame'   => $active_frame,
+                'clean_images' => $clean_img_items
+            ]);
+            exit;
+        }
+
+        if ($ok) {
+            $pesan_sukses = $msg;
+        } else {
+            $pesan_error = $msg;
+        }
+    } else if ($action_type === 'save_text') {
         $current_tab = 'text';
         $json_raw = $_POST['custom_text_items_json'] ?? '[]';
         $decoded = json_decode($json_raw, true);
@@ -257,9 +510,10 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $clean_img_items = [];
         foreach ($decoded as $idx => $img) {
             if (empty($img['url'])) continue;
+            $saved_url = saveBase64ImageIfAny(trim($img['url']));
             $clean_img_items[] = [
                 'id'            => !empty($img['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $img['id']) : 'img_' . ($idx + 1),
-                'url'           => trim($img['url']),
+                'url'           => $saved_url,
                 'shape'         => in_array($img['shape'] ?? '', ['kotak', 'persegi_panjang', 'persegi_panjang_wide', 'rounded', 'bulat', 'oval', 'kubah', 'perisai', 'bintang']) ? $img['shape'] : 'rounded',
                 'border_enable' => !empty($img['border_enable']) ? 1 : 0,
                 'border_width'  => max(0, min(20, (int)($img['border_width'] ?? 2))),
@@ -846,11 +1100,17 @@ $active_menu = 'brosur_settings';
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2 shrink-0">
+                        <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
                             <span id="frame-header-menu-pill" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-1.5 shadow-2xs">
                                 <i class="fas fa-compass text-amber-600"></i>
                                 <span id="frame-header-menu-text">Menu #1 di Bottom Bar</span>
                             </span>
+
+                            <!-- TOMBOL MASTER SAVE UNTUK SELURUH PENGATURAN -->
+                            <button type="button" id="btn-master-save" onclick="saveAllSettings()" class="px-4 sm:px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#0b8478] via-emerald-600 to-teal-700 hover:from-[#086b61] hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer ring-2 ring-emerald-300" title="Simpan Semua Pengaturan (Background, Tulisan, Gambar, Video, Tombol) dalam 1 Klik">
+                                <i class="fas fa-floppy-disk text-amber-300 text-base"></i>
+                                <span>Simpan Seluruh Pengaturan</span>
+                            </button>
                         </div>
                     </div>
 
@@ -3868,6 +4128,131 @@ $active_menu = 'brosur_settings';
             updateLiveBottomBarColors();
         }
 
+        // ==========================================
+        // 10. LOGIKA MASTER SAVE SELURUH PENGATURAN & TOAST
+        // ==========================================
+
+        function showToast(title, msg, isSuccess = true) {
+            const toast = document.getElementById('brosur-toast');
+            const toastCard = document.getElementById('brosur-toast-card');
+            const toastTitle = document.getElementById('brosur-toast-title');
+            const toastMsg = document.getElementById('brosur-toast-msg');
+            const toastIcon = document.getElementById('brosur-toast-icon');
+
+            if (!toast) return;
+
+            if (toastTitle) toastTitle.innerText = title;
+            if (toastMsg) toastMsg.innerText = msg;
+            
+            if (toastIcon) {
+                if (isSuccess) {
+                    toastIcon.className = 'w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-base';
+                    toastIcon.innerHTML = '<i class="fas fa-check"></i>';
+                    if (toastCard) toastCard.className = 'px-4 py-3 rounded-2xl bg-slate-900 text-white border border-emerald-500/50 shadow-2xl flex items-center gap-3';
+                } else {
+                    toastIcon.className = 'w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 text-base';
+                    toastIcon.innerHTML = '<i class="fas fa-circle-exclamation"></i>';
+                    if (toastCard) toastCard.className = 'px-4 py-3 rounded-2xl bg-slate-900 text-white border border-rose-500/50 shadow-2xl flex items-center gap-3';
+                }
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 4000);
+        }
+
+        function saveAllSettings() {
+            // 1. Sinkronkan semua data aktif
+            syncJsonInput();
+            syncImageJsonInput();
+            syncVideoJsonInput();
+            syncButtonJsonInput();
+
+            const btn = document.getElementById('btn-master-save');
+            const originalHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin text-amber-300"></i> <span>Menyimpan...</span>';
+            }
+
+            const bgUrl = document.getElementById('input-bg-url')?.value || '';
+            const bgOpacity = document.getElementById('input-bg-opacity')?.value || '0.88';
+            const bbarBg = document.getElementById('input-bbar-bg')?.value || '#022d27';
+            const bbarText = document.getElementById('input-bbar-text')?.value || '#ffffff';
+            const bbarActive = document.getElementById('input-bbar-active')?.value || '#fbbf24';
+
+            const formData = new FormData();
+            formData.append('action_type', 'save_all');
+            formData.append('ajax_mode', '1');
+            formData.append('active_frame', currentActiveFrame);
+            formData.append('active_tab', currentActiveTab);
+            formData.append('bg_url', bgUrl);
+            formData.append('bg_overlay_opacity', bgOpacity);
+            formData.append('bottom_bar_bg_color', bbarBg);
+            formData.append('bottom_bar_text_color', bbarText);
+            formData.append('bottom_bar_active_color', bbarActive);
+            formData.append('custom_text_items_json', JSON.stringify(textItems));
+            formData.append('custom_image_items_json', JSON.stringify(imageItems));
+            formData.append('custom_video_items_json', JSON.stringify(videoItems));
+            formData.append('custom_button_items_json', JSON.stringify(buttonItems));
+
+            // Upload bg_file jika ada
+            const bgFileInput = document.getElementById('input-bg-file');
+            if (bgFileInput && bgFileInput.files && bgFileInput.files[0]) {
+                formData.append('bg_file', bgFileInput.files[0]);
+            }
+
+            fetch('admin-brosur-settings.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+                if (res.success) {
+                    if (res.clean_images && Array.isArray(res.clean_images)) {
+                        imageItems = res.clean_images;
+                        if (framesData[currentActiveFrame]) framesData[currentActiveFrame].images = imageItems;
+                        renderImageRows();
+                        renderSimImageLayers();
+                    }
+                    showToast('Alhamdulillah Berhasil!', res.message || 'Seluruh pengaturan frame berhasil disimpan.', true);
+                } else {
+                    showToast('Gagal Menyimpan', res.message || 'Terjadi kesalahan saat menyimpan.', false);
+                }
+            })
+            .catch(err => {
+                console.error('AJAX save error, submitting form fallback:', err);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+                // Fallback ke form submit standar
+                const formFallback = document.getElementById('form-master-save');
+                if (formFallback) {
+                    document.getElementById('master-input-frame').value = currentActiveFrame;
+                    document.getElementById('master-input-tab').value = currentActiveTab;
+                    document.getElementById('master-input-bg-url').value = bgUrl;
+                    document.getElementById('master-input-bg-opacity').value = bgOpacity;
+                    document.getElementById('master-input-bbar-bg').value = bbarBg;
+                    document.getElementById('master-input-bbar-text').value = bbarText;
+                    document.getElementById('master-input-bbar-active').value = bbarActive;
+                    document.getElementById('master-input-text-json').value = JSON.stringify(textItems);
+                    document.getElementById('master-input-img-json').value = JSON.stringify(imageItems);
+                    document.getElementById('master-input-vid-json').value = JSON.stringify(videoItems);
+                    document.getElementById('master-input-btn-json').value = JSON.stringify(buttonItems);
+                    formFallback.submit();
+                }
+            });
+        }
+
         // Inisialisasi awal saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
             // Cek hash URL jika ada (#bg, #text, #image, #video, #button)
@@ -3879,6 +4264,35 @@ $active_menu = 'brosur_settings';
             switchTab(currentActiveTab);
         });
     </script>
+
+    <!-- FLOATING TOAST NOTIFICATION -->
+    <div id="brosur-toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none max-w-sm">
+        <div id="brosur-toast-card" class="px-4 py-3 rounded-2xl bg-slate-900 text-white border border-slate-700 shadow-2xl flex items-center gap-3">
+            <div id="brosur-toast-icon" class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 text-base">
+                <i class="fas fa-check"></i>
+            </div>
+            <div class="flex-1">
+                <p id="brosur-toast-title" class="text-xs font-black text-white">Berhasil Disimpan</p>
+                <p id="brosur-toast-msg" class="text-[11px] text-slate-300 mt-0.5 leading-snug">Pengaturan brosur berhasil diperbarui.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- HIDDEN FORM FOR MASTER POST FALLBACK -->
+    <form id="form-master-save" method="POST" action="" style="display:none;">
+        <input type="hidden" name="action_type" value="save_all">
+        <input type="hidden" name="active_frame" id="master-input-frame" value="<?= $active_frame ?>">
+        <input type="hidden" name="active_tab" id="master-input-tab" value="<?= $current_tab ?>">
+        <input type="hidden" name="bg_url" id="master-input-bg-url" value="">
+        <input type="hidden" name="bg_overlay_opacity" id="master-input-bg-opacity" value="">
+        <input type="hidden" name="bottom_bar_bg_color" id="master-input-bbar-bg" value="">
+        <input type="hidden" name="bottom_bar_text_color" id="master-input-bbar-text" value="">
+        <input type="hidden" name="bottom_bar_active_color" id="master-input-bbar-active" value="">
+        <input type="hidden" name="custom_text_items_json" id="master-input-text-json" value="">
+        <input type="hidden" name="custom_image_items_json" id="master-input-img-json" value="">
+        <input type="hidden" name="custom_video_items_json" id="master-input-vid-json" value="">
+        <input type="hidden" name="custom_button_items_json" id="master-input-btn-json" value="">
+    </form>
 </body>
 </html>
 
