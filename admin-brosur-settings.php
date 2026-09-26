@@ -1031,11 +1031,11 @@ $active_menu = 'brosur_settings';
             </div>
         </header>
 
-        <!-- WORKSPACE AREA: 2 KOLOM (PAPAN PENGATURAN KIRI & SIMULASI KANAN) -->
-        <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- WORKSPACE AREA: 2 KOLOM (PAPAN PENGATURAN KIRI LEBAR & SIMULASI KANAN MEPET) -->
+        <div class="p-3 sm:p-4 lg:p-5 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start w-full">
             
-            <!-- PANEL KIRI: PENGATURAN BERBASIS TAB (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR) -->
-            <div class="lg:col-span-7 xl:col-span-7 space-y-5">
+            <!-- PANEL KIRI: PENGATURAN BERBASIS TAB (DIBUAT LEBAR & LAPANG) -->
+            <div class="lg:col-span-8 xl:col-span-8 2xl:col-span-8 space-y-4">
 
                 <!-- NOTIFIKASI SUKSES / ERROR -->
                 <?php if (!empty($pesan_sukses)): ?>
@@ -1082,32 +1082,32 @@ $active_menu = 'brosur_settings';
                 <div class="bg-white/90 backdrop-blur-md rounded-3xl p-5 sm:p-6 border-2 border-emerald-500/30 shadow-sm space-y-5">
                     
                     <!-- FRAME HEADER: DINAMIS SESUAI FRAME TERPILIH -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
-                        <div class="flex items-center gap-3.5">
+                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+                        <div class="flex items-center gap-3.5 min-w-0">
                             <div id="frame-header-icon-box" class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-[#0b8478] text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/20 shrink-0">
                                 <i id="frame-header-icon" class="fas fa-house"></i>
                             </div>
-                            <div>
+                            <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <h2 id="frame-header-title" class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Home</h2>
                                     <span id="frame-header-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
                                         Cover / Halaman Depan
                                     </span>
                                 </div>
-                                <p id="frame-header-desc" class="text-xs text-slate-500 mt-0.5">
+                                <p id="frame-header-desc" class="text-xs text-slate-500 mt-1 leading-normal">
                                     Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Home</strong> pada Bottom Navigation Bar).
                                 </p>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
-                            <span id="frame-header-menu-pill" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-1.5 shadow-2xs">
+                        <div class="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+                            <span id="frame-header-menu-pill" class="px-3 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-1.5 shadow-2xs whitespace-nowrap">
                                 <i class="fas fa-compass text-amber-600"></i>
                                 <span id="frame-header-menu-text">Menu #1 di Bottom Bar</span>
                             </span>
 
                             <!-- TOMBOL MASTER SAVE UNTUK SELURUH PENGATURAN -->
-                            <button type="button" id="btn-master-save" onclick="saveAllSettings()" class="px-4 sm:px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#0b8478] via-emerald-600 to-teal-700 hover:from-[#086b61] hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer ring-2 ring-emerald-300" title="Simpan Semua Pengaturan (Background, Tulisan, Gambar, Video, Tombol) dalam 1 Klik">
+                            <button type="button" id="btn-master-save" onclick="saveAllSettings()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#0b8478] via-emerald-600 to-teal-700 hover:from-[#086b61] hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer ring-2 ring-emerald-300 whitespace-nowrap" title="Simpan Semua Pengaturan (Background, Tulisan, Gambar, Video, Tombol) dalam 1 Klik">
                                 <i class="fas fa-floppy-disk text-amber-300 text-base"></i>
                                 <span>Simpan Seluruh Pengaturan</span>
                             </button>
@@ -1115,46 +1115,46 @@ $active_menu = 'brosur_settings';
                     </div>
 
                     <!-- NAVIGASI 5 SUB-TAB DALAM FRAME AKTIF (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR, TAB 4: VIDEO, TAB 5: TOMBOL) -->
-                    <div class="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 shadow-inner flex items-center gap-1 sm:gap-1.5 sticky top-20 z-20 overflow-x-auto">
+                    <div class="bg-slate-100/95 p-1.5 rounded-2xl border border-slate-200 shadow-inner flex items-center gap-1.5 sticky top-16 z-20 overflow-x-auto">
                         
                         <!-- TAB 1: BACKGROUND BROSUR -->
-                        <button type="button" id="tab-btn-bg" onclick="switchTab('bg')" class="tab-nav-btn flex-1 min-w-[90px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer">
+                        <button type="button" id="tab-btn-bg" onclick="switchTab('bg')" class="tab-nav-btn flex-1 min-w-[110px] py-2.5 sm:py-3 px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer whitespace-nowrap">
                             <i class="fas fa-image text-sm sm:text-base"></i>
                             <span>1. Background</span>
                         </button>
 
                         <!-- TAB 2: KOLOM TULISAN -->
-                        <button type="button" id="tab-btn-text" onclick="switchTab('text')" class="tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                        <button type="button" id="tab-btn-text" onclick="switchTab('text')" class="tab-nav-btn flex-1 min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
                             <i class="fas fa-font text-sm sm:text-base"></i>
                             <span>2. Tulisan</span>
-                            <span id="tab-badge-text" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">
+                            <span id="tab-badge-text" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">
                                 <?= count($text_items) ?>
                             </span>
                         </button>
 
                         <!-- TAB 3: SISIPKAN GAMBAR -->
-                        <button type="button" id="tab-btn-image" onclick="switchTab('image')" class="tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                        <button type="button" id="tab-btn-image" onclick="switchTab('image')" class="tab-nav-btn flex-1 min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
                             <i class="fas fa-shapes text-sm sm:text-base"></i>
                             <span>3. Gambar</span>
-                            <span id="tab-badge-image" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-800">
+                            <span id="tab-badge-image" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-800">
                                 <?= count($image_items) ?>
                             </span>
                         </button>
 
                         <!-- TAB 4: SISIPKAN VIDEO -->
-                        <button type="button" id="tab-btn-video" onclick="switchTab('video')" class="tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                        <button type="button" id="tab-btn-video" onclick="switchTab('video')" class="tab-nav-btn flex-1 min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
                             <i class="fas fa-video text-sm sm:text-base"></i>
                             <span>4. Video</span>
-                            <span id="tab-badge-video" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">
+                            <span id="tab-badge-video" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">
                                 <?= count($video_items) ?>
                             </span>
                         </button>
 
                         <!-- TAB 5: PENGATURAN TOMBOL -->
-                        <button type="button" id="tab-btn-button" onclick="switchTab('button')" class="tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                        <button type="button" id="tab-btn-button" onclick="switchTab('button')" class="tab-nav-btn flex-1 min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
                             <i class="fas fa-hand-pointer text-sm sm:text-base"></i>
                             <span>5. Tombol</span>
-                            <span id="tab-badge-button" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+                            <span id="tab-badge-button" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
                                 <?= count($button_items) ?>
                             </span>
                         </button>
@@ -1699,7 +1699,7 @@ $active_menu = 'brosur_settings';
             </div>
 
             <!-- PANEL KANAN: LAYAR SIMULASI INTERAKTIF (STICKY DI KANAN LAYAR PC) -->
-            <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 self-start flex flex-col items-center lg:items-end">
+            <div class="lg:col-span-4 xl:col-span-4 2xl:col-span-4 lg:sticky lg:top-6 self-start flex flex-col items-center">
                 <div class="w-full max-w-[340px] flex flex-col items-center">
                     
                     <!-- TOOLBAR ATAS SIMULASI: TOGGLE GARIS BANTU PRESISI -->
