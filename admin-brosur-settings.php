@@ -123,7 +123,13 @@ $columns_to_check = [
     'prestasi_text_items'      => "LONGTEXT",
     'prestasi_image_items'     => "LONGTEXT",
     'prestasi_video_items'     => "LONGTEXT",
-    'prestasi_button_items'    => "LONGTEXT"
+    'prestasi_button_items'    => "LONGTEXT",
+    'unggulan_bg_url'          => "TEXT",
+    'unggulan_overlay_opacity' => "DECIMAL(3,2) DEFAULT 0.88",
+    'unggulan_text_items'      => "LONGTEXT",
+    'unggulan_image_items'     => "LONGTEXT",
+    'unggulan_video_items'     => "LONGTEXT",
+    'unggulan_button_items'    => "LONGTEXT"
 ];
 foreach ($columns_to_check as $col => $type) {
     $res = $conn->query("SHOW COLUMNS FROM pengaturan_brosur LIKE '$col'");
@@ -192,7 +198,7 @@ $pesan_error  = '';
 
 // Tab Aktif & Frame Aktif
 $active_frame = $_POST['active_frame'] ?? $_GET['frame'] ?? 'home';
-if (!in_array($active_frame, ['home', 'prestasi'])) {
+if (!in_array($active_frame, ['home', 'prestasi', 'unggulan'])) {
     $active_frame = 'home';
 }
 
@@ -340,6 +346,18 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
                            WHERE id = 1";
+        } else if ($active_frame === 'unggulan') {
+            $sql_master = "UPDATE pengaturan_brosur SET 
+                            unggulan_bg_url = '$bg_url',
+                            unggulan_overlay_opacity = $bg_overlay_opacity,
+                            unggulan_text_items = '$final_text_json_esc',
+                            unggulan_image_items = '$final_img_json_esc',
+                            unggulan_video_items = '$final_vid_json_esc',
+                            unggulan_button_items = '$final_btn_json_esc',
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
         } else {
             $first = $clean_text_items[0] ?? [
                 'content' => '', 'format' => 'h2', 'color' => '#ffffff',
@@ -381,7 +399,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         }
 
         $ok = $conn->query($sql_master);
-        $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+        $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : 'Frame Home');
         $msg = $ok ? "Alhamdulillah! Seluruh pengaturan {$frame_label} berhasil disimpan." : "Gagal menyimpan: " . $conn->error;
 
         if (isset($_POST['ajax_mode']) && $_POST['ajax_mode'] == '1') {
@@ -850,6 +868,105 @@ if ($raw_prestasi_buttons !== null && $raw_prestasi_buttons !== '') {
     ];
 }
 
+// ==============================================================
+// 3. DATA FRAME UNGGULAN (PROGRAM & KEUNGGULAN PESANTREN)
+// ==============================================================
+$unggulan_bg_url = !empty($cfg['unggulan_bg_url']) ? $cfg['unggulan_bg_url'] : 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=1200&auto=format&fit=crop&q=80';
+$unggulan_overlay_opacity = isset($cfg['unggulan_overlay_opacity']) ? (float)$cfg['unggulan_overlay_opacity'] : 0.88;
+
+$raw_unggulan_texts = $cfg['unggulan_text_items'] ?? null;
+if ($raw_unggulan_texts !== null && $raw_unggulan_texts !== '') {
+    $unggulan_text_items = json_decode($raw_unggulan_texts, true);
+    if (!is_array($unggulan_text_items)) $unggulan_text_items = [];
+} else {
+    $unggulan_text_items = [
+        [
+            'id'      => 'text_unggulan_1',
+            'content' => 'Program Unggulan Villa Quran',
+            'format'  => 'h2',
+            'color'   => '#ffffff',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 24,
+            'posX'    => 50.0,
+            'posY'    => 18.0,
+            'width'   => 88
+        ],
+        [
+            'id'      => 'text_unggulan_2',
+            'content' => 'Tahfidz 30 Juz Mutqin, Karakter Islami & Kurikulum Solopreneur Modern',
+            'format'  => 'h4',
+            'color'   => '#fbbf24',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 13,
+            'posX'    => 50.0,
+            'posY'    => 28.0,
+            'width'   => 90
+        ]
+    ];
+}
+
+$raw_unggulan_images = $cfg['unggulan_image_items'] ?? null;
+if ($raw_unggulan_images !== null && $raw_unggulan_images !== '') {
+    $unggulan_image_items = json_decode($raw_unggulan_images, true);
+    if (!is_array($unggulan_image_items)) $unggulan_image_items = [];
+} else {
+    $unggulan_image_items = [
+        [
+            'id'            => 'img_unggulan_1',
+            'url'           => 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=800&auto=format&fit=crop&q=80',
+            'shape'         => 'rounded',
+            'border_enable' => 1,
+            'border_width'  => 3,
+            'border_color'  => '#fbbf24',
+            'border_style'  => 'solid',
+            'shadow_style'  => 'glow_gold',
+            'rotation'      => 0,
+            'posX'          => 50.0,
+            'posY'          => 53.0,
+            'width'         => 72
+        ]
+    ];
+}
+
+$raw_unggulan_videos = $cfg['unggulan_video_items'] ?? null;
+if ($raw_unggulan_videos !== null && $raw_unggulan_videos !== '') {
+    $unggulan_video_items = json_decode($raw_unggulan_videos, true);
+    if (!is_array($unggulan_video_items)) $unggulan_video_items = [];
+} else {
+    $unggulan_video_items = [];
+}
+
+$raw_unggulan_buttons = $cfg['unggulan_button_items'] ?? null;
+if ($raw_unggulan_buttons !== null && $raw_unggulan_buttons !== '') {
+    $unggulan_button_items = json_decode($raw_unggulan_buttons, true);
+    if (!is_array($unggulan_button_items)) $unggulan_button_items = [];
+} else {
+    $unggulan_button_items = [
+        [
+            'id'            => 'btn_unggulan_1',
+            'text'          => 'Tanya Program Unggulan',
+            'url'           => 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20info%20program%20unggulan%20Villa%20Quran',
+            'icon'          => 'fab fa-whatsapp',
+            'shape'         => 'rounded_pill',
+            'bg_color'      => '#25d366',
+            'text_color'    => '#ffffff',
+            'border_enable' => 0,
+            'border_width'  => 2,
+            'border_color'  => '#ffffff',
+            'shadow_style'  => 'glow_wa',
+            'font_size'     => 13,
+            'font'          => 'Plus Jakarta Sans',
+            'posX'          => 50.0,
+            'posY'          => 82.0,
+            'width'         => 82,
+            'height'        => 46,
+            'target'        => '_blank'
+        ]
+    ];
+}
+
 $active_menu = 'brosur_settings';
 ?>
 <!DOCTYPE html>
@@ -1052,6 +1169,13 @@ $active_menu = 'brosur_settings';
                         <i class="fas fa-trophy text-xs text-amber-400"></i>
                         <span>2. Frame: Prestasi</span>
                         <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-900/60 text-amber-200">Menu #2</span>
+                    </button>
+
+                    <!-- Tombol Frame 3: Unggulan -->
+                    <button type="button" id="frame-btn-unggulan" onclick="switchFrame('unggulan')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+                        <i class="fas fa-star text-xs text-amber-400"></i>
+                        <span>3. Frame: Unggulan</span>
+                        <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-900/60 text-amber-200">Menu #3</span>
                     </button>
                 </div>
 
@@ -1743,7 +1867,7 @@ $active_menu = 'brosur_settings';
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimButtonLayers() -->
                             </div>
 
-                            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME & PRESTASI) -->
+                            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME, PRESTASI & UNGGULAN) -->
                             <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-3 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>; color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;">
                                 <!-- Menu 1: Home -->
                                 <button type="button" onclick="switchFrame('home')" id="sim-menu-home-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5" style="color: <?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>;" title="Menu Home (Frame Home)">
@@ -1755,6 +1879,12 @@ $active_menu = 'brosur_settings';
                                 <button type="button" onclick="switchFrame('prestasi')" id="sim-menu-prestasi-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Prestasi (Frame Prestasi)">
                                     <i id="sim-menu-prestasi-icon" class="fas fa-trophy text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
                                     <span id="sim-menu-prestasi-label" class="text-[9.5px] font-bold tracking-wider leading-none">Prestasi</span>
+                                </button>
+
+                                <!-- Menu 3: Unggulan -->
+                                <button type="button" onclick="switchFrame('unggulan')" id="sim-menu-unggulan-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Unggulan (Frame Unggulan)">
+                                    <i id="sim-menu-unggulan-icon" class="fas fa-star text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                                    <span id="sim-menu-unggulan-label" class="text-[9.5px] font-bold tracking-wider leading-none">Unggulan</span>
                                 </button>
                             </div>
 
@@ -1820,6 +1950,23 @@ $active_menu = 'brosur_settings';
                 images: <?= json_encode($prestasi_image_items, JSON_UNESCAPED_UNICODE) ?>,
                 videos: <?= json_encode($prestasi_video_items, JSON_UNESCAPED_UNICODE) ?>,
                 buttons: <?= json_encode($prestasi_button_items, JSON_UNESCAPED_UNICODE) ?>
+            },
+            unggulan: {
+                id: 'unggulan',
+                name: 'Unggulan',
+                title: 'Frame: Unggulan',
+                subtitle: 'Frame ini mengatur tampilan program, fasilitas & keunggulan pesantren (Menu <strong>Unggulan</strong> pada Bottom Navigation Bar).',
+                badge: 'Program & Keunggulan',
+                menuPill: 'Menu #3 di Bottom Bar',
+                icon: 'fa-star',
+                iconGradient: 'from-amber-500 via-orange-500 to-amber-600',
+                badgeClass: 'bg-orange-100 text-orange-900 border-orange-300',
+                bgUrl: <?= json_encode($unggulan_bg_url) ?>,
+                bgOpacity: <?= (float)$unggulan_overlay_opacity ?>,
+                texts: <?= json_encode($unggulan_text_items, JSON_UNESCAPED_UNICODE) ?>,
+                images: <?= json_encode($unggulan_image_items, JSON_UNESCAPED_UNICODE) ?>,
+                videos: <?= json_encode($unggulan_video_items, JSON_UNESCAPED_UNICODE) ?>,
+                buttons: <?= json_encode($unggulan_button_items, JSON_UNESCAPED_UNICODE) ?>
             }
         };
 
@@ -1833,7 +1980,7 @@ $active_menu = 'brosur_settings';
         let buttonItems = framesData[currentActiveFrame].buttons;
 
         function switchFrame(frame) {
-            if (!['home', 'prestasi'].includes(frame)) frame = 'home';
+            if (!['home', 'prestasi', 'unggulan'].includes(frame)) frame = 'home';
             currentActiveFrame = frame;
 
             const data = framesData[frame];
@@ -1845,15 +1992,18 @@ $active_menu = 'brosur_settings';
             // 1. Update Tombol Switcher Frame
             const btnHome = document.getElementById('frame-btn-home');
             const btnPrestasi = document.getElementById('frame-btn-prestasi');
-            if (btnHome && btnPrestasi) {
-                if (frame === 'home') {
-                    btnHome.className = 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer';
-                    btnPrestasi.className = 'flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer';
-                } else {
-                    btnPrestasi.className = 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md ring-2 ring-amber-400 cursor-pointer';
-                    btnHome.className = 'flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer';
-                }
-            }
+            const btnUnggulan = document.getElementById('frame-btn-unggulan');
+            
+            const activeClassMap = {
+                home: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer',
+                prestasi: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md ring-2 ring-amber-400 cursor-pointer',
+                unggulan: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md ring-2 ring-orange-400 cursor-pointer'
+            };
+            const inactiveClass = 'flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer';
+
+            if (btnHome) btnHome.className = (frame === 'home') ? activeClassMap.home : inactiveClass;
+            if (btnPrestasi) btnPrestasi.className = (frame === 'prestasi') ? activeClassMap.prestasi : inactiveClass;
+            if (btnUnggulan) btnUnggulan.className = (frame === 'unggulan') ? activeClassMap.unggulan : inactiveClass;
 
             // 2. Update Header Info Frame
             const headerTitle    = document.getElementById('frame-header-title');
@@ -1886,7 +2036,7 @@ $active_menu = 'brosur_settings';
             if (bgUrlInput) bgUrlInput.value = data.bgUrl || '';
             if (bgOpacityInput) bgOpacityInput.value = data.bgOpacity;
             if (bgOpacityLabel) bgOpacityLabel.innerText = Math.round(data.bgOpacity * 100) + '%';
-            if (thumbBgBox && data.bgUrl) thumbBgBox.style.backgroundImage = `url('${data.bgUrl}')`;
+            if (thumbBgBox) thumbBgBox.style.backgroundImage = data.bgUrl ? `url('${data.bgUrl}')` : 'none';
             if (thumbBgOverlay) thumbBgOverlay.style.opacity = data.bgOpacity;
 
             // 5. Update Background Canvas Simulasi
@@ -1895,21 +2045,21 @@ $active_menu = 'brosur_settings';
             // 6. Update Highlight Menu Aktif di Bottom Bar Simulasi
             const navHome = document.getElementById('sim-menu-home-btn');
             const navPrestasi = document.getElementById('sim-menu-prestasi-btn');
+            const navUnggulan = document.getElementById('sim-menu-unggulan-btn');
             const activeColor = '<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>';
             const normalColor = '<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>';
 
-            if (navHome && navPrestasi) {
-                if (frame === 'home') {
-                    navHome.style.color = activeColor;
-                    navHome.classList.remove('opacity-70');
-                    navPrestasi.style.color = normalColor;
-                    navPrestasi.classList.add('opacity-70');
-                } else {
-                    navPrestasi.style.color = activeColor;
-                    navPrestasi.classList.remove('opacity-70');
-                    navHome.style.color = normalColor;
-                    navHome.classList.add('opacity-70');
-                }
+            if (navHome) {
+                navHome.style.color = (frame === 'home') ? activeColor : normalColor;
+                navHome.classList.toggle('opacity-70', frame !== 'home');
+            }
+            if (navPrestasi) {
+                navPrestasi.style.color = (frame === 'prestasi') ? activeColor : normalColor;
+                navPrestasi.classList.toggle('opacity-70', frame !== 'prestasi');
+            }
+            if (navUnggulan) {
+                navUnggulan.style.color = (frame === 'unggulan') ? activeColor : normalColor;
+                navUnggulan.classList.toggle('opacity-70', frame !== 'unggulan');
             }
 
             // 7. Re-render Semua Tab Rows & Layar Simulasi
