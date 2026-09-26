@@ -256,6 +256,16 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             overflow-x: hidden;
         }
 
+        .bg-pattern {
+            <?php if (!empty($body_bg_url)): ?>
+            background-image: linear-gradient(rgba(246, 247, 245, <?= $body_overlay_opacity ?>), rgba(246, 247, 245, <?= $body_overlay_opacity ?>)), url('<?= $body_bg_url ?>');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            <?php endif; ?>
+        }
+
         .font-arabic {
             font-family: 'Amiri', serif;
         }
