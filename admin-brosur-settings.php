@@ -65,8 +65,9 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
-// Pastikan kolom untuk custom text tersedia di tabel pengaturan_brosur
+// Pastikan kolom untuk custom text & multi-layer JSON tersedia di tabel pengaturan_brosur
 $columns_to_check = [
+    'custom_text_items'   => "LONGTEXT",
     'custom_text_content' => "TEXT",
     'custom_text_format'  => "VARCHAR(20) DEFAULT 'h2'",
     'custom_text_color'   => "VARCHAR(30) DEFAULT '#ffffff'",
@@ -120,35 +121,86 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_koleksi') {
 $pesan_sukses = (($_GET['msg'] ?? '') === 'koleksi_deleted') ? 'Background berhasil dihapus dari koleksi.' : '';
 $pesan_error  = '';
 
-// Proses Simpan Pengaturan (Background & Tulisan Dinamis)
+// Proses Simpan Pengaturan (Background & Tulisan Dinamis Multi-Kolom)
 if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     $action_type = $_POST['action_type'] ?? 'save_bg';
 
     if ($action_type === 'save_text') {
-        $custom_text_content = $conn->real_escape_string(trim($_POST['custom_text_content'] ?? ''));
-        $custom_text_format  = $conn->real_escape_string(trim($_POST['custom_text_format'] ?? 'h2'));
-        $custom_text_color   = $conn->real_escape_string(trim($_POST['custom_text_color'] ?? '#ffffff'));
-        $custom_text_font    = $conn->real_escape_string(trim($_POST['custom_text_font'] ?? 'Plus Jakarta Sans'));
-        $custom_text_align   = $conn->real_escape_string(trim($_POST['custom_text_align'] ?? 'center'));
-        $custom_text_size    = (int)($_POST['custom_text_size'] ?? 24);
-        $custom_text_pos_x   = (float)($_POST['custom_text_pos_x'] ?? 50.00);
-        $custom_text_pos_y   = (float)($_POST['custom_text_pos_y'] ?? 35.00);
-        $custom_text_width   = (int)($_POST['custom_text_width'] ?? 85);
+        $json_raw = $_POST['custom_text_items_json'] ?? '';
+        $decoded = json_decode($json_raw, true);
+
+        if (!is_array($decoded) || empty($decoded)) {
+            // Fallback single item jika JSON kosong
+            $decoded = [[
+                'id'      => 'text_1',
+                'content' => trim($_POST['custom_text_content'] ?? 'Villa Quran Indonesia'),
+                'format'  => trim($_POST['custom_text_format'] ?? 'h2'),
+                'color'   => trim($_POST['custom_text_color'] ?? '#ffffff'),
+                'font'    => trim($_POST['custom_text_font'] ?? 'Plus Jakarta Sans'),
+                'align'   => trim($_POST['custom_text_align'] ?? 'center'),
+                'size'    => (int)($_POST['custom_text_size'] ?? 24),
+                'posX'    => (float)($_POST['custom_text_pos_x'] ?? 50.0),
+                'posY'    => (float)($_POST['custom_text_pos_y'] ?? 35.0),
+                'width'   => (int)($_POST['custom_text_width'] ?? 85)
+            ]];
+        }
+
+        $clean_items = [];
+        foreach ($decoded as $idx => $it) {
+            $clean_items[] = [
+                'id'      => !empty($it['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $it['id']) : 'text_' . ($idx + 1),
+                'content' => trim($it['content'] ?? ''),
+                'format'  => in_array(strtolower($it['format'] ?? ''), ['h1','h2','h3','h4','h5','p']) ? strtolower($it['format']) : 'h2',
+                'color'   => !empty($it['color']) ? $it['color'] : '#ffffff',
+                'font'    => !empty($it['font']) ? trim($it['font']) : 'Plus Jakarta Sans',
+                'align'   => in_array(strtolower($it['align'] ?? ''), ['left','center','right','justify']) ? strtolower($it['align']) : 'center',
+                'size'    => max(8, min(120, (int)($it['size'] ?? 24))),
+                'posX'    => round(max(0, min(100, (float)($it['posX'] ?? 50.0))), 2),
+                'posY'    => round(max(0, min(100, (float)($it['posY'] ?? 35.0))), 2),
+                'width'   => max(10, min(100, (int)($it['width'] ?? 85)))
+            ];
+        }
+
+        $final_json = json_encode($clean_items, JSON_UNESCAPED_UNICODE);
+        $final_json_esc = $conn->real_escape_string($final_json);
+
+        // Update legacy columns dari item pertama sebagai fallback
+        $first = $clean_items[0] ?? [
+            'content' => 'Villa Quran Indonesia',
+            'format' => 'h2',
+            'color' => '#ffffff',
+            'font' => 'Plus Jakarta Sans',
+            'align' => 'center',
+            'size' => 24,
+            'posX' => 50,
+            'posY' => 35,
+            'width' => 85
+        ];
+        $c_content = $conn->real_escape_string($first['content']);
+        $c_format  = $conn->real_escape_string($first['format']);
+        $c_color   = $conn->real_escape_string($first['color']);
+        $c_font    = $conn->real_escape_string($first['font']);
+        $c_align   = $conn->real_escape_string($first['align']);
+        $c_size    = (int)$first['size'];
+        $c_pos_x   = (float)$first['posX'];
+        $c_pos_y   = (float)$first['posY'];
+        $c_width   = (int)$first['width'];
 
         $sql_text = "UPDATE pengaturan_brosur SET 
-                        custom_text_content = '$custom_text_content',
-                        custom_text_format  = '$custom_text_format',
-                        custom_text_color   = '$custom_text_color',
-                        custom_text_font    = '$custom_text_font',
-                        custom_text_align   = '$custom_text_align',
-                        custom_text_size    = $custom_text_size,
-                        custom_text_pos_x   = $custom_text_pos_x,
-                        custom_text_pos_y   = $custom_text_pos_y,
-                        custom_text_width   = $custom_text_width
+                        custom_text_items   = '$final_json_esc',
+                        custom_text_content = '$c_content',
+                        custom_text_format  = '$c_format',
+                        custom_text_color   = '$c_color',
+                        custom_text_font    = '$c_font',
+                        custom_text_align   = '$c_align',
+                        custom_text_size    = $c_size,
+                        custom_text_pos_x   = $c_pos_x,
+                        custom_text_pos_y   = $c_pos_y,
+                        custom_text_width   = $c_width
                      WHERE id = 1";
 
         if ($conn->query($sql_text)) {
-            $pesan_sukses = "Alhamdulillah! Pengaturan dan posisi kolom tulisan berhasil disimpan.";
+            $pesan_sukses = "Alhamdulillah! Pengaturan seluruh kolom tulisan (" . count($clean_items) . " kolom) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan tulisan: " . $conn->error;
         }
@@ -204,26 +256,24 @@ if ($q_koleksi && $q_koleksi->num_rows > 0) {
 $q = $conn->query("SELECT * FROM pengaturan_brosur WHERE id = 1 LIMIT 1");
 $cfg = $q ? $q->fetch_assoc() : [];
 
-// Helper Render Teks HTML Berdasarkan Format
-function renderCustomTextPreview($content, $format = 'h2') {
-    $text = htmlspecialchars($content);
-    if (empty($text)) $text = 'Villa Quran Indonesia';
-    $format = strtolower(trim($format));
-    switch ($format) {
-        case 'h1':
-            return '<h1 class="font-black leading-tight tracking-tight">' . nl2br($text) . '</h1>';
-        case 'h3':
-            return '<h3 class="font-bold leading-snug">' . nl2br($text) . '</h3>';
-        case 'h4':
-            return '<h4 class="font-bold leading-normal">' . nl2br($text) . '</h4>';
-        case 'h5':
-            return '<h5 class="font-semibold uppercase tracking-wider leading-normal text-xs">' . nl2br($text) . '</h5>';
-        case 'p':
-            return '<p class="font-normal leading-relaxed text-sm">' . nl2br($text) . '</p>';
-        case 'h2':
-        default:
-            return '<h2 class="font-extrabold leading-tight">' . nl2br($text) . '</h2>';
-    }
+// Ambil daftar text items atau inisialisasi default
+$raw_items = $cfg['custom_text_items'] ?? '';
+$text_items = !empty($raw_items) ? json_decode($raw_items, true) : null;
+if (!is_array($text_items) || empty($text_items)) {
+    $text_items = [
+        [
+            'id'      => 'text_' . time() . '_1',
+            'content' => !empty($cfg['custom_text_content']) ? $cfg['custom_text_content'] : 'Villa Quran Indonesia',
+            'format'  => !empty($cfg['custom_text_format']) ? $cfg['custom_text_format'] : 'h2',
+            'color'   => !empty($cfg['custom_text_color']) ? $cfg['custom_text_color'] : '#ffffff',
+            'font'    => !empty($cfg['custom_text_font']) ? $cfg['custom_text_font'] : 'Plus Jakarta Sans',
+            'align'   => !empty($cfg['custom_text_align']) ? $cfg['custom_text_align'] : 'center',
+            'size'    => !empty($cfg['custom_text_size']) ? (int)$cfg['custom_text_size'] : 24,
+            'posX'    => isset($cfg['custom_text_pos_x']) ? (float)$cfg['custom_text_pos_x'] : 50.0,
+            'posY'    => isset($cfg['custom_text_pos_y']) ? (float)$cfg['custom_text_pos_y'] : 35.0,
+            'width'   => !empty($cfg['custom_text_width']) ? (int)$cfg['custom_text_width'] : 85
+        ]
+    ];
 }
 
 $active_menu = 'brosur_settings';
@@ -272,6 +322,19 @@ $active_menu = 'brosur_settings';
         .draggable-box:active {
             cursor: grabbing;
         }
+
+        /* Compact Text Row Strip */
+        .text-row-item {
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .text-row-item:hover {
+            border-color: #0b8478;
+        }
+        .text-row-item.active-layer {
+            border-color: #0b8478;
+            background-color: #f0fdfa;
+            box-shadow: 0 4px 12px -2px rgba(11, 132, 120, 0.12);
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800">
@@ -286,11 +349,11 @@ $active_menu = 'brosur_settings';
         <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-xs">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-xl shadow-xs">
-                    <i class="fas fa-pen-nib"></i>
+                    <i class="fas fa-layer-group"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg sm:text-xl font-black text-slate-900 leading-tight">Pengaturan Tulisan & Background Brosur</h1>
-                    <p class="text-xs text-slate-500">Kustomisasi kolom tulisan (H1-H5, font, warna, ukuran) & drag posisi di atas background</p>
+                    <h1 class="text-lg sm:text-xl font-black text-slate-900 leading-tight">Pengaturan Kolom Tulisan & Background</h1>
+                    <p class="text-xs text-slate-500">Duplikasi kolom tulisan (H1-H5/P, font, warna, ukuran) & geser letak posisi di layar HP</p>
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
@@ -322,204 +385,59 @@ $active_menu = 'brosur_settings';
                 </div>
                 <?php endif; ?>
 
-                <!-- KARTU 1: PENGATURAN KOLOM TULISAN DINAMIS (6 FITUR LENGKAP) -->
-                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
+                <!-- KARTU 1: PENGATURAN KOLOM TULISAN DINAMIS MULTI-ROW (BISA DIGANDAKAN / DIDUPLIKASI) -->
+                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
                     
-                    <!-- Header Kartu Tulisan -->
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <!-- Header Kartu Tulisan & Tombol Tambah Kolom -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-2xs">
+                            <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
                                 <i class="fas fa-font"></i>
                             </div>
                             <div>
-                                <h2 class="font-black text-base sm:text-lg text-slate-900">Pengaturan Kolom Tulisan</h2>
-                                <p class="text-xs text-slate-500">Format, warna, jenis font, alignment, ukuran & drag letak posisi</p>
+                                <div class="flex items-center gap-2">
+                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Kolom Tulisan Brosur</h2>
+                                    <span id="text-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-teal-100 text-teal-800">
+                                        <?= count($text_items) ?> Kolom
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500">Tampilan ringkas 1 baris per kolom. Tekan <strong>Duplikasi</strong> untuk menambah kolom baru.</p>
                             </div>
                         </div>
-                        <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-900 border border-amber-200/60 flex items-center gap-1.5">
-                            <i class="fas fa-hand-pointer text-amber-600"></i> Bisa Digeser di Layar
-                        </span>
+                        
+                        <!-- Tombol Tambah Kolom Tulisan -->
+                        <button type="button" onclick="addNewTextRow()" class="px-4 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200/80 font-black text-xs transition flex items-center gap-2 shrink-0 active:scale-95 cursor-pointer">
+                            <i class="fas fa-plus text-xs"></i>
+                            <span>Tambah Kolom Tulisan</span>
+                        </button>
                     </div>
 
-                    <form action="" method="POST" id="form-pengaturan-text" class="space-y-5">
+                    <!-- FORM UTAMA TULISAN DINAMIS -->
+                    <form action="" method="POST" id="form-pengaturan-text" class="space-y-4">
                         <input type="hidden" name="action_type" value="save_text">
+                        <input type="hidden" name="custom_text_items_json" id="input-text-items-json" value="">
 
-                        <!-- INPUT ISI TULISAN -->
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
-                                Isi Tulisan / Teks:
-                            </label>
-                            <textarea name="custom_text_content" id="input-text-content" rows="3" oninput="updateLiveText(this.value)" placeholder="Tulis teks atau judul yang ingin ditampilkan..." class="w-full p-3.5 rounded-2xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none bg-slate-50/50 hover:bg-white transition leading-relaxed font-medium"><?= htmlspecialchars($cfg['custom_text_content'] ?? 'Villa Quran Indonesia') ?></textarea>
+                        <!-- DAFTAR BARIS KOLOM TULISAN (RINGKAS & SIMPEL 1 BARIS PER ITEM) -->
+                        <div id="text-rows-container" class="space-y-3">
+                            <!-- Diisi secara dinamis oleh Javascript renderRows() -->
                         </div>
 
-                        <!-- GRID 2 KOLOM KONTROL UTAMA (FITUR 1 S/D FITUR 5) -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            
-                            <!-- FITUR 1: PILIHAN FORMAT (H1, H2, H3, H4, H5, Paragraf) -->
-                            <div class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2">
-                                <label class="block text-[11px] font-bold text-slate-700 flex items-center justify-between">
-                                    <span>1. Format Teks:</span>
-                                    <span id="label-format-badge" class="font-mono text-[10px] text-teal-800 font-bold uppercase"><?= htmlspecialchars($cfg['custom_text_format'] ?? 'h2') ?></span>
-                                </label>
-                                <div class="grid grid-cols-3 gap-1.5" id="group-format-buttons">
-                                    <?php 
-                                    $formats = [
-                                        'h1' => 'H1',
-                                        'h2' => 'H2',
-                                        'h3' => 'H3',
-                                        'h4' => 'H4',
-                                        'h5' => 'H5',
-                                        'p'  => 'Paragraf'
-                                    ];
-                                    $current_format = strtolower($cfg['custom_text_format'] ?? 'h2');
-                                    foreach ($formats as $fmt_val => $fmt_label): 
-                                        $is_active = ($current_format === $fmt_val);
-                                    ?>
-                                        <button type="button" onclick="setFormatOption('<?= $fmt_val ?>')" class="btn-fmt-opt py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center <?= $is_active ? 'bg-[#0b8478] text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100' ?>" data-format="<?= $fmt_val ?>">
-                                            <?= $fmt_label ?>
-                                        </button>
-                                    <?php endforeach; ?>
-                                </div>
-                                <input type="hidden" name="custom_text_format" id="input-text-format" value="<?= htmlspecialchars($cfg['custom_text_format'] ?? 'h2') ?>">
-                            </div>
-
-                            <!-- FITUR 2: PILIHAN WARNA FONT -->
-                            <div class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2">
-                                <label class="block text-[11px] font-bold text-slate-700">2. Pilihan Warna Font:</label>
-                                <div class="flex items-center gap-2">
-                                    <input type="color" id="input-text-color-picker" value="<?= htmlspecialchars($cfg['custom_text_color'] ?? '#ffffff') ?>" onchange="setColorOption(this.value)" class="w-10 h-10 rounded-xl cursor-pointer border border-slate-200 p-0.5 bg-white shadow-2xs">
-                                    <input type="text" name="custom_text_color" id="input-text-color-hex" value="<?= htmlspecialchars($cfg['custom_text_color'] ?? '#ffffff') ?>" oninput="setColorOption(this.value)" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold uppercase bg-white">
-                                </div>
-                                <!-- Preset Warna Cepat -->
-                                <div class="flex items-center gap-1.5 pt-1">
-                                    <?php 
-                                    $color_presets = ['#ffffff', '#fbbf24', '#10b981', '#38bdf8', '#fb7185', '#0f172a'];
-                                    foreach ($color_presets as $cp): 
-                                    ?>
-                                        <button type="button" onclick="setColorOption('<?= $cp ?>')" class="w-6 h-6 rounded-full border border-slate-300 shadow-2xs transition transform hover:scale-110" style="background-color: <?= $cp ?>;" title="<?= $cp ?>"></button>
-                                    <?php endforeach; ?>
-                                </div>
-                            </div>
-
-                            <!-- FITUR 3: PILIHAN JENIS FONT -->
-                            <div class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2">
-                                <label class="block text-[11px] font-bold text-slate-700">3. Pilihan Jenis Font:</label>
-                                <select name="custom_text_font" id="input-text-font" onchange="setFontOption(this.value)" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b8478] focus:outline-none bg-white">
-                                    <?php 
-                                    $font_options = [
-                                        'Plus Jakarta Sans' => 'Plus Jakarta Sans (Modern Clean)',
-                                        'Amiri'             => 'Amiri (Arab & Kaligrafi Islami)',
-                                        'Cinzel'            => 'Cinzel (Royal & Klasik Mewah)',
-                                        'Playfair Display'  => 'Playfair Display (Elegan Editorial)',
-                                        'Poppins'           => 'Poppins (Rounded Modern)',
-                                        'Inter'             => 'Inter (Sleek Interface)',
-                                        'Outfit'            => 'Outfit (Trendy & Bold)'
-                                    ];
-                                    $current_font = $cfg['custom_text_font'] ?? 'Plus Jakarta Sans';
-                                    foreach ($font_options as $f_val => $f_name): 
-                                    ?>
-                                        <option value="<?= $f_val ?>" <?= ($current_font === $f_val) ? 'selected' : '' ?> style="font-family: '<?= $f_val ?>', sans-serif;">
-                                            <?= $f_name ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-
-                            <!-- FITUR 4: PILIHAN ALIGNMENT -->
-                            <div class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2">
-                                <label class="block text-[11px] font-bold text-slate-700 flex items-center justify-between">
-                                    <span>4. Pilihan Alignment:</span>
-                                    <span id="label-align-badge" class="font-mono text-[10px] text-teal-800 font-bold uppercase"><?= htmlspecialchars($cfg['custom_text_align'] ?? 'center') ?></span>
-                                </label>
-                                <div class="grid grid-cols-4 gap-1.5" id="group-align-buttons">
-                                    <?php 
-                                    $alignments = [
-                                        'left'    => 'fa-align-left',
-                                        'center'  => 'fa-align-center',
-                                        'right'   => 'fa-align-right',
-                                        'justify' => 'fa-align-justify'
-                                    ];
-                                    $current_align = strtolower($cfg['custom_text_align'] ?? 'center');
-                                    foreach ($alignments as $alg_val => $alg_icon): 
-                                        $is_act = ($current_align === $alg_val);
-                                    ?>
-                                        <button type="button" onclick="setAlignOption('<?= $alg_val ?>')" class="btn-alg-opt py-2 px-2 rounded-xl text-xs transition flex items-center justify-center <?= $is_act ? 'bg-[#0b8478] text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100' ?>" data-align="<?= $alg_val ?>" title="Align <?= ucfirst($alg_val) ?>">
-                                            <i class="fas <?= $alg_icon ?>"></i>
-                                        </button>
-                                    <?php endforeach; ?>
-                                </div>
-                                <input type="hidden" name="custom_text_align" id="input-text-align" value="<?= htmlspecialchars($cfg['custom_text_align'] ?? 'center') ?>">
-                            </div>
-
+                        <!-- PETUNJUK RINGKAS -->
+                        <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-amber-900 text-[11px] flex items-center gap-2.5">
+                            <i class="fas fa-arrows-up-down-left-right text-amber-600 text-sm shrink-0"></i>
+                            <span><strong>Tips:</strong> Setiap kolom tulisan di atas dapat langsung <strong>diklik dan digeser (drag & drop)</strong> posisinya di layar simulasi HP sebelah kanan.</span>
                         </div>
 
-                        <!-- FITUR 5: PILIHAN UKURAN FONT -->
-                        <div class="p-4 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2">
-                            <div class="flex justify-between items-center">
-                                <label class="text-[11px] font-bold text-slate-700">5. Pilihan Ukuran Font:</label>
-                                <span id="val-text-size" class="text-xs font-black text-teal-800 font-mono"><?= (int)($cfg['custom_text_size'] ?? 24) ?>px</span>
-                            </div>
-                            <input type="range" name="custom_text_size" id="input-text-size" min="10" max="56" step="1" value="<?= (int)($cfg['custom_text_size'] ?? 24) ?>" oninput="setSizeOption(this.value)" class="w-full accent-[#0b8478] cursor-pointer">
-                            <div class="flex justify-between text-[9px] text-slate-400">
-                                <span>10px (Kecil)</span>
-                                <span>24px (Sedang)</span>
-                                <span>56px (Besar)</span>
-                            </div>
-                        </div>
+                        <!-- TOMBOL AKSI BAWAH: TAMBAH & SIMPAN -->
+                        <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <button type="button" onclick="addNewTextRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fas fa-plus text-xs text-teal-600"></i>
+                                <span>Tambah Kolom Baru</span>
+                            </button>
 
-                        <!-- FITUR 6: PENGATURAN POSISI (GESER-GESER LETAK TULISAN) -->
-                        <div class="p-4 sm:p-5 rounded-2xl bg-amber-50/60 border border-amber-200/80 space-y-3.5">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2">
-                                    <span class="w-6 h-6 rounded-lg bg-amber-400 text-teal-950 flex items-center justify-center text-xs font-black">
-                                        <i class="fas fa-arrows-up-down-left-right"></i>
-                                    </span>
-                                    <label class="text-xs font-black text-amber-950">6. Pengaturan Posisi (Bisa Digeser Langsung):</label>
-                                </div>
-                                <button type="button" onclick="resetPosisiTengah()" class="text-[10px] text-amber-900 underline font-bold hover:text-amber-700">
-                                    Reset Tengah
-                                </button>
-                            </div>
-                            
-                            <p class="text-[11px] text-amber-900/80 leading-relaxed">
-                                <i class="fas fa-circle-info text-amber-600 mr-1"></i> Anda bisa <strong>klik & drag/geser langsung</strong> kotak tulisan pada layar preview di sebelah kanan, atau atur slider posisi di bawah ini:
-                            </p>
-
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                                <!-- Posisi Vertikal (Top Y) -->
-                                <div>
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="text-[10.5px] font-bold text-slate-700">Posisi Vertikal (Y):</span>
-                                        <span id="val-pos-y" class="text-xs font-mono font-black text-amber-900"><?= round((float)($cfg['custom_text_pos_y'] ?? 35)) ?>%</span>
-                                    </div>
-                                    <input type="range" name="custom_text_pos_y" id="input-pos-y" min="2" max="92" step="0.5" value="<?= (float)($cfg['custom_text_pos_y'] ?? 35) ?>" oninput="setPosYOption(this.value)" class="w-full accent-amber-500 cursor-pointer">
-                                </div>
-
-                                <!-- Posisi Horizontal (Left X) -->
-                                <div>
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="text-[10.5px] font-bold text-slate-700">Posisi Horizontal (X):</span>
-                                        <span id="val-pos-x" class="text-xs font-mono font-black text-amber-900"><?= round((float)($cfg['custom_text_pos_x'] ?? 50)) ?>%</span>
-                                    </div>
-                                    <input type="range" name="custom_text_pos_x" id="input-pos-x" min="10" max="90" step="0.5" value="<?= (float)($cfg['custom_text_pos_x'] ?? 50) ?>" oninput="setPosXOption(this.value)" class="w-full accent-amber-500 cursor-pointer">
-                                </div>
-
-                                <!-- Lebar Kolom (Width %) -->
-                                <div>
-                                    <div class="flex justify-between items-center mb-1">
-                                        <span class="text-[10.5px] font-bold text-slate-700">Lebar Kolom:</span>
-                                        <span id="val-pos-w" class="text-xs font-mono font-black text-amber-900"><?= (int)($cfg['custom_text_width'] ?? 85) ?>%</span>
-                                    </div>
-                                    <input type="range" name="custom_text_width" id="input-pos-w" min="30" max="100" step="1" value="<?= (int)($cfg['custom_text_width'] ?? 85) ?>" oninput="setWidthOption(this.value)" class="w-full accent-amber-500 cursor-pointer">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- TOMBOL SIMPAN PENGATURAN TULISAN -->
-                        <div class="pt-2 flex items-center justify-end">
-                            <button type="submit" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                            <button type="button" onclick="saveAllTextItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
                                 <i class="fas fa-save text-base"></i>
-                                <span>Simpan Pengaturan Tulisan</span>
+                                <span>Simpan Semua Kolom Tulisan</span>
                             </button>
                         </div>
 
@@ -701,7 +619,7 @@ $active_menu = 'brosur_settings';
             <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 self-start flex flex-col items-center lg:items-end">
                 <div class="w-full max-w-[340px] flex flex-col items-center">
                     
-                    <!-- KANVAS SIMULASI BACKGROUND PORTRAIT MURNI DENGAN KOLOM TULISAN DRAGGABLE -->
+                    <!-- KANVAS SIMULASI BACKGROUND PORTRAIT MURNI DENGAN KOLOM-KOLOM TULISAN DRAGGABLE -->
                     <div class="bg-simulation-canvas relative w-full overflow-hidden transition-all duration-300" id="phone-container">
                         
                         <!-- GAMBAR BACKGROUND PORTRAIT -->
@@ -710,21 +628,9 @@ $active_menu = 'brosur_settings';
                             <!-- LAPISAN OVERLAY DINAMIS -->
                             <div id="preview-cover-overlay" class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all duration-300" style="opacity: <?= $cfg['cover_overlay_opacity'] ?? 0.88 ?>;"></div>
 
-                            <!-- KOLOM TULISAN DRAGGABLE INTERAKTIF (BISA DIGESER-GESER) -->
-                            <div id="sim-text-box" class="draggable-box absolute transition-shadow group/drag" style="top: <?= (float)($cfg['custom_text_pos_y'] ?? 35) ?>%; left: <?= (float)($cfg['custom_text_pos_x'] ?? 50) ?>%; transform: translate(-50%, 0); width: <?= (int)($cfg['custom_text_width'] ?? 85) ?>%; z-index: 25;">
-                                
-                                <!-- Bounding indicator saat hover / dragging -->
-                                <div class="absolute -inset-2 border-2 border-dashed border-amber-400/80 rounded-xl pointer-events-none opacity-0 group-hover/drag:opacity-100 transition-opacity flex items-start justify-end p-1">
-                                    <span class="bg-amber-400 text-teal-950 text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
-                                        <i class="fas fa-up-down-left-right"></i> Geser
-                                    </span>
-                                </div>
-
-                                <!-- Konten Teks Sesuai Format (H1-H5 / Paragraf) -->
-                                <div id="sim-text-wrapper" style="color: <?= htmlspecialchars($cfg['custom_text_color'] ?? '#ffffff') ?>; font-family: '<?= htmlspecialchars($cfg['custom_text_font'] ?? 'Plus Jakarta Sans') ?>', sans-serif; text-align: <?= htmlspecialchars($cfg['custom_text_align'] ?? 'center') ?>; font-size: <?= (int)($cfg['custom_text_size'] ?? 24) ?>px;">
-                                    <?= renderCustomTextPreview($cfg['custom_text_content'] ?? 'Villa Quran Indonesia', $cfg['custom_text_format'] ?? 'h2') ?>
-                                </div>
-
+                            <!-- CONTAINER SEMUA LAYER TULISAN DI LAYAR SIMULASI -->
+                            <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSimLayers() -->
                             </div>
 
                         </div>
@@ -739,7 +645,7 @@ $active_menu = 'brosur_settings';
                     <!-- Petunjuk Interaktif Drag -->
                     <p class="text-[10px] text-slate-500 mt-2.5 text-center flex items-center gap-1.5">
                         <i class="fas fa-hand-pointer text-amber-500"></i>
-                        <span>Klik & geser tulisan di atas untuk memindahkan posisinya</span>
+                        <span>Klik & geser tulisan manapun pada layar simulasi untuk memindahkan posisinya</span>
                     </p>
 
                 </div>
@@ -749,162 +655,363 @@ $active_menu = 'brosur_settings';
 
     </main>
 
-    <!-- SCRIPT INTERAKTIF PENGATURAN TULISAN & BACKGROUND & DRAGGABLE LOGIC -->
+    <!-- SCRIPT INTERAKTIF PENGATURAN TULISAN MULTI-KOLOM & DRAGGABLE LOGIC -->
     <script>
-        // State Konfigurasi Teks
-        let currentTextState = {
-            content: <?= json_encode($cfg['custom_text_content'] ?? 'Villa Quran Indonesia') ?>,
-            format: <?= json_encode($cfg['custom_text_format'] ?? 'h2') ?>,
-            color: <?= json_encode($cfg['custom_text_color'] ?? '#ffffff') ?>,
-            font: <?= json_encode($cfg['custom_text_font'] ?? 'Plus Jakarta Sans') ?>,
-            align: <?= json_encode($cfg['custom_text_align'] ?? 'center') ?>,
-            size: <?= (int)($cfg['custom_text_size'] ?? 24) ?>,
-            posX: <?= (float)($cfg['custom_text_pos_x'] ?? 50.00) ?>,
-            posY: <?= (float)($cfg['custom_text_pos_y'] ?? 35.00) ?>,
-            width: <?= (int)($cfg['custom_text_width'] ?? 85) ?>
-        };
+        // State Array untuk Semua Kolom Tulisan
+        let textItems = <?= json_encode($text_items, JSON_UNESCAPED_UNICODE) ?>;
+        if (!Array.isArray(textItems) || textItems.length === 0) {
+            textItems = [{
+                id: 'text_' + Date.now(),
+                content: 'Villa Quran Indonesia',
+                format: 'h2',
+                color: '#ffffff',
+                font: 'Plus Jakarta Sans',
+                align: 'center',
+                size: 24,
+                posX: 50,
+                posY: 35,
+                width: 85
+            }];
+        }
 
-        // Render Ulang Konten Teks di Kanvas Simulasi
-        function renderSimText() {
-            const wrapper = document.getElementById('sim-text-wrapper');
-            const box = document.getElementById('sim-text-box');
-            if (!wrapper || !box) return;
+        // Pilihan Font Tersedia
+        const availableFonts = [
+            { id: 'Plus Jakarta Sans', name: 'Jakarta (Modern)' },
+            { id: 'Amiri',             name: 'Amiri (Arab)' },
+            { id: 'Cinzel',            name: 'Cinzel (Royal)' },
+            { id: 'Playfair Display',  name: 'Playfair (Elegan)' },
+            { id: 'Poppins',           name: 'Poppins (Bold)' },
+            { id: 'Inter',             name: 'Inter (Clean)' },
+            { id: 'Outfit',            name: 'Outfit (Trendy)' }
+        ];
 
-            let text = currentTextState.content.trim();
+        // Format Helper HTML Generator
+        function getFormatHtml(content, format) {
+            let text = (content || '').trim();
             if (!text) text = 'Villa Quran Indonesia';
 
             // Escape HTML dan buat line-break
             const safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").replace(/\n/g, "<br>");
+            const fmt = (format || 'h2').toLowerCase();
 
-            let tagHtml = '';
-            const fmt = currentTextState.format.toLowerCase();
             switch (fmt) {
                 case 'h1':
-                    tagHtml = `<h1 class="font-black leading-tight tracking-tight">${safeText}</h1>`;
-                    break;
+                    return `<h1 class="font-black leading-tight tracking-tight">${safeText}</h1>`;
                 case 'h3':
-                    tagHtml = `<h3 class="font-bold leading-snug">${safeText}</h3>`;
-                    break;
+                    return `<h3 class="font-bold leading-snug">${safeText}</h3>`;
                 case 'h4':
-                    tagHtml = `<h4 class="font-bold leading-normal">${safeText}</h4>`;
-                    break;
+                    return `<h4 class="font-bold leading-normal">${safeText}</h4>`;
                 case 'h5':
-                    tagHtml = `<h5 class="font-semibold uppercase tracking-wider leading-normal text-xs">${safeText}</h5>`;
-                    break;
+                    return `<h5 class="font-semibold uppercase tracking-wider leading-normal text-xs">${safeText}</h5>`;
                 case 'p':
-                    tagHtml = `<p class="font-normal leading-relaxed text-sm">${safeText}</p>`;
-                    break;
+                    return `<p class="font-normal leading-relaxed text-sm">${safeText}</p>`;
                 case 'h2':
                 default:
-                    tagHtml = `<h2 class="font-extrabold leading-tight">${safeText}</h2>`;
-                    break;
+                    return `<h2 class="font-extrabold leading-tight">${safeText}</h2>`;
+            }
+        }
+
+        // Render Seluruh Baris Pengaturan di Papan Kiri (Ringkas & Simpel 1 Baris per Kolom)
+        function renderRows() {
+            const container = document.getElementById('text-rows-container');
+            const badge = document.getElementById('text-count-badge');
+            if (badge) badge.innerText = `${textItems.length} Kolom`;
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            textItems.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = 'text-row-item bg-white border border-slate-200/90 hover:border-teal-500 rounded-2xl p-2.5 sm:p-3 shadow-xs space-y-2';
+                row.id = `row-item-${item.id}`;
+
+                // Options Font HTML
+                let fontOptionsHtml = '';
+                availableFonts.forEach(f => {
+                    const sel = (item.font === f.id) ? 'selected' : '';
+                    fontOptionsHtml += `<option value="${f.id}" ${sel}>${f.name}</option>`;
+                });
+
+                row.innerHTML = `
+                    <!-- BARIS UTAMA (1 BARIS RINGKAS) -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        
+                        <!-- Nomor Kolom -->
+                        <div class="flex items-center justify-center w-7 h-7 rounded-xl bg-teal-50 text-teal-800 font-black text-xs shrink-0 border border-teal-100 shadow-2xs" title="Kolom #${index + 1}">
+                            ${index + 1}
+                        </div>
+
+                        <!-- Input Teks Utama -->
+                        <div class="flex-1 min-w-[150px]">
+                            <input type="text" value="${escapeHtml(item.content)}" oninput="updateItemField('${item.id}', 'content', this.value)" placeholder="Ketik isi teks di sini..." class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b8478] focus:outline-none bg-slate-50/60 focus:bg-white transition">
+                        </div>
+
+                        <!-- Format Tag (H1 - H5 / Paragraf) -->
+                        <div class="shrink-0">
+                            <select onchange="updateItemField('${item.id}', 'format', this.value)" class="px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-black bg-white focus:border-[#0b8478] focus:outline-none cursor-pointer" title="Pilih Format Heading / Paragraf">
+                                <option value="h1" ${item.format === 'h1' ? 'selected' : ''}>H1</option>
+                                <option value="h2" ${item.format === 'h2' ? 'selected' : ''}>H2</option>
+                                <option value="h3" ${item.format === 'h3' ? 'selected' : ''}>H3</option>
+                                <option value="h4" ${item.format === 'h4' ? 'selected' : ''}>H4</option>
+                                <option value="h5" ${item.format === 'h5' ? 'selected' : ''}>H5</option>
+                                <option value="p"  ${item.format === 'p'  ? 'selected' : ''}>P (Paragraf)</option>
+                            </select>
+                        </div>
+
+                        <!-- Pilihan Jenis Font -->
+                        <div class="shrink-0 max-w-[125px]">
+                            <select onchange="updateItemField('${item.id}', 'font', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white focus:border-[#0b8478] focus:outline-none cursor-pointer truncate" title="Pilih Jenis Font">
+                                ${fontOptionsHtml}
+                            </select>
+                        </div>
+
+                        <!-- Ukuran Font (px) -->
+                        <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-1 shrink-0 shadow-2xs" title="Ukuran Font">
+                            <input type="number" min="8" max="90" value="${item.size || 24}" oninput="updateItemField('${item.id}', 'size', parseInt(this.value) || 16)" class="w-8 text-xs font-black text-teal-800 text-center focus:outline-none">
+                            <span class="text-[10px] text-slate-400 font-mono">px</span>
+                        </div>
+
+                        <!-- Pilihan Warna Font -->
+                        <div class="shrink-0" title="Pilih Warna Font">
+                            <input type="color" value="${item.color || '#ffffff'}" onchange="updateItemField('${item.id}', 'color', this.value)" class="w-7 h-7 rounded-xl border border-slate-200 p-0.5 bg-white cursor-pointer shadow-2xs">
+                        </div>
+
+                        <!-- Pilihan Alignment -->
+                        <div class="inline-flex rounded-xl border border-slate-200 bg-white p-0.5 shadow-2xs shrink-0" title="Alignment Teks">
+                            <button type="button" onclick="updateItemField('${item.id}', 'align', 'left')" class="px-1.5 py-1 rounded-lg text-xs transition ${item.align === 'left' ? 'bg-[#0b8478] text-white' : 'text-slate-600 hover:bg-slate-100'}"><i class="fas fa-align-left text-[11px]"></i></button>
+                            <button type="button" onclick="updateItemField('${item.id}', 'align', 'center')" class="px-1.5 py-1 rounded-lg text-xs transition ${item.align === 'center' ? 'bg-[#0b8478] text-white' : 'text-slate-600 hover:bg-slate-100'}"><i class="fas fa-align-center text-[11px]"></i></button>
+                            <button type="button" onclick="updateItemField('${item.id}', 'align', 'right')" class="px-1.5 py-1 rounded-lg text-xs transition ${item.align === 'right' ? 'bg-[#0b8478] text-white' : 'text-slate-600 hover:bg-slate-100'}"><i class="fas fa-align-right text-[11px]"></i></button>
+                            <button type="button" onclick="updateItemField('${item.id}', 'align', 'justify')" class="px-1.5 py-1 rounded-lg text-xs transition ${item.align === 'justify' ? 'bg-[#0b8478] text-white' : 'text-slate-600 hover:bg-slate-100'}"><i class="fas fa-align-justify text-[11px]"></i></button>
+                        </div>
+
+                        <!-- TOMBOL DUPLIKASI (GANDAKAN) & HAPUS -->
+                        <div class="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
+                            <!-- Tombol Duplikasi -->
+                            <button type="button" onclick="duplicateRow('${item.id}')" title="Duplikasi / Gandakan Kolom Ini" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 text-xs font-bold transition flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer">
+                                <i class="fas fa-copy text-amber-600"></i>
+                                <span class="hidden sm:inline text-[11px]">Duplikasi</span>
+                            </button>
+
+                            <!-- Toggle Slider Posisi Detail -->
+                            <button type="button" onclick="toggleDetails('${item.id}')" title="Pengaturan Posisi Slider" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs transition shadow-2xs active:scale-95 cursor-pointer">
+                                <i class="fas fa-sliders text-[11px]"></i>
+                            </button>
+
+                            <!-- Tombol Hapus -->
+                            <button type="button" onclick="deleteRow('${item.id}')" title="Hapus Kolom Ini" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center text-xs transition shadow-2xs active:scale-95 cursor-pointer">
+                                <i class="fas fa-trash-can text-[11px]"></i>
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- PANEL DETAIL POSISI & LEBAR (OPSIONAL / EXPANDABLE) -->
+                    <div id="details-${item.id}" class="hidden pt-2 mt-2 border-t border-slate-100 bg-slate-50/70 p-3 rounded-xl">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div>
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
+                                    <span>Posisi Vertikal (Y):</span>
+                                    <span id="label-posy-${item.id}" class="font-mono text-amber-800 font-bold">${Math.round(item.posY || 35)}%</span>
+                                </div>
+                                <input type="range" min="2" max="92" step="0.5" value="${item.posY || 35}" oninput="updateItemPosition('${item.id}', 'posY', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
+                                    <span>Posisi Horizontal (X):</span>
+                                    <span id="label-posx-${item.id}" class="font-mono text-amber-800 font-bold">${Math.round(item.posX || 50)}%</span>
+                                </div>
+                                <input type="range" min="10" max="90" step="0.5" value="${item.posX || 50}" oninput="updateItemPosition('${item.id}', 'posX', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
+                                    <span>Lebar Kolom:</span>
+                                    <span id="label-width-${item.id}" class="font-mono text-amber-800 font-bold">${item.width || 85}%</span>
+                                </div>
+                                <input type="range" min="30" max="100" step="1" value="${item.width || 85}" oninput="updateItemPosition('${item.id}', 'width', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(row);
+            });
+
+            syncJsonInput();
+        }
+
+        // Escape HTML Utility
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Toggle Details Slider Posisi
+        function toggleDetails(id) {
+            const el = document.getElementById(`details-${id}`);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        // Update Nilai Field Tertentu
+        function updateItemField(id, field, value) {
+            const item = textItems.find(i => i.id === id);
+            if (item) {
+                item[field] = value;
+                renderSimLayers();
+                syncJsonInput();
+            }
+        }
+
+        // Update Nilai Posisi Slider
+        function updateItemPosition(id, field, value) {
+            const item = textItems.find(i => i.id === id);
+            if (item) {
+                item[field] = parseFloat(value);
+                const label = document.getElementById(`label-${field.toLowerCase()}-${id}`);
+                if (label) {
+                    label.innerText = Math.round(item[field]) + '%';
+                }
+                renderSimLayers();
+                syncJsonInput();
+            }
+        }
+
+        // 1. Tambah Kolom Tulisan Baru
+        function addNewTextRow() {
+            const newIndex = textItems.length + 1;
+            const newPosY = Math.min(85, 20 + ((newIndex - 1) * 14));
+            
+            const newItem = {
+                id: 'text_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                content: 'Teks Kolom ' + newIndex,
+                format: newIndex === 1 ? 'h2' : (newIndex === 2 ? 'h3' : 'p'),
+                color: '#ffffff',
+                font: 'Plus Jakarta Sans',
+                align: 'center',
+                size: newIndex === 1 ? 24 : 16,
+                posX: 50,
+                posY: newPosY,
+                width: 85
+            };
+
+            textItems.push(newItem);
+            renderRows();
+            renderSimLayers();
+
+            // Scroll baris baru ke pandangan
+            setTimeout(() => {
+                const el = document.getElementById(`row-item-${newItem.id}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        // 2. Duplikasi / Gandakan Kolom Tertentu
+        function duplicateRow(sourceId) {
+            const source = textItems.find(i => i.id === sourceId);
+            if (!source) return;
+
+            const cloned = JSON.parse(JSON.stringify(source));
+            cloned.id = 'text_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            cloned.content = source.content ? source.content + ' (Salinan)' : 'Salinan Teks';
+            cloned.posY = Math.min(90, (source.posY || 35) + 9);
+
+            // Sisipkan tepat di bawah baris yang digandakan
+            const sourceIndex = textItems.findIndex(i => i.id === sourceId);
+            if (sourceIndex >= 0) {
+                textItems.splice(sourceIndex + 1, 0, cloned);
+            } else {
+                textItems.push(cloned);
             }
 
-            wrapper.innerHTML = tagHtml;
-            wrapper.style.color = currentTextState.color;
-            wrapper.style.fontFamily = `'${currentTextState.font}', sans-serif`;
-            wrapper.style.textAlign = currentTextState.align;
-            wrapper.style.fontSize = `${currentTextState.size}px`;
+            renderRows();
+            renderSimLayers();
 
-            box.style.left = `${currentTextState.posX}%`;
-            box.style.top = `${currentTextState.posY}%`;
-            box.style.width = `${currentTextState.width}%`;
-        }
-
-        // 1. Live Text Input
-        function updateLiveText(val) {
-            currentTextState.content = val;
-            renderSimText();
-        }
-
-        // 2. Set Format Option (H1 - H5, p)
-        function setFormatOption(fmt) {
-            currentTextState.format = fmt;
-            document.getElementById('input-text-format').value = fmt;
-            document.getElementById('label-format-badge').innerText = fmt.toUpperCase();
-
-            document.querySelectorAll('.btn-fmt-opt').forEach(btn => {
-                if (btn.getAttribute('data-format') === fmt) {
-                    btn.className = 'btn-fmt-opt py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center bg-[#0b8478] text-white shadow-xs';
-                } else {
-                    btn.className = 'btn-fmt-opt py-2 px-2 rounded-xl text-xs font-bold transition flex items-center justify-center bg-white border border-slate-200 text-slate-700 hover:bg-slate-100';
+            // Highlight baris baru
+            setTimeout(() => {
+                const el = document.getElementById(`row-item-${cloned.id}`);
+                if (el) {
+                    el.classList.add('active-layer');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    setTimeout(() => el.classList.remove('active-layer'), 1500);
                 }
-            });
-
-            renderSimText();
+            }, 100);
         }
 
-        // 3. Set Color Option
-        function setColorOption(color) {
-            currentTextState.color = color;
-            document.getElementById('input-text-color-picker').value = color;
-            document.getElementById('input-text-color-hex').value = color;
-            renderSimText();
-        }
-
-        // 4. Set Font Option
-        function setFontOption(font) {
-            currentTextState.font = font;
-            document.getElementById('input-text-font').value = font;
-            renderSimText();
-        }
-
-        // 5. Set Alignment Option
-        function setAlignOption(align) {
-            currentTextState.align = align;
-            document.getElementById('input-text-align').value = align;
-            document.getElementById('label-align-badge').innerText = align.toUpperCase();
-
-            document.querySelectorAll('.btn-alg-opt').forEach(btn => {
-                if (btn.getAttribute('data-align') === align) {
-                    btn.className = 'btn-alg-opt py-2 px-2 rounded-xl text-xs transition flex items-center justify-center bg-[#0b8478] text-white shadow-xs';
-                } else {
-                    btn.className = 'btn-alg-opt py-2 px-2 rounded-xl text-xs transition flex items-center justify-center bg-white border border-slate-200 text-slate-700 hover:bg-slate-100';
+        // 3. Hapus Kolom Tertentu
+        function deleteRow(id) {
+            if (textItems.length <= 1) {
+                if (confirm('Ini adalah kolom terakhir. Apakah Anda ingin mengosongkan isinya?')) {
+                    textItems[0].content = '';
+                    renderRows();
+                    renderSimLayers();
                 }
+                return;
+            }
+
+            if (confirm('Hapus kolom tulisan ini?')) {
+                textItems = textItems.filter(i => i.id !== id);
+                renderRows();
+                renderSimLayers();
+            }
+        }
+
+        // Sinkronisasi JSON ke Hidden Input Form
+        function syncJsonInput() {
+            const inp = document.getElementById('input-text-items-json');
+            if (inp) {
+                inp.value = JSON.stringify(textItems);
+            }
+        }
+
+        // Simpan Semua Item Kolom Tulisan
+        function saveAllTextItems() {
+            syncJsonInput();
+            document.getElementById('form-pengaturan-text').submit();
+        }
+
+        // Render Semua Layer Kolom Tulisan di Kanvas Simulasi HP (Sebelah Kanan)
+        function renderSimLayers() {
+            const container = document.getElementById('sim-text-layers-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            textItems.forEach((item, index) => {
+                const box = document.createElement('div');
+                box.id = `sim-box-${item.id}`;
+                box.className = 'draggable-box absolute pointer-events-auto transition-shadow group/drag';
+                box.setAttribute('data-id', item.id);
+                box.style.top = `${item.posY || 35}%`;
+                box.style.left = `${item.posX || 50}%`;
+                box.style.transform = 'translate(-50%, 0)';
+                box.style.width = `${item.width || 85}%`;
+                box.style.zIndex = 20 + index;
+
+                box.innerHTML = `
+                    <!-- Border indikator saat hover / drag -->
+                    <div class="absolute -inset-1.5 border-2 border-dashed border-amber-400/80 rounded-xl pointer-events-none opacity-0 group-hover/drag:opacity-100 transition-opacity flex items-start justify-between p-1">
+                        <span class="bg-amber-400 text-teal-950 text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                            #${index + 1}
+                        </span>
+                        <span class="bg-teal-950/90 text-amber-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
+                            <i class="fas fa-up-down-left-right"></i> Geser
+                        </span>
+                    </div>
+
+                    <!-- Konten Teks Terformat -->
+                    <div style="color: ${item.color || '#ffffff'}; font-family: '${item.font || 'Plus Jakarta Sans'}', sans-serif; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word;">
+                        ${getFormatHtml(item.content, item.format)}
+                    </div>
+                `;
+
+                // Event listener drag untuk elemen ini
+                initDragForItem(box, item);
+
+                container.appendChild(box);
             });
-
-            renderSimText();
         }
 
-        // 6. Set Font Size Option
-        function setSizeOption(size) {
-            currentTextState.size = parseInt(size);
-            document.getElementById('val-text-size').innerText = size + 'px';
-            renderSimText();
-        }
-
-        // 7. Set Posisi Vertikal Y
-        function setPosYOption(val) {
-            currentTextState.posY = parseFloat(val);
-            document.getElementById('val-pos-y').innerText = Math.round(val) + '%';
-            renderSimText();
-        }
-
-        // 8. Set Posisi Horizontal X
-        function setPosXOption(val) {
-            currentTextState.posX = parseFloat(val);
-            document.getElementById('val-pos-x').innerText = Math.round(val) + '%';
-            renderSimText();
-        }
-
-        // 9. Set Lebar Kolom
-        function setWidthOption(val) {
-            currentTextState.width = parseInt(val);
-            document.getElementById('val-pos-w').innerText = val + '%';
-            renderSimText();
-        }
-
-        // 10. Reset Posisi Tengah
-        function resetPosisiTengah() {
-            setPosXOption(50);
-            setPosYOption(35);
-            document.getElementById('input-pos-x').value = 50;
-            document.getElementById('input-pos-y').value = 35;
-        }
-
-        // 11. Interactive Drag-and-Drop Logic di Atas Layar Simulasi
-        (function initDraggableTextBox() {
-            const box = document.getElementById('sim-text-box');
+        // Logika Interaktif Drag & Drop untuk Setiap Box Tulisan di Layar HP
+        function initDragForItem(box, item) {
             const container = document.getElementById('preview-screen-cover');
             if (!box || !container) return;
 
@@ -913,7 +1020,6 @@ $active_menu = 'brosur_settings';
             let initialLeftPct, initialTopPct;
 
             function startDrag(e) {
-                // Hanya tangani klik mouse kiri atau single touch
                 if (e.type === 'mousedown' && e.button !== 0) return;
                 
                 isDragging = true;
@@ -923,10 +1029,16 @@ $active_menu = 'brosur_settings';
                 startX = clientX;
                 startY = clientY;
 
-                initialLeftPct = currentTextState.posX;
-                initialTopPct  = currentTextState.posY;
+                initialLeftPct = item.posX || 50;
+                initialTopPct  = item.posY || 35;
 
                 box.style.transition = 'none';
+                box.style.zIndex = 50; // Bawa ke paling atas saat di-drag
+
+                // Highlight baris terkait di panel kiri
+                const rowEl = document.getElementById(`row-item-${item.id}`);
+                if (rowEl) rowEl.classList.add('active-layer');
+
                 e.preventDefault();
             }
 
@@ -946,28 +1058,31 @@ $active_menu = 'brosur_settings';
                 let newXPct = Math.min(Math.max(initialLeftPct + deltaXPct, 5), 95);
                 let newYPct = Math.min(Math.max(initialTopPct + deltaYPct, 2), 92);
 
-                currentTextState.posX = Math.round(newXPct * 10) / 10;
-                currentTextState.posY = Math.round(newYPct * 10) / 10;
+                item.posX = Math.round(newXPct * 10) / 10;
+                item.posY = Math.round(newYPct * 10) / 10;
 
-                // Sync ke input slider dan label
-                const sliderX = document.getElementById('input-pos-x');
-                const sliderY = document.getElementById('input-pos-y');
-                const labelX = document.getElementById('val-pos-x');
-                const labelY = document.getElementById('val-pos-y');
+                box.style.left = `${item.posX}%`;
+                box.style.top  = `${item.posY}%`;
 
-                if (sliderX) sliderX.value = currentTextState.posX;
-                if (sliderY) sliderY.value = currentTextState.posY;
-                if (labelX) labelX.innerText = Math.round(currentTextState.posX) + '%';
-                if (labelY) labelY.innerText = Math.round(currentTextState.posY) + '%';
-
-                box.style.left = `${currentTextState.posX}%`;
-                box.style.top  = `${currentTextState.posY}%`;
+                // Sync label & slider jika sedang terbuka
+                const labelX = document.getElementById(`label-posx-${item.id}`);
+                const labelY = document.getElementById(`label-posy-${item.id}`);
+                if (labelX) labelX.innerText = Math.round(item.posX) + '%';
+                if (labelY) labelY.innerText = Math.round(item.posY) + '%';
             }
 
             function endDrag() {
                 if (!isDragging) return;
                 isDragging = false;
                 box.style.transition = '';
+                box.style.zIndex = 20;
+
+                const rowEl = document.getElementById(`row-item-${item.id}`);
+                if (rowEl) {
+                    setTimeout(() => rowEl.classList.remove('active-layer'), 800);
+                }
+
+                syncJsonInput();
             }
 
             box.addEventListener('mousedown', startDrag);
@@ -977,9 +1092,9 @@ $active_menu = 'brosur_settings';
             box.addEventListener('touchstart', startDrag, { passive: false });
             window.addEventListener('touchmove', moveDrag, { passive: false });
             window.addEventListener('touchend', endDrag);
-        })();
+        }
 
-        // 12. Live Background File Preview (Menyeluruh)
+        // Live Background File Preview
         function previewBgFile(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
@@ -1001,7 +1116,7 @@ $active_menu = 'brosur_settings';
             }
         }
 
-        // 13. Live Background URL Input (Menyeluruh)
+        // Live Background URL Input
         function updateLiveBgUrl(url) {
             const trimmed = url.trim();
             const finalUrl = trimmed ? trimmed : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
@@ -1015,7 +1130,7 @@ $active_menu = 'brosur_settings';
             if (bodyScreen) bodyScreen.style.backgroundImage = `url('${finalUrl}')`;
         }
 
-        // 14. Live Background Opacity Slider (Menyeluruh)
+        // Live Background Opacity Slider
         function updateLiveBgOpacity(val) {
             const pct = Math.round(val * 100);
             const valLabel = document.getElementById('val-bg-opacity');
@@ -1030,7 +1145,7 @@ $active_menu = 'brosur_settings';
             if (bodyOverlay) bodyOverlay.style.opacity = val;
         }
 
-        // 15. Terapkan Background dari Koleksi ke Form & Layar Simulasi
+        // Terapkan Background dari Koleksi
         function terapkanKoleksi(url) {
             const inp = document.getElementById('input-bg-url');
             if (inp) inp.value = url;
@@ -1039,6 +1154,12 @@ $active_menu = 'brosur_settings';
             const formBg = document.getElementById('form-pengaturan-bg');
             if (formBg) formBg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
+
+        // Inisialisasi awal saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', () => {
+            renderRows();
+            renderSimLayers();
+        });
     </script>
 </body>
 </html>
