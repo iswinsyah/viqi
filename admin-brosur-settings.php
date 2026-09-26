@@ -1157,24 +1157,24 @@ $active_menu = 'brosur_settings';
                         <span class="hidden sm:inline">Pilih Frame:</span>
                     </div>
                     
-                    <!-- Tombol Frame 1: Home -->
+                    <!-- Tombol Frame 1: Depan -->
                     <button type="button" id="frame-btn-home" onclick="switchFrame('home')" class="flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer">
                         <i class="fas fa-house text-xs"></i>
-                        <span>1. Frame: Home</span>
+                        <span>Depan</span>
                         <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-900/80 text-emerald-200">Cover</span>
                     </button>
 
                     <!-- Tombol Frame 2: Prestasi -->
                     <button type="button" id="frame-btn-prestasi" onclick="switchFrame('prestasi')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
                         <i class="fas fa-trophy text-xs text-amber-400"></i>
-                        <span>2. Frame: Prestasi</span>
+                        <span>Prestasi</span>
                         <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-900/60 text-amber-200">Menu #2</span>
                     </button>
 
                     <!-- Tombol Frame 3: Unggulan -->
                     <button type="button" id="frame-btn-unggulan" onclick="switchFrame('unggulan')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
                         <i class="fas fa-star text-xs text-amber-400"></i>
-                        <span>3. Frame: Unggulan</span>
+                        <span>Unggulan</span>
                         <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-900/60 text-amber-200">Menu #3</span>
                     </button>
                 </div>
@@ -1192,13 +1192,13 @@ $active_menu = 'brosur_settings';
                             </div>
                             <div class="min-w-0 flex-1">
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <h2 id="frame-header-title" class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Home</h2>
+                                    <h2 id="frame-header-title" class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Depan</h2>
                                     <span id="frame-header-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
                                         Cover / Halaman Depan
                                     </span>
                                 </div>
                                 <p id="frame-header-desc" class="text-xs text-slate-500 mt-1 leading-normal">
-                                    Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Home</strong> pada Bottom Navigation Bar).
+                                    Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).
                                 </p>
                             </div>
                         </div>
@@ -1919,9 +1919,9 @@ $active_menu = 'brosur_settings';
         let framesData = {
             home: {
                 id: 'home',
-                name: 'Home',
-                title: 'Frame: Home',
-                subtitle: 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Home</strong> pada Bottom Navigation Bar).',
+                name: 'Depan',
+                title: 'Frame: Depan',
+                subtitle: 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).',
                 badge: 'Cover / Halaman Depan',
                 menuPill: 'Menu #1 di Bottom Bar',
                 icon: 'fa-house',
