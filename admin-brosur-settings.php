@@ -97,20 +97,23 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
-// Pastikan kolom untuk custom text, images, videos, dan multi-layer JSON tersedia di tabel pengaturan_brosur
+// Pastikan kolom untuk custom text, images, videos, bottom bar, dan multi-layer JSON tersedia di tabel pengaturan_brosur
 $columns_to_check = [
-    'custom_text_items'   => "LONGTEXT",
-    'custom_image_items'  => "LONGTEXT",
-    'custom_video_items'  => "LONGTEXT",
-    'custom_text_content' => "TEXT",
-    'custom_text_format'  => "VARCHAR(20) DEFAULT 'h2'",
-    'custom_text_color'   => "VARCHAR(30) DEFAULT '#ffffff'",
-    'custom_text_font'    => "VARCHAR(50) DEFAULT 'Plus Jakarta Sans'",
-    'custom_text_align'   => "VARCHAR(20) DEFAULT 'center'",
-    'custom_text_size'    => "INT DEFAULT 24",
-    'custom_text_pos_x'   => "DECIMAL(5,2) DEFAULT 50.00",
-    'custom_text_pos_y'   => "DECIMAL(5,2) DEFAULT 35.00",
-    'custom_text_width'   => "INT DEFAULT 85"
+    'custom_text_items'       => "LONGTEXT",
+    'custom_image_items'      => "LONGTEXT",
+    'custom_video_items'      => "LONGTEXT",
+    'custom_text_content'     => "TEXT",
+    'custom_text_format'      => "VARCHAR(20) DEFAULT 'h2'",
+    'custom_text_color'       => "VARCHAR(30) DEFAULT '#ffffff'",
+    'custom_text_font'        => "VARCHAR(50) DEFAULT 'Plus Jakarta Sans'",
+    'custom_text_align'       => "VARCHAR(20) DEFAULT 'center'",
+    'custom_text_size'        => "INT DEFAULT 24",
+    'custom_text_pos_x'       => "DECIMAL(5,2) DEFAULT 50.00",
+    'custom_text_pos_y'       => "DECIMAL(5,2) DEFAULT 35.00",
+    'custom_text_width'       => "INT DEFAULT 85",
+    'bottom_bar_bg_color'     => "VARCHAR(100) DEFAULT '#022d27'",
+    'bottom_bar_text_color'   => "VARCHAR(30) DEFAULT '#ffffff'",
+    'bottom_bar_active_color' => "VARCHAR(30) DEFAULT '#fbbf24'"
 ];
 foreach ($columns_to_check as $col => $type) {
     $res = $conn->query("SHOW COLUMNS FROM pengaturan_brosur LIKE '$col'");
@@ -309,9 +312,12 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         }
     } else {
         $current_tab = 'bg';
-        // Simpan Background
-        $bg_url             = $conn->real_escape_string(trim($_POST['bg_url'] ?? ''));
-        $bg_overlay_opacity = (float)($_POST['bg_overlay_opacity'] ?? 0.88);
+        // Simpan Background & Warna Bottom Bar
+        $bg_url                  = $conn->real_escape_string(trim($_POST['bg_url'] ?? ''));
+        $bg_overlay_opacity      = (float)($_POST['bg_overlay_opacity'] ?? 0.88);
+        $bottom_bar_bg_color     = $conn->real_escape_string(trim($_POST['bottom_bar_bg_color'] ?? '#022d27'));
+        $bottom_bar_text_color   = $conn->real_escape_string(trim($_POST['bottom_bar_text_color'] ?? '#ffffff'));
+        $bottom_bar_active_color = $conn->real_escape_string(trim($_POST['bottom_bar_active_color'] ?? '#fbbf24'));
 
         // Handle Upload File Background
         if (!empty($_FILES['bg_file']['name']) && $_FILES['bg_file']['error'] === UPLOAD_ERR_OK) {
@@ -325,12 +331,15 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             }
         }
 
-        // Terapkan ke cover dan body secara seragam
+        // Terapkan ke cover, body, dan bottom bar
         $sql_update = "UPDATE pengaturan_brosur SET 
                         cover_bg_url = '$bg_url',
                         cover_overlay_opacity = $bg_overlay_opacity,
                         body_bg_url = '$bg_url',
-                        body_overlay_opacity = $bg_overlay_opacity
+                        body_overlay_opacity = $bg_overlay_opacity,
+                        bottom_bar_bg_color = '$bottom_bar_bg_color',
+                        bottom_bar_text_color = '$bottom_bar_text_color',
+                        bottom_bar_active_color = '$bottom_bar_active_color'
                        WHERE id = 1";
 
         if ($conn->query($sql_update)) {
@@ -342,9 +351,9 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 }
             }
 
-            $pesan_sukses = "Alhamdulillah! Background Brosur berhasil disimpan dan diterapkan ke semua halaman.";
+            $pesan_sukses = "Alhamdulillah! Pengaturan Background & Bottom Bar Brosur berhasil disimpan.";
         } else {
-            $pesan_error = "Gagal menyimpan background: " . $conn->error;
+            $pesan_error = "Gagal menyimpan background & bottom bar: " . $conn->error;
         }
     }
 }
@@ -714,11 +723,92 @@ $active_menu = 'brosur_settings';
                                 </div>
                             </div>
 
-                            <!-- TOMBOL SIMPAN PENGATURAN BACKGROUND -->
+                            <!-- KONTEN PENGATURAN WARNA BOTTOM BAR (NAVIGASI BAWAH) -->
+                            <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4">
+                                <div class="flex items-center justify-between border-b border-slate-200/60 pb-3">
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm shadow-2xs">
+                                            <i class="fas fa-palette"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-black text-sm text-slate-900">Pengaturan Warna Bottom Bar (Navigasi Bawah)</h3>
+                                            <p class="text-[11px] text-slate-500">Sesuaikan kombinasi warna bar menu bawah yang tampil di layar brosur digital</p>
+                                        </div>
+                                    </div>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900">
+                                        Live Sync
+                                    </span>
+                                </div>
+
+                                <!-- 3 Input Warna: Background Bar, Teks/Icon Normal, Menu Aktif -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                                    
+                                    <!-- Warna Background Bar -->
+                                    <div class="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1.5 shadow-2xs">
+                                        <label class="block text-[11px] font-bold text-slate-700">Warna Latar Bar:</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" id="input-bbar-bg-picker" value="<?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>" oninput="syncBBarColor('bg', this.value)" class="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer p-0 bg-transparent shrink-0">
+                                            <input type="text" name="bottom_bar_bg_color" id="input-bbar-bg" value="<?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>" oninput="syncBBarColor('bg_text', this.value)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-mono focus:border-teal-600 focus:outline-none bg-slate-50">
+                                        </div>
+                                    </div>
+
+                                    <!-- Warna Teks / Icon Normal -->
+                                    <div class="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1.5 shadow-2xs">
+                                        <label class="block text-[11px] font-bold text-slate-700">Warna Teks & Icon Normal:</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" id="input-bbar-text-picker" value="<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>" oninput="syncBBarColor('text', this.value)" class="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer p-0 bg-transparent shrink-0">
+                                            <input type="text" name="bottom_bar_text_color" id="input-bbar-text" value="<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>" oninput="syncBBarColor('text_text', this.value)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-mono focus:border-teal-600 focus:outline-none bg-slate-50">
+                                        </div>
+                                    </div>
+
+                                    <!-- Warna Menu Aktif / Aksen -->
+                                    <div class="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1.5 shadow-2xs">
+                                        <label class="block text-[11px] font-bold text-slate-700">Warna Menu Aktif (Aksen):</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="color" id="input-bbar-active-picker" value="<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>" oninput="syncBBarColor('active', this.value)" class="w-8 h-8 rounded-lg border border-slate-300 cursor-pointer p-0 bg-transparent shrink-0">
+                                            <input type="text" name="bottom_bar_active_color" id="input-bbar-active" value="<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>" oninput="syncBBarColor('active_text', this.value)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-mono focus:border-teal-600 focus:outline-none bg-slate-50">
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- Preset Tema Warna Cepat -->
+                                <div class="pt-2 border-t border-slate-200/60">
+                                    <label class="block text-[11px] font-bold text-slate-700 mb-2">Preset Tema Warna Cepat (1-Klik):</label>
+                                    <div class="flex flex-wrap gap-2">
+                                        <button type="button" onclick="applyBBarPreset('#022d27', '#ffffff', '#fbbf24')" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-2 border border-slate-700 transition cursor-pointer shadow-2xs">
+                                            <span class="w-3 h-3 rounded-full bg-[#022d27] border border-amber-400"></span>
+                                            <span>Dark Emerald & Gold</span>
+                                        </button>
+                                        <button type="button" onclick="applyBBarPreset('#0f172a', '#94a3b8', '#38bdf8')" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-2 border border-slate-700 transition cursor-pointer shadow-2xs">
+                                            <span class="w-3 h-3 rounded-full bg-[#0f172a] border border-sky-400"></span>
+                                            <span>Midnight Sky</span>
+                                        </button>
+                                        <button type="button" onclick="applyBBarPreset('#0c1a30', '#cbd5e1', '#34d399')" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-2 border border-slate-700 transition cursor-pointer shadow-2xs">
+                                            <span class="w-3 h-3 rounded-full bg-[#0c1a30] border border-emerald-400"></span>
+                                            <span>Royal Navy</span>
+                                        </button>
+                                        <button type="button" onclick="applyBBarPreset('#18181b', '#d4d4d8', '#f59e0b')" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-2 border border-slate-700 transition cursor-pointer shadow-2xs">
+                                            <span class="w-3 h-3 rounded-full bg-[#18181b] border border-amber-500"></span>
+                                            <span>Luxury Charcoal</span>
+                                        </button>
+                                        <button type="button" onclick="applyBBarPreset('#2a0812', '#fecdd3', '#fb7185')" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-2 border border-slate-700 transition cursor-pointer shadow-2xs">
+                                            <span class="w-3 h-3 rounded-full bg-[#2a0812] border border-rose-400"></span>
+                                            <span>Velvet Maroon</span>
+                                        </button>
+                                        <button type="button" onclick="applyBBarPreset('#050505', '#e2e8f0', '#60a5fa')" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center gap-2 border border-slate-700 transition cursor-pointer shadow-2xs">
+                                            <span class="w-3 h-3 rounded-full bg-[#050505] border border-blue-400"></span>
+                                            <span>Deep Obsidian</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TOMBOL SIMPAN PENGATURAN BACKGROUND & BOTTOM BAR -->
                             <div class="pt-3 border-t border-slate-100 flex items-center justify-end">
                                 <button type="submit" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
                                     <i class="fas fa-save text-base"></i>
-                                    <span>Simpan Background Brosur</span>
+                                    <span>Simpan Pengaturan Home & Bottom Bar</span>
                                 </button>
                             </div>
 
@@ -1076,13 +1166,11 @@ $active_menu = 'brosur_settings';
                             </div>
 
                             <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME) -->
-                            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black/95 via-[#022c22]/90 to-transparent pt-4 pb-2.5 px-3 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-10px_25px_rgba(0,0,0,0.5)]">
-                                <!-- Menu 1: Home (Active) -->
-                                <button type="button" onclick="switchTab('bg')" class="flex flex-col items-center justify-center text-center text-amber-300 transform transition active:scale-95 group cursor-pointer" title="Menu Home (Frame Pengaturan Home)">
-                                    <div class="w-8 h-8 rounded-xl bg-amber-400/25 text-amber-300 flex items-center justify-center text-sm mb-0.5 shadow-md border border-amber-400/50 group-hover:scale-110 transition">
-                                        <i class="fas fa-house"></i>
-                                    </div>
-                                    <span class="text-[9.5px] font-black tracking-wider leading-none">Home</span>
+                            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-3 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>; color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;">
+                                <!-- Menu 1: Home (Active Tanpa Frame Box) -->
+                                <button type="button" onclick="switchTab('bg')" id="sim-menu-home-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5" style="color: <?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>;" title="Menu Home (Frame Pengaturan Home)">
+                                    <i id="sim-menu-home-icon" class="fas fa-house text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                                    <span id="sim-menu-home-label" class="text-[9.5px] font-bold tracking-wider leading-none">Home</span>
                                 </button>
                             </div>
 
@@ -2600,6 +2688,76 @@ $active_menu = 'brosur_settings';
 
             const formBg = document.getElementById('form-pengaturan-bg');
             if (formBg) formBg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // ==========================================
+        // 9. LOGIKA SINKRONISASI WARNA BOTTOM BAR
+        // ==========================================
+
+        function syncBBarColor(type, value) {
+            if (type === 'bg') {
+                const textInput = document.getElementById('input-bbar-bg');
+                if (textInput) textInput.value = value;
+            } else if (type === 'bg_text') {
+                const pickerInput = document.getElementById('input-bbar-bg-picker');
+                if (pickerInput && value.startsWith('#') && (value.length === 4 || value.length === 7)) {
+                    pickerInput.value = value;
+                }
+            } else if (type === 'text') {
+                const textInput = document.getElementById('input-bbar-text');
+                if (textInput) textInput.value = value;
+            } else if (type === 'text_text') {
+                const pickerInput = document.getElementById('input-bbar-text-picker');
+                if (pickerInput && value.startsWith('#') && (value.length === 4 || value.length === 7)) {
+                    pickerInput.value = value;
+                }
+            } else if (type === 'active') {
+                const textInput = document.getElementById('input-bbar-active');
+                if (textInput) textInput.value = value;
+            } else if (type === 'active_text') {
+                const pickerInput = document.getElementById('input-bbar-active-picker');
+                if (pickerInput && value.startsWith('#') && (value.length === 4 || value.length === 7)) {
+                    pickerInput.value = value;
+                }
+            }
+            updateLiveBottomBarColors();
+        }
+
+        function updateLiveBottomBarColors() {
+            const bg = document.getElementById('input-bbar-bg')?.value || '#022d27';
+            const text = document.getElementById('input-bbar-text')?.value || '#ffffff';
+            const active = document.getElementById('input-bbar-active')?.value || '#fbbf24';
+
+            const bar = document.getElementById('sim-bottom-bar');
+            const homeBtn = document.getElementById('sim-menu-home-btn');
+
+            if (bar) {
+                bar.style.backgroundColor = bg;
+                bar.style.color = text;
+            }
+            if (homeBtn) {
+                homeBtn.style.color = active;
+            }
+        }
+
+        function applyBBarPreset(bg, text, active) {
+            const bgInput = document.getElementById('input-bbar-bg');
+            const bgPicker = document.getElementById('input-bbar-bg-picker');
+            const textInput = document.getElementById('input-bbar-text');
+            const textPicker = document.getElementById('input-bbar-text-picker');
+            const activeInput = document.getElementById('input-bbar-active');
+            const activePicker = document.getElementById('input-bbar-active-picker');
+
+            if (bgInput) bgInput.value = bg;
+            if (bgPicker && bg.startsWith('#')) bgPicker.value = bg;
+
+            if (textInput) textInput.value = text;
+            if (textPicker && text.startsWith('#')) textPicker.value = text;
+
+            if (activeInput) activeInput.value = active;
+            if (activePicker && active.startsWith('#')) activePicker.value = active;
+
+            updateLiveBottomBarColors();
         }
 
         // Inisialisasi awal saat halaman dimuat
