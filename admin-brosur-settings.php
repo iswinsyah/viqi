@@ -1828,18 +1828,18 @@ $active_menu = 'brosur_settings';
 
             switch (fmt) {
                 case 'h1':
-                    return `<h1 class="font-black leading-tight tracking-tight">${safeText}</h1>`;
+                    return `<h1 class="font-black leading-tight tracking-tight" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h1>`;
                 case 'h3':
-                    return `<h3 class="font-bold leading-snug">${safeText}</h3>`;
+                    return `<h3 class="font-bold leading-snug" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h3>`;
                 case 'h4':
-                    return `<h4 class="font-bold leading-normal">${safeText}</h4>`;
+                    return `<h4 class="font-bold leading-normal" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h4>`;
                 case 'h5':
-                    return `<h5 class="font-semibold uppercase tracking-wider leading-normal text-xs">${safeText}</h5>`;
+                    return `<h5 class="font-semibold uppercase tracking-wider leading-normal" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h5>`;
                 case 'p':
-                    return `<p class="font-normal leading-relaxed text-sm">${safeText}</p>`;
+                    return `<p class="font-normal leading-relaxed" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</p>`;
                 case 'h2':
                 default:
-                    return `<h2 class="font-extrabold leading-tight">${safeText}</h2>`;
+                    return `<h2 class="font-extrabold leading-tight" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h2>`;
             }
         }
 
@@ -2789,15 +2789,15 @@ $active_menu = 'brosur_settings';
                             <button type="button" onclick="updateItemField('${item.id}', 'align', 'justify')" class="px-1.5 py-1 rounded-lg text-xs transition ${item.align === 'justify' ? 'bg-[#0b8478] text-white' : 'text-slate-600 hover:bg-slate-100'}"><i class="fas fa-align-justify text-[11px]"></i></button>
                         </div>
 
-                        <!-- TOMBOL DUPLIKASI & HAPUS -->
+                        <!-- TOMBOL DUPLIKASI, SETTING POSISI/LEBAR & HAPUS -->
                         <div class="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
-                            <button type="button" onclick="duplicateRow('${item.id}')" title="Duplikasi / Gandakan Kolom Ini" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 text-xs font-bold transition flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer">
-                                <i class="fas fa-copy text-amber-600"></i>
-                                <span class="hidden sm:inline text-[11px]">Duplikasi</span>
+                            <button type="button" onclick="toggleDetails('${item.id}')" title="Pengaturan Posisi & Lebar Bidang Tulis" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-teal-50 hover:text-teal-800 text-slate-700 flex items-center gap-1 text-xs font-bold transition shadow-2xs active:scale-95 cursor-pointer">
+                                <i class="fas fa-sliders text-[11px] text-teal-600"></i>
+                                <span class="text-[11px]">Posisi & Lebar</span>
                             </button>
 
-                            <button type="button" onclick="toggleDetails('${item.id}')" title="Pengaturan Posisi Slider" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs transition shadow-2xs active:scale-95 cursor-pointer">
-                                <i class="fas fa-sliders text-[11px]"></i>
+                            <button type="button" onclick="duplicateRow('${item.id}')" title="Duplikasi / Gandakan Kolom Ini" class="w-7 h-7 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 flex items-center justify-center text-xs transition shadow-2xs active:scale-95 cursor-pointer">
+                                <i class="fas fa-copy text-amber-600 text-[11px]"></i>
                             </button>
 
                             <button type="button" onclick="deleteRow('${item.id}')" title="Hapus Kolom Ini" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center text-xs transition shadow-2xs active:scale-95 cursor-pointer">
@@ -2807,31 +2807,66 @@ $active_menu = 'brosur_settings';
 
                     </div>
 
-                    <!-- PANEL DETAIL POSISI & LEBAR (EXPANDABLE) -->
-                    <div id="details-${item.id}" class="hidden pt-2 mt-2 border-t border-slate-100 bg-slate-50/70 p-3 rounded-xl">
+                    <!-- PANEL DETAIL PENGATURAN LEBAR & POSISI BIDANG TULIS (EXPANDABLE) -->
+                    <div id="details-${item.id}" class="hidden pt-3 mt-2 border-t border-slate-100 bg-slate-50/80 p-3.5 rounded-2xl space-y-3">
+                        
+                        <div class="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                            <span class="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                                <i class="fas fa-arrows-up-down-left-right text-[#0b8478]"></i>
+                                <span>Pengaturan Lebar Bidang Tulis & Posisi:</span>
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-semibold">Tersedia fitur Drag & Drop langsung di layar simulasi</span>
+                        </div>
+
+                        <!-- 3 SLIDER: LEBAR (HORIZONTAL), POSISI Y (VERTIKAL), POSISI X (HORIZONTAL) -->
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                            <div>
-                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
-                                    <span>Posisi Vertikal (Y):</span>
-                                    <span id="label-posy-${item.id}" class="font-mono text-amber-800 font-bold">${Math.round(item.posY || 35)}%</span>
+                            <!-- 1. Lebar Bidang Tulis (Horizontal) -->
+                            <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-700 mb-1">
+                                    <span class="flex items-center gap-1"><i class="fas fa-arrows-left-right text-teal-600"></i> Lebar Bidang (Horisontal):</span>
+                                    <span id="label-width-${item.id}" class="font-mono text-teal-800 font-bold">${item.width || 85}%</span>
                                 </div>
-                                <input type="range" min="2" max="92" step="0.5" value="${item.posY || 35}" oninput="updateItemPosition('${item.id}', 'posY', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                                <input type="range" min="15" max="100" step="1" value="${item.width || 85}" oninput="updateItemPosition('${item.id}', 'width', this.value)" class="w-full accent-[#0b8478] cursor-pointer">
+                                <span class="text-[9.5px] text-slate-400">Atur lebar area teks (15% - 100%)</span>
                             </div>
-                            <div>
-                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
-                                    <span>Posisi Horizontal (X):</span>
-                                    <span id="label-posx-${item.id}" class="font-mono text-amber-800 font-bold">${Math.round(item.posX || 50)}%</span>
+
+                            <!-- 2. Posisi Vertikal Y (Atas - Bawah) -->
+                            <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-700 mb-1">
+                                    <span class="flex items-center gap-1"><i class="fas fa-arrows-up-down text-teal-600"></i> Posisi Vertikal (Y):</span>
+                                    <span id="label-posy-${item.id}" class="font-mono text-teal-800 font-bold">${Math.round(item.posY || 35)}%</span>
                                 </div>
-                                <input type="range" min="10" max="90" step="0.5" value="${item.posX || 50}" oninput="updateItemPosition('${item.id}', 'posX', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                                <input type="range" min="2" max="95" step="0.5" value="${item.posY || 35}" oninput="updateItemPosition('${item.id}', 'posY', this.value)" class="w-full accent-[#0b8478] cursor-pointer">
+                                <span class="text-[9.5px] text-slate-400">Jarak vertikal dari atas layar (2% - 95%)</span>
                             </div>
-                            <div>
-                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
-                                    <span>Lebar Kolom:</span>
-                                    <span id="label-width-${item.id}" class="font-mono text-amber-800 font-bold">${item.width || 85}%</span>
+
+                            <!-- 3. Posisi Horizontal X (Kiri - Kanan) -->
+                            <div class="bg-white p-2.5 rounded-xl border border-slate-200/80 shadow-2xs">
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-700 mb-1">
+                                    <span class="flex items-center gap-1"><i class="fas fa-arrows-left-right-to-line text-teal-600"></i> Posisi Horizontal (X):</span>
+                                    <span id="label-posx-${item.id}" class="font-mono text-teal-800 font-bold">${Math.round(item.posX || 50)}%</span>
                                 </div>
-                                <input type="range" min="30" max="100" step="1" value="${item.width || 85}" oninput="updateItemPosition('${item.id}', 'width', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                                <input type="range" min="5" max="95" step="0.5" value="${item.posX || 50}" oninput="updateItemPosition('${item.id}', 'posX', this.value)" class="w-full accent-[#0b8478] cursor-pointer">
+                                <span class="text-[9.5px] text-slate-400">Pusat posisi horizontal (50% = pas tengah)</span>
                             </div>
                         </div>
+
+                        <!-- PRESET CEPAT LEBAR & RESET POSISI -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[10px]">
+                            <div class="flex items-center gap-1.5 flex-wrap">
+                                <span class="font-bold text-slate-500">Preset Lebar:</span>
+                                <button type="button" onclick="updateItemPosition('${item.id}', 'width', 100)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:bg-teal-50 text-slate-700 font-bold active:scale-95 cursor-pointer">100% (Penuh)</button>
+                                <button type="button" onclick="updateItemPosition('${item.id}', 'width', 85)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:bg-teal-50 text-slate-700 font-bold active:scale-95 cursor-pointer">85% (Standar)</button>
+                                <button type="button" onclick="updateItemPosition('${item.id}', 'width', 65)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:bg-teal-50 text-slate-700 font-bold active:scale-95 cursor-pointer">65% (Sedang)</button>
+                                <button type="button" onclick="updateItemPosition('${item.id}', 'width', 45)" class="px-2 py-0.5 rounded-lg bg-white border border-slate-200 hover:bg-teal-50 text-slate-700 font-bold active:scale-95 cursor-pointer">45% (Ramping)</button>
+                            </div>
+
+                            <button type="button" onclick="updateItemPosition('${item.id}', 'posX', 50)" class="text-teal-700 hover:underline font-bold flex items-center gap-1 active:scale-95 cursor-pointer">
+                                <i class="fas fa-crosshairs"></i>
+                                <span>Reset Posisi Tengah X (50%)</span>
+                            </button>
+                        </div>
+
                     </div>
                 `;
 
@@ -2861,6 +2896,10 @@ $active_menu = 'brosur_settings';
                 item[field] = parseFloat(value);
                 const label = document.getElementById(`label-${field.toLowerCase()}-${id}`);
                 if (label) label.innerText = Math.round(item[field]) + '%';
+                
+                const inputEl = document.querySelector(`#details-${id} input[oninput*="'${field}'"]`);
+                if (inputEl) inputEl.value = item[field];
+
                 renderSimLayers();
                 syncJsonInput();
             }
