@@ -97,24 +97,30 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
-// Pastikan kolom untuk custom text, images, videos, buttons, bottom bar, dan multi-layer JSON tersedia di tabel pengaturan_brosur
+// Pastikan kolom untuk custom text, images, videos, buttons, bottom bar, dan Frame Prestasi tersedia di tabel pengaturan_brosur
 $columns_to_check = [
-    'custom_text_items'       => "LONGTEXT",
-    'custom_image_items'      => "LONGTEXT",
-    'custom_video_items'      => "LONGTEXT",
-    'custom_button_items'     => "LONGTEXT",
-    'custom_text_content'     => "TEXT",
-    'custom_text_format'      => "VARCHAR(20) DEFAULT 'h2'",
-    'custom_text_color'       => "VARCHAR(30) DEFAULT '#ffffff'",
-    'custom_text_font'        => "VARCHAR(50) DEFAULT 'Plus Jakarta Sans'",
-    'custom_text_align'       => "VARCHAR(20) DEFAULT 'center'",
-    'custom_text_size'        => "INT DEFAULT 24",
-    'custom_text_pos_x'       => "DECIMAL(5,2) DEFAULT 50.00",
-    'custom_text_pos_y'       => "DECIMAL(5,2) DEFAULT 35.00",
-    'custom_text_width'       => "INT DEFAULT 85",
-    'bottom_bar_bg_color'     => "VARCHAR(100) DEFAULT '#022d27'",
-    'bottom_bar_text_color'   => "VARCHAR(30) DEFAULT '#ffffff'",
-    'bottom_bar_active_color' => "VARCHAR(30) DEFAULT '#fbbf24'"
+    'custom_text_items'        => "LONGTEXT",
+    'custom_image_items'       => "LONGTEXT",
+    'custom_video_items'       => "LONGTEXT",
+    'custom_button_items'      => "LONGTEXT",
+    'custom_text_content'      => "TEXT",
+    'custom_text_format'       => "VARCHAR(20) DEFAULT 'h2'",
+    'custom_text_color'        => "VARCHAR(30) DEFAULT '#ffffff'",
+    'custom_text_font'         => "VARCHAR(50) DEFAULT 'Plus Jakarta Sans'",
+    'custom_text_align'        => "VARCHAR(20) DEFAULT 'center'",
+    'custom_text_size'         => "INT DEFAULT 24",
+    'custom_text_pos_x'        => "DECIMAL(5,2) DEFAULT 50.00",
+    'custom_text_pos_y'        => "DECIMAL(5,2) DEFAULT 35.00",
+    'custom_text_width'        => "INT DEFAULT 85",
+    'bottom_bar_bg_color'      => "VARCHAR(100) DEFAULT '#022d27'",
+    'bottom_bar_text_color'    => "VARCHAR(30) DEFAULT '#ffffff'",
+    'bottom_bar_active_color'  => "VARCHAR(30) DEFAULT '#fbbf24'",
+    'prestasi_bg_url'          => "TEXT",
+    'prestasi_overlay_opacity' => "DECIMAL(3,2) DEFAULT 0.88",
+    'prestasi_text_items'      => "LONGTEXT",
+    'prestasi_image_items'     => "LONGTEXT",
+    'prestasi_video_items'     => "LONGTEXT",
+    'prestasi_button_items'    => "LONGTEXT"
 ];
 foreach ($columns_to_check as $col => $type) {
     $res = $conn->query("SHOW COLUMNS FROM pengaturan_brosur LIKE '$col'");
@@ -159,13 +165,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_koleksi') {
 $pesan_sukses = (($_GET['msg'] ?? '') === 'koleksi_deleted') ? 'Background berhasil dihapus dari koleksi.' : '';
 $pesan_error  = '';
 
-// Tab Aktif (Tab 1: Background, Tab 2: Tulisan, Tab 3: Gambar, Tab 4: Video)
+// Tab Aktif & Frame Aktif
+$active_frame = $_POST['active_frame'] ?? $_GET['frame'] ?? 'home';
+if (!in_array($active_frame, ['home', 'prestasi'])) {
+    $active_frame = 'home';
+}
+
 $current_tab = $_POST['active_tab'] ?? $_GET['tab'] ?? 'bg';
-if (!in_array($current_tab, ['bg', 'text', 'image', 'video'])) {
+if (!in_array($current_tab, ['bg', 'text', 'image', 'video', 'button'])) {
     $current_tab = 'bg';
 }
 
-// Proses Simpan Pengaturan (Background, Tulisan Dinamis, Gambar Sisipan & Video Sisipan)
+// Proses Simpan Pengaturan (Background, Tulisan Dinamis, Gambar Sisipan, Video Sisipan & Tombol)
 if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     $action_type = $_POST['action_type'] ?? 'save_bg';
 
@@ -197,43 +208,42 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $final_json = json_encode($clean_items, JSON_UNESCAPED_UNICODE);
         $final_json_esc = $conn->real_escape_string($final_json);
 
-        // Update legacy columns dari item pertama sebagai fallback jika ada
-        $first = $clean_items[0] ?? [
-            'content' => '',
-            'format' => 'h2',
-            'color' => '#ffffff',
-            'font' => 'Plus Jakarta Sans',
-            'align' => 'center',
-            'size' => 24,
-            'posX' => 50,
-            'posY' => 35,
-            'width' => 85
-        ];
-        $c_content = $conn->real_escape_string($first['content']);
-        $c_format  = $conn->real_escape_string($first['format']);
-        $c_color   = $conn->real_escape_string($first['color']);
-        $c_font    = $conn->real_escape_string($first['font']);
-        $c_align   = $conn->real_escape_string($first['align']);
-        $c_size    = (int)$first['size'];
-        $c_pos_x   = (float)$first['posX'];
-        $c_pos_y   = (float)$first['posY'];
-        $c_width   = (int)$first['width'];
+        if ($active_frame === 'prestasi') {
+            $sql_text = "UPDATE pengaturan_brosur SET prestasi_text_items = '$final_json_esc' WHERE id = 1";
+        } else {
+            // Update legacy columns dari item pertama sebagai fallback jika ada
+            $first = $clean_items[0] ?? [
+                'content' => '', 'format' => 'h2', 'color' => '#ffffff',
+                'font' => 'Plus Jakarta Sans', 'align' => 'center', 'size' => 24,
+                'posX' => 50, 'posY' => 35, 'width' => 85
+            ];
+            $c_content = $conn->real_escape_string($first['content']);
+            $c_format  = $conn->real_escape_string($first['format']);
+            $c_color   = $conn->real_escape_string($first['color']);
+            $c_font    = $conn->real_escape_string($first['font']);
+            $c_align   = $conn->real_escape_string($first['align']);
+            $c_size    = (int)$first['size'];
+            $c_pos_x   = (float)$first['posX'];
+            $c_pos_y   = (float)$first['posY'];
+            $c_width   = (int)$first['width'];
 
-        $sql_text = "UPDATE pengaturan_brosur SET 
-                        custom_text_items   = '$final_json_esc',
-                        custom_text_content = '$c_content',
-                        custom_text_format  = '$c_format',
-                        custom_text_color   = '$c_color',
-                        custom_text_font    = '$c_font',
-                        custom_text_align   = '$c_align',
-                        custom_text_size    = $c_size,
-                        custom_text_pos_x   = $c_pos_x,
-                        custom_text_pos_y   = $c_pos_y,
-                        custom_text_width   = $c_width
-                     WHERE id = 1";
+            $sql_text = "UPDATE pengaturan_brosur SET 
+                            custom_text_items   = '$final_json_esc',
+                            custom_text_content = '$c_content',
+                            custom_text_format  = '$c_format',
+                            custom_text_color   = '$c_color',
+                            custom_text_font    = '$c_font',
+                            custom_text_align   = '$c_align',
+                            custom_text_size    = $c_size,
+                            custom_text_pos_x   = $c_pos_x,
+                            custom_text_pos_y   = $c_pos_y,
+                            custom_text_width   = $c_width
+                         WHERE id = 1";
+        }
 
         if ($conn->query($sql_text)) {
-            $pesan_sukses = "Alhamdulillah! Pengaturan kolom tulisan (" . count($clean_items) . " kolom) berhasil disimpan.";
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $pesan_sukses = "Alhamdulillah! Pengaturan kolom tulisan {$frame_label} (" . count($clean_items) . " kolom) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan tulisan: " . $conn->error;
         }
@@ -266,9 +276,15 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $final_img_json = json_encode($clean_img_items, JSON_UNESCAPED_UNICODE);
         $final_img_json_esc = $conn->real_escape_string($final_img_json);
 
-        $sql_img = "UPDATE pengaturan_brosur SET custom_image_items = '$final_img_json_esc' WHERE id = 1";
+        if ($active_frame === 'prestasi') {
+            $sql_img = "UPDATE pengaturan_brosur SET prestasi_image_items = '$final_img_json_esc' WHERE id = 1";
+        } else {
+            $sql_img = "UPDATE pengaturan_brosur SET custom_image_items = '$final_img_json_esc' WHERE id = 1";
+        }
+
         if ($conn->query($sql_img)) {
-            $pesan_sukses = "Alhamdulillah! Pengaturan gambar sisipan (" . count($clean_img_items) . " gambar) berhasil disimpan.";
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $pesan_sukses = "Alhamdulillah! Pengaturan gambar sisipan {$frame_label} (" . count($clean_img_items) . " gambar) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan gambar: " . $conn->error;
         }
@@ -305,9 +321,15 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $final_vid_json = json_encode($clean_vid_items, JSON_UNESCAPED_UNICODE);
         $final_vid_json_esc = $conn->real_escape_string($final_vid_json);
 
-        $sql_vid = "UPDATE pengaturan_brosur SET custom_video_items = '$final_vid_json_esc' WHERE id = 1";
+        if ($active_frame === 'prestasi') {
+            $sql_vid = "UPDATE pengaturan_brosur SET prestasi_video_items = '$final_vid_json_esc' WHERE id = 1";
+        } else {
+            $sql_vid = "UPDATE pengaturan_brosur SET custom_video_items = '$final_vid_json_esc' WHERE id = 1";
+        }
+
         if ($conn->query($sql_vid)) {
-            $pesan_sukses = "Alhamdulillah! Pengaturan video sisipan (" . count($clean_vid_items) . " video) berhasil disimpan.";
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $pesan_sukses = "Alhamdulillah! Pengaturan video sisipan {$frame_label} (" . count($clean_vid_items) . " video) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan video: " . $conn->error;
         }
@@ -345,9 +367,15 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $final_btn_json = json_encode($clean_btn_items, JSON_UNESCAPED_UNICODE);
         $final_btn_json_esc = $conn->real_escape_string($final_btn_json);
 
-        $sql_btn = "UPDATE pengaturan_brosur SET custom_button_items = '$final_btn_json_esc' WHERE id = 1";
+        if ($active_frame === 'prestasi') {
+            $sql_btn = "UPDATE pengaturan_brosur SET prestasi_button_items = '$final_btn_json_esc' WHERE id = 1";
+        } else {
+            $sql_btn = "UPDATE pengaturan_brosur SET custom_button_items = '$final_btn_json_esc' WHERE id = 1";
+        }
+
         if ($conn->query($sql_btn)) {
-            $pesan_sukses = "Alhamdulillah! Pengaturan tombol (" . count($clean_btn_items) . " tombol) berhasil disimpan.";
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $pesan_sukses = "Alhamdulillah! Pengaturan tombol {$frame_label} (" . count($clean_btn_items) . " tombol) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan tombol: " . $conn->error;
         }
@@ -372,16 +400,26 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             }
         }
 
-        // Terapkan ke cover, body, dan bottom bar
-        $sql_update = "UPDATE pengaturan_brosur SET 
-                        cover_bg_url = '$bg_url',
-                        cover_overlay_opacity = $bg_overlay_opacity,
-                        body_bg_url = '$bg_url',
-                        body_overlay_opacity = $bg_overlay_opacity,
-                        bottom_bar_bg_color = '$bottom_bar_bg_color',
-                        bottom_bar_text_color = '$bottom_bar_text_color',
-                        bottom_bar_active_color = '$bottom_bar_active_color'
-                       WHERE id = 1";
+        if ($active_frame === 'prestasi') {
+            $sql_update = "UPDATE pengaturan_brosur SET 
+                            prestasi_bg_url = '$bg_url',
+                            prestasi_overlay_opacity = $bg_overlay_opacity,
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
+        } else {
+            // Terapkan ke cover, body, dan bottom bar
+            $sql_update = "UPDATE pengaturan_brosur SET 
+                            cover_bg_url = '$bg_url',
+                            cover_overlay_opacity = $bg_overlay_opacity,
+                            body_bg_url = '$bg_url',
+                            body_overlay_opacity = $bg_overlay_opacity,
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
+        }
 
         if ($conn->query($sql_update)) {
             if (!empty($bg_url)) {
@@ -392,7 +430,8 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 }
             }
 
-            $pesan_sukses = "Alhamdulillah! Pengaturan Background & Bottom Bar Brosur berhasil disimpan.";
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : 'Frame Home';
+            $pesan_sukses = "Alhamdulillah! Pengaturan Background {$frame_label} & Bottom Bar berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan background & bottom bar: " . $conn->error;
         }
@@ -410,7 +449,9 @@ if ($q_koleksi && $q_koleksi->num_rows > 0) {
 $q = $conn->query("SELECT * FROM pengaturan_brosur WHERE id = 1 LIMIT 1");
 $cfg = $q ? $q->fetch_assoc() : [];
 
-// Ambil daftar text items atau inisialisasi default
+// ==============================================================
+// 1. DATA FRAME HOME (COVER / HALAMAN DEPAN)
+// ==============================================================
 $raw_items = $cfg['custom_text_items'] ?? null;
 if ($raw_items !== null && $raw_items !== '') {
     $text_items = json_decode($raw_items, true);
@@ -432,7 +473,6 @@ if ($raw_items !== null && $raw_items !== '') {
     ];
 }
 
-// Ambil daftar image items atau inisialisasi default
 $raw_images = $cfg['custom_image_items'] ?? null;
 if ($raw_images !== null && $raw_images !== '') {
     $image_items = json_decode($raw_images, true);
@@ -441,7 +481,6 @@ if ($raw_images !== null && $raw_images !== '') {
     $image_items = [];
 }
 
-// Ambil daftar video items atau inisialisasi default
 $raw_videos = $cfg['custom_video_items'] ?? null;
 if ($raw_videos !== null && $raw_videos !== '') {
     $video_items = json_decode($raw_videos, true);
@@ -450,7 +489,6 @@ if ($raw_videos !== null && $raw_videos !== '') {
     $video_items = [];
 }
 
-// Ambil daftar button items atau inisialisasi default
 $raw_buttons = $cfg['custom_button_items'] ?? null;
 if ($raw_buttons !== null && $raw_buttons !== '') {
     $button_items = json_decode($raw_buttons, true);
@@ -461,6 +499,105 @@ if ($raw_buttons !== null && $raw_buttons !== '') {
             'id'            => 'btn_' . time() . '_1',
             'text'          => 'Chat WhatsApp Panitia',
             'url'           => 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20info%20pendaftaran%20Villa%20Quran',
+            'icon'          => 'fab fa-whatsapp',
+            'shape'         => 'rounded_pill',
+            'bg_color'      => '#25d366',
+            'text_color'    => '#ffffff',
+            'border_enable' => 0,
+            'border_width'  => 2,
+            'border_color'  => '#ffffff',
+            'shadow_style'  => 'glow_wa',
+            'font_size'     => 13,
+            'font'          => 'Plus Jakarta Sans',
+            'posX'          => 50.0,
+            'posY'          => 82.0,
+            'width'         => 82,
+            'height'        => 46,
+            'target'        => '_blank'
+        ]
+    ];
+}
+
+// ==============================================================
+// 2. DATA FRAME PRESTASI (PENCAPAIAN & PRESTASI SANTRI)
+// ==============================================================
+$prestasi_bg_url = !empty($cfg['prestasi_bg_url']) ? $cfg['prestasi_bg_url'] : 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=1200&auto=format&fit=crop&q=80';
+$prestasi_overlay_opacity = isset($cfg['prestasi_overlay_opacity']) ? (float)$cfg['prestasi_overlay_opacity'] : 0.88;
+
+$raw_prestasi_texts = $cfg['prestasi_text_items'] ?? null;
+if ($raw_prestasi_texts !== null && $raw_prestasi_texts !== '') {
+    $prestasi_text_items = json_decode($raw_prestasi_texts, true);
+    if (!is_array($prestasi_text_items)) $prestasi_text_items = [];
+} else {
+    $prestasi_text_items = [
+        [
+            'id'      => 'text_prestasi_1',
+            'content' => 'Prestasi Santri Villa Quran',
+            'format'  => 'h2',
+            'color'   => '#ffffff',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 24,
+            'posX'    => 50.0,
+            'posY'    => 18.0,
+            'width'   => 88
+        ],
+        [
+            'id'      => 'text_prestasi_2',
+            'content' => 'Mencetak Generasi Qur\'ani Berprestasi Juara Nasional & Internasional',
+            'format'  => 'h4',
+            'color'   => '#fbbf24',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 13,
+            'posX'    => 50.0,
+            'posY'    => 28.0,
+            'width'   => 90
+        ]
+    ];
+}
+
+$raw_prestasi_images = $cfg['prestasi_image_items'] ?? null;
+if ($raw_prestasi_images !== null && $raw_prestasi_images !== '') {
+    $prestasi_image_items = json_decode($raw_prestasi_images, true);
+    if (!is_array($prestasi_image_items)) $prestasi_image_items = [];
+} else {
+    $prestasi_image_items = [
+        [
+            'id'            => 'img_prestasi_1',
+            'url'           => 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80',
+            'shape'         => 'rounded',
+            'border_enable' => 1,
+            'border_width'  => 3,
+            'border_color'  => '#fbbf24',
+            'border_style'  => 'solid',
+            'shadow_style'  => 'glow_gold',
+            'rotation'      => 0,
+            'posX'          => 50.0,
+            'posY'          => 53.0,
+            'width'         => 72
+        ]
+    ];
+}
+
+$raw_prestasi_videos = $cfg['prestasi_video_items'] ?? null;
+if ($raw_prestasi_videos !== null && $raw_prestasi_videos !== '') {
+    $prestasi_video_items = json_decode($raw_prestasi_videos, true);
+    if (!is_array($prestasi_video_items)) $prestasi_video_items = [];
+} else {
+    $prestasi_video_items = [];
+}
+
+$raw_prestasi_buttons = $cfg['prestasi_button_items'] ?? null;
+if ($raw_prestasi_buttons !== null && $raw_prestasi_buttons !== '') {
+    $prestasi_button_items = json_decode($raw_prestasi_buttons, true);
+    if (!is_array($prestasi_button_items)) $prestasi_button_items = [];
+} else {
+    $prestasi_button_items = [
+        [
+            'id'            => 'btn_prestasi_1',
+            'text'          => 'Konsultasi Beasiswa Prestasi',
+            'url'           => 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20info%20program%20prestasi%20Villa%20Quran',
             'icon'          => 'fab fa-whatsapp',
             'shape'         => 'rounded_pill',
             'bg_color'      => '#25d366',
@@ -662,38 +799,62 @@ $active_menu = 'brosur_settings';
                 <?php endif; ?>
 
                 <!-- ============================================================== -->
-                <!-- MASTER FRAME: HOME (COVER HALAMAN DEPAN - MENU NAVIGASI #1)   -->
+                <!-- FRAME SWITCHER BAR: PILIH ANTARA FRAME HOME & FRAME PRESTASI   -->
+                <!-- ============================================================== -->
+                <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 p-2 sm:p-2.5 rounded-3xl border border-slate-700/80 shadow-md flex items-center gap-2">
+                    <div class="text-white text-xs font-black uppercase tracking-wider px-2 shrink-0 flex items-center gap-1.5">
+                        <i class="fas fa-layer-group text-amber-400"></i>
+                        <span class="hidden sm:inline">Pilih Frame:</span>
+                    </div>
+                    
+                    <!-- Tombol Frame 1: Home -->
+                    <button type="button" id="frame-btn-home" onclick="switchFrame('home')" class="flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer">
+                        <i class="fas fa-house text-xs"></i>
+                        <span>1. Frame: Home</span>
+                        <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-900/80 text-emerald-200">Cover</span>
+                    </button>
+
+                    <!-- Tombol Frame 2: Prestasi -->
+                    <button type="button" id="frame-btn-prestasi" onclick="switchFrame('prestasi')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+                        <i class="fas fa-trophy text-xs text-amber-400"></i>
+                        <span>2. Frame: Prestasi</span>
+                        <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-900/60 text-amber-200">Menu #2</span>
+                    </button>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- MASTER CONTAINER: 5 TAB PENGATURAN FRAME (HOME / PRESTASI)    -->
                 <!-- ============================================================== -->
                 <div class="bg-white/90 backdrop-blur-md rounded-3xl p-5 sm:p-6 border-2 border-emerald-500/30 shadow-sm space-y-5">
                     
-                    <!-- FRAME HEADER: HOME (MENU NAVIGASI BOTTOM BAR) -->
+                    <!-- FRAME HEADER: DINAMIS SESUAI FRAME TERPILIH -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
                         <div class="flex items-center gap-3.5">
-                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-[#0b8478] text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/20 shrink-0">
-                                <i class="fas fa-house"></i>
+                            <div id="frame-header-icon-box" class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-[#0b8478] text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/20 shrink-0">
+                                <i id="frame-header-icon" class="fas fa-house"></i>
                             </div>
                             <div>
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <h2 class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Home</h2>
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                    <h2 id="frame-header-title" class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Home</h2>
+                                    <span id="frame-header-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
                                         Cover / Halaman Depan
                                     </span>
                                 </div>
-                                <p class="text-xs text-slate-500 mt-0.5">
+                                <p id="frame-header-desc" class="text-xs text-slate-500 mt-0.5">
                                     Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Home</strong> pada Bottom Navigation Bar).
                                 </p>
                             </div>
                         </div>
 
                         <div class="flex items-center gap-2 shrink-0">
-                            <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-1.5 shadow-2xs">
+                            <span id="frame-header-menu-pill" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-1.5 shadow-2xs">
                                 <i class="fas fa-compass text-amber-600"></i>
-                                <span>Menu #1 di Bottom Bar</span>
+                                <span id="frame-header-menu-text">Menu #1 di Bottom Bar</span>
                             </span>
                         </div>
                     </div>
 
-                    <!-- NAVIGASI 5 SUB-TAB DALAM FRAME HOME (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR, TAB 4: VIDEO, TAB 5: TOMBOL) -->
+                    <!-- NAVIGASI 5 SUB-TAB DALAM FRAME AKTIF (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR, TAB 4: VIDEO, TAB 5: TOMBOL) -->
                     <div class="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 shadow-inner flex items-center gap-1 sm:gap-1.5 sticky top-20 z-20 overflow-x-auto">
                         
                         <!-- TAB 1: BACKGROUND BROSUR -->
@@ -1338,12 +1499,18 @@ $active_menu = 'brosur_settings';
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimButtonLayers() -->
                             </div>
 
-                            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME) -->
+                            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME & PRESTASI) -->
                             <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-3 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>; color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;">
-                                <!-- Menu 1: Home (Active Tanpa Frame Box) -->
-                                <button type="button" onclick="switchTab('bg')" id="sim-menu-home-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5" style="color: <?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>;" title="Menu Home (Frame Pengaturan Home)">
+                                <!-- Menu 1: Home -->
+                                <button type="button" onclick="switchFrame('home')" id="sim-menu-home-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5" style="color: <?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>;" title="Menu Home (Frame Home)">
                                     <i id="sim-menu-home-icon" class="fas fa-house text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
                                     <span id="sim-menu-home-label" class="text-[9.5px] font-bold tracking-wider leading-none">Home</span>
+                                </button>
+
+                                <!-- Menu 2: Prestasi -->
+                                <button type="button" onclick="switchFrame('prestasi')" id="sim-menu-prestasi-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Prestasi (Frame Prestasi)">
+                                    <i id="sim-menu-prestasi-icon" class="fas fa-trophy text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                                    <span id="sim-menu-prestasi-label" class="text-[9.5px] font-bold tracking-wider leading-none">Prestasi</span>
                                 </button>
                             </div>
 
@@ -1372,46 +1539,162 @@ $active_menu = 'brosur_settings';
     <!-- SCRIPT INTERAKTIF PENGATURAN GAMBAR, TULISAN & SMART DRAGGABLE GUIDELINES -->
     <script>
         // ==========================================
-        // 1. STATE & KONFIGURASI
+        // 1. STATE & KONFIGURASI MULTI-FRAME (HOME & PRESTASI)
         // ==========================================
         
-        // State Array Tulisan
-        let textItems = <?= json_encode($text_items, JSON_UNESCAPED_UNICODE) ?>;
-        if (!Array.isArray(textItems) || textItems.length === 0) {
-            textItems = [{
-                id: 'text_' + Date.now(),
-                content: 'Villa Quran Indonesia',
-                format: 'h2',
-                color: '#ffffff',
-                font: 'Plus Jakarta Sans',
-                align: 'center',
-                size: 24,
-                posX: 50,
-                posY: 35,
-                width: 85
-            }];
+        let framesData = {
+            home: {
+                id: 'home',
+                name: 'Home',
+                title: 'Frame: Home',
+                subtitle: 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Home</strong> pada Bottom Navigation Bar).',
+                badge: 'Cover / Halaman Depan',
+                menuPill: 'Menu #1 di Bottom Bar',
+                icon: 'fa-house',
+                iconGradient: 'from-emerald-500 to-[#0b8478]',
+                badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+                bgUrl: <?= json_encode($cfg['cover_bg_url'] ?? '') ?>,
+                bgOpacity: <?= (float)($cfg['cover_overlay_opacity'] ?? 0.88) ?>,
+                texts: <?= json_encode($text_items, JSON_UNESCAPED_UNICODE) ?>,
+                images: <?= json_encode($image_items, JSON_UNESCAPED_UNICODE) ?>,
+                videos: <?= json_encode($video_items, JSON_UNESCAPED_UNICODE) ?>,
+                buttons: <?= json_encode($button_items, JSON_UNESCAPED_UNICODE) ?>
+            },
+            prestasi: {
+                id: 'prestasi',
+                name: 'Prestasi',
+                title: 'Frame: Prestasi',
+                subtitle: 'Frame ini mengatur tampilan galeri pencapaian, piala, medali & prestasi santri (Menu <strong>Prestasi</strong> pada Bottom Navigation Bar).',
+                badge: 'Menu Prestasi Brosur',
+                menuPill: 'Menu #2 di Bottom Bar',
+                icon: 'fa-trophy',
+                iconGradient: 'from-amber-500 to-amber-600',
+                badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
+                bgUrl: <?= json_encode($prestasi_bg_url) ?>,
+                bgOpacity: <?= (float)$prestasi_overlay_opacity ?>,
+                texts: <?= json_encode($prestasi_text_items, JSON_UNESCAPED_UNICODE) ?>,
+                images: <?= json_encode($prestasi_image_items, JSON_UNESCAPED_UNICODE) ?>,
+                videos: <?= json_encode($prestasi_video_items, JSON_UNESCAPED_UNICODE) ?>,
+                buttons: <?= json_encode($prestasi_button_items, JSON_UNESCAPED_UNICODE) ?>
+            }
+        };
+
+        let currentActiveFrame = '<?= $active_frame ?>';
+        let currentActiveTab   = '<?= $current_tab ?>';
+
+        // Pointer item aktif sesuai frame yang sedang dibuka
+        let textItems   = framesData[currentActiveFrame].texts;
+        let imageItems  = framesData[currentActiveFrame].images;
+        let videoItems  = framesData[currentActiveFrame].videos;
+        let buttonItems = framesData[currentActiveFrame].buttons;
+
+        function switchFrame(frame) {
+            if (!['home', 'prestasi'].includes(frame)) frame = 'home';
+            currentActiveFrame = frame;
+
+            const data = framesData[frame];
+            textItems   = data.texts;
+            imageItems  = data.images;
+            videoItems  = data.videos;
+            buttonItems = data.buttons;
+
+            // 1. Update Tombol Switcher Frame
+            const btnHome = document.getElementById('frame-btn-home');
+            const btnPrestasi = document.getElementById('frame-btn-prestasi');
+            if (btnHome && btnPrestasi) {
+                if (frame === 'home') {
+                    btnHome.className = 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer';
+                    btnPrestasi.className = 'flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer';
+                } else {
+                    btnPrestasi.className = 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md ring-2 ring-amber-400 cursor-pointer';
+                    btnHome.className = 'flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer';
+                }
+            }
+
+            // 2. Update Header Info Frame
+            const headerTitle    = document.getElementById('frame-header-title');
+            const headerBadge    = document.getElementById('frame-header-badge');
+            const headerDesc     = document.getElementById('frame-header-desc');
+            const headerIcon     = document.getElementById('frame-header-icon');
+            const headerIconBox  = document.getElementById('frame-header-icon-box');
+            const headerMenuText = document.getElementById('frame-header-menu-text');
+
+            if (headerTitle) headerTitle.innerText = data.title;
+            if (headerBadge) {
+                headerBadge.innerText = data.badge;
+                headerBadge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${data.badgeClass}`;
+            }
+            if (headerDesc) headerDesc.innerHTML = data.subtitle;
+            if (headerIcon) headerIcon.className = `fas ${data.icon}`;
+            if (headerIconBox) headerIconBox.className = `w-12 h-12 rounded-2xl bg-gradient-to-br ${data.iconGradient} text-white flex items-center justify-center text-xl shadow-md shrink-0`;
+            if (headerMenuText) headerMenuText.innerText = data.menuPill;
+
+            // 3. Update Hidden Inputs active_frame di semua Form
+            document.querySelectorAll('.input-active-frame').forEach(inp => inp.value = frame);
+
+            // 4. Update Input Tab Background
+            const bgUrlInput = document.getElementById('input-bg-url');
+            const bgOpacityInput = document.getElementById('input-bg-opacity');
+            const bgOpacityLabel = document.getElementById('val-bg-opacity');
+            const thumbBgBox = document.getElementById('thumb-bg-box');
+            const thumbBgOverlay = document.getElementById('thumb-bg-overlay');
+
+            if (bgUrlInput) bgUrlInput.value = data.bgUrl || '';
+            if (bgOpacityInput) bgOpacityInput.value = data.bgOpacity;
+            if (bgOpacityLabel) bgOpacityLabel.innerText = Math.round(data.bgOpacity * 100) + '%';
+            if (thumbBgBox && data.bgUrl) thumbBgBox.style.backgroundImage = `url('${data.bgUrl}')`;
+            if (thumbBgOverlay) thumbBgOverlay.style.opacity = data.bgOpacity;
+
+            // 5. Update Background Canvas Simulasi
+            updateCanvasBackground(data.bgUrl, data.bgOpacity);
+
+            // 6. Update Highlight Menu Aktif di Bottom Bar Simulasi
+            const navHome = document.getElementById('sim-menu-home-btn');
+            const navPrestasi = document.getElementById('sim-menu-prestasi-btn');
+            const activeColor = '<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>';
+            const normalColor = '<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>';
+
+            if (navHome && navPrestasi) {
+                if (frame === 'home') {
+                    navHome.style.color = activeColor;
+                    navHome.classList.remove('opacity-70');
+                    navPrestasi.style.color = normalColor;
+                    navPrestasi.classList.add('opacity-70');
+                } else {
+                    navPrestasi.style.color = activeColor;
+                    navPrestasi.classList.remove('opacity-70');
+                    navHome.style.color = normalColor;
+                    navHome.classList.add('opacity-70');
+                }
+            }
+
+            // 7. Re-render Semua Tab Rows & Layar Simulasi
+            renderRows();
+            renderImageRows();
+            renderVideoRows();
+            renderButtonRows();
+            renderSimLayers();
+            renderSimImageLayers();
+            renderSimVideoLayers();
+            renderSimButtonLayers();
         }
 
-        // State Array Gambar Sisipan
-        let imageItems = <?= json_encode($image_items, JSON_UNESCAPED_UNICODE) ?>;
-        if (!Array.isArray(imageItems)) {
-            imageItems = [];
+        function updateCanvasBackground(url, opacity) {
+            const screenCover = document.getElementById('preview-screen-cover');
+            const overlay = document.getElementById('preview-cover-overlay');
+            if (screenCover) {
+                if (url) {
+                    screenCover.style.backgroundImage = `url('${url}')`;
+                    screenCover.style.backgroundSize = 'cover';
+                    screenCover.style.backgroundPosition = 'center';
+                } else {
+                    screenCover.style.backgroundImage = 'none';
+                }
+            }
+            if (overlay) {
+                overlay.style.opacity = opacity;
+            }
         }
-
-        // State Array Video Sisipan
-        let videoItems = <?= json_encode($video_items, JSON_UNESCAPED_UNICODE) ?>;
-        if (!Array.isArray(videoItems)) {
-            videoItems = [];
-        }
-
-        // State Array Tombol Aksi (Call To Action Buttons)
-        let buttonItems = <?= json_encode($button_items, JSON_UNESCAPED_UNICODE) ?>;
-        if (!Array.isArray(buttonItems)) {
-            buttonItems = [];
-        }
-
-        // Tab Aktif State
-        let currentActiveTab = '<?= $current_tab ?>';
 
         function switchTab(tab) {
             if (!['bg', 'text', 'image', 'video', 'button'].includes(tab)) tab = 'bg';
