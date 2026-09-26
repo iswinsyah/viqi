@@ -143,22 +143,11 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     $action_type = $_POST['action_type'] ?? 'save_bg';
 
     if ($action_type === 'save_text') {
-        $json_raw = $_POST['custom_text_items_json'] ?? '';
+        $json_raw = $_POST['custom_text_items_json'] ?? '[]';
         $decoded = json_decode($json_raw, true);
 
-        if (!is_array($decoded) || empty($decoded)) {
-            $decoded = [[
-                'id'      => 'text_1',
-                'content' => trim($_POST['custom_text_content'] ?? 'Villa Quran Indonesia'),
-                'format'  => trim($_POST['custom_text_format'] ?? 'h2'),
-                'color'   => trim($_POST['custom_text_color'] ?? '#ffffff'),
-                'font'    => trim($_POST['custom_text_font'] ?? 'Plus Jakarta Sans'),
-                'align'   => trim($_POST['custom_text_align'] ?? 'center'),
-                'size'    => (int)($_POST['custom_text_size'] ?? 24),
-                'posX'    => (float)($_POST['custom_text_pos_x'] ?? 50.0),
-                'posY'    => (float)($_POST['custom_text_pos_y'] ?? 35.0),
-                'width'   => (int)($_POST['custom_text_width'] ?? 85)
-            ]];
+        if (!is_array($decoded)) {
+            $decoded = [];
         }
 
         $clean_items = [];
@@ -180,9 +169,9 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $final_json = json_encode($clean_items, JSON_UNESCAPED_UNICODE);
         $final_json_esc = $conn->real_escape_string($final_json);
 
-        // Update legacy columns dari item pertama sebagai fallback
+        // Update legacy columns dari item pertama sebagai fallback jika ada
         $first = $clean_items[0] ?? [
-            'content' => 'Villa Quran Indonesia',
+            'content' => '',
             'format' => 'h2',
             'color' => '#ffffff',
             'font' => 'Plus Jakarta Sans',
@@ -216,7 +205,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                      WHERE id = 1";
 
         if ($conn->query($sql_text)) {
-            $pesan_sukses = "Alhamdulillah! Pengaturan seluruh kolom tulisan (" . count($clean_items) . " kolom) berhasil disimpan.";
+            $pesan_sukses = "Alhamdulillah! Pengaturan kolom tulisan (" . count($clean_items) . " kolom) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan tulisan: " . $conn->error;
         }
@@ -307,9 +296,11 @@ $q = $conn->query("SELECT * FROM pengaturan_brosur WHERE id = 1 LIMIT 1");
 $cfg = $q ? $q->fetch_assoc() : [];
 
 // Ambil daftar text items atau inisialisasi default
-$raw_items = $cfg['custom_text_items'] ?? '';
-$text_items = !empty($raw_items) ? json_decode($raw_items, true) : null;
-if (!is_array($text_items) || empty($text_items)) {
+$raw_items = $cfg['custom_text_items'] ?? null;
+if ($raw_items !== null && $raw_items !== '') {
+    $text_items = json_decode($raw_items, true);
+    if (!is_array($text_items)) $text_items = [];
+} else {
     $text_items = [
         [
             'id'      => 'text_' . time() . '_1',
@@ -327,9 +318,11 @@ if (!is_array($text_items) || empty($text_items)) {
 }
 
 // Ambil daftar image items atau inisialisasi default
-$raw_images = $cfg['custom_image_items'] ?? '';
-$image_items = !empty($raw_images) ? json_decode($raw_images, true) : null;
-if (!is_array($image_items)) {
+$raw_images = $cfg['custom_image_items'] ?? null;
+if ($raw_images !== null && $raw_images !== '') {
+    $image_items = json_decode($raw_images, true);
+    if (!is_array($image_items)) $image_items = [];
+} else {
     $image_items = [];
 }
 
@@ -512,11 +505,17 @@ $active_menu = 'brosur_settings';
                             </div>
                         </div>
                         
-                        <!-- Tombol Tambah Gambar -->
-                        <button type="button" onclick="addNewImageRow()" class="px-4 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 font-black text-xs transition flex items-center gap-2 shrink-0 active:scale-95 cursor-pointer">
-                            <i class="fas fa-plus text-xs"></i>
-                            <span>+ Sisipkan Gambar</span>
-                        </button>
+                        <!-- Tombol Tambah & Hapus Semua Gambar -->
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="clearAllImageRows()" id="btn-clear-all-images" class="px-3 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer <?= empty($image_items) ? 'hidden' : '' ?>" title="Hapus semua gambar yang disisipkan">
+                                <i class="fas fa-trash-can text-xs"></i>
+                                <span>Hapus Semua</span>
+                            </button>
+                            <button type="button" onclick="addNewImageRow()" class="px-4 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
+                                <i class="fas fa-plus text-xs"></i>
+                                <span>+ Sisipkan Gambar</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- FORM UTAMA GAMBAR SISIPAN -->
@@ -565,11 +564,17 @@ $active_menu = 'brosur_settings';
                             </div>
                         </div>
                         
-                        <!-- Tombol Tambah Kolom Tulisan -->
-                        <button type="button" onclick="addNewTextRow()" class="px-4 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200/80 font-black text-xs transition flex items-center gap-2 shrink-0 active:scale-95 cursor-pointer">
-                            <i class="fas fa-plus text-xs"></i>
-                            <span>Tambah Kolom Tulisan</span>
-                        </button>
+                        <!-- Tombol Tambah & Hapus Semua Tulisan -->
+                        <div class="flex items-center gap-2 shrink-0">
+                            <button type="button" onclick="clearAllTextRows()" id="btn-clear-all-text" class="px-3 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer <?= empty($text_items) ? 'hidden' : '' ?>" title="Hapus semua kolom tulisan">
+                                <i class="fas fa-trash-can text-xs"></i>
+                                <span>Hapus Semua</span>
+                            </button>
+                            <button type="button" onclick="addNewTextRow()" class="px-4 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
+                                <i class="fas fa-plus text-xs"></i>
+                                <span>+ Tambah Kolom Tulisan</span>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- FORM UTAMA TULISAN DINAMIS -->
@@ -946,7 +951,13 @@ $active_menu = 'brosur_settings';
         function renderImageRows() {
             const container = document.getElementById('image-rows-container');
             const badge = document.getElementById('img-count-badge');
+            const clearBtn = document.getElementById('btn-clear-all-images');
+
             if (badge) badge.innerText = `${imageItems.length} Gambar`;
+            if (clearBtn) {
+                if (imageItems.length > 0) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
             if (!container) return;
 
             container.innerHTML = '';
@@ -956,7 +967,11 @@ $active_menu = 'brosur_settings';
                     <div class="p-6 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
                         <i class="fas fa-image text-3xl text-slate-300 mb-2"></i>
                         <p class="text-xs font-bold text-slate-700">Belum ada gambar yang disisipkan</p>
-                        <p class="text-[11px] text-slate-500 mt-0.5">Klik tombol <strong>+ Sisipkan Gambar</strong> untuk menambahkan foto/logo baru dengan bingkai.</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5 mb-3">Klik tombol <strong>+ Sisipkan Gambar</strong> untuk menambahkan foto/logo baru dengan bingkai.</p>
+                        <button type="button" onclick="addNewImageRow()" class="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-black text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            <i class="fas fa-plus text-xs"></i>
+                            <span>Sisipkan Gambar Sekarang</span>
+                        </button>
                     </div>
                 `;
                 syncImageJsonInput();
@@ -1028,7 +1043,7 @@ $active_menu = 'brosur_settings';
                                 <i class="fas fa-sliders text-[11px]"></i>
                             </button>
 
-                            <!-- Hapus -->
+                            <!-- Hapus Gambar -->
                             <button type="button" onclick="deleteImageRow('${img.id}')" title="Hapus Gambar Ini" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
                                 <i class="fas fa-trash-can text-[11px]"></i>
                             </button>
@@ -1199,6 +1214,15 @@ $active_menu = 'brosur_settings';
             }
         }
 
+        function clearAllImageRows() {
+            if (imageItems.length === 0) return;
+            if (confirm(`Yakin ingin menghapus semua (${imageItems.length}) gambar yang disisipkan?`)) {
+                imageItems = [];
+                renderImageRows();
+                renderSimImageLayers();
+            }
+        }
+
         // Instant Upload Layer Image via AJAX
         function uploadLayerImage(input, imgId) {
             if (!input.files || !input.files[0]) return;
@@ -1286,9 +1310,14 @@ $active_menu = 'brosur_settings';
                         <span class="bg-sky-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
                             Img #${index + 1}
                         </span>
-                        <span class="bg-slate-950/90 text-sky-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
-                            <i class="fas fa-arrows-up-down-left-right"></i> Geser
-                        </span>
+                        <div class="flex items-center gap-1 pointer-events-auto">
+                            <span class="bg-slate-950/90 text-sky-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
+                                <i class="fas fa-arrows-up-down-left-right"></i> Geser
+                            </span>
+                            <button type="button" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); deleteImageRow('${img.id}')" title="Hapus Gambar Ini" class="w-5 h-5 rounded bg-rose-600 hover:bg-rose-700 text-white text-[9px] flex items-center justify-center shadow-xs cursor-pointer active:scale-90 transition">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Inner Frame dengan Shape & Shadow -->
@@ -1311,10 +1340,32 @@ $active_menu = 'brosur_settings';
         function renderRows() {
             const container = document.getElementById('text-rows-container');
             const badge = document.getElementById('text-count-badge');
+            const clearBtn = document.getElementById('btn-clear-all-text');
+
             if (badge) badge.innerText = `${textItems.length} Kolom`;
+            if (clearBtn) {
+                if (textItems.length > 0) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
             if (!container) return;
 
             container.innerHTML = '';
+
+            if (textItems.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                        <i class="fas fa-font text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700">Belum ada kolom tulisan</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5 mb-3">Klik tombol <strong>+ Tambah Kolom Tulisan</strong> untuk menambahkan teks baru ke brosur.</p>
+                        <button type="button" onclick="addNewTextRow()" class="px-4 py-2 rounded-xl bg-[#0b8478] hover:bg-[#08635a] text-white font-black text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            <i class="fas fa-plus text-xs"></i>
+                            <span>Tambah Kolom Tulisan Pertama</span>
+                        </button>
+                    </div>
+                `;
+                syncJsonInput();
+                return;
+            }
 
             textItems.forEach((item, index) => {
                 const row = document.createElement('div');
@@ -1512,17 +1563,19 @@ $active_menu = 'brosur_settings';
         }
 
         function deleteRow(id) {
-            if (textItems.length <= 1) {
-                if (confirm('Ini adalah kolom terakhir. Apakah Anda ingin mengosongkan isinya?')) {
-                    textItems[0].content = '';
-                    renderRows();
-                    renderSimLayers();
-                }
-                return;
-            }
-
-            if (confirm('Hapus kolom tulisan ini?')) {
+            const item = textItems.find(i => i.id === id);
+            const itemName = item && item.content ? `"${item.content.substring(0, 25)}..."` : 'kolom ini';
+            if (confirm(`Hapus kolom tulisan ${itemName}?`)) {
                 textItems = textItems.filter(i => i.id !== id);
+                renderRows();
+                renderSimLayers();
+            }
+        }
+
+        function clearAllTextRows() {
+            if (textItems.length === 0) return;
+            if (confirm(`Yakin ingin menghapus semua (${textItems.length}) kolom tulisan?`)) {
+                textItems = [];
                 renderRows();
                 renderSimLayers();
             }
@@ -1560,9 +1613,14 @@ $active_menu = 'brosur_settings';
                         <span class="bg-amber-400 text-teal-950 text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
                             #${index + 1}
                         </span>
-                        <span class="bg-teal-950/90 text-amber-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
-                            <i class="fas fa-up-down-left-right"></i> Geser
-                        </span>
+                        <div class="flex items-center gap-1 pointer-events-auto">
+                            <span class="bg-teal-950/90 text-amber-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
+                                <i class="fas fa-up-down-left-right"></i> Geser
+                            </span>
+                            <button type="button" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); deleteRow('${item.id}')" title="Hapus Kolom Ini" class="w-5 h-5 rounded bg-rose-600 hover:bg-rose-700 text-white text-[9px] flex items-center justify-center shadow-xs cursor-pointer active:scale-90 transition">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div style="color: ${item.color || '#ffffff'}; font-family: '${item.font || 'Plus Jakarta Sans'}', sans-serif; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word;">
