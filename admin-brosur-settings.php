@@ -138,11 +138,18 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_koleksi') {
 $pesan_sukses = (($_GET['msg'] ?? '') === 'koleksi_deleted') ? 'Background berhasil dihapus dari koleksi.' : '';
 $pesan_error  = '';
 
+// Tab Aktif (Tab 1: Background, Tab 2: Tulisan, Tab 3: Gambar)
+$current_tab = $_POST['active_tab'] ?? $_GET['tab'] ?? 'bg';
+if (!in_array($current_tab, ['bg', 'text', 'image'])) {
+    $current_tab = 'bg';
+}
+
 // Proses Simpan Pengaturan (Background, Tulisan Dinamis & Gambar Sisipan)
 if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     $action_type = $_POST['action_type'] ?? 'save_bg';
 
     if ($action_type === 'save_text') {
+        $current_tab = 'text';
         $json_raw = $_POST['custom_text_items_json'] ?? '[]';
         $decoded = json_decode($json_raw, true);
 
@@ -210,6 +217,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $pesan_error = "Gagal menyimpan tulisan: " . $conn->error;
         }
     } else if ($action_type === 'save_images') {
+        $current_tab = 'image';
         // Simpan Gambar Sisipan (Multi-Layer Images)
         $json_raw = $_POST['custom_image_items_json'] ?? '[]';
         $decoded = json_decode($json_raw, true);
@@ -244,6 +252,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $pesan_error = "Gagal menyimpan gambar: " . $conn->error;
         }
     } else {
+        $current_tab = 'bg';
         // Simpan Background
         $bg_url             = $conn->real_escape_string(trim($_POST['bg_url'] ?? ''));
         $bg_overlay_opacity = (float)($_POST['bg_overlay_opacity'] ?? 0.88);
@@ -467,8 +476,8 @@ $active_menu = 'brosur_settings';
         <!-- WORKSPACE AREA: 2 KOLOM (PAPAN PENGATURAN KIRI & SIMULASI KANAN) -->
         <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- PANEL KIRI: PENGATURAN GAMBAR SISIPAN, TULISAN & BACKGROUND -->
-            <div class="lg:col-span-7 xl:col-span-7 space-y-6">
+            <!-- PANEL KIRI: PENGATURAN BERBASIS TAB (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR) -->
+            <div class="lg:col-span-7 xl:col-span-7 space-y-5">
 
                 <!-- NOTIFIKASI SUKSES / ERROR -->
                 <?php if (!empty($pesan_sukses)): ?>
@@ -485,7 +494,288 @@ $active_menu = 'brosur_settings';
                 </div>
                 <?php endif; ?>
 
-                <!-- KARTU 1: PENGATURAN SISIPKAN GAMBAR (INSERT IMAGE LAYER - 8 FITUR LENGKAP) -->
+                <!-- NAVIGASI TAB UTAMA (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR) -->
+                <div class="bg-white/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200/90 shadow-sm flex items-center gap-1.5 sticky top-20 z-20">
+                    
+                    <!-- TAB 1: BACKGROUND BROSUR -->
+                    <button type="button" id="tab-btn-bg" onclick="switchTab('bg')" class="tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer">
+                        <i class="fas fa-image text-sm sm:text-base"></i>
+                        <span>1. Background</span>
+                    </button>
+
+                    <!-- TAB 2: KOLOM TULISAN -->
+                    <button type="button" id="tab-btn-text" onclick="switchTab('text')" class="tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                        <i class="fas fa-font text-sm sm:text-base"></i>
+                        <span>2. Tulisan</span>
+                        <span id="tab-badge-text" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800">
+                            <?= count($text_items) ?>
+                        </span>
+                    </button>
+
+                    <!-- TAB 3: SISIPKAN GAMBAR -->
+                    <button type="button" id="tab-btn-image" onclick="switchTab('image')" class="tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                        <i class="fas fa-shapes text-sm sm:text-base"></i>
+                        <span>3. Gambar</span>
+                        <span id="tab-badge-image" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-sky-100 text-sky-800">
+                            <?= count($image_items) ?>
+                        </span>
+                    </button>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- KONTEN TAB 1: PENGATURAN BACKGROUND BROSUR -->
+                <!-- ========================================== -->
+                <div id="tab-content-bg" class="tab-pane space-y-6">
+                    
+                    <!-- KARTU FORM UTAMA BACKGROUND -->
+                    <form action="" method="POST" enctype="multipart/form-data" id="form-pengaturan-bg" class="space-y-6">
+                        <input type="hidden" name="action_type" value="save_bg">
+                        <input type="hidden" name="active_tab" value="bg">
+
+                        <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
+                            
+                            <!-- Header Kartu -->
+                            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
+                                        <i class="fas fa-image"></i>
+                                    </div>
+                                    <div>
+                                        <h2 class="font-black text-base sm:text-lg text-slate-900">Pengaturan Background Brosur</h2>
+                                        <p class="text-xs text-slate-500">Sesuaikan foto background format portrait HP via Upload atau Link URL</p>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200/60 flex items-center gap-1">
+                                    <i class="fas fa-mobile-screen-button text-teal-600"></i> Portrait HP (9:16)
+                                </span>
+                            </div>
+
+                            <!-- KONTEN PENGATURAN BACKGROUND -->
+                            <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4">
+                                
+                                <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
+                                    
+                                    <!-- Frame Portrait Preview Thumbnail (9:16) -->
+                                    <div class="sm:col-span-4 flex flex-col items-center">
+                                        <div class="w-28 h-48 rounded-2xl border-4 border-slate-800 overflow-hidden shadow-md relative bg-slate-900 bg-cover bg-center transition-all" id="thumb-bg-box" style="background-image: url('<?= htmlspecialchars($cfg['cover_bg_url'] ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80') ?>');">
+                                            <!-- Overlay di Thumbnail -->
+                                            <div class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all" id="thumb-bg-overlay" style="opacity: <?= $cfg['cover_overlay_opacity'] ?? 0.88 ?>;"></div>
+                                            <div class="absolute inset-0 flex flex-col items-center justify-center p-2 text-center text-white z-10 pointer-events-none">
+                                                <span class="text-[8px] font-black uppercase tracking-wider text-amber-300">Live Preview</span>
+                                                <span class="text-[7px] opacity-80 mt-0.5 leading-tight">Format 9:16 HP</span>
+                                            </div>
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 font-semibold mt-1.5">Tampilan Foto Portrait</span>
+                                    </div>
+
+                                    <!-- Kontrol Input & Upload -->
+                                    <div class="sm:col-span-8 space-y-3.5">
+                                        
+                                        <!-- Input URL Gambar -->
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Link URL Gambar (Pinterest / Unsplash / Web):</label>
+                                            <div class="relative">
+                                                <input type="text" name="bg_url" id="input-bg-url" value="<?= htmlspecialchars($cfg['cover_bg_url'] ?? '') ?>" oninput="updateLiveBgUrl(this.value)" placeholder="https://images.unsplash.com/... atau link foto web" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none bg-white">
+                                                <i class="fas fa-link absolute left-2.5 top-3 text-slate-400 text-xs"></i>
+                                            </div>
+                                        </div>
+
+                                        <!-- Upload File Gambar -->
+                                        <div>
+                                            <label class="block text-[11px] font-bold text-slate-700 mb-1">Atau Upload File Gambar (JPG, PNG, WEBP):</label>
+                                            <label class="cursor-pointer px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-teal-500 text-slate-700 font-bold text-xs flex items-center justify-between transition shadow-2xs group">
+                                                <span class="flex items-center gap-2 text-slate-600 group-hover:text-teal-700 truncate">
+                                                    <i class="fas fa-cloud-arrow-up text-teal-600"></i>
+                                                    <span id="label-bg-file">Pilih file foto dari perangkat...</span>
+                                                </span>
+                                                <span class="text-[10px] bg-slate-100 group-hover:bg-teal-50 px-2 py-0.5 rounded text-slate-600 group-hover:text-teal-800">Browse</span>
+                                                <input type="file" name="bg_file" id="input-bg-file" accept="image/*" class="hidden" onchange="previewBgFile(this)">
+                                            </label>
+                                        </div>
+
+                                        <!-- Slider Tingkat Kegelapan Lapisan Overlay -->
+                                        <div class="pt-2 border-t border-slate-200/60">
+                                            <div class="flex justify-between items-center mb-1">
+                                                <label class="text-[11px] font-bold text-slate-700">Tingkat Kegelapan / Opasitas Lapis:</label>
+                                                <span id="val-bg-opacity" class="text-xs font-black text-teal-800 font-mono"><?= round((float)($cfg['cover_overlay_opacity'] ?? 0.88) * 100) ?>%</span>
+                                            </div>
+                                            <input type="range" name="bg_overlay_opacity" id="input-bg-opacity" min="0.00" max="1.00" step="0.01" value="<?= $cfg['cover_overlay_opacity'] ?? 0.88 ?>" oninput="updateLiveBgOpacity(this.value)" class="w-full accent-[#0b8478] cursor-pointer">
+                                            <span class="text-[10px] text-slate-400">Rekomendasi 80-90% agar tulisan brosur tetap tajam dan kontras.</span>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- TOMBOL SIMPAN PENGATURAN BACKGROUND -->
+                            <div class="pt-3 border-t border-slate-100 flex items-center justify-end">
+                                <button type="submit" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-base"></i>
+                                    <span>Simpan Background Brosur</span>
+                                </button>
+                            </div>
+
+                        </div>
+
+                    </form>
+
+                    <!-- KARTU KOLEKSI BACKGROUND TERSIMPAN -->
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
+                        
+                        <!-- Header Koleksi -->
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-photo-film"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-black text-base sm:text-lg text-slate-900">Koleksi Background Tersimpan</h3>
+                                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900">
+                                            <?= count($koleksi_bg) ?> Item
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500">Pilih dari background tersimpan dengan 1 klik atau hapus yang tidak digunakan</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Grid Koleksi Background (Format Portrait HP 9:16) -->
+                        <?php if (!empty($koleksi_bg)): ?>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3.5" id="grid-koleksi-bg">
+                            <?php foreach ($koleksi_bg as $kb): ?>
+                                <div class="item-koleksi-bg group relative rounded-2xl border border-slate-200/80 bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
+                                    
+                                    <!-- Portrait Preview Container (9:16 Aspect Ratio) -->
+                                    <div class="w-full aspect-[9/16] bg-cover bg-center relative" style="background-image: url('<?= htmlspecialchars($kb['url']) ?>');">
+                                        
+                                        <!-- Overlay Gradient -->
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40 group-hover:from-black/90 group-hover:via-black/60 group-hover:to-black/60 transition-all"></div>
+                                        
+                                        <!-- Badges Atas & Tombol Hapus -->
+                                        <div class="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
+                                            <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-teal-400 text-teal-950">
+                                                Portrait 9:16
+                                            </span>
+                                            
+                                            <!-- Tombol Hapus dari Koleksi -->
+                                            <a href="admin-brosur-settings.php?action=delete_koleksi&id=<?= $kb['id'] ?>&tab=bg" onclick="return confirm('Hapus background ini dari koleksi tersimpan?');" title="Hapus dari koleksi" class="w-6 h-6 rounded-lg bg-rose-600/80 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] transition shadow-xs">
+                                                <i class="fas fa-trash-can"></i>
+                                            </a>
+                                        </div>
+
+                                        <!-- Tombol Terapkan Cepat (Hover Overlay Action) -->
+                                        <div class="absolute inset-x-2 bottom-2 z-10 flex flex-col gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                                            <button type="button" onclick="terapkanKoleksi('<?= htmlspecialchars($kb['url'], ENT_QUOTES) ?>')" class="w-full py-2 px-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer">
+                                                <i class="fas fa-check-circle text-xs"></i> Gunakan Background Ini
+                                            </button>
+                                        </div>
+
+                                    </div>
+
+                                    <!-- Label Judul / Info -->
+                                    <div class="p-2.5 bg-slate-900 border-t border-slate-800 text-white">
+                                        <p class="text-[10.5px] font-bold truncate text-slate-200" title="<?= htmlspecialchars($kb['judul']) ?>">
+                                            <?= htmlspecialchars($kb['judul']) ?>
+                                        </p>
+                                        <span class="text-[8.5px] text-slate-400 font-mono block mt-0.5">
+                                            <?= date('d M Y', strtotime($kb['created_at'])) ?>
+                                        </span>
+                                    </div>
+
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php else: ?>
+                        <div class="p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                            <i class="fas fa-images text-2xl text-slate-400 mb-2"></i>
+                            <p class="text-xs font-bold text-slate-700">Belum Ada Koleksi Background</p>
+                            <p class="text-[11px] text-slate-500 mt-0.5">Setiap background yang Anda simpan di atas akan otomatis terkumpul di sini.</p>
+                        </div>
+                        <?php endif; ?>
+
+                    </div>
+
+                </div>
+
+                <!-- ========================================== -->
+                <!-- KONTEN TAB 2: PENGATURAN KOLOM TULISAN     -->
+                <!-- ========================================== -->
+                <div id="tab-content-text" class="tab-pane hidden space-y-6">
+                    
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
+                        
+                        <!-- Header Kartu Tulisan & Tombol Tambah Kolom -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-font"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="font-black text-base sm:text-lg text-slate-900">Kolom Tulisan Brosur</h2>
+                                        <span id="text-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-teal-100 text-teal-800">
+                                            <?= count($text_items) ?> Kolom
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500">Tampilan ringkas 1 baris per kolom. Tekan <strong>Duplikasi</strong> untuk menambah kolom baru.</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Tombol Tambah & Hapus Semua Tulisan -->
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button type="button" onclick="clearAllTextRows()" id="btn-clear-all-text" class="px-3 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer <?= empty($text_items) ? 'hidden' : '' ?>" title="Hapus semua kolom tulisan">
+                                <i class="fas fa-trash-can text-xs"></i>
+                                <span>Hapus Semua</span>
+                            </button>
+                            <button type="button" onclick="addNewTextRow()" class="px-4 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
+                                <i class="fas fa-plus text-xs"></i>
+                                <span>+ Tambah Kolom Tulisan</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- FORM UTAMA TULISAN DINAMIS -->
+                    <form action="" method="POST" id="form-pengaturan-text" class="space-y-4">
+                        <input type="hidden" name="action_type" value="save_text">
+                        <input type="hidden" name="active_tab" value="text">
+                        <input type="hidden" name="custom_text_items_json" id="input-text-items-json" value="">
+
+                        <!-- DAFTAR BARIS KOLOM TULISAN (RINGKAS & SIMPEL 1 BARIS PER ITEM) -->
+                        <div id="text-rows-container" class="space-y-3">
+                            <!-- Diisi secara dinamis oleh Javascript renderRows() -->
+                        </div>
+
+                        <!-- PETUNJUK RINGKAS -->
+                        <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-amber-900 text-[11px] flex items-center gap-2.5">
+                            <i class="fas fa-arrows-up-down-left-right text-amber-600 text-sm shrink-0"></i>
+                            <span><strong>Tips:</strong> Setiap kolom tulisan dapat langsung <strong>diklik dan digeser (drag & drop)</strong> posisinya di layar simulasi HP sebelah kanan. Garis bantu tengah akan menyala otomatis saat presisi!</span>
+                        </div>
+
+                        <!-- TOMBOL AKSI BAWAH: TAMBAH & SIMPAN -->
+                        <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <button type="button" onclick="addNewTextRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fas fa-plus text-xs text-teal-600"></i>
+                                <span>Tambah Kolom Baru</span>
+                            </button>
+
+                            <button type="button" onclick="saveAllTextItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                <i class="fas fa-save text-base"></i>
+                                <span>Simpan Semua Kolom Tulisan</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+            </div>
+
+            <!-- ========================================== -->
+            <!-- KONTEN TAB 3: PENGATURAN SISIPKAN GAMBAR   -->
+            <!-- ========================================== -->
+            <div id="tab-content-image" class="tab-pane hidden space-y-6">
+                
                 <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
                     
                     <!-- Header Kartu Gambar -->
@@ -521,6 +811,7 @@ $active_menu = 'brosur_settings';
                     <!-- FORM UTAMA GAMBAR SISIPAN -->
                     <form action="" method="POST" id="form-pengaturan-images" class="space-y-4">
                         <input type="hidden" name="action_type" value="save_images">
+                        <input type="hidden" name="active_tab" value="image">
                         <input type="hidden" name="custom_image_items_json" id="input-image-items-json" value="">
 
                         <!-- DAFTAR BARIS GAMBAR SISIPAN (RINGKAS & LENGKAP) -->
@@ -544,241 +835,9 @@ $active_menu = 'brosur_settings';
                     </form>
                 </div>
 
-                <!-- KARTU 2: PENGATURAN KOLOM TULISAN DINAMIS MULTI-ROW (BISA DIGANDAKAN / DIDUPLIKASI) -->
-                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
-                    
-                    <!-- Header Kartu Tulisan & Tombol Tambah Kolom -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
-                                <i class="fas fa-font"></i>
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Kolom Tulisan Brosur</h2>
-                                    <span id="text-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-teal-100 text-teal-800">
-                                        <?= count($text_items) ?> Kolom
-                                    </span>
-                                </div>
-                                <p class="text-xs text-slate-500">Tampilan ringkas 1 baris per kolom. Tekan <strong>Duplikasi</strong> untuk menambah kolom baru.</p>
-                            </div>
-                        </div>
-                        
-                        <!-- Tombol Tambah & Hapus Semua Tulisan -->
-                        <div class="flex items-center gap-2 shrink-0">
-                            <button type="button" onclick="clearAllTextRows()" id="btn-clear-all-text" class="px-3 py-2.5 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 active:scale-95 cursor-pointer <?= empty($text_items) ? 'hidden' : '' ?>" title="Hapus semua kolom tulisan">
-                                <i class="fas fa-trash-can text-xs"></i>
-                                <span>Hapus Semua</span>
-                            </button>
-                            <button type="button" onclick="addNewTextRow()" class="px-4 py-2.5 rounded-2xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200/80 font-black text-xs transition flex items-center gap-2 active:scale-95 cursor-pointer">
-                                <i class="fas fa-plus text-xs"></i>
-                                <span>+ Tambah Kolom Tulisan</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- FORM UTAMA TULISAN DINAMIS -->
-                    <form action="" method="POST" id="form-pengaturan-text" class="space-y-4">
-                        <input type="hidden" name="action_type" value="save_text">
-                        <input type="hidden" name="custom_text_items_json" id="input-text-items-json" value="">
-
-                        <!-- DAFTAR BARIS KOLOM TULISAN (RINGKAS & SIMPEL 1 BARIS PER ITEM) -->
-                        <div id="text-rows-container" class="space-y-3">
-                            <!-- Diisi secara dinamis oleh Javascript renderRows() -->
-                        </div>
-
-                        <!-- PETUNJUK RINGKAS -->
-                        <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-amber-900 text-[11px] flex items-center gap-2.5">
-                            <i class="fas fa-arrows-up-down-left-right text-amber-600 text-sm shrink-0"></i>
-                            <span><strong>Tips:</strong> Setiap gambar dan tulisan dapat langsung <strong>diklik dan digeser (drag & drop)</strong> posisinya di layar simulasi HP sebelah kanan. Garis bantu tengah akan menyala otomatis saat posisi presisi!</span>
-                        </div>
-
-                        <!-- TOMBOL AKSI BAWAH: TAMBAH & SIMPAN -->
-                        <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <button type="button" onclick="addNewTextRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
-                                <i class="fas fa-plus text-xs text-teal-600"></i>
-                                <span>Tambah Kolom Baru</span>
-                            </button>
-
-                            <button type="button" onclick="saveAllTextItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
-                                <i class="fas fa-save text-base"></i>
-                                <span>Simpan Semua Kolom Tulisan</span>
-                            </button>
-                        </div>
-
-                    </form>
-                </div>
-
-                <!-- KARTU 3: PENGATURAN BACKGROUND (TUNGGAL) -->
-                <form action="" method="POST" enctype="multipart/form-data" id="form-pengaturan-bg" class="space-y-6">
-                    <input type="hidden" name="action_type" value="save_bg">
-
-                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
-                        
-                        <!-- Header Kartu -->
-                        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
-                                    <i class="fas fa-image"></i>
-                                </div>
-                                <div>
-                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Pengaturan Background Brosur</h2>
-                                    <p class="text-xs text-slate-500">Sesuaikan foto background format portrait HP via Upload atau Link URL</p>
-                                </div>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200/60 flex items-center gap-1">
-                                <i class="fas fa-mobile-screen-button text-teal-600"></i> Rasio Portrait HP (9:16)
-                            </span>
-                        </div>
-
-                        <!-- KONTEN PENGATURAN BACKGROUND TUNGGAL -->
-                        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4">
-                            
-                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-5 items-center">
-                                
-                                <!-- Frame Portrait Preview Thumbnail (9:16) -->
-                                <div class="sm:col-span-4 flex flex-col items-center">
-                                    <div class="w-28 h-48 rounded-2xl border-4 border-slate-800 overflow-hidden shadow-md relative bg-slate-900 bg-cover bg-center transition-all" id="thumb-bg-box" style="background-image: url('<?= htmlspecialchars($cfg['cover_bg_url'] ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80') ?>');">
-                                        <!-- Overlay di Thumbnail -->
-                                        <div class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all" id="thumb-bg-overlay" style="opacity: <?= $cfg['cover_overlay_opacity'] ?? 0.88 ?>;"></div>
-                                        <div class="absolute inset-0 flex flex-col items-center justify-center p-2 text-center text-white z-10 pointer-events-none">
-                                            <span class="text-[8px] font-black uppercase tracking-wider text-amber-300">Live Preview</span>
-                                            <span class="text-[7px] opacity-80 mt-0.5 leading-tight">Format 9:16 HP</span>
-                                        </div>
-                                    </div>
-                                    <span class="text-[10px] text-slate-400 font-semibold mt-1.5">Tampilan Foto Portrait</span>
-                                </div>
-
-                                <!-- Kontrol Input & Upload -->
-                                <div class="sm:col-span-8 space-y-3.5">
-                                    
-                                    <!-- Input URL Gambar -->
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Link URL Gambar (Pinterest / Unsplash / Web):</label>
-                                        <div class="relative">
-                                            <input type="text" name="bg_url" id="input-bg-url" value="<?= htmlspecialchars($cfg['cover_bg_url'] ?? '') ?>" oninput="updateLiveBgUrl(this.value)" placeholder="https://images.unsplash.com/... atau link foto web" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none bg-white">
-                                            <i class="fas fa-link absolute left-2.5 top-3 text-slate-400 text-xs"></i>
-                                        </div>
-                                    </div>
-
-                                    <!-- Upload File Gambar -->
-                                    <div>
-                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Atau Upload File Gambar (JPG, PNG, WEBP):</label>
-                                        <label class="cursor-pointer px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-teal-500 text-slate-700 font-bold text-xs flex items-center justify-between transition shadow-2xs group">
-                                            <span class="flex items-center gap-2 text-slate-600 group-hover:text-teal-700 truncate">
-                                                <i class="fas fa-cloud-arrow-up text-teal-600"></i>
-                                                <span id="label-bg-file">Pilih file foto dari perangkat...</span>
-                                            </span>
-                                            <span class="text-[10px] bg-slate-100 group-hover:bg-teal-50 px-2 py-0.5 rounded text-slate-600 group-hover:text-teal-800">Browse</span>
-                                            <input type="file" name="bg_file" id="input-bg-file" accept="image/*" class="hidden" onchange="previewBgFile(this)">
-                                        </label>
-                                    </div>
-
-                                    <!-- Slider Tingkat Kegelapan Lapisan Overlay -->
-                                    <div class="pt-2 border-t border-slate-200/60">
-                                        <div class="flex justify-between items-center mb-1">
-                                            <label class="text-[11px] font-bold text-slate-700">Tingkat Kegelapan / Opasitas Lapis:</label>
-                                            <span id="val-bg-opacity" class="text-xs font-black text-teal-800 font-mono"><?= round((float)($cfg['cover_overlay_opacity'] ?? 0.88) * 100) ?>%</span>
-                                        </div>
-                                        <input type="range" name="bg_overlay_opacity" id="input-bg-opacity" min="0.00" max="1.00" step="0.01" value="<?= $cfg['cover_overlay_opacity'] ?? 0.88 ?>" oninput="updateLiveBgOpacity(this.value)" class="w-full accent-[#0b8478] cursor-pointer">
-                                        <span class="text-[10px] text-slate-400">Rekomendasi 80-90% agar tulisan brosur tetap tajam dan kontras.</span>
-                                    </div>
-
-                                </div>
-
-                            </div>
-                        </div>
-
-                        <!-- TOMBOL SIMPAN PENGATURAN BACKGROUND -->
-                        <div class="pt-3 border-t border-slate-100 flex items-center justify-end">
-                            <button type="submit" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
-                                <i class="fas fa-save text-base"></i>
-                                <span>Simpan Background Brosur</span>
-                            </button>
-                        </div>
-
-                    </div>
-
-                </form>
-
-                <!-- KARTU 4: KOLEKSI BACKGROUND TERSIMPAN -->
-                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
-                    
-                    <!-- Header Koleksi -->
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-2xs">
-                                <i class="fas fa-photo-film"></i>
-                            </div>
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h3 class="font-black text-base sm:text-lg text-slate-900">Koleksi Background Tersimpan</h3>
-                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900">
-                                        <?= count($koleksi_bg) ?> Item
-                                    </span>
-                                </div>
-                                <p class="text-xs text-slate-500">Pilih dari background tersimpan dengan 1 klik atau hapus yang tidak digunakan</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Grid Koleksi Background (Format Portrait HP 9:16) -->
-                    <?php if (!empty($koleksi_bg)): ?>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3.5" id="grid-koleksi-bg">
-                        <?php foreach ($koleksi_bg as $kb): ?>
-                            <div class="item-koleksi-bg group relative rounded-2xl border border-slate-200/80 bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
-                                
-                                <!-- Portrait Preview Container (9:16 Aspect Ratio) -->
-                                <div class="w-full aspect-[9/16] bg-cover bg-center relative" style="background-image: url('<?= htmlspecialchars($kb['url']) ?>');">
-                                    
-                                    <!-- Overlay Gradient -->
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40 group-hover:from-black/90 group-hover:via-black/60 group-hover:to-black/60 transition-all"></div>
-                                    
-                                    <!-- Badges Atas & Tombol Hapus -->
-                                    <div class="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
-                                        <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-teal-400 text-teal-950">
-                                            Portrait 9:16
-                                        </span>
-                                        
-                                        <!-- Tombol Hapus dari Koleksi -->
-                                        <a href="admin-brosur-settings.php?action=delete_koleksi&id=<?= $kb['id'] ?>" onclick="return confirm('Hapus background ini dari koleksi tersimpan?');" title="Hapus dari koleksi" class="w-6 h-6 rounded-lg bg-rose-600/80 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] transition shadow-xs">
-                                            <i class="fas fa-trash-can"></i>
-                                        </a>
-                                    </div>
-
-                                    <!-- Tombol Terapkan Cepat (Hover Overlay Action) -->
-                                    <div class="absolute inset-x-2 bottom-2 z-10 flex flex-col gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                                        <button type="button" onclick="terapkanKoleksi('<?= htmlspecialchars($kb['url'], ENT_QUOTES) ?>')" class="w-full py-2 px-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow-sm flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer">
-                                            <i class="fas fa-check-circle text-xs"></i> Gunakan Background Ini
-                                        </button>
-                                    </div>
-
-                                </div>
-
-                                <!-- Label Judul / Info -->
-                                <div class="p-2.5 bg-slate-900 border-t border-slate-800 text-white">
-                                    <p class="text-[10.5px] font-bold truncate text-slate-200" title="<?= htmlspecialchars($kb['judul']) ?>">
-                                        <?= htmlspecialchars($kb['judul']) ?>
-                                    </p>
-                                    <span class="text-[8.5px] text-slate-400 font-mono block mt-0.5">
-                                        <?= date('d M Y', strtotime($kb['created_at'])) ?>
-                                    </span>
-                                </div>
-
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php else: ?>
-                    <div class="p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
-                        <i class="fas fa-images text-2xl text-slate-400 mb-2"></i>
-                        <p class="text-xs font-bold text-slate-700">Belum Ada Koleksi Background</p>
-                        <p class="text-[11px] text-slate-500 mt-0.5">Setiap background yang Anda simpan di atas akan otomatis terkumpul di sini.</p>
-                    </div>
-                    <?php endif; ?>
-
-                </div>
-
             </div>
+
+        </div>
 
             <!-- PANEL KANAN: LAYAR SIMULASI INTERAKTIF (STICKY DI KANAN LAYAR PC) -->
             <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 self-start flex flex-col items-center lg:items-end">
@@ -887,6 +946,40 @@ $active_menu = 'brosur_settings';
             imageItems = [];
         }
 
+        // Tab Aktif State
+        let currentActiveTab = '<?= $current_tab ?>';
+
+        function switchTab(tab) {
+            if (!['bg', 'text', 'image'].includes(tab)) tab = 'bg';
+            currentActiveTab = tab;
+
+            const tabs = ['bg', 'text', 'image'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                const pane = document.getElementById(`tab-content-${t}`);
+                if (btn) {
+                    if (t === tab) {
+                        btn.className = 'tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-[#0b8478] to-[#075f56] text-white shadow-md cursor-pointer';
+                    } else {
+                        btn.className = 'tab-nav-btn flex-1 py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer';
+                    }
+                }
+                if (pane) {
+                    if (t === tab) {
+                        pane.classList.remove('hidden');
+                    } else {
+                        pane.classList.add('hidden');
+                    }
+                }
+            });
+
+            document.querySelectorAll('input[name="active_tab"]').forEach(inp => inp.value = tab);
+
+            if (history.replaceState) {
+                history.replaceState(null, null, '#' + tab);
+            }
+        }
+
         // Persistent Guide Lines State
         let showPersistentGuides = true;
 
@@ -951,9 +1044,11 @@ $active_menu = 'brosur_settings';
         function renderImageRows() {
             const container = document.getElementById('image-rows-container');
             const badge = document.getElementById('img-count-badge');
+            const tabBadge = document.getElementById('tab-badge-image');
             const clearBtn = document.getElementById('btn-clear-all-images');
 
             if (badge) badge.innerText = `${imageItems.length} Gambar`;
+            if (tabBadge) tabBadge.innerText = imageItems.length;
             if (clearBtn) {
                 if (imageItems.length > 0) clearBtn.classList.remove('hidden');
                 else clearBtn.classList.add('hidden');
@@ -1340,9 +1435,11 @@ $active_menu = 'brosur_settings';
         function renderRows() {
             const container = document.getElementById('text-rows-container');
             const badge = document.getElementById('text-count-badge');
+            const tabBadge = document.getElementById('tab-badge-text');
             const clearBtn = document.getElementById('btn-clear-all-text');
 
             if (badge) badge.innerText = `${textItems.length} Kolom`;
+            if (tabBadge) tabBadge.innerText = textItems.length;
             if (clearBtn) {
                 if (textItems.length > 0) clearBtn.classList.remove('hidden');
                 else clearBtn.classList.add('hidden');
@@ -1660,6 +1757,13 @@ $active_menu = 'brosur_settings';
                 initialLeftPct = item.posX || 50;
                 initialTopPct  = item.posY || (layerType === 'image' ? 50 : 35);
 
+                // Auto switch to respective tab when interacting with element on canvas
+                if (layerType === 'image' && currentActiveTab !== 'image') {
+                    switchTab('image');
+                } else if (layerType === 'text' && currentActiveTab !== 'text') {
+                    switchTab('text');
+                }
+
                 box.style.transition = 'none';
                 box.style.zIndex = 70;
 
@@ -1826,6 +1930,7 @@ $active_menu = 'brosur_settings';
         }
 
         function terapkanKoleksi(url) {
+            switchTab('bg');
             const inp = document.getElementById('input-bg-url');
             if (inp) inp.value = url;
             updateLiveBgUrl(url);
@@ -1836,6 +1941,13 @@ $active_menu = 'brosur_settings';
 
         // Inisialisasi awal saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
+            // Cek hash URL jika ada (#bg, #text, #image)
+            const hash = window.location.hash.replace('#', '');
+            if (['bg', 'text', 'image'].includes(hash)) {
+                currentActiveTab = hash;
+            }
+            switchTab(currentActiveTab);
+
             renderImageRows();
             renderSimImageLayers();
             renderRows();
