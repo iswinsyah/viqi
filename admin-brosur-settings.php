@@ -97,11 +97,12 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
-// Pastikan kolom untuk custom text, images, videos, bottom bar, dan multi-layer JSON tersedia di tabel pengaturan_brosur
+// Pastikan kolom untuk custom text, images, videos, buttons, bottom bar, dan multi-layer JSON tersedia di tabel pengaturan_brosur
 $columns_to_check = [
     'custom_text_items'       => "LONGTEXT",
     'custom_image_items'      => "LONGTEXT",
     'custom_video_items'      => "LONGTEXT",
+    'custom_button_items'     => "LONGTEXT",
     'custom_text_content'     => "TEXT",
     'custom_text_format'      => "VARCHAR(20) DEFAULT 'h2'",
     'custom_text_color'       => "VARCHAR(30) DEFAULT '#ffffff'",
@@ -310,6 +311,45 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         } else {
             $pesan_error = "Gagal menyimpan video: " . $conn->error;
         }
+    } else if ($action_type === 'save_buttons') {
+        $current_tab = 'button';
+        // Simpan Data Tombol Aksi (Buttons)
+        $json_raw = $_POST['custom_button_items_json'] ?? '[]';
+        $decoded = json_decode($json_raw, true);
+        if (!is_array($decoded)) $decoded = [];
+
+        $clean_btn_items = [];
+        foreach ($decoded as $idx => $btn) {
+            $clean_btn_items[] = [
+                'id'            => !empty($btn['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $btn['id']) : 'btn_' . ($idx + 1),
+                'text'          => trim($btn['text'] ?? 'Tombol Aksi'),
+                'url'           => trim($btn['url'] ?? '#'),
+                'icon'          => trim($btn['icon'] ?? 'fab fa-whatsapp'),
+                'shape'         => in_array($btn['shape'] ?? '', ['rounded_pill', 'persegipanjang', 'bulat', 'rounded']) ? $btn['shape'] : 'rounded_pill',
+                'bg_color'      => !empty($btn['bg_color']) ? $btn['bg_color'] : '#25d366',
+                'text_color'    => !empty($btn['text_color']) ? $btn['text_color'] : '#ffffff',
+                'border_enable' => !empty($btn['border_enable']) ? 1 : 0,
+                'border_width'  => max(0, min(20, (int)($btn['border_width'] ?? 2))),
+                'border_color'  => !empty($btn['border_color']) ? $btn['border_color'] : '#ffffff',
+                'shadow_style'  => in_array($btn['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'glow_gold', 'glow_teal', 'glow_wa', 'glow_rose']) ? $btn['shadow_style'] : 'soft',
+                'font_size'     => max(9, min(40, (int)($btn['font_size'] ?? 14))),
+                'font'          => !empty($btn['font']) ? $btn['font'] : 'Plus Jakarta Sans',
+                'posX'          => round(max(0, min(100, (float)($btn['posX'] ?? 50.0))), 2),
+                'posY'          => round(max(0, min(100, (float)($btn['posY'] ?? 80.0))), 2),
+                'width'         => max(10, min(100, (int)($btn['width'] ?? 80))),
+                'target'        => ($btn['target'] ?? '_blank') === '_self' ? '_self' : '_blank'
+            ];
+        }
+
+        $final_btn_json = json_encode($clean_btn_items, JSON_UNESCAPED_UNICODE);
+        $final_btn_json_esc = $conn->real_escape_string($final_btn_json);
+
+        $sql_btn = "UPDATE pengaturan_brosur SET custom_button_items = '$final_btn_json_esc' WHERE id = 1";
+        if ($conn->query($sql_btn)) {
+            $pesan_sukses = "Alhamdulillah! Pengaturan tombol (" . count($clean_btn_items) . " tombol) berhasil disimpan.";
+        } else {
+            $pesan_error = "Gagal menyimpan tombol: " . $conn->error;
+        }
     } else {
         $current_tab = 'bg';
         // Simpan Background & Warna Bottom Bar
@@ -409,6 +449,35 @@ if ($raw_videos !== null && $raw_videos !== '') {
     $video_items = [];
 }
 
+// Ambil daftar button items atau inisialisasi default
+$raw_buttons = $cfg['custom_button_items'] ?? null;
+if ($raw_buttons !== null && $raw_buttons !== '') {
+    $button_items = json_decode($raw_buttons, true);
+    if (!is_array($button_items)) $button_items = [];
+} else {
+    $button_items = [
+        [
+            'id'            => 'btn_' . time() . '_1',
+            'text'          => 'Chat WhatsApp Panitia',
+            'url'           => 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20info%20pendaftaran%20Villa%20Quran',
+            'icon'          => 'fab fa-whatsapp',
+            'shape'         => 'rounded_pill',
+            'bg_color'      => '#25d366',
+            'text_color'    => '#ffffff',
+            'border_enable' => 0,
+            'border_width'  => 2,
+            'border_color'  => '#ffffff',
+            'shadow_style'  => 'glow_wa',
+            'font_size'     => 13,
+            'font'          => 'Plus Jakarta Sans',
+            'posX'          => 50.0,
+            'posY'          => 82.0,
+            'width'         => 82,
+            'target'        => '_blank'
+        ]
+    ];
+}
+
 $active_menu = 'brosur_settings';
 ?>
 <!DOCTYPE html>
@@ -497,6 +566,15 @@ $active_menu = 'brosur_settings';
         .shadow-deep { filter: drop-shadow(0 20px 45px rgba(0,0,0,0.7)); }
         .shadow-glow_gold { filter: drop-shadow(0 0 18px rgba(251,191,36,0.75)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
         .shadow-glow_teal { filter: drop-shadow(0 0 18px rgba(11,132,120,0.85)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+        .shadow-glow_wa { filter: drop-shadow(0 0 18px rgba(37,211,102,0.8)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+        .shadow-glow_rose { filter: drop-shadow(0 0 18px rgba(244,63,94,0.8)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+        .shadow-glow_sky { filter: drop-shadow(0 0 18px rgba(56,189,248,0.8)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+
+        /* Button Shape Helpers */
+        .shape-btn-rounded_pill { border-radius: 9999px !important; }
+        .shape-btn-persegipanjang { border-radius: 4px !important; }
+        .shape-btn-bulat { border-radius: 50% !important; aspect-ratio: 1/1 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
+        .shape-btn-rounded { border-radius: 14px !important; }
 
         /* Guidelines & Smart Snap Lines */
         .snap-guide-line-x {
@@ -611,7 +689,7 @@ $active_menu = 'brosur_settings';
                         </div>
                     </div>
 
-                    <!-- NAVIGASI 4 SUB-TAB DALAM FRAME HOME (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR, TAB 4: VIDEO) -->
+                    <!-- NAVIGASI 5 SUB-TAB DALAM FRAME HOME (TAB 1: BACKGROUND, TAB 2: TULISAN, TAB 3: GAMBAR, TAB 4: VIDEO, TAB 5: TOMBOL) -->
                     <div class="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/90 shadow-inner flex items-center gap-1 sm:gap-1.5 sticky top-20 z-20 overflow-x-auto">
                         
                         <!-- TAB 1: BACKGROUND BROSUR -->
@@ -644,6 +722,15 @@ $active_menu = 'brosur_settings';
                             <span>4. Video</span>
                             <span id="tab-badge-video" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">
                                 <?= count($video_items) ?>
+                            </span>
+                        </button>
+
+                        <!-- TAB 5: PENGATURAN TOMBOL -->
+                        <button type="button" id="tab-btn-button" onclick="switchTab('button')" class="tab-nav-btn flex-1 min-w-[85px] py-2.5 sm:py-3 px-2 sm:px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer">
+                            <i class="fas fa-hand-pointer text-sm sm:text-base"></i>
+                            <span>5. Tombol</span>
+                            <span id="tab-badge-button" class="px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
+                                <?= count($button_items) ?>
                             </span>
                         </button>
                     </div>
@@ -1110,6 +1197,72 @@ $active_menu = 'brosur_settings';
 
                 </div>
 
+                <!-- ========================================== -->
+                <!-- KONTEN TAB 5: PENGATURAN SISIPKAN TOMBOL   -->
+                <!-- ========================================== -->
+                <div id="tab-content-button" class="tab-pane hidden space-y-6">
+                    
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
+                        
+                        <!-- Header Kartu Tombol -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-hand-pointer"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="font-black text-base sm:text-lg text-slate-900">Sisipkan Tombol Aksi (Call To Action)</h2>
+                                        <span id="btn-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-amber-100 text-amber-800">
+                                            <?= count($button_items) ?> Tombol
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500">Atur bentuk (Bulat, Persegi Panjang, Ujung Tumpul), warna, teks, icon (WA, IG, YouTube, Web), dan link tujuan</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="addNewButtonRow()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs shadow-sm transition flex items-center gap-1.5 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-plus text-xs"></i>
+                                    <span>Tambah Tombol</span>
+                                </button>
+                                
+                                <button type="button" id="btn-clear-all-buttons" onclick="clearAllButtonRows()" class="<?= empty($button_items) ? 'hidden' : '' ?> px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer" title="Hapus semua tombol">
+                                    <i class="fas fa-trash-can text-xs"></i>
+                                    <span class="hidden sm:inline">Hapus Semua</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Form Pengaturan Tombol Aksi -->
+                        <form action="" method="POST" id="form-pengaturan-button" class="space-y-4">
+                            <input type="hidden" name="action_type" value="save_buttons">
+                            <input type="hidden" name="active_tab" value="button">
+                            <input type="hidden" name="custom_button_items_json" id="input-button-items-json" value="">
+
+                            <!-- DAFTAR BARIS TOMBOL (RINGKAS & LENGKAP) -->
+                            <div id="button-rows-container" class="space-y-3">
+                                <!-- Diisi secara dinamis oleh JavaScript renderButtonRows() -->
+                            </div>
+
+                            <!-- TOMBOL AKSI BAWAH TOMBOL -->
+                            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <button type="button" onclick="addNewButtonRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <i class="fas fa-plus text-xs text-amber-600"></i>
+                                    <span>Tambah Tombol Lain</span>
+                                </button>
+
+                                <button type="button" onclick="saveAllButtonItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-base"></i>
+                                    <span>Simpan Semua Tombol</span>
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+
+                </div>
+
                 </div>
                 <!-- AKHIR MASTER FRAME: HOME -->
 
@@ -1134,7 +1287,7 @@ $active_menu = 'brosur_settings';
                         </div>
                     </div>
 
-                    <!-- KANVAS SIMULASI BACKGROUND PORTRAIT MURNI DENGAN GAMBAR, VIDEO & TULISAN DRAGGABLE -->
+                    <!-- KANVAS SIMULASI BACKGROUND PORTRAIT MURNI DENGAN GAMBAR, VIDEO, TOMBOL & TULISAN DRAGGABLE -->
                     <div class="bg-simulation-canvas relative w-full overflow-hidden transition-all duration-300" id="phone-container">
                         
                         <!-- GAMBAR BACKGROUND PORTRAIT -->
@@ -1174,6 +1327,11 @@ $active_menu = 'brosur_settings';
                             <!-- CONTAINER LAYER TULISAN DI LAYAR SIMULASI -->
                             <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none z-30">
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimLayers() -->
+                            </div>
+
+                            <!-- CONTAINER LAYER TOMBOL DI LAYAR SIMULASI -->
+                            <div id="sim-button-layers-container" class="absolute inset-0 pointer-events-none z-35">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSimButtonLayers() -->
                             </div>
 
                             <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME) -->
@@ -1242,14 +1400,20 @@ $active_menu = 'brosur_settings';
             videoItems = [];
         }
 
+        // State Array Tombol Aksi (Call To Action Buttons)
+        let buttonItems = <?= json_encode($button_items, JSON_UNESCAPED_UNICODE) ?>;
+        if (!Array.isArray(buttonItems)) {
+            buttonItems = [];
+        }
+
         // Tab Aktif State
         let currentActiveTab = '<?= $current_tab ?>';
 
         function switchTab(tab) {
-            if (!['bg', 'text', 'image', 'video'].includes(tab)) tab = 'bg';
+            if (!['bg', 'text', 'image', 'video', 'button'].includes(tab)) tab = 'bg';
             currentActiveTab = tab;
 
-            const tabs = ['bg', 'text', 'image', 'video'];
+            const tabs = ['bg', 'text', 'image', 'video', 'button'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const pane = document.getElementById(`tab-content-${t}`);
@@ -1303,6 +1467,30 @@ $active_menu = 'brosur_settings';
             { id: 'kubah',                 name: 'Kubah Lengkung Islami', icon: 'fa-mosque' },
             { id: 'perisai',               name: 'Perisai / Shield', icon: 'fa-shield-halved' },
             { id: 'bintang',               name: 'Bintang / Octagon Badge', icon: 'fa-certificate' }
+        ];
+
+        // Pilihan Bentuk Tombol Aksi (Sesuai Permintaan: Bulat, Persegi Panjang, Ujung Tumpul / Pill, Sudut Lengkung)
+        const buttonShapes = [
+            { id: 'rounded_pill',    name: 'Persegi Panjang Ujung Tumpul (Pill / Kapsul)', icon: 'fa-capsules' },
+            { id: 'persegipanjang',  name: 'Persegi Panjang (Kotak Tegas)', icon: 'fa-rectangle-ad' },
+            { id: 'bulat',           name: 'Bulat Lingkaran (Circle / Icon Button)', icon: 'fa-circle' },
+            { id: 'rounded',         name: 'Sudut Lengkung (Squircle)', icon: 'fa-square' }
+        ];
+
+        // Pilihan Icon Tombol Populer
+        const buttonIcons = [
+            { id: 'fab fa-whatsapp',       name: 'WhatsApp', icon: 'fab fa-whatsapp' },
+            { id: 'fas fa-globe',          name: 'Website / Browser', icon: 'fas fa-globe' },
+            { id: 'fab fa-instagram',      name: 'Instagram', icon: 'fab fa-instagram' },
+            { id: 'fab fa-tiktok',         name: 'TikTok', icon: 'fab fa-tiktok' },
+            { id: 'fab fa-youtube',        name: 'YouTube', icon: 'fab fa-youtube' },
+            { id: 'fas fa-phone',          name: 'Telepon / Call Center', icon: 'fas fa-phone' },
+            { id: 'fas fa-paper-plane',    name: 'Pendaftaran / Form PSB', icon: 'fas fa-paper-plane' },
+            { id: 'fas fa-download',       name: 'Download E-Brosur / PDF', icon: 'fas fa-download' },
+            { id: 'fas fa-location-dot',   name: 'Google Maps / Lokasi', icon: 'fas fa-location-dot' },
+            { id: 'fas fa-comment-dots',   name: 'Chat / Diskusi', icon: 'fas fa-comment-dots' },
+            { id: 'fas fa-link',           name: 'Link Tautan Lain', icon: 'fas fa-link' },
+            { id: 'none',                  name: 'Tanpa Icon (Hanya Teks)', icon: 'fas fa-ban' }
         ];
 
         // Helper YouTube / Video URL Detection
@@ -2441,6 +2629,433 @@ $active_menu = 'brosur_settings';
             }
         }
 
+        // ==========================================
+        // 5. LOGIKA TOMBOL AKSI (MULTI-LAYER BUTTONS)
+        // ==========================================
+
+        function renderButtonRows() {
+            const container = document.getElementById('button-rows-container');
+            const badge = document.getElementById('btn-count-badge');
+            const tabBadge = document.getElementById('tab-badge-button');
+            const clearBtn = document.getElementById('btn-clear-all-buttons');
+
+            if (badge) badge.innerText = `${buttonItems.length} Tombol`;
+            if (tabBadge) tabBadge.innerText = buttonItems.length;
+            if (clearBtn) {
+                if (buttonItems.length > 0) clearBtn.classList.remove('hidden');
+                else clearBtn.classList.add('hidden');
+            }
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (buttonItems.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                        <i class="fas fa-hand-pointer text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700">Belum ada tombol aksi</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5 mb-3">Klik tombol <strong>+ Tambah Tombol</strong> untuk menambahkan tombol interaktif seperti WhatsApp, Website, atau Form PSB.</p>
+                        <button type="button" onclick="addNewButtonRow()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
+                            <i class="fas fa-plus text-xs"></i>
+                            <span>Tambah Tombol Pertama</span>
+                        </button>
+                    </div>
+                `;
+                syncButtonJsonInput();
+                return;
+            }
+
+            buttonItems.forEach((btn, index) => {
+                const row = document.createElement('div');
+                row.className = 'item-row-strip bg-white border border-slate-200/90 hover:border-amber-500 rounded-2xl p-2.5 sm:p-3 shadow-xs space-y-2';
+                row.id = `btn-row-item-${btn.id}`;
+
+                // Options Bentuk Tombol
+                let shapeOptionsHtml = '';
+                buttonShapes.forEach(s => {
+                    const sel = (btn.shape === s.id) ? 'selected' : '';
+                    shapeOptionsHtml += `<option value="${s.id}" ${sel}>${s.name}</option>`;
+                });
+
+                // Options Icon Tombol
+                let iconOptionsHtml = '';
+                buttonIcons.forEach(ic => {
+                    const sel = (btn.icon === ic.id) ? 'selected' : '';
+                    iconOptionsHtml += `<option value="${ic.id}" ${sel}>${ic.name}</option>`;
+                });
+
+                row.innerHTML = `
+                    <!-- BARIS UTAMA (1 BARIS RINGKAS) -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        
+                        <!-- Nomor Tombol & Icon Preview -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="w-6 h-6 rounded-lg bg-amber-50 text-amber-800 font-black text-[11px] flex items-center justify-center border border-amber-200/80 shadow-2xs" title="Tombol #${index + 1}">
+                                ${index + 1}
+                            </div>
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-sm shadow-2xs shrink-0 transition" style="background-color: ${btn.bg_color || '#25d366'}; color: ${btn.text_color || '#ffffff'};">
+                                <i class="${btn.icon && btn.icon !== 'none' ? btn.icon : 'fas fa-link'}"></i>
+                            </div>
+                        </div>
+
+                        <!-- Input Teks Tombol -->
+                        <div class="flex-1 min-w-[130px]">
+                            <input type="text" value="${escapeHtml(btn.text || '')}" oninput="updateButtonField('${btn.id}', 'text', this.value)" placeholder="Tulisan pada Tombol (mis: Chat WhatsApp)" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold focus:border-amber-500 focus:outline-none bg-slate-50/60 focus:bg-white transition" title="Tulisan / Label Tombol">
+                        </div>
+
+                        <!-- Input Link Tujuan -->
+                        <div class="flex-1 min-w-[140px]">
+                            <div class="relative">
+                                <input type="text" value="${escapeHtml(btn.url || '')}" oninput="updateButtonField('${btn.id}', 'url', this.value)" placeholder="Link URL: https://wa.me/..." class="w-full pl-7 pr-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-amber-500 focus:outline-none bg-slate-50/60 focus:bg-white transition" title="Link URL Tujuan">
+                                <i class="fas fa-link absolute left-2.5 top-2 text-slate-400 text-[10px]"></i>
+                            </div>
+                        </div>
+
+                        <!-- Pilihan Bentuk Tombol (Bulat, Persegi Panjang, Ujung Tumpul / Pill) -->
+                        <div class="shrink-0 max-w-[130px]">
+                            <select onchange="updateButtonField('${btn.id}', 'shape', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-bold bg-white focus:border-amber-500 focus:outline-none cursor-pointer truncate" title="Pilih Bentuk Tombol">
+                                ${shapeOptionsHtml}
+                            </select>
+                        </div>
+
+                        <!-- Pilihan Icon -->
+                        <div class="shrink-0 max-w-[110px]">
+                            <select onchange="updateButtonField('${btn.id}', 'icon', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white focus:border-amber-500 focus:outline-none cursor-pointer truncate" title="Pilih Icon Tombol">
+                                ${iconOptionsHtml}
+                            </select>
+                        </div>
+
+                        <!-- Warna Background Tombol -->
+                        <div class="shrink-0 flex items-center gap-1" title="Pilih Warna Background Tombol">
+                            <input type="color" value="${btn.bg_color || '#25d366'}" onchange="updateButtonField('${btn.id}', 'bg_color', this.value)" class="w-7 h-7 rounded-xl border border-slate-200 p-0.5 bg-white cursor-pointer shadow-2xs">
+                        </div>
+
+                        <!-- Warna Teks / Icon Tombol -->
+                        <div class="shrink-0 flex items-center gap-1" title="Pilih Warna Teks & Icon Tombol">
+                            <input type="color" value="${btn.text_color || '#ffffff'}" onchange="updateButtonField('${btn.id}', 'text_color', this.value)" class="w-7 h-7 rounded-xl border border-slate-200 p-0.5 bg-white cursor-pointer shadow-2xs">
+                        </div>
+
+                        <!-- Tombol Aksi Row (Detail, Duplikasi, Hapus) -->
+                        <div class="flex items-center gap-1 shrink-0 ml-auto">
+                            <button type="button" onclick="toggleButtonDetails('${btn.id}')" title="Pengaturan Lanjutan Tombol" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition cursor-pointer">
+                                <i class="fas fa-sliders"></i>
+                            </button>
+                            <button type="button" onclick="duplicateButtonRow('${btn.id}')" title="Gandakan / Duplikasi Tombol" class="w-7 h-7 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 flex items-center justify-center text-xs transition cursor-pointer">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button type="button" onclick="deleteButtonRow('${btn.id}')" title="Hapus Tombol" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center text-xs transition cursor-pointer">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- PANEL PENGATURAN LANJUTAN TOMBOL -->
+                    <div id="btn-details-${btn.id}" class="hidden pt-3 border-t border-slate-100 space-y-3 bg-slate-50/70 p-3 rounded-xl">
+                        
+                        <!-- Preset Tema Cepat Tombol -->
+                        <div>
+                            <span class="block text-[10.5px] font-bold text-slate-700 mb-1.5">Preset Warna Cepat:</span>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button type="button" onclick="applyBtnPreset('${btn.id}', '#25d366', '#ffffff', 'glow_wa')" class="px-2 py-1 rounded-lg bg-[#25d366] text-white text-[10px] font-black shadow-2xs flex items-center gap-1 active:scale-95 transition cursor-pointer">
+                                    <i class="fab fa-whatsapp"></i> WA Green
+                                </button>
+                                <button type="button" onclick="applyBtnPreset('${btn.id}', '#e1306c', '#ffffff', 'glow_rose')" class="px-2 py-1 rounded-lg bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white text-[10px] font-black shadow-2xs flex items-center gap-1 active:scale-95 transition cursor-pointer">
+                                    <i class="fab fa-instagram"></i> Instagram
+                                </button>
+                                <button type="button" onclick="applyBtnPreset('${btn.id}', '#ff0000', '#ffffff', 'glow_rose')" class="px-2 py-1 rounded-lg bg-[#ff0000] text-white text-[10px] font-black shadow-2xs flex items-center gap-1 active:scale-95 transition cursor-pointer">
+                                    <i class="fab fa-youtube"></i> YouTube Red
+                                </button>
+                                <button type="button" onclick="applyBtnPreset('${btn.id}', '#f59e0b', '#022d27', 'glow_gold')" class="px-2 py-1 rounded-lg bg-[#f59e0b] text-[#022d27] text-[10px] font-black shadow-2xs flex items-center gap-1 active:scale-95 transition cursor-pointer">
+                                    <i class="fas fa-crown"></i> Gold Luxury
+                                </button>
+                                <button type="button" onclick="applyBtnPreset('${btn.id}', '#0b8478', '#ffffff', 'glow_teal')" class="px-2 py-1 rounded-lg bg-[#0b8478] text-white text-[10px] font-black shadow-2xs flex items-center gap-1 active:scale-95 transition cursor-pointer">
+                                    <i class="fas fa-mosque"></i> Emerald VQ
+                                </button>
+                                <button type="button" onclick="applyBtnPreset('${btn.id}', '#0f172a', '#38bdf8', 'glow_sky')" class="px-2 py-1 rounded-lg bg-[#0f172a] text-[#38bdf8] text-[10px] font-black shadow-2xs flex items-center gap-1 active:scale-95 transition cursor-pointer">
+                                    <i class="fas fa-moon"></i> Midnight Sky
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Efek Bayangan / Glow & Border -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <div>
+                                <label class="block text-[10.5px] font-bold text-slate-600 mb-1">Efek Bayangan / Glow:</label>
+                                <select onchange="updateButtonField('${btn.id}', 'shadow_style', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white focus:outline-none">
+                                    <option value="none" ${btn.shadow_style === 'none' ? 'selected' : ''}>Tanpa Bayangan</option>
+                                    <option value="soft" ${btn.shadow_style === 'soft' ? 'selected' : ''}>Bayangan Lembut (Soft)</option>
+                                    <option value="medium" ${btn.shadow_style === 'medium' ? 'selected' : ''}>Bayangan Sedang (Medium)</option>
+                                    <option value="deep" ${btn.shadow_style === 'deep' ? 'selected' : ''}>Bayangan Tebal (3D Deep)</option>
+                                    <option value="glow_wa" ${btn.shadow_style === 'glow_wa' ? 'selected' : ''}>Glow WhatsApp Green</option>
+                                    <option value="glow_gold" ${btn.shadow_style === 'glow_gold' ? 'selected' : ''}>Glow Emas Mewah</option>
+                                    <option value="glow_teal" ${btn.shadow_style === 'glow_teal' ? 'selected' : ''}>Glow Emerald Islami</option>
+                                    <option value="glow_rose" ${btn.shadow_style === 'glow_rose' ? 'selected' : ''}>Glow Neon Rose</option>
+                                    <option value="glow_sky" ${btn.shadow_style === 'glow_sky' ? 'selected' : ''}>Glow Sky Blue</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10.5px] font-bold text-slate-600 mb-1">Ukuran Tulisan (px):</label>
+                                <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-1">
+                                    <input type="number" min="9" max="40" value="${btn.font_size || 14}" oninput="updateButtonField('${btn.id}', 'font_size', parseInt(this.value) || 14)" class="w-full text-xs font-black text-amber-800 text-center focus:outline-none">
+                                    <span class="text-[10px] text-slate-400 font-mono">px</span>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10.5px] font-bold text-slate-600 mb-1">Target Buka Link:</label>
+                                <select onchange="updateButtonField('${btn.id}', 'target', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white focus:outline-none">
+                                    <option value="_blank" ${btn.target === '_blank' ? 'selected' : ''}>Tab Baru (_blank)</option>
+                                    <option value="_self" ${btn.target === '_self' ? 'selected' : ''}>Halaman Ini (_self)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Slider Posisi & Lebar Tombol -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/60">
+                            <div>
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
+                                    <span>Posisi Vertikal (Y):</span>
+                                    <span id="btn-label-posy-${btn.id}" class="font-mono text-amber-800 font-bold">${Math.round(btn.posY || 80)}%</span>
+                                </div>
+                                <input type="range" min="5" max="95" step="0.5" value="${btn.posY || 80}" oninput="updateButtonPosition('${btn.id}', 'posY', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
+                                    <span>Posisi Horizontal (X):</span>
+                                    <span id="btn-label-posx-${btn.id}" class="font-mono text-amber-800 font-bold">${Math.round(btn.posX || 50)}%</span>
+                                </div>
+                                <input type="range" min="10" max="90" step="0.5" value="${btn.posX || 50}" oninput="updateButtonPosition('${btn.id}', 'posX', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
+                                    <span>Lebar Tombol:</span>
+                                    <span id="btn-label-width-${btn.id}" class="font-mono text-amber-800 font-bold">${btn.width || 80}%</span>
+                                </div>
+                                <input type="range" min="15" max="100" step="1" value="${btn.width || 80}" oninput="updateButtonPosition('${btn.id}', 'width', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+
+                container.appendChild(row);
+            });
+
+            syncButtonJsonInput();
+        }
+
+        function toggleButtonDetails(id) {
+            const el = document.getElementById(`btn-details-${id}`);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        function updateButtonField(id, field, value) {
+            const btn = buttonItems.find(b => b.id === id);
+            if (btn) {
+                btn[field] = value;
+                renderSimButtonLayers();
+                syncButtonJsonInput();
+            }
+        }
+
+        function updateButtonPosition(id, field, value) {
+            const btn = buttonItems.find(b => b.id === id);
+            if (btn) {
+                btn[field] = parseFloat(value);
+                const label = document.getElementById(`btn-label-${field.toLowerCase()}-${id}`);
+                if (label) label.innerText = Math.round(btn[field]) + '%';
+                renderSimButtonLayers();
+                syncButtonJsonInput();
+            }
+        }
+
+        function applyBtnPreset(id, bg, text, shadow) {
+            const btn = buttonItems.find(b => b.id === id);
+            if (btn) {
+                btn.bg_color = bg;
+                btn.text_color = text;
+                btn.shadow_style = shadow;
+                renderButtonRows();
+                renderSimButtonLayers();
+                syncButtonJsonInput();
+            }
+        }
+
+        function addNewButtonRow() {
+            const newIndex = buttonItems.length + 1;
+            const newPosY = Math.min(88, 70 + ((newIndex - 1) * 10));
+
+            const newBtn = {
+                id: 'btn_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                text: newIndex === 1 ? 'Chat WhatsApp Panitia' : (newIndex === 2 ? 'Kunjungi Website' : 'Daftar Sekarang'),
+                url: newIndex === 1 ? 'https://wa.me/6281234567890' : 'https://villaquranindonesia.com',
+                icon: newIndex === 1 ? 'fab fa-whatsapp' : (newIndex === 2 ? 'fas fa-globe' : 'fas fa-paper-plane'),
+                shape: 'rounded_pill',
+                bg_color: newIndex === 1 ? '#25d366' : (newIndex === 2 ? '#0b8478' : '#f59e0b'),
+                text_color: '#ffffff',
+                border_enable: 0,
+                border_width: 2,
+                border_color: '#ffffff',
+                shadow_style: newIndex === 1 ? 'glow_wa' : 'glow_teal',
+                font_size: 13,
+                font: 'Plus Jakarta Sans',
+                posX: 50.0,
+                posY: newPosY,
+                width: 82,
+                target: '_blank'
+            };
+
+            buttonItems.push(newBtn);
+            renderButtonRows();
+            renderSimButtonLayers();
+
+            setTimeout(() => {
+                const el = document.getElementById(`btn-row-item-${newBtn.id}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        function duplicateButtonRow(sourceId) {
+            const source = buttonItems.find(b => b.id === sourceId);
+            if (!source) return;
+
+            const cloned = JSON.parse(JSON.stringify(source));
+            cloned.id = 'btn_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            cloned.text = source.text ? source.text + ' (Salinan)' : 'Salinan Tombol';
+            cloned.posY = Math.min(92, (source.posY || 80) + 8);
+
+            const sourceIndex = buttonItems.findIndex(b => b.id === sourceId);
+            if (sourceIndex >= 0) {
+                buttonItems.splice(sourceIndex + 1, 0, cloned);
+            } else {
+                buttonItems.push(cloned);
+            }
+
+            renderButtonRows();
+            renderSimButtonLayers();
+
+            setTimeout(() => {
+                const el = document.getElementById(`btn-row-item-${cloned.id}`);
+                if (el) {
+                    el.classList.add('active-layer');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    setTimeout(() => el.classList.remove('active-layer'), 1500);
+                }
+            }, 100);
+        }
+
+        function deleteButtonRow(id) {
+            const btn = buttonItems.find(b => b.id === id);
+            const btnName = btn && btn.text ? `"${btn.text.substring(0, 25)}..."` : 'tombol ini';
+            if (confirm(`Hapus ${btnName}?`)) {
+                buttonItems = buttonItems.filter(b => b.id !== id);
+                renderButtonRows();
+                renderSimButtonLayers();
+            }
+        }
+
+        function clearAllButtonRows() {
+            if (buttonItems.length === 0) return;
+            if (confirm(`Yakin ingin menghapus semua (${buttonItems.length}) tombol?`)) {
+                buttonItems = [];
+                renderButtonRows();
+                renderSimButtonLayers();
+            }
+        }
+
+        function syncButtonJsonInput() {
+            const inp = document.getElementById('input-button-items-json');
+            if (inp) inp.value = JSON.stringify(buttonItems);
+        }
+
+        function saveAllButtonItems() {
+            syncButtonJsonInput();
+            document.getElementById('form-pengaturan-button').submit();
+        }
+
+        function renderSimButtonLayers() {
+            const container = document.getElementById('sim-button-layers-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            buttonItems.forEach((btn, index) => {
+                const box = document.createElement('div');
+                box.id = `sim-box-${btn.id}`;
+                box.className = 'draggable-box absolute pointer-events-auto transition-all group/btn';
+                box.setAttribute('data-id', btn.id);
+                box.style.top = `${btn.posY || 80}%`;
+                box.style.left = `${btn.posX || 50}%`;
+                box.style.transform = 'translate(-50%, -50%)';
+                box.style.width = (btn.shape === 'bulat') ? 'auto' : `${btn.width || 80}%`;
+                box.style.zIndex = 35 + index;
+
+                // Tentukan class bentuk tombol
+                let shapeClass = 'shape-btn-rounded_pill';
+                if (btn.shape === 'persegipanjang') shapeClass = 'shape-btn-persegipanjang';
+                else if (btn.shape === 'bulat') shapeClass = 'shape-btn-bulat';
+                else if (btn.shape === 'rounded') shapeClass = 'shape-btn-rounded';
+
+                // Tentukan class bayangan / shadow
+                const shadowClass = btn.shadow_style && btn.shadow_style !== 'none' ? `shadow-${btn.shadow_style}` : '';
+
+                // Border style
+                const borderStyle = btn.border_enable ? `border: ${btn.border_width || 2}px solid ${btn.border_color || '#ffffff'};` : '';
+
+                // Font family
+                const fontFamily = getFontFamily(btn.font);
+
+                // Icon HTML
+                let iconHtml = '';
+                if (btn.icon && btn.icon !== 'none') {
+                    iconHtml = `<i class="${btn.icon} ${btn.shape === 'bulat' ? 'text-lg' : 'text-base mr-2'}"></i>`;
+                }
+
+                // Bulat vs Persegi / Pill content
+                let innerContent = '';
+                if (btn.shape === 'bulat') {
+                    innerContent = `
+                        <div class="${shapeClass} ${shadowClass} w-12 h-12 flex items-center justify-center text-center font-bold transition transform group-hover/btn:scale-105 active:scale-95 cursor-pointer" style="background-color: ${btn.bg_color || '#25d366'}; color: ${btn.text_color || '#ffffff'}; font-size: ${btn.font_size || 16}px; ${borderStyle}">
+                            ${iconHtml}
+                        </div>
+                    `;
+                } else {
+                    innerContent = `
+                        <div class="${shapeClass} ${shadowClass} w-full py-2.5 px-4 flex items-center justify-center text-center font-bold transition transform group-hover/btn:scale-102 active:scale-95 cursor-pointer select-none" style="background-color: ${btn.bg_color || '#25d366'}; color: ${btn.text_color || '#ffffff'}; font-size: ${btn.font_size || 14}px; font-family: ${fontFamily}; ${borderStyle}">
+                            ${iconHtml}
+                            <span class="tracking-wide">${escapeHtml(btn.text || 'Tombol Aksi')}</span>
+                        </div>
+                    `;
+                }
+
+                box.innerHTML = `
+                    <div class="absolute -inset-1.5 border-2 border-dashed border-amber-400/80 rounded-2xl pointer-events-none opacity-0 group-hover/btn:opacity-100 transition-opacity flex items-start justify-between p-1 z-20">
+                        <span class="bg-amber-400 text-teal-950 text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                            #${index + 1}
+                        </span>
+                        <div class="flex items-center gap-1 pointer-events-auto">
+                            <span class="bg-teal-950/90 text-amber-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
+                                <i class="fas fa-up-down-left-right"></i> Geser
+                            </span>
+                            <button type="button" onmousedown="event.stopPropagation()" onclick="event.stopPropagation(); deleteButtonRow('${btn.id}')" title="Hapus Tombol Ini" class="w-5 h-5 rounded bg-rose-600 hover:bg-rose-700 text-white text-[9px] flex items-center justify-center shadow-xs cursor-pointer active:scale-90 transition">
+                                <i class="fas fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                    ${innerContent}
+                `;
+
+                initDragForLayer(box, btn, 'button');
+                container.appendChild(box);
+            });
+        }
+
+        // ==========================================
+        // 6. LOGIKA KOLOM TULISAN
+        // ==========================================
+
         function syncJsonInput() {
             const inp = document.getElementById('input-text-items-json');
             if (inp) inp.value = JSON.stringify(textItems);
@@ -2518,10 +3133,12 @@ $active_menu = 'brosur_settings';
                 startY = clientY;
 
                 initialLeftPct = item.posX || 50;
-                initialTopPct  = item.posY || (layerType === 'text' ? 35 : 50);
+                initialTopPct  = item.posY || (layerType === 'text' ? 35 : (layerType === 'button' ? 80 : 50));
 
                 // Auto switch to respective tab when interacting with element on canvas
-                if (layerType === 'video' && currentActiveTab !== 'video') {
+                if (layerType === 'button' && currentActiveTab !== 'button') {
+                    switchTab('button');
+                } else if (layerType === 'video' && currentActiveTab !== 'video') {
                     switchTab('video');
                 } else if (layerType === 'image' && currentActiveTab !== 'image') {
                     switchTab('image');
@@ -2536,6 +3153,7 @@ $active_menu = 'brosur_settings';
                 let rowElId = `row-item-${item.id}`;
                 if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
                 if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
+                if (layerType === 'button') rowElId = `btn-row-item-${item.id}`;
                 
                 const rowEl = document.getElementById(rowElId);
                 if (rowEl) rowEl.classList.add('active-layer');
@@ -2588,6 +3206,11 @@ $active_menu = 'brosur_settings';
                     const labelY = document.getElementById(`label-posy-${item.id}`);
                     if (labelX) labelX.innerText = Math.round(item.posX) + '%';
                     if (labelY) labelY.innerText = Math.round(item.posY) + '%';
+                } else if (layerType === 'button') {
+                    const labelX = document.getElementById(`btn-label-posx-${item.id}`);
+                    const labelY = document.getElementById(`btn-label-posy-${item.id}`);
+                    if (labelX) labelX.innerText = Math.round(item.posX) + '%';
+                    if (labelY) labelY.innerText = Math.round(item.posY) + '%';
                 }
             }
 
@@ -2595,7 +3218,7 @@ $active_menu = 'brosur_settings';
                 if (!isDragging) return;
                 isDragging = false;
                 box.style.transition = '';
-                box.style.zIndex = layerType === 'image' ? 20 : (layerType === 'video' ? 25 : 30);
+                box.style.zIndex = layerType === 'image' ? 20 : (layerType === 'video' ? 25 : (layerType === 'button' ? 35 : 30));
 
                 // Sembunyikan garis snap
                 if (guideX) guideX.style.display = 'none';
@@ -2604,13 +3227,16 @@ $active_menu = 'brosur_settings';
                 let rowElId = `row-item-${item.id}`;
                 if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
                 if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
+                if (layerType === 'button') rowElId = `btn-row-item-${item.id}`;
                 
                 const rowEl = document.getElementById(rowElId);
                 if (rowEl) {
                     setTimeout(() => rowEl.classList.remove('active-layer'), 800);
                 }
 
-                if (layerType === 'video') {
+                if (layerType === 'button') {
+                    syncButtonJsonInput();
+                } else if (layerType === 'video') {
                     syncVideoJsonInput();
                 } else if (layerType === 'image') {
                     syncImageJsonInput();
@@ -2784,13 +3410,15 @@ $active_menu = 'brosur_settings';
 
         // Inisialisasi awal saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
-            // Cek hash URL jika ada (#bg, #text, #image, #video)
+            // Cek hash URL jika ada (#bg, #text, #image, #video, #button)
             const hash = window.location.hash.replace('#', '');
-            if (['bg', 'text', 'image', 'video'].includes(hash)) {
+            if (['bg', 'text', 'image', 'video', 'button'].includes(hash)) {
                 currentActiveTab = hash;
             }
             switchTab(currentActiveTab);
 
+            renderButtonRows();
+            renderSimButtonLayers();
             renderImageRows();
             renderSimImageLayers();
             renderVideoRows();
