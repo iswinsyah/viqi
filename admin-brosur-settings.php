@@ -65,8 +65,40 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
+// Pastikan tabel koleksi_background ada di database
+$conn->query("CREATE TABLE IF NOT EXISTS koleksi_background (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipe VARCHAR(20) DEFAULT 'cover',
+    judul VARCHAR(150) DEFAULT 'Background Portrait',
+    url TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)");
+
+// Pre-seed preset koleksi awal jika masih kosong
+$cnt_koleksi = $conn->query("SELECT COUNT(*) as total FROM koleksi_background");
+$row_k = $cnt_koleksi ? $cnt_koleksi->fetch_assoc() : ['total' => 0];
+if (($row_k['total'] ?? 0) == 0) {
+    $conn->query("INSERT INTO koleksi_background (tipe, judul, url) VALUES 
+        ('cover', 'Arsitektur Kubah Hijau Klasik', 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80'),
+        ('cover', 'Masjid Nabawi Madinah', 'https://images.unsplash.com/photo-1564769625905-50e93615e769?w=1200&auto=format&fit=crop&q=80'),
+        ('cover', 'Mihrab Qur\'ani Mewah', 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=1200&auto=format&fit=crop&q=80'),
+        ('body', 'Tekstur Kanvas Halus', 'https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=1200&auto=format&fit=crop&q=80'),
+        ('body', 'Villa Tropis Asri Pegunungan', 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&auto=format&fit=crop&q=80')
+    ");
+}
+
+// Handler Hapus Item Koleksi
+if (isset($_GET['action']) && $_GET['action'] === 'delete_koleksi') {
+    $del_id = (int)($_GET['id'] ?? 0);
+    if ($del_id > 0) {
+        $conn->query("DELETE FROM koleksi_background WHERE id = $del_id");
+        header("Location: admin-brosur-settings.php?msg=koleksi_deleted");
+        exit;
+    }
+}
+
 // Variabel Notifikasi
-$pesan_sukses = '';
+$pesan_sukses = (($_GET['msg'] ?? '') === 'koleksi_deleted') ? 'Background berhasil dihapus dari koleksi.' : '';
 $pesan_error  = '';
 
 // Proses Simpan Pengaturan Background
@@ -108,10 +140,33 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                    WHERE id = 1";
 
     if ($conn->query($sql_update)) {
-        $pesan_sukses = "Alhamdulillah! Background Brosur & Tingkat Opasitas berhasil diperbarui.";
+        // Otomatis simpan ke Koleksi Background jika belum ada
+        if (!empty($cover_bg_url)) {
+            $check_c = $conn->query("SELECT id FROM koleksi_background WHERE url = '$cover_bg_url' AND tipe = 'cover' LIMIT 1");
+            if ($check_c && $check_c->num_rows == 0) {
+                $judul_c = 'Cover ' . date('d M Y');
+                $conn->query("INSERT INTO koleksi_background (tipe, judul, url) VALUES ('cover', '$judul_c', '$cover_bg_url')");
+            }
+        }
+        if (!empty($body_bg_url)) {
+            $check_b = $conn->query("SELECT id FROM koleksi_background WHERE url = '$body_bg_url' AND tipe = 'body' LIMIT 1");
+            if ($check_b && $check_b->num_rows == 0) {
+                $judul_b = 'Laman Dalam ' . date('d M Y');
+                $conn->query("INSERT INTO koleksi_background (tipe, judul, url) VALUES ('body', '$judul_b', '$body_bg_url')");
+            }
+        }
+
+        $pesan_sukses = "Alhamdulillah! Background Brosur berhasil disimpan dan ditambahkan ke Koleksi Background.";
     } else {
         $pesan_error = "Gagal menyimpan background: " . $conn->error;
     }
+}
+
+// Ambil Data Koleksi Background
+$koleksi_bg = [];
+$q_koleksi = $conn->query("SELECT * FROM koleksi_background ORDER BY id DESC");
+if ($q_koleksi && $q_koleksi->num_rows > 0) {
+    while ($r = $q_koleksi->fetch_assoc()) $koleksi_bg[] = $r;
 }
 
 // Ambil Data Terkini dari Database
@@ -448,6 +503,99 @@ $active_menu = 'brosur_settings';
                     </div>
 
                 </form>
+
+                <!-- KARTU KOLEKSI BACKGROUND TERSIMPAN -->
+                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
+                    
+                    <!-- Header Koleksi -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-2xs">
+                                <i class="fas fa-photo-film"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="font-black text-base sm:text-lg text-slate-900">Koleksi Background Tersimpan</h3>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-900">
+                                        <?= count($koleksi_bg) ?> Item
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500">Pilih dari background yang pernah disimpan atau hapus jika tidak diperlukan</p>
+                            </div>
+                        </div>
+
+                        <!-- Filter Kategori Koleksi -->
+                        <div class="flex items-center gap-1 p-1 bg-slate-100 rounded-xl self-start sm:self-auto text-xs">
+                            <button type="button" onclick="filterKoleksi('all', this)" class="btn-filter-koleksi px-3 py-1 rounded-lg font-bold text-[11px] bg-white text-slate-900 shadow-2xs transition">
+                                Semua
+                            </button>
+                            <button type="button" onclick="filterKoleksi('cover', this)" class="btn-filter-koleksi px-3 py-1 rounded-lg font-bold text-[11px] text-slate-600 hover:text-slate-900 transition">
+                                Cover
+                            </button>
+                            <button type="button" onclick="filterKoleksi('body', this)" class="btn-filter-koleksi px-3 py-1 rounded-lg font-bold text-[11px] text-slate-600 hover:text-slate-900 transition">
+                                Laman Dalam
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Grid Koleksi Background (Format Portrait HP 9:16) -->
+                    <?php if (!empty($koleksi_bg)): ?>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3.5" id="grid-koleksi-bg">
+                        <?php foreach ($koleksi_bg as $kb): ?>
+                            <div class="item-koleksi-bg group relative rounded-2xl border border-slate-200/80 bg-slate-900 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col" data-tipe="<?= htmlspecialchars($kb['tipe']) ?>">
+                                
+                                <!-- Portrait Preview Container (9:16 Aspect Ratio) -->
+                                <div class="w-full aspect-[9/16] bg-cover bg-center relative" style="background-image: url('<?= htmlspecialchars($kb['url']) ?>');">
+                                    
+                                    <!-- Overlay Gradient -->
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/40 group-hover:from-black/90 group-hover:via-black/60 group-hover:to-black/60 transition-all"></div>
+                                    
+                                    <!-- Badges Atas -->
+                                    <div class="absolute top-2 left-2 right-2 flex items-center justify-between z-10">
+                                        <span class="px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider <?= ($kb['tipe'] === 'cover') ? 'bg-amber-400 text-teal-950' : 'bg-teal-400 text-teal-950' ?>">
+                                            <?= ($kb['tipe'] === 'cover') ? 'Cover' : 'Isi' ?>
+                                        </span>
+                                        
+                                        <!-- Tombol Hapus dari Koleksi -->
+                                        <a href="admin-brosur-settings.php?action=delete_koleksi&id=<?= $kb['id'] ?>" onclick="return confirm('Hapus background ini dari koleksi tersimpan?');" title="Hapus dari koleksi" class="w-6 h-6 rounded-lg bg-rose-600/80 hover:bg-rose-600 text-white flex items-center justify-center text-[10px] transition shadow-xs">
+                                            <i class="fas fa-trash-can"></i>
+                                        </a>
+                                    </div>
+
+                                    <!-- Tombol Terapkan Cepat (Hover Overlay Action) -->
+                                    <div class="absolute inset-x-2 bottom-2 z-10 flex flex-col gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
+                                        <button type="button" onclick="terapkanKoleksi('<?= htmlspecialchars($kb['url'], ENT_QUOTES) ?>', 'cover')" class="w-full py-1.5 px-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-[10px] shadow-sm flex items-center justify-center gap-1 active:scale-95 transition cursor-pointer">
+                                            <i class="fas fa-envelope-open-text text-[9px]"></i> Pakai sbg Cover
+                                        </button>
+                                        <button type="button" onclick="terapkanKoleksi('<?= htmlspecialchars($kb['url'], ENT_QUOTES) ?>', 'body')" class="w-full py-1.5 px-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-[10px] shadow-sm flex items-center justify-center gap-1 active:scale-95 transition cursor-pointer">
+                                            <i class="fas fa-file-invoice text-[9px]"></i> Pakai sbg Isi
+                                        </button>
+                                    </div>
+
+                                </div>
+
+                                <!-- Label Judul / Info -->
+                                <div class="p-2 bg-slate-900 border-t border-slate-800 text-white">
+                                    <p class="text-[10px] font-bold truncate text-slate-200" title="<?= htmlspecialchars($kb['judul']) ?>">
+                                        <?= htmlspecialchars($kb['judul']) ?>
+                                    </p>
+                                    <span class="text-[8.5px] text-slate-400 font-mono block mt-0.5">
+                                        <?= date('d M Y', strtotime($kb['created_at'])) ?>
+                                    </span>
+                                </div>
+
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php else: ?>
+                    <div class="p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                        <i class="fas fa-images text-2xl text-slate-400 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700">Belum Ada Koleksi Background</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Setiap background yang Anda simpan di atas akan otomatis terkumpul di sini.</p>
+                    </div>
+                    <?php endif; ?>
+
+                </div>
 
             </div>
 
@@ -1016,6 +1164,40 @@ $active_menu = 'brosur_settings';
                 document.getElementById('thumb-body-overlay').style.opacity = val;
                 document.getElementById('preview-body-overlay').style.opacity = val;
             }
+        }
+
+        // 4. Terapkan Background dari Koleksi ke Form & Layar Simulasi
+        function terapkanKoleksi(url, tipe) {
+            if (tipe === 'cover') {
+                const inp = document.getElementById('input-cover-bg-url');
+                if (inp) inp.value = url;
+                updateLiveBgUrl('cover', url);
+                setPhoneTab('cover');
+            } else {
+                const inp = document.getElementById('input-body-bg-url');
+                if (inp) inp.value = url;
+                updateLiveBgUrl('body', url);
+                setPhoneTab('body');
+            }
+            const formBg = document.getElementById('form-pengaturan-bg');
+            if (formBg) formBg.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        // 5. Filter Koleksi Background
+        function filterKoleksi(tipe, btn) {
+            document.querySelectorAll('.btn-filter-koleksi').forEach(b => {
+                b.className = 'btn-filter-koleksi px-3 py-1 rounded-lg font-bold text-[11px] text-slate-600 hover:text-slate-900 transition';
+            });
+            btn.className = 'btn-filter-koleksi px-3 py-1 rounded-lg font-bold text-[11px] bg-white text-slate-900 shadow-2xs transition';
+
+            const items = document.querySelectorAll('.item-koleksi-bg');
+            items.forEach(item => {
+                if (tipe === 'all' || item.dataset.tipe === tipe) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
         }
 
         // Navigasi & Kontrol Bottom Bar Simulasi Smartphone
