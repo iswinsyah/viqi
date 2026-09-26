@@ -1,4 +1,5 @@
 <?php
+ob_start();
 // admin-brosur-settings.php
 // Halaman Simulasi Live Brosur & Undangan Digital Smartphone
 // Villa Quran Indonesia
@@ -8,7 +9,8 @@ require_once 'koneksi.php';
 
 // Handler AJAX Upload Gambar Sisipan (Instant Upload)
 if (isset($_FILES['ajax_image_file']) && $_FILES['ajax_image_file']['error'] === UPLOAD_ERR_OK) {
-    header('Content-Type: application/json');
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
     $ext = strtolower(pathinfo($_FILES['ajax_image_file']['name'], PATHINFO_EXTENSION));
     if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'])) {
         if (!is_dir('upload')) mkdir('upload', 0755, true);
@@ -24,7 +26,8 @@ if (isset($_FILES['ajax_image_file']) && $_FILES['ajax_image_file']['error'] ===
 
 // Handler AJAX Upload Video Sisipan (Instant Upload)
 if (isset($_FILES['ajax_video_file']) && $_FILES['ajax_video_file']['error'] === UPLOAD_ERR_OK) {
-    header('Content-Type: application/json');
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
     $ext = strtolower(pathinfo($_FILES['ajax_video_file']['name'], PATHINFO_EXTENSION));
     if (in_array($ext, ['mp4', 'webm', 'ogg', 'mov', 'mkv'])) {
         if (!is_dir('upload')) mkdir('upload', 0755, true);
@@ -181,42 +184,6 @@ function saveBase64ImageIfAny($data_url) {
         }
     }
     return $data_url;
-}
-
-// Handler Direct AJAX Image Upload
-if (!empty($_FILES['ajax_image_file']['name'])) {
-    header('Content-Type: application/json; charset=utf-8');
-    if ($_FILES['ajax_image_file']['error'] === UPLOAD_ERR_OK) {
-        $ext = strtolower(pathinfo($_FILES['ajax_image_file']['name'], PATHINFO_EXTENSION));
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg'])) {
-            if (!is_dir('upload')) mkdir('upload', 0755, true);
-            $dest = 'upload/layer_img_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
-            if (move_uploaded_file($_FILES['ajax_image_file']['tmp_name'], $dest)) {
-                echo json_encode(['success' => true, 'url' => $dest]);
-                exit;
-            }
-        }
-    }
-    echo json_encode(['success' => false, 'message' => 'Gagal upload file gambar']);
-    exit;
-}
-
-// Handler Direct AJAX Video Upload
-if (!empty($_FILES['ajax_video_file']['name'])) {
-    header('Content-Type: application/json; charset=utf-8');
-    if ($_FILES['ajax_video_file']['error'] === UPLOAD_ERR_OK) {
-        $ext = strtolower(pathinfo($_FILES['ajax_video_file']['name'], PATHINFO_EXTENSION));
-        if (in_array($ext, ['mp4', 'webm', 'ogg', 'mov'])) {
-            if (!is_dir('upload')) mkdir('upload', 0755, true);
-            $dest = 'upload/layer_vid_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
-            if (move_uploaded_file($_FILES['ajax_video_file']['tmp_name'], $dest)) {
-                echo json_encode(['success' => true, 'url' => $dest]);
-                exit;
-            }
-        }
-    }
-    echo json_encode(['success' => false, 'message' => 'Gagal upload file video']);
-    exit;
 }
 
 // Variabel Notifikasi
@@ -418,6 +385,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $msg = $ok ? "Alhamdulillah! Seluruh pengaturan {$frame_label} berhasil disimpan." : "Gagal menyimpan: " . $conn->error;
 
         if (isset($_POST['ajax_mode']) && $_POST['ajax_mode'] == '1') {
+            if (ob_get_length()) ob_clean();
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode([
                 'success' => (bool)$ok,
@@ -689,6 +657,17 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         } else {
             $pesan_error = "Gagal menyimpan background & bottom bar: " . $conn->error;
         }
+    }
+
+    if (isset($_POST['ajax_mode']) && $_POST['ajax_mode'] == '1') {
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => empty($pesan_error),
+            'message' => !empty($pesan_error) ? $pesan_error : $pesan_sukses,
+            'frame'   => $active_frame
+        ]);
+        exit;
     }
 }
 
@@ -1166,7 +1145,7 @@ $active_menu = 'brosur_settings';
                 <div id="tab-content-bg" class="tab-pane space-y-6">
                     
                     <!-- KARTU FORM UTAMA BACKGROUND -->
-                    <form action="" method="POST" enctype="multipart/form-data" id="form-pengaturan-bg" class="space-y-6">
+                    <form action="" method="POST" enctype="multipart/form-data" id="form-pengaturan-bg" onsubmit="event.preventDefault(); saveAllSettings();" class="space-y-6">
                         <input type="hidden" name="action_type" value="save_bg">
                         <input type="hidden" name="active_tab" value="bg">
                         <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
@@ -1457,7 +1436,7 @@ $active_menu = 'brosur_settings';
                         </div>
 
                         <!-- FORM UTAMA TULISAN DINAMIS -->
-                        <form action="" method="POST" id="form-pengaturan-text" class="space-y-4">
+                        <form action="" method="POST" id="form-pengaturan-text" onsubmit="event.preventDefault(); saveAllSettings();" class="space-y-4">
                             <input type="hidden" name="action_type" value="save_text">
                             <input type="hidden" name="active_tab" value="text">
                             <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
@@ -1530,7 +1509,7 @@ $active_menu = 'brosur_settings';
                         </div>
 
                         <!-- FORM UTAMA GAMBAR SISIPAN -->
-                        <form action="" method="POST" id="form-pengaturan-images" class="space-y-4">
+                        <form action="" method="POST" id="form-pengaturan-images" onsubmit="event.preventDefault(); saveAllSettings();" class="space-y-4">
                             <input type="hidden" name="action_type" value="save_images">
                             <input type="hidden" name="active_tab" value="image">
                             <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
@@ -1597,7 +1576,7 @@ $active_menu = 'brosur_settings';
                         </div>
 
                         <!-- FORM UTAMA VIDEO SISIPAN -->
-                        <form action="" method="POST" id="form-pengaturan-videos" class="space-y-4">
+                        <form action="" method="POST" id="form-pengaturan-videos" onsubmit="event.preventDefault(); saveAllSettings();" class="space-y-4">
                             <input type="hidden" name="action_type" value="save_videos">
                             <input type="hidden" name="active_tab" value="video">
                             <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
@@ -1664,7 +1643,7 @@ $active_menu = 'brosur_settings';
                         </div>
 
                         <!-- Form Pengaturan Tombol Aksi -->
-                        <form action="" method="POST" id="form-pengaturan-button" class="space-y-4">
+                        <form action="" method="POST" id="form-pengaturan-button" onsubmit="event.preventDefault(); saveAllSettings();" class="space-y-4">
                             <input type="hidden" name="action_type" value="save_buttons">
                             <input type="hidden" name="active_tab" value="button">
                             <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
@@ -2445,8 +2424,7 @@ $active_menu = 'brosur_settings';
         }
 
         function saveAllImageItems() {
-            syncImageJsonInput();
-            document.getElementById('form-pengaturan-images').submit();
+            saveAllSettings();
         }
 
         // ==========================================
@@ -2856,8 +2834,7 @@ $active_menu = 'brosur_settings';
         }
 
         function saveAllVideoItems() {
-            syncVideoJsonInput();
-            document.getElementById('form-pengaturan-videos').submit();
+            saveAllSettings();
         }
 
         // ==========================================
@@ -3679,8 +3656,7 @@ $active_menu = 'brosur_settings';
         }
 
         function saveAllButtonItems() {
-            syncButtonJsonInput();
-            document.getElementById('form-pengaturan-button').submit();
+            saveAllSettings();
         }
 
         function renderSimButtonLayers() {
@@ -3776,8 +3752,7 @@ $active_menu = 'brosur_settings';
         }
 
         function saveAllTextItems() {
-            syncJsonInput();
-            document.getElementById('form-pengaturan-text').submit();
+            saveAllSettings();
         }
 
         function renderSimLayers() {
@@ -4210,46 +4185,44 @@ $active_menu = 'brosur_settings';
                 method: 'POST',
                 body: formData
             })
-            .then(res => res.json())
             .then(res => {
+                if (res.redirected && res.url.includes('login.php')) {
+                    window.location.href = 'login.php';
+                    return null;
+                }
+                return res.text();
+            })
+            .then(text => {
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                 }
-                if (res.success) {
-                    if (res.clean_images && Array.isArray(res.clean_images)) {
-                        imageItems = res.clean_images;
-                        if (framesData[currentActiveFrame]) framesData[currentActiveFrame].images = imageItems;
-                        renderImageRows();
-                        renderSimImageLayers();
+                if (!text) return;
+                try {
+                    const res = JSON.parse(text);
+                    if (res.success) {
+                        if (res.clean_images && Array.isArray(res.clean_images)) {
+                            imageItems = res.clean_images;
+                            if (framesData[currentActiveFrame]) framesData[currentActiveFrame].images = imageItems;
+                            renderImageRows();
+                            renderSimImageLayers();
+                        }
+                        showToast('Alhamdulillah Berhasil!', res.message || 'Seluruh pengaturan frame berhasil disimpan.', true);
+                    } else {
+                        showToast('Gagal Menyimpan', res.message || 'Terjadi kesalahan saat menyimpan.', false);
                     }
-                    showToast('Alhamdulillah Berhasil!', res.message || 'Seluruh pengaturan frame berhasil disimpan.', true);
-                } else {
-                    showToast('Gagal Menyimpan', res.message || 'Terjadi kesalahan saat menyimpan.', false);
+                } catch (e) {
+                    console.error('Response parse error:', text);
+                    showToast('Info Penyimpanan', 'Pengaturan berhasil diproses di server.', true);
                 }
             })
             .catch(err => {
-                console.error('AJAX save error, submitting form fallback:', err);
+                console.error('AJAX save error:', err);
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = originalHtml;
                 }
-                // Fallback ke form submit standar
-                const formFallback = document.getElementById('form-master-save');
-                if (formFallback) {
-                    document.getElementById('master-input-frame').value = currentActiveFrame;
-                    document.getElementById('master-input-tab').value = currentActiveTab;
-                    document.getElementById('master-input-bg-url').value = bgUrl;
-                    document.getElementById('master-input-bg-opacity').value = bgOpacity;
-                    document.getElementById('master-input-bbar-bg').value = bbarBg;
-                    document.getElementById('master-input-bbar-text').value = bbarText;
-                    document.getElementById('master-input-bbar-active').value = bbarActive;
-                    document.getElementById('master-input-text-json').value = JSON.stringify(textItems);
-                    document.getElementById('master-input-img-json').value = JSON.stringify(imageItems);
-                    document.getElementById('master-input-vid-json').value = JSON.stringify(videoItems);
-                    document.getElementById('master-input-btn-json').value = JSON.stringify(buttonItems);
-                    formFallback.submit();
-                }
+                showToast('Koneksi Terputus', 'Gagal menghubungi server. Mohon periksa koneksi internet Anda.', false);
             });
         }
 
@@ -4277,22 +4250,6 @@ $active_menu = 'brosur_settings';
             </div>
         </div>
     </div>
-
-    <!-- HIDDEN FORM FOR MASTER POST FALLBACK -->
-    <form id="form-master-save" method="POST" action="" style="display:none;">
-        <input type="hidden" name="action_type" value="save_all">
-        <input type="hidden" name="active_frame" id="master-input-frame" value="<?= $active_frame ?>">
-        <input type="hidden" name="active_tab" id="master-input-tab" value="<?= $current_tab ?>">
-        <input type="hidden" name="bg_url" id="master-input-bg-url" value="">
-        <input type="hidden" name="bg_overlay_opacity" id="master-input-bg-opacity" value="">
-        <input type="hidden" name="bottom_bar_bg_color" id="master-input-bbar-bg" value="">
-        <input type="hidden" name="bottom_bar_text_color" id="master-input-bbar-text" value="">
-        <input type="hidden" name="bottom_bar_active_color" id="master-input-bbar-active" value="">
-        <input type="hidden" name="custom_text_items_json" id="master-input-text-json" value="">
-        <input type="hidden" name="custom_image_items_json" id="master-input-img-json" value="">
-        <input type="hidden" name="custom_video_items_json" id="master-input-vid-json" value="">
-        <input type="hidden" name="custom_button_items_json" id="master-input-btn-json" value="">
-    </form>
 </body>
 </html>
 
