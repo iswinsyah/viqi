@@ -337,6 +337,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 'posX'          => round(max(0, min(100, (float)($btn['posX'] ?? 50.0))), 2),
                 'posY'          => round(max(0, min(100, (float)($btn['posY'] ?? 80.0))), 2),
                 'width'         => max(10, min(100, (int)($btn['width'] ?? 80))),
+                'height'        => max(24, min(150, (int)($btn['height'] ?? 46))),
                 'target'        => ($btn['target'] ?? '_blank') === '_self' ? '_self' : '_blank'
             ];
         }
@@ -473,6 +474,7 @@ if ($raw_buttons !== null && $raw_buttons !== '') {
             'posX'          => 50.0,
             'posY'          => 82.0,
             'width'         => 82,
+            'height'        => 46,
             'target'        => '_blank'
         ]
     ];
@@ -2812,8 +2814,38 @@ $active_menu = 'brosur_settings';
                             </div>
                         </div>
 
-                        <!-- Slider Posisi & Lebar Tombol -->
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-200/60">
+                        <!-- PENGATURAN UKURAN TOMBOL (PANJANG & TINGGI) SERTA POSISI -->
+                        <div class="p-3 bg-amber-50/50 border border-amber-200/60 rounded-xl space-y-2.5">
+                            <span class="block text-[11px] font-black text-amber-950 flex items-center gap-1.5">
+                                <i class="fas fa-up-right-and-down-left-from-center text-amber-600"></i>
+                                <span>Pengaturan Ukuran Tombol (Panjang & Tinggi):</span>
+                            </span>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <!-- Panjang / Lebar Tombol -->
+                                <div>
+                                    <div class="flex justify-between text-[10.5px] font-bold text-slate-700 mb-1">
+                                        <span>Panjang / Lebar Tombol:</span>
+                                        <span id="btn-label-width-${btn.id}" class="font-mono text-amber-800 font-bold">${btn.width || 80}%</span>
+                                    </div>
+                                    <input type="range" min="15" max="100" step="1" value="${btn.width || 80}" oninput="updateButtonPosition('${btn.id}', 'width', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                                    <span class="text-[9.5px] text-slate-400">Atur panjang tombol (15% - 100% layar)</span>
+                                </div>
+
+                                <!-- Tinggi Tombol -->
+                                <div>
+                                    <div class="flex justify-between text-[10.5px] font-bold text-slate-700 mb-1">
+                                        <span>Tinggi / Ketebalan Tombol:</span>
+                                        <span id="btn-label-height-${btn.id}" class="font-mono text-amber-800 font-bold">${btn.height || 46}px</span>
+                                    </div>
+                                    <input type="range" min="24" max="120" step="1" value="${btn.height || 46}" oninput="updateButtonPosition('${btn.id}', 'height', this.value)" class="w-full accent-amber-500 cursor-pointer">
+                                    <span class="text-[9.5px] text-slate-400">Atur tinggi / diameter tombol (24px - 120px)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slider Posisi X & Y Tombol -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60">
                             <div>
                                 <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
                                     <span>Posisi Vertikal (Y):</span>
@@ -2827,13 +2859,6 @@ $active_menu = 'brosur_settings';
                                     <span id="btn-label-posx-${btn.id}" class="font-mono text-amber-800 font-bold">${Math.round(btn.posX || 50)}%</span>
                                 </div>
                                 <input type="range" min="10" max="90" step="0.5" value="${btn.posX || 50}" oninput="updateButtonPosition('${btn.id}', 'posX', this.value)" class="w-full accent-amber-500 cursor-pointer">
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
-                                    <span>Lebar Tombol:</span>
-                                    <span id="btn-label-width-${btn.id}" class="font-mono text-amber-800 font-bold">${btn.width || 80}%</span>
-                                </div>
-                                <input type="range" min="15" max="100" step="1" value="${btn.width || 80}" oninput="updateButtonPosition('${btn.id}', 'width', this.value)" class="w-full accent-amber-500 cursor-pointer">
                             </div>
                         </div>
 
@@ -2865,7 +2890,13 @@ $active_menu = 'brosur_settings';
             if (btn) {
                 btn[field] = parseFloat(value);
                 const label = document.getElementById(`btn-label-${field.toLowerCase()}-${id}`);
-                if (label) label.innerText = Math.round(btn[field]) + '%';
+                if (label) {
+                    if (field === 'height') {
+                        label.innerText = Math.round(btn[field]) + 'px';
+                    } else {
+                        label.innerText = Math.round(btn[field]) + '%';
+                    }
+                }
                 renderSimButtonLayers();
                 syncButtonJsonInput();
             }
@@ -2904,6 +2935,7 @@ $active_menu = 'brosur_settings';
                 posX: 50.0,
                 posY: newPosY,
                 width: 82,
+                height: 46,
                 target: '_blank'
             };
 
@@ -2925,6 +2957,7 @@ $active_menu = 'brosur_settings';
             cloned.id = 'btn_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
             cloned.text = source.text ? source.text + ' (Salinan)' : 'Salinan Tombol';
             cloned.posY = Math.min(92, (source.posY || 80) + 8);
+            cloned.height = source.height || 46;
 
             const sourceIndex = buttonItems.findIndex(b => b.id === sourceId);
             if (sourceIndex >= 0) {
@@ -2989,7 +3022,10 @@ $active_menu = 'brosur_settings';
                 box.style.top = `${btn.posY || 80}%`;
                 box.style.left = `${btn.posX || 50}%`;
                 box.style.transform = 'translate(-50%, -50%)';
-                box.style.width = (btn.shape === 'bulat') ? 'auto' : `${btn.width || 80}%`;
+
+                const btnHeight = btn.height || (btn.shape === 'bulat' ? 48 : 46);
+                box.style.width = (btn.shape === 'bulat') ? `${btnHeight}px` : `${btn.width || 80}%`;
+                box.style.height = `${btnHeight}px`;
                 box.style.zIndex = 35 + index;
 
                 // Tentukan class bentuk tombol
@@ -3017,15 +3053,15 @@ $active_menu = 'brosur_settings';
                 let innerContent = '';
                 if (btn.shape === 'bulat') {
                     innerContent = `
-                        <div class="${shapeClass} ${shadowClass} w-12 h-12 flex items-center justify-center text-center font-bold transition transform group-hover/btn:scale-105 active:scale-95 cursor-pointer" style="background-color: ${btn.bg_color || '#25d366'}; color: ${btn.text_color || '#ffffff'}; font-size: ${btn.font_size || 16}px; ${borderStyle}">
+                        <div class="${shapeClass} ${shadowClass} w-full h-full flex items-center justify-center text-center font-bold transition transform group-hover/btn:scale-105 active:scale-95 cursor-pointer" style="background-color: ${btn.bg_color || '#25d366'}; color: ${btn.text_color || '#ffffff'}; font-size: ${btn.font_size || 16}px; ${borderStyle}">
                             ${iconHtml}
                         </div>
                     `;
                 } else {
                     innerContent = `
-                        <div class="${shapeClass} ${shadowClass} w-full py-2.5 px-4 flex items-center justify-center text-center font-bold transition transform group-hover/btn:scale-102 active:scale-95 cursor-pointer select-none" style="background-color: ${btn.bg_color || '#25d366'}; color: ${btn.text_color || '#ffffff'}; font-size: ${btn.font_size || 14}px; font-family: ${fontFamily}; ${borderStyle}">
+                        <div class="${shapeClass} ${shadowClass} w-full h-full px-4 flex items-center justify-center text-center font-bold transition transform group-hover/btn:scale-102 active:scale-95 cursor-pointer select-none" style="background-color: ${btn.bg_color || '#25d366'}; color: ${btn.text_color || '#ffffff'}; font-size: ${btn.font_size || 14}px; font-family: ${fontFamily}; ${borderStyle}">
                             ${iconHtml}
-                            <span class="tracking-wide">${escapeHtml(btn.text || 'Tombol Aksi')}</span>
+                            <span class="tracking-wide truncate">${escapeHtml(btn.text || 'Tombol Aksi')}</span>
                         </div>
                     `;
                 }
