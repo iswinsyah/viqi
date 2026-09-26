@@ -1075,6 +1075,17 @@ $active_menu = 'brosur_settings';
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimLayers() -->
                             </div>
 
+                            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME) -->
+                            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 bg-gradient-to-t from-black/95 via-[#022c22]/90 to-transparent pt-4 pb-2.5 px-3 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-10px_25px_rgba(0,0,0,0.5)]">
+                                <!-- Menu 1: Home (Active) -->
+                                <button type="button" onclick="switchTab('bg')" class="flex flex-col items-center justify-center text-center text-amber-300 transform transition active:scale-95 group cursor-pointer" title="Menu Home (Frame Pengaturan Home)">
+                                    <div class="w-8 h-8 rounded-xl bg-amber-400/25 text-amber-300 flex items-center justify-center text-sm mb-0.5 shadow-md border border-amber-400/50 group-hover:scale-110 transition">
+                                        <i class="fas fa-house"></i>
+                                    </div>
+                                    <span class="text-[9.5px] font-black tracking-wider leading-none">Home</span>
+                                </button>
+                            </div>
+
                         </div>
 
                         <!-- HIDDEN BODY CONTAINER FOR SCRIPT COMPATIBILITY -->
