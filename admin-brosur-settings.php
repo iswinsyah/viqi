@@ -422,10 +422,21 @@ $active_menu = 'brosur_settings';
     <!-- Google Fonts Lengkap -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800;900&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800;900&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;600;700;800&family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
     
     <style>
+        @font-face {
+            font-family: 'Marlin Condensed';
+            src: local('Marlin Condensed'), local('MarlinCondensed'), local('Marlin-Condensed'), local('Marlin'), local('MarlinBold');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
+        
+        /* Font Utility Classes */
+        .font-marlin { font-family: 'Marlin Condensed', 'Barlow Condensed', 'Oswald', sans-serif; }
         
         /* Clean Background Simulation Canvas (Portrait 9:16) */
         .bg-simulation-canvas {
@@ -1270,13 +1281,15 @@ $active_menu = 'brosur_settings';
 
         // Pilihan Font Tersedia
         const availableFonts = [
+            { id: 'Marlin Condensed',  name: 'Marlin Condensed (Brand Nasional)' },
             { id: 'Plus Jakarta Sans', name: 'Jakarta (Modern)' },
             { id: 'Amiri',             name: 'Amiri (Arab)' },
             { id: 'Cinzel',            name: 'Cinzel (Royal)' },
             { id: 'Playfair Display',  name: 'Playfair (Elegan)' },
             { id: 'Poppins',           name: 'Poppins (Bold)' },
             { id: 'Inter',             name: 'Inter (Clean)' },
-            { id: 'Outfit',            name: 'Outfit (Trendy)' }
+            { id: 'Outfit',            name: 'Outfit (Trendy)' },
+            { id: 'Oswald',            name: 'Oswald (Condensed Bold)' }
         ];
 
         // Pilihan Bentuk Bingkai Gambar & Video
@@ -1334,6 +1347,15 @@ $active_menu = 'brosur_settings';
                 default:
                     return `<h2 class="font-extrabold leading-tight">${safeText}</h2>`;
             }
+        }
+
+        // Font Family Helper
+        function getFontFamily(fontName) {
+            if (!fontName) return "'Plus Jakarta Sans', sans-serif";
+            if (fontName === 'Marlin Condensed') {
+                return "'Marlin Condensed', 'Barlow Condensed', 'Oswald', sans-serif";
+            }
+            return `'${fontName}', sans-serif`;
         }
 
         function escapeHtml(str) {
@@ -2461,7 +2483,7 @@ $active_menu = 'brosur_settings';
                         </div>
                     </div>
 
-                    <div style="color: ${item.color || '#ffffff'}; font-family: '${item.font || 'Plus Jakarta Sans'}', sans-serif; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word;">
+                    <div style="color: ${item.color || '#ffffff'}; font-family: ${getFontFamily(item.font)}; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word;">
                         ${getFormatHtml(item.content, item.format)}
                     </div>
                 `;

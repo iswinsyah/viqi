@@ -214,7 +214,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- Google Fonts Multi-Family: Dynamic Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;700;900&family=Inter:wght@400;600;700&family=Outfit:wght@400;600;800&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;700;900&family=Inter:wght@400;600;700&family=Outfit:wght@400;600;800&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;600;700;800&family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -239,6 +239,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     fontFamily: {
                         sans: ['"<?= $font_family ?>"', '"Plus Jakarta Sans"', 'sans-serif'],
                         arabic: ['"Amiri"', 'serif'],
+                        marlin: ['"Marlin Condensed"', '"Barlow Condensed"', '"Oswald"', 'sans-serif'],
                     }
                 }
             }
@@ -249,11 +250,23 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
     <style>
+        @font-face {
+            font-family: 'Marlin Condensed';
+            src: local('Marlin Condensed'), local('MarlinCondensed'), local('Marlin-Condensed'), local('Marlin'), local('MarlinBold');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
         body {
             font-family: '<?= $font_family ?>', 'Plus Jakarta Sans', sans-serif;
             background-color: #f6f7f5;
             color: #1e293b;
             overflow-x: hidden;
+        }
+
+        .font-marlin {
+            font-family: 'Marlin Condensed', 'Barlow Condensed', 'Oswald', sans-serif;
         }
 
         .bg-pattern {
