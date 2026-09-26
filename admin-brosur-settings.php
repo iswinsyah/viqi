@@ -65,6 +65,55 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
+// Variabel Notifikasi
+$pesan_sukses = '';
+$pesan_error  = '';
+
+// Proses Simpan Pengaturan Background
+if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
+    $cover_bg_url         = $conn->real_escape_string(trim($_POST['cover_bg_url'] ?? ''));
+    $cover_overlay_opacity= (float)($_POST['cover_overlay_opacity'] ?? 0.85);
+    $body_bg_url          = $conn->real_escape_string(trim($_POST['body_bg_url'] ?? ''));
+    $body_overlay_opacity = (float)($_POST['body_overlay_opacity'] ?? 0.92);
+
+    // 1. Handle Upload File Background Cover
+    if (!empty($_FILES['cover_bg_file']['name']) && $_FILES['cover_bg_file']['error'] === UPLOAD_ERR_OK) {
+        $ext = strtolower(pathinfo($_FILES['cover_bg_file']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+            if (!is_dir('upload')) mkdir('upload', 0755, true);
+            $new_cover = 'upload/bg_cover_' . time() . '_' . rand(100, 999) . '.' . $ext;
+            if (move_uploaded_file($_FILES['cover_bg_file']['tmp_name'], $new_cover)) {
+                $cover_bg_url = $new_cover;
+            }
+        }
+    }
+
+    // 2. Handle Upload File Background Laman Dalam
+    if (!empty($_FILES['body_bg_file']['name']) && $_FILES['body_bg_file']['error'] === UPLOAD_ERR_OK) {
+        $ext = strtolower(pathinfo($_FILES['body_bg_file']['name'], PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) {
+            if (!is_dir('upload')) mkdir('upload', 0755, true);
+            $new_body = 'upload/bg_body_' . time() . '_' . rand(100, 999) . '.' . $ext;
+            if (move_uploaded_file($_FILES['body_bg_file']['tmp_name'], $new_body)) {
+                $body_bg_url = $new_body;
+            }
+        }
+    }
+
+    $sql_update = "UPDATE pengaturan_brosur SET 
+                    cover_bg_url = '$cover_bg_url',
+                    cover_overlay_opacity = $cover_overlay_opacity,
+                    body_bg_url = '$body_bg_url',
+                    body_overlay_opacity = $body_overlay_opacity
+                   WHERE id = 1";
+
+    if ($conn->query($sql_update)) {
+        $pesan_sukses = "Alhamdulillah! Background Brosur & Tingkat Opasitas berhasil diperbarui.";
+    } else {
+        $pesan_error = "Gagal menyimpan background: " . $conn->error;
+    }
+}
+
 // Ambil Data Terkini dari Database
 $q = $conn->query("SELECT * FROM pengaturan_brosur WHERE id = 1 LIMIT 1");
 $cfg = $q ? $q->fetch_assoc() : [];
@@ -217,42 +266,188 @@ $active_menu = 'brosur_settings';
         <!-- WORKSPACE AREA: 2 KOLOM (PAPAN PENGATURAN KIRI & SIMULASI KANAN) -->
         <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- PANEL KIRI: PAPAN PENGATURAN (KOSONG DULU UNTUK PENGEMBANGAN BERTAHAP) -->
+            <!-- PANEL KIRI: PAPAN PENGATURAN (TAHAP 1: PENGATURAN BACKGROUND PORTRAIT) -->
             <div class="lg:col-span-7 xl:col-span-7 space-y-6">
                 
-                <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm min-h-[640px] flex flex-col">
-                    <!-- Header Papan Pengaturan -->
-                    <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
-                                <i class="fas fa-sliders"></i>
+                <form action="" method="POST" enctype="multipart/form-data" id="form-pengaturan-bg" class="space-y-6">
+
+                    <!-- NOTIFIKASI SUKSES / ERROR -->
+                    <?php if (!empty($pesan_sukses)): ?>
+                    <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2.5 shadow-xs">
+                        <i class="fas fa-circle-check text-emerald-600 text-base"></i>
+                        <span><?= htmlspecialchars($pesan_sukses) ?></span>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($pesan_error)): ?>
+                    <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2.5 shadow-xs">
+                        <i class="fas fa-circle-exclamation text-rose-600 text-base"></i>
+                        <span><?= htmlspecialchars($pesan_error) ?></span>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- KARTU UTAMA: PENGATURAN BACKGROUND -->
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
+                        
+                        <!-- Header Kartu -->
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-teal-50 text-[#0b8478] flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-image"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Pengaturan Background Brosur</h2>
+                                    <p class="text-xs text-slate-500">Sesuaikan foto background format portrait HP via Upload atau Link URL</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 class="font-black text-base sm:text-lg text-slate-900">Papan Pengaturan Brosur</h2>
-                                <p class="text-xs text-slate-500">Panel konfigurasi untuk mengatur elemen brosur digital secara bertahap</p>
+                            <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-teal-50 text-teal-800 border border-teal-200/60 flex items-center gap-1">
+                                <i class="fas fa-mobile-screen-button text-teal-600"></i> Rasio Portrait HP (9:16)
+                            </span>
+                        </div>
+
+                        <!-- 1. BACKGROUND COVER AMPLOP -->
+                        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-200/60 pb-2.5">
+                                <span class="font-extrabold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
+                                    <i class="fas fa-envelope-open-text text-amber-500"></i> 1. Background Cover Amplop
+                                </span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200/60">
+                                    Layar Pembuka
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                                
+                                <!-- Frame Portrait Preview Thumbnail (9:16) -->
+                                <div class="sm:col-span-4 flex flex-col items-center">
+                                    <div class="w-28 h-48 rounded-2xl border-4 border-slate-800 overflow-hidden shadow-md relative bg-slate-900 bg-cover bg-center transition-all" id="thumb-cover-box" style="background-image: url('<?= htmlspecialchars($cfg['cover_bg_url'] ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80') ?>');">
+                                        <!-- Overlay di Thumbnail -->
+                                        <div class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all" id="thumb-cover-overlay" style="opacity: <?= $cfg['cover_overlay_opacity'] ?? 0.85 ?>;"></div>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center p-2 text-center text-white z-10 pointer-events-none">
+                                            <span class="text-[8px] font-black uppercase tracking-wider text-amber-300">Preview</span>
+                                            <span class="text-[7px] opacity-80 mt-0.5 leading-tight">Cover Portrait</span>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-semibold mt-1.5">Format Portrait (9:16)</span>
+                                </div>
+
+                                <!-- Kontrol Input & Upload -->
+                                <div class="sm:col-span-8 space-y-3">
+                                    
+                                    <!-- Input URL Gambar -->
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Link URL Gambar Cover (Pinterest / Web / Unsplash):</label>
+                                        <div class="relative">
+                                            <input type="text" name="cover_bg_url" id="input-cover-bg-url" value="<?= htmlspecialchars($cfg['cover_bg_url'] ?? '') ?>" oninput="updateLiveBgUrl('cover', this.value)" placeholder="https://images.unsplash.com/... atau link gambar web" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none bg-white">
+                                            <i class="fas fa-link absolute left-2.5 top-3 text-slate-400 text-xs"></i>
+                                        </div>
+                                    </div>
+
+                                    <!-- Upload File Gambar -->
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Atau Upload File Gambar Langsung (JPG, PNG, WEBP):</label>
+                                        <label class="cursor-pointer px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-teal-500 text-slate-700 font-bold text-xs flex items-center justify-between transition shadow-2xs group">
+                                            <span class="flex items-center gap-2 text-slate-600 group-hover:text-teal-700 truncate">
+                                                <i class="fas fa-cloud-arrow-up text-teal-600"></i>
+                                                <span id="label-cover-file">Pilih file foto dari komputer/HP...</span>
+                                            </span>
+                                            <span class="text-[10px] bg-slate-100 group-hover:bg-teal-50 px-2 py-0.5 rounded text-slate-600 group-hover:text-teal-800">Browse</span>
+                                            <input type="file" name="cover_bg_file" id="input-cover-bg-file" accept="image/*" class="hidden" onchange="previewBgFile(this, 'cover')">
+                                        </label>
+                                    </div>
+
+                                    <!-- Slider Tingkat Kegelapan Lapis Cover -->
+                                    <div class="pt-2 border-t border-slate-200/60">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[11px] font-bold text-slate-700">Tingkat Kegelapan Lapis Cover:</label>
+                                            <span id="val-cover-opacity" class="text-xs font-black text-teal-800 font-mono"><?= round((float)($cfg['cover_overlay_opacity'] ?? 0.85) * 100) ?>%</span>
+                                        </div>
+                                        <input type="range" name="cover_overlay_opacity" id="input-cover-opacity" min="0.00" max="1.00" step="0.01" value="<?= $cfg['cover_overlay_opacity'] ?? 0.85 ?>" oninput="updateLiveBgOpacity('cover', this.value)" class="w-full accent-[#0b8478] cursor-pointer">
+                                        <span class="text-[10px] text-slate-400">Semakin tinggi (80-90%), tulisan di cover semakin kontras dan mudah dibaca.</span>
+                                    </div>
+
+                                </div>
+
                             </div>
                         </div>
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200/60">
-                            <i class="fas fa-circle-notch fa-spin text-amber-500"></i> Siap Dikonfigurasi
-                        </span>
+
+                        <!-- 2. BACKGROUND LAMAN DALAM (WALLPAPER ISI) -->
+                        <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-4">
+                            <div class="flex items-center justify-between border-b border-slate-200/60 pb-2.5">
+                                <span class="font-extrabold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
+                                    <i class="fas fa-file-invoice text-teal-600"></i> 2. Background Halaman Dalam (Isi Brosur)
+                                </span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200/60">
+                                    Laman Isi
+                                </span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                                
+                                <!-- Frame Portrait Preview Thumbnail (9:16) -->
+                                <div class="sm:col-span-4 flex flex-col items-center">
+                                    <div class="w-28 h-48 rounded-2xl border-4 border-slate-800 overflow-hidden shadow-md relative bg-slate-100 bg-cover bg-center transition-all" id="thumb-body-box" style="background-image: url('<?= htmlspecialchars($cfg['body_bg_url'] ?? '') ?>');">
+                                        <!-- Overlay di Thumbnail -->
+                                        <div class="absolute inset-0 bg-[#f6f7f5] transition-all" id="thumb-body-overlay" style="opacity: <?= $cfg['body_overlay_opacity'] ?? 0.92 ?>;"></div>
+                                        <div class="absolute inset-0 flex flex-col items-center justify-center p-2 text-center text-slate-800 z-10 pointer-events-none">
+                                            <span class="text-[8px] font-black uppercase tracking-wider text-teal-800">Preview</span>
+                                            <span class="text-[7px] opacity-70 mt-0.5 leading-tight">Wallpaper Isi</span>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-semibold mt-1.5">Format Portrait (9:16)</span>
+                                </div>
+
+                                <!-- Kontrol Input & Upload -->
+                                <div class="sm:col-span-8 space-y-3">
+                                    
+                                    <!-- Input URL Gambar -->
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Link URL Wallpaper Halaman Dalam:</label>
+                                        <div class="relative">
+                                            <input type="text" name="body_bg_url" id="input-body-bg-url" value="<?= htmlspecialchars($cfg['body_bg_url'] ?? '') ?>" oninput="updateLiveBgUrl('body', this.value)" placeholder="Kosongkan jika ingin putih polos atau masukkan URL" class="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:border-[#0b8478] focus:outline-none bg-white">
+                                            <i class="fas fa-link absolute left-2.5 top-3 text-slate-400 text-xs"></i>
+                                        </div>
+                                    </div>
+
+                                    <!-- Upload File Gambar -->
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-slate-700 mb-1">Atau Upload File Wallpaper (JPG, PNG, WEBP):</label>
+                                        <label class="cursor-pointer px-4 py-2.5 rounded-xl bg-white border border-slate-300 hover:border-teal-500 text-slate-700 font-bold text-xs flex items-center justify-between transition shadow-2xs group">
+                                            <span class="flex items-center gap-2 text-slate-600 group-hover:text-teal-700 truncate">
+                                                <i class="fas fa-cloud-arrow-up text-teal-600"></i>
+                                                <span id="label-body-file">Pilih file wallpaper...</span>
+                                            </span>
+                                            <span class="text-[10px] bg-slate-100 group-hover:bg-teal-50 px-2 py-0.5 rounded text-slate-600 group-hover:text-teal-800">Browse</span>
+                                            <input type="file" name="body_bg_file" id="input-body-bg-file" accept="image/*" class="hidden" onchange="previewBgFile(this, 'body')">
+                                        </label>
+                                    </div>
+
+                                    <!-- Slider Transparansi Lapis Terang Laman Dalam -->
+                                    <div class="pt-2 border-t border-slate-200/60">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <label class="text-[11px] font-bold text-slate-700">Transparansi Lapis Terang Laman Dalam:</label>
+                                            <span id="val-body-opacity" class="text-xs font-black text-teal-800 font-mono"><?= round((float)($cfg['body_overlay_opacity'] ?? 0.92) * 100) ?>%</span>
+                                        </div>
+                                        <input type="range" name="body_overlay_opacity" id="input-body-opacity" min="0.00" max="1.00" step="0.01" value="<?= $cfg['body_overlay_opacity'] ?? 0.92 ?>" oninput="updateLiveBgOpacity('body', this.value)" class="w-full accent-[#0b8478] cursor-pointer">
+                                        <span class="text-[10px] text-slate-400">Nilai 90-95% membuat wallpaper tampil halus di balik konten teks brosur.</span>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <!-- TOMBOL SIMPAN PENGATURAN BACKGROUND -->
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-end">
+                            <button type="submit" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-[#0b8478] to-[#075f56] hover:from-[#097368] hover:to-[#054a43] text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                <i class="fas fa-save text-base"></i>
+                                <span>Simpan Pengaturan Background</span>
+                            </button>
+                        </div>
+
                     </div>
 
-                    <!-- Area Kosong / Placeholder Papan Pengaturan -->
-                    <div class="flex-1 flex flex-col items-center justify-center p-8 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 my-auto">
-                        <div class="w-16 h-16 rounded-2xl bg-white border border-slate-200 text-teal-600 flex items-center justify-center text-2xl shadow-xs mb-3">
-                            <i class="fas fa-layer-group"></i>
-                        </div>
-                        <h3 class="font-bold text-sm text-slate-800 mb-1">Papan Pengaturan Masih Kosong</h3>
-                        <p class="text-xs text-slate-500 max-w-md leading-relaxed mb-4">
-                            Silakan instruksikan bagian atau pengaturan apa yang ingin Anda tambahkan ke sini terlebih dahulu (misal: Cover, Teks, Warna, Countdown, Biaya, dll) agar kita susun secara bertahap dan rapi.
-                        </p>
-                        <div class="flex items-center gap-2 text-[11px] text-teal-800 font-semibold bg-teal-50/80 border border-teal-200/80 px-3.5 py-1.5 rounded-xl">
-                            <i class="fas fa-circle-info text-teal-600"></i>
-                            <span>Siap menerima instruksi penambahan form langkah demi langkah</span>
-                        </div>
-                    </div>
-
-                </div>
+                </form>
 
             </div>
 
@@ -766,6 +961,60 @@ $active_menu = 'brosur_settings';
                 bodyScreen.classList.remove('hidden');
                 btnCover.className = 'px-4 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5';
                 btnBody.className  = 'px-4 py-1.5 rounded-xl font-bold text-xs bg-[#0b8478] text-white shadow-sm transition flex items-center gap-1.5';
+            }
+        }
+
+        // 1. Live Background File Preview (Cover & Body)
+        function previewBgFile(input, target) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const label = document.getElementById(`label-${target}-file`);
+                if (label) label.innerText = file.name;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const dataUrl = e.target.result;
+                    if (target === 'cover') {
+                        document.getElementById('thumb-cover-box').style.backgroundImage = `url('${dataUrl}')`;
+                        document.getElementById('preview-screen-cover').style.backgroundImage = `url('${dataUrl}')`;
+                        setPhoneTab('cover');
+                    } else {
+                        document.getElementById('thumb-body-box').style.backgroundImage = `url('${dataUrl}')`;
+                        document.getElementById('preview-screen-body').style.backgroundImage = `url('${dataUrl}')`;
+                        setPhoneTab('body');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 2. Live Background URL Input (Cover & Body)
+        function updateLiveBgUrl(target, url) {
+            const trimmed = url.trim();
+            if (target === 'cover') {
+                const finalUrl = trimmed ? trimmed : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
+                document.getElementById('thumb-cover-box').style.backgroundImage = `url('${finalUrl}')`;
+                document.getElementById('preview-screen-cover').style.backgroundImage = `url('${finalUrl}')`;
+                setPhoneTab('cover');
+            } else {
+                const finalUrl = trimmed ? `url('${trimmed}')` : 'none';
+                document.getElementById('thumb-body-box').style.backgroundImage = finalUrl;
+                document.getElementById('preview-screen-body').style.backgroundImage = finalUrl;
+                setPhoneTab('body');
+            }
+        }
+
+        // 3. Live Background Opacity Slider (Cover & Body)
+        function updateLiveBgOpacity(target, val) {
+            const pct = Math.round(val * 100);
+            if (target === 'cover') {
+                document.getElementById('val-cover-opacity').innerText = pct + '%';
+                document.getElementById('thumb-cover-overlay').style.opacity = val;
+                document.getElementById('preview-cover-overlay').style.opacity = val;
+            } else {
+                document.getElementById('val-body-opacity').innerText = pct + '%';
+                document.getElementById('thumb-body-overlay').style.opacity = val;
+                document.getElementById('preview-body-overlay').style.opacity = val;
             }
         }
 
