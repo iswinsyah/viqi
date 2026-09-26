@@ -486,7 +486,7 @@ $active_menu = 'brosur_settings';
             <!-- PANEL KIRI: FORM PENGATURAN LENGKAP (7 - 8 KOLOM) -->
             <div class="lg:col-span-7 xl:col-span-8 space-y-6">
 
-                <form action="" method="POST" enctype="multipart/form-data" class="space-y-6">
+                <form action="" method="POST" enctype="multipart/form-data" id="form-pengaturan-brosur" class="space-y-6">
 
                     <!-- ============================================================ -->
                     <!-- KARTU 1: BACKGROUND COVER & LAMAN DALAM (PINTEREST / UPLOAD) -->
@@ -1160,13 +1160,19 @@ $active_menu = 'brosur_settings';
             <!-- SIMULASI SMARTPHONE LIVE PREVIEW & VISUAL CANVAS (4 - 5 KOLOM) -->
             <div class="lg:col-span-5 xl:col-span-4 sticky top-6 flex flex-col items-center">
                 
-                <!-- TAB SWITCHER: COVER VS INNER -->
-                <div class="flex items-center gap-1 p-1 bg-slate-200/80 rounded-2xl mb-2.5 shadow-inner">
-                    <button type="button" id="tab-btn-cover" onclick="setPhoneTab('cover')" class="px-3.5 py-1.5 rounded-xl font-bold text-xs bg-white text-slate-900 shadow-sm transition flex items-center gap-1.5">
-                        <i class="fas fa-envelope-open-text text-amber-600"></i> Cover Amplop
-                    </button>
-                    <button type="button" id="tab-btn-body" onclick="setPhoneTab('body')" class="px-3.5 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
-                        <i class="fas fa-file-invoice text-teal-700"></i> Laman Dalam
+                <!-- TAB SWITCHER & QUICK SAVE -->
+                <div class="flex items-center gap-2 mb-2.5">
+                    <div class="flex items-center gap-1 p-1 bg-slate-200/80 rounded-2xl shadow-inner">
+                        <button type="button" id="tab-btn-cover" onclick="setPhoneTab('cover')" class="px-3.5 py-1.5 rounded-xl font-bold text-xs bg-white text-slate-900 shadow-sm transition flex items-center gap-1.5">
+                            <i class="fas fa-envelope-open-text text-amber-600"></i> Cover Amplop
+                        </button>
+                        <button type="button" id="tab-btn-body" onclick="setPhoneTab('body')" class="px-3.5 py-1.5 rounded-xl font-bold text-xs text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5">
+                            <i class="fas fa-file-invoice text-teal-700"></i> Laman Dalam
+                        </button>
+                    </div>
+                    <button type="button" onclick="document.getElementById('form-pengaturan-brosur').submit()" class="px-3.5 py-2 rounded-xl font-black text-xs bg-[#0b8478] hover:bg-[#075f56] text-white shadow-md flex items-center gap-1.5 transition transform active:scale-95 whitespace-nowrap">
+                        <i class="fas fa-save"></i>
+                        <span>Simpan</span>
                     </button>
                 </div>
 
@@ -1204,7 +1210,7 @@ $active_menu = 'brosur_settings';
                             
                             <!-- Gambar Logo (Bulat Sempurna sesuai Lingkaran Logo) -->
                             <div id="view-logo-container" class="my-1 <?= (isset($cfg['show_logo']) && $cfg['show_logo'] == 0) ? 'hidden' : '' ?>">
-                                <div id="preview-logo-wrapper" class="rounded-full p-0.5 bg-white border-2 border-emerald-600 shadow-md overflow-hidden aspect-square mx-auto flex items-center justify-center transition-all" style="width: <?= round(($cfg['logo_size'] ?? 80) * 0.55) ?>px; height: round(($cfg['logo_size'] ?? 80) * 0.55)px;">
+                                <div id="preview-logo-wrapper" class="rounded-full p-0.5 bg-white border-2 border-emerald-600 shadow-md overflow-hidden aspect-square mx-auto flex items-center justify-center transition-all" style="width: <?= round(($cfg['logo_size'] ?? 80) * 0.55) ?>px; height: <?= round(($cfg['logo_size'] ?? 80) * 0.55) ?>px;">
                                     <img src="upload/logo-villa-quran.png" class="w-full h-full object-cover rounded-full pointer-events-none">
                                 </div>
                             </div>

@@ -335,85 +335,82 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <!-- ============================================================ -->
     <!-- 1. FULLSCREEN COVER AMPLOP DIGITAL (OPENING EXPERIENCE)      -->
     <!-- ============================================================ -->
-    <div id="envelope-cover" class="fixed inset-0 z-50 flex items-center justify-center text-white overflow-hidden bg-cover bg-center transition-all duration-700 select-none" style="background-image: url('<?= $cover_bg_url ?>');">
+    <div id="envelope-cover" class="fixed inset-0 z-50 flex items-center justify-center text-white overflow-hidden bg-cover bg-center transition-all duration-700 select-none" style="background-image: url('<?= $cover_bg_url ?>'); font-family: '<?= $font_family ?>', sans-serif;">
         
         <!-- Ornamen Latar & Overlay Dinamis Sesuai Persis Simulasi Admin -->
         <div class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all duration-300 pointer-events-none" style="opacity: <?= $cover_opacity ?>;"></div>
 
-        <!-- Frame Proporsional Layar Cover (Sama Persis Tampilan Layar Simulasi HP) -->
-        <div class="relative w-full max-w-md h-full mx-auto p-4 overflow-hidden select-none">
+        <!-- Frame Proporsional Layar Cover (Sama Persis Tampilan Layar Simulasi HP 320px) -->
+        <div class="relative w-full max-w-[320px] h-full mx-auto p-4 text-center overflow-hidden select-none">
             
             <!-- BLOK 1: HEADER LOGO, BISMILLAH, JUDUL (POSISI Y DINAMIS SESUAI SIMULASI) -->
-            <div id="cover-elem-header" class="absolute left-1/2 -translate-x-1/2 z-20 text-center w-full px-3 transition-all duration-300" style="top: <?= $header_y ?>%;">
-                <!-- Ornamen Bismillah -->
-                <?php if ($show_bismillah): ?>
-                <p class="font-arabic text-lg sm:text-xl mb-1 tracking-wide transition-colors" style="color: <?= $accent_color ?>;">
+            <div id="cover-elem-header" class="absolute left-1/2 -translate-x-1/2 z-20 text-center w-full px-2 transition-all duration-300" style="top: <?= $header_y ?>%;">
+                
+                <!-- Bismillah -->
+                <?php if (!empty($show_bismillah)): ?>
+                <p class="font-arabic text-sm transition-colors" style="color: <?= $accent_color ?>;">
                     <?= $bismillah_text ?>
                 </p>
                 <?php endif; ?>
                 
-                <!-- Logo Villa Quran (Bulat Sempurna sesuai Lingkaran Logo) -->
-                <?php if ($show_logo): ?>
-                <div class="relative inline-block my-1" id="cover-logo-block">
-                    <div class="mx-auto rounded-full p-1 bg-white border-2 border-emerald-600 shadow-xl overflow-hidden aspect-square flex items-center justify-center transition-all" style="width: <?= $logo_size ?>px; height: <?= $logo_size ?>px;">
-                        <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-full h-full object-cover rounded-full">
+                <!-- Gambar Logo (Bulat Sempurna sesuai Lingkaran Logo) -->
+                <?php if (!empty($show_logo)): ?>
+                <div class="my-1" id="cover-logo-block">
+                    <div class="rounded-full p-0.5 bg-white border-2 border-emerald-600 shadow-md overflow-hidden aspect-square mx-auto flex items-center justify-center transition-all" style="width: <?= round($logo_size * 0.55) ?>px; height: <?= round($logo_size * 0.55) ?>px;">
+                        <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-full h-full object-cover rounded-full pointer-events-none">
                     </div>
-                    <span class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-[9px] font-extrabold uppercase px-2.5 py-0.5 rounded-full text-emerald-950 tracking-wider shadow whitespace-nowrap">Resmi SPMB</span>
                 </div>
                 <?php endif; ?>
 
-                <!-- Judul Utama & Subjudul -->
-                <h1 class="font-black tracking-tight leading-tight transition-colors mt-0.5" style="color: <?= $text_color ?>; font-size: <?= $text_title_size ?>px;">
+                <!-- Judul Utama -->
+                <h3 class="font-black mt-1 transition-all leading-tight" style="color: <?= $text_color ?>; font-size: <?= round($text_title_size * 0.7) ?>px;">
                     <?= $judul_utama ?>
-                </h1>
+                </h3>
 
-                <?php if ($show_subjudul): ?>
-                <p class="font-medium transition-colors leading-relaxed mt-0.5" style="color: <?= $accent_color ?>; font-size: <?= $text_sub_size ?>px;">
+                <!-- Subjudul -->
+                <?php if (!empty($show_subjudul)): ?>
+                <p class="text-[9px] font-medium transition-all" style="color: <?= $accent_color ?>; font-size: <?= round($text_sub_size * 0.8) ?>px;">
                     <?= $subjudul ?>
                 </p>
                 <?php endif; ?>
 
-                <p class="text-[10px] font-extrabold uppercase tracking-wider mt-1 transition-colors" style="color: <?= $accent_color ?>;">
-                    <?= $periode_gelombang ?> &bull; TA <?= $tahun_ajaran ?>
+                <p class="text-[8px] font-bold uppercase tracking-wider mt-0.5 transition-colors" style="color: <?= $accent_color ?>;">
+                    <?= $periode_gelombang ?>
                 </p>
             </div>
 
             <!-- BLOK 2: KARTU TAMU CALON WALI (POSISI Y DINAMIS SESUAI SIMULASI) -->
-            <div id="cover-elem-guest" class="absolute left-1/2 -translate-x-1/2 z-20 border rounded-2xl backdrop-blur-md shadow-2xl transition-all text-center <?= ($card_bg_style === 'glass_light') ? 'bg-white/85 border-emerald-600/40 text-slate-800' : 'bg-black/45 border-amber-400/40 text-white' ?>" style="top: <?= $guest_y ?>%; width: <?= $card_width ?>%; padding: <?= $card_padding ?>px;">
-                <div class="absolute top-0 right-0 transform translate-x-3 -translate-y-3 w-12 h-12 bg-amber-400/10 rounded-full blur-lg pointer-events-none"></div>
-                
-                <span class="text-[10px] uppercase tracking-wider font-bold block mb-0.5" style="color: <?= $accent_color ?>;">
+            <div id="cover-elem-guest" class="absolute left-1/2 -translate-x-1/2 z-20 border rounded-2xl backdrop-blur-md shadow-lg transition-all text-center <?= ($card_bg_style === 'glass_light') ? 'bg-white/85 border-emerald-600/40 text-slate-800' : 'bg-black/45 border-amber-400/40 text-white' ?>" style="top: <?= $guest_y ?>%; width: <?= $card_width ?>%; padding: <?= round($card_padding * 0.6) ?>px;">
+                <span class="text-[8px] uppercase tracking-wider font-bold block" style="color: <?= $accent_color ?>;">
                     <?= $tamu_header_text ?>
                 </span>
-                <div class="text-base sm:text-lg font-black leading-snug py-0.5" style="color: <?= ($card_bg_style === 'glass_light') ? '#022d27' : '#ffffff' ?>;">
+                <div class="text-xs font-black mt-0.5 transition-colors" style="color: <?= ($card_bg_style === 'glass_light') ? '#0f172a' : '#ffffff' ?>;">
                     <?= $nama_tamu ?>
                 </div>
                 <?php if (!empty($nama_agen_pengundang)): ?>
-                    <p class="text-[10px] mt-0.5 italic" style="color: <?= $accent_color ?>;"><i class="fas fa-hand-holding-heart mr-1"></i> Rekomendasi: <?= htmlspecialchars($nama_agen_pengundang) ?></p>
+                    <p class="text-[8px] mt-0.5 italic" style="color: <?= $accent_color ?>;"><i class="fas fa-hand-holding-heart mr-1"></i> Rekomendasi: <?= htmlspecialchars($nama_agen_pengundang) ?></p>
                 <?php endif; ?>
                 
-                <?php if ($show_sambutan && !empty($tamu_sambutan_text)): ?>
-                <div class="mt-2 pt-1.5 border-t border-white/10 text-[10px] leading-relaxed opacity-90 <?= ($card_bg_style === 'glass_light') ? 'text-slate-600' : 'text-gray-200' ?>">
+                <!-- Teks Sambutan Tamu -->
+                <?php if (!empty($show_sambutan) && !empty($tamu_sambutan_text)): ?>
+                <p class="text-[8px] mt-0.5 leading-tight opacity-90 transition-all">
                     <?= nl2br(htmlspecialchars($tamu_sambutan_text)) ?>
-                </div>
+                </p>
                 <?php endif; ?>
 
-                <div class="mt-2 pt-1.5 border-t border-white/10 text-[10px] font-semibold" style="color: <?= $accent_color ?>;">
+                <div class="mt-1.5 pt-1.5 border-t border-white/10 text-[8px] font-semibold" style="color: <?= $accent_color ?>;">
                     Tahun Ajaran <?= $tahun_ajaran ?>
                 </div>
             </div>
 
             <!-- BLOK 3: TOMBOL BUKA UNDANGAN (POSISI Y DINAMIS SESUAI SIMULASI) -->
-            <div id="cover-elem-btn" class="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center w-full px-4 transition-all duration-300" style="top: <?= $btn_y ?>%;">
-                <button onclick="bukaUndangan()" class="rounded-2xl shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-2.5 gold-glow group font-black" style="width: <?= $btn_width ?>%; height: <?= $btn_height ?>px; background: <?= $btn_bg_color ?>; color: <?= $btn_text_color ?>;">
-                    <span class="w-7 h-7 rounded-full flex items-center justify-center text-xs group-hover:rotate-12 transition" style="background: <?= $btn_text_color ?>; color: <?= $btn_bg_color ?>;">
-                        <i class="fas fa-envelope-open-text"></i>
-                    </span>
-                    <span class="text-xs sm:text-sm font-bold"><?= $btn_text ?></span>
+            <div id="cover-elem-btn" class="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center w-full px-2 transition-all duration-300" style="top: <?= $btn_y ?>%;">
+                <button type="button" onclick="bukaUndangan()" class="rounded-xl font-black text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all" style="width: <?= $btn_width ?>%; height: <?= round($btn_height * 0.8) ?>px; background: <?= $btn_bg_color ?>; color: <?= $btn_text_color ?>;">
+                    <i class="fas fa-envelope-open-text text-[10px]"></i>
+                    <span><?= $btn_text ?></span>
                 </button>
-                
-                <p class="text-[10px] mt-2 flex items-center justify-center gap-1.5 opacity-80" style="color: <?= $text_color ?>;">
-                    <i class="fas fa-volume-up text-xs" style="color: <?= $accent_color ?>;"></i> <span>Dilengkapi alunan backsound syahdu</span>
+                <p class="text-[8px] mt-1 text-center opacity-80" style="color: <?= $text_color ?>;">
+                    <i class="fas fa-music mr-1"></i> Alunan Backsound Syahdu
                 </p>
             </div>
 
