@@ -6,6 +6,22 @@
 require_once 'auth.php';
 require_once 'koneksi.php';
 
+// Handler AJAX Upload Gambar Sisipan (Instant Upload)
+if (isset($_FILES['ajax_image_file']) && $_FILES['ajax_image_file']['error'] === UPLOAD_ERR_OK) {
+    header('Content-Type: application/json');
+    $ext = strtolower(pathinfo($_FILES['ajax_image_file']['name'], PATHINFO_EXTENSION));
+    if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'])) {
+        if (!is_dir('upload')) mkdir('upload', 0755, true);
+        $filename = 'upload/img_layer_' . time() . '_' . rand(1000, 9999) . '.' . $ext;
+        if (move_uploaded_file($_FILES['ajax_image_file']['tmp_name'], $filename)) {
+            echo json_encode(['success' => true, 'url' => $filename]);
+            exit;
+        }
+    }
+    echo json_encode(['success' => false, 'error' => 'Format file tidak didukung atau gagal upload.']);
+    exit;
+}
+
 // Pastikan baris pengaturan_brosur ada di database
 $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     id INT PRIMARY KEY DEFAULT 1,
@@ -65,9 +81,10 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
 
-// Pastikan kolom untuk custom text & multi-layer JSON tersedia di tabel pengaturan_brosur
+// Pastikan kolom untuk custom text, images, dan multi-layer JSON tersedia di tabel pengaturan_brosur
 $columns_to_check = [
     'custom_text_items'   => "LONGTEXT",
+    'custom_image_items'  => "LONGTEXT",
     'custom_text_content' => "TEXT",
     'custom_text_format'  => "VARCHAR(20) DEFAULT 'h2'",
     'custom_text_color'   => "VARCHAR(30) DEFAULT '#ffffff'",
@@ -121,7 +138,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_koleksi') {
 $pesan_sukses = (($_GET['msg'] ?? '') === 'koleksi_deleted') ? 'Background berhasil dihapus dari koleksi.' : '';
 $pesan_error  = '';
 
-// Proses Simpan Pengaturan (Background & Tulisan Dinamis Multi-Kolom)
+// Proses Simpan Pengaturan (Background, Tulisan Dinamis & Gambar Sisipan)
 if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
     $action_type = $_POST['action_type'] ?? 'save_bg';
 
@@ -130,7 +147,6 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $decoded = json_decode($json_raw, true);
 
         if (!is_array($decoded) || empty($decoded)) {
-            // Fallback single item jika JSON kosong
             $decoded = [[
                 'id'      => 'text_1',
                 'content' => trim($_POST['custom_text_content'] ?? 'Villa Quran Indonesia'),
@@ -204,6 +220,40 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         } else {
             $pesan_error = "Gagal menyimpan tulisan: " . $conn->error;
         }
+    } else if ($action_type === 'save_images') {
+        // Simpan Gambar Sisipan (Multi-Layer Images)
+        $json_raw = $_POST['custom_image_items_json'] ?? '[]';
+        $decoded = json_decode($json_raw, true);
+        if (!is_array($decoded)) $decoded = [];
+
+        $clean_img_items = [];
+        foreach ($decoded as $idx => $img) {
+            if (empty($img['url'])) continue;
+            $clean_img_items[] = [
+                'id'            => !empty($img['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $img['id']) : 'img_' . ($idx + 1),
+                'url'           => trim($img['url']),
+                'shape'         => in_array($img['shape'] ?? '', ['kotak', 'persegi_panjang', 'persegi_panjang_wide', 'rounded', 'bulat', 'oval', 'kubah', 'perisai', 'bintang']) ? $img['shape'] : 'rounded',
+                'border_enable' => !empty($img['border_enable']) ? 1 : 0,
+                'border_width'  => max(0, min(20, (int)($img['border_width'] ?? 2))),
+                'border_color'  => !empty($img['border_color']) ? $img['border_color'] : '#ffffff',
+                'border_style'  => in_array($img['border_style'] ?? '', ['solid', 'dashed', 'double']) ? $img['border_style'] : 'solid',
+                'shadow_style'  => in_array($img['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'glow_gold', 'glow_teal']) ? $img['shadow_style'] : 'soft',
+                'rotation'      => max(-180, min(180, (float)($img['rotation'] ?? 0))),
+                'posX'          => round(max(0, min(100, (float)($img['posX'] ?? 50.0))), 2),
+                'posY'          => round(max(0, min(100, (float)($img['posY'] ?? 50.0))), 2),
+                'width'         => max(10, min(100, (int)($img['width'] ?? 50)))
+            ];
+        }
+
+        $final_img_json = json_encode($clean_img_items, JSON_UNESCAPED_UNICODE);
+        $final_img_json_esc = $conn->real_escape_string($final_img_json);
+
+        $sql_img = "UPDATE pengaturan_brosur SET custom_image_items = '$final_img_json_esc' WHERE id = 1";
+        if ($conn->query($sql_img)) {
+            $pesan_sukses = "Alhamdulillah! Pengaturan gambar sisipan (" . count($clean_img_items) . " gambar) berhasil disimpan.";
+        } else {
+            $pesan_error = "Gagal menyimpan gambar: " . $conn->error;
+        }
     } else {
         // Simpan Background
         $bg_url             = $conn->real_escape_string(trim($_POST['bg_url'] ?? ''));
@@ -276,6 +326,13 @@ if (!is_array($text_items) || empty($text_items)) {
     ];
 }
 
+// Ambil daftar image items atau inisialisasi default
+$raw_images = $cfg['custom_image_items'] ?? '';
+$image_items = !empty($raw_images) ? json_decode($raw_images, true) : null;
+if (!is_array($image_items)) {
+    $image_items = [];
+}
+
 $active_menu = 'brosur_settings';
 ?>
 <!DOCTYPE html>
@@ -313,7 +370,7 @@ $active_menu = 'brosur_settings';
             background-size: 24px 24px;
         }
 
-        /* Draggable text container */
+        /* Draggable item container */
         .draggable-box {
             touch-action: none;
             cursor: grab;
@@ -323,17 +380,67 @@ $active_menu = 'brosur_settings';
             cursor: grabbing;
         }
 
-        /* Compact Text Row Strip */
-        .text-row-item {
+        /* Compact Row Strip */
+        .item-row-strip {
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .text-row-item:hover {
+        .item-row-strip:hover {
             border-color: #0b8478;
         }
-        .text-row-item.active-layer {
+        .item-row-strip.active-layer {
             border-color: #0b8478;
             background-color: #f0fdfa;
             box-shadow: 0 4px 12px -2px rgba(11, 132, 120, 0.12);
+        }
+
+        /* Shape Styles */
+        .shape-kotak { border-radius: 0px; aspect-ratio: 1/1; }
+        .shape-persegi_panjang { border-radius: 14px; aspect-ratio: 4/3; }
+        .shape-persegi_panjang_wide { border-radius: 14px; aspect-ratio: 16/9; }
+        .shape-rounded { border-radius: 24px; aspect-ratio: 1/1; }
+        .shape-bulat { border-radius: 50%; aspect-ratio: 1/1; }
+        .shape-oval { border-radius: 50%; aspect-ratio: 4/3; }
+        .shape-kubah { border-radius: 120px 120px 16px 16px; aspect-ratio: 3/4; }
+        .shape-perisai { border-radius: 16px 16px 50% 50%; aspect-ratio: 1/1; }
+        .shape-bintang { clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); aspect-ratio: 1/1; }
+
+        /* Shadow Styles */
+        .shadow-soft { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.25)); }
+        .shadow-medium { filter: drop-shadow(0 12px 28px rgba(0,0,0,0.45)); }
+        .shadow-deep { filter: drop-shadow(0 20px 45px rgba(0,0,0,0.7)); }
+        .shadow-glow_gold { filter: drop-shadow(0 0 18px rgba(251,191,36,0.75)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+        .shadow-glow_teal { filter: drop-shadow(0 0 18px rgba(11,132,120,0.85)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
+
+        /* Guidelines & Smart Snap Lines */
+        .snap-guide-line-x {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1.5px;
+            background: #38bdf8;
+            box-shadow: 0 0 8px #38bdf8;
+            pointer-events: none;
+            z-index: 60;
+            display: none;
+        }
+        .snap-guide-line-y {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1.5px;
+            background: #38bdf8;
+            box-shadow: 0 0 8px #38bdf8;
+            pointer-events: none;
+            z-index: 60;
+            display: none;
+        }
+        .grid-guide-line {
+            pointer-events: none;
+            position: absolute;
+            z-index: 55;
+            transition: opacity 0.2s;
         }
     </style>
 </head>
@@ -352,8 +459,8 @@ $active_menu = 'brosur_settings';
                     <i class="fas fa-layer-group"></i>
                 </div>
                 <div>
-                    <h1 class="text-lg sm:text-xl font-black text-slate-900 leading-tight">Pengaturan Kolom Tulisan & Background</h1>
-                    <p class="text-xs text-slate-500">Duplikasi kolom tulisan (H1-H5/P, font, warna, ukuran) & geser letak posisi di layar HP</p>
+                    <h1 class="text-lg sm:text-xl font-black text-slate-900 leading-tight">Pengaturan Brosur & Undangan Digital</h1>
+                    <p class="text-xs text-slate-500">Sisipkan gambar frame (kotak, bulat, kubah, rotasi), kolom tulisan & background dengan garis bantu presisi</p>
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
@@ -367,7 +474,7 @@ $active_menu = 'brosur_settings';
         <!-- WORKSPACE AREA: 2 KOLOM (PAPAN PENGATURAN KIRI & SIMULASI KANAN) -->
         <div class="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            <!-- PANEL KIRI: PENGATURAN TULISAN & BACKGROUND -->
+            <!-- PANEL KIRI: PENGATURAN GAMBAR SISIPAN, TULISAN & BACKGROUND -->
             <div class="lg:col-span-7 xl:col-span-7 space-y-6">
 
                 <!-- NOTIFIKASI SUKSES / ERROR -->
@@ -385,7 +492,60 @@ $active_menu = 'brosur_settings';
                 </div>
                 <?php endif; ?>
 
-                <!-- KARTU 1: PENGATURAN KOLOM TULISAN DINAMIS MULTI-ROW (BISA DIGANDAKAN / DIDUPLIKASI) -->
+                <!-- KARTU 1: PENGATURAN SISIPKAN GAMBAR (INSERT IMAGE LAYER - 8 FITUR LENGKAP) -->
+                <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
+                    
+                    <!-- Header Kartu Gambar -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-lg shadow-2xs">
+                                <i class="fas fa-image"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Sisipkan Gambar / Foto Frame</h2>
+                                    <span id="img-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-sky-100 text-sky-800">
+                                        <?= count($image_items) ?> Gambar
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-500">Bentuk bingkai (kotak, bulat, kubah, dll), garis tepi, bayangan, rotasi miring & drag bebas</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Tombol Tambah Gambar -->
+                        <button type="button" onclick="addNewImageRow()" class="px-4 py-2.5 rounded-2xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200/80 font-black text-xs transition flex items-center gap-2 shrink-0 active:scale-95 cursor-pointer">
+                            <i class="fas fa-plus text-xs"></i>
+                            <span>+ Sisipkan Gambar</span>
+                        </button>
+                    </div>
+
+                    <!-- FORM UTAMA GAMBAR SISIPAN -->
+                    <form action="" method="POST" id="form-pengaturan-images" class="space-y-4">
+                        <input type="hidden" name="action_type" value="save_images">
+                        <input type="hidden" name="custom_image_items_json" id="input-image-items-json" value="">
+
+                        <!-- DAFTAR BARIS GAMBAR SISIPAN (RINGKAS & LENGKAP) -->
+                        <div id="image-rows-container" class="space-y-3">
+                            <!-- Diisi secara dinamis oleh Javascript renderImageRows() -->
+                        </div>
+
+                        <!-- TOMBOL AKSI BAWAH GAMBAR -->
+                        <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <button type="button" onclick="addNewImageRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                <i class="fas fa-plus text-xs text-sky-600"></i>
+                                <span>Tambah Gambar Lain</span>
+                            </button>
+
+                            <button type="button" onclick="saveAllImageItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 to-teal-700 hover:from-sky-700 hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                <i class="fas fa-save text-base"></i>
+                                <span>Simpan Semua Gambar</span>
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+                <!-- KARTU 2: PENGATURAN KOLOM TULISAN DINAMIS MULTI-ROW (BISA DIGANDAKAN / DIDUPLIKASI) -->
                 <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
                     
                     <!-- Header Kartu Tulisan & Tombol Tambah Kolom -->
@@ -425,7 +585,7 @@ $active_menu = 'brosur_settings';
                         <!-- PETUNJUK RINGKAS -->
                         <div class="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200/70 text-amber-900 text-[11px] flex items-center gap-2.5">
                             <i class="fas fa-arrows-up-down-left-right text-amber-600 text-sm shrink-0"></i>
-                            <span><strong>Tips:</strong> Setiap kolom tulisan di atas dapat langsung <strong>diklik dan digeser (drag & drop)</strong> posisinya di layar simulasi HP sebelah kanan.</span>
+                            <span><strong>Tips:</strong> Setiap gambar dan tulisan dapat langsung <strong>diklik dan digeser (drag & drop)</strong> posisinya di layar simulasi HP sebelah kanan. Garis bantu tengah akan menyala otomatis saat posisi presisi!</span>
                         </div>
 
                         <!-- TOMBOL AKSI BAWAH: TAMBAH & SIMPAN -->
@@ -444,7 +604,7 @@ $active_menu = 'brosur_settings';
                     </form>
                 </div>
 
-                <!-- KARTU 2: PENGATURAN BACKGROUND (TUNGGAL) -->
+                <!-- KARTU 3: PENGATURAN BACKGROUND (TUNGGAL) -->
                 <form action="" method="POST" enctype="multipart/form-data" id="form-pengaturan-bg" class="space-y-6">
                     <input type="hidden" name="action_type" value="save_bg">
 
@@ -536,7 +696,7 @@ $active_menu = 'brosur_settings';
 
                 </form>
 
-                <!-- KARTU 3: KOLEKSI BACKGROUND TERSIMPAN -->
+                <!-- KARTU 4: KOLEKSI BACKGROUND TERSIMPAN -->
                 <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
                     
                     <!-- Header Koleksi -->
@@ -619,7 +779,22 @@ $active_menu = 'brosur_settings';
             <div class="lg:col-span-5 xl:col-span-5 lg:sticky lg:top-6 self-start flex flex-col items-center lg:items-end">
                 <div class="w-full max-w-[340px] flex flex-col items-center">
                     
-                    <!-- KANVAS SIMULASI BACKGROUND PORTRAIT MURNI DENGAN KOLOM-KOLOM TULISAN DRAGGABLE -->
+                    <!-- TOOLBAR ATAS SIMULASI: TOGGLE GARIS BANTU PRESISI -->
+                    <div class="w-full flex items-center justify-between mb-2.5 px-2">
+                        <span class="text-[11px] font-black text-slate-700 flex items-center gap-1.5">
+                            <i class="fas fa-mobile-screen text-teal-600"></i> Layar Simulasi HP
+                        </span>
+                        
+                        <div class="flex items-center gap-1.5">
+                            <!-- Toggle Garis Bantu (Guidelines) -->
+                            <button type="button" id="btn-toggle-guides" onclick="togglePersistentGuides()" class="px-2.5 py-1 rounded-xl text-[10px] font-black transition flex items-center gap-1.5 bg-sky-100 text-sky-800 border border-sky-200 hover:bg-sky-200 active:scale-95 shadow-2xs cursor-pointer" title="Nyalakan/Matikan Garis Bantu Presisi">
+                                <i class="fas fa-ruler-combined text-sky-600"></i>
+                                <span id="label-guides-state">Garis Bantu: ON</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- KANVAS SIMULASI BACKGROUND PORTRAIT MURNI DENGAN GAMBAR & TULISAN DRAGGABLE -->
                     <div class="bg-simulation-canvas relative w-full overflow-hidden transition-all duration-300" id="phone-container">
                         
                         <!-- GAMBAR BACKGROUND PORTRAIT -->
@@ -628,8 +803,31 @@ $active_menu = 'brosur_settings';
                             <!-- LAPISAN OVERLAY DINAMIS -->
                             <div id="preview-cover-overlay" class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all duration-300" style="opacity: <?= $cfg['cover_overlay_opacity'] ?? 0.88 ?>;"></div>
 
-                            <!-- CONTAINER SEMUA LAYER TULISAN DI LAYAR SIMULASI -->
-                            <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none">
+                            <!-- GARIS BANTU PRESISI (GUIDELINES & SMART SNAP ASSIST) -->
+                            <div id="sim-guidelines-layer" class="absolute inset-0 pointer-events-none z-50">
+                                <!-- Garis Bantu Tengah X (Vertikal Center) -->
+                                <div id="snap-guide-x" class="snap-guide-line-x">
+                                    <span class="absolute top-2 left-1 bg-sky-500 text-white text-[8px] font-mono font-black px-1 rounded shadow-xs">Center X 50%</span>
+                                </div>
+                                <!-- Garis Bantu Tengah Y (Horizontal Center) -->
+                                <div id="snap-guide-y" class="snap-guide-line-y">
+                                    <span class="absolute left-2 top-1 bg-sky-500 text-white text-[8px] font-mono font-black px-1 rounded shadow-xs">Middle Y 50%</span>
+                                </div>
+                                
+                                <!-- Persistent Grid Lines (Rule-of-Thirds) -->
+                                <div class="persistent-grid-line grid-guide-line top-0 bottom-0 left-1/3 w-[1px] border-r border-dashed border-sky-400/30"></div>
+                                <div class="persistent-grid-line grid-guide-line top-0 bottom-0 left-2/3 w-[1px] border-r border-dashed border-sky-400/30"></div>
+                                <div class="persistent-grid-line grid-guide-line left-0 right-0 top-1/3 h-[1px] border-b border-dashed border-sky-400/30"></div>
+                                <div class="persistent-grid-line grid-guide-line left-0 right-0 top-2/3 h-[1px] border-b border-dashed border-sky-400/30"></div>
+                            </div>
+
+                            <!-- CONTAINER LAYER GAMBAR SISIPAN DI LAYAR SIMULASI -->
+                            <div id="sim-image-layers-container" class="absolute inset-0 pointer-events-none z-20">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSimImageLayers() -->
+                            </div>
+
+                            <!-- CONTAINER LAYER TULISAN DI LAYAR SIMULASI -->
+                            <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none z-30">
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimLayers() -->
                             </div>
 
@@ -642,10 +840,10 @@ $active_menu = 'brosur_settings';
 
                     </div>
 
-                    <!-- Petunjuk Interaktif Drag -->
+                    <!-- Petunjuk Interaktif Drag & Snap -->
                     <p class="text-[10px] text-slate-500 mt-2.5 text-center flex items-center gap-1.5">
-                        <i class="fas fa-hand-pointer text-amber-500"></i>
-                        <span>Klik & geser tulisan manapun pada layar simulasi untuk memindahkan posisinya</span>
+                        <i class="fas fa-magnet text-sky-500"></i>
+                        <span>Smart Snap: Garis bantu biru menyala otomatis saat digeser tepat ke tengah (50%)</span>
                     </p>
 
                 </div>
@@ -655,9 +853,13 @@ $active_menu = 'brosur_settings';
 
     </main>
 
-    <!-- SCRIPT INTERAKTIF PENGATURAN TULISAN MULTI-KOLOM & DRAGGABLE LOGIC -->
+    <!-- SCRIPT INTERAKTIF PENGATURAN GAMBAR, TULISAN & SMART DRAGGABLE GUIDELINES -->
     <script>
-        // State Array untuk Semua Kolom Tulisan
+        // ==========================================
+        // 1. STATE & KONFIGURASI
+        // ==========================================
+        
+        // State Array Tulisan
         let textItems = <?= json_encode($text_items, JSON_UNESCAPED_UNICODE) ?>;
         if (!Array.isArray(textItems) || textItems.length === 0) {
             textItems = [{
@@ -674,6 +876,15 @@ $active_menu = 'brosur_settings';
             }];
         }
 
+        // State Array Gambar Sisipan
+        let imageItems = <?= json_encode($image_items, JSON_UNESCAPED_UNICODE) ?>;
+        if (!Array.isArray(imageItems)) {
+            imageItems = [];
+        }
+
+        // Persistent Guide Lines State
+        let showPersistentGuides = true;
+
         // Pilihan Font Tersedia
         const availableFonts = [
             { id: 'Plus Jakarta Sans', name: 'Jakarta (Modern)' },
@@ -685,12 +896,24 @@ $active_menu = 'brosur_settings';
             { id: 'Outfit',            name: 'Outfit (Trendy)' }
         ];
 
+        // Pilihan Bentuk Bingkai Gambar
+        const frameShapes = [
+            { id: 'rounded',               name: 'Sudut Lengkung (Squircle)', icon: 'fa-square' },
+            { id: 'bulat',                 name: 'Bulat Lingkaran (Circle)', icon: 'fa-circle' },
+            { id: 'kotak',                 name: 'Kotak Persegi 1:1', icon: 'fa-square-full' },
+            { id: 'persegi_panjang',       name: 'Persegi Panjang 4:3', icon: 'fa-rectangle-ad' },
+            { id: 'persegi_panjang_wide',  name: 'Persegi Panjang 16:9', icon: 'fa-tv' },
+            { id: 'oval',                  name: 'Oval / Elips', icon: 'fa-egg' },
+            { id: 'kubah',                 name: 'Kubah Lengkung Islami', icon: 'fa-mosque' },
+            { id: 'perisai',               name: 'Perisai / Shield', icon: 'fa-shield-halved' },
+            { id: 'bintang',               name: 'Bintang / Octagon Badge', icon: 'fa-certificate' }
+        ];
+
         // Format Helper HTML Generator
         function getFormatHtml(content, format) {
             let text = (content || '').trim();
             if (!text) text = 'Villa Quran Indonesia';
 
-            // Escape HTML dan buat line-break
             const safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").replace(/\n/g, "<br>");
             const fmt = (format || 'h2').toLowerCase();
 
@@ -711,7 +934,380 @@ $active_menu = 'brosur_settings';
             }
         }
 
-        // Render Seluruh Baris Pengaturan di Papan Kiri (Ringkas & Simpel 1 Baris per Kolom)
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // ==========================================
+        // 2. LOGIKA GAMBAR SISIPAN (MULTI-LAYER IMAGES)
+        // ==========================================
+
+        function renderImageRows() {
+            const container = document.getElementById('image-rows-container');
+            const badge = document.getElementById('img-count-badge');
+            if (badge) badge.innerText = `${imageItems.length} Gambar`;
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (imageItems.length === 0) {
+                container.innerHTML = `
+                    <div class="p-6 text-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50">
+                        <i class="fas fa-image text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-xs font-bold text-slate-700">Belum ada gambar yang disisipkan</p>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Klik tombol <strong>+ Sisipkan Gambar</strong> untuk menambahkan foto/logo baru dengan bingkai.</p>
+                    </div>
+                `;
+                syncImageJsonInput();
+                return;
+            }
+
+            imageItems.forEach((img, index) => {
+                const row = document.createElement('div');
+                row.className = 'item-row-strip bg-white border border-slate-200/90 hover:border-sky-500 rounded-2xl p-2.5 sm:p-3 shadow-xs space-y-2';
+                row.id = `img-row-item-${img.id}`;
+
+                let shapeOptionsHtml = '';
+                frameShapes.forEach(s => {
+                    const sel = (img.shape === s.id) ? 'selected' : '';
+                    shapeOptionsHtml += `<option value="${s.id}" ${sel}>${s.name}</option>`;
+                });
+
+                row.innerHTML = `
+                    <!-- BARIS UTAMA (1 BARIS RINGKAS) -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        
+                        <!-- Nomor Gambar & Thumbnail Kecil -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="w-6 h-6 rounded-lg bg-sky-50 text-sky-800 font-black text-[11px] flex items-center justify-center border border-sky-100 shadow-2xs" title="Gambar #${index + 1}">
+                                ${index + 1}
+                            </div>
+                            <div class="w-8 h-8 rounded-lg bg-slate-900 overflow-hidden border border-slate-200 shrink-0">
+                                <img src="${escapeHtml(img.url)}" id="thumb-row-${img.id}" class="w-full h-full object-cover">
+                            </div>
+                        </div>
+
+                        <!-- Input URL Gambar -->
+                        <div class="flex-1 min-w-[140px]">
+                            <input type="text" value="${escapeHtml(img.url)}" oninput="updateImageField('${img.id}', 'url', this.value)" placeholder="Link URL Gambar (https://...)" class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-medium focus:border-sky-500 focus:outline-none bg-slate-50/60 focus:bg-white transition">
+                        </div>
+
+                        <!-- Tombol Upload File Gambar -->
+                        <div class="shrink-0">
+                            <label class="cursor-pointer px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-sky-50 hover:text-sky-700 text-slate-700 border border-slate-200 text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
+                                <i class="fas fa-cloud-arrow-up text-sky-600 text-xs"></i>
+                                <span class="hidden sm:inline text-[11px]">Upload</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="uploadLayerImage(this, '${img.id}')">
+                            </label>
+                        </div>
+
+                        <!-- Pilihan Bentuk Bingkai (Shape) -->
+                        <div class="shrink-0 max-w-[130px]">
+                            <select onchange="updateImageField('${img.id}', 'shape', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-bold bg-white focus:border-sky-500 focus:outline-none cursor-pointer truncate" title="Pilih Bentuk Bingkai">
+                                ${shapeOptionsHtml}
+                            </select>
+                        </div>
+
+                        <!-- Rotasi Ringkas (Deg) -->
+                        <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-1 shrink-0 shadow-2xs" title="Rotasi Kemiringan (-180° s/d 180°)">
+                            <i class="fas fa-rotate text-sky-600 text-[10px]"></i>
+                            <input type="number" min="-180" max="180" value="${img.rotation || 0}" oninput="updateImageField('${img.id}', 'rotation', parseFloat(this.value) || 0)" class="w-9 text-xs font-black text-sky-800 text-center focus:outline-none">
+                            <span class="text-[10px] text-slate-400 font-mono">°</span>
+                        </div>
+
+                        <!-- TOMBOL DUPLIKASI, SETTING DETAIL & HAPUS -->
+                        <div class="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
+                            <!-- Duplikasi -->
+                            <button type="button" onclick="duplicateImageRow('${img.id}')" title="Duplikasi Gambar Ini" class="w-7 h-7 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-copy text-[11px]"></i>
+                            </button>
+
+                            <!-- Toggle Setting Lengkap (Garis Tepi, Bayangan, Ukuran) -->
+                            <button type="button" onclick="toggleImageDetails('${img.id}')" title="Pengaturan Bingkai, Garis Tepi & Bayangan" class="w-7 h-7 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-sliders text-[11px]"></i>
+                            </button>
+
+                            <!-- Hapus -->
+                            <button type="button" onclick="deleteImageRow('${img.id}')" title="Hapus Gambar Ini" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-trash-can text-[11px]"></i>
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- PANEL DETAIL BINGKAI, GARIS TEPI, BAYANGAN & ROTASI (EXPANDABLE) -->
+                    <div id="img-details-${img.id}" class="hidden pt-2.5 mt-2 border-t border-slate-100 bg-slate-50/70 p-3.5 rounded-xl space-y-3">
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            
+                            <!-- KONTROL 1: GARIS TEPI (BORDER ON/OFF & COLOR) -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="font-bold text-slate-700 text-[11px] flex items-center gap-1.5">
+                                        <input type="checkbox" ${img.border_enable ? 'checked' : ''} onchange="updateImageField('${img.id}', 'border_enable', this.checked ? 1 : 0)" class="rounded text-sky-600">
+                                        <span>Garis Tepi (Border)</span>
+                                    </label>
+                                    <span class="text-[10px] text-slate-400 font-mono">${img.border_width || 2}px</span>
+                                </div>
+                                <div class="flex items-center gap-2 pt-1">
+                                    <input type="color" value="${img.border_color || '#ffffff'}" onchange="updateImageField('${img.id}', 'border_color', this.value)" class="w-6 h-6 rounded-lg border border-slate-200 cursor-pointer p-0.5" title="Warna Garis">
+                                    <input type="range" min="1" max="12" step="1" value="${img.border_width || 2}" oninput="updateImageField('${img.id}', 'border_width', parseInt(this.value))" class="flex-1 accent-sky-600 cursor-pointer">
+                                </div>
+                            </div>
+
+                            <!-- KONTROL 2: BAYANGAN (SHADOW EFFECT) -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <label class="block font-bold text-slate-700 text-[11px]">Efek Bayangan (Shadow):</label>
+                                <select onchange="updateImageField('${img.id}', 'shadow_style', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold bg-white focus:outline-none">
+                                    <option value="none" ${img.shadow_style === 'none' ? 'selected' : ''}>Tanpa Bayangan</option>
+                                    <option value="soft" ${img.shadow_style === 'soft' ? 'selected' : ''}>Bayangan Halus (Soft)</option>
+                                    <option value="medium" ${img.shadow_style === 'medium' ? 'selected' : ''}>Bayangan Sedang</option>
+                                    <option value="deep" ${img.shadow_style === 'deep' ? 'selected' : ''}>Bayangan 3D Dalam</option>
+                                    <option value="glow_gold" ${img.shadow_style === 'glow_gold' ? 'selected' : ''}>Glow Cahaya Emas</option>
+                                    <option value="glow_teal" ${img.shadow_style === 'glow_teal' ? 'selected' : ''}>Glow Cahaya Emerald</option>
+                                </select>
+                            </div>
+
+                            <!-- KONTROL 3: ROTASI & UKURAN LEBAR -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <div class="flex justify-between items-center text-[11px] font-bold text-slate-700">
+                                    <span>Ukuran Lebar:</span>
+                                    <span class="font-mono text-sky-800">${img.width || 50}%</span>
+                                </div>
+                                <input type="range" min="15" max="100" step="1" value="${img.width || 50}" oninput="updateImageField('${img.id}', 'width', parseInt(this.value))" class="w-full accent-sky-600 cursor-pointer">
+                            </div>
+
+                        </div>
+
+                        <!-- PRESET ROTASI CEPAT -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-[10.5px] font-bold text-slate-500">Preset Rotasi:</span>
+                                <button type="button" onclick="updateImageField('${img.id}', 'rotation', 0)" class="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold">0° (Tegak)</button>
+                                <button type="button" onclick="updateImageField('${img.id}', 'rotation', -15)" class="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold">-15° (Miring Kiri)</button>
+                                <button type="button" onclick="updateImageField('${img.id}', 'rotation', 15)" class="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold">+15° (Miring Kanan)</button>
+                                <button type="button" onclick="updateImageField('${img.id}', 'rotation', 45)" class="px-2 py-0.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold">45° (Wajik)</button>
+                            </div>
+
+                            <button type="button" onclick="resetImageCenter('${img.id}')" class="text-[10px] text-sky-700 hover:underline font-bold">
+                                <i class="fas fa-crosshairs mr-1"></i>Reset Posisi Tengah (50%)
+                            </button>
+                        </div>
+
+                    </div>
+                `;
+
+                container.appendChild(row);
+            });
+
+            syncImageJsonInput();
+        }
+
+        function toggleImageDetails(id) {
+            const el = document.getElementById(`img-details-${id}`);
+            if (el) el.classList.toggle('hidden');
+        }
+
+        function updateImageField(id, field, value) {
+            const img = imageItems.find(i => i.id === id);
+            if (img) {
+                img[field] = value;
+                renderSimImageLayers();
+                syncImageJsonInput();
+            }
+        }
+
+        function resetImageCenter(id) {
+            const img = imageItems.find(i => i.id === id);
+            if (img) {
+                img.posX = 50;
+                img.posY = 50;
+                renderSimImageLayers();
+                syncImageJsonInput();
+            }
+        }
+
+        function addNewImageRow() {
+            const newIndex = imageItems.length + 1;
+            const sampleUrls = [
+                'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=600&auto=format&fit=crop&q=80',
+                'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80',
+                'https://images.unsplash.com/photo-1564769625905-50e93615e769?w=600&auto=format&fit=crop&q=80'
+            ];
+            const chosenUrl = sampleUrls[(newIndex - 1) % sampleUrls.length];
+
+            const newImg = {
+                id: 'img_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                url: chosenUrl,
+                shape: newIndex === 1 ? 'rounded' : (newIndex === 2 ? 'bulat' : 'kubah'),
+                border_enable: 1,
+                border_width: 3,
+                border_color: '#fbbf24',
+                border_style: 'solid',
+                shadow_style: 'medium',
+                rotation: 0,
+                posX: 50,
+                posY: Math.min(80, 25 + ((newIndex - 1) * 20)),
+                width: 50
+            };
+
+            imageItems.push(newImg);
+            renderImageRows();
+            renderSimImageLayers();
+
+            setTimeout(() => {
+                const el = document.getElementById(`img-row-item-${newImg.id}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        function duplicateImageRow(sourceId) {
+            const source = imageItems.find(i => i.id === sourceId);
+            if (!source) return;
+
+            const cloned = JSON.parse(JSON.stringify(source));
+            cloned.id = 'img_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            cloned.posY = Math.min(88, (source.posY || 50) + 10);
+            cloned.posX = Math.min(88, (source.posX || 50) + 5);
+
+            const sourceIndex = imageItems.findIndex(i => i.id === sourceId);
+            if (sourceIndex >= 0) {
+                imageItems.splice(sourceIndex + 1, 0, cloned);
+            } else {
+                imageItems.push(cloned);
+            }
+
+            renderImageRows();
+            renderSimImageLayers();
+
+            setTimeout(() => {
+                const el = document.getElementById(`img-row-item-${cloned.id}`);
+                if (el) {
+                    el.classList.add('active-layer');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    setTimeout(() => el.classList.remove('active-layer'), 1500);
+                }
+            }, 100);
+        }
+
+        function deleteImageRow(id) {
+            if (confirm('Hapus gambar yang disisipkan ini?')) {
+                imageItems = imageItems.filter(i => i.id !== id);
+                renderImageRows();
+                renderSimImageLayers();
+            }
+        }
+
+        // Instant Upload Layer Image via AJAX
+        function uploadLayerImage(input, imgId) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+
+            // 1. Instant Live Preview via FileReader
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const dataUrl = e.target.result;
+                updateImageField(imgId, 'url', dataUrl);
+                const thumb = document.getElementById(`thumb-row-${imgId}`);
+                if (thumb) thumb.src = dataUrl;
+            };
+            reader.readAsDataURL(file);
+
+            // 2. Upload async ke server
+            const formData = new FormData();
+            formData.append('ajax_image_file', file);
+
+            fetch('admin-brosur-settings.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && res.url) {
+                    updateImageField(imgId, 'url', res.url);
+                    const inp = document.querySelector(`#img-row-item-${imgId} input[type="text"]`);
+                    if (inp) inp.value = res.url;
+                }
+            })
+            .catch(err => {
+                console.error('Upload layer error:', err);
+            });
+        }
+
+        function syncImageJsonInput() {
+            const inp = document.getElementById('input-image-items-json');
+            if (inp) {
+                inp.value = JSON.stringify(imageItems);
+            }
+        }
+
+        function saveAllImageItems() {
+            syncImageJsonInput();
+            document.getElementById('form-pengaturan-images').submit();
+        }
+
+        // ==========================================
+        // 3. RENDER SIMULASI GAMBAR SISIPAN & SMART DRAG
+        // ==========================================
+
+        function renderSimImageLayers() {
+            const container = document.getElementById('sim-image-layers-container');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            imageItems.forEach((img, index) => {
+                const box = document.createElement('div');
+                box.id = `sim-img-box-${img.id}`;
+                box.className = 'draggable-box absolute pointer-events-auto transition-shadow group/imgdrag';
+                box.setAttribute('data-id', img.id);
+                box.style.top = `${img.posY || 50}%`;
+                box.style.left = `${img.posX || 50}%`;
+                box.style.transform = `translate(-50%, -50%) rotate(${img.rotation || 0}deg)`;
+                box.style.width = `${img.width || 50}%`;
+                box.style.zIndex = 20 + index;
+
+                // Frame styling
+                const shapeClass = `shape-${img.shape || 'rounded'}`;
+                const shadowClass = (img.shadow_style && img.shadow_style !== 'none') ? `shadow-${img.shadow_style}` : '';
+                
+                let borderStyle = '';
+                if (img.border_enable) {
+                    const bw = img.border_width || 2;
+                    const bc = img.border_color || '#ffffff';
+                    const bs = img.border_style || 'solid';
+                    borderStyle = `border: ${bw}px ${bs} ${bc};`;
+                }
+
+                box.innerHTML = `
+                    <!-- Border indikator saat hover / drag -->
+                    <div class="absolute -inset-2 border-2 border-dashed border-sky-400 rounded-2xl pointer-events-none opacity-0 group-hover/imgdrag:opacity-100 transition-opacity flex items-start justify-between p-1 z-30" style="transform: rotate(0deg);">
+                        <span class="bg-sky-500 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                            Img #${index + 1}
+                        </span>
+                        <span class="bg-slate-950/90 text-sky-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
+                            <i class="fas fa-arrows-up-down-left-right"></i> Geser
+                        </span>
+                    </div>
+
+                    <!-- Inner Frame dengan Shape & Shadow -->
+                    <div class="w-full h-full overflow-hidden ${shapeClass} ${shadowClass} transition-transform" style="${borderStyle}">
+                        <img src="${escapeHtml(img.url)}" class="w-full h-full object-cover select-none pointer-events-none" loading="lazy" alt="Gambar Sisipan">
+                    </div>
+                `;
+
+                // Pasang Event Dragging dengan Snap Guidelines
+                initDragForLayer(box, img, 'image');
+
+                container.appendChild(box);
+            });
+        }
+
+        // ==========================================
+        // 4. LOGIKA KOLOM TULISAN DINAMIS (TEXT ROWS)
+        // ==========================================
+
         function renderRows() {
             const container = document.getElementById('text-rows-container');
             const badge = document.getElementById('text-count-badge');
@@ -722,10 +1318,9 @@ $active_menu = 'brosur_settings';
 
             textItems.forEach((item, index) => {
                 const row = document.createElement('div');
-                row.className = 'text-row-item bg-white border border-slate-200/90 hover:border-teal-500 rounded-2xl p-2.5 sm:p-3 shadow-xs space-y-2';
+                row.className = 'item-row-strip bg-white border border-slate-200/90 hover:border-teal-500 rounded-2xl p-2.5 sm:p-3 shadow-xs space-y-2';
                 row.id = `row-item-${item.id}`;
 
-                // Options Font HTML
                 let fontOptionsHtml = '';
                 availableFonts.forEach(f => {
                     const sel = (item.font === f.id) ? 'selected' : '';
@@ -733,7 +1328,6 @@ $active_menu = 'brosur_settings';
                 });
 
                 row.innerHTML = `
-                    <!-- BARIS UTAMA (1 BARIS RINGKAS) -->
                     <div class="flex flex-wrap items-center gap-2">
                         
                         <!-- Nomor Kolom -->
@@ -784,20 +1378,17 @@ $active_menu = 'brosur_settings';
                             <button type="button" onclick="updateItemField('${item.id}', 'align', 'justify')" class="px-1.5 py-1 rounded-lg text-xs transition ${item.align === 'justify' ? 'bg-[#0b8478] text-white' : 'text-slate-600 hover:bg-slate-100'}"><i class="fas fa-align-justify text-[11px]"></i></button>
                         </div>
 
-                        <!-- TOMBOL DUPLIKASI (GANDAKAN) & HAPUS -->
+                        <!-- TOMBOL DUPLIKASI & HAPUS -->
                         <div class="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
-                            <!-- Tombol Duplikasi -->
                             <button type="button" onclick="duplicateRow('${item.id}')" title="Duplikasi / Gandakan Kolom Ini" class="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 text-xs font-bold transition flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer">
                                 <i class="fas fa-copy text-amber-600"></i>
                                 <span class="hidden sm:inline text-[11px]">Duplikasi</span>
                             </button>
 
-                            <!-- Toggle Slider Posisi Detail -->
                             <button type="button" onclick="toggleDetails('${item.id}')" title="Pengaturan Posisi Slider" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center text-xs transition shadow-2xs active:scale-95 cursor-pointer">
                                 <i class="fas fa-sliders text-[11px]"></i>
                             </button>
 
-                            <!-- Tombol Hapus -->
                             <button type="button" onclick="deleteRow('${item.id}')" title="Hapus Kolom Ini" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center text-xs transition shadow-2xs active:scale-95 cursor-pointer">
                                 <i class="fas fa-trash-can text-[11px]"></i>
                             </button>
@@ -805,7 +1396,7 @@ $active_menu = 'brosur_settings';
 
                     </div>
 
-                    <!-- PANEL DETAIL POSISI & LEBAR (OPSIONAL / EXPANDABLE) -->
+                    <!-- PANEL DETAIL POSISI & LEBAR (EXPANDABLE) -->
                     <div id="details-${item.id}" class="hidden pt-2 mt-2 border-t border-slate-100 bg-slate-50/70 p-3 rounded-xl">
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                             <div>
@@ -839,19 +1430,11 @@ $active_menu = 'brosur_settings';
             syncJsonInput();
         }
 
-        // Escape HTML Utility
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        // Toggle Details Slider Posisi
         function toggleDetails(id) {
             const el = document.getElementById(`details-${id}`);
             if (el) el.classList.toggle('hidden');
         }
 
-        // Update Nilai Field Tertentu
         function updateItemField(id, field, value) {
             const item = textItems.find(i => i.id === id);
             if (item) {
@@ -861,21 +1444,17 @@ $active_menu = 'brosur_settings';
             }
         }
 
-        // Update Nilai Posisi Slider
         function updateItemPosition(id, field, value) {
             const item = textItems.find(i => i.id === id);
             if (item) {
                 item[field] = parseFloat(value);
                 const label = document.getElementById(`label-${field.toLowerCase()}-${id}`);
-                if (label) {
-                    label.innerText = Math.round(item[field]) + '%';
-                }
+                if (label) label.innerText = Math.round(item[field]) + '%';
                 renderSimLayers();
                 syncJsonInput();
             }
         }
 
-        // 1. Tambah Kolom Tulisan Baru
         function addNewTextRow() {
             const newIndex = textItems.length + 1;
             const newPosY = Math.min(85, 20 + ((newIndex - 1) * 14));
@@ -897,14 +1476,12 @@ $active_menu = 'brosur_settings';
             renderRows();
             renderSimLayers();
 
-            // Scroll baris baru ke pandangan
             setTimeout(() => {
                 const el = document.getElementById(`row-item-${newItem.id}`);
                 if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 100);
         }
 
-        // 2. Duplikasi / Gandakan Kolom Tertentu
         function duplicateRow(sourceId) {
             const source = textItems.find(i => i.id === sourceId);
             if (!source) return;
@@ -914,7 +1491,6 @@ $active_menu = 'brosur_settings';
             cloned.content = source.content ? source.content + ' (Salinan)' : 'Salinan Teks';
             cloned.posY = Math.min(90, (source.posY || 35) + 9);
 
-            // Sisipkan tepat di bawah baris yang digandakan
             const sourceIndex = textItems.findIndex(i => i.id === sourceId);
             if (sourceIndex >= 0) {
                 textItems.splice(sourceIndex + 1, 0, cloned);
@@ -925,7 +1501,6 @@ $active_menu = 'brosur_settings';
             renderRows();
             renderSimLayers();
 
-            // Highlight baris baru
             setTimeout(() => {
                 const el = document.getElementById(`row-item-${cloned.id}`);
                 if (el) {
@@ -936,7 +1511,6 @@ $active_menu = 'brosur_settings';
             }, 100);
         }
 
-        // 3. Hapus Kolom Tertentu
         function deleteRow(id) {
             if (textItems.length <= 1) {
                 if (confirm('Ini adalah kolom terakhir. Apakah Anda ingin mengosongkan isinya?')) {
@@ -954,21 +1528,16 @@ $active_menu = 'brosur_settings';
             }
         }
 
-        // Sinkronisasi JSON ke Hidden Input Form
         function syncJsonInput() {
             const inp = document.getElementById('input-text-items-json');
-            if (inp) {
-                inp.value = JSON.stringify(textItems);
-            }
+            if (inp) inp.value = JSON.stringify(textItems);
         }
 
-        // Simpan Semua Item Kolom Tulisan
         function saveAllTextItems() {
             syncJsonInput();
             document.getElementById('form-pengaturan-text').submit();
         }
 
-        // Render Semua Layer Kolom Tulisan di Kanvas Simulasi HP (Sebelah Kanan)
         function renderSimLayers() {
             const container = document.getElementById('sim-text-layers-container');
             if (!container) return;
@@ -984,10 +1553,9 @@ $active_menu = 'brosur_settings';
                 box.style.left = `${item.posX || 50}%`;
                 box.style.transform = 'translate(-50%, 0)';
                 box.style.width = `${item.width || 85}%`;
-                box.style.zIndex = 20 + index;
+                box.style.zIndex = 30 + index;
 
                 box.innerHTML = `
-                    <!-- Border indikator saat hover / drag -->
                     <div class="absolute -inset-1.5 border-2 border-dashed border-amber-400/80 rounded-xl pointer-events-none opacity-0 group-hover/drag:opacity-100 transition-opacity flex items-start justify-between p-1">
                         <span class="bg-amber-400 text-teal-950 text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
                             #${index + 1}
@@ -997,22 +1565,24 @@ $active_menu = 'brosur_settings';
                         </span>
                     </div>
 
-                    <!-- Konten Teks Terformat -->
                     <div style="color: ${item.color || '#ffffff'}; font-family: '${item.font || 'Plus Jakarta Sans'}', sans-serif; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word;">
                         ${getFormatHtml(item.content, item.format)}
                     </div>
                 `;
 
-                // Event listener drag untuk elemen ini
-                initDragForItem(box, item);
-
+                initDragForLayer(box, item, 'text');
                 container.appendChild(box);
             });
         }
 
-        // Logika Interaktif Drag & Drop untuk Setiap Box Tulisan di Layar HP
-        function initDragForItem(box, item) {
+        // ==========================================
+        // 5. DRAGGABLE ENGINE DENGAN SMART SNAP & GARIS BANTU
+        // ==========================================
+
+        function initDragForLayer(box, item, layerType) {
             const container = document.getElementById('preview-screen-cover');
+            const guideX = document.getElementById('snap-guide-x');
+            const guideY = document.getElementById('snap-guide-y');
             if (!box || !container) return;
 
             let isDragging = false;
@@ -1030,13 +1600,14 @@ $active_menu = 'brosur_settings';
                 startY = clientY;
 
                 initialLeftPct = item.posX || 50;
-                initialTopPct  = item.posY || 35;
+                initialTopPct  = item.posY || (layerType === 'image' ? 50 : 35);
 
                 box.style.transition = 'none';
-                box.style.zIndex = 50; // Bawa ke paling atas saat di-drag
+                box.style.zIndex = 70;
 
-                // Highlight baris terkait di panel kiri
-                const rowEl = document.getElementById(`row-item-${item.id}`);
+                // Highlight baris
+                const rowElId = (layerType === 'image') ? `img-row-item-${item.id}` : `row-item-${item.id}`;
+                const rowEl = document.getElementById(rowElId);
                 if (rowEl) rowEl.classList.add('active-layer');
 
                 e.preventDefault();
@@ -1056,7 +1627,25 @@ $active_menu = 'brosur_settings';
                 const deltaYPct = (deltaY / rect.height) * 100;
 
                 let newXPct = Math.min(Math.max(initialLeftPct + deltaXPct, 5), 95);
-                let newYPct = Math.min(Math.max(initialTopPct + deltaYPct, 2), 92);
+                let newYPct = Math.min(Math.max(initialTopPct + deltaYPct, 2), 95);
+
+                // SMART MAGNETIC SNAP KE CENTER (50% X dan 50% Y)
+                const snapThreshold = 2.0; // Toleransi snap 2%
+                let isSnappedX = false;
+                let isSnappedY = false;
+
+                if (Math.abs(newXPct - 50.0) < snapThreshold) {
+                    newXPct = 50.0;
+                    isSnappedX = true;
+                }
+                if (Math.abs(newYPct - 50.0) < snapThreshold) {
+                    newYPct = 50.0;
+                    isSnappedY = true;
+                }
+
+                // Tampilkan garis bantu snap saat mendekati / tepat di tengah
+                if (guideX) guideX.style.display = isSnappedX ? 'block' : 'none';
+                if (guideY) guideY.style.display = isSnappedY ? 'block' : 'none';
 
                 item.posX = Math.round(newXPct * 10) / 10;
                 item.posY = Math.round(newYPct * 10) / 10;
@@ -1064,25 +1653,35 @@ $active_menu = 'brosur_settings';
                 box.style.left = `${item.posX}%`;
                 box.style.top  = `${item.posY}%`;
 
-                // Sync label & slider jika sedang terbuka
-                const labelX = document.getElementById(`label-posx-${item.id}`);
-                const labelY = document.getElementById(`label-posy-${item.id}`);
-                if (labelX) labelX.innerText = Math.round(item.posX) + '%';
-                if (labelY) labelY.innerText = Math.round(item.posY) + '%';
+                if (layerType === 'text') {
+                    const labelX = document.getElementById(`label-posx-${item.id}`);
+                    const labelY = document.getElementById(`label-posy-${item.id}`);
+                    if (labelX) labelX.innerText = Math.round(item.posX) + '%';
+                    if (labelY) labelY.innerText = Math.round(item.posY) + '%';
+                }
             }
 
             function endDrag() {
                 if (!isDragging) return;
                 isDragging = false;
                 box.style.transition = '';
-                box.style.zIndex = 20;
+                box.style.zIndex = layerType === 'image' ? 20 : 30;
 
-                const rowEl = document.getElementById(`row-item-${item.id}`);
+                // Sembunyikan garis snap
+                if (guideX) guideX.style.display = 'none';
+                if (guideY) guideY.style.display = 'none';
+
+                const rowElId = (layerType === 'image') ? `img-row-item-${item.id}` : `row-item-${item.id}`;
+                const rowEl = document.getElementById(rowElId);
                 if (rowEl) {
                     setTimeout(() => rowEl.classList.remove('active-layer'), 800);
                 }
 
-                syncJsonInput();
+                if (layerType === 'image') {
+                    syncImageJsonInput();
+                } else {
+                    syncJsonInput();
+                }
             }
 
             box.addEventListener('mousedown', startDrag);
@@ -1094,7 +1693,32 @@ $active_menu = 'brosur_settings';
             window.addEventListener('touchend', endDrag);
         }
 
-        // Live Background File Preview
+        // Toggle Persistent Guidelines (Garis Bantu Kisi-Kisi)
+        function togglePersistentGuides() {
+            showPersistentGuides = !showPersistentGuides;
+            const gridLines = document.querySelectorAll('.persistent-grid-line');
+            const label = document.getElementById('label-guides-state');
+            const btn = document.getElementById('btn-toggle-guides');
+
+            gridLines.forEach(l => {
+                l.style.opacity = showPersistentGuides ? '1' : '0';
+            });
+
+            if (label && btn) {
+                if (showPersistentGuides) {
+                    label.innerText = 'Garis Bantu: ON';
+                    btn.className = 'px-2.5 py-1 rounded-xl text-[10px] font-black transition flex items-center gap-1.5 bg-sky-100 text-sky-800 border border-sky-200 hover:bg-sky-200 active:scale-95 shadow-2xs cursor-pointer';
+                } else {
+                    label.innerText = 'Garis Bantu: OFF';
+                    btn.className = 'px-2.5 py-1 rounded-xl text-[10px] font-black transition flex items-center gap-1.5 bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200 active:scale-95 shadow-2xs cursor-pointer';
+                }
+            }
+        }
+
+        // ==========================================
+        // 6. LOGIKA BACKGROUND BROSUR
+        // ==========================================
+
         function previewBgFile(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
@@ -1116,7 +1740,6 @@ $active_menu = 'brosur_settings';
             }
         }
 
-        // Live Background URL Input
         function updateLiveBgUrl(url) {
             const trimmed = url.trim();
             const finalUrl = trimmed ? trimmed : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
@@ -1130,7 +1753,6 @@ $active_menu = 'brosur_settings';
             if (bodyScreen) bodyScreen.style.backgroundImage = `url('${finalUrl}')`;
         }
 
-        // Live Background Opacity Slider
         function updateLiveBgOpacity(val) {
             const pct = Math.round(val * 100);
             const valLabel = document.getElementById('val-bg-opacity');
@@ -1145,7 +1767,6 @@ $active_menu = 'brosur_settings';
             if (bodyOverlay) bodyOverlay.style.opacity = val;
         }
 
-        // Terapkan Background dari Koleksi
         function terapkanKoleksi(url) {
             const inp = document.getElementById('input-bg-url');
             if (inp) inp.value = url;
@@ -1157,10 +1778,13 @@ $active_menu = 'brosur_settings';
 
         // Inisialisasi awal saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
+            renderImageRows();
+            renderSimImageLayers();
             renderRows();
             renderSimLayers();
         });
     </script>
 </body>
 </html>
+
 
