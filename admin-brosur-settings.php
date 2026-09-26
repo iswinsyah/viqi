@@ -331,7 +331,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 'border_enable' => !empty($btn['border_enable']) ? 1 : 0,
                 'border_width'  => max(0, min(20, (int)($btn['border_width'] ?? 2))),
                 'border_color'  => !empty($btn['border_color']) ? $btn['border_color'] : '#ffffff',
-                'shadow_style'  => in_array($btn['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'glow_gold', 'glow_teal', 'glow_wa', 'glow_rose']) ? $btn['shadow_style'] : 'soft',
+                'shadow_style'  => in_array($btn['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'floating', 'glow_gold', 'glow_teal', 'glow_wa', 'glow_rose', 'glow_sky']) ? $btn['shadow_style'] : 'soft',
                 'font_size'     => max(9, min(40, (int)($btn['font_size'] ?? 14))),
                 'font'          => !empty($btn['font']) ? $btn['font'] : 'Plus Jakarta Sans',
                 'posX'          => round(max(0, min(100, (float)($btn['posX'] ?? 50.0))), 2),
@@ -563,9 +563,11 @@ $active_menu = 'brosur_settings';
         .shape-bintang { clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); aspect-ratio: 1/1; }
 
         /* Shadow Styles */
+        .shadow-none { filter: none !important; box-shadow: none !important; }
         .shadow-soft { filter: drop-shadow(0 6px 16px rgba(0,0,0,0.25)); }
         .shadow-medium { filter: drop-shadow(0 12px 28px rgba(0,0,0,0.45)); }
         .shadow-deep { filter: drop-shadow(0 20px 45px rgba(0,0,0,0.7)); }
+        .shadow-floating { filter: drop-shadow(0 12px 24px rgba(0,0,0,0.35)) drop-shadow(0 4px 8px rgba(0,0,0,0.15)); }
         .shadow-glow_gold { filter: drop-shadow(0 0 18px rgba(251,191,36,0.75)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
         .shadow-glow_teal { filter: drop-shadow(0 0 18px rgba(11,132,120,0.85)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
         .shadow-glow_wa { filter: drop-shadow(0 0 18px rgba(37,211,102,0.8)) drop-shadow(0 4px 10px rgba(0,0,0,0.4)); }
@@ -1493,6 +1495,20 @@ $active_menu = 'brosur_settings';
             { id: 'fas fa-comment-dots',   name: 'Chat / Diskusi', icon: 'fas fa-comment-dots' },
             { id: 'fas fa-link',           name: 'Link Tautan Lain', icon: 'fas fa-link' },
             { id: 'none',                  name: 'Tanpa Icon (Hanya Teks)', icon: 'fas fa-ban' }
+        ];
+
+        // Pilihan Efek Bayangan & Glow Tombol
+        const buttonShadows = [
+            { id: 'none',        name: 'Tanpa Bayangan (Flat)', icon: 'fa-ban' },
+            { id: 'soft',        name: 'Bayangan Halus (Soft Natural)', icon: 'fa-cloud' },
+            { id: 'medium',      name: 'Bayangan Sedang (Medium 3D)', icon: 'fa-cubes' },
+            { id: 'deep',        name: 'Bayangan Tebal (Deep 3D)', icon: 'fa-cube' },
+            { id: 'floating',    name: 'Bayangan Melayang (Floating)', icon: 'fa-paper-plane' },
+            { id: 'glow_wa',     name: 'Glow WhatsApp Green', icon: 'fab fa-whatsapp' },
+            { id: 'glow_gold',   name: 'Glow Gold Luxury (Emas)', icon: 'fa-crown' },
+            { id: 'glow_teal',   name: 'Glow Emerald Islami (Teal)', icon: 'fa-mosque' },
+            { id: 'glow_rose',   name: 'Glow Neon Rose / Pink', icon: 'fa-heart' },
+            { id: 'glow_sky',    name: 'Glow Sky Blue (Biru Neon)', icon: 'fa-gem' }
         ];
 
         // Helper YouTube / Video URL Detection
@@ -2686,6 +2702,35 @@ $active_menu = 'brosur_settings';
                     iconOptionsHtml += `<option value="${ic.id}" ${sel}>${ic.name}</option>`;
                 });
 
+                // Options Bayangan Tombol
+                let shadowOptionsHtml = '';
+                buttonShadows.forEach(sh => {
+                    const sel = (btn.shadow_style === sh.id) ? 'selected' : '';
+                    shadowOptionsHtml += `<option value="${sh.id}" ${sel}>${sh.name}</option>`;
+                });
+
+                // Quick Chips Bayangan Tombol
+                let shadowQuickChipsHtml = '';
+                buttonShadows.forEach(sh => {
+                    const isActive = (btn.shadow_style === sh.id) || (!btn.shadow_style && sh.id === 'none');
+                    const activeClass = isActive 
+                        ? 'bg-amber-600 text-white font-black ring-2 ring-amber-400 shadow-xs' 
+                        : 'bg-white text-slate-700 hover:bg-amber-50 border border-slate-200 font-semibold';
+                    shadowQuickChipsHtml += `
+                        <button type="button" onclick="updateButtonField('${btn.id}', 'shadow_style', '${sh.id}')" class="px-2 py-1 rounded-lg text-[10px] transition flex items-center gap-1 active:scale-95 cursor-pointer ${activeClass}" title="Terapkan ${sh.name}">
+                            <i class="fas ${sh.icon} text-[9px]"></i>
+                            <span>${sh.name}</span>
+                        </button>
+                    `;
+                });
+
+                // Options Font
+                let fontOptionsHtml = '';
+                availableFonts.forEach(f => {
+                    const sel = (btn.font === f.id) ? 'selected' : '';
+                    fontOptionsHtml += `<option value="${f.id}" ${sel}>${f.name}</option>`;
+                });
+
                 row.innerHTML = `
                     <!-- BARIS UTAMA (1 BARIS RINGKAS) -->
                     <div class="flex flex-wrap items-center gap-2">
@@ -2739,8 +2784,9 @@ $active_menu = 'brosur_settings';
 
                         <!-- Tombol Aksi Row (Detail, Duplikasi, Hapus) -->
                         <div class="flex items-center gap-1 shrink-0 ml-auto">
-                            <button type="button" onclick="toggleButtonDetails('${btn.id}')" title="Pengaturan Lanjutan Tombol" class="w-7 h-7 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center text-xs transition cursor-pointer">
-                                <i class="fas fa-sliders"></i>
+                            <button type="button" onclick="toggleButtonDetails('${btn.id}')" title="Pengaturan Lanjutan Tombol (Bayangan, Ukuran & Posisi)" class="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center gap-1 text-xs font-bold transition cursor-pointer">
+                                <i class="fas fa-sliders text-[11px]"></i>
+                                <span class="text-[11px]">Setting & Bayangan</span>
                             </button>
                             <button type="button" onclick="duplicateButtonRow('${btn.id}')" title="Gandakan / Duplikasi Tombol" class="w-7 h-7 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 flex items-center justify-center text-xs transition cursor-pointer">
                                 <i class="fas fa-copy"></i>
@@ -2753,11 +2799,34 @@ $active_menu = 'brosur_settings';
                     </div>
 
                     <!-- PANEL PENGATURAN LANJUTAN TOMBOL -->
-                    <div id="btn-details-${btn.id}" class="hidden pt-3 border-t border-slate-100 space-y-3 bg-slate-50/70 p-3 rounded-xl">
+                    <div id="btn-details-${btn.id}" class="pt-3 border-t border-slate-100 space-y-3 bg-slate-50/70 p-3 rounded-xl">
                         
-                        <!-- Preset Tema Cepat Tombol -->
+                        <!-- 1. PENGATURAN BAYANGAN TOMBOL (SHADOW & GLOW) -->
+                        <div class="p-3 bg-amber-500/10 border border-amber-300/80 rounded-xl space-y-2.5">
+                            <div class="flex flex-wrap items-center justify-between gap-2">
+                                <span class="text-[11.5px] font-black text-amber-950 flex items-center gap-1.5">
+                                    <i class="fas fa-cube text-amber-600"></i>
+                                    <span>Pengaturan Bayangan & Efek 3D Tombol (Shadow & Glow):</span>
+                                </span>
+                                <div class="shrink-0 min-w-[180px]">
+                                    <select onchange="updateButtonField('${btn.id}', 'shadow_style', this.value)" class="w-full px-2.5 py-1 rounded-lg border border-amber-300 text-xs font-bold bg-white focus:outline-none cursor-pointer">
+                                        ${shadowOptionsHtml}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Preset Chips Bayangan Cepat (1-Click Apply) -->
+                            <div>
+                                <span class="block text-[10px] font-bold text-slate-600 mb-1">Pilih Cepat Efek Bayangan / Glow:</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                    ${shadowQuickChipsHtml}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. PRESET WARNA CEPAT TOMBOL -->
                         <div>
-                            <span class="block text-[10.5px] font-bold text-slate-700 mb-1.5">Preset Warna Cepat:</span>
+                            <span class="block text-[10.5px] font-bold text-slate-700 mb-1.5">Preset Tema & Warna Cepat:</span>
                             <div class="flex flex-wrap gap-1.5">
                                 <button type="button" onclick="applyBtnPreset('${btn.id}', '#25d366', '#ffffff', 'glow_wa')" class="px-2 py-1 rounded-lg bg-[#25d366] text-white text-[10px] font-black shadow-2xs flex items-center gap-1 active:scale-95 transition cursor-pointer">
                                     <i class="fab fa-whatsapp"></i> WA Green
@@ -2780,43 +2849,9 @@ $active_menu = 'brosur_settings';
                             </div>
                         </div>
 
-                        <!-- Efek Bayangan / Glow & Border -->
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                            <div>
-                                <label class="block text-[10.5px] font-bold text-slate-600 mb-1">Efek Bayangan / Glow:</label>
-                                <select onchange="updateButtonField('${btn.id}', 'shadow_style', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white focus:outline-none">
-                                    <option value="none" ${btn.shadow_style === 'none' ? 'selected' : ''}>Tanpa Bayangan</option>
-                                    <option value="soft" ${btn.shadow_style === 'soft' ? 'selected' : ''}>Bayangan Lembut (Soft)</option>
-                                    <option value="medium" ${btn.shadow_style === 'medium' ? 'selected' : ''}>Bayangan Sedang (Medium)</option>
-                                    <option value="deep" ${btn.shadow_style === 'deep' ? 'selected' : ''}>Bayangan Tebal (3D Deep)</option>
-                                    <option value="glow_wa" ${btn.shadow_style === 'glow_wa' ? 'selected' : ''}>Glow WhatsApp Green</option>
-                                    <option value="glow_gold" ${btn.shadow_style === 'glow_gold' ? 'selected' : ''}>Glow Emas Mewah</option>
-                                    <option value="glow_teal" ${btn.shadow_style === 'glow_teal' ? 'selected' : ''}>Glow Emerald Islami</option>
-                                    <option value="glow_rose" ${btn.shadow_style === 'glow_rose' ? 'selected' : ''}>Glow Neon Rose</option>
-                                    <option value="glow_sky" ${btn.shadow_style === 'glow_sky' ? 'selected' : ''}>Glow Sky Blue</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-[10.5px] font-bold text-slate-600 mb-1">Ukuran Tulisan (px):</label>
-                                <div class="flex items-center gap-1 bg-white border border-slate-200 rounded-xl px-2 py-1">
-                                    <input type="number" min="9" max="40" value="${btn.font_size || 14}" oninput="updateButtonField('${btn.id}', 'font_size', parseInt(this.value) || 14)" class="w-full text-xs font-black text-amber-800 text-center focus:outline-none">
-                                    <span class="text-[10px] text-slate-400 font-mono">px</span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-[10.5px] font-bold text-slate-600 mb-1">Target Buka Link:</label>
-                                <select onchange="updateButtonField('${btn.id}', 'target', this.value)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-semibold bg-white focus:outline-none">
-                                    <option value="_blank" ${btn.target === '_blank' ? 'selected' : ''}>Tab Baru (_blank)</option>
-                                    <option value="_self" ${btn.target === '_self' ? 'selected' : ''}>Halaman Ini (_self)</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <!-- PENGATURAN UKURAN TOMBOL (PANJANG & TINGGI) SERTA POSISI -->
-                        <div class="p-3 bg-amber-50/50 border border-amber-200/60 rounded-xl space-y-2.5">
-                            <span class="block text-[11px] font-black text-amber-950 flex items-center gap-1.5">
+                        <!-- 3. PENGATURAN UKURAN TOMBOL (PANJANG & TINGGI) -->
+                        <div class="p-3 bg-white border border-slate-200 rounded-xl space-y-2.5 shadow-2xs">
+                            <span class="block text-[11px] font-black text-slate-800 flex items-center gap-1.5">
                                 <i class="fas fa-up-right-and-down-left-from-center text-amber-600"></i>
                                 <span>Pengaturan Ukuran Tombol (Panjang & Tinggi):</span>
                             </span>
@@ -2844,7 +2879,48 @@ $active_menu = 'brosur_settings';
                             </div>
                         </div>
 
-                        <!-- Slider Posisi X & Y Tombol -->
+                        <!-- 4. GARIS TEPI (BORDER), TIPOGRAFI & TARGET LINK -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                            <!-- Garis Tepi (Border) -->
+                            <div class="p-2 bg-white border border-slate-200 rounded-xl space-y-1">
+                                <label class="flex items-center gap-1.5 text-[10.5px] font-bold text-slate-700 cursor-pointer">
+                                    <input type="checkbox" ${btn.border_enable ? 'checked' : ''} onchange="updateButtonField('${btn.id}', 'border_enable', this.checked ? 1 : 0)" class="rounded text-amber-600 focus:ring-0">
+                                    <span>Garis Tepi (Border)</span>
+                                </label>
+                                <div class="flex items-center gap-1.5 pt-1">
+                                    <input type="color" value="${btn.border_color || '#ffffff'}" onchange="updateButtonField('${btn.id}', 'border_color', this.value)" class="w-6 h-6 rounded border border-slate-200 p-0.5 bg-white cursor-pointer shrink-0" title="Warna Garis Tepi">
+                                    <div class="flex items-center gap-1 flex-1">
+                                        <input type="number" min="1" max="10" value="${btn.border_width || 2}" oninput="updateButtonField('${btn.id}', 'border_width', parseInt(this.value) || 1)" class="w-full text-xs font-black text-amber-800 text-center border border-slate-200 rounded px-1 py-0.5" title="Tebal Border">
+                                        <span class="text-[10px] text-slate-400">px</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ukuran & Font Tulisan -->
+                            <div class="p-2 bg-white border border-slate-200 rounded-xl space-y-1">
+                                <label class="block text-[10.5px] font-bold text-slate-700">Jenis Font & Ukuran:</label>
+                                <div class="flex items-center gap-1.5">
+                                    <select onchange="updateButtonField('${btn.id}', 'font', this.value)" class="w-full px-1.5 py-1 rounded border border-slate-200 text-[10px] font-semibold bg-white focus:outline-none truncate">
+                                        ${fontOptionsHtml}
+                                    </select>
+                                    <div class="flex items-center gap-0.5 shrink-0">
+                                        <input type="number" min="9" max="40" value="${btn.font_size || 14}" oninput="updateButtonField('${btn.id}', 'font_size', parseInt(this.value) || 14)" class="w-8 text-xs font-black text-amber-800 text-center border border-slate-200 rounded py-0.5" title="Ukuran Font">
+                                        <span class="text-[9px] text-slate-400">px</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Target Buka Link -->
+                            <div class="p-2 bg-white border border-slate-200 rounded-xl space-y-1">
+                                <label class="block text-[10.5px] font-bold text-slate-700">Target Buka Link:</label>
+                                <select onchange="updateButtonField('${btn.id}', 'target', this.value)" class="w-full px-2 py-1 rounded border border-slate-200 text-[11px] font-semibold bg-white focus:outline-none">
+                                    <option value="_blank" ${btn.target === '_blank' ? 'selected' : ''}>Tab Baru (_blank)</option>
+                                    <option value="_self" ${btn.target === '_self' ? 'selected' : ''}>Halaman Ini (_self)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 5. SLIDER POSISI X & Y TOMBOL -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60">
                             <div>
                                 <div class="flex justify-between text-[10.5px] font-bold text-slate-600 mb-1">
@@ -2880,6 +2956,9 @@ $active_menu = 'brosur_settings';
             const btn = buttonItems.find(b => b.id === id);
             if (btn) {
                 btn[field] = value;
+                if (['shadow_style', 'border_enable', 'shape'].includes(field)) {
+                    renderButtonRows();
+                }
                 renderSimButtonLayers();
                 syncButtonJsonInput();
             }
