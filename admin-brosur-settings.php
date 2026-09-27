@@ -139,7 +139,14 @@ $columns_to_check = [
     'custom_slide_items'       => "LONGTEXT",
     'prestasi_slide_items'     => "LONGTEXT",
     'unggulan_slide_items'     => "LONGTEXT",
-    'pengajar_slide_items'     => "LONGTEXT"
+    'pengajar_slide_items'     => "LONGTEXT",
+    'fasilitas_bg_url'          => "TEXT",
+    'fasilitas_overlay_opacity' => "DECIMAL(3,2) DEFAULT 0.88",
+    'fasilitas_text_items'      => "LONGTEXT",
+    'fasilitas_image_items'     => "LONGTEXT",
+    'fasilitas_video_items'     => "LONGTEXT",
+    'fasilitas_button_items'    => "LONGTEXT",
+    'fasilitas_slide_items'     => "LONGTEXT"
 ];
 foreach ($columns_to_check as $col => $type) {
     $res = $conn->query("SHOW COLUMNS FROM pengaturan_brosur LIKE '$col'");
@@ -208,7 +215,7 @@ $pesan_error  = '';
 
 // Tab Aktif & Frame Aktif
 $active_frame = $_POST['active_frame'] ?? $_GET['frame'] ?? 'home';
-if (!in_array($active_frame, ['home', 'prestasi', 'unggulan', 'pengajar'])) {
+if (!in_array($active_frame, ['home', 'prestasi', 'unggulan', 'pengajar', 'fasilitas'])) {
     $active_frame = 'home';
 }
 
@@ -418,6 +425,19 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
                            WHERE id = 1";
+        } else if ($active_frame === 'fasilitas') {
+            $sql_master = "UPDATE pengaturan_brosur SET 
+                            fasilitas_bg_url = '$bg_url',
+                            fasilitas_overlay_opacity = $bg_overlay_opacity,
+                            fasilitas_text_items = '$final_text_json_esc',
+                            fasilitas_image_items = '$final_img_json_esc',
+                            fasilitas_video_items = '$final_vid_json_esc',
+                            fasilitas_button_items = '$final_btn_json_esc',
+                            fasilitas_slide_items = '$final_slide_json_esc',
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
         } else {
             $first = $clean_text_items[0] ?? [
                 'content' => '', 'format' => 'h2', 'color' => '#ffffff',
@@ -460,7 +480,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         }
 
         $ok = $conn->query($sql_master);
-        $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
+        $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
         $msg = $ok ? "Alhamdulillah! Seluruh pengaturan {$frame_label} berhasil disimpan." : "Gagal menyimpan: " . $conn->error;
 
         if (isset($_POST['ajax_mode']) && $_POST['ajax_mode'] == '1') {
@@ -526,12 +546,14 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_slide = "UPDATE pengaturan_brosur SET unggulan_slide_items = '$final_slide_json_esc' WHERE id = 1";
         } else if ($active_frame === 'pengajar') {
             $sql_slide = "UPDATE pengaturan_brosur SET pengajar_slide_items = '$final_slide_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'fasilitas') {
+            $sql_slide = "UPDATE pengaturan_brosur SET fasilitas_slide_items = '$final_slide_json_esc' WHERE id = 1";
         } else {
             $sql_slide = "UPDATE pengaturan_brosur SET custom_slide_items = '$final_slide_json_esc' WHERE id = 1";
         }
 
         if ($conn->query($sql_slide)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
             $pesan_sukses = "Alhamdulillah! Pengaturan slide {$frame_label} (" . count($clean_slide_items) . " slide) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan slide: " . $conn->error;
@@ -570,6 +592,8 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_text = "UPDATE pengaturan_brosur SET unggulan_text_items = '$final_json_esc' WHERE id = 1";
         } else if ($active_frame === 'pengajar') {
             $sql_text = "UPDATE pengaturan_brosur SET pengajar_text_items = '$final_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'fasilitas') {
+            $sql_text = "UPDATE pengaturan_brosur SET fasilitas_text_items = '$final_json_esc' WHERE id = 1";
         } else {
             // Update legacy columns dari item pertama sebagai fallback jika ada
             $first = $clean_items[0] ?? [
@@ -602,7 +626,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         }
 
         if ($conn->query($sql_text)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
             $pesan_sukses = "Alhamdulillah! Pengaturan kolom tulisan {$frame_label} (" . count($clean_items) . " kolom) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan tulisan: " . $conn->error;
@@ -643,12 +667,14 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_img = "UPDATE pengaturan_brosur SET unggulan_image_items = '$final_img_json_esc' WHERE id = 1";
         } else if ($active_frame === 'pengajar') {
             $sql_img = "UPDATE pengaturan_brosur SET pengajar_image_items = '$final_img_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'fasilitas') {
+            $sql_img = "UPDATE pengaturan_brosur SET fasilitas_image_items = '$final_img_json_esc' WHERE id = 1";
         } else {
             $sql_img = "UPDATE pengaturan_brosur SET custom_image_items = '$final_img_json_esc' WHERE id = 1";
         }
 
         if ($conn->query($sql_img)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
             $pesan_sukses = "Alhamdulillah! Pengaturan gambar sisipan {$frame_label} (" . count($clean_img_items) . " gambar) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan gambar: " . $conn->error;
@@ -692,12 +718,14 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_vid = "UPDATE pengaturan_brosur SET unggulan_video_items = '$final_vid_json_esc' WHERE id = 1";
         } else if ($active_frame === 'pengajar') {
             $sql_vid = "UPDATE pengaturan_brosur SET pengajar_video_items = '$final_vid_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'fasilitas') {
+            $sql_vid = "UPDATE pengaturan_brosur SET fasilitas_video_items = '$final_vid_json_esc' WHERE id = 1";
         } else {
             $sql_vid = "UPDATE pengaturan_brosur SET custom_video_items = '$final_vid_json_esc' WHERE id = 1";
         }
 
         if ($conn->query($sql_vid)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
             $pesan_sukses = "Alhamdulillah! Pengaturan video sisipan {$frame_label} (" . count($clean_vid_items) . " video) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan video: " . $conn->error;
@@ -742,12 +770,14 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_btn = "UPDATE pengaturan_brosur SET unggulan_button_items = '$final_btn_json_esc' WHERE id = 1";
         } else if ($active_frame === 'pengajar') {
             $sql_btn = "UPDATE pengaturan_brosur SET pengajar_button_items = '$final_btn_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'fasilitas') {
+            $sql_btn = "UPDATE pengaturan_brosur SET fasilitas_button_items = '$final_btn_json_esc' WHERE id = 1";
         } else {
             $sql_btn = "UPDATE pengaturan_brosur SET custom_button_items = '$final_btn_json_esc' WHERE id = 1";
         }
 
         if ($conn->query($sql_btn)) {
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
             $pesan_sukses = "Alhamdulillah! Pengaturan tombol {$frame_label} (" . count($clean_btn_items) . " tombol) berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan tombol: " . $conn->error;
@@ -797,6 +827,14 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
                            WHERE id = 1";
+        } else if ($active_frame === 'fasilitas') {
+            $sql_update = "UPDATE pengaturan_brosur SET 
+                            fasilitas_bg_url = '$bg_url',
+                            fasilitas_overlay_opacity = $bg_overlay_opacity,
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
         } else {
             // Terapkan ke cover, body, dan bottom bar
             $sql_update = "UPDATE pengaturan_brosur SET 
@@ -819,7 +857,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 }
             }
 
-            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
             $pesan_sukses = "Alhamdulillah! Pengaturan Background {$frame_label} & Bottom Bar berhasil disimpan.";
         } else {
             $pesan_error = "Gagal menyimpan background & bottom bar: " . $conn->error;
@@ -1247,6 +1285,113 @@ if ($raw_pengajar_slides !== null && $raw_pengajar_slides !== '') {
     $pengajar_slide_items = [];
 }
 
+// ==============================================================
+// 5. DATA FRAME FASILITAS (SARANA & PRASARANA PESANTREN)
+// ==============================================================
+$fasilitas_bg_url = !empty($cfg['fasilitas_bg_url']) ? $cfg['fasilitas_bg_url'] : 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=1200&auto=format&fit=crop&q=80';
+$fasilitas_overlay_opacity = isset($cfg['fasilitas_overlay_opacity']) ? (float)$cfg['fasilitas_overlay_opacity'] : 0.88;
+
+$raw_fasilitas_texts = $cfg['fasilitas_text_items'] ?? null;
+if ($raw_fasilitas_texts !== null && $raw_fasilitas_texts !== '') {
+    $fasilitas_text_items = json_decode($raw_fasilitas_texts, true);
+    if (!is_array($fasilitas_text_items)) $fasilitas_text_items = [];
+} else {
+    $fasilitas_text_items = [
+        [
+            'id'      => 'text_fasilitas_1',
+            'content' => 'Fasilitas & Sarana Pesantren',
+            'format'  => 'h2',
+            'color'   => '#ffffff',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 24,
+            'posX'    => 50.0,
+            'posY'    => 18.0,
+            'width'   => 88
+        ],
+        [
+            'id'      => 'text_fasilitas_2',
+            'content' => 'Lingkungan Asri Pegunungan, Masjid Megah, Asrama Nyaman Ala Villa & Sarana Olahraga',
+            'format'  => 'h4',
+            'color'   => '#38bdf8',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 13,
+            'posX'    => 50.0,
+            'posY'    => 28.0,
+            'width'   => 90
+        ]
+    ];
+}
+
+$raw_fasilitas_images = $cfg['fasilitas_image_items'] ?? null;
+if ($raw_fasilitas_images !== null && $raw_fasilitas_images !== '') {
+    $fasilitas_image_items = json_decode($raw_fasilitas_images, true);
+    if (!is_array($fasilitas_image_items)) $fasilitas_image_items = [];
+} else {
+    $fasilitas_image_items = [
+        [
+            'id'            => 'img_fasilitas_1',
+            'url'           => 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=800&auto=format&fit=crop&q=80',
+            'shape'         => 'rounded',
+            'border_enable' => 1,
+            'border_width'  => 3,
+            'border_color'  => '#38bdf8',
+            'border_style'  => 'solid',
+            'shadow_style'  => 'glow_teal',
+            'rotation'      => 0,
+            'posX'          => 50.0,
+            'posY'          => 53.0,
+            'width'         => 72
+        ]
+    ];
+}
+
+$raw_fasilitas_videos = $cfg['fasilitas_video_items'] ?? null;
+if ($raw_fasilitas_videos !== null && $raw_fasilitas_videos !== '') {
+    $fasilitas_video_items = json_decode($raw_fasilitas_videos, true);
+    if (!is_array($fasilitas_video_items)) $fasilitas_video_items = [];
+} else {
+    $fasilitas_video_items = [];
+}
+
+$raw_fasilitas_buttons = $cfg['fasilitas_button_items'] ?? null;
+if ($raw_fasilitas_buttons !== null && $raw_fasilitas_buttons !== '') {
+    $fasilitas_button_items = json_decode($raw_fasilitas_buttons, true);
+    if (!is_array($fasilitas_button_items)) $fasilitas_button_items = [];
+} else {
+    $fasilitas_button_items = [
+        [
+            'id'            => 'btn_fasilitas_1',
+            'text'          => 'Lihat Virtual Tour Fasilitas',
+            'url'           => 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20info%20fasilitas%20Villa%20Quran',
+            'icon'          => 'fas fa-building-columns',
+            'shape'         => 'rounded_pill',
+            'bg_color'      => '#0284c7',
+            'text_color'    => '#ffffff',
+            'border_enable' => 0,
+            'border_width'  => 2,
+            'border_color'  => '#ffffff',
+            'shadow_style'  => 'glow_sky',
+            'font_size'     => 13,
+            'font'          => 'Plus Jakarta Sans',
+            'posX'          => 50.0,
+            'posY'          => 82.0,
+            'width'         => 82,
+            'height'        => 46,
+            'target'        => '_blank'
+        ]
+    ];
+}
+
+$raw_fasilitas_slides = $cfg['fasilitas_slide_items'] ?? null;
+if ($raw_fasilitas_slides !== null && $raw_fasilitas_slides !== '') {
+    $fasilitas_slide_items = json_decode($raw_fasilitas_slides, true);
+    if (!is_array($fasilitas_slide_items)) $fasilitas_slide_items = [];
+} else {
+    $fasilitas_slide_items = [];
+}
+
 $active_menu = 'brosur_settings';
 ?>
 <!DOCTYPE html>
@@ -1459,6 +1604,12 @@ $active_menu = 'brosur_settings';
                     <button type="button" id="frame-btn-pengajar" onclick="switchFrame('pengajar')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
                         <i class="fas fa-chalkboard-user text-xs text-teal-400"></i>
                         <span>Pengajar</span>
+                    </button>
+
+                    <!-- Tombol Frame 5: Fasilitas -->
+                    <button type="button" id="frame-btn-fasilitas" onclick="switchFrame('fasilitas')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
+                        <i class="fas fa-building-columns text-xs text-sky-400"></i>
+                        <span>Fasilitas</span>
                     </button>
                 </div>
 
@@ -2243,6 +2394,12 @@ $active_menu = 'brosur_settings';
                                     <i id="sim-menu-pengajar-icon" class="fas fa-chalkboard-user text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
                                     <span id="sim-menu-pengajar-label" class="text-[9.5px] font-bold tracking-wider leading-none">Pengajar</span>
                                 </button>
+
+                                <!-- Menu 5: Fasilitas -->
+                                <button type="button" onclick="switchFrame('fasilitas')" id="sim-menu-fasilitas-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Fasilitas (Frame Fasilitas)">
+                                    <i id="sim-menu-fasilitas-icon" class="fas fa-building-columns text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                                    <span id="sim-menu-fasilitas-label" class="text-[9.5px] font-bold tracking-wider leading-none">Fasilitas</span>
+                                </button>
                             </div>
 
                         </div>
@@ -2345,6 +2502,24 @@ $active_menu = 'brosur_settings';
                 videos: <?= json_encode($pengajar_video_items, JSON_UNESCAPED_UNICODE) ?>,
                 buttons: <?= json_encode($pengajar_button_items, JSON_UNESCAPED_UNICODE) ?>,
                 slides: <?= json_encode($pengajar_slide_items, JSON_UNESCAPED_UNICODE) ?>
+            },
+            fasilitas: {
+                id: 'fasilitas',
+                name: 'Fasilitas',
+                title: 'Frame: Fasilitas',
+                subtitle: 'Frame ini mengatur tampilan sarana, prasarana, asrama & fasilitas pesantren (Menu <strong>Fasilitas</strong> pada Bottom Navigation Bar).',
+                badge: 'Sarana & Fasilitas',
+                menuPill: 'Menu #5 di Bottom Bar',
+                icon: 'fa-building-columns',
+                iconGradient: 'from-sky-500 via-blue-600 to-indigo-600',
+                badgeClass: 'bg-sky-100 text-sky-900 border-sky-300',
+                bgUrl: <?= json_encode($fasilitas_bg_url) ?>,
+                bgOpacity: <?= (float)$fasilitas_overlay_opacity ?>,
+                texts: <?= json_encode($fasilitas_text_items, JSON_UNESCAPED_UNICODE) ?>,
+                images: <?= json_encode($fasilitas_image_items, JSON_UNESCAPED_UNICODE) ?>,
+                videos: <?= json_encode($fasilitas_video_items, JSON_UNESCAPED_UNICODE) ?>,
+                buttons: <?= json_encode($fasilitas_button_items, JSON_UNESCAPED_UNICODE) ?>,
+                slides: <?= json_encode($fasilitas_slide_items, JSON_UNESCAPED_UNICODE) ?>
             }
         };
 
@@ -2359,7 +2534,7 @@ $active_menu = 'brosur_settings';
         let slideItems  = framesData[currentActiveFrame].slides || [];
 
         function switchFrame(frame) {
-            if (!['home', 'prestasi', 'unggulan', 'pengajar'].includes(frame)) frame = 'home';
+            if (!['home', 'prestasi', 'unggulan', 'pengajar', 'fasilitas'].includes(frame)) frame = 'home';
             currentActiveFrame = frame;
 
             const data = framesData[frame];
@@ -2374,12 +2549,14 @@ $active_menu = 'brosur_settings';
             const btnPrestasi = document.getElementById('frame-btn-prestasi');
             const btnUnggulan = document.getElementById('frame-btn-unggulan');
             const btnPengajar = document.getElementById('frame-btn-pengajar');
+            const btnFasilitas = document.getElementById('frame-btn-fasilitas');
             
             const activeClassMap = {
                 home: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer',
                 prestasi: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md ring-2 ring-amber-400 cursor-pointer',
                 unggulan: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md ring-2 ring-orange-400 cursor-pointer',
-                pengajar: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-md ring-2 ring-teal-400 cursor-pointer'
+                pengajar: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-md ring-2 ring-teal-400 cursor-pointer',
+                fasilitas: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-md ring-2 ring-sky-400 cursor-pointer'
             };
             const inactiveClass = 'flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer';
 
@@ -2387,6 +2564,7 @@ $active_menu = 'brosur_settings';
             if (btnPrestasi) btnPrestasi.className = (frame === 'prestasi') ? activeClassMap.prestasi : inactiveClass;
             if (btnUnggulan) btnUnggulan.className = (frame === 'unggulan') ? activeClassMap.unggulan : inactiveClass;
             if (btnPengajar) btnPengajar.className = (frame === 'pengajar') ? activeClassMap.pengajar : inactiveClass;
+            if (btnFasilitas) btnFasilitas.className = (frame === 'fasilitas') ? activeClassMap.fasilitas : inactiveClass;
 
             // 2. Update Header Info Frame
             const headerTitle    = document.getElementById('frame-header-title');
@@ -2445,6 +2623,7 @@ $active_menu = 'brosur_settings';
             const navPrestasi = document.getElementById('sim-menu-prestasi-btn');
             const navUnggulan = document.getElementById('sim-menu-unggulan-btn');
             const navPengajar = document.getElementById('sim-menu-pengajar-btn');
+            const navFasilitas = document.getElementById('sim-menu-fasilitas-btn');
             const activeColor = '<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>';
             const normalColor = '<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>';
 
@@ -2463,6 +2642,10 @@ $active_menu = 'brosur_settings';
             if (navPengajar) {
                 navPengajar.style.color = (frame === 'pengajar') ? activeColor : normalColor;
                 navPengajar.classList.toggle('opacity-70', frame !== 'pengajar');
+            }
+            if (navFasilitas) {
+                navFasilitas.style.color = (frame === 'fasilitas') ? activeColor : normalColor;
+                navFasilitas.classList.toggle('opacity-70', frame !== 'fasilitas');
             }
 
             // 7. Re-render Semua Tab Rows & Layar Simulasi
