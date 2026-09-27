@@ -61,7 +61,20 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
             border-radius: 0.75rem; 
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); 
         }
+        @font-face {
+            font-family: 'Marlin Condensed';
+            src: local('Marlin Condensed'), local('MarlinCondensed'), local('Marlin-Condensed'), local('Marlin'), local('MarlinBold');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        .font-marlin {
+            font-family: 'Marlin Condensed', 'Barlow Condensed', 'Oswald', sans-serif;
+        }
     </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Google Tag Manager -->
     <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -81,9 +94,9 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
         <div class="max-w-4xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
             <div class="flex-shrink-0 flex items-center">
-                <a href="index.html" class="flex items-center space-x-2.5 font-bold text-xl text-emerald-800 hover:text-emerald-600 transition">
-                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="h-9 w-auto inline-block">
-                    <span>Villa Quran</span>
+                <a href="index.html" class="flex items-center space-x-2.5 text-emerald-900 hover:text-emerald-700 transition">
+                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Baron Malang" class="h-9 w-auto inline-block">
+                    <span class="inline-block font-marlin font-bold text-xl sm:text-2xl text-emerald-900 tracking-tight uppercase">Villa Quran Baron Malang</span>
                 </a>
             </div>
                 <a href="artikel.php" class="text-gray-500 hover:text-emerald-600 text-sm font-medium"><i class="fas fa-arrow-left mr-1"></i> Kembali ke Blog</a>
