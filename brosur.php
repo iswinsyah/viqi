@@ -1588,6 +1588,12 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                 box.innerHTML = `
                     <div class="w-full h-full overflow-hidden ${shapeClass} ${shadowClass} relative bg-black" style="${borderStyle}">
                         ${videoInnerHtml}
+                    </div>
+                `;
+                container.appendChild(box);
+            });
+        }
+
         // 4. RENDER BIAYA LIVE EMBED
         window.currentBiayaCategory = 'all';
 
