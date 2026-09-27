@@ -997,6 +997,8 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
+    <!-- MATA AI MARKETING & VISITOR TRACKER -->
+    <script src="tracker.js" defer></script>
 </head>
 <body class="desktop-backdrop flex items-center justify-center min-h-screen w-screen overflow-hidden select-none">
 
@@ -1092,6 +1094,13 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         const activeColor = '<?= htmlspecialchars($bottom_bar_active_color) ?>';
         const normalColor = '<?= htmlspecialchars($bottom_bar_text_color) ?>';
         const guestName = <?= json_encode($nama_tamu) ?>;
+        const currentRefCode = <?= json_encode($kode_ref) ?>;
+        const namaMitra = <?= json_encode($nama_agen_pengundang) ?>;
+
+        // Persist referral ke LocalStorage agar jika user mendaftar nanti, kredit mitra tetap tercatat
+        if (currentRefCode && currentRefCode !== 'organik') {
+            try { localStorage.setItem('agen_ref', currentRefCode); } catch(e) {}
+        }
 
         // Slide State
         window.simSlideCurrentIndices = {};
@@ -1118,7 +1127,30 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         function replacePlaceholders(text) {
             if (!text) return '';
             return text.replace(/\{nama_tamu\}/gi, guestName)
-                       .replace(/\{tamu\}/gi, guestName);
+                       .replace(/\{tamu\}/gi, guestName)
+                       .replace(/\{kode_ref\}/gi, currentRefCode)
+                       .replace(/\{ref\}/gi, currentRefCode)
+                       .replace(/\{nama_mitra\}/gi, namaMitra || currentRefCode)
+                       .replace(/\{nama_agen\}/gi, namaMitra || currentRefCode);
+        }
+
+        function buildActionUrl(rawUrl) {
+            if (!rawUrl || rawUrl === '#') return '#';
+            let url = replacePlaceholders(rawUrl).trim();
+            if (currentRefCode && currentRefCode !== 'organik' && url !== '#' && !url.startsWith('javascript:')) {
+                if (url.includes('.html') || url.includes('.php') || url.startsWith('/') || url.startsWith('./') || url.includes('villaquranindonesia.com')) {
+                    if (!url.includes('ref=')) {
+                        url += (url.includes('?') ? '&' : '?') + 'ref=' + encodeURIComponent(currentRefCode);
+                    }
+                } else if (url.includes('wa.me') || url.includes('api.whatsapp.com')) {
+                    if (!url.includes('ref') && !url.includes(encodeURIComponent(currentRefCode))) {
+                        const sep = url.includes('text=') ? '%0A%0A' : (url.includes('?') ? '&text=' : '?text=');
+                        const refTag = encodeURIComponent(`(Rekomendasi Mitra: ${namaMitra ? namaMitra + ' - ' : ''}${currentRefCode})`);
+                        url += `${sep}${refTag}`;
+                    }
+                }
+            }
+            return url;
         }
 
         function getFormatHtml(content, format) {
@@ -1874,7 +1906,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                 }
 
                 const targetAttr = btn.target === '_self' ? '_self' : '_blank';
-                const finalUrl = escapeHtml(replacePlaceholders(rawUrl || '#'));
+                const finalUrl = escapeHtml(buildActionUrl(rawUrl || '#'));
                 const clickHandlerStr = isBukaBtn ? `onclick="event.preventDefault(); openFrameWithSmoothFade('${targetFrame}');"` : `onclick="if(!isAudioPlaying&&audioPlayer){toggleAudio();}"`;
 
                 let innerContent = '';
@@ -1888,7 +1920,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                     innerContent = `
                         <a href="${finalUrl}" target="${targetAttr}" ${clickHandlerStr} class="${shapeClass} ${shadowClass} w-full h-full px-4 flex items-center justify-center text-center font-bold transition transform hover:scale-102 active:scale-95 shadow-lg select-none cursor-pointer" style="background-color: ${btn.bg_color || '#25d366'}; color: ${btn.text_color || '#ffffff'}; font-size: ${btn.font_size || 14}px; font-family: ${fontFamily}; ${borderStyle}">
                             ${iconHtml}
-                            <span class="tracking-wide truncate">${escapeHtml(btn.text || 'Tombol Aksi')}</span>
+                            <span class="tracking-wide truncate">${escapeHtml(replacePlaceholders(btn.text || 'Tombol Aksi'))}</span>
                         </a>
                     `;
                 }
@@ -2126,19 +2158,28 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         document.addEventListener('touchstart', autoPlayOnFirstTouch, { once: true });
 
         // =======================================================
-        // SHARE BROSUR HANDLER
+        // SHARE BROSUR HANDLER (PRESERVE KODE MITRA OTOMATIS)
         // =======================================================
         function shareBrosur() {
+            let shareUrl = window.location.href;
+            try {
+                const u = new URL(shareUrl);
+                if (currentRefCode && currentRefCode !== 'organik') {
+                    u.searchParams.set('ref', currentRefCode);
+                }
+                shareUrl = u.toString();
+            } catch(e) {}
+
             const shareData = {
                 title: 'Brosur Digital Villa Quran Indonesia',
                 text: 'Undangan Khusus & Brosur Informasi Pendidikan Santri Tahfidz Bersanad Villa Quran Indonesia.',
-                url: window.location.href
+                url: shareUrl
             };
             if (navigator.share) {
                 navigator.share(shareData).catch(() => {});
             } else if (navigator.clipboard) {
-                navigator.clipboard.writeText(window.location.href).then(() => {
-                    alert('Link brosur berhasil disalin ke clipboard!');
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('Link brosur mitra berhasil disalin ke clipboard!');
                 });
             }
         }
