@@ -146,7 +146,8 @@ $columns_to_check = [
     'fasilitas_image_items'     => "LONGTEXT",
     'fasilitas_video_items'     => "LONGTEXT",
     'fasilitas_button_items'    => "LONGTEXT",
-    'fasilitas_slide_items'     => "LONGTEXT"
+    'fasilitas_slide_items'     => "LONGTEXT",
+    'all_frames_json'           => "LONGTEXT"
 ];
 foreach ($columns_to_check as $col => $type) {
     $res = $conn->query("SHOW COLUMNS FROM pengaturan_brosur LIKE '$col'");
@@ -477,6 +478,25 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
                            WHERE id = 1";
+        }
+
+        // Simpan all_frames_json jika dikirim
+        if (!empty($_POST['all_frames_data_json'])) {
+            $raw_all = $_POST['all_frames_data_json'];
+            $dec_all = json_decode($raw_all, true);
+            if (is_array($dec_all)) {
+                if (isset($dec_all[$active_frame])) {
+                    $dec_all[$active_frame]['bgUrl']     = $bg_url;
+                    $dec_all[$active_frame]['bgOpacity'] = $bg_overlay_opacity;
+                    $dec_all[$active_frame]['texts']     = $clean_text_items;
+                    $dec_all[$active_frame]['images']    = $clean_img_items;
+                    $dec_all[$active_frame]['videos']    = $clean_vid_items;
+                    $dec_all[$active_frame]['buttons']   = $clean_btn_items;
+                    $dec_all[$active_frame]['slides']    = $clean_slide_items;
+                }
+                $final_all_esc = $conn->real_escape_string(json_encode($dec_all, JSON_UNESCAPED_UNICODE));
+                $conn->query("UPDATE pengaturan_brosur SET all_frames_json = '$final_all_esc' WHERE id = 1");
+            }
         }
 
         $ok = $conn->query($sql_master);
@@ -1392,6 +1412,124 @@ if ($raw_fasilitas_slides !== null && $raw_fasilitas_slides !== '') {
     $fasilitas_slide_items = [];
 }
 
+// ==============================================================
+// 6. DYNAMIC FRAMES DICTIONARY (MENDUKUNG TAMBAH/EDIT/HAPUS FRAME)
+// ==============================================================
+$all_frames_dict = [];
+$raw_all_frames = $cfg['all_frames_json'] ?? null;
+if (!empty($raw_all_frames)) {
+    $decoded_all = json_decode($raw_all_frames, true);
+    if (is_array($decoded_all) && !empty($decoded_all)) {
+        $all_frames_dict = $decoded_all;
+    }
+}
+
+// Fallback initial default frames jika belum ada di all_frames_json
+if (empty($all_frames_dict)) {
+    $all_frames_dict = [
+        'home' => [
+            'id'           => 'home',
+            'name'         => 'Depan',
+            'title'        => 'Frame: Depan',
+            'subtitle'     => 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Cover / Halaman Depan',
+            'menuPill'     => 'Menu #1 di Bottom Bar',
+            'icon'         => 'fa-house',
+            'theme'        => 'emerald',
+            'iconGradient' => 'from-emerald-500 to-[#0b8478]',
+            'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
+            'bgUrl'        => $cfg['cover_bg_url'] ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80',
+            'bgOpacity'    => isset($cfg['cover_overlay_opacity']) ? (float)$cfg['cover_overlay_opacity'] : 0.88,
+            'texts'        => $text_items,
+            'images'       => $image_items,
+            'videos'       => $video_items,
+            'buttons'      => $button_items,
+            'slides'       => $slide_items
+        ],
+        'prestasi' => [
+            'id'           => 'prestasi',
+            'name'         => 'Prestasi',
+            'title'        => 'Frame: Prestasi',
+            'subtitle'     => 'Frame ini mengatur tampilan galeri pencapaian, piala, medali & prestasi santri (Menu <strong>Prestasi</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Menu Prestasi Brosur',
+            'menuPill'     => 'Menu #2 di Bottom Bar',
+            'icon'         => 'fa-trophy',
+            'theme'        => 'amber',
+            'iconGradient' => 'from-amber-500 to-amber-600',
+            'badgeClass'   => 'bg-amber-100 text-amber-900 border-amber-300',
+            'bgUrl'        => $prestasi_bg_url,
+            'bgOpacity'    => (float)$prestasi_overlay_opacity,
+            'texts'        => $prestasi_text_items,
+            'images'       => $prestasi_image_items,
+            'videos'       => $prestasi_video_items,
+            'buttons'      => $prestasi_button_items,
+            'slides'       => $prestasi_slide_items
+        ],
+        'unggulan' => [
+            'id'           => 'unggulan',
+            'name'         => 'Unggulan',
+            'title'        => 'Frame: Unggulan',
+            'subtitle'     => 'Frame ini mengatur tampilan program, fasilitas & keunggulan pesantren (Menu <strong>Unggulan</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Program & Keunggulan',
+            'menuPill'     => 'Menu #3 di Bottom Bar',
+            'icon'         => 'fa-star',
+            'theme'        => 'orange',
+            'iconGradient' => 'from-amber-500 via-orange-500 to-amber-600',
+            'badgeClass'   => 'bg-orange-100 text-orange-900 border-orange-300',
+            'bgUrl'        => $unggulan_bg_url,
+            'bgOpacity'    => (float)$unggulan_overlay_opacity,
+            'texts'        => $unggulan_text_items,
+            'images'       => $unggulan_image_items,
+            'videos'       => $unggulan_video_items,
+            'buttons'      => $unggulan_button_items,
+            'slides'       => $unggulan_slide_items
+        ],
+        'pengajar' => [
+            'id'           => 'pengajar',
+            'name'         => 'Pengajar',
+            'title'        => 'Frame: Pengajar',
+            'subtitle'     => 'Frame ini mengatur tampilan profil asatidz, dewan guru & pengasuh (Menu <strong>Pengajar</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Dewan Pengajar & Asatidz',
+            'menuPill'     => 'Menu #4 di Bottom Bar',
+            'icon'         => 'fa-chalkboard-user',
+            'theme'        => 'teal',
+            'iconGradient' => 'from-teal-500 via-emerald-600 to-cyan-600',
+            'badgeClass'   => 'bg-teal-100 text-teal-900 border-teal-300',
+            'bgUrl'        => $pengajar_bg_url,
+            'bgOpacity'    => (float)$pengajar_overlay_opacity,
+            'texts'        => $pengajar_text_items,
+            'images'       => $pengajar_image_items,
+            'videos'       => $pengajar_video_items,
+            'buttons'      => $pengajar_button_items,
+            'slides'       => $pengajar_slide_items
+        ],
+        'fasilitas' => [
+            'id'           => 'fasilitas',
+            'name'         => 'Fasilitas',
+            'title'        => 'Frame: Fasilitas',
+            'subtitle'     => 'Frame ini mengatur tampilan sarana, prasarana, asrama & fasilitas pesantren (Menu <strong>Fasilitas</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Sarana & Fasilitas',
+            'menuPill'     => 'Menu #5 di Bottom Bar',
+            'icon'         => 'fa-building-columns',
+            'theme'        => 'sky',
+            'iconGradient' => 'from-sky-500 via-blue-600 to-indigo-600',
+            'badgeClass'   => 'bg-sky-100 text-sky-900 border-sky-300',
+            'bgUrl'        => $fasilitas_bg_url,
+            'bgOpacity'    => (float)$fasilitas_overlay_opacity,
+            'texts'        => $fasilitas_text_items,
+            'images'       => $fasilitas_image_items,
+            'videos'       => $fasilitas_video_items,
+            'buttons'      => $fasilitas_button_items,
+            'slides'       => $fasilitas_slide_items
+        ]
+    ];
+}
+
+// Pastikan active_frame terdaftar
+if (!isset($all_frames_dict[$active_frame])) {
+    $active_frame = array_key_first($all_frames_dict) ?? 'home';
+}
+
 $active_menu = 'brosur_settings';
 ?>
 <!DOCTYPE html>
@@ -1574,42 +1712,23 @@ $active_menu = 'brosur_settings';
                 <?php endif; ?>
 
                 <!-- ============================================================== -->
-                <!-- FRAME SWITCHER BAR: PILIH ANTARA FRAME HOME & FRAME PRESTASI   -->
+                <!-- FRAME SWITCHER BAR: DINAMIS BISA TAMBAH & KELOLA SEMUA FRAME   -->
                 <!-- ============================================================== -->
-                <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 p-2 sm:p-2.5 rounded-3xl border border-slate-700/80 shadow-md flex items-center gap-2">
+                <div class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 p-2 sm:p-2.5 rounded-3xl border border-slate-700/80 shadow-md flex items-center gap-2 overflow-x-auto no-scrollbar">
                     <div class="text-white text-xs font-black uppercase tracking-wider px-2 shrink-0 flex items-center gap-1.5">
                         <i class="fas fa-layer-group text-amber-400"></i>
                         <span class="hidden sm:inline">Pilih Frame:</span>
                     </div>
                     
-                    <!-- Tombol Frame 1: Depan -->
-                    <button type="button" id="frame-btn-home" onclick="switchFrame('home')" class="flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer">
-                        <i class="fas fa-house text-xs"></i>
-                        <span>Depan</span>
-                    </button>
+                    <!-- Dynamic Frame Buttons Container -->
+                    <div id="frame-switcher-buttons-container" class="flex items-center gap-1.5 flex-1 overflow-x-auto no-scrollbar">
+                        <!-- Diisi secara dinamis oleh JavaScript renderFrameSwitcher() -->
+                    </div>
 
-                    <!-- Tombol Frame 2: Prestasi -->
-                    <button type="button" id="frame-btn-prestasi" onclick="switchFrame('prestasi')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-                        <i class="fas fa-trophy text-xs text-amber-400"></i>
-                        <span>Prestasi</span>
-                    </button>
-
-                    <!-- Tombol Frame 3: Unggulan -->
-                    <button type="button" id="frame-btn-unggulan" onclick="switchFrame('unggulan')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-                        <i class="fas fa-star text-xs text-amber-400"></i>
-                        <span>Unggulan</span>
-                    </button>
-
-                    <!-- Tombol Frame 4: Pengajar -->
-                    <button type="button" id="frame-btn-pengajar" onclick="switchFrame('pengajar')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-                        <i class="fas fa-chalkboard-user text-xs text-teal-400"></i>
-                        <span>Pengajar</span>
-                    </button>
-
-                    <!-- Tombol Frame 5: Fasilitas -->
-                    <button type="button" id="frame-btn-fasilitas" onclick="switchFrame('fasilitas')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
-                        <i class="fas fa-building-columns text-xs text-sky-400"></i>
-                        <span>Fasilitas</span>
+                    <!-- Tombol Tambah Frame Baru -->
+                    <button type="button" onclick="openAddFrameModal()" class="py-2.5 px-3.5 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-teal-950 shadow-md transform active:scale-95 cursor-pointer shrink-0 whitespace-nowrap" title="Tambah Frame Baru ke Brosur">
+                        <i class="fas fa-plus text-xs"></i>
+                        <span>Tambah Frame</span>
                     </button>
                 </div>
 
@@ -1625,13 +1744,33 @@ $active_menu = 'brosur_settings';
                                 <i id="frame-header-icon" class="fas fa-house"></i>
                             </div>
                             <div class="min-w-0 flex-1">
-                                <h2 id="frame-header-title" class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Depan</h2>
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h2 id="frame-header-title" class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Depan</h2>
+                                    <span id="frame-header-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                        Cover / Halaman Depan
+                                    </span>
+                                </div>
+                                <p id="frame-header-desc" class="text-xs text-slate-500 mt-0.5">
+                                    Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital.
+                                </p>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2.5 shrink-0">
+                        <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                            <!-- Tombol Ubah Nama Frame -->
+                            <button type="button" onclick="openRenameFrameModal()" class="px-3.5 py-2 rounded-2xl bg-slate-100 hover:bg-teal-50 hover:text-teal-800 text-slate-700 border border-slate-200 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95" title="Ubah Nama & Ikon Frame Ini">
+                                <i class="fas fa-pen-to-square text-teal-600"></i>
+                                <span>Ubah Nama</span>
+                            </button>
+
+                            <!-- Tombol Hapus Frame (Hanya untuk frame selain home) -->
+                            <button type="button" id="btn-delete-frame" onclick="confirmDeleteCurrentFrame()" class="hidden px-3.5 py-2 rounded-2xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs transition flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95" title="Hapus Frame Ini">
+                                <i class="fas fa-trash-can text-rose-600"></i>
+                                <span>Hapus Frame</span>
+                            </button>
+
                             <!-- TOMBOL MASTER SAVE UNTUK SELURUH PENGATURAN -->
-                            <button type="button" id="btn-master-save" onclick="saveAllSettings()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#0b8478] via-emerald-600 to-teal-700 hover:from-[#086b61] hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer ring-2 ring-emerald-300 whitespace-nowrap" title="Simpan Semua Pengaturan (Background, Tulisan, Gambar, Video, Tombol) dalam 1 Klik">
+                            <button type="button" id="btn-master-save" onclick="saveAllSettings()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#0b8478] via-emerald-600 to-teal-700 hover:from-[#086b61] hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer ring-2 ring-emerald-300 whitespace-nowrap" title="Simpan Semua Pengaturan dalam 1 Klik">
                                 <i class="fas fa-floppy-disk text-amber-300 text-base"></i>
                                 <span>Simpan Seluruh Pengaturan</span>
                             </button>
@@ -2369,37 +2508,9 @@ $active_menu = 'brosur_settings';
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimButtonLayers() -->
                             </div>
 
-                            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME, PRESTASI & UNGGULAN) -->
-                            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-3 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>; color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;">
-                                <!-- Menu 1: Home -->
-                                <button type="button" onclick="switchFrame('home')" id="sim-menu-home-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5" style="color: <?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>;" title="Menu Home (Frame Home)">
-                                    <i id="sim-menu-home-icon" class="fas fa-house text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                                    <span id="sim-menu-home-label" class="text-[9.5px] font-bold tracking-wider leading-none">Home</span>
-                                </button>
-
-                                <!-- Menu 2: Prestasi -->
-                                <button type="button" onclick="switchFrame('prestasi')" id="sim-menu-prestasi-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Prestasi (Frame Prestasi)">
-                                    <i id="sim-menu-prestasi-icon" class="fas fa-trophy text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                                    <span id="sim-menu-prestasi-label" class="text-[9.5px] font-bold tracking-wider leading-none">Prestasi</span>
-                                </button>
-
-                                <!-- Menu 3: Unggulan -->
-                                <button type="button" onclick="switchFrame('unggulan')" id="sim-menu-unggulan-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Unggulan (Frame Unggulan)">
-                                    <i id="sim-menu-unggulan-icon" class="fas fa-star text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                                    <span id="sim-menu-unggulan-label" class="text-[9.5px] font-bold tracking-wider leading-none">Unggulan</span>
-                                </button>
-
-                                <!-- Menu 4: Pengajar -->
-                                <button type="button" onclick="switchFrame('pengajar')" id="sim-menu-pengajar-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Pengajar (Frame Pengajar)">
-                                    <i id="sim-menu-pengajar-icon" class="fas fa-chalkboard-user text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                                    <span id="sim-menu-pengajar-label" class="text-[9.5px] font-bold tracking-wider leading-none">Pengajar</span>
-                                </button>
-
-                                <!-- Menu 5: Fasilitas -->
-                                <button type="button" onclick="switchFrame('fasilitas')" id="sim-menu-fasilitas-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;" title="Menu Fasilitas (Frame Fasilitas)">
-                                    <i id="sim-menu-fasilitas-icon" class="fas fa-building-columns text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                                    <span id="sim-menu-fasilitas-label" class="text-[9.5px] font-bold tracking-wider leading-none">Fasilitas</span>
-                                </button>
+                            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI -->
+                            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-2 border-t border-white/10 backdrop-blur-md flex items-center justify-around overflow-x-auto no-scrollbar shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>; color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSimBottomBar() -->
                             </div>
 
                         </div>
@@ -2424,147 +2535,241 @@ $active_menu = 'brosur_settings';
 
     </main>
 
+    <!-- ============================================================== -->
+    <!-- MODAL TAMBAH FRAME BARU                                        -->
+    <!-- ============================================================== -->
+    <div id="modal-add-frame" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-100 space-y-5 transform transition-all">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-base sm:text-lg text-slate-900">Tambah Frame Baru</h3>
+                        <p class="text-[11px] text-slate-500">Buat frame/halaman baru untuk brosur digital Anda</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAddFrameModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Input Nama Frame -->
+                <div>
+                    <label class="block text-xs font-black text-slate-700 mb-1">Nama Frame <span class="text-rose-500">*</span></label>
+                    <input type="text" id="input-new-frame-name" placeholder="Misal: Ekstrakurikuler, Biaya, Asrama, dsb" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-sm font-bold focus:border-amber-500 focus:outline-none bg-slate-50 focus:bg-white transition">
+                </div>
+
+                <!-- Pilihan Ikon Frame -->
+                <div>
+                    <label class="block text-xs font-black text-slate-700 mb-1.5">Pilih Ikon Menu</label>
+                    <div id="icon-picker-add-frame" class="grid grid-cols-6 gap-2 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200/80">
+                        <!-- Icon options rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Pilihan Warna / Tema Badge -->
+                <div>
+                    <label class="block text-xs font-black text-slate-700 mb-1.5">Pilih Tema Warna</label>
+                    <div id="theme-picker-add-frame" class="flex flex-wrap gap-2">
+                        <!-- Theme options rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeAddFrameModal()" class="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="submitAddNewFrame()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-teal-950 text-xs font-black shadow-md transition active:scale-95 cursor-pointer">
+                    <i class="fas fa-check mr-1"></i> Buat Frame Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL UBAH NAMA & IKON FRAME                                   -->
+    <!-- ============================================================== -->
+    <div id="modal-rename-frame" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-100 space-y-5 transform transition-all">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-lg">
+                        <i class="fas fa-pen-to-square"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-base sm:text-lg text-slate-900">Ubah Nama & Ikon Frame</h3>
+                        <p class="text-[11px] text-slate-500">Sesuaikan penamaan menu dan ikon frame ini</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeRenameFrameModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition cursor-pointer">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Input Nama Frame -->
+                <div>
+                    <label class="block text-xs font-black text-slate-700 mb-1">Nama Frame <span class="text-rose-500">*</span></label>
+                    <input type="text" id="input-rename-frame-name" placeholder="Nama Frame" class="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 text-sm font-bold focus:border-teal-500 focus:outline-none bg-slate-50 focus:bg-white transition">
+                </div>
+
+                <!-- Pilihan Ikon Frame -->
+                <div>
+                    <label class="block text-xs font-black text-slate-700 mb-1.5">Pilih Ikon Menu</label>
+                    <div id="icon-picker-rename-frame" class="grid grid-cols-6 gap-2 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200/80">
+                        <!-- Icon options rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Pilihan Warna / Tema Badge -->
+                <div>
+                    <label class="block text-xs font-black text-slate-700 mb-1.5">Pilih Tema Warna</label>
+                    <div id="theme-picker-rename-frame" class="flex flex-wrap gap-2">
+                        <!-- Theme options rendered by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+                <button type="button" onclick="closeRenameFrameModal()" class="px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer">
+                    Batal
+                </button>
+                <button type="button" onclick="submitRenameFrame()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-700 hover:from-teal-700 hover:to-emerald-800 text-white text-xs font-black shadow-md transition active:scale-95 cursor-pointer">
+                    <i class="fas fa-check mr-1"></i> Simpan Perubahan
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- SCRIPT INTERAKTIF PENGATURAN GAMBAR, TULISAN & SMART DRAGGABLE GUIDELINES -->
     <script>
         // ==========================================
-        // 1. STATE & KONFIGURASI MULTI-FRAME (HOME & PRESTASI)
+        // 1. STATE & KONFIGURASI MULTI-FRAME DINAMIS
         // ==========================================
         
-        let framesData = {
-            home: {
-                id: 'home',
-                name: 'Depan',
-                title: 'Frame: Depan',
-                subtitle: 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).',
-                badge: 'Cover / Halaman Depan',
-                menuPill: 'Menu #1 di Bottom Bar',
-                icon: 'fa-house',
-                iconGradient: 'from-emerald-500 to-[#0b8478]',
-                badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300',
-                bgUrl: <?= json_encode($cfg['cover_bg_url'] ?? '') ?>,
-                bgOpacity: <?= (float)($cfg['cover_overlay_opacity'] ?? 0.88) ?>,
-                texts: <?= json_encode($text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($slide_items, JSON_UNESCAPED_UNICODE) ?>
-            },
-            prestasi: {
-                id: 'prestasi',
-                name: 'Prestasi',
-                title: 'Frame: Prestasi',
-                subtitle: 'Frame ini mengatur tampilan galeri pencapaian, piala, medali & prestasi santri (Menu <strong>Prestasi</strong> pada Bottom Navigation Bar).',
-                badge: 'Menu Prestasi Brosur',
-                menuPill: 'Menu #2 di Bottom Bar',
-                icon: 'fa-trophy',
-                iconGradient: 'from-amber-500 to-amber-600',
-                badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',
-                bgUrl: <?= json_encode($prestasi_bg_url) ?>,
-                bgOpacity: <?= (float)$prestasi_overlay_opacity ?>,
-                texts: <?= json_encode($prestasi_text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($prestasi_image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($prestasi_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($prestasi_button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($prestasi_slide_items, JSON_UNESCAPED_UNICODE) ?>
-            },
-            unggulan: {
-                id: 'unggulan',
-                name: 'Unggulan',
-                title: 'Frame: Unggulan',
-                subtitle: 'Frame ini mengatur tampilan program, fasilitas & keunggulan pesantren (Menu <strong>Unggulan</strong> pada Bottom Navigation Bar).',
-                badge: 'Program & Keunggulan',
-                menuPill: 'Menu #3 di Bottom Bar',
-                icon: 'fa-star',
-                iconGradient: 'from-amber-500 via-orange-500 to-amber-600',
-                badgeClass: 'bg-orange-100 text-orange-900 border-orange-300',
-                bgUrl: <?= json_encode($unggulan_bg_url) ?>,
-                bgOpacity: <?= (float)$unggulan_overlay_opacity ?>,
-                texts: <?= json_encode($unggulan_text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($unggulan_image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($unggulan_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($unggulan_button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($unggulan_slide_items, JSON_UNESCAPED_UNICODE) ?>
-            },
-            pengajar: {
-                id: 'pengajar',
-                name: 'Pengajar',
-                title: 'Frame: Pengajar',
-                subtitle: 'Frame ini mengatur tampilan profil asatidz, dewan guru & pengasuh (Menu <strong>Pengajar</strong> pada Bottom Navigation Bar).',
-                badge: 'Dewan Pengajar & Asatidz',
-                menuPill: 'Menu #4 di Bottom Bar',
-                icon: 'fa-chalkboard-user',
-                iconGradient: 'from-teal-500 via-emerald-600 to-cyan-600',
-                badgeClass: 'bg-teal-100 text-teal-900 border-teal-300',
-                bgUrl: <?= json_encode($pengajar_bg_url) ?>,
-                bgOpacity: <?= (float)$pengajar_overlay_opacity ?>,
-                texts: <?= json_encode($pengajar_text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($pengajar_image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($pengajar_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($pengajar_button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($pengajar_slide_items, JSON_UNESCAPED_UNICODE) ?>
-            },
-            fasilitas: {
-                id: 'fasilitas',
-                name: 'Fasilitas',
-                title: 'Frame: Fasilitas',
-                subtitle: 'Frame ini mengatur tampilan sarana, prasarana, asrama & fasilitas pesantren (Menu <strong>Fasilitas</strong> pada Bottom Navigation Bar).',
-                badge: 'Sarana & Fasilitas',
-                menuPill: 'Menu #5 di Bottom Bar',
-                icon: 'fa-building-columns',
-                iconGradient: 'from-sky-500 via-blue-600 to-indigo-600',
-                badgeClass: 'bg-sky-100 text-sky-900 border-sky-300',
-                bgUrl: <?= json_encode($fasilitas_bg_url) ?>,
-                bgOpacity: <?= (float)$fasilitas_overlay_opacity ?>,
-                texts: <?= json_encode($fasilitas_text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($fasilitas_image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($fasilitas_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($fasilitas_button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($fasilitas_slide_items, JSON_UNESCAPED_UNICODE) ?>
-            }
-        };
+        let framesData = <?= json_encode($all_frames_dict, JSON_UNESCAPED_UNICODE) ?>;
+        let frameOrder = Object.keys(framesData);
 
         let currentActiveFrame = '<?= $active_frame ?>';
+        if (!framesData[currentActiveFrame]) {
+            currentActiveFrame = frameOrder[0] || 'home';
+        }
         let currentActiveTab   = '<?= $current_tab ?>';
 
         // Pointer item aktif sesuai frame yang sedang dibuka
-        let textItems   = framesData[currentActiveFrame].texts;
-        let imageItems  = framesData[currentActiveFrame].images;
-        let videoItems  = framesData[currentActiveFrame].videos;
-        let buttonItems = framesData[currentActiveFrame].buttons;
-        let slideItems  = framesData[currentActiveFrame].slides || [];
+        let textItems   = framesData[currentActiveFrame].texts   || [];
+        let imageItems  = framesData[currentActiveFrame].images  || [];
+        let videoItems  = framesData[currentActiveFrame].videos  || [];
+        let buttonItems = framesData[currentActiveFrame].buttons || [];
+        let slideItems  = framesData[currentActiveFrame].slides  || [];
+
+        // Konfigurasi Ikon & Tema
+        const availableFrameIcons = [
+            'fa-house', 'fa-trophy', 'fa-star', 'fa-chalkboard-user', 'fa-building-columns',
+            'fa-futbol', 'fa-money-bill-wave', 'fa-book-quran', 'fa-graduation-cap', 'fa-campground',
+            'fa-camera', 'fa-calendar-days', 'fa-mosque', 'fa-utensils', 'fa-heart-pulse',
+            'fa-handshake', 'fa-map-location-dot', 'fa-certificate', 'fa-shield-halved', 'fa-bullseye',
+            'fa-award', 'fa-users', 'fa-envelope-open-text', 'fa-phone', 'fa-globe'
+        ];
+
+        const availableThemes = [
+            { id: 'emerald', name: 'Emerald', gradient: 'from-emerald-500 to-[#0b8478]', badgeClass: 'bg-emerald-100 text-emerald-900 border-emerald-300', colorDot: 'bg-emerald-500', btnActive: 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400', iconColor: 'text-emerald-300' },
+            { id: 'amber',   name: 'Amber',   gradient: 'from-amber-500 to-amber-600',       badgeClass: 'bg-amber-100 text-amber-900 border-amber-300',       colorDot: 'bg-amber-500',   btnActive: 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md ring-2 ring-amber-400', iconColor: 'text-amber-400' },
+            { id: 'orange',  name: 'Orange',  gradient: 'from-amber-500 via-orange-500 to-amber-600', badgeClass: 'bg-orange-100 text-orange-900 border-orange-300', colorDot: 'bg-orange-500', btnActive: 'bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md ring-2 ring-orange-400', iconColor: 'text-amber-400' },
+            { id: 'teal',    name: 'Teal',    gradient: 'from-teal-500 via-emerald-600 to-cyan-600', badgeClass: 'bg-teal-100 text-teal-900 border-teal-300', colorDot: 'bg-teal-500',     btnActive: 'bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-md ring-2 ring-teal-400', iconColor: 'text-teal-400' },
+            { id: 'sky',     name: 'Sky',     gradient: 'from-sky-500 via-blue-600 to-indigo-600', badgeClass: 'bg-sky-100 text-sky-900 border-sky-300', colorDot: 'bg-sky-500',         btnActive: 'bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-md ring-2 ring-sky-400', iconColor: 'text-sky-400' },
+            { id: 'purple',  name: 'Purple',  gradient: 'from-purple-500 to-indigo-600',     badgeClass: 'bg-purple-100 text-purple-900 border-purple-300',     colorDot: 'bg-purple-500',  btnActive: 'bg-gradient-to-r from-purple-600 to-indigo-700 text-white shadow-md ring-2 ring-purple-400', iconColor: 'text-purple-300' },
+            { id: 'rose',    name: 'Rose',    gradient: 'from-rose-500 to-pink-600',         badgeClass: 'bg-rose-100 text-rose-900 border-rose-300',         colorDot: 'bg-rose-500',    btnActive: 'bg-gradient-to-r from-rose-600 to-pink-700 text-white shadow-md ring-2 ring-rose-400', iconColor: 'text-rose-300' },
+            { id: 'indigo',  name: 'Indigo',  gradient: 'from-indigo-500 to-blue-600',     badgeClass: 'bg-indigo-100 text-indigo-900 border-indigo-300',     colorDot: 'bg-indigo-500',  btnActive: 'bg-gradient-to-r from-indigo-600 to-blue-700 text-white shadow-md ring-2 ring-indigo-400', iconColor: 'text-indigo-300' }
+        ];
+
+        let selectedNewFrameIcon = 'fa-star';
+        let selectedNewFrameTheme = 'emerald';
+        let selectedRenameFrameIcon = 'fa-star';
+        let selectedRenameFrameTheme = 'emerald';
+
+        function renderFrameSwitcher() {
+            const container = document.getElementById('frame-switcher-buttons-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const inactiveClass = 'py-2.5 px-3.5 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer shrink-0 whitespace-nowrap min-w-[90px]';
+
+            frameOrder.forEach((fKey) => {
+                const data = framesData[fKey];
+                if (!data) return;
+
+                const isActive = (fKey === currentActiveFrame);
+                const themeKey = data.theme || (fKey === 'prestasi' ? 'amber' : (fKey === 'unggulan' ? 'orange' : (fKey === 'pengajar' ? 'teal' : (fKey === 'fasilitas' ? 'sky' : 'emerald'))));
+                const themeObj = availableThemes.find(t => t.id === themeKey) || availableThemes[0];
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.id = `frame-btn-${fKey}`;
+                btn.onclick = () => switchFrame(fKey);
+                btn.className = isActive 
+                    ? `py-2.5 px-3.5 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 ${themeObj.btnActive} cursor-pointer shrink-0 whitespace-nowrap min-w-[90px]`
+                    : inactiveClass;
+
+                btn.innerHTML = `
+                    <i class="fas ${data.icon || 'fa-layer-group'} text-xs ${isActive ? 'text-white' : themeObj.iconColor}"></i>
+                    <span>${escapeHtml(data.name || fKey)}</span>
+                `;
+
+                container.appendChild(btn);
+            });
+        }
+
+        function renderSimBottomBar() {
+            const container = document.getElementById('sim-bottom-bar');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const activeColor = '<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>';
+            const normalColor = '<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>';
+
+            frameOrder.forEach((fKey) => {
+                const data = framesData[fKey];
+                if (!data) return;
+
+                const isActive = (fKey === currentActiveFrame);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.id = `sim-menu-${fKey}-btn`;
+                btn.onclick = () => switchFrame(fKey);
+                btn.className = `flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 px-1 flex-1 min-w-[48px] shrink-0 ${isActive ? '' : 'opacity-70 hover:opacity-100'}`;
+                btn.style.color = isActive ? activeColor : normalColor;
+                btn.title = `Menu ${data.name || fKey}`;
+
+                btn.innerHTML = `
+                    <i class="fas ${data.icon || 'fa-circle'} text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                    <span class="text-[9.5px] font-bold tracking-wider leading-none truncate max-w-[58px]">${escapeHtml(data.name || fKey)}</span>
+                `;
+
+                container.appendChild(btn);
+            });
+        }
 
         function switchFrame(frame) {
-            if (!['home', 'prestasi', 'unggulan', 'pengajar', 'fasilitas'].includes(frame)) frame = 'home';
+            if (!framesData[frame]) {
+                frame = frameOrder[0] || 'home';
+            }
             currentActiveFrame = frame;
 
             const data = framesData[frame];
-            textItems   = data.texts;
-            imageItems  = data.images;
-            videoItems  = data.videos;
-            buttonItems = data.buttons;
-            slideItems  = data.slides || [];
+            textItems   = data.texts   || [];
+            imageItems  = data.images  || [];
+            videoItems  = data.videos  || [];
+            buttonItems = data.buttons || [];
+            slideItems  = data.slides  || [];
 
-            // 1. Update Tombol Switcher Frame
-            const btnHome = document.getElementById('frame-btn-home');
-            const btnPrestasi = document.getElementById('frame-btn-prestasi');
-            const btnUnggulan = document.getElementById('frame-btn-unggulan');
-            const btnPengajar = document.getElementById('frame-btn-pengajar');
-            const btnFasilitas = document.getElementById('frame-btn-fasilitas');
-            
-            const activeClassMap = {
-                home: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer',
-                prestasi: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md ring-2 ring-amber-400 cursor-pointer',
-                unggulan: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-600 text-white shadow-md ring-2 ring-orange-400 cursor-pointer',
-                pengajar: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-teal-600 to-cyan-700 text-white shadow-md ring-2 ring-teal-400 cursor-pointer',
-                fasilitas: 'flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600 to-blue-700 text-white shadow-md ring-2 ring-sky-400 cursor-pointer'
-            };
-            const inactiveClass = 'flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer';
-
-            if (btnHome) btnHome.className = (frame === 'home') ? activeClassMap.home : inactiveClass;
-            if (btnPrestasi) btnPrestasi.className = (frame === 'prestasi') ? activeClassMap.prestasi : inactiveClass;
-            if (btnUnggulan) btnUnggulan.className = (frame === 'unggulan') ? activeClassMap.unggulan : inactiveClass;
-            if (btnPengajar) btnPengajar.className = (frame === 'pengajar') ? activeClassMap.pengajar : inactiveClass;
-            if (btnFasilitas) btnFasilitas.className = (frame === 'fasilitas') ? activeClassMap.fasilitas : inactiveClass;
+            // 1. Re-render Switcher buttons & Bottom Bar
+            renderFrameSwitcher();
+            renderSimBottomBar();
 
             // 2. Update Header Info Frame
             const headerTitle    = document.getElementById('frame-header-title');
@@ -2572,17 +2777,28 @@ $active_menu = 'brosur_settings';
             const headerDesc     = document.getElementById('frame-header-desc');
             const headerIcon     = document.getElementById('frame-header-icon');
             const headerIconBox  = document.getElementById('frame-header-icon-box');
-            const headerMenuText = document.getElementById('frame-header-menu-text');
+            const btnDelete      = document.getElementById('btn-delete-frame');
 
-            if (headerTitle) headerTitle.innerText = data.title;
+            const themeKey = data.theme || (frame === 'prestasi' ? 'amber' : (frame === 'unggulan' ? 'orange' : (frame === 'pengajar' ? 'teal' : (frame === 'fasilitas' ? 'sky' : 'emerald'))));
+            const themeObj = availableThemes.find(t => t.id === themeKey) || availableThemes[0];
+
+            if (headerTitle) headerTitle.innerText = data.title || `Frame: ${data.name}`;
             if (headerBadge) {
-                headerBadge.innerText = data.badge;
-                headerBadge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${data.badgeClass}`;
+                headerBadge.innerText = data.badge || data.name;
+                headerBadge.className = `px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${themeObj.badgeClass}`;
             }
-            if (headerDesc) headerDesc.innerHTML = data.subtitle;
-            if (headerIcon) headerIcon.className = `fas ${data.icon}`;
-            if (headerIconBox) headerIconBox.className = `w-12 h-12 rounded-2xl bg-gradient-to-br ${data.iconGradient} text-white flex items-center justify-center text-xl shadow-md shrink-0`;
-            if (headerMenuText) headerMenuText.innerText = data.menuPill;
+            if (headerDesc) headerDesc.innerHTML = data.subtitle || `Frame ini mengatur tampilan ${data.name}.`;
+            if (headerIcon) headerIcon.className = `fas ${data.icon || 'fa-layer-group'}`;
+            if (headerIconBox) headerIconBox.className = `w-12 h-12 rounded-2xl bg-gradient-to-br ${themeObj.gradient} text-white flex items-center justify-center text-xl shadow-md shrink-0`;
+            
+            // Show/hide tombol hapus (frame home tidak bisa dihapus)
+            if (btnDelete) {
+                if (frame === 'home') {
+                    btnDelete.classList.add('hidden');
+                } else {
+                    btnDelete.classList.remove('hidden');
+                }
+            }
 
             // 3. Update Hidden Inputs active_frame di semua Form
             document.querySelectorAll('.input-active-frame').forEach(inp => inp.value = frame);
@@ -2595,10 +2811,10 @@ $active_menu = 'brosur_settings';
             const thumbBgOverlay = document.getElementById('thumb-bg-overlay');
 
             if (bgUrlInput) bgUrlInput.value = data.bgUrl || '';
-            if (bgOpacityInput) bgOpacityInput.value = data.bgOpacity;
-            if (bgOpacityLabel) bgOpacityLabel.innerText = Math.round(data.bgOpacity * 100) + '%';
+            if (bgOpacityInput) bgOpacityInput.value = data.bgOpacity ?? 0.88;
+            if (bgOpacityLabel) bgOpacityLabel.innerText = Math.round((data.bgOpacity ?? 0.88) * 100) + '%';
             if (thumbBgBox) thumbBgBox.style.backgroundImage = data.bgUrl ? `url('${data.bgUrl}')` : 'none';
-            if (thumbBgOverlay) thumbBgOverlay.style.opacity = data.bgOpacity;
+            if (thumbBgOverlay) thumbBgOverlay.style.opacity = data.bgOpacity ?? 0.88;
 
             // Update Tab Badges
             const badgeText = document.getElementById('tab-badge-text');
@@ -2616,49 +2832,262 @@ $active_menu = 'brosur_settings';
             if (slideCountBadge) slideCountBadge.innerText = `${slideItems.length} Slide`;
 
             // 5. Update Background Canvas Simulasi
-            updateCanvasBackground(data.bgUrl, data.bgOpacity);
+            updateCanvasBackground(data.bgUrl, data.bgOpacity ?? 0.88);
 
-            // 6. Update Highlight Menu Aktif di Bottom Bar Simulasi
-            const navHome = document.getElementById('sim-menu-home-btn');
-            const navPrestasi = document.getElementById('sim-menu-prestasi-btn');
-            const navUnggulan = document.getElementById('sim-menu-unggulan-btn');
-            const navPengajar = document.getElementById('sim-menu-pengajar-btn');
-            const navFasilitas = document.getElementById('sim-menu-fasilitas-btn');
-            const activeColor = '<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>';
-            const normalColor = '<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>';
-
-            if (navHome) {
-                navHome.style.color = (frame === 'home') ? activeColor : normalColor;
-                navHome.classList.toggle('opacity-70', frame !== 'home');
-            }
-            if (navPrestasi) {
-                navPrestasi.style.color = (frame === 'prestasi') ? activeColor : normalColor;
-                navPrestasi.classList.toggle('opacity-70', frame !== 'prestasi');
-            }
-            if (navUnggulan) {
-                navUnggulan.style.color = (frame === 'unggulan') ? activeColor : normalColor;
-                navUnggulan.classList.toggle('opacity-70', frame !== 'unggulan');
-            }
-            if (navPengajar) {
-                navPengajar.style.color = (frame === 'pengajar') ? activeColor : normalColor;
-                navPengajar.classList.toggle('opacity-70', frame !== 'pengajar');
-            }
-            if (navFasilitas) {
-                navFasilitas.style.color = (frame === 'fasilitas') ? activeColor : normalColor;
-                navFasilitas.classList.toggle('opacity-70', frame !== 'fasilitas');
-            }
-
-            // 7. Re-render Semua Tab Rows & Layar Simulasi
+            // 6. Render Layers Formulir & Simulasi
             renderRows();
-            renderImageRows();
-            renderVideoRows();
-            renderButtonRows();
-            renderSlideRows();
             renderSimLayers();
+
+            renderImageRows();
             renderSimImageLayers();
+
+            renderVideoRows();
             renderSimVideoLayers();
+
+            renderButtonRows();
             renderSimButtonLayers();
+
+            renderSlideRows();
             renderSimSlideLayers();
+        }
+
+        // ==========================================
+        // HANDLER MODAL TAMBAH & RENAME FRAME
+        // ==========================================
+        function openAddFrameModal() {
+            const modal = document.getElementById('modal-add-frame');
+            const nameInp = document.getElementById('input-new-frame-name');
+            if (nameInp) nameInp.value = '';
+            selectedNewFrameIcon = 'fa-star';
+            selectedNewFrameTheme = 'emerald';
+            renderAddFramePickers();
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            if (nameInp) nameInp.focus();
+        }
+
+        function closeAddFrameModal() {
+            const modal = document.getElementById('modal-add-frame');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function renderAddFramePickers() {
+            const iconContainer = document.getElementById('icon-picker-add-frame');
+            const themeContainer = document.getElementById('theme-picker-add-frame');
+
+            if (iconContainer) {
+                iconContainer.innerHTML = availableFrameIcons.map(ic => `
+                    <button type="button" onclick="selectAddFrameIcon('${ic}')" class="w-10 h-10 rounded-xl border flex items-center justify-center text-sm transition cursor-pointer ${selectedNewFrameIcon === ic ? 'bg-amber-500 text-white border-amber-600 ring-2 ring-amber-300 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                        <i class="fas ${ic}"></i>
+                    </button>
+                `).join('');
+            }
+
+            if (themeContainer) {
+                themeContainer.innerHTML = availableThemes.map(th => `
+                    <button type="button" onclick="selectAddFrameTheme('${th.id}')" class="px-2.5 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${selectedNewFrameTheme === th.id ? 'bg-slate-900 text-white border-slate-900 ring-2 ring-amber-400 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                        <span class="w-3 h-3 rounded-full ${th.colorDot}"></span>
+                        <span>${th.name}</span>
+                    </button>
+                `).join('');
+            }
+        }
+
+        function selectAddFrameIcon(ic) {
+            selectedNewFrameIcon = ic;
+            renderAddFramePickers();
+        }
+
+        function selectAddFrameTheme(th) {
+            selectedNewFrameTheme = th;
+            renderAddFramePickers();
+        }
+
+        function submitAddNewFrame() {
+            const nameInp = document.getElementById('input-new-frame-name');
+            const name = (nameInp ? nameInp.value : '').trim();
+            if (!name) {
+                alert('Silakan masukkan nama frame terlebih dahulu.');
+                if (nameInp) nameInp.focus();
+                return;
+            }
+
+            const themeObj = availableThemes.find(t => t.id === selectedNewFrameTheme) || availableThemes[0];
+            const newId = 'frame_' + Date.now();
+
+            framesData[newId] = {
+                id: newId,
+                name: name,
+                title: 'Frame: ' + name,
+                subtitle: `Frame ini mengatur tampilan ${name} (Menu <strong>${name}</strong> pada Bottom Navigation Bar).`,
+                badge: name,
+                menuPill: 'Menu Frame',
+                icon: selectedNewFrameIcon,
+                theme: selectedNewFrameTheme,
+                iconGradient: themeObj.gradient,
+                badgeClass: themeObj.badgeClass,
+                bgUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80',
+                bgOpacity: 0.88,
+                texts: [
+                    {
+                        id: 'text_' + Date.now() + '_1',
+                        content: name,
+                        format: 'h2',
+                        color: '#ffffff',
+                        font: 'Plus Jakarta Sans',
+                        align: 'center',
+                        size: 24,
+                        posX: 50.0,
+                        posY: 18.0,
+                        width: 88
+                    }
+                ],
+                images: [],
+                videos: [],
+                buttons: [
+                    {
+                        id: 'btn_' + Date.now() + '_1',
+                        text: 'Informasi ' + name,
+                        url: 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20info%20' + encodeURIComponent(name),
+                        icon: 'fab fa-whatsapp',
+                        shape: 'rounded_pill',
+                        bg_color: '#25d366',
+                        text_color: '#ffffff',
+                        border_enable: 0,
+                        border_width: 2,
+                        border_color: '#ffffff',
+                        shadow_style: 'glow_wa',
+                        font_size: 13,
+                        font: 'Plus Jakarta Sans',
+                        posX: 50.0,
+                        posY: 82.0,
+                        width: 82,
+                        height: 46,
+                        target: '_blank'
+                    }
+                ],
+                slides: []
+            };
+
+            frameOrder.push(newId);
+            closeAddFrameModal();
+            renderFrameSwitcher();
+            renderSimBottomBar();
+            switchFrame(newId);
+            saveAllSettings();
+            showToast('Frame Baru Dibuat!', `Frame "${name}" berhasil ditambahkan & disimpan.`, true);
+        }
+
+        function openRenameFrameModal() {
+            const data = framesData[currentActiveFrame];
+            if (!data) return;
+
+            const modal = document.getElementById('modal-rename-frame');
+            const nameInp = document.getElementById('input-rename-frame-name');
+            if (nameInp) nameInp.value = data.name || '';
+            selectedRenameFrameIcon = data.icon || 'fa-star';
+            selectedRenameFrameTheme = data.theme || 'emerald';
+            renderRenameFramePickers();
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+            if (nameInp) nameInp.focus();
+        }
+
+        function closeRenameFrameModal() {
+            const modal = document.getElementById('modal-rename-frame');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function renderRenameFramePickers() {
+            const iconContainer = document.getElementById('icon-picker-rename-frame');
+            const themeContainer = document.getElementById('theme-picker-rename-frame');
+
+            if (iconContainer) {
+                iconContainer.innerHTML = availableFrameIcons.map(ic => `
+                    <button type="button" onclick="selectRenameFrameIcon('${ic}')" class="w-10 h-10 rounded-xl border flex items-center justify-center text-sm transition cursor-pointer ${selectedRenameFrameIcon === ic ? 'bg-teal-600 text-white border-teal-700 ring-2 ring-teal-300 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                        <i class="fas ${ic}"></i>
+                    </button>
+                `).join('');
+            }
+
+            if (themeContainer) {
+                themeContainer.innerHTML = availableThemes.map(th => `
+                    <button type="button" onclick="selectRenameFrameTheme('${th.id}')" class="px-2.5 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${selectedRenameFrameTheme === th.id ? 'bg-slate-900 text-white border-slate-900 ring-2 ring-teal-400 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'}">
+                        <span class="w-3 h-3 rounded-full ${th.colorDot}"></span>
+                        <span>${th.name}</span>
+                    </button>
+                `).join('');
+            }
+        }
+
+        function selectRenameFrameIcon(ic) {
+            selectedRenameFrameIcon = ic;
+            renderRenameFramePickers();
+        }
+
+        function selectRenameFrameTheme(th) {
+            selectedRenameFrameTheme = th;
+            renderRenameFramePickers();
+        }
+
+        function submitRenameFrame() {
+            const nameInp = document.getElementById('input-rename-frame-name');
+            const name = (nameInp ? nameInp.value : '').trim();
+            if (!name) {
+                alert('Silakan masukkan nama frame.');
+                if (nameInp) nameInp.focus();
+                return;
+            }
+
+            const data = framesData[currentActiveFrame];
+            if (!data) return;
+
+            const themeObj = availableThemes.find(t => t.id === selectedRenameFrameTheme) || availableThemes[0];
+            data.name = name;
+            data.title = 'Frame: ' + name;
+            data.badge = name;
+            data.subtitle = `Frame ini mengatur tampilan ${name} (Menu <strong>${name}</strong> pada Bottom Navigation Bar).`;
+            data.icon = selectedRenameFrameIcon;
+            data.theme = selectedRenameFrameTheme;
+            data.iconGradient = themeObj.gradient;
+            data.badgeClass = themeObj.badgeClass;
+
+            closeRenameFrameModal();
+            renderFrameSwitcher();
+            renderSimBottomBar();
+            switchFrame(currentActiveFrame);
+            saveAllSettings();
+            showToast('Nama Frame Diubah', `Nama frame berhasil diubah menjadi "${name}".`, true);
+        }
+
+        function confirmDeleteCurrentFrame() {
+            if (currentActiveFrame === 'home') {
+                alert('Frame Depan (Home) adalah cover utama dan tidak dapat dihapus.');
+                return;
+            }
+
+            const data = framesData[currentActiveFrame];
+            const name = data ? data.name : currentActiveFrame;
+
+            if (confirm(`Yakin ingin menghapus Frame "${name}" beserta seluruh isinya?`)) {
+                delete framesData[currentActiveFrame];
+                frameOrder = frameOrder.filter(k => k !== currentActiveFrame);
+                renderFrameSwitcher();
+                renderSimBottomBar();
+                switchFrame('home');
+                saveAllSettings();
+                showToast('Frame Dihapus', `Frame "${name}" berhasil dihapus.`, true);
+            }
         }
 
         function updateCanvasBackground(url, opacity) {
@@ -5444,6 +5873,19 @@ $active_menu = 'brosur_settings';
             syncButtonJsonInput();
             syncSlideJsonInput();
 
+            if (framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].texts   = textItems;
+                framesData[currentActiveFrame].images  = imageItems;
+                framesData[currentActiveFrame].videos  = videoItems;
+                framesData[currentActiveFrame].buttons = buttonItems;
+                framesData[currentActiveFrame].slides  = slideItems;
+                
+                const bgUrlInp = document.getElementById('input-bg-url');
+                const bgOpInp = document.getElementById('input-bg-opacity');
+                if (bgUrlInp) framesData[currentActiveFrame].bgUrl = bgUrlInp.value;
+                if (bgOpInp) framesData[currentActiveFrame].bgOpacity = parseFloat(bgOpInp.value) || 0.88;
+            }
+
             const btn = document.getElementById('btn-master-save');
             const originalHtml = btn ? btn.innerHTML : '';
             if (btn) {
@@ -5467,6 +5909,7 @@ $active_menu = 'brosur_settings';
             formData.append('bottom_bar_bg_color', bbarBg);
             formData.append('bottom_bar_text_color', bbarText);
             formData.append('bottom_bar_active_color', bbarActive);
+            formData.append('all_frames_data_json', JSON.stringify(framesData));
             formData.append('custom_text_items_json', JSON.stringify(textItems));
             formData.append('custom_image_items_json', JSON.stringify(imageItems));
             formData.append('custom_video_items_json', JSON.stringify(videoItems));

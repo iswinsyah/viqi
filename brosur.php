@@ -1,7 +1,7 @@
 <?php
 // brosur.php
 // Halaman Khusus Brosur & Undangan Digital Smartphone Villa Quran Indonesia
-// 100% Sinkron & Presisi Sesuai Layar Simulasi Admin (Adaptive Canvas Scaling)
+// 100% Sinkron & Presisi Sesuai Layar Simulasi Admin (Adaptive Canvas Scaling + Multi-Frame Dinamis)
 
 require_once 'koneksi.php';
 
@@ -22,11 +22,6 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         $row_ag = $q_ag->fetch_assoc();
         $nama_agen_pengundang = $row_ag['nama'];
     }
-}
-
-$active_frame_param = isset($_GET['frame']) ? trim(strtolower($_GET['frame'])) : 'home';
-if (!in_array($active_frame_param, ['home', 'prestasi', 'unggulan', 'pengajar', 'fasilitas'])) {
-    $active_frame_param = 'home';
 }
 
 // 1. DATA FRAME DEPAN (HOME)
@@ -378,7 +373,7 @@ if ($raw_pengajar_images !== null && $raw_pengajar_images !== '') {
 }
 
 $raw_pengajar_videos = $cfg['pengajar_video_items'] ?? null;
-if ($raw_pengajar_videos !== null && $raw_pengajar_videos !== '') {
+if ($raw_pengajar_videos !== null && $raw_videos !== '') {
     $pengajar_video_items = json_decode($raw_pengajar_videos, true);
     if (!is_array($pengajar_video_items)) $pengajar_video_items = [];
 } else {
@@ -525,6 +520,122 @@ if ($raw_fasilitas_slides !== null && $raw_fasilitas_slides !== '') {
     if (!is_array($fasilitas_slide_items)) $fasilitas_slide_items = [];
 } else {
     $fasilitas_slide_items = [];
+}
+
+// 6. BUILD DYNAMIC FRAMES DICTIONARY
+$all_frames_dict = [];
+$raw_all_frames = $cfg['all_frames_json'] ?? null;
+if (!empty($raw_all_frames)) {
+    $decoded_all = json_decode($raw_all_frames, true);
+    if (is_array($decoded_all) && !empty($decoded_all)) {
+        $all_frames_dict = $decoded_all;
+    }
+}
+
+// Fallback initial default frames jika belum ada di all_frames_json
+if (empty($all_frames_dict)) {
+    $all_frames_dict = [
+        'home' => [
+            'id'           => 'home',
+            'name'         => 'Depan',
+            'title'        => 'Frame: Depan',
+            'subtitle'     => 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Cover / Halaman Depan',
+            'menuPill'     => 'Menu #1 di Bottom Bar',
+            'icon'         => 'fa-house',
+            'theme'        => 'emerald',
+            'iconGradient' => 'from-emerald-500 to-[#0b8478]',
+            'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
+            'bgUrl'        => $cfg['cover_bg_url'] ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80',
+            'bgOpacity'    => isset($cfg['cover_overlay_opacity']) ? (float)$cfg['cover_overlay_opacity'] : 0.88,
+            'texts'        => $text_items,
+            'images'       => $image_items,
+            'videos'       => $video_items,
+            'buttons'      => $button_items,
+            'slides'       => $slide_items
+        ],
+        'prestasi' => [
+            'id'           => 'prestasi',
+            'name'         => 'Prestasi',
+            'title'        => 'Frame: Prestasi',
+            'subtitle'     => 'Frame ini mengatur tampilan galeri pencapaian, piala, medali & prestasi santri (Menu <strong>Prestasi</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Menu Prestasi Brosur',
+            'menuPill'     => 'Menu #2 di Bottom Bar',
+            'icon'         => 'fa-trophy',
+            'theme'        => 'amber',
+            'iconGradient' => 'from-amber-500 to-amber-600',
+            'badgeClass'   => 'bg-amber-100 text-amber-900 border-amber-300',
+            'bgUrl'        => $prestasi_bg_url,
+            'bgOpacity'    => (float)$prestasi_overlay_opacity,
+            'texts'        => $prestasi_text_items,
+            'images'       => $prestasi_image_items,
+            'videos'       => $prestasi_video_items,
+            'buttons'      => $prestasi_button_items,
+            'slides'       => $prestasi_slide_items
+        ],
+        'unggulan' => [
+            'id'           => 'unggulan',
+            'name'         => 'Unggulan',
+            'title'        => 'Frame: Unggulan',
+            'subtitle'     => 'Frame ini mengatur tampilan program, fasilitas & keunggulan pesantren (Menu <strong>Unggulan</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Program & Keunggulan',
+            'menuPill'     => 'Menu #3 di Bottom Bar',
+            'icon'         => 'fa-star',
+            'theme'        => 'orange',
+            'iconGradient' => 'from-amber-500 via-orange-500 to-amber-600',
+            'badgeClass'   => 'bg-orange-100 text-orange-900 border-orange-300',
+            'bgUrl'        => $unggulan_bg_url,
+            'bgOpacity'    => (float)$unggulan_overlay_opacity,
+            'texts'        => $unggulan_text_items,
+            'images'       => $unggulan_image_items,
+            'videos'       => $unggulan_video_items,
+            'buttons'      => $unggulan_button_items,
+            'slides'       => $unggulan_slide_items
+        ],
+        'pengajar' => [
+            'id'           => 'pengajar',
+            'name'         => 'Pengajar',
+            'title'        => 'Frame: Pengajar',
+            'subtitle'     => 'Frame ini mengatur tampilan profil asatidz, dewan guru & pengasuh (Menu <strong>Pengajar</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Dewan Pengajar & Asatidz',
+            'menuPill'     => 'Menu #4 di Bottom Bar',
+            'icon'         => 'fa-chalkboard-user',
+            'theme'        => 'teal',
+            'iconGradient' => 'from-teal-500 via-emerald-600 to-cyan-600',
+            'badgeClass'   => 'bg-teal-100 text-teal-900 border-teal-300',
+            'bgUrl'        => $pengajar_bg_url,
+            'bgOpacity'    => (float)$pengajar_overlay_opacity,
+            'texts'        => $pengajar_text_items,
+            'images'       => $pengajar_image_items,
+            'videos'       => $pengajar_video_items,
+            'buttons'      => $pengajar_button_items,
+            'slides'       => $pengajar_slide_items
+        ],
+        'fasilitas' => [
+            'id'           => 'fasilitas',
+            'name'         => 'Fasilitas',
+            'title'        => 'Frame: Fasilitas',
+            'subtitle'     => 'Frame ini mengatur tampilan sarana, prasarana, asrama & fasilitas pesantren (Menu <strong>Fasilitas</strong> pada Bottom Navigation Bar).',
+            'badge'        => 'Sarana & Fasilitas',
+            'menuPill'     => 'Menu #5 di Bottom Bar',
+            'icon'         => 'fa-building-columns',
+            'theme'        => 'sky',
+            'iconGradient' => 'from-sky-500 via-blue-600 to-indigo-600',
+            'badgeClass'   => 'bg-sky-100 text-sky-900 border-sky-300',
+            'bgUrl'        => $fasilitas_bg_url,
+            'bgOpacity'    => (float)$fasilitas_overlay_opacity,
+            'texts'        => $fasilitas_text_items,
+            'images'       => $fasilitas_image_items,
+            'videos'       => $fasilitas_video_items,
+            'buttons'      => $fasilitas_button_items,
+            'slides'       => $fasilitas_slide_items
+        ]
+    ];
+}
+
+$active_frame_param = isset($_GET['frame']) ? trim($_GET['frame']) : 'home';
+if (!isset($all_frames_dict[$active_frame_param])) {
+    $active_frame_param = array_key_first($all_frames_dict) ?? 'home';
 }
 
 $bottom_bar_bg_color     = !empty($cfg['bottom_bar_bg_color']) ? htmlspecialchars($cfg['bottom_bar_bg_color']) : '#022d27';
@@ -717,39 +828,9 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             <!-- CONTAINER LAYER TOMBOL DI LAYAR SIMULASI -->
             <div id="sim-button-layers-container" class="absolute inset-0 pointer-events-none z-35"></div>
 
-            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME, PRESTASI, UNGGULAN, PENGAJAR & FASILITAS) -->
-            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-3 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($bottom_bar_bg_color) ?>; color: <?= htmlspecialchars($bottom_bar_text_color) ?>;">
-                
-                <!-- Menu 1: Home -->
-                <button type="button" onclick="switchFrame('home')" id="sim-menu-home-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5" style="color: <?= htmlspecialchars($bottom_bar_active_color) ?>;" title="Menu Home (Frame Depan)">
-                    <i id="sim-menu-home-icon" class="fas fa-house text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                    <span id="sim-menu-home-label" class="text-[9.5px] font-bold tracking-wider leading-none">Home</span>
-                </button>
-
-                <!-- Menu 2: Prestasi -->
-                <button type="button" onclick="switchFrame('prestasi')" id="sim-menu-prestasi-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($bottom_bar_text_color) ?>;" title="Menu Prestasi (Frame Prestasi)">
-                    <i id="sim-menu-prestasi-icon" class="fas fa-trophy text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                    <span id="sim-menu-prestasi-label" class="text-[9.5px] font-bold tracking-wider leading-none">Prestasi</span>
-                </button>
-
-                <!-- Menu 3: Unggulan -->
-                <button type="button" onclick="switchFrame('unggulan')" id="sim-menu-unggulan-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($bottom_bar_text_color) ?>;" title="Menu Unggulan (Frame Unggulan)">
-                    <i id="sim-menu-unggulan-icon" class="fas fa-star text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                    <span id="sim-menu-unggulan-label" class="text-[9.5px] font-bold tracking-wider leading-none">Unggulan</span>
-                </button>
-
-                <!-- Menu 4: Pengajar -->
-                <button type="button" onclick="switchFrame('pengajar')" id="sim-menu-pengajar-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($bottom_bar_text_color) ?>;" title="Menu Pengajar (Frame Pengajar)">
-                    <i id="sim-menu-pengajar-icon" class="fas fa-chalkboard-user text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                    <span id="sim-menu-pengajar-label" class="text-[9.5px] font-bold tracking-wider leading-none">Pengajar</span>
-                </button>
-
-                <!-- Menu 5: Fasilitas -->
-                <button type="button" onclick="switchFrame('fasilitas')" id="sim-menu-fasilitas-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($bottom_bar_text_color) ?>;" title="Menu Fasilitas (Frame Fasilitas)">
-                    <i id="sim-menu-fasilitas-icon" class="fas fa-building-columns text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                    <span id="sim-menu-fasilitas-label" class="text-[9.5px] font-bold tracking-wider leading-none">Fasilitas</span>
-                </button>
-
+            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (DINAMIS SEMUA FRAME) -->
+            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-2 border-t border-white/10 backdrop-blur-md flex items-center justify-around overflow-x-auto no-scrollbar shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($bottom_bar_bg_color) ?>; color: <?= htmlspecialchars($bottom_bar_text_color) ?>;">
+                <!-- Diisi dinamis oleh renderPublicBottomBar() -->
             </div>
 
         </div>
@@ -761,73 +842,25 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
     <!-- ======================================================= -->
     <script>
         // 1. DATA MASTER DARI DATABASE
-        const framesData = {
-            home: {
-                id: 'home',
-                name: 'Depan',
-                bgUrl: <?= json_encode($cover_bg_url) ?>,
-                bgOpacity: <?= (float)$cover_overlay_opacity ?>,
-                texts: <?= json_encode($text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($slide_items, JSON_UNESCAPED_UNICODE) ?>
-            },
-            prestasi: {
-                id: 'prestasi',
-                name: 'Prestasi',
-                bgUrl: <?= json_encode($prestasi_bg_url) ?>,
-                bgOpacity: <?= (float)$prestasi_overlay_opacity ?>,
-                texts: <?= json_encode($prestasi_text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($prestasi_image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($prestasi_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($prestasi_button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($prestasi_slide_items, JSON_UNESCAPED_UNICODE) ?>
-            },
-            unggulan: {
-                id: 'unggulan',
-                name: 'Unggulan',
-                bgUrl: <?= json_encode($unggulan_bg_url) ?>,
-                bgOpacity: <?= (float)$unggulan_overlay_opacity ?>,
-                texts: <?= json_encode($unggulan_text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($unggulan_image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($unggulan_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($unggulan_button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($unggulan_slide_items, JSON_UNESCAPED_UNICODE) ?>
-            },
-            pengajar: {
-                id: 'pengajar',
-                name: 'Pengajar',
-                bgUrl: <?= json_encode($pengajar_bg_url) ?>,
-                bgOpacity: <?= (float)$pengajar_overlay_opacity ?>,
-                texts: <?= json_encode($pengajar_text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($pengajar_image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($pengajar_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($pengajar_button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($pengajar_slide_items, JSON_UNESCAPED_UNICODE) ?>
-            },
-            fasilitas: {
-                id: 'fasilitas',
-                name: 'Fasilitas',
-                bgUrl: <?= json_encode($fasilitas_bg_url) ?>,
-                bgOpacity: <?= (float)$fasilitas_overlay_opacity ?>,
-                texts: <?= json_encode($fasilitas_text_items, JSON_UNESCAPED_UNICODE) ?>,
-                images: <?= json_encode($fasilitas_image_items, JSON_UNESCAPED_UNICODE) ?>,
-                videos: <?= json_encode($fasilitas_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($fasilitas_button_items, JSON_UNESCAPED_UNICODE) ?>,
-                slides: <?= json_encode($fasilitas_slide_items, JSON_UNESCAPED_UNICODE) ?>
-            }
-        };
+        const framesData = <?= json_encode($all_frames_dict, JSON_UNESCAPED_UNICODE) ?>;
+        const frameKeys = Object.keys(framesData);
 
-        const frameKeys = ['home', 'prestasi', 'unggulan', 'pengajar', 'fasilitas'];
         let currentFrame = '<?= $active_frame_param ?>';
+        if (!framesData[currentFrame]) {
+            currentFrame = frameKeys[0] || 'home';
+        }
+
         const activeColor = '<?= htmlspecialchars($bottom_bar_active_color) ?>';
         const normalColor = '<?= htmlspecialchars($bottom_bar_text_color) ?>';
         const guestName = <?= json_encode($nama_tamu) ?>;
 
         // Slide State
-        window.simSlideCurrentIndices = { home: 0, prestasi: 0, unggulan: 0, pengajar: 0, fasilitas: 0 };
-        window.simSlideTimers = { home: null, prestasi: null, unggulan: null, pengajar: null, fasilitas: null };
+        window.simSlideCurrentIndices = {};
+        window.simSlideTimers = {};
+        frameKeys.forEach(k => {
+            window.simSlideCurrentIndices[k] = 0;
+            window.simSlideTimers[k] = null;
+        });
 
         // Helper Typography & Format
         function getFontFamily(fontName) {
@@ -893,7 +926,6 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
         // =======================================================
         // ADAPTIVE RESPONSIVE CANVAS RESIZER
-        // Menjaga perbandingan 340px x 600px tetap 100% presisi
         // =======================================================
         function resizeCanvas() {
             const box = document.getElementById('brosur-canvas-box');
@@ -904,7 +936,6 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             const winW = window.innerWidth;
             const winH = window.innerHeight;
 
-            // Hitung scale factor agar pas di layar tanpa terpotong
             let scale;
             if (winW <= 480) {
                 const scaleW = winW / baseW;
@@ -926,45 +957,50 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         window.addEventListener('orientationchange', resizeCanvas);
 
         // =======================================================
-        // SWITCH FRAME LOGIC (PERSIS 100% SIMULASI ADMIN)
+        // RENDER BOTTOM BAR DINAMIS
+        // =======================================================
+        function renderPublicBottomBar() {
+            const container = document.getElementById('sim-bottom-bar');
+            if (!container) return;
+            container.innerHTML = '';
+
+            frameKeys.forEach((fKey) => {
+                const data = framesData[fKey];
+                if (!data) return;
+
+                const isActive = (fKey === currentFrame);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.id = `sim-menu-${fKey}-btn`;
+                btn.onclick = () => switchFrame(fKey);
+                btn.className = `flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 px-1 flex-1 min-w-[48px] shrink-0 ${isActive ? '' : 'opacity-70 hover:opacity-100'}`;
+                btn.style.color = isActive ? activeColor : normalColor;
+                btn.title = `Menu ${data.name || fKey}`;
+
+                btn.innerHTML = `
+                    <i class="fas ${data.icon || 'fa-circle'} text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                    <span class="text-[9.5px] font-bold tracking-wider leading-none truncate max-w-[58px]">${escapeHtml(data.name || fKey)}</span>
+                `;
+
+                container.appendChild(btn);
+            });
+        }
+
+        // =======================================================
+        // SWITCH FRAME LOGIC
         // =======================================================
         function switchFrame(frame) {
-            if (!frameKeys.includes(frame)) frame = 'home';
+            if (!framesData[frame]) frame = frameKeys[0] || 'home';
             currentFrame = frame;
 
             const data = framesData[frame];
             if (!data) return;
 
             // 1. Update Canvas Background & Overlay
-            updateCanvasBackground(data.bgUrl, data.bgOpacity);
+            updateCanvasBackground(data.bgUrl, data.bgOpacity ?? 0.88);
 
-            // 2. Update Bottom Bar Highlight
-            const navHome      = document.getElementById('sim-menu-home-btn');
-            const navPrestasi  = document.getElementById('sim-menu-prestasi-btn');
-            const navUnggulan  = document.getElementById('sim-menu-unggulan-btn');
-            const navPengajar  = document.getElementById('sim-menu-pengajar-btn');
-            const navFasilitas = document.getElementById('sim-menu-fasilitas-btn');
-
-            if (navHome) {
-                navHome.style.color = (frame === 'home') ? activeColor : normalColor;
-                navHome.classList.toggle('opacity-70', frame !== 'home');
-            }
-            if (navPrestasi) {
-                navPrestasi.style.color = (frame === 'prestasi') ? activeColor : normalColor;
-                navPrestasi.classList.toggle('opacity-70', frame !== 'prestasi');
-            }
-            if (navUnggulan) {
-                navUnggulan.style.color = (frame === 'unggulan') ? activeColor : normalColor;
-                navUnggulan.classList.toggle('opacity-70', frame !== 'unggulan');
-            }
-            if (navPengajar) {
-                navPengajar.style.color = (frame === 'pengajar') ? activeColor : normalColor;
-                navPengajar.classList.toggle('opacity-70', frame !== 'pengajar');
-            }
-            if (navFasilitas) {
-                navFasilitas.style.color = (frame === 'fasilitas') ? activeColor : normalColor;
-                navFasilitas.classList.toggle('opacity-70', frame !== 'fasilitas');
-            }
+            // 2. Update Bottom Bar
+            renderPublicBottomBar();
 
             // 3. Render All Simulation Layers
             renderSimImageLayers(data.images || []);
@@ -1007,9 +1043,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             }
         }
 
-        // =======================================================
-        // 1. RENDER GAMBAR SISIPAN (PERSIS SIMULASI)
-        // =======================================================
+        // 1. RENDER GAMBAR
         function renderSimImageLayers(imageItems) {
             const container = document.getElementById('sim-image-layers-container');
             if (!container) return;
@@ -1045,9 +1079,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             });
         }
 
-        // =======================================================
-        // 2. RENDER SLIDE SHOWCASE (PERSIS SIMULASI)
-        // =======================================================
+        // 2. RENDER SLIDE
         function setSimActiveSlide(frame, index) {
             window.simSlideCurrentIndices[frame] = index;
             if (framesData[frame]) {
@@ -1175,9 +1207,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             }
         }
 
-        // =======================================================
-        // 3. RENDER VIDEO SISIPAN (PERSIS SIMULASI)
-        // =======================================================
+        // 3. RENDER VIDEO
         function renderSimVideoLayers(videoItems) {
             const container = document.getElementById('sim-video-layers-container');
             if (!container) return;
@@ -1235,9 +1265,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             });
         }
 
-        // =======================================================
-        // 4. RENDER TULISAN DINAMIS (PERSIS SIMULASI)
-        // =======================================================
+        // 4. RENDER TULISAN
         function renderSimLayers(textItems) {
             const container = document.getElementById('sim-text-layers-container');
             if (!container) return;
@@ -1262,9 +1290,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             });
         }
 
-        // =======================================================
-        // 5. RENDER TOMBOL AKSI INTERAKTIF (PERSIS SIMULASI)
-        // =======================================================
+        // 5. RENDER TOMBOL
         function renderSimButtonLayers(buttonItems) {
             const container = document.getElementById('sim-button-layers-container');
             if (!container) return;
@@ -1419,6 +1445,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         // INITIAL LOAD & SCALE
         document.addEventListener('DOMContentLoaded', () => {
             resizeCanvas();
+            renderPublicBottomBar();
             switchFrame(currentFrame);
         });
     </script>
