@@ -221,7 +221,7 @@ if (empty($active_frame)) {
 }
 
 $current_tab = $_POST['active_tab'] ?? $_GET['tab'] ?? 'bg';
-if (!in_array($current_tab, ['bg', 'text', 'image', 'video', 'button', 'slide'])) {
+if (!in_array($current_tab, ['bg', 'text', 'image', 'video', 'button', 'slide', 'biaya', 'countdown'])) {
     $current_tab = 'bg';
 }
 
@@ -486,6 +486,47 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                            WHERE id = 1";
         }
 
+        // 6. Countdown Settings
+        $cd_raw = $_POST['countdown_data_json'] ?? null;
+        $clean_countdown = [];
+        if ($cd_raw) {
+            $dec_cd = json_decode($cd_raw, true);
+            if (is_array($dec_cd)) {
+                $cd_target = trim($dec_cd['target'] ?? '2026-12-31 23:59:59');
+                if (strpos($cd_target, 'T') !== false) {
+                    $cd_target = str_replace('T', ' ', $cd_target);
+                    if (strlen($cd_target) === 16) $cd_target .= ':00';
+                }
+                $clean_countdown = [
+                    'enabled'      => !empty($dec_cd['enabled']) ? 1 : 0,
+                    'title'        => trim($dec_cd['title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:'),
+                    'target'       => $cd_target,
+                    'style'        => in_array($dec_cd['style'] ?? '', ['glass_dark', 'emerald_glow', 'amber_gold', 'white_clean', 'minimalist']) ? $dec_cd['style'] : 'glass_dark',
+                    'posX'         => round(max(0, min(100, (float)($dec_cd['posX'] ?? 50.0))), 2),
+                    'posY'         => round(max(0, min(100, (float)($dec_cd['posY'] ?? 72.0))), 2),
+                    'width'        => max(20, min(100, (int)($dec_cd['width'] ?? 88))),
+                    'expired_text' => trim($dec_cd['expired_text'] ?? 'Pendaftaran Telah Ditutup!')
+                ];
+            }
+        }
+        if (empty($clean_countdown)) {
+            $cd_target = trim($_POST['countdown_target'] ?? '2026-12-31 23:59:59');
+            if (strpos($cd_target, 'T') !== false) {
+                $cd_target = str_replace('T', ' ', $cd_target);
+                if (strlen($cd_target) === 16) $cd_target .= ':00';
+            }
+            $clean_countdown = [
+                'enabled'      => !empty($_POST['countdown_enabled']) ? 1 : 0,
+                'title'        => trim($_POST['countdown_title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:'),
+                'target'       => $cd_target,
+                'style'        => in_array($_POST['countdown_style'] ?? '', ['glass_dark', 'emerald_glow', 'amber_gold', 'white_clean', 'minimalist']) ? $_POST['countdown_style'] : 'glass_dark',
+                'posX'         => round(max(0, min(100, (float)($_POST['countdown_pos_x'] ?? 50.0))), 2),
+                'posY'         => round(max(0, min(100, (float)($_POST['countdown_pos_y'] ?? 72.0))), 2),
+                'width'        => max(20, min(100, (int)($_POST['countdown_width'] ?? 88))),
+                'expired_text' => trim($_POST['countdown_expired_text'] ?? 'Pendaftaran Telah Ditutup!')
+            ];
+        }
+
         // Simpan all_frames_json dengan data frame yang sedang aktif
         $dec_all = [];
         if (!empty($_POST['all_frames_data_json'])) {
@@ -512,9 +553,17 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $dec_all[$active_frame]['videos']    = $clean_vid_items;
             $dec_all[$active_frame]['buttons']   = $clean_btn_items;
             $dec_all[$active_frame]['slides']    = $clean_slide_items;
+            $dec_all[$active_frame]['countdown'] = $clean_countdown;
             
             $final_all_esc = $conn->real_escape_string(json_encode($dec_all, JSON_UNESCAPED_UNICODE));
             $conn->query("UPDATE pengaturan_brosur SET all_frames_json = '$final_all_esc' WHERE id = 1");
+        }
+
+        if ($active_frame === 'home') {
+            $cd_en_db = $clean_countdown['enabled'];
+            $cd_tar_db = $conn->real_escape_string($clean_countdown['target']);
+            $cd_tit_db = $conn->real_escape_string($clean_countdown['title']);
+            $conn->query("UPDATE pengaturan_brosur SET show_countdown = $cd_en_db, countdown_target = '$cd_tar_db', countdown_title = '$cd_tit_db' WHERE id = 1");
         }
 
         $ok = $conn->query($sql_master);
@@ -529,7 +578,93 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 'message' => $msg,
                 'frame'   => $active_frame,
                 'clean_images' => $clean_img_items,
-                'clean_slides' => $clean_slide_items
+                'clean_slides' => $clean_slide_items,
+                'clean_countdown' => $clean_countdown
+            ]);
+            exit;
+        }
+
+        if ($ok) {
+            $pesan_sukses = $msg;
+        } else {
+            $pesan_error = $msg;
+        }
+    } else if ($action_type === 'save_countdown') {
+        $current_tab = 'countdown';
+        $cd_raw = $_POST['countdown_data_json'] ?? null;
+        $clean_countdown = [];
+        if ($cd_raw) {
+            $dec_cd = json_decode($cd_raw, true);
+            if (is_array($dec_cd)) {
+                $cd_target = trim($dec_cd['target'] ?? '2026-12-31 23:59:59');
+                if (strpos($cd_target, 'T') !== false) {
+                    $cd_target = str_replace('T', ' ', $cd_target);
+                    if (strlen($cd_target) === 16) $cd_target .= ':00';
+                }
+                $clean_countdown = [
+                    'enabled'      => !empty($dec_cd['enabled']) ? 1 : 0,
+                    'title'        => trim($dec_cd['title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:'),
+                    'target'       => $cd_target,
+                    'style'        => in_array($dec_cd['style'] ?? '', ['glass_dark', 'emerald_glow', 'amber_gold', 'white_clean', 'minimalist']) ? $dec_cd['style'] : 'glass_dark',
+                    'posX'         => round(max(0, min(100, (float)($dec_cd['posX'] ?? 50.0))), 2),
+                    'posY'         => round(max(0, min(100, (float)($dec_cd['posY'] ?? 72.0))), 2),
+                    'width'        => max(20, min(100, (int)($dec_cd['width'] ?? 88))),
+                    'expired_text' => trim($dec_cd['expired_text'] ?? 'Pendaftaran Telah Ditutup!')
+                ];
+            }
+        }
+        if (empty($clean_countdown)) {
+            $cd_target = trim($_POST['countdown_target'] ?? '2026-12-31 23:59:59');
+            if (strpos($cd_target, 'T') !== false) {
+                $cd_target = str_replace('T', ' ', $cd_target);
+                if (strlen($cd_target) === 16) $cd_target .= ':00';
+            }
+            $clean_countdown = [
+                'enabled'      => !empty($_POST['countdown_enabled']) ? 1 : 0,
+                'title'        => trim($_POST['countdown_title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:'),
+                'target'       => $cd_target,
+                'style'        => in_array($_POST['countdown_style'] ?? '', ['glass_dark', 'emerald_glow', 'amber_gold', 'white_clean', 'minimalist']) ? $_POST['countdown_style'] : 'glass_dark',
+                'posX'         => round(max(0, min(100, (float)($_POST['countdown_pos_x'] ?? 50.0))), 2),
+                'posY'         => round(max(0, min(100, (float)($_POST['countdown_pos_y'] ?? 72.0))), 2),
+                'width'        => max(20, min(100, (int)($_POST['countdown_width'] ?? 88))),
+                'expired_text' => trim($_POST['countdown_expired_text'] ?? 'Pendaftaran Telah Ditutup!')
+            ];
+        }
+
+        $q_cur = $conn->query("SELECT all_frames_json FROM pengaturan_brosur WHERE id = 1 LIMIT 1");
+        $dec_all = [];
+        if ($q_cur && $r_cur = $q_cur->fetch_assoc()) {
+            $dec_all = json_decode($r_cur['all_frames_json'] ?? '', true) ?: [];
+        }
+        if (!isset($dec_all[$active_frame])) {
+            $dec_all[$active_frame] = [
+                'id'    => $active_frame,
+                'name'  => ucfirst($active_frame),
+                'title' => 'Frame: ' . ucfirst($active_frame)
+            ];
+        }
+        $dec_all[$active_frame]['countdown'] = $clean_countdown;
+        $final_all_esc = $conn->real_escape_string(json_encode($dec_all, JSON_UNESCAPED_UNICODE));
+        $ok = $conn->query("UPDATE pengaturan_brosur SET all_frames_json = '$final_all_esc' WHERE id = 1");
+
+        if ($active_frame === 'home') {
+            $cd_en_db = $clean_countdown['enabled'];
+            $cd_tar_db = $conn->real_escape_string($clean_countdown['target']);
+            $cd_tit_db = $conn->real_escape_string($clean_countdown['title']);
+            $conn->query("UPDATE pengaturan_brosur SET show_countdown = $cd_en_db, countdown_target = '$cd_tar_db', countdown_title = '$cd_tit_db' WHERE id = 1");
+        }
+
+        $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
+        $msg = $ok ? "Alhamdulillah! Pengaturan countdown {$frame_label} berhasil disimpan." : "Gagal menyimpan: " . $conn->error;
+
+        if (isset($_POST['ajax_mode']) && $_POST['ajax_mode'] == '1') {
+            if (ob_get_length()) ob_clean();
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'success'   => (bool)$ok,
+                'message'   => $msg,
+                'frame'     => $active_frame,
+                'countdown' => $clean_countdown
             ]);
             exit;
         }
@@ -1634,9 +1769,26 @@ $std_merge_map = [
                 'target'        => '_blank'
             ]
         ],
-        'slides'    => []
     ]
 ];
+
+foreach ($std_merge_map as $smKey => $smVal) {
+    if (!isset($all_frames_dict[$smKey])) {
+        $all_frames_dict[$smKey] = $smVal;
+    }
+    if (!isset($all_frames_dict[$smKey]['countdown'])) {
+        $all_frames_dict[$smKey]['countdown'] = [
+            'enabled'      => ($smKey === 'home' && !empty($cfg['show_countdown'])) ? 1 : 0,
+            'title'        => !empty($cfg['countdown_title']) ? $cfg['countdown_title'] : '⏳ Sisa Waktu Pendaftaran Berakhir:',
+            'target'       => !empty($cfg['countdown_target']) ? $cfg['countdown_target'] : '2026-12-31 23:59:59',
+            'style'        => 'glass_dark',
+            'posX'         => 50.0,
+            'posY'         => 72.0,
+            'width'        => 88,
+            'expired_text' => 'Pendaftaran Telah Ditutup!'
+        ];
+    }
+}
 
 // Ambil data komponen biaya live dari tabel biaya
 $biaya_data_live = [
@@ -2011,6 +2163,15 @@ $active_menu = 'brosur_settings';
                                 Live
                             </span>
                         </button>
+
+                        <!-- TAB 8: PENGATURAN COUNTDOWN -->
+                        <button type="button" id="tab-btn-countdown" onclick="switchTab('countdown')" class="tab-nav-btn flex-1 min-w-[95px] sm:min-w-[105px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
+                            <i class="fas fa-stopwatch text-sm sm:text-base text-rose-600"></i>
+                            <span>Countdown</span>
+                            <span id="tab-badge-countdown" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-rose-100 text-rose-800">
+                                Off
+                            </span>
+                        </button>
                     </div>
 
                 <!-- ========================================== -->
@@ -2072,6 +2233,170 @@ $active_menu = 'brosur_settings';
                                 <span class="text-[10px] text-sky-600 font-medium"><?= count($biaya_data_live['spp']) ?> Komponen</span>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- KONTEN TAB 8: PENGATURAN COUNTDOWN TIMER   -->
+                <!-- ========================================== -->
+                <div id="tab-content-countdown" class="tab-pane hidden space-y-6">
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
+                        
+                        <!-- Header Tab Countdown -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-stopwatch"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="font-black text-base sm:text-lg text-slate-900">Pengaturan Countdown Timer Frame</h2>
+                                        <span id="countdown-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-slate-100 text-slate-600 border border-slate-200">
+                                            Nonaktif
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500">Tampilkan hitung mundur waktu pendaftaran / promo batas waktu pada frame ini.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="saveCountdownSettings()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-black text-xs shadow-sm transition flex items-center gap-1.5 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-xs"></i>
+                                    <span>Simpan Countdown</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Form Fields -->
+                        <div class="space-y-5">
+                            <!-- 1. Toggle Aktifkan Countdown -->
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
+                                <div>
+                                    <label class="font-black text-sm text-slate-900 flex items-center gap-2 cursor-pointer" for="input-cd-enabled">
+                                        <span>Aktifkan Countdown di Frame Ini</span>
+                                    </label>
+                                    <p class="text-xs text-slate-500 mt-0.5">Jika diaktifkan, widget countdown akan muncul di layar smartphone pada frame ini.</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                    <input type="checkbox" id="input-cd-enabled" onchange="updateCountdownField('enabled', this.checked ? 1 : 0)" class="sr-only peer">
+                                    <div class="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                                </label>
+                            </div>
+
+                            <!-- 2. Judul / Teks Label -->
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-slate-700">Judul / Teks Label Countdown</label>
+                                <input type="text" id="input-cd-title" oninput="updateCountdownField('title', this.value)" placeholder="Contoh: ⏳ Sisa Waktu Pendaftaran Berakhir:" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 font-semibold">
+                                <p class="text-[11px] text-slate-400">Gunakan emoji seperti ⏳, 🔥, ⚡ untuk menarik perhatian calon wali santri.</p>
+                            </div>
+
+                            <!-- 3. Tanggal & Jam Target Selesai + Preset -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold text-slate-700">Waktu Target Selesai (Batas Waktu)</label>
+                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                                    <input type="datetime-local" id="input-cd-target" oninput="updateCountdownField('target', this.value)" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 font-mono font-bold">
+                                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                                        <button type="button" onclick="setCountdownPreset(7)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+7 Hari</button>
+                                        <button type="button" onclick="setCountdownPreset(14)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+14 Hari</button>
+                                        <button type="button" onclick="setCountdownPreset(30)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+30 Hari</button>
+                                        <button type="button" onclick="setCountdownPreset('year_end')" class="px-2.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold transition whitespace-nowrap">Akhir Tahun</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4. Pilihan Desain / Style Tampilan Kartu -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold text-slate-700">Pilihan Desain Kotak Countdown</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                    <label class="p-3 rounded-xl border-2 border-slate-200 hover:border-rose-400 cursor-pointer flex items-center gap-2.5 transition bg-slate-900 text-white cd-style-option" data-style="glass_dark">
+                                        <input type="radio" name="cd_style_radio" value="glass_dark" onchange="updateCountdownField('style', this.value)" class="sr-only">
+                                        <div class="w-4 h-4 rounded-full border border-amber-400 flex items-center justify-center shrink-0 cd-radio-indicator"></div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-black text-amber-300">Glass Dark Gold</p>
+                                            <p class="text-[10px] text-slate-300">Gelap mewah glow emas</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="p-3 rounded-xl border-2 border-slate-200 hover:border-rose-400 cursor-pointer flex items-center gap-2.5 transition bg-gradient-to-r from-[#022c22] to-[#075f56] text-white cd-style-option" data-style="emerald_glow">
+                                        <input type="radio" name="cd_style_radio" value="emerald_glow" onchange="updateCountdownField('style', this.value)" class="sr-only">
+                                        <div class="w-4 h-4 rounded-full border border-emerald-400 flex items-center justify-center shrink-0 cd-radio-indicator"></div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-black text-emerald-200">Emerald Zamrud</p>
+                                            <p class="text-[10px] text-emerald-100">Khas hijau Villa Quran</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="p-3 rounded-xl border-2 border-slate-200 hover:border-rose-400 cursor-pointer flex items-center gap-2.5 transition bg-gradient-to-r from-amber-700 to-orange-800 text-white cd-style-option" data-style="amber_gold">
+                                        <input type="radio" name="cd_style_radio" value="amber_gold" onchange="updateCountdownField('style', this.value)" class="sr-only">
+                                        <div class="w-4 h-4 rounded-full border border-amber-300 flex items-center justify-center shrink-0 cd-radio-indicator"></div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-black text-amber-200">Amber Sunrise</p>
+                                            <p class="text-[10px] text-amber-100">Emas & oranye hangat</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="p-3 rounded-xl border-2 border-slate-200 hover:border-rose-400 cursor-pointer flex items-center gap-2.5 transition bg-white text-slate-900 cd-style-option shadow-2xs" data-style="white_clean">
+                                        <input type="radio" name="cd_style_radio" value="white_clean" onchange="updateCountdownField('style', this.value)" class="sr-only">
+                                        <div class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center shrink-0 cd-radio-indicator"></div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-black text-slate-950">White & Black Clean</p>
+                                            <p class="text-[10px] text-slate-500">Putih bersih teks hitam</p>
+                                        </div>
+                                    </label>
+
+                                    <label class="p-3 rounded-xl border-2 border-slate-200 hover:border-rose-400 cursor-pointer flex items-center gap-2.5 transition bg-slate-800 text-white cd-style-option" data-style="minimalist">
+                                        <input type="radio" name="cd_style_radio" value="minimalist" onchange="updateCountdownField('style', this.value)" class="sr-only">
+                                        <div class="w-4 h-4 rounded-full border border-slate-400 flex items-center justify-center shrink-0 cd-radio-indicator"></div>
+                                        <div class="text-left">
+                                            <p class="text-xs font-black text-slate-200">Minimalist Line</p>
+                                            <p class="text-[10px] text-slate-400">Sederhana tanpa kartu tebal</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- 5. Posisi dan Lebar (Pos X, Pos Y, Width) -->
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span>Posisi X (Horizontal)</span>
+                                        <span id="val-cd-pos-x" class="text-rose-600 font-mono">50%</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" step="0.5" id="slider-cd-pos-x" oninput="updateCountdownField('posX', parseFloat(this.value)); document.getElementById('val-cd-pos-x').innerText = this.value + '%';" class="w-full accent-rose-600">
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span>Posisi Y (Vertikal)</span>
+                                        <span id="val-cd-pos-y" class="text-rose-600 font-mono">72%</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" step="0.5" id="slider-cd-pos-y" oninput="updateCountdownField('posY', parseFloat(this.value)); document.getElementById('val-cd-pos-y').innerText = this.value + '%';" class="w-full accent-rose-600">
+                                </div>
+
+                                <div class="space-y-1.5">
+                                    <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span>Lebar Kotak (Width)</span>
+                                        <span id="val-cd-width" class="text-rose-600 font-mono">88%</span>
+                                    </div>
+                                    <input type="range" min="30" max="100" step="1" id="slider-cd-width" oninput="updateCountdownField('width', parseInt(this.value)); document.getElementById('val-cd-width').innerText = this.value + '%';" class="w-full accent-rose-600">
+                                </div>
+                            </div>
+
+                            <!-- 6. Teks Waktu Habis (Expired Text) -->
+                            <div class="space-y-1.5">
+                                <label class="block text-xs font-bold text-slate-700">Pesan Setelah Waktu Berakhir (Expired)</label>
+                                <input type="text" id="input-cd-expired" oninput="updateCountdownField('expired_text', this.value)" placeholder="Contoh: ⏳ Pendaftaran Telah Ditutup!" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 font-semibold">
+                            </div>
+
+                            <!-- Tombol Simpan Tab Countdown -->
+                            <div class="pt-3 border-t border-slate-100 flex items-center justify-end">
+                                <button type="button" onclick="saveCountdownSettings()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-base"></i>
+                                    <span>Simpan Pengaturan Countdown</span>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -2773,6 +3098,11 @@ $active_menu = 'brosur_settings';
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimLayers() -->
                             </div>
 
+                            <!-- CONTAINER LAYER COUNTDOWN DI LAYAR SIMULASI -->
+                            <div id="sim-countdown-layers-container" class="absolute inset-0 pointer-events-none z-32">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSimCountdownLayers() -->
+                            </div>
+
                             <!-- CONTAINER LAYER TOMBOL DI LAYAR SIMULASI -->
                             <div id="sim-button-layers-container" class="absolute inset-0 pointer-events-none z-35">
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimButtonLayers() -->
@@ -2938,6 +3268,9 @@ $active_menu = 'brosur_settings';
         let videoItems  = framesData[currentActiveFrame].videos  || [];
         let buttonItems = framesData[currentActiveFrame].buttons || [];
         let slideItems  = framesData[currentActiveFrame].slides  || [];
+        let countdownData = (framesData[currentActiveFrame] && framesData[currentActiveFrame].countdown) 
+                            ? framesData[currentActiveFrame].countdown 
+                            : { enabled: 0, title: '⏳ Sisa Waktu Pendaftaran Berakhir:', target: '2026-12-31 23:59:59', style: 'glass_dark', posX: 50.0, posY: 72.0, width: 88, expired_text: 'Pendaftaran Telah Ditutup!' };
 
         // Konfigurasi Ikon & Tema
         const availableFrameIcons = [
@@ -3111,6 +3444,7 @@ $active_menu = 'brosur_settings';
             videoItems  = data.videos  || [];
             buttonItems = data.buttons || [];
             slideItems  = data.slides  || [];
+            countdownData = data.countdown || { enabled: 0, title: '⏳ Sisa Waktu Pendaftaran Berakhir:', target: '2026-12-31 23:59:59', style: 'glass_dark', posX: 50.0, posY: 72.0, width: 88, expired_text: 'Pendaftaran Telah Ditutup!' };
 
             // 1. Re-render Switcher buttons & Bottom Bar
             renderFrameSwitcher();
@@ -3196,6 +3530,9 @@ $active_menu = 'brosur_settings';
             renderSimSlideLayers();
 
             renderSimBiayaLayers();
+
+            renderCountdownForm();
+            renderSimCountdownLayers();
         }
 
         // ==========================================
@@ -3455,10 +3792,10 @@ $active_menu = 'brosur_settings';
         }
 
         function switchTab(tab) {
-            if (!['bg', 'text', 'image', 'video', 'button', 'slide', 'biaya'].includes(tab)) tab = 'bg';
+            if (!['bg', 'text', 'image', 'video', 'button', 'slide', 'biaya', 'countdown'].includes(tab)) tab = 'bg';
             currentActiveTab = tab;
 
-            const tabs = ['bg', 'text', 'image', 'video', 'button', 'slide', 'biaya'];
+            const tabs = ['bg', 'text', 'image', 'video', 'button', 'slide', 'biaya', 'countdown'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const pane = document.getElementById(`tab-content-${t}`);
@@ -6111,6 +6448,304 @@ $active_menu = 'brosur_settings';
         }
 
         // ==========================================
+        // 7.5. PENGATURAN & SIMULASI LIVE COUNTDOWN
+        // ==========================================
+
+        let countdownInterval = null;
+
+        function renderCountdownForm() {
+            const cd = (framesData[currentActiveFrame] && framesData[currentActiveFrame].countdown) 
+                       ? framesData[currentActiveFrame].countdown 
+                       : { enabled: 0, title: '⏳ Sisa Waktu Pendaftaran Berakhir:', target: '2026-12-31 23:59:59', style: 'glass_dark', posX: 50.0, posY: 72.0, width: 88, expired_text: 'Pendaftaran Telah Ditutup!' };
+                       
+            countdownData = Object.assign({}, cd);
+            if (framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].countdown = countdownData;
+            }
+            
+            const enInp = document.getElementById('input-cd-enabled');
+            const titleInp = document.getElementById('input-cd-title');
+            const targetInp = document.getElementById('input-cd-target');
+            const expiredInp = document.getElementById('input-cd-expired');
+            const badgeEl = document.getElementById('countdown-status-badge');
+            const tabBadge = document.getElementById('tab-badge-countdown');
+            const posXInp = document.getElementById('slider-cd-pos-x');
+            const posYInp = document.getElementById('slider-cd-pos-y');
+            const widthInp = document.getElementById('slider-cd-width');
+            const posXVal = document.getElementById('val-cd-pos-x');
+            const posYVal = document.getElementById('val-cd-pos-y');
+            const widthVal = document.getElementById('val-cd-width');
+            
+            if (enInp) enInp.checked = (countdownData.enabled == 1);
+            if (titleInp) titleInp.value = countdownData.title || '';
+            if (expiredInp) expiredInp.value = countdownData.expired_text || '';
+            
+            if (targetInp) {
+                let tVal = (countdownData.target || '').replace(' ', 'T');
+                if (tVal.length > 16) tVal = tVal.substring(0, 16);
+                targetInp.value = tVal;
+            }
+            
+            if (posXInp) posXInp.value = countdownData.posX ?? 50;
+            if (posYInp) posYInp.value = countdownData.posY ?? 72;
+            if (widthInp) widthInp.value = countdownData.width ?? 88;
+            if (posXVal) posXVal.innerText = (countdownData.posX ?? 50) + '%';
+            if (posYVal) posYVal.innerText = (countdownData.posY ?? 72) + '%';
+            if (widthVal) widthVal.innerText = (countdownData.width ?? 88) + '%';
+            
+            // Style Selector Indicators
+            document.querySelectorAll('.cd-style-option').forEach(opt => {
+                const st = opt.getAttribute('data-style');
+                const radio = opt.querySelector('input[type="radio"]');
+                const indicator = opt.querySelector('.cd-radio-indicator');
+                if (st === (countdownData.style || 'glass_dark')) {
+                    if (radio) radio.checked = true;
+                    opt.classList.add('ring-2', 'ring-rose-500', 'border-rose-500');
+                    if (indicator) indicator.innerHTML = '<div class="w-2 h-2 rounded-full bg-rose-500"></div>';
+                } else {
+                    if (radio) radio.checked = false;
+                    opt.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500');
+                    if (indicator) indicator.innerHTML = '';
+                }
+            });
+            
+            if (badgeEl) {
+                if (countdownData.enabled == 1) {
+                    badgeEl.innerText = 'Aktif';
+                    badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300';
+                } else {
+                    badgeEl.innerText = 'Nonaktif';
+                    badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-slate-100 text-slate-600 border border-slate-200';
+                }
+            }
+            
+            if (tabBadge) {
+                if (countdownData.enabled == 1) {
+                    tabBadge.innerText = 'On';
+                    tabBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800';
+                } else {
+                    tabBadge.innerText = 'Off';
+                    tabBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-600';
+                }
+            }
+        }
+
+        function updateCountdownField(key, value) {
+            countdownData[key] = value;
+            if (framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].countdown = countdownData;
+            }
+            
+            const badgeEl = document.getElementById('countdown-status-badge');
+            const tabBadge = document.getElementById('tab-badge-countdown');
+            if (key === 'enabled') {
+                if (badgeEl) {
+                    if (value == 1) {
+                        badgeEl.innerText = 'Aktif';
+                        badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300';
+                    } else {
+                        badgeEl.innerText = 'Nonaktif';
+                        badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-slate-100 text-slate-600 border border-slate-200';
+                    }
+                }
+                if (tabBadge) {
+                    if (value == 1) {
+                        tabBadge.innerText = 'On';
+                        tabBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800';
+                    } else {
+                        tabBadge.innerText = 'Off';
+                        tabBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-600';
+                    }
+                }
+            }
+            
+            if (key === 'style') {
+                document.querySelectorAll('.cd-style-option').forEach(opt => {
+                    const st = opt.getAttribute('data-style');
+                    const indicator = opt.querySelector('.cd-radio-indicator');
+                    if (st === value) {
+                        opt.classList.add('ring-2', 'ring-rose-500', 'border-rose-500');
+                        if (indicator) indicator.innerHTML = '<div class="w-2 h-2 rounded-full bg-rose-500"></div>';
+                    } else {
+                        opt.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500');
+                        if (indicator) indicator.innerHTML = '';
+                    }
+                });
+            }
+            
+            renderSimCountdownLayers();
+        }
+
+        function setCountdownPreset(preset) {
+            let now = new Date();
+            let target = new Date();
+            if (preset === 'year_end') {
+                target = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+            } else if (typeof preset === 'number') {
+                target.setDate(target.getDate() + preset);
+                target.setHours(23, 59, 59, 0);
+            }
+            
+            const yr = target.getFullYear();
+            const mo = String(target.getMonth() + 1).padStart(2, '0');
+            const da = String(target.getDate()).padStart(2, '0');
+            const hr = String(target.getHours()).padStart(2, '0');
+            const mi = String(target.getMinutes()).padStart(2, '0');
+            const formatted = `${yr}-${mo}-${da} ${hr}:${mi}:00`;
+            const formattedLocal = `${yr}-${mo}-${da}T${hr}:${mi}`;
+            
+            updateCountdownField('target', formatted);
+            const targetInp = document.getElementById('input-cd-target');
+            if (targetInp) targetInp.value = formattedLocal;
+        }
+
+        function saveCountdownSettings() {
+            const formData = new FormData();
+            formData.append('action_type', 'save_countdown');
+            formData.append('ajax_mode', '1');
+            formData.append('active_frame', currentActiveFrame);
+            formData.append('active_tab', 'countdown');
+            formData.append('countdown_data_json', JSON.stringify(countdownData));
+            
+            fetch('admin-brosur-settings.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    showToast('Alhamdulillah Berhasil!', res.message || 'Pengaturan countdown berhasil disimpan.', true);
+                } else {
+                    showToast('Gagal Menyimpan', res.message || 'Terjadi kesalahan sistem.', false);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                showToast('Info', 'Pengaturan countdown tersimpan.', true);
+            });
+        }
+
+        function renderSimCountdownLayers() {
+            const container = document.getElementById('sim-countdown-layers-container');
+            if (!container) return;
+            
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            const cd = (framesData[currentActiveFrame] && framesData[currentActiveFrame].countdown) 
+                       ? framesData[currentActiveFrame].countdown 
+                       : countdownData;
+                       
+            if (!cd || !cd.enabled) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            const posX = cd.posX ?? 50;
+            const posY = cd.posY ?? 72;
+            const width = cd.width ?? 88;
+            const title = cd.title || '⏳ Sisa Waktu Pendaftaran Berakhir:';
+            const style = cd.style || 'glass_dark';
+            const targetStr = cd.target || '2026-12-31 23:59:59';
+            const expiredText = cd.expired_text || 'Pendaftaran Telah Ditutup!';
+            
+            let boxThemeClass = 'bg-black/60 backdrop-blur-md border border-amber-400/40 text-white shadow-xl';
+            let titleColorClass = 'text-amber-300';
+            let numBgClass = 'bg-white/10 border border-white/15 text-amber-300';
+            let labelColorClass = 'text-slate-300';
+            
+            if (style === 'emerald_glow') {
+                boxThemeClass = 'bg-gradient-to-br from-emerald-900/90 via-[#075f56]/90 to-[#022c22]/90 backdrop-blur-md border border-emerald-400/50 text-white shadow-xl';
+                titleColorClass = 'text-emerald-200';
+                numBgClass = 'bg-emerald-950/70 border border-emerald-400/30 text-emerald-200';
+                labelColorClass = 'text-emerald-100/80';
+            } else if (style === 'amber_gold') {
+                boxThemeClass = 'bg-gradient-to-br from-amber-900/90 via-amber-800/90 to-orange-950/90 backdrop-blur-md border border-amber-400/60 text-white shadow-xl';
+                titleColorClass = 'text-amber-200';
+                numBgClass = 'bg-black/40 border border-amber-400/40 text-amber-300';
+                labelColorClass = 'text-amber-100/80';
+            } else if (style === 'white_clean') {
+                boxThemeClass = 'bg-white/95 backdrop-blur-md border border-slate-200 text-slate-900 shadow-xl';
+                titleColorClass = 'text-emerald-800';
+                numBgClass = 'bg-slate-100 border border-slate-300 text-slate-950';
+                labelColorClass = 'text-slate-600';
+            } else if (style === 'minimalist') {
+                boxThemeClass = 'bg-black/35 backdrop-blur-xs border border-white/20 text-white shadow-md';
+                titleColorClass = 'text-white';
+                numBgClass = 'bg-white/10 border border-white/20 text-white';
+                labelColorClass = 'text-white/70';
+            }
+            
+            const card = document.createElement('div');
+            card.id = 'sim-countdown-card';
+            card.className = `absolute pointer-events-auto transition-all fade-in-layer rounded-2xl p-2.5 sm:p-3 text-center ${boxThemeClass}`;
+            card.style.top = `${posY}%`;
+            card.style.left = `${posX}%`;
+            card.style.transform = 'translate(-50%, -50%)';
+            card.style.width = `${width}%`;
+            card.style.zIndex = '32';
+            
+            container.innerHTML = '';
+            container.appendChild(card);
+            
+            function updateTicks() {
+                const targetDate = new Date(targetStr.replace(/-/g, '/')).getTime();
+                const now = new Date().getTime();
+                const diff = targetDate - now;
+                
+                if (isNaN(targetDate) || diff <= 0) {
+                    card.innerHTML = `
+                        <div class="flex items-center justify-center gap-1.5 text-xs font-bold ${titleColorClass}">
+                            <i class="fas fa-hourglass-end text-rose-400"></i>
+                            <span>${escapeHtml(expiredText)}</span>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                
+                const dStr = String(days).padStart(2, '0');
+                const hStr = String(hours).padStart(2, '0');
+                const mStr = String(minutes).padStart(2, '0');
+                const sStr = String(seconds).padStart(2, '0');
+                
+                card.innerHTML = `
+                    <div class="text-[10px] font-extrabold mb-1.5 flex items-center justify-center gap-1.5 ${titleColorClass}">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                        <span>${escapeHtml(title)}</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-1.5 select-none">
+                        <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
+                            <span class="text-xs sm:text-sm font-black font-mono leading-none">${dStr}</span>
+                            <span class="text-[7.5px] font-bold uppercase tracking-wider mt-0.5 ${labelColorClass}">Hari</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
+                            <span class="text-xs sm:text-sm font-black font-mono leading-none">${hStr}</span>
+                            <span class="text-[7.5px] font-bold uppercase tracking-wider mt-0.5 ${labelColorClass}">Jam</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
+                            <span class="text-xs sm:text-sm font-black font-mono leading-none">${mStr}</span>
+                            <span class="text-[7.5px] font-bold uppercase tracking-wider mt-0.5 ${labelColorClass}">Menit</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
+                            <span class="text-xs sm:text-sm font-black font-mono leading-none text-rose-400">${sStr}</span>
+                            <span class="text-[7.5px] font-bold uppercase tracking-wider mt-0.5 ${labelColorClass}">Detik</span>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            updateTicks();
+            countdownInterval = setInterval(updateTicks, 1000);
+        }
+
+        // ==========================================
         // 8. DRAGGABLE ENGINE DENGAN SMART SNAP & GARIS BANTU
         // ==========================================
 
@@ -6517,6 +7152,7 @@ $active_menu = 'brosur_settings';
             formData.append('custom_video_items_json', JSON.stringify(videoItems));
             formData.append('custom_button_items_json', JSON.stringify(buttonItems));
             formData.append('custom_slide_items_json', JSON.stringify(slideItems));
+            formData.append('countdown_data_json', JSON.stringify(countdownData));
 
             // Upload bg_file jika ada
             const bgFileInput = document.getElementById('input-bg-file');
@@ -6556,6 +7192,12 @@ $active_menu = 'brosur_settings';
                             renderSlideRows();
                             renderSimSlideLayers();
                         }
+                        if (res.clean_countdown && typeof res.clean_countdown === 'object') {
+                            countdownData = res.clean_countdown;
+                            if (framesData[currentActiveFrame]) framesData[currentActiveFrame].countdown = countdownData;
+                            renderCountdownForm();
+                            renderSimCountdownLayers();
+                        }
                         showToast('Alhamdulillah Berhasil!', res.message || 'Seluruh pengaturan frame berhasil disimpan.', true);
                     } else {
                         showToast('Gagal Menyimpan', res.message || 'Terjadi kesalahan saat menyimpan.', false);
@@ -6577,9 +7219,9 @@ $active_menu = 'brosur_settings';
 
         // Inisialisasi awal saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
-            // Cek hash URL jika ada (#bg, #text, #image, #video, #button, #slide)
+            // Cek hash URL jika ada (#bg, #text, #image, #video, #button, #slide, #biaya, #countdown)
             const hash = window.location.hash.replace('#', '');
-            if (['bg', 'text', 'image', 'video', 'button', 'slide'].includes(hash)) {
+            if (['bg', 'text', 'image', 'video', 'button', 'slide', 'biaya', 'countdown'].includes(hash)) {
                 currentActiveTab = hash;
             }
             switchFrame(currentActiveFrame);

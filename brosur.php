@@ -821,6 +821,22 @@ if (empty($all_frames_dict)) {
     }
 }
 
+// Pastikan setiap frame memiliki konfigurasi countdown fallback
+foreach ($all_frames_dict as $afk => $afv) {
+    if (!isset($all_frames_dict[$afk]['countdown'])) {
+        $all_frames_dict[$afk]['countdown'] = [
+            'enabled'      => ($afk === 'home' && !empty($cfg['show_countdown'])) ? 1 : 0,
+            'title'        => !empty($cfg['countdown_title']) ? $cfg['countdown_title'] : '⏳ Sisa Waktu Pendaftaran Berakhir:',
+            'target'       => !empty($cfg['countdown_target']) ? $cfg['countdown_target'] : '2026-12-31 23:59:59',
+            'style'        => 'glass_dark',
+            'posX'         => 50.0,
+            'posY'         => 72.0,
+            'width'        => 88,
+            'expired_text' => 'Pendaftaran Telah Ditutup!'
+        ];
+    }
+}
+
 $active_frame_param = isset($_GET['frame']) ? trim($_GET['frame']) : 'home';
 if (!isset($all_frames_dict[$active_frame_param])) {
     $active_frame_param = array_key_first($all_frames_dict) ?? 'home';
@@ -1019,6 +1035,9 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
             <!-- CONTAINER LAYER TULISAN DI LAYAR SIMULASI -->
             <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none z-30"></div>
+
+            <!-- CONTAINER LAYER COUNTDOWN DI LAYAR SIMULASI -->
+            <div id="sim-countdown-layers-container" class="absolute inset-0 pointer-events-none z-32"></div>
 
             <!-- CONTAINER LAYER TOMBOL DI LAYAR SIMULASI -->
             <div id="sim-button-layers-container" class="absolute inset-0 pointer-events-none z-35"></div>
@@ -1315,6 +1334,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             renderSimVideoLayers(data.videos || []);
             renderSimBiayaLayers(frame);
             renderSimLayers(data.texts || []);
+            renderSimCountdownLayers(frame);
             renderSimButtonLayers(data.buttons || []);
 
             // 4. Update URL without reload
@@ -1798,6 +1818,128 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                 box.innerHTML = innerContent;
                 container.appendChild(box);
             });
+        }
+
+        // 6. RENDER COUNTDOWN
+        let brosurCountdownInterval = null;
+
+        function renderSimCountdownLayers(frameKey) {
+            const container = document.getElementById('sim-countdown-layers-container');
+            if (!container) return;
+
+            if (brosurCountdownInterval) {
+                clearInterval(brosurCountdownInterval);
+                brosurCountdownInterval = null;
+            }
+
+            const fData = framesData[frameKey];
+            const cd = fData ? fData.countdown : null;
+
+            if (!cd || !cd.enabled) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const posX = cd.posX ?? 50;
+            const posY = cd.posY ?? 72;
+            const width = cd.width ?? 88;
+            const title = cd.title || '⏳ Sisa Waktu Pendaftaran Berakhir:';
+            const style = cd.style || 'glass_dark';
+            const targetStr = cd.target || '2026-12-31 23:59:59';
+            const expiredText = cd.expired_text || 'Pendaftaran Telah Ditutup!';
+
+            let boxThemeClass = 'bg-black/60 backdrop-blur-md border border-amber-400/40 text-white shadow-xl';
+            let titleColorClass = 'text-amber-300';
+            let numBgClass = 'bg-white/10 border border-white/15 text-amber-300';
+            let labelColorClass = 'text-slate-300';
+
+            if (style === 'emerald_glow') {
+                boxThemeClass = 'bg-gradient-to-br from-emerald-900/90 via-[#075f56]/90 to-[#022c22]/90 backdrop-blur-md border border-emerald-400/50 text-white shadow-xl';
+                titleColorClass = 'text-emerald-200';
+                numBgClass = 'bg-emerald-950/70 border border-emerald-400/30 text-emerald-200';
+                labelColorClass = 'text-emerald-100/80';
+            } else if (style === 'amber_gold') {
+                boxThemeClass = 'bg-gradient-to-br from-amber-900/90 via-amber-800/90 to-orange-950/90 backdrop-blur-md border border-amber-400/60 text-white shadow-xl';
+                titleColorClass = 'text-amber-200';
+                numBgClass = 'bg-black/40 border border-amber-400/40 text-amber-300';
+                labelColorClass = 'text-amber-100/80';
+            } else if (style === 'white_clean') {
+                boxThemeClass = 'bg-white/95 backdrop-blur-md border border-slate-200 text-slate-900 shadow-xl';
+                titleColorClass = 'text-emerald-800';
+                numBgClass = 'bg-slate-100 border border-slate-300 text-slate-950';
+                labelColorClass = 'text-slate-600';
+            } else if (style === 'minimalist') {
+                boxThemeClass = 'bg-black/35 backdrop-blur-xs border border-white/20 text-white shadow-md';
+                titleColorClass = 'text-white';
+                numBgClass = 'bg-white/10 border border-white/20 text-white';
+                labelColorClass = 'text-white/70';
+            }
+
+            const card = document.createElement('div');
+            card.id = 'sim-countdown-card';
+            card.className = `absolute pointer-events-auto transition-all fade-in-layer rounded-2xl p-2.5 sm:p-3 text-center ${boxThemeClass}`;
+            card.style.top = `${posY}%`;
+            card.style.left = `${posX}%`;
+            card.style.transform = 'translate(-50%, -50%)';
+            card.style.width = `${width}%`;
+            card.style.zIndex = '32';
+
+            container.innerHTML = '';
+            container.appendChild(card);
+
+            function updateTicks() {
+                const targetDate = new Date(targetStr.replace(/-/g, '/')).getTime();
+                const now = new Date().getTime();
+                const diff = targetDate - now;
+
+                if (isNaN(targetDate) || diff <= 0) {
+                    card.innerHTML = `
+                        <div class="flex items-center justify-center gap-1.5 text-xs font-bold ${titleColorClass}">
+                            <i class="fas fa-hourglass-end text-rose-400"></i>
+                            <span>${escapeHtml(expiredText)}</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                const dStr = String(days).padStart(2, '0');
+                const hStr = String(hours).padStart(2, '0');
+                const mStr = String(minutes).padStart(2, '0');
+                const sStr = String(seconds).padStart(2, '0');
+
+                card.innerHTML = `
+                    <div class="text-[10px] font-extrabold mb-1.5 flex items-center justify-center gap-1.5 ${titleColorClass}">
+                        <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
+                        <span>${escapeHtml(title)}</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-1.5 select-none">
+                        <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
+                            <span class="text-xs sm:text-sm font-black font-mono leading-none">${dStr}</span>
+                            <span class="text-[7.5px] font-bold uppercase tracking-wider mt-0.5 ${labelColorClass}">Hari</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
+                            <span class="text-xs sm:text-sm font-black font-mono leading-none">${hStr}</span>
+                            <span class="text-[7.5px] font-bold uppercase tracking-wider mt-0.5 ${labelColorClass}">Jam</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
+                            <span class="text-xs sm:text-sm font-black font-mono leading-none">${mStr}</span>
+                            <span class="text-[7.5px] font-bold uppercase tracking-wider mt-0.5 ${labelColorClass}">Menit</span>
+                        </div>
+                        <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
+                            <span class="text-xs sm:text-sm font-black font-mono leading-none text-rose-400">${sStr}</span>
+                            <span class="text-[7.5px] font-bold uppercase tracking-wider mt-0.5 ${labelColorClass}">Detik</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            updateTicks();
+            brosurCountdownInterval = setInterval(updateTicks, 1000);
         }
 
         // =======================================================
