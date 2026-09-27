@@ -5973,9 +5973,9 @@ $active_menu = 'brosur_settings';
                 const btn = document.getElementById(`biaya-tab-btn-${k}`);
                 if (btn) {
                     if (k === cat) {
-                        btn.className = 'px-2.5 py-1 rounded-lg bg-emerald-500 text-white font-black shadow-xs transition';
+                        btn.className = 'px-2.5 py-1 rounded-lg bg-emerald-700 text-white font-black shadow-xs transition';
                     } else {
-                        btn.className = 'px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition';
+                        btn.className = 'px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold';
                     }
                 }
             });
@@ -5991,10 +5991,10 @@ $active_menu = 'brosur_settings';
             const cat = window.currentBiayaCategory || 'all';
 
             const categoryMeta = {
-                pendaftaran: { title: '1. Pendaftaran & Seleksi', color: 'text-teal-300', badge: 'bg-teal-900/80 text-teal-200 border-teal-500/40' },
-                pangkal:     { title: '2. Uang Pangkal (Masuk)',   color: 'text-amber-300', badge: 'bg-amber-900/80 text-amber-200 border-amber-500/40' },
-                tahunan:     { title: '3. Biaya Tahunan',         color: 'text-purple-300', badge: 'bg-purple-900/80 text-purple-200 border-purple-500/40' },
-                spp:         { title: '4. SPP Bulanan (Makan & Asrama)', color: 'text-sky-300', badge: 'bg-sky-900/80 text-sky-200 border-sky-500/40' }
+                pendaftaran: { title: '1. Pendaftaran & Seleksi', color: 'text-teal-900', badge: 'bg-teal-100 text-teal-950 border-teal-300' },
+                pangkal:     { title: '2. Uang Pangkal (Masuk)',   color: 'text-amber-950', badge: 'bg-amber-100 text-amber-950 border-amber-300' },
+                tahunan:     { title: '3. Biaya Tahunan',         color: 'text-purple-950', badge: 'bg-purple-100 text-purple-950 border-purple-300' },
+                spp:         { title: '4. SPP Bulanan (Makan & Asrama)', color: 'text-blue-950', badge: 'bg-blue-100 text-blue-950 border-blue-300' }
             };
 
             let totalFiltered = 0;
@@ -6009,27 +6009,27 @@ $active_menu = 'brosur_settings';
                 totalFiltered += subtotal;
 
                 const sec = document.createElement('div');
-                sec.className = 'bg-white/5 p-2.5 rounded-xl border border-white/10 space-y-1.5 backdrop-blur-xs';
+                sec.className = 'bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5 shadow-2xs text-slate-900';
 
                 let rowsHtml = '';
                 items.forEach(it => {
                     rowsHtml += `
-                        <div class="flex items-center justify-between text-[9.5px] py-1 border-b border-white/5 last:border-0">
-                            <span class="text-slate-200 font-medium truncate pr-1 flex items-center gap-1.5">
-                                <i class="fas fa-circle-check text-[8px] ${meta.color}"></i>
+                        <div class="flex items-center justify-between text-[9.5px] py-1 border-b border-slate-200/80 last:border-0">
+                            <span class="text-slate-800 font-medium truncate pr-1 flex items-center gap-1.5">
+                                <i class="fas fa-circle-check text-[8px] text-emerald-600"></i>
                                 <span>${escapeHtml(it.nama)}</span>
                             </span>
-                            <span class="font-bold text-white shrink-0 font-mono">${formatRupiah(it.nominal)}</span>
+                            <span class="font-bold text-slate-950 shrink-0 font-mono">${formatRupiah(it.nominal)}</span>
                         </div>
                     `;
                 });
 
                 sec.innerHTML = `
-                    <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
                         <span class="text-[10px] font-black ${meta.color} flex items-center gap-1">
                             ${meta.title}
                         </span>
-                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded-full border ${meta.badge} font-mono">
+                        <span class="text-[9px] font-black px-2 py-0.5 rounded-full border ${meta.badge} font-mono">
                             ${formatRupiah(subtotal)}
                         </span>
                     </div>
@@ -6042,7 +6042,7 @@ $active_menu = 'brosur_settings';
 
             if (box.children.length === 0) {
                 box.innerHTML = `
-                    <div class="p-6 text-center text-slate-400 text-[10px] italic">
+                    <div class="p-6 text-center text-slate-500 text-[10px] italic">
                         Belum ada data komponen biaya pada kategori ini.
                     </div>
                 `;
@@ -6065,7 +6065,7 @@ $active_menu = 'brosur_settings';
 
             const card = document.createElement('div');
             card.id = 'sim-biaya-card';
-            card.className = 'absolute pointer-events-auto transition-all fade-in-layer shadow-2xl rounded-2xl overflow-hidden border border-emerald-500/40 backdrop-blur-md bg-slate-950/85 text-white flex flex-col';
+            card.className = 'absolute pointer-events-auto transition-all fade-in-layer shadow-2xl rounded-2xl overflow-hidden border border-slate-200 backdrop-blur-md bg-white/95 text-slate-900 flex flex-col';
             card.style.top = '51.5%';
             card.style.left = '50%';
             card.style.transform = 'translate(-50%, -50%)';
@@ -6075,34 +6075,34 @@ $active_menu = 'brosur_settings';
 
             card.innerHTML = `
                 <!-- Header with Live Badge -->
-                <div class="bg-gradient-to-r from-emerald-800/90 via-teal-800/90 to-emerald-900/90 p-2.5 border-b border-white/10 flex items-center justify-between shrink-0">
+                <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 p-2.5 border-b border-emerald-950/20 flex items-center justify-between shrink-0 text-white">
                     <div class="flex items-center gap-1.5">
                         <i class="fas fa-wallet text-amber-300 text-xs"></i>
                         <span class="text-[10.5px] font-black uppercase tracking-wider text-white">Rincian Biaya Pendidikan</span>
                     </div>
-                    <div class="flex items-center gap-1 text-[8px] font-bold text-emerald-200 bg-emerald-950/90 px-2 py-0.5 rounded-full border border-emerald-400/40">
-                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <div class="flex items-center gap-1 text-[8px] font-bold text-white bg-white/20 px-2 py-0.5 rounded-full border border-white/30 backdrop-blur-xs">
+                        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                         <span>Live Sync Web</span>
                     </div>
                 </div>
 
                 <!-- Filter Sub-Tabs -->
-                <div class="flex items-center gap-1 p-1 bg-black/60 border-b border-white/5 overflow-x-auto no-scrollbar shrink-0 text-[8.5px] font-bold">
-                    <button type="button" id="biaya-tab-btn-all" onclick="setBiayaCategory('all')" class="px-2.5 py-1 rounded-lg bg-emerald-500 text-white font-black shadow-xs transition">Semua</button>
-                    <button type="button" id="biaya-tab-btn-pangkal" onclick="setBiayaCategory('pangkal')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">Pangkal</button>
-                    <button type="button" id="biaya-tab-btn-tahunan" onclick="setBiayaCategory('tahunan')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">Tahunan</button>
-                    <button type="button" id="biaya-tab-btn-spp" onclick="setBiayaCategory('spp')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">SPP</button>
-                    <button type="button" id="biaya-tab-btn-pendaftaran" onclick="setBiayaCategory('pendaftaran')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">Pendaftaran</button>
+                <div class="flex items-center gap-1 p-1.5 bg-slate-100 border-b border-slate-200 overflow-x-auto no-scrollbar shrink-0 text-[8.5px] font-bold">
+                    <button type="button" id="biaya-tab-btn-all" onclick="setBiayaCategory('all')" class="px-2.5 py-1 rounded-lg bg-emerald-700 text-white font-black shadow-xs transition">Semua</button>
+                    <button type="button" id="biaya-tab-btn-pangkal" onclick="setBiayaCategory('pangkal')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Pangkal</button>
+                    <button type="button" id="biaya-tab-btn-tahunan" onclick="setBiayaCategory('tahunan')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Tahunan</button>
+                    <button type="button" id="biaya-tab-btn-spp" onclick="setBiayaCategory('spp')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">SPP</button>
+                    <button type="button" id="biaya-tab-btn-pendaftaran" onclick="setBiayaCategory('pendaftaran')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Pendaftaran</button>
                 </div>
 
                 <!-- Scrollable Items List -->
-                <div id="biaya-items-list-box" class="p-2 space-y-2 overflow-y-auto overflow-x-hidden flex-1 no-scrollbar text-left">
+                <div id="biaya-items-list-box" class="p-2 space-y-2 overflow-y-auto overflow-x-hidden flex-1 no-scrollbar text-left bg-white">
                 </div>
 
                 <!-- Footer Total -->
-                <div class="bg-black/90 p-2 border-t border-white/10 flex items-center justify-between shrink-0 text-[10px]">
-                    <span class="text-slate-300 font-medium">Estimasi Total Biaya:</span>
-                    <span id="biaya-grand-total-val" class="font-black text-amber-300 text-xs font-mono">Rp 0</span>
+                <div class="bg-slate-100 p-2 border-t border-slate-200 flex items-center justify-between shrink-0 text-[10px]">
+                    <span class="text-slate-700 font-bold">Estimasi Total Biaya:</span>
+                    <span id="biaya-grand-total-val" class="font-black text-emerald-800 text-xs font-mono">Rp 0</span>
                 </div>
             `;
 
