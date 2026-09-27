@@ -1546,6 +1546,140 @@ foreach ($std_merge_map as $fid => $fdefs) {
     }
 }
 
+// Auto-heal recovery: Periksa jika data frame 'home' di database sempat tertukar dengan data 'Kegiatan'
+$is_home_corrupted = false;
+if (isset($all_frames_dict['home']['texts']) && is_array($all_frames_dict['home']['texts'])) {
+    foreach ($all_frames_dict['home']['texts'] as $t) {
+        if (stripos($t['content'] ?? '', 'Kegiatan') !== false || stripos($t['content'] ?? '', 'Muroja') !== false) {
+            $is_home_corrupted = true;
+            break;
+        }
+    }
+}
+
+if ($is_home_corrupted) {
+    // 1. Amankan data kegiatan ke frame kegiatan jika belum ada
+    $kegiatan_key = 'frame_1790486082531';
+    if (!isset($all_frames_dict[$kegiatan_key])) {
+        $all_frames_dict[$kegiatan_key] = [
+            'id'           => $kegiatan_key,
+            'name'         => 'Kegiatan',
+            'title'        => 'Frame: Kegiatan',
+            'subtitle'     => 'Frame ini mengatur tampilan Kegiatan santri.',
+            'badge'        => 'Kegiatan Santri',
+            'icon'         => 'fa-bullseye',
+            'theme'        => 'emerald',
+            'iconGradient' => 'from-emerald-500 to-[#0b8478]',
+            'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
+            'bgUrl'        => $all_frames_dict['home']['bgUrl'] ?? 'upload/bg_brosur_1790424374_668.png',
+            'bgOpacity'    => 0.02,
+            'texts'        => $all_frames_dict['home']['texts'] ?? [],
+            'images'       => $all_frames_dict['home']['images'] ?? [],
+            'videos'       => $all_frames_dict['home']['videos'] ?? [],
+            'buttons'      => $all_frames_dict['home']['buttons'] ?? [],
+            'slides'       => $all_frames_dict['home']['slides'] ?? []
+        ];
+    }
+
+    // 2. Pulihkan frame 'home' (Depan) ke elemen aslinya sesuai simulasi
+    $all_frames_dict['home'] = [
+        'id'           => 'home',
+        'name'         => 'Depan',
+        'title'        => 'Frame: Depan',
+        'subtitle'     => 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).',
+        'badge'        => 'Cover / Halaman Depan',
+        'menuPill'     => 'Menu #1 di Bottom Bar',
+        'icon'         => 'fa-house',
+        'theme'        => 'emerald',
+        'iconGradient' => 'from-emerald-500 to-[#0b8478]',
+        'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
+        'bgUrl'        => 'upload/bg_brosur_1790424374_668.png',
+        'bgOpacity'    => 0.0,
+        'texts'        => [
+            [
+                'id'      => 'text_home_alhamdulillah',
+                'content' => 'Alhamdulillah',
+                'format'  => 'h2',
+                'color'   => '#27968f',
+                'font'    => 'Marlin Condensed',
+                'align'   => 'center',
+                'size'    => 28,
+                'posX'    => 50,
+                'posY'    => 10.5,
+                'width'   => 85
+            ],
+            [
+                'id'      => 'text_home_competition',
+                'content' => "International Mathematics, Science, Social Studies, and Language Competition",
+                'format'  => 'p',
+                'color'   => '#334155',
+                'font'    => 'Plus Jakarta Sans',
+                'align'   => 'center',
+                'size'    => 9,
+                'posX'    => 50,
+                'posY'    => 19.5,
+                'width'   => 88
+            ],
+            [
+                'id'      => 'text_home_prestasi',
+                'content' => 'Baru 2 Tahun Raih Banyak Prestasi',
+                'format'  => 'h2',
+                'color'   => '#ffffff',
+                'font'    => 'Marlin Condensed',
+                'align'   => 'center',
+                'size'    => 20,
+                'posX'    => 50,
+                'posY'    => 72.0,
+                'width'   => 88
+            ]
+        ],
+        'images'       => [
+            [
+                'id'            => 'img_home_santriwati',
+                'url'           => 'http://villaquranindonesia.com//uploads/media_69e85ba108590.jpg',
+                'shape'         => 'rounded',
+                'border_enable' => 0,
+                'border_width'  => 0,
+                'border_color'  => '#ffffff',
+                'border_style'  => 'solid',
+                'shadow_style'  => 'medium',
+                'rotation'      => 0,
+                'posX'          => 50,
+                'posY'          => 45.0,
+                'width'         => 88
+            ]
+        ],
+        'videos'       => [],
+        'buttons'      => [
+            [
+                'id'            => 'btn_home_buka',
+                'text'          => 'BUKA',
+                'url'           => 'brosur.php?frame=prestasi',
+                'icon'          => '',
+                'shape'         => 'rounded_pill',
+                'bg_color'      => '#022d27',
+                'text_color'    => '#ffffff',
+                'border_enable' => 0,
+                'border_width'  => 0,
+                'border_color'  => '#ffffff',
+                'shadow_style'  => 'glow_wa',
+                'font_size'     => 13,
+                'font'          => 'Plus Jakarta Sans',
+                'posX'          => 50,
+                'posY'          => 83.5,
+                'width'         => 38,
+                'height'        => 42,
+                'target'        => '_self'
+            ]
+        ],
+        'slides'       => []
+    ];
+
+    // Simpan auto-repair ke database
+    $clean_heal_json = $conn->real_escape_string(json_encode($all_frames_dict, JSON_UNESCAPED_UNICODE));
+    $conn->query("UPDATE pengaturan_brosur SET all_frames_json = '$clean_heal_json' WHERE id = 1");
+}
+
 // Pastikan active_frame terdaftar
 if (!isset($all_frames_dict[$active_frame])) {
     $active_frame = array_key_first($all_frames_dict) ?? 'home';
