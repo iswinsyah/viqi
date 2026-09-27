@@ -439,7 +439,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
                            WHERE id = 1";
-        } else {
+        } else if ($active_frame === 'home') {
             $first = $clean_text_items[0] ?? [
                 'content' => '', 'format' => 'h2', 'color' => '#ffffff',
                 'font' => 'Plus Jakarta Sans', 'align' => 'center', 'size' => 24,
@@ -474,6 +474,12 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             custom_video_items = '$final_vid_json_esc',
                             custom_button_items = '$final_btn_json_esc',
                             custom_slide_items = '$final_slide_json_esc',
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
+        } else {
+            $sql_master = "UPDATE pengaturan_brosur SET 
                             bottom_bar_bg_color = '$bottom_bar_bg_color',
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
@@ -568,8 +574,10 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_slide = "UPDATE pengaturan_brosur SET pengajar_slide_items = '$final_slide_json_esc' WHERE id = 1";
         } else if ($active_frame === 'fasilitas') {
             $sql_slide = "UPDATE pengaturan_brosur SET fasilitas_slide_items = '$final_slide_json_esc' WHERE id = 1";
-        } else {
+        } else if ($active_frame === 'home') {
             $sql_slide = "UPDATE pengaturan_brosur SET custom_slide_items = '$final_slide_json_esc' WHERE id = 1";
+        } else {
+            $sql_slide = "SELECT id FROM pengaturan_brosur WHERE id = 1";
         }
 
         if ($conn->query($sql_slide)) {
@@ -614,7 +622,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_text = "UPDATE pengaturan_brosur SET pengajar_text_items = '$final_json_esc' WHERE id = 1";
         } else if ($active_frame === 'fasilitas') {
             $sql_text = "UPDATE pengaturan_brosur SET fasilitas_text_items = '$final_json_esc' WHERE id = 1";
-        } else {
+        } else if ($active_frame === 'home') {
             // Update legacy columns dari item pertama sebagai fallback jika ada
             $first = $clean_items[0] ?? [
                 'content' => '', 'format' => 'h2', 'color' => '#ffffff',
@@ -643,6 +651,8 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             custom_text_pos_y   = $c_pos_y,
                             custom_text_width   = $c_width
                          WHERE id = 1";
+        } else {
+            $sql_text = "SELECT id FROM pengaturan_brosur WHERE id = 1";
         }
 
         if ($conn->query($sql_text)) {
@@ -689,8 +699,10 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_img = "UPDATE pengaturan_brosur SET pengajar_image_items = '$final_img_json_esc' WHERE id = 1";
         } else if ($active_frame === 'fasilitas') {
             $sql_img = "UPDATE pengaturan_brosur SET fasilitas_image_items = '$final_img_json_esc' WHERE id = 1";
-        } else {
+        } else if ($active_frame === 'home') {
             $sql_img = "UPDATE pengaturan_brosur SET custom_image_items = '$final_img_json_esc' WHERE id = 1";
+        } else {
+            $sql_img = "SELECT id FROM pengaturan_brosur WHERE id = 1";
         }
 
         if ($conn->query($sql_img)) {
@@ -740,8 +752,10 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_vid = "UPDATE pengaturan_brosur SET pengajar_video_items = '$final_vid_json_esc' WHERE id = 1";
         } else if ($active_frame === 'fasilitas') {
             $sql_vid = "UPDATE pengaturan_brosur SET fasilitas_video_items = '$final_vid_json_esc' WHERE id = 1";
-        } else {
+        } else if ($active_frame === 'home') {
             $sql_vid = "UPDATE pengaturan_brosur SET custom_video_items = '$final_vid_json_esc' WHERE id = 1";
+        } else {
+            $sql_vid = "SELECT id FROM pengaturan_brosur WHERE id = 1";
         }
 
         if ($conn->query($sql_vid)) {
@@ -792,8 +806,10 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $sql_btn = "UPDATE pengaturan_brosur SET pengajar_button_items = '$final_btn_json_esc' WHERE id = 1";
         } else if ($active_frame === 'fasilitas') {
             $sql_btn = "UPDATE pengaturan_brosur SET fasilitas_button_items = '$final_btn_json_esc' WHERE id = 1";
-        } else {
+        } else if ($active_frame === 'home') {
             $sql_btn = "UPDATE pengaturan_brosur SET custom_button_items = '$final_btn_json_esc' WHERE id = 1";
+        } else {
+            $sql_btn = "SELECT id FROM pengaturan_brosur WHERE id = 1";
         }
 
         if ($conn->query($sql_btn)) {
@@ -855,13 +871,19 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
                            WHERE id = 1";
-        } else {
+        } else if ($active_frame === 'home') {
             // Terapkan ke cover, body, dan bottom bar
             $sql_update = "UPDATE pengaturan_brosur SET 
                             cover_bg_url = '$bg_url',
                             cover_overlay_opacity = $bg_overlay_opacity,
                             body_bg_url = '$bg_url',
                             body_overlay_opacity = $bg_overlay_opacity,
+                            bottom_bar_bg_color = '$bottom_bar_bg_color',
+                            bottom_bar_text_color = '$bottom_bar_text_color',
+                            bottom_bar_active_color = '$bottom_bar_active_color'
+                           WHERE id = 1";
+        } else {
+            $sql_update = "UPDATE pengaturan_brosur SET 
                             bottom_bar_bg_color = '$bottom_bar_bg_color',
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
@@ -1521,29 +1543,6 @@ foreach ($std_merge_map as $fid => $fdefs) {
             'buttons'      => $fdefs['buttons'],
             'slides'       => $fdefs['slides']
         ];
-    } else {
-        // Selalu perbarui dengan data kolom spesifik jika tersedia
-        if (!empty($fdefs['texts']) || empty($all_frames_dict[$fid]['texts'])) {
-            $all_frames_dict[$fid]['texts'] = $fdefs['texts'];
-        }
-        if (!empty($fdefs['images']) || empty($all_frames_dict[$fid]['images'])) {
-            $all_frames_dict[$fid]['images'] = $fdefs['images'];
-        }
-        if (!empty($fdefs['videos']) || empty($all_frames_dict[$fid]['videos'])) {
-            $all_frames_dict[$fid]['videos'] = $fdefs['videos'];
-        }
-        if (!empty($fdefs['buttons']) || empty($all_frames_dict[$fid]['buttons'])) {
-            $all_frames_dict[$fid]['buttons'] = $fdefs['buttons'];
-        }
-        if (!empty($fdefs['slides']) || empty($all_frames_dict[$fid]['slides'])) {
-            $all_frames_dict[$fid]['slides'] = $fdefs['slides'];
-        }
-        if (!empty($fdefs['bgUrl'])) {
-            $all_frames_dict[$fid]['bgUrl'] = $fdefs['bgUrl'];
-        }
-        if (isset($fdefs['bgOpacity'])) {
-            $all_frames_dict[$fid]['bgOpacity'] = $fdefs['bgOpacity'];
-        }
     }
 }
 

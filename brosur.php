@@ -579,171 +579,109 @@ if (!empty($raw_all_frames)) {
     }
 }
 
-// Fallback initial default frames jika belum ada di all_frames_json
-if (empty($all_frames_dict)) {
-    $all_frames_dict = [
-        'home' => [
-            'id'           => 'home',
-            'name'         => 'Depan',
-            'title'        => 'Frame: Depan',
-            'subtitle'     => 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).',
-            'badge'        => 'Cover / Halaman Depan',
-            'menuPill'     => 'Menu #1 di Bottom Bar',
-            'icon'         => 'fa-house',
-            'theme'        => 'emerald',
-            'iconGradient' => 'from-emerald-500 to-[#0b8478]',
-            'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
-            'bgUrl'        => $cover_bg_url,
-            'bgOpacity'    => $cover_overlay_opacity,
-            'texts'        => $text_items,
-            'images'       => $image_items,
-            'videos'       => $video_items,
-            'buttons'      => $button_items,
-            'slides'       => $slide_items
-        ],
-        'prestasi' => [
-            'id'           => 'prestasi',
-            'name'         => 'Prestasi',
-            'title'        => 'Frame: Prestasi',
-            'subtitle'     => 'Frame ini mengatur tampilan galeri pencapaian, piala, medali & prestasi santri (Menu <strong>Prestasi</strong> pada Bottom Navigation Bar).',
-            'badge'        => 'Menu Prestasi Brosur',
-            'menuPill'     => 'Menu #2 di Bottom Bar',
-            'icon'         => 'fa-trophy',
-            'theme'        => 'amber',
-            'iconGradient' => 'from-amber-500 to-amber-600',
-            'badgeClass'   => 'bg-amber-100 text-amber-900 border-amber-300',
-            'bgUrl'        => $prestasi_bg_url,
-            'bgOpacity'    => (float)$prestasi_overlay_opacity,
-            'texts'        => $prestasi_text_items,
-            'images'       => $prestasi_image_items,
-            'videos'       => $prestasi_video_items,
-            'buttons'      => $prestasi_button_items,
-            'slides'       => $prestasi_slide_items
-        ],
-        'unggulan' => [
-            'id'           => 'unggulan',
-            'name'         => 'Unggulan',
-            'title'        => 'Frame: Unggulan',
-            'subtitle'     => 'Frame ini mengatur tampilan program, fasilitas & keunggulan pesantren (Menu <strong>Unggulan</strong> pada Bottom Navigation Bar).',
-            'badge'        => 'Program & Keunggulan',
-            'menuPill'     => 'Menu #3 di Bottom Bar',
-            'icon'         => 'fa-star',
-            'theme'        => 'orange',
-            'iconGradient' => 'from-amber-500 via-orange-500 to-amber-600',
-            'badgeClass'   => 'bg-orange-100 text-orange-900 border-orange-300',
-            'bgUrl'        => $unggulan_bg_url,
-            'bgOpacity'    => (float)$unggulan_overlay_opacity,
-            'texts'        => $unggulan_text_items,
-            'images'       => $unggulan_image_items,
-            'videos'       => $unggulan_video_items,
-            'buttons'      => $unggulan_button_items,
-            'slides'       => $unggulan_slide_items
-        ],
-        'pengajar' => [
-            'id'           => 'pengajar',
-            'name'         => 'Pengajar',
-            'title'        => 'Frame: Pengajar',
-            'subtitle'     => 'Frame ini mengatur tampilan profil asatidz, dewan guru & pengasuh (Menu <strong>Pengajar</strong> pada Bottom Navigation Bar).',
-            'badge'        => 'Dewan Pengajar & Asatidz',
-            'menuPill'     => 'Menu #4 di Bottom Bar',
-            'icon'         => 'fa-chalkboard-user',
-            'theme'        => 'teal',
-            'iconGradient' => 'from-teal-500 via-emerald-600 to-cyan-600',
-            'badgeClass'   => 'bg-teal-100 text-teal-900 border-teal-300',
-            'bgUrl'        => $pengajar_bg_url,
-            'bgOpacity'    => (float)$pengajar_overlay_opacity,
-            'texts'        => $pengajar_text_items,
-            'images'       => $pengajar_image_items,
-            'videos'       => $pengajar_video_items,
-            'buttons'      => $pengajar_button_items,
-            'slides'       => $pengajar_slide_items
-        ],
-        'fasilitas' => [
-            'id'           => 'fasilitas',
-            'name'         => 'Fasilitas',
-            'title'        => 'Frame: Fasilitas',
-            'subtitle'     => 'Frame ini mengatur tampilan sarana, prasarana, asrama & fasilitas pesantren (Menu <strong>Fasilitas</strong> pada Bottom Navigation Bar).',
-            'badge'        => 'Sarana & Fasilitas',
-            'menuPill'     => 'Menu #5 di Bottom Bar',
-            'icon'         => 'fa-building-columns',
-            'theme'        => 'sky',
-            'iconGradient' => 'from-sky-500 via-blue-600 to-indigo-600',
-            'badgeClass'   => 'bg-sky-100 text-sky-900 border-sky-300',
-            'bgUrl'        => $fasilitas_bg_url,
-            'bgOpacity'    => (float)$fasilitas_overlay_opacity,
-            'texts'        => $fasilitas_text_items,
-            'images'       => $fasilitas_image_items,
-            'videos'       => $fasilitas_video_items,
-            'buttons'      => $fasilitas_button_items,
-            'slides'       => $fasilitas_slide_items
-        ]
-    ];
-} else {
-    // Sinkronisasi data kolom terkini ke dalam frame standar
-    $std_merge_map = [
-        'home' => [
-            'bgUrl'     => $cover_bg_url,
-            'bgOpacity' => $cover_overlay_opacity,
-            'texts'     => $text_items,
-            'images'    => $image_items,
-            'videos'    => $video_items,
-            'buttons'   => $button_items,
-            'slides'    => $slide_items
-        ],
-        'prestasi' => [
-            'bgUrl'     => $prestasi_bg_url,
-            'bgOpacity' => (float)$prestasi_overlay_opacity,
-            'texts'     => $prestasi_text_items,
-            'images'    => $prestasi_image_items,
-            'videos'    => $prestasi_video_items,
-            'buttons'   => $prestasi_button_items,
-            'slides'    => $prestasi_slide_items
-        ],
-        'unggulan' => [
-            'bgUrl'     => $unggulan_bg_url,
-            'bgOpacity' => (float)$unggulan_overlay_opacity,
-            'texts'     => $unggulan_text_items,
-            'images'    => $unggulan_image_items,
-            'videos'    => $unggulan_video_items,
-            'buttons'   => $unggulan_button_items,
-            'slides'    => $unggulan_slide_items
-        ],
-        'pengajar' => [
-            'bgUrl'     => $pengajar_bg_url,
-            'bgOpacity' => (float)$pengajar_overlay_opacity,
-            'texts'     => $pengajar_text_items,
-            'images'    => $pengajar_image_items,
-            'videos'    => $pengajar_video_items,
-            'buttons'   => $pengajar_button_items,
-            'slides'    => $pengajar_slide_items
-        ],
-        'fasilitas' => [
-            'bgUrl'     => $fasilitas_bg_url,
-            'bgOpacity' => (float)$fasilitas_overlay_opacity,
-            'texts'     => $fasilitas_text_items,
-            'images'    => $fasilitas_image_items,
-            'videos'    => $fasilitas_video_items,
-            'buttons'   => $fasilitas_button_items,
-            'slides'    => $fasilitas_slide_items
-        ]
-    ];
+// Fallback initial default frames jika belum ada di database
+$default_frames = [
+    'home' => [
+        'id'           => 'home',
+        'name'         => 'Depan',
+        'title'        => 'Frame: Depan',
+        'subtitle'     => 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).',
+        'badge'        => 'Cover / Halaman Depan',
+        'menuPill'     => 'Menu #1 di Bottom Bar',
+        'icon'         => 'fa-house',
+        'theme'        => 'emerald',
+        'iconGradient' => 'from-emerald-500 to-[#0b8478]',
+        'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
+        'bgUrl'        => $cover_bg_url,
+        'bgOpacity'    => $cover_overlay_opacity,
+        'texts'        => $text_items,
+        'images'       => $image_items,
+        'videos'       => $video_items,
+        'buttons'      => $button_items,
+        'slides'       => $slide_items
+    ],
+    'prestasi' => [
+        'id'           => 'prestasi',
+        'name'         => 'Prestasi',
+        'title'        => 'Frame: Prestasi',
+        'subtitle'     => 'Frame ini mengatur tampilan galeri pencapaian, piala, medali & prestasi santri (Menu <strong>Prestasi</strong> pada Bottom Navigation Bar).',
+        'badge'        => 'Menu Prestasi Brosur',
+        'menuPill'     => 'Menu #2 di Bottom Bar',
+        'icon'         => 'fa-trophy',
+        'theme'        => 'amber',
+        'iconGradient' => 'from-amber-500 to-amber-600',
+        'badgeClass'   => 'bg-amber-100 text-amber-900 border-amber-300',
+        'bgUrl'        => $prestasi_bg_url,
+        'bgOpacity'    => (float)$prestasi_overlay_opacity,
+        'texts'        => $prestasi_text_items,
+        'images'       => $prestasi_image_items,
+        'videos'       => $prestasi_video_items,
+        'buttons'      => $prestasi_button_items,
+        'slides'       => $prestasi_slide_items
+    ],
+    'unggulan' => [
+        'id'           => 'unggulan',
+        'name'         => 'Unggulan',
+        'title'        => 'Frame: Unggulan',
+        'subtitle'     => 'Frame ini mengatur tampilan program, fasilitas & keunggulan pesantren (Menu <strong>Unggulan</strong> pada Bottom Navigation Bar).',
+        'badge'        => 'Program & Keunggulan',
+        'icon'         => 'fa-star',
+        'theme'        => 'orange',
+        'iconGradient' => 'from-amber-500 via-orange-500 to-amber-600',
+        'badgeClass'   => 'bg-orange-100 text-orange-900 border-orange-300',
+        'bgUrl'        => $unggulan_bg_url,
+        'bgOpacity'    => (float)$unggulan_overlay_opacity,
+        'texts'        => $unggulan_text_items,
+        'images'       => $unggulan_image_items,
+        'videos'       => $unggulan_video_items,
+        'buttons'      => $unggulan_button_items,
+        'slides'       => $unggulan_slide_items
+    ],
+    'pengajar' => [
+        'id'           => 'pengajar',
+        'name'         => 'Pengajar',
+        'title'        => 'Frame: Pengajar',
+        'subtitle'     => 'Frame ini mengatur tampilan profil asatidz, dewan guru & pengasuh (Menu <strong>Pengajar</strong> pada Bottom Navigation Bar).',
+        'badge'        => 'Dewan Pengajar & Asatidz',
+        'icon'         => 'fa-chalkboard-user',
+        'theme'        => 'teal',
+        'iconGradient' => 'from-teal-500 via-emerald-600 to-cyan-600',
+        'badgeClass'   => 'bg-teal-100 text-teal-900 border-teal-300',
+        'bgUrl'        => $pengajar_bg_url,
+        'bgOpacity'    => (float)$pengajar_overlay_opacity,
+        'texts'        => $pengajar_text_items,
+        'images'       => $pengajar_image_items,
+        'videos'       => $pengajar_video_items,
+        'buttons'      => $pengajar_button_items,
+        'slides'       => $pengajar_slide_items
+    ],
+    'fasilitas' => [
+        'id'           => 'fasilitas',
+        'name'         => 'Fasilitas',
+        'title'        => 'Frame: Fasilitas',
+        'subtitle'     => 'Frame ini mengatur tampilan sarana, prasarana, asrama & fasilitas pesantren (Menu <strong>Fasilitas</strong> pada Bottom Navigation Bar).',
+        'badge'        => 'Sarana & Fasilitas',
+        'icon'         => 'fa-building-columns',
+        'theme'        => 'sky',
+        'iconGradient' => 'from-sky-500 via-blue-600 to-indigo-600',
+        'badgeClass'   => 'bg-sky-100 text-sky-900 border-sky-300',
+        'bgUrl'        => $fasilitas_bg_url,
+        'bgOpacity'    => (float)$fasilitas_overlay_opacity,
+        'texts'        => $fasilitas_text_items,
+        'images'       => $fasilitas_image_items,
+        'videos'       => $fasilitas_video_items,
+        'buttons'      => $fasilitas_button_items,
+        'slides'       => $fasilitas_slide_items
+    ]
+];
 
-    foreach ($std_merge_map as $fKey => $fData) {
-        if (!isset($all_frames_dict[$fKey])) {
-            $all_frames_dict[$fKey] = [
-                'id'       => $fKey,
-                'name'     => ucfirst($fKey === 'home' ? 'Depan' : $fKey),
-                'icon'     => ($fKey === 'home' ? 'fa-house' : ($fKey === 'prestasi' ? 'fa-trophy' : ($fKey === 'unggulan' ? 'fa-star' : ($fKey === 'pengajar' ? 'fa-chalkboard-user' : 'fa-building-columns')))),
-                'theme'    => ($fKey === 'home' ? 'emerald' : ($fKey === 'prestasi' ? 'amber' : ($fKey === 'unggulan' ? 'orange' : ($fKey === 'pengajar' ? 'teal' : 'sky')))),
-            ];
+if (empty($all_frames_dict)) {
+    $all_frames_dict = $default_frames;
+} else {
+    foreach ($default_frames as $dfKey => $dfVal) {
+        if (!isset($all_frames_dict[$dfKey])) {
+            $all_frames_dict[$dfKey] = $dfVal;
         }
-        if (!empty($fData['texts']))   $all_frames_dict[$fKey]['texts']   = $fData['texts'];
-        if (!empty($fData['images']))  $all_frames_dict[$fKey]['images']  = $fData['images'];
-        if (!empty($fData['videos']))  $all_frames_dict[$fKey]['videos']  = $fData['videos'];
-        if (!empty($fData['buttons'])) $all_frames_dict[$fKey]['buttons'] = $fData['buttons'];
-        if (!empty($fData['slides']))  $all_frames_dict[$fKey]['slides']  = $fData['slides'];
-        if (!empty($fData['bgUrl']))   $all_frames_dict[$fKey]['bgUrl']   = $fData['bgUrl'];
-        if (isset($fData['bgOpacity'])) $all_frames_dict[$fKey]['bgOpacity'] = $fData['bgOpacity'];
     }
 }
 
