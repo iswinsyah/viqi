@@ -1092,19 +1092,48 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             }
         }
 
+        function extractYouTubeId(input) {
+            if (!input || typeof input !== 'string') return null;
+            let url = input.trim();
+            if (!url) return null;
+
+            const iframeMatch = url.match(/src=["']([^"']+)["']/i);
+            if (iframeMatch && iframeMatch[1]) {
+                url = iframeMatch[1].trim();
+            }
+
+            if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+                return url;
+            }
+
+            const patterns = [
+                /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|shorts\/|live\/))([a-zA-Z0-9_-]{11})/i,
+                /youtube\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/i,
+                /youtube\.com\/.*?\/([a-zA-Z0-9_-]{11})/i
+            ];
+
+            for (let i = 0; i < patterns.length; i++) {
+                const match = url.match(patterns[i]);
+                if (match && match[1]) {
+                    return match[1];
+                }
+            }
+            return null;
+        }
+
         function parseVideoSource(url, options = {}) {
             if (!url) return { type: 'empty', url: '' };
             url = url.trim();
 
-            const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
-            if (ytMatch && ytMatch[1]) {
-                const vidId = ytMatch[1];
-                const auto = options.autoplay ? 1 : 0;
-                const mute = options.muted ? 1 : 1;
-                const loop = options.loop ? `1&playlist=${vidId}` : '0';
-                const controls = options.controls ? 1 : 0;
-                const embedUrl = `https://www.youtube.com/embed/${vidId}?autoplay=${auto}&mute=${mute}&loop=${loop}&controls=${controls}&playsinline=1&enablejsapi=1`;
-                return { type: 'youtube', embedUrl, vidId };
+            const ytId = extractYouTubeId(url);
+            if (ytId) {
+                const auto = (options.autoplay !== false && options.autoplay !== 0) ? 1 : 0;
+                const mute = (options.muted !== false && options.muted !== 0) ? 1 : 0;
+                const actualMute = auto ? 1 : mute;
+                const loop = (options.loop !== false && options.loop !== 0) ? `1&playlist=${ytId}` : '0';
+                const controls = (options.controls !== false && options.controls !== 0) ? 1 : 0;
+                const embedUrl = `https://www.youtube.com/embed/${ytId}?autoplay=${auto}&mute=${actualMute}&loop=${loop}&controls=${controls}&playsinline=1&enablejsapi=1&rel=0`;
+                return { type: 'youtube', embedUrl, vidId: ytId };
             }
 
             return { type: 'direct', url: url };
@@ -1424,21 +1453,21 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                     autoplay: vid.autoplay !== 0,
                     muted: vid.muted !== 0,
                     loop: vid.loop !== 0,
-                    controls: vid.controls ? 1 : 0
+                    controls: vid.controls !== 0
                 });
 
                 let videoInnerHtml = '';
                 if (parsed.type === 'youtube') {
                     videoInnerHtml = `
-                        <iframe src="${parsed.embedUrl}" class="w-full h-full border-0 pointer-events-auto" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                        <iframe src="${parsed.embedUrl}" class="w-full h-full border-0 pointer-events-auto" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen loading="eager" title="YouTube Video Player"></iframe>
                     `;
                 } else if (parsed.type === 'direct' && parsed.url) {
                     const autoAttr = (vid.autoplay !== 0) ? 'autoplay' : '';
                     const loopAttr = (vid.loop !== 0) ? 'loop' : '';
                     const muteAttr = (vid.muted !== 0) ? 'muted' : '';
-                    const ctrlAttr = (vid.controls) ? 'controls' : '';
+                    const ctrlAttr = (vid.controls !== 0) ? 'controls' : '';
                     videoInnerHtml = `
-                        <video src="${escapeHtml(parsed.url)}" ${autoAttr} ${loopAttr} ${muteAttr} ${ctrlAttr} playsinline class="w-full h-full object-cover pointer-events-auto"></video>
+                        <video src="${escapeHtml(parsed.url)}" ${autoAttr} ${loopAttr} ${muteAttr} ${ctrlAttr} playsinline preload="auto" class="w-full h-full object-cover pointer-events-auto"></video>
                     `;
                 }
 
@@ -1460,7 +1489,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             textItems.forEach((item, index) => {
                 const box = document.createElement('div');
                 box.id = `sim-box-${item.id}`;
-                box.className = 'absolute pointer-events-auto fade-in-layer';
+                box.className = 'absolute pointer-events-none fade-in-layer';
                 box.style.top = `${item.posY || 35}%`;
                 box.style.left = `${item.posX || 50}%`;
                 box.style.transform = 'translate(-50%, 0)';
@@ -1468,7 +1497,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                 box.style.zIndex = 30 + index;
 
                 box.innerHTML = `
-                    <div style="color: ${item.color || '#ffffff'}; font-family: ${getFontFamily(item.font)}; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word;">
+                    <div class="pointer-events-none" style="color: ${item.color || '#ffffff'}; font-family: ${getFontFamily(item.font)}; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word;">
                         ${getFormatHtml(item.content, item.format)}
                     </div>
                 `;
