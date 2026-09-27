@@ -2192,13 +2192,90 @@ $active_menu = 'brosur_settings';
                                     <i class="fas fa-wallet"></i>
                                 </div>
                                 <div>
-                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Integrasi Live Info Biaya Pendidikan</h2>
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="font-black text-base sm:text-lg text-slate-900">Integrasi Live Info Biaya Pendidikan</h2>
+                                        <span id="biaya-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                            Aktif di Frame Ini
+                                        </span>
+                                    </div>
                                     <p class="text-xs text-slate-500">Data rincian biaya ditarik otomatis secara real-time dari database menu <strong>Info Biaya</strong> di website.</p>
                                 </div>
                             </div>
-                            <a href="admin-biaya.php" target="_blank" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 flex items-center gap-1.5 transition shrink-0 self-start sm:self-auto">
-                                <i class="fas fa-arrow-up-right-from-square"></i> Kelola Data Biaya Web
-                            </a>
+                            <div class="flex items-center gap-2">
+                                <a href="admin-biaya.php" target="_blank" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 flex items-center gap-1.5 transition">
+                                    <i class="fas fa-arrow-up-right-from-square"></i> Data Biaya Web
+                                </a>
+                                <button type="button" onclick="saveAllSettings()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs shadow-sm transition flex items-center gap-1.5 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-xs"></i>
+                                    <span>Simpan Pengaturan</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 1. Toggle Aktifkan Tabel Biaya di Frame Ini -->
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-4">
+                            <div>
+                                <label class="font-black text-sm text-slate-900 flex items-center gap-2 cursor-pointer" for="input-biaya-enabled">
+                                    <span>Tampilkan Tabel Rincian Biaya di Frame Ini</span>
+                                </label>
+                                <p class="text-xs text-slate-500 mt-0.5">Jika diaktifkan, widget tabel rincian biaya interaktif akan disematkan di layar smartphone pada frame ini.</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="input-biaya-enabled" onchange="updateBiayaField('embed_biaya', this.checked ? 1 : 0)" class="sr-only peer">
+                                <div class="w-12 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- 2. Pengaturan Posisi & Ukuran Tabel Biaya (Bisa Digeser / Slider) -->
+                        <div class="p-4 rounded-2xl bg-emerald-50/40 border border-emerald-200 space-y-4">
+                            <div class="flex items-center justify-between flex-wrap gap-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                                    <h4 class="text-xs font-black text-slate-900">Posisi & Ukuran Tabel Biaya (Dapat Digeser)</h4>
+                                </div>
+                                <button type="button" onclick="resetBiayaPosition()" class="px-2.5 py-1 rounded-lg bg-white text-slate-700 hover:bg-slate-100 border border-slate-200 text-[10.5px] font-bold transition flex items-center gap-1">
+                                    <i class="fas fa-undo text-[9px]"></i> Reset Posisi Tengah
+                                </button>
+                            </div>
+
+                            <p class="text-[11px] text-emerald-800 bg-white/80 p-2.5 rounded-xl border border-emerald-100 flex items-center gap-2">
+                                <i class="fas fa-hand-pointer text-emerald-600 shrink-0"></i>
+                                <span><strong>Tips Geser:</strong> Anda dapat menggeser (drag & drop) kartu Tabel Rincian Biaya secara langsung di layar smartphone preview sebelah kanan.</span>
+                            </p>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <div class="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200">
+                                    <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span>Posisi X (Horizontal)</span>
+                                        <span id="val-biaya-pos-x" class="text-emerald-700 font-mono">50%</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" step="0.5" id="slider-biaya-pos-x" oninput="updateBiayaField('embed_biaya_posX', parseFloat(this.value)); document.getElementById('val-biaya-pos-x').innerText = this.value + '%';" class="w-full accent-emerald-600">
+                                </div>
+
+                                <div class="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200">
+                                    <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span>Posisi Y (Vertikal)</span>
+                                        <span id="val-biaya-pos-y" class="text-emerald-700 font-mono">51.5%</span>
+                                    </div>
+                                    <input type="range" min="0" max="100" step="0.5" id="slider-biaya-pos-y" oninput="updateBiayaField('embed_biaya_posY', parseFloat(this.value)); document.getElementById('val-biaya-pos-y').innerText = this.value + '%';" class="w-full accent-emerald-600">
+                                </div>
+
+                                <div class="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200">
+                                    <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span>Lebar Tabel (Width)</span>
+                                        <span id="val-biaya-width" class="text-emerald-700 font-mono">88%</span>
+                                    </div>
+                                    <input type="range" min="40" max="100" step="1" id="slider-biaya-width" oninput="updateBiayaField('embed_biaya_width', parseInt(this.value)); document.getElementById('val-biaya-width').innerText = this.value + '%';" class="w-full accent-emerald-600">
+                                </div>
+
+                                <div class="space-y-1.5 bg-white p-3 rounded-xl border border-slate-200">
+                                    <div class="flex items-center justify-between text-xs font-bold text-slate-700">
+                                        <span>Tinggi Tabel (Height)</span>
+                                        <span id="val-biaya-height" class="text-emerald-700 font-mono">315px</span>
+                                    </div>
+                                    <input type="range" min="180" max="500" step="5" id="slider-biaya-height" oninput="updateBiayaField('embed_biaya_height', parseInt(this.value)); document.getElementById('val-biaya-height').innerText = this.value + 'px';" class="w-full accent-emerald-600">
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Status Box Live Sync -->
@@ -3619,6 +3696,7 @@ $active_menu = 'brosur_settings';
             renderSimSlideLayers();
 
             renderSimBiayaLayers();
+            updateBiayaTabUI();
 
             renderCountdownForm();
             renderSimCountdownLayers();
@@ -6479,6 +6557,65 @@ $active_menu = 'brosur_settings';
             }
         }
 
+        function updateBiayaField(key, value) {
+            if (!framesData[currentActiveFrame]) return;
+            framesData[currentActiveFrame][key] = value;
+            renderSimBiayaLayers();
+            updateBiayaTabUI();
+        }
+
+        function resetBiayaPosition() {
+            if (!framesData[currentActiveFrame]) return;
+            framesData[currentActiveFrame].embed_biaya_posX = 50.0;
+            framesData[currentActiveFrame].embed_biaya_posY = 51.5;
+            framesData[currentActiveFrame].embed_biaya_width = 88;
+            framesData[currentActiveFrame].embed_biaya_height = 315;
+            renderSimBiayaLayers();
+            updateBiayaTabUI();
+            showToast('Reset Posisi', 'Posisi tabel biaya dikembalikan ke tengah.', true);
+        }
+
+        function updateBiayaTabUI() {
+            const fData = framesData[currentActiveFrame];
+            const isBiayaFrame = (currentActiveFrame === 'biaya') || (fData && fData.embed_biaya) || (fData && (fData.name || '').toLowerCase().includes('biaya'));
+            
+            const enInp = document.getElementById('input-biaya-enabled');
+            const posXInp = document.getElementById('slider-biaya-pos-x');
+            const posYInp = document.getElementById('slider-biaya-pos-y');
+            const widthInp = document.getElementById('slider-biaya-width');
+            const heightInp = document.getElementById('slider-biaya-height');
+            const posXVal = document.getElementById('val-biaya-pos-x');
+            const posYVal = document.getElementById('val-biaya-pos-y');
+            const widthVal = document.getElementById('val-biaya-width');
+            const heightVal = document.getElementById('val-biaya-height');
+            const statusBadge = document.getElementById('biaya-status-badge');
+
+            const posX = (fData && fData.embed_biaya_posX !== undefined) ? fData.embed_biaya_posX : 50.0;
+            const posY = (fData && fData.embed_biaya_posY !== undefined) ? fData.embed_biaya_posY : 51.5;
+            const width = (fData && fData.embed_biaya_width !== undefined) ? fData.embed_biaya_width : 88;
+            const height = (fData && fData.embed_biaya_height !== undefined) ? fData.embed_biaya_height : 315;
+
+            if (enInp) enInp.checked = !!isBiayaFrame;
+            if (posXInp) posXInp.value = posX;
+            if (posYInp) posYInp.value = posY;
+            if (widthInp) widthInp.value = width;
+            if (heightInp) heightInp.value = height;
+            if (posXVal) posXVal.innerText = posX + '%';
+            if (posYVal) posYVal.innerText = posY + '%';
+            if (widthVal) widthVal.innerText = width + '%';
+            if (heightVal) heightVal.innerText = height + 'px';
+
+            if (statusBadge) {
+                if (isBiayaFrame) {
+                    statusBadge.innerText = 'Aktif di Frame Ini';
+                    statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300';
+                } else {
+                    statusBadge.innerText = 'Nonaktif';
+                    statusBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-black bg-slate-100 text-slate-600 border border-slate-200';
+                }
+            }
+        }
+
         function renderSimBiayaLayers() {
             const container = document.getElementById('sim-biaya-layers-container');
             if (!container) return;
@@ -6489,20 +6626,27 @@ $active_menu = 'brosur_settings';
 
             if (!isBiayaFrame) return;
 
+            const posX = (fData && fData.embed_biaya_posX !== undefined) ? fData.embed_biaya_posX : 50.0;
+            const posY = (fData && fData.embed_biaya_posY !== undefined) ? fData.embed_biaya_posY : 51.5;
+            const width = (fData && fData.embed_biaya_width !== undefined) ? fData.embed_biaya_width : 88;
+            const height = (fData && fData.embed_biaya_height !== undefined) ? fData.embed_biaya_height : 315;
+
             const card = document.createElement('div');
             card.id = 'sim-biaya-card';
-            card.className = 'absolute pointer-events-auto transition-all fade-in-layer shadow-2xl rounded-2xl overflow-hidden border border-slate-200 backdrop-blur-md bg-white/95 text-slate-900 flex flex-col';
-            card.style.top = '51.5%';
-            card.style.left = '50%';
+            card.className = 'absolute pointer-events-auto transition-all fade-in-layer shadow-2xl rounded-2xl overflow-hidden border border-slate-200 backdrop-blur-md bg-white/95 text-slate-900 flex flex-col cursor-grab active:cursor-grabbing';
+            card.style.top = `${posY}%`;
+            card.style.left = `${posX}%`;
             card.style.transform = 'translate(-50%, -50%)';
-            card.style.width = '88%';
-            card.style.height = '315px';
+            card.style.width = `${width}%`;
+            card.style.height = `${height}px`;
             card.style.zIndex = '28';
+            card.setAttribute('title', 'Tahan & geser untuk memindahkan posisi tabel rincian biaya');
 
             card.innerHTML = `
-                <!-- Header with Live Badge -->
-                <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 p-2.5 border-b border-emerald-950/20 flex items-center justify-between shrink-0 text-white">
+                <!-- Header with Live Badge and Drag Handle -->
+                <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 p-2.5 border-b border-emerald-950/20 flex items-center justify-between shrink-0 text-white select-none">
                     <div class="flex items-center gap-1.5">
+                        <i class="fas fa-grip-vertical text-white/50 text-[11px] mr-0.5"></i>
                         <i class="fas fa-wallet text-amber-300 text-xs"></i>
                         <span class="text-[10.5px] font-black uppercase tracking-wider text-white">Rincian Biaya Pendidikan</span>
                     </div>
@@ -6514,11 +6658,11 @@ $active_menu = 'brosur_settings';
 
                 <!-- Filter Sub-Tabs -->
                 <div class="flex items-center gap-1 p-1.5 bg-slate-100 border-b border-slate-200 overflow-x-auto no-scrollbar shrink-0 text-[8.5px] font-bold">
-                    <button type="button" id="biaya-tab-btn-all" onclick="setBiayaCategory('all')" class="px-2.5 py-1 rounded-lg bg-emerald-700 text-white font-black shadow-xs transition">Semua</button>
-                    <button type="button" id="biaya-tab-btn-pangkal" onclick="setBiayaCategory('pangkal')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Pangkal</button>
-                    <button type="button" id="biaya-tab-btn-tahunan" onclick="setBiayaCategory('tahunan')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Tahunan</button>
-                    <button type="button" id="biaya-tab-btn-spp" onclick="setBiayaCategory('spp')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">SPP</button>
-                    <button type="button" id="biaya-tab-btn-pendaftaran" onclick="setBiayaCategory('pendaftaran')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Pendaftaran</button>
+                    <button type="button" id="biaya-tab-btn-all" onclick="event.stopPropagation(); setBiayaCategory('all')" class="px-2.5 py-1 rounded-lg bg-emerald-700 text-white font-black shadow-xs transition">Semua</button>
+                    <button type="button" id="biaya-tab-btn-pangkal" onclick="event.stopPropagation(); setBiayaCategory('pangkal')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Pangkal</button>
+                    <button type="button" id="biaya-tab-btn-tahunan" onclick="event.stopPropagation(); setBiayaCategory('tahunan')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Tahunan</button>
+                    <button type="button" id="biaya-tab-btn-spp" onclick="event.stopPropagation(); setBiayaCategory('spp')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">SPP</button>
+                    <button type="button" id="biaya-tab-btn-pendaftaran" onclick="event.stopPropagation(); setBiayaCategory('pendaftaran')" class="px-2.5 py-1 rounded-lg text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition font-bold">Pendaftaran</button>
                 </div>
 
                 <!-- Scrollable Items List -->
@@ -6534,6 +6678,7 @@ $active_menu = 'brosur_settings';
 
             container.appendChild(card);
             setBiayaCategory(window.currentBiayaCategory || 'all');
+            initDragForLayer(card, fData, 'biaya');
         }
 
         // ==========================================
@@ -6954,12 +7099,13 @@ $active_menu = 'brosur_settings';
             
             const card = document.createElement('div');
             card.id = 'sim-countdown-card';
-            card.className = `absolute pointer-events-auto transition-all fade-in-layer rounded-2xl p-2.5 sm:p-3 text-center ${boxThemeClass}`;
+            card.className = `absolute pointer-events-auto transition-all fade-in-layer rounded-2xl p-2.5 sm:p-3 text-center cursor-grab active:cursor-grabbing ${boxThemeClass}`;
             card.style.top = `${posY}%`;
             card.style.left = `${posX}%`;
             card.style.transform = 'translate(-50%, -50%)';
             card.style.width = `${width}%`;
             card.style.zIndex = '32';
+            card.setAttribute('title', 'Tahan & geser untuk memindahkan posisi countdown');
             
             container.innerHTML = '';
             container.appendChild(card);
@@ -6998,7 +7144,8 @@ $active_menu = 'brosur_settings';
                 const sStr = String(seconds).padStart(2, '0');
                 
                 card.innerHTML = `
-                    <div class="text-[10px] font-extrabold mb-1.5 flex items-center justify-center gap-1.5 ${titleColorClass}">
+                    <div class="text-[10px] font-extrabold mb-1.5 flex items-center justify-center gap-1.5 ${titleColorClass} select-none">
+                        <i class="fas fa-grip-vertical text-white/40 text-[10px]"></i>
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
                         <span>${escapeHtml(displayTitle)}</span>
                     </div>
@@ -7025,6 +7172,7 @@ $active_menu = 'brosur_settings';
             
             updateTicks();
             countdownInterval = setInterval(updateTicks, 1000);
+            initDragForLayer(card, cd, 'countdown');
         }
 
         // ==========================================
@@ -7043,6 +7191,17 @@ $active_menu = 'brosur_settings';
 
             function startDrag(e) {
                 if (e.type === 'mousedown' && e.button !== 0) return;
+
+                if (layerType === 'biaya') {
+                    if (e.target.closest('button') || e.target.closest('#biaya-items-list-box')) {
+                        return; // Biarkan tombol filter atau list di dalam tabel dapat diklik & discroll
+                    }
+                }
+                if (layerType === 'countdown') {
+                    if (e.target.closest('button') || e.target.closest('a')) {
+                        return;
+                    }
+                }
                 
                 isDragging = true;
                 const clientX = e.clientX || (e.touches && e.touches[0].clientX);
@@ -7051,8 +7210,16 @@ $active_menu = 'brosur_settings';
                 startX = clientX;
                 startY = clientY;
 
-                initialLeftPct = item.posX || 50;
-                initialTopPct  = item.posY || (layerType === 'text' ? 35 : (layerType === 'button' ? 80 : 50));
+                if (layerType === 'biaya') {
+                    initialLeftPct = (item.embed_biaya_posX !== undefined) ? item.embed_biaya_posX : 50.0;
+                    initialTopPct  = (item.embed_biaya_posY !== undefined) ? item.embed_biaya_posY : 51.5;
+                } else if (layerType === 'countdown') {
+                    initialLeftPct = (item.posX !== undefined) ? item.posX : 50.0;
+                    initialTopPct  = (item.posY !== undefined) ? item.posY : 72.0;
+                } else {
+                    initialLeftPct = item.posX || 50;
+                    initialTopPct  = item.posY || (layerType === 'text' ? 35 : (layerType === 'button' ? 80 : 50));
+                }
 
                 // Auto switch to respective tab when interacting with element on canvas
                 if (layerType === 'button' && currentActiveTab !== 'button') {
@@ -7065,20 +7232,26 @@ $active_menu = 'brosur_settings';
                     switchTab('image');
                 } else if (layerType === 'text' && currentActiveTab !== 'text') {
                     switchTab('text');
+                } else if (layerType === 'biaya' && currentActiveTab !== 'biaya') {
+                    switchTab('biaya');
+                } else if (layerType === 'countdown' && currentActiveTab !== 'countdown') {
+                    switchTab('countdown');
                 }
 
                 box.style.transition = 'none';
                 box.style.zIndex = 70;
 
                 // Highlight baris
-                let rowElId = `row-item-${item.id}`;
-                if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
-                if (layerType === 'slide') rowElId = `slide-row-item-${item.id}`;
-                if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
-                if (layerType === 'button') rowElId = `btn-row-item-${item.id}`;
-                
-                const rowEl = document.getElementById(rowElId);
-                if (rowEl) rowEl.classList.add('active-layer');
+                if (item && item.id) {
+                    let rowElId = `row-item-${item.id}`;
+                    if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
+                    if (layerType === 'slide') rowElId = `slide-row-item-${item.id}`;
+                    if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
+                    if (layerType === 'button') rowElId = `btn-row-item-${item.id}`;
+                    
+                    const rowEl = document.getElementById(rowElId);
+                    if (rowEl) rowEl.classList.add('active-layer');
+                }
 
                 e.preventDefault();
             }
@@ -7117,27 +7290,59 @@ $active_menu = 'brosur_settings';
                 if (guideX) guideX.style.display = isSnappedX ? 'block' : 'none';
                 if (guideY) guideY.style.display = isSnappedY ? 'block' : 'none';
 
-                item.posX = Math.round(newXPct * 10) / 10;
-                item.posY = Math.round(newYPct * 10) / 10;
+                if (layerType === 'biaya') {
+                    item.embed_biaya_posX = Math.round(newXPct * 10) / 10;
+                    item.embed_biaya_posY = Math.round(newYPct * 10) / 10;
+                    box.style.left = `${item.embed_biaya_posX}%`;
+                    box.style.top  = `${item.embed_biaya_posY}%`;
 
-                box.style.left = `${item.posX}%`;
-                box.style.top  = `${item.posY}%`;
+                    const sliderX = document.getElementById('slider-biaya-pos-x');
+                    const sliderY = document.getElementById('slider-biaya-pos-y');
+                    const valX = document.getElementById('val-biaya-pos-x');
+                    const valY = document.getElementById('val-biaya-pos-y');
+                    if (sliderX) sliderX.value = item.embed_biaya_posX;
+                    if (sliderY) sliderY.value = item.embed_biaya_posY;
+                    if (valX) valX.innerText = item.embed_biaya_posX + '%';
+                    if (valY) valY.innerText = item.embed_biaya_posY + '%';
+                } else if (layerType === 'countdown') {
+                    item.posX = Math.round(newXPct * 10) / 10;
+                    item.posY = Math.round(newYPct * 10) / 10;
+                    countdownData.posX = item.posX;
+                    countdownData.posY = item.posY;
+                    box.style.left = `${item.posX}%`;
+                    box.style.top  = `${item.posY}%`;
 
-                if (layerType === 'text') {
-                    const labelX = document.getElementById(`label-posx-${item.id}`);
-                    const labelY = document.getElementById(`label-posy-${item.id}`);
-                    if (labelX) labelX.innerText = Math.round(item.posX) + '%';
-                    if (labelY) labelY.innerText = Math.round(item.posY) + '%';
-                } else if (layerType === 'slide') {
-                    const labelX = document.getElementById(`slide-label-posx-${item.id}`);
-                    const labelY = document.getElementById(`slide-label-posy-${item.id}`);
-                    if (labelX) labelX.innerText = Math.round(item.posX) + '%';
-                    if (labelY) labelY.innerText = Math.round(item.posY) + '%';
-                } else if (layerType === 'button') {
-                    const labelX = document.getElementById(`btn-label-posx-${item.id}`);
-                    const labelY = document.getElementById(`btn-label-posy-${item.id}`);
-                    if (labelX) labelX.innerText = Math.round(item.posX) + '%';
-                    if (labelY) labelY.innerText = Math.round(item.posY) + '%';
+                    const sliderX = document.getElementById('slider-cd-pos-x');
+                    const sliderY = document.getElementById('slider-cd-pos-y');
+                    const valX = document.getElementById('val-cd-pos-x');
+                    const valY = document.getElementById('val-cd-pos-y');
+                    if (sliderX) sliderX.value = item.posX;
+                    if (sliderY) sliderY.value = item.posY;
+                    if (valX) valX.innerText = item.posX + '%';
+                    if (valY) valY.innerText = item.posY + '%';
+                } else {
+                    item.posX = Math.round(newXPct * 10) / 10;
+                    item.posY = Math.round(newYPct * 10) / 10;
+
+                    box.style.left = `${item.posX}%`;
+                    box.style.top  = `${item.posY}%`;
+
+                    if (layerType === 'text') {
+                        const labelX = document.getElementById(`label-posx-${item.id}`);
+                        const labelY = document.getElementById(`label-posy-${item.id}`);
+                        if (labelX) labelX.innerText = Math.round(item.posX) + '%';
+                        if (labelY) labelY.innerText = Math.round(item.posY) + '%';
+                    } else if (layerType === 'slide') {
+                        const labelX = document.getElementById(`slide-label-posx-${item.id}`);
+                        const labelY = document.getElementById(`slide-label-posy-${item.id}`);
+                        if (labelX) labelX.innerText = Math.round(item.posX) + '%';
+                        if (labelY) labelY.innerText = Math.round(item.posY) + '%';
+                    } else if (layerType === 'button') {
+                        const labelX = document.getElementById(`btn-label-posx-${item.id}`);
+                        const labelY = document.getElementById(`btn-label-posy-${item.id}`);
+                        if (labelX) labelX.innerText = Math.round(item.posX) + '%';
+                        if (labelY) labelY.innerText = Math.round(item.posY) + '%';
+                    }
                 }
             }
 
@@ -7145,21 +7350,23 @@ $active_menu = 'brosur_settings';
                 if (!isDragging) return;
                 isDragging = false;
                 box.style.transition = '';
-                box.style.zIndex = layerType === 'image' ? 20 : (layerType === 'slide' ? 22 : (layerType === 'video' ? 25 : (layerType === 'button' ? 35 : 30)));
+                box.style.zIndex = layerType === 'image' ? 20 : (layerType === 'slide' ? 22 : (layerType === 'video' ? 25 : (layerType === 'biaya' ? 28 : (layerType === 'countdown' ? 32 : (layerType === 'button' ? 35 : 30)))));
 
                 // Sembunyikan garis snap
                 if (guideX) guideX.style.display = 'none';
                 if (guideY) guideY.style.display = 'none';
 
-                let rowElId = `row-item-${item.id}`;
-                if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
-                if (layerType === 'slide') rowElId = `slide-row-item-${item.id}`;
-                if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
-                if (layerType === 'button') rowElId = `btn-row-item-${item.id}`;
-                
-                const rowEl = document.getElementById(rowElId);
-                if (rowEl) {
-                    setTimeout(() => rowEl.classList.remove('active-layer'), 800);
+                if (item && item.id) {
+                    let rowElId = `row-item-${item.id}`;
+                    if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
+                    if (layerType === 'slide') rowElId = `slide-row-item-${item.id}`;
+                    if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
+                    if (layerType === 'button') rowElId = `btn-row-item-${item.id}`;
+                    
+                    const rowEl = document.getElementById(rowElId);
+                    if (rowEl) {
+                        setTimeout(() => rowEl.classList.remove('active-layer'), 800);
+                    }
                 }
 
                 if (layerType === 'button') {
@@ -7170,6 +7377,10 @@ $active_menu = 'brosur_settings';
                     syncVideoJsonInput();
                 } else if (layerType === 'image') {
                     syncImageJsonInput();
+                } else if (layerType === 'biaya') {
+                    // Biaya disimpan di framesData[currentActiveFrame]
+                } else if (layerType === 'countdown') {
+                    // Countdown disimpan di framesData[currentActiveFrame].countdown
                 } else {
                     syncJsonInput();
                 }

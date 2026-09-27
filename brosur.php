@@ -1692,14 +1692,19 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
             if (!isBiayaFrame) return;
 
+            const posX = (fData && fData.embed_biaya_posX !== undefined) ? fData.embed_biaya_posX : 50.0;
+            const posY = (fData && fData.embed_biaya_posY !== undefined) ? fData.embed_biaya_posY : 51.5;
+            const width = (fData && fData.embed_biaya_width !== undefined) ? fData.embed_biaya_width : 88;
+            const height = (fData && fData.embed_biaya_height !== undefined) ? fData.embed_biaya_height : 315;
+
             const card = document.createElement('div');
             card.id = 'sim-biaya-card';
             card.className = 'absolute pointer-events-auto transition-all fade-in-layer shadow-2xl rounded-2xl overflow-hidden border border-slate-200 backdrop-blur-md bg-white/95 text-slate-900 flex flex-col';
-            card.style.top = '51.5%';
-            card.style.left = '50%';
+            card.style.top = `${posY}%`;
+            card.style.left = `${posX}%`;
             card.style.transform = 'translate(-50%, -50%)';
-            card.style.width = '88%';
-            card.style.height = '315px';
+            card.style.width = `${width}%`;
+            card.style.height = `${height}px`;
             card.style.zIndex = '28';
 
             card.innerHTML = `
