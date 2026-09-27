@@ -135,7 +135,11 @@ $columns_to_check = [
     'pengajar_text_items'      => "LONGTEXT",
     'pengajar_image_items'     => "LONGTEXT",
     'pengajar_video_items'     => "LONGTEXT",
-    'pengajar_button_items'    => "LONGTEXT"
+    'pengajar_button_items'    => "LONGTEXT",
+    'custom_slide_items'       => "LONGTEXT",
+    'prestasi_slide_items'     => "LONGTEXT",
+    'unggulan_slide_items'     => "LONGTEXT",
+    'pengajar_slide_items'     => "LONGTEXT"
 ];
 foreach ($columns_to_check as $col => $type) {
     $res = $conn->query("SHOW COLUMNS FROM pengaturan_brosur LIKE '$col'");
@@ -209,7 +213,7 @@ if (!in_array($active_frame, ['home', 'prestasi', 'unggulan', 'pengajar'])) {
 }
 
 $current_tab = $_POST['active_tab'] ?? $_GET['tab'] ?? 'bg';
-if (!in_array($current_tab, ['bg', 'text', 'image', 'video', 'button'])) {
+if (!in_array($current_tab, ['bg', 'text', 'image', 'video', 'button', 'slide'])) {
     $current_tab = 'bg';
 }
 
@@ -340,6 +344,41 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         }
         $final_btn_json_esc = $conn->real_escape_string(json_encode($clean_btn_items, JSON_UNESCAPED_UNICODE));
 
+        // 5. Simpan Data Slide Showcase
+        $json_slides_raw = $_POST['custom_slide_items_json'] ?? '[]';
+        $dec_slides = json_decode($json_slides_raw, true);
+        if (!is_array($dec_slides)) $dec_slides = [];
+
+        $clean_slide_items = [];
+        foreach ($dec_slides as $idx => $sld) {
+            if (empty($sld['url']) && empty($sld['title'])) continue;
+            $saved_url = saveBase64ImageIfAny(trim($sld['url'] ?? ''));
+            $clean_slide_items[] = [
+                'id'            => !empty($sld['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $sld['id']) : 'slide_' . ($idx + 1),
+                'url'           => $saved_url,
+                'title'         => trim($sld['title'] ?? ''),
+                'subtitle'      => trim($sld['subtitle'] ?? ''),
+                'badge'         => trim($sld['badge'] ?? ''),
+                'btn_text'      => trim($sld['btn_text'] ?? ''),
+                'btn_url'       => trim($sld['btn_url'] ?? ''),
+                'shape'         => in_array($sld['shape'] ?? '', ['rounded', 'kotak', 'kubah', 'oval']) ? $sld['shape'] : 'rounded',
+                'border_enable' => !empty($sld['border_enable']) ? 1 : 0,
+                'border_width'  => max(0, min(20, (int)($sld['border_width'] ?? 2))),
+                'border_color'  => !empty($sld['border_color']) ? $sld['border_color'] : '#ffffff',
+                'shadow_style'  => in_array($sld['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'glow_gold', 'glow_teal', 'glow_rose', 'glow_sky']) ? $sld['shadow_style'] : 'medium',
+                'posX'          => round(max(0, min(100, (float)($sld['posX'] ?? 50.0))), 2),
+                'posY'          => round(max(0, min(100, (float)($sld['posY'] ?? 48.0))), 2),
+                'width'         => max(20, min(100, (int)($sld['width'] ?? 88))),
+                'height'        => max(100, min(450, (int)($sld['height'] ?? 190))),
+                'autoplay'      => !empty($sld['autoplay']) ? 1 : 0,
+                'interval'      => max(2, min(15, (int)($sld['interval'] ?? 4))),
+                'effect'        => in_array($sld['effect'] ?? '', ['slide', 'fade']) ? $sld['effect'] : 'slide',
+                'show_dots'     => !isset($sld['show_dots']) || !empty($sld['show_dots']) ? 1 : 0,
+                'show_arrows'   => !empty($sld['show_arrows']) ? 1 : 0
+            ];
+        }
+        $final_slide_json_esc = $conn->real_escape_string(json_encode($clean_slide_items, JSON_UNESCAPED_UNICODE));
+
         if ($active_frame === 'prestasi') {
             $sql_master = "UPDATE pengaturan_brosur SET 
                             prestasi_bg_url = '$bg_url',
@@ -348,6 +387,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             prestasi_image_items = '$final_img_json_esc',
                             prestasi_video_items = '$final_vid_json_esc',
                             prestasi_button_items = '$final_btn_json_esc',
+                            prestasi_slide_items = '$final_slide_json_esc',
                             bottom_bar_bg_color = '$bottom_bar_bg_color',
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
@@ -360,6 +400,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             unggulan_image_items = '$final_img_json_esc',
                             unggulan_video_items = '$final_vid_json_esc',
                             unggulan_button_items = '$final_btn_json_esc',
+                            unggulan_slide_items = '$final_slide_json_esc',
                             bottom_bar_bg_color = '$bottom_bar_bg_color',
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
@@ -372,6 +413,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             pengajar_image_items = '$final_img_json_esc',
                             pengajar_video_items = '$final_vid_json_esc',
                             pengajar_button_items = '$final_btn_json_esc',
+                            pengajar_slide_items = '$final_slide_json_esc',
                             bottom_bar_bg_color = '$bottom_bar_bg_color',
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
@@ -410,6 +452,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                             custom_image_items = '$final_img_json_esc',
                             custom_video_items = '$final_vid_json_esc',
                             custom_button_items = '$final_btn_json_esc',
+                            custom_slide_items = '$final_slide_json_esc',
                             bottom_bar_bg_color = '$bottom_bar_bg_color',
                             bottom_bar_text_color = '$bottom_bar_text_color',
                             bottom_bar_active_color = '$bottom_bar_active_color'
@@ -427,7 +470,8 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 'success' => (bool)$ok,
                 'message' => $msg,
                 'frame'   => $active_frame,
-                'clean_images' => $clean_img_items
+                'clean_images' => $clean_img_items,
+                'clean_slides' => $clean_slide_items
             ]);
             exit;
         }
@@ -436,6 +480,61 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $pesan_sukses = $msg;
         } else {
             $pesan_error = $msg;
+        }
+    } else if ($action_type === 'save_slides') {
+        $current_tab = 'slide';
+        // Simpan Data Slide Showcase
+        $json_raw = $_POST['custom_slide_items_json'] ?? '[]';
+        $decoded = json_decode($json_raw, true);
+        if (!is_array($decoded)) $decoded = [];
+
+        $clean_slide_items = [];
+        foreach ($decoded as $idx => $sld) {
+            if (empty($sld['url']) && empty($sld['title'])) continue;
+            $saved_url = saveBase64ImageIfAny(trim($sld['url'] ?? ''));
+            $clean_slide_items[] = [
+                'id'            => !empty($sld['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $sld['id']) : 'slide_' . ($idx + 1),
+                'url'           => $saved_url,
+                'title'         => trim($sld['title'] ?? ''),
+                'subtitle'      => trim($sld['subtitle'] ?? ''),
+                'badge'         => trim($sld['badge'] ?? ''),
+                'btn_text'      => trim($sld['btn_text'] ?? ''),
+                'btn_url'       => trim($sld['btn_url'] ?? ''),
+                'shape'         => in_array($sld['shape'] ?? '', ['rounded', 'kotak', 'kubah', 'oval']) ? $sld['shape'] : 'rounded',
+                'border_enable' => !empty($sld['border_enable']) ? 1 : 0,
+                'border_width'  => max(0, min(20, (int)($sld['border_width'] ?? 2))),
+                'border_color'  => !empty($sld['border_color']) ? $sld['border_color'] : '#ffffff',
+                'shadow_style'  => in_array($sld['shadow_style'] ?? '', ['none', 'soft', 'medium', 'deep', 'glow_gold', 'glow_teal', 'glow_rose', 'glow_sky']) ? $sld['shadow_style'] : 'medium',
+                'posX'          => round(max(0, min(100, (float)($sld['posX'] ?? 50.0))), 2),
+                'posY'          => round(max(0, min(100, (float)($sld['posY'] ?? 48.0))), 2),
+                'width'         => max(20, min(100, (int)($sld['width'] ?? 88))),
+                'height'        => max(100, min(450, (int)($sld['height'] ?? 190))),
+                'autoplay'      => !empty($sld['autoplay']) ? 1 : 0,
+                'interval'      => max(2, min(15, (int)($sld['interval'] ?? 4))),
+                'effect'        => in_array($sld['effect'] ?? '', ['slide', 'fade']) ? $sld['effect'] : 'slide',
+                'show_dots'     => !isset($sld['show_dots']) || !empty($sld['show_dots']) ? 1 : 0,
+                'show_arrows'   => !empty($sld['show_arrows']) ? 1 : 0
+            ];
+        }
+
+        $final_slide_json = json_encode($clean_slide_items, JSON_UNESCAPED_UNICODE);
+        $final_slide_json_esc = $conn->real_escape_string($final_slide_json);
+
+        if ($active_frame === 'prestasi') {
+            $sql_slide = "UPDATE pengaturan_brosur SET prestasi_slide_items = '$final_slide_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'unggulan') {
+            $sql_slide = "UPDATE pengaturan_brosur SET unggulan_slide_items = '$final_slide_json_esc' WHERE id = 1";
+        } else if ($active_frame === 'pengajar') {
+            $sql_slide = "UPDATE pengaturan_brosur SET pengajar_slide_items = '$final_slide_json_esc' WHERE id = 1";
+        } else {
+            $sql_slide = "UPDATE pengaturan_brosur SET custom_slide_items = '$final_slide_json_esc' WHERE id = 1";
+        }
+
+        if ($conn->query($sql_slide)) {
+            $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : 'Frame Depan'));
+            $pesan_sukses = "Alhamdulillah! Pengaturan slide {$frame_label} (" . count($clean_slide_items) . " slide) berhasil disimpan.";
+        } else {
+            $pesan_error = "Gagal menyimpan slide: " . $conn->error;
         }
     } else if ($action_type === 'save_text') {
         $current_tab = 'text';
@@ -819,6 +918,14 @@ if ($raw_buttons !== null && $raw_buttons !== '') {
     ];
 }
 
+$raw_slides = $cfg['custom_slide_items'] ?? null;
+if ($raw_slides !== null && $raw_slides !== '') {
+    $slide_items = json_decode($raw_slides, true);
+    if (!is_array($slide_items)) $slide_items = [];
+} else {
+    $slide_items = [];
+}
+
 // ==============================================================
 // 2. DATA FRAME PRESTASI (PENCAPAIAN & PRESTASI SANTRI)
 // ==============================================================
@@ -916,6 +1023,14 @@ if ($raw_prestasi_buttons !== null && $raw_prestasi_buttons !== '') {
             'target'        => '_blank'
         ]
     ];
+}
+
+$raw_prestasi_slides = $cfg['prestasi_slide_items'] ?? null;
+if ($raw_prestasi_slides !== null && $raw_prestasi_slides !== '') {
+    $prestasi_slide_items = json_decode($raw_prestasi_slides, true);
+    if (!is_array($prestasi_slide_items)) $prestasi_slide_items = [];
+} else {
+    $prestasi_slide_items = [];
 }
 
 // ==============================================================
@@ -1017,6 +1132,14 @@ if ($raw_unggulan_buttons !== null && $raw_unggulan_buttons !== '') {
     ];
 }
 
+$raw_unggulan_slides = $cfg['unggulan_slide_items'] ?? null;
+if ($raw_unggulan_slides !== null && $raw_unggulan_slides !== '') {
+    $unggulan_slide_items = json_decode($raw_unggulan_slides, true);
+    if (!is_array($unggulan_slide_items)) $unggulan_slide_items = [];
+} else {
+    $unggulan_slide_items = [];
+}
+
 // ==============================================================
 // 4. DATA FRAME PENGAJAR (ASATIDZ & DEWAN GURU)
 // ==============================================================
@@ -1114,6 +1237,14 @@ if ($raw_pengajar_buttons !== null && $raw_pengajar_buttons !== '') {
             'target'        => '_blank'
         ]
     ];
+}
+
+$raw_pengajar_slides = $cfg['pengajar_slide_items'] ?? null;
+if ($raw_pengajar_slides !== null && $raw_pengajar_slides !== '') {
+    $pengajar_slide_items = json_decode($raw_pengajar_slides, true);
+    if (!is_array($pengajar_slide_items)) $pengajar_slide_items = [];
+} else {
+    $pengajar_slide_items = [];
 }
 
 $active_menu = 'brosur_settings';
@@ -1398,6 +1529,15 @@ $active_menu = 'brosur_settings';
                             <span>Tombol</span>
                             <span id="tab-badge-button" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-100 text-amber-800">
                                 <?= count($button_items) ?>
+                            </span>
+                        </button>
+
+                        <!-- TAB 6: PENGATURAN SLIDE -->
+                        <button type="button" id="tab-btn-slide" onclick="switchTab('slide')" class="tab-nav-btn flex-1 min-w-[90px] sm:min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
+                            <i class="fas fa-sliders text-sm sm:text-base text-purple-600"></i>
+                            <span>Slide</span>
+                            <span id="tab-badge-slide" class="px-2 py-0.5 rounded-full text-[10px] font-black bg-purple-100 text-purple-800">
+                                <?= count($slide_items) ?>
                             </span>
                         </button>
                     </div>
@@ -1935,6 +2075,73 @@ $active_menu = 'brosur_settings';
 
                 </div>
 
+                <!-- ========================================== -->
+                <!-- KONTEN TAB 6: PENGATURAN SISIPKAN SLIDE    -->
+                <!-- ========================================== -->
+                <div id="tab-content-slide" class="tab-pane hidden space-y-6">
+                    
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-5">
+                        
+                        <!-- Header Kartu Slide -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-sliders"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h2 class="font-black text-base sm:text-lg text-slate-900">Pengaturan Slide Showcase</h2>
+                                        <span id="slide-count-badge" class="px-2 py-0.5 rounded-full text-[11px] font-black bg-purple-100 text-purple-800">
+                                            <?= count($slide_items) ?> Slide
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-500">Atur carousel/slider gambar interaktif, judul, badge info, tombol tautan, dan durasi transisi otomatis</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2">
+                                <button type="button" onclick="addNewSlideRow()" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs shadow-sm transition flex items-center gap-1.5 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-plus text-xs"></i>
+                                    <span>Tambah Slide</span>
+                                </button>
+                                
+                                <button type="button" id="btn-clear-all-slides" onclick="clearAllSlideRows()" class="<?= empty($slide_items) ? 'hidden' : '' ?> px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200/80 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer" title="Hapus semua slide">
+                                    <i class="fas fa-trash-can text-xs"></i>
+                                    <span class="hidden sm:inline">Hapus Semua</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Form Pengaturan Slide Showcase -->
+                        <form action="" method="POST" id="form-pengaturan-slide" onsubmit="event.preventDefault(); saveAllSettings();" class="space-y-4">
+                            <input type="hidden" name="action_type" value="save_slides">
+                            <input type="hidden" name="active_tab" value="slide">
+                            <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
+                            <input type="hidden" name="custom_slide_items_json" id="input-slide-items-json" value="">
+
+                            <!-- DAFTAR BARIS SLIDE (RINGKAS & LENGKAP) -->
+                            <div id="slide-rows-container" class="space-y-3">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSlideRows() -->
+                            </div>
+
+                            <!-- TOMBOL AKSI BAWAH SLIDE -->
+                            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                                <button type="button" onclick="addNewSlideRow()" class="w-full sm:w-auto px-4 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <i class="fas fa-plus text-xs text-purple-600"></i>
+                                    <span>Tambah Slide Lain</span>
+                                </button>
+
+                                <button type="button" onclick="saveAllSlideItems()" class="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95 cursor-pointer">
+                                    <i class="fas fa-save text-base"></i>
+                                    <span>Simpan Semua Slide</span>
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+
+                </div>
+
                 </div>
                 <!-- AKHIR MASTER FRAME: HOME -->
 
@@ -1989,6 +2196,11 @@ $active_menu = 'brosur_settings';
                             <!-- CONTAINER LAYER GAMBAR SISIPAN DI LAYAR SIMULASI -->
                             <div id="sim-image-layers-container" class="absolute inset-0 pointer-events-none z-20">
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimImageLayers() -->
+                            </div>
+
+                            <!-- CONTAINER LAYER SLIDE SHOWCASE DI LAYAR SIMULASI -->
+                            <div id="sim-slide-layers-container" class="absolute inset-0 pointer-events-none z-22">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSimSlideLayers() -->
                             </div>
 
                             <!-- CONTAINER LAYER VIDEO SISIPAN DI LAYAR SIMULASI -->
@@ -2077,7 +2289,8 @@ $active_menu = 'brosur_settings';
                 texts: <?= json_encode($text_items, JSON_UNESCAPED_UNICODE) ?>,
                 images: <?= json_encode($image_items, JSON_UNESCAPED_UNICODE) ?>,
                 videos: <?= json_encode($video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($button_items, JSON_UNESCAPED_UNICODE) ?>
+                buttons: <?= json_encode($button_items, JSON_UNESCAPED_UNICODE) ?>,
+                slides: <?= json_encode($slide_items, JSON_UNESCAPED_UNICODE) ?>
             },
             prestasi: {
                 id: 'prestasi',
@@ -2094,7 +2307,8 @@ $active_menu = 'brosur_settings';
                 texts: <?= json_encode($prestasi_text_items, JSON_UNESCAPED_UNICODE) ?>,
                 images: <?= json_encode($prestasi_image_items, JSON_UNESCAPED_UNICODE) ?>,
                 videos: <?= json_encode($prestasi_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($prestasi_button_items, JSON_UNESCAPED_UNICODE) ?>
+                buttons: <?= json_encode($prestasi_button_items, JSON_UNESCAPED_UNICODE) ?>,
+                slides: <?= json_encode($prestasi_slide_items, JSON_UNESCAPED_UNICODE) ?>
             },
             unggulan: {
                 id: 'unggulan',
@@ -2111,7 +2325,8 @@ $active_menu = 'brosur_settings';
                 texts: <?= json_encode($unggulan_text_items, JSON_UNESCAPED_UNICODE) ?>,
                 images: <?= json_encode($unggulan_image_items, JSON_UNESCAPED_UNICODE) ?>,
                 videos: <?= json_encode($unggulan_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($unggulan_button_items, JSON_UNESCAPED_UNICODE) ?>
+                buttons: <?= json_encode($unggulan_button_items, JSON_UNESCAPED_UNICODE) ?>,
+                slides: <?= json_encode($unggulan_slide_items, JSON_UNESCAPED_UNICODE) ?>
             },
             pengajar: {
                 id: 'pengajar',
@@ -2128,7 +2343,8 @@ $active_menu = 'brosur_settings';
                 texts: <?= json_encode($pengajar_text_items, JSON_UNESCAPED_UNICODE) ?>,
                 images: <?= json_encode($pengajar_image_items, JSON_UNESCAPED_UNICODE) ?>,
                 videos: <?= json_encode($pengajar_video_items, JSON_UNESCAPED_UNICODE) ?>,
-                buttons: <?= json_encode($pengajar_button_items, JSON_UNESCAPED_UNICODE) ?>
+                buttons: <?= json_encode($pengajar_button_items, JSON_UNESCAPED_UNICODE) ?>,
+                slides: <?= json_encode($pengajar_slide_items, JSON_UNESCAPED_UNICODE) ?>
             }
         };
 
@@ -2140,6 +2356,7 @@ $active_menu = 'brosur_settings';
         let imageItems  = framesData[currentActiveFrame].images;
         let videoItems  = framesData[currentActiveFrame].videos;
         let buttonItems = framesData[currentActiveFrame].buttons;
+        let slideItems  = framesData[currentActiveFrame].slides || [];
 
         function switchFrame(frame) {
             if (!['home', 'prestasi', 'unggulan', 'pengajar'].includes(frame)) frame = 'home';
@@ -2150,6 +2367,7 @@ $active_menu = 'brosur_settings';
             imageItems  = data.images;
             videoItems  = data.videos;
             buttonItems = data.buttons;
+            slideItems  = data.slides || [];
 
             // 1. Update Tombol Switcher Frame
             const btnHome = document.getElementById('frame-btn-home');
@@ -2204,6 +2422,21 @@ $active_menu = 'brosur_settings';
             if (thumbBgBox) thumbBgBox.style.backgroundImage = data.bgUrl ? `url('${data.bgUrl}')` : 'none';
             if (thumbBgOverlay) thumbBgOverlay.style.opacity = data.bgOpacity;
 
+            // Update Tab Badges
+            const badgeText = document.getElementById('tab-badge-text');
+            const badgeImage = document.getElementById('tab-badge-image');
+            const badgeVideo = document.getElementById('tab-badge-video');
+            const badgeButton = document.getElementById('tab-badge-button');
+            const badgeSlide = document.getElementById('tab-badge-slide');
+            const slideCountBadge = document.getElementById('slide-count-badge');
+
+            if (badgeText) badgeText.innerText = textItems.length;
+            if (badgeImage) badgeImage.innerText = imageItems.length;
+            if (badgeVideo) badgeVideo.innerText = videoItems.length;
+            if (badgeButton) badgeButton.innerText = buttonItems.length;
+            if (badgeSlide) badgeSlide.innerText = slideItems.length;
+            if (slideCountBadge) slideCountBadge.innerText = `${slideItems.length} Slide`;
+
             // 5. Update Background Canvas Simulasi
             updateCanvasBackground(data.bgUrl, data.bgOpacity);
 
@@ -2237,10 +2470,12 @@ $active_menu = 'brosur_settings';
             renderImageRows();
             renderVideoRows();
             renderButtonRows();
+            renderSlideRows();
             renderSimLayers();
             renderSimImageLayers();
             renderSimVideoLayers();
             renderSimButtonLayers();
+            renderSimSlideLayers();
         }
 
         function updateCanvasBackground(url, opacity) {
@@ -2261,10 +2496,10 @@ $active_menu = 'brosur_settings';
         }
 
         function switchTab(tab) {
-            if (!['bg', 'text', 'image', 'video', 'button'].includes(tab)) tab = 'bg';
+            if (!['bg', 'text', 'image', 'video', 'button', 'slide'].includes(tab)) tab = 'bg';
             currentActiveTab = tab;
 
-            const tabs = ['bg', 'text', 'image', 'video', 'button'];
+            const tabs = ['bg', 'text', 'image', 'video', 'button', 'slide'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const pane = document.getElementById(`tab-content-${t}`);
@@ -4118,6 +4353,553 @@ $active_menu = 'brosur_settings';
         }
 
         // ==========================================
+        // 6. PENGATURAN SLIDE SHOWCASE (CAROUSEL MULTI-FRAME)
+        // ==========================================
+
+        window.simSlideCurrentIndices = { home: 0, prestasi: 0, unggulan: 0, pengajar: 0 };
+        window.simSlideTimers = { home: null, prestasi: null, unggulan: null, pengajar: null };
+
+        function renderSlideRows() {
+            const container = document.getElementById('slide-rows-container');
+            const clearBtn = document.getElementById('btn-clear-all-slides');
+            const badge = document.getElementById('slide-count-badge');
+            const tabBadge = document.getElementById('tab-badge-slide');
+
+            if (clearBtn) clearBtn.classList.toggle('hidden', slideItems.length === 0);
+            if (badge) badge.innerText = `${slideItems.length} Slide`;
+            if (tabBadge) tabBadge.innerText = slideItems.length;
+
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (slideItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 px-4 bg-slate-50/80 rounded-2xl border border-dashed border-slate-300">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl mx-auto mb-3 shadow-xs">
+                            <i class="fas fa-sliders"></i>
+                        </div>
+                        <h4 class="font-black text-slate-800 text-sm">Belum Ada Slide Ditambahkan</h4>
+                        <p class="text-slate-500 text-xs mt-1 max-w-sm mx-auto leading-relaxed">
+                            Buat slider / banner interaktif pada frame ini untuk menampilkan foto santri, prestasi, fasilitas, atau program secara dinamis.
+                        </p>
+                        <button type="button" onclick="addNewSlideRow()" class="mt-4 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs shadow-md transition inline-flex items-center gap-2 cursor-pointer transform active:scale-95">
+                            <i class="fas fa-plus"></i>
+                            <span>+ Tambah Slide Sekarang</span>
+                        </button>
+                    </div>
+                `;
+                syncSlideJsonInput();
+                return;
+            }
+
+            slideItems.forEach((sld, index) => {
+                const row = document.createElement('div');
+                row.className = 'item-row-strip bg-white border border-slate-200/90 hover:border-purple-500 rounded-2xl p-2.5 sm:p-3 shadow-xs space-y-2';
+                row.id = `slide-row-item-${sld.id}`;
+
+                let shapeOptionsHtml = '';
+                [
+                    { id: 'rounded', name: 'Sudut Lengkung (Rounded)' },
+                    { id: 'kotak',   name: 'Kotak Persegi (Square)' },
+                    { id: 'kubah',   name: 'Kubah Islami (Dome)' },
+                    { id: 'oval',    name: 'Oval / Elips' }
+                ].forEach(s => {
+                    const sel = (sld.shape === s.id) ? 'selected' : '';
+                    shapeOptionsHtml += `<option value="${s.id}" ${sel}>${s.name}</option>`;
+                });
+
+                row.innerHTML = `
+                    <!-- BARIS UTAMA (RINGKAS & FLEKSIBEL) -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        
+                        <!-- Nomor Slide & Thumbnail -->
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="w-6 h-6 rounded-lg bg-purple-50 text-purple-800 font-black text-[11px] flex items-center justify-center border border-purple-100 shadow-2xs" title="Slide #${index + 1}">
+                                ${index + 1}
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-slate-900 overflow-hidden border border-slate-200 shrink-0 relative flex items-center justify-center">
+                                ${sld.url ? `<img src="${escapeHtml(sld.url)}" id="thumb-slide-${sld.id}" class="w-full h-full object-cover">` : `<i class="fas fa-image text-slate-500 text-xs"></i>`}
+                            </div>
+                        </div>
+
+                        <!-- Input Judul Slide & Badge -->
+                        <div class="flex-1 min-w-[150px] space-y-1">
+                            <input type="text" value="${escapeHtml(sld.title || '')}" oninput="updateSlideField('${sld.id}', 'title', this.value)" placeholder="Judul Slide (mis: Juara 1 Tahfidz 30 Juz)" class="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold focus:border-purple-500 focus:outline-none bg-slate-50/60 focus:bg-white transition">
+                            <input type="text" value="${escapeHtml(sld.url || '')}" oninput="updateSlideField('${sld.id}', 'url', this.value)" placeholder="URL Gambar Slide (https://...)" class="w-full px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-medium text-slate-600 focus:border-purple-500 focus:outline-none bg-slate-50/40 focus:bg-white transition">
+                        </div>
+
+                        <!-- Tombol Upload File -->
+                        <div class="shrink-0">
+                            <label class="cursor-pointer px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-purple-50 hover:text-purple-700 text-slate-700 border border-slate-200 text-xs font-bold transition flex items-center gap-1.5 active:scale-95 shadow-2xs">
+                                <i class="fas fa-cloud-arrow-up text-purple-600 text-xs"></i>
+                                <span class="hidden sm:inline text-[11px]">Upload</span>
+                                <input type="file" accept="image/*" class="hidden" onchange="uploadSlideImage(this, '${sld.id}')">
+                            </label>
+                        </div>
+
+                        <!-- Badge Label Ringkas -->
+                        <div class="shrink-0 w-28">
+                            <input type="text" value="${escapeHtml(sld.badge || '')}" oninput="updateSlideField('${sld.id}', 'badge', this.value)" placeholder="Tag (mis: Prestasi)" class="w-full px-2 py-1.5 rounded-xl border border-slate-200 text-[11px] font-bold text-amber-700 bg-amber-50/50 focus:bg-white focus:border-purple-500 focus:outline-none transition text-center" title="Teks Badge / Tag Kecil di atas Judul">
+                        </div>
+
+                        <!-- TOMBOL DUPLIKASI, TOGGLE SETTING & HAPUS -->
+                        <div class="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
+                            <!-- Duplikasi -->
+                            <button type="button" onclick="duplicateSlideRow('${sld.id}')" title="Duplikasi Slide Ini" class="w-7 h-7 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-copy text-[11px]"></i>
+                            </button>
+
+                            <!-- Toggle Setting Lengkap -->
+                            <button type="button" onclick="toggleSlideDetails('${sld.id}')" title="Pengaturan Lengkap Slide (Deskripsi, Tombol Aksi, Durasi & Posisi)" class="w-7 h-7 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-sliders text-[11px]"></i>
+                            </button>
+
+                            <!-- Hapus Slide -->
+                            <button type="button" onclick="deleteSlideRow('${sld.id}')" title="Hapus Slide Ini" class="w-7 h-7 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 flex items-center justify-center text-xs transition active:scale-95 cursor-pointer">
+                                <i class="fas fa-trash-can text-[11px]"></i>
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- PANEL DETAIL SLIDE (EXPANDABLE) -->
+                    <div id="slide-details-${sld.id}" class="hidden pt-2.5 mt-2 border-t border-slate-100 bg-slate-50/70 p-3.5 rounded-xl space-y-3">
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            
+                            <!-- Subjudul / Keterangan Slide -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1">
+                                <label class="font-bold text-slate-700 text-[11px]">Subjudul / Keterangan Singkat</label>
+                                <input type="text" value="${escapeHtml(sld.subtitle || '')}" oninput="updateSlideField('${sld.id}', 'subtitle', this.value)" placeholder="Contoh: Juara Tingkat Nasional Tahun 2025" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-medium focus:border-purple-500 focus:outline-none">
+                            </div>
+
+                            <!-- Tombol Aksi (Teks & URL Link) -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <label class="font-bold text-slate-700 text-[11px]">Tombol Aksi pada Slide (Opsional)</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="text" value="${escapeHtml(sld.btn_text || '')}" oninput="updateSlideField('${sld.id}', 'btn_text', this.value)" placeholder="Teks Tombol (mis: Detail)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-bold text-purple-700 focus:border-purple-500 focus:outline-none">
+                                    <input type="text" value="${escapeHtml(sld.btn_url || '')}" oninput="updateSlideField('${sld.id}', 'btn_url', this.value)" placeholder="Link URL (https://...)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-medium focus:border-purple-500 focus:outline-none">
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Pengaturan Efek, Autoplay & Tampilan Slider -->
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            
+                            <!-- Bentuk Bingkai & Efek Transisi -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <label class="font-bold text-slate-700 text-[11px]">Bentuk Bingkai & Efek</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <select onchange="updateSlideField('${sld.id}', 'shape', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-bold bg-white focus:border-purple-500 focus:outline-none">
+                                        ${shapeOptionsHtml}
+                                    </select>
+                                    <select onchange="updateSlideField('${sld.id}', 'effect', this.value)" class="w-full px-2 py-1.5 rounded-lg border border-slate-200 text-xs font-bold bg-white focus:border-purple-500 focus:outline-none">
+                                        <option value="slide" ${sld.effect === 'slide' ? 'selected' : ''}>Geser (Slide)</option>
+                                        <option value="fade" ${sld.effect === 'fade' ? 'selected' : ''}>Pudar (Fade)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Autoplay & Durasi Interval -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <div class="flex items-center justify-between">
+                                    <label class="font-bold text-slate-700 text-[11px] flex items-center gap-1.5">
+                                        <input type="checkbox" ${sld.autoplay ? 'checked' : ''} onchange="updateSlideField('${sld.id}', 'autoplay', this.checked ? 1 : 0)" class="rounded text-purple-600">
+                                        <span>Auto-Play Slider</span>
+                                    </label>
+                                    <span id="slide-label-interval-${sld.id}" class="text-[10px] text-purple-700 font-black">${sld.interval || 4} dtk</span>
+                                </div>
+                                <input type="range" min="2" max="12" step="1" value="${sld.interval || 4}" oninput="updateSlideField('${sld.id}', 'interval', parseInt(this.value)); document.getElementById('slide-label-interval-${sld.id}').innerText = this.value + ' dtk';" class="w-full accent-purple-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer">
+                            </div>
+
+                            <!-- Navigasi Dots & Arrows -->
+                            <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-1.5">
+                                <label class="font-bold text-slate-700 text-[11px]">Navigasi & Indikator</label>
+                                <div class="flex items-center justify-between pt-1">
+                                    <label class="font-medium text-slate-600 text-[11px] flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" ${sld.show_dots !== 0 ? 'checked' : ''} onchange="updateSlideField('${sld.id}', 'show_dots', this.checked ? 1 : 0)" class="rounded text-purple-600">
+                                        <span>Titik Dots</span>
+                                    </label>
+                                    <label class="font-medium text-slate-600 text-[11px] flex items-center gap-1.5 cursor-pointer">
+                                        <input type="checkbox" ${sld.show_arrows ? 'checked' : ''} onchange="updateSlideField('${sld.id}', 'show_arrows', this.checked ? 1 : 0)" class="rounded text-purple-600">
+                                        <span>Panah Nav</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Pengaturan Posisi & Ukuran Slider di Layar -->
+                        <div class="p-2.5 rounded-xl bg-white border border-slate-200/80 space-y-2 text-xs">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-slate-700 text-[11px] flex items-center gap-1.5">
+                                    <i class="fas fa-arrows-up-down-left-right text-purple-600"></i>
+                                    <span>Posisi & Dimensi Slider pada Layar Simulasi</span>
+                                </span>
+                                <span class="text-[10px] text-slate-400 font-mono">Bisa di-drag langsung di layar HP</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                                <div>
+                                    <div class="flex justify-between text-[10px] text-slate-500 font-bold mb-1">
+                                        <span>Posisi X:</span>
+                                        <span id="slide-label-posx-${sld.id}" class="text-purple-700">${Math.round(sld.posX || 50)}%</span>
+                                    </div>
+                                    <input type="range" min="10" max="90" step="0.5" value="${sld.posX || 50}" oninput="updateSlidePosition('${sld.id}', 'posX', this.value)" class="w-full accent-purple-600 h-1 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] text-slate-500 font-bold mb-1">
+                                        <span>Posisi Y:</span>
+                                        <span id="slide-label-posy-${sld.id}" class="text-purple-700">${Math.round(sld.posY || 48)}%</span>
+                                    </div>
+                                    <input type="range" min="10" max="90" step="0.5" value="${sld.posY || 48}" oninput="updateSlidePosition('${sld.id}', 'posY', this.value)" class="w-full accent-purple-600 h-1 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] text-slate-500 font-bold mb-1">
+                                        <span>Lebar:</span>
+                                        <span id="slide-label-width-${sld.id}" class="text-purple-700">${Math.round(sld.width || 88)}%</span>
+                                    </div>
+                                    <input type="range" min="30" max="100" step="1" value="${sld.width || 88}" oninput="updateSlidePosition('${sld.id}', 'width', this.value)" class="w-full accent-purple-600 h-1 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] text-slate-500 font-bold mb-1">
+                                        <span>Tinggi:</span>
+                                        <span id="slide-label-height-${sld.id}" class="text-purple-700">${Math.round(sld.height || 190)}px</span>
+                                    </div>
+                                    <input type="range" min="120" max="400" step="5" value="${sld.height || 190}" oninput="updateSlidePosition('${sld.id}', 'height', this.value)" class="w-full accent-purple-600 h-1 bg-slate-200 rounded-lg cursor-pointer">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+
+                container.appendChild(row);
+            });
+
+            syncSlideJsonInput();
+        }
+
+        function toggleSlideDetails(id) {
+            const panel = document.getElementById(`slide-details-${id}`);
+            if (panel) panel.classList.toggle('hidden');
+        }
+
+        function updateSlideField(id, field, value) {
+            const sld = slideItems.find(s => s.id === id);
+            if (sld) {
+                sld[field] = value;
+                if (field === 'url') {
+                    const thumb = document.getElementById(`thumb-slide-${id}`);
+                    if (thumb) thumb.src = value;
+                }
+                renderSimSlideLayers();
+                syncSlideJsonInput();
+            }
+        }
+
+        function updateSlidePosition(id, field, value) {
+            const sld = slideItems.find(s => s.id === id);
+            if (sld) {
+                sld[field] = parseFloat(value);
+                const label = document.getElementById(`slide-label-${field.toLowerCase()}-${id}`);
+                if (label) {
+                    label.innerText = (field === 'height') ? Math.round(sld[field]) + 'px' : Math.round(sld[field]) + '%';
+                }
+                renderSimSlideLayers();
+                syncSlideJsonInput();
+            }
+        }
+
+        function addNewSlideRow() {
+            const newIndex = slideItems.length + 1;
+            const presets = [
+                {
+                    title: 'Juara 1 MHQ Nasional 30 Juz',
+                    subtitle: 'Santri Villa Quran Raih Emas Tingkat Nasional 2025',
+                    badge: 'Prestasi Emas',
+                    url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80',
+                    btn_text: 'Lihat Prestasi'
+                },
+                {
+                    title: 'Fasilitas Asri & Kamar Nyaman Ala Villa',
+                    subtitle: 'Suasana Sejuk, Bersih, dan Asri untuk Fokus Menghafal Al-Qur\'an',
+                    badge: 'Fasilitas Villa',
+                    url: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?w=800&auto=format&fit=crop&q=80',
+                    btn_text: 'Jelajah Fasilitas'
+                },
+                {
+                    title: 'Kurikulum Solopreneur Digital & Bahasa Arab',
+                    subtitle: 'Membekali Santri dengan Kemandirian Wirausaha & Dakwah Global',
+                    badge: 'Program Unggulan',
+                    url: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80',
+                    btn_text: 'Daftar Sekarang'
+                }
+            ];
+
+            const preset = presets[(newIndex - 1) % presets.length];
+
+            const newSlide = {
+                id: 'slide_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                url: preset.url,
+                title: preset.title,
+                subtitle: preset.subtitle,
+                badge: preset.badge,
+                btn_text: preset.btn_text,
+                btn_url: 'https://wa.me/6281234567890',
+                shape: 'rounded',
+                border_enable: 1,
+                border_width: 2,
+                border_color: '#ffffff',
+                shadow_style: 'medium',
+                posX: 50.0,
+                posY: 48.0,
+                width: 88,
+                height: 190,
+                autoplay: 1,
+                interval: 4,
+                effect: 'slide',
+                show_dots: 1,
+                show_arrows: 1
+            };
+
+            slideItems.push(newSlide);
+            renderSlideRows();
+            renderSimSlideLayers();
+
+            setTimeout(() => {
+                const el = document.getElementById(`slide-row-item-${newSlide.id}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+
+        function duplicateSlideRow(sourceId) {
+            const source = slideItems.find(s => s.id === sourceId);
+            if (!source) return;
+
+            const cloned = JSON.parse(JSON.stringify(source));
+            cloned.id = 'slide_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+            cloned.title = source.title ? source.title + ' (Salinan)' : 'Salinan Slide';
+
+            const sourceIndex = slideItems.findIndex(s => s.id === sourceId);
+            if (sourceIndex >= 0) {
+                slideItems.splice(sourceIndex + 1, 0, cloned);
+            } else {
+                slideItems.push(cloned);
+            }
+
+            renderSlideRows();
+            renderSimSlideLayers();
+
+            setTimeout(() => {
+                const el = document.getElementById(`slide-row-item-${cloned.id}`);
+                if (el) {
+                    el.classList.add('active-layer');
+                    el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    setTimeout(() => el.classList.remove('active-layer'), 1500);
+                }
+            }, 100);
+        }
+
+        function deleteSlideRow(id) {
+            const sld = slideItems.find(s => s.id === id);
+            const name = sld && sld.title ? `"${sld.title.substring(0, 25)}..."` : 'slide ini';
+            if (confirm(`Hapus ${name}?`)) {
+                slideItems = slideItems.filter(s => s.id !== id);
+                renderSlideRows();
+                renderSimSlideLayers();
+            }
+        }
+
+        function clearAllSlideRows() {
+            if (slideItems.length === 0) return;
+            if (confirm(`Yakin ingin menghapus semua (${slideItems.length}) slide?`)) {
+                slideItems = [];
+                renderSlideRows();
+                renderSimSlideLayers();
+            }
+        }
+
+        function uploadSlideImage(input, id) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                updateSlideField(id, 'url', base64);
+                const thumb = document.getElementById(`thumb-slide-${id}`);
+                if (thumb) thumb.src = base64;
+                showToast('Gambar Terpilih', 'Gambar slide berhasil dimuat. Klik "Simpan" untuk menyimpan ke server.', true);
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        function syncSlideJsonInput() {
+            if (typeof framesData !== 'undefined' && framesData[currentActiveFrame]) {
+                framesData[currentActiveFrame].slides = slideItems;
+            }
+            const inp = document.getElementById('input-slide-items-json');
+            if (inp) inp.value = JSON.stringify(slideItems);
+        }
+
+        function saveAllSlideItems() {
+            saveAllSettings();
+        }
+
+        function setSimActiveSlide(frame, index) {
+            if (!window.simSlideCurrentIndices) window.simSlideCurrentIndices = {};
+            window.simSlideCurrentIndices[frame] = index;
+            renderSimSlideLayers();
+        }
+
+        function nextSimSlide(frame) {
+            const slides = (framesData[frame] && framesData[frame].slides) ? framesData[frame].slides : [];
+            if (slides.length <= 1) return;
+            let current = window.simSlideCurrentIndices[frame] || 0;
+            current = (current + 1) % slides.length;
+            setSimActiveSlide(frame, current);
+        }
+
+        function prevSimSlide(frame) {
+            const slides = (framesData[frame] && framesData[frame].slides) ? framesData[frame].slides : [];
+            if (slides.length <= 1) return;
+            let current = window.simSlideCurrentIndices[frame] || 0;
+            current = (current - 1 + slides.length) % slides.length;
+            setSimActiveSlide(frame, current);
+        }
+
+        function renderSimSlideLayers() {
+            const container = document.getElementById('sim-slide-layers-container');
+            if (!container) return;
+
+            // Bersihkan timer sebelumnya
+            if (window.simSlideTimers && window.simSlideTimers[currentActiveFrame]) {
+                clearInterval(window.simSlideTimers[currentActiveFrame]);
+                window.simSlideTimers[currentActiveFrame] = null;
+            }
+
+            container.innerHTML = '';
+            if (!slideItems || slideItems.length === 0) return;
+
+            const activeIndex = (window.simSlideCurrentIndices[currentActiveFrame] || 0) % slideItems.length;
+            const primarySlide = slideItems[0] || {};
+            const currentSlide = slideItems[activeIndex] || primarySlide;
+
+            const box = document.createElement('div');
+            box.id = `sim-box-${primarySlide.id || 'slide_showcase'}`;
+            box.className = 'draggable-box absolute pointer-events-auto transition-all group/slide overflow-hidden shadow-lg';
+            box.setAttribute('data-id', primarySlide.id || 'slide_showcase');
+            box.style.top = `${primarySlide.posY || 48}%`;
+            box.style.left = `${primarySlide.posX || 50}%`;
+            box.style.transform = 'translate(-50%, -50%)';
+            box.style.width = `${primarySlide.width || 88}%`;
+            box.style.height = `${primarySlide.height || 190}px`;
+            box.style.zIndex = 22;
+
+            // Shape & Border
+            let shapeBorderRadius = '16px';
+            if (primarySlide.shape === 'kotak') shapeBorderRadius = '4px';
+            else if (primarySlide.shape === 'kubah') shapeBorderRadius = '999px 999px 16px 16px';
+            else if (primarySlide.shape === 'oval') shapeBorderRadius = '50%';
+            box.style.borderRadius = shapeBorderRadius;
+
+            if (primarySlide.border_enable) {
+                box.style.border = `${primarySlide.border_width || 2}px solid ${primarySlide.border_color || '#ffffff'}`;
+            }
+
+            // Build Slides Track / Container
+            let slidesHtml = '';
+            slideItems.forEach((sld, sIdx) => {
+                const isActive = (sIdx === activeIndex);
+                slidesHtml += `
+                    <div class="absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}" style="background-image: url('${escapeHtml(sld.url || '')}'); background-size: cover; background-position: center;">
+                        <!-- Gradient Overlay untuk Keterbacaan Teks -->
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+                        
+                        <!-- Badge Tag -->
+                        ${sld.badge ? `
+                            <div class="absolute top-2.5 left-2.5 z-20">
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400 text-teal-950 shadow-xs backdrop-blur-xs">
+                                    ${escapeHtml(sld.badge)}
+                                </span>
+                            </div>
+                        ` : ''}
+
+                        <!-- Caption & Tombol Aksi -->
+                        <div class="absolute bottom-2.5 left-2.5 right-2.5 z-20 space-y-1">
+                            ${sld.title ? `<h4 class="text-white font-black text-xs sm:text-[13px] leading-tight drop-shadow-md truncate">${escapeHtml(sld.title)}</h4>` : ''}
+                            ${sld.subtitle ? `<p class="text-slate-200 text-[10px] leading-snug line-clamp-1 opacity-90">${escapeHtml(sld.subtitle)}</p>` : ''}
+                            
+                            ${sld.btn_text ? `
+                                <div class="pt-0.5">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9.5px] font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs">
+                                        <span>${escapeHtml(sld.btn_text)}</span>
+                                        <i class="fas fa-arrow-right text-[8px]"></i>
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Dots Nav
+            let dotsHtml = '';
+            if (primarySlide.show_dots !== 0 && slideItems.length > 1) {
+                dotsHtml = `
+                    <div class="absolute bottom-1 right-2.5 z-30 flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full backdrop-blur-xs">
+                        ${slideItems.map((_, i) => `
+                            <button type="button" onclick="event.stopPropagation(); setSimActiveSlide('${currentActiveFrame}', ${i})" class="w-1.5 h-1.5 rounded-full transition-all ${i === activeIndex ? 'bg-amber-400 w-3' : 'bg-white/50 hover:bg-white'}"></button>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Arrows Nav
+            let arrowsHtml = '';
+            if (primarySlide.show_arrows && slideItems.length > 1) {
+                arrowsHtml = `
+                    <button type="button" onclick="event.stopPropagation(); prevSimSlide('${currentActiveFrame}')" class="absolute left-1.5 top-1/2 -translate-y-1/2 z-30 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center text-[10px] transition active:scale-90">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button type="button" onclick="event.stopPropagation(); nextSimSlide('${currentActiveFrame}')" class="absolute right-1.5 top-1/2 -translate-y-1/2 z-30 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center text-[10px] transition active:scale-90">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                `;
+            }
+
+            box.innerHTML = `
+                <!-- Hover Guide -->
+                <div class="absolute -inset-1.5 border-2 border-dashed border-purple-400/80 rounded-2xl pointer-events-none opacity-0 group-hover/slide:opacity-100 transition-opacity flex items-start justify-between p-1 z-40">
+                    <span class="bg-purple-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded shadow-xs">
+                        Slider (${slideItems.length} Slide)
+                    </span>
+                    <span class="bg-slate-900/90 text-purple-300 text-[8px] font-bold px-1.5 py-0.5 rounded shadow-xs flex items-center gap-1">
+                        <i class="fas fa-up-down-left-right"></i> Geser
+                    </span>
+                </div>
+
+                ${slidesHtml}
+                ${dotsHtml}
+                ${arrowsHtml}
+            `;
+
+            initDragForLayer(box, primarySlide, 'slide');
+            container.appendChild(box);
+
+            // Setup Auto-play Timer if enabled
+            if (primarySlide.autoplay && slideItems.length > 1) {
+                const intervalMs = Math.max(2, (currentSlide.interval || 4)) * 1000;
+                window.simSlideTimers[currentActiveFrame] = setInterval(() => {
+                    nextSimSlide(currentActiveFrame);
+                }, intervalMs);
+            }
+        }
+
+        // ==========================================
         // 7. DRAGGABLE ENGINE DENGAN SMART SNAP & GARIS BANTU
         // ==========================================
 
@@ -4147,6 +4929,8 @@ $active_menu = 'brosur_settings';
                 // Auto switch to respective tab when interacting with element on canvas
                 if (layerType === 'button' && currentActiveTab !== 'button') {
                     switchTab('button');
+                } else if (layerType === 'slide' && currentActiveTab !== 'slide') {
+                    switchTab('slide');
                 } else if (layerType === 'video' && currentActiveTab !== 'video') {
                     switchTab('video');
                 } else if (layerType === 'image' && currentActiveTab !== 'image') {
@@ -4161,6 +4945,7 @@ $active_menu = 'brosur_settings';
                 // Highlight baris
                 let rowElId = `row-item-${item.id}`;
                 if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
+                if (layerType === 'slide') rowElId = `slide-row-item-${item.id}`;
                 if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
                 if (layerType === 'button') rowElId = `btn-row-item-${item.id}`;
                 
@@ -4215,6 +5000,11 @@ $active_menu = 'brosur_settings';
                     const labelY = document.getElementById(`label-posy-${item.id}`);
                     if (labelX) labelX.innerText = Math.round(item.posX) + '%';
                     if (labelY) labelY.innerText = Math.round(item.posY) + '%';
+                } else if (layerType === 'slide') {
+                    const labelX = document.getElementById(`slide-label-posx-${item.id}`);
+                    const labelY = document.getElementById(`slide-label-posy-${item.id}`);
+                    if (labelX) labelX.innerText = Math.round(item.posX) + '%';
+                    if (labelY) labelY.innerText = Math.round(item.posY) + '%';
                 } else if (layerType === 'button') {
                     const labelX = document.getElementById(`btn-label-posx-${item.id}`);
                     const labelY = document.getElementById(`btn-label-posy-${item.id}`);
@@ -4227,7 +5017,7 @@ $active_menu = 'brosur_settings';
                 if (!isDragging) return;
                 isDragging = false;
                 box.style.transition = '';
-                box.style.zIndex = layerType === 'image' ? 20 : (layerType === 'video' ? 25 : (layerType === 'button' ? 35 : 30));
+                box.style.zIndex = layerType === 'image' ? 20 : (layerType === 'slide' ? 22 : (layerType === 'video' ? 25 : (layerType === 'button' ? 35 : 30)));
 
                 // Sembunyikan garis snap
                 if (guideX) guideX.style.display = 'none';
@@ -4235,6 +5025,7 @@ $active_menu = 'brosur_settings';
 
                 let rowElId = `row-item-${item.id}`;
                 if (layerType === 'image') rowElId = `img-row-item-${item.id}`;
+                if (layerType === 'slide') rowElId = `slide-row-item-${item.id}`;
                 if (layerType === 'video') rowElId = `vid-row-item-${item.id}`;
                 if (layerType === 'button') rowElId = `btn-row-item-${item.id}`;
                 
@@ -4245,6 +5036,8 @@ $active_menu = 'brosur_settings';
 
                 if (layerType === 'button') {
                     syncButtonJsonInput();
+                } else if (layerType === 'slide') {
+                    syncSlideJsonInput();
                 } else if (layerType === 'video') {
                     syncVideoJsonInput();
                 } else if (layerType === 'image') {
@@ -4466,6 +5259,7 @@ $active_menu = 'brosur_settings';
             syncImageJsonInput();
             syncVideoJsonInput();
             syncButtonJsonInput();
+            syncSlideJsonInput();
 
             const btn = document.getElementById('btn-master-save');
             const originalHtml = btn ? btn.innerHTML : '';
@@ -4494,6 +5288,7 @@ $active_menu = 'brosur_settings';
             formData.append('custom_image_items_json', JSON.stringify(imageItems));
             formData.append('custom_video_items_json', JSON.stringify(videoItems));
             formData.append('custom_button_items_json', JSON.stringify(buttonItems));
+            formData.append('custom_slide_items_json', JSON.stringify(slideItems));
 
             // Upload bg_file jika ada
             const bgFileInput = document.getElementById('input-bg-file');
@@ -4527,6 +5322,12 @@ $active_menu = 'brosur_settings';
                             renderImageRows();
                             renderSimImageLayers();
                         }
+                        if (res.clean_slides && Array.isArray(res.clean_slides)) {
+                            slideItems = res.clean_slides;
+                            if (framesData[currentActiveFrame]) framesData[currentActiveFrame].slides = slideItems;
+                            renderSlideRows();
+                            renderSimSlideLayers();
+                        }
                         showToast('Alhamdulillah Berhasil!', res.message || 'Seluruh pengaturan frame berhasil disimpan.', true);
                     } else {
                         showToast('Gagal Menyimpan', res.message || 'Terjadi kesalahan saat menyimpan.', false);
@@ -4548,9 +5349,9 @@ $active_menu = 'brosur_settings';
 
         // Inisialisasi awal saat halaman dimuat
         document.addEventListener('DOMContentLoaded', () => {
-            // Cek hash URL jika ada (#bg, #text, #image, #video, #button)
+            // Cek hash URL jika ada (#bg, #text, #image, #video, #button, #slide)
             const hash = window.location.hash.replace('#', '');
-            if (['bg', 'text', 'image', 'video', 'button'].includes(hash)) {
+            if (['bg', 'text', 'image', 'video', 'button', 'slide'].includes(hash)) {
                 currentActiveTab = hash;
             }
             switchFrame(currentActiveFrame);
