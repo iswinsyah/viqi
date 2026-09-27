@@ -1818,6 +1818,10 @@ $active_menu = 'brosur_settings';
             z-index: 55;
             transition: opacity 0.2s;
         }
+
+        /* No Scrollbar Utility */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800">
@@ -2666,7 +2670,7 @@ $active_menu = 'brosur_settings';
                             </div>
 
                             <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI -->
-                            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-2 border-t border-white/10 backdrop-blur-md flex items-center justify-around overflow-x-auto no-scrollbar shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>; color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>;">
+                            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2 pb-1.5 px-0.5 border-t border-white/10 backdrop-blur-md flex flex-nowrap items-center overflow-x-auto no-scrollbar shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all select-none cursor-grab active:cursor-grabbing" style="background-color: <?= htmlspecialchars($cfg['bottom_bar_bg_color'] ?? '#022d27') ?>; color: <?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; touch-action: pan-x;">
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimBottomBar() -->
                             </div>
 
@@ -2881,13 +2885,62 @@ $active_menu = 'brosur_settings';
             });
         }
 
+        function enableHorizontalDragScroll(el) {
+            if (!el || el._dragScrollInitialized) return;
+            el._dragScrollInitialized = true;
+
+            let isDown = false;
+            let startX = 0;
+            let scrollLeft = 0;
+            let hasMoved = false;
+
+            el.addEventListener('mousedown', (e) => {
+                isDown = true;
+                hasMoved = false;
+                startX = e.pageX - el.offsetLeft;
+                scrollLeft = el.scrollLeft;
+            });
+
+            el.addEventListener('mouseleave', () => {
+                isDown = false;
+                el.classList.remove('cursor-grabbing');
+            });
+
+            el.addEventListener('mouseup', () => {
+                isDown = false;
+                el.classList.remove('cursor-grabbing');
+            });
+
+            el.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                const x = e.pageX - el.offsetLeft;
+                const walk = (x - startX) * 1.5;
+                if (Math.abs(x - startX) > 6) {
+                    hasMoved = true;
+                    el.classList.add('cursor-grabbing');
+                    e.preventDefault();
+                }
+                el.scrollLeft = scrollLeft - walk;
+            });
+
+            // Mencegah klik tidak sengaja saat menggeser
+            el.addEventListener('click', (e) => {
+                if (hasMoved) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    hasMoved = false;
+                }
+            }, true);
+        }
+
         function renderSimBottomBar() {
             const container = document.getElementById('sim-bottom-bar');
             if (!container) return;
             container.innerHTML = '';
 
-            const activeColor = '<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>';
-            const normalColor = '<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>';
+            const activeColor = document.getElementById('input-bbar-active')?.value || '<?= htmlspecialchars($cfg['bottom_bar_active_color'] ?? '#fbbf24') ?>';
+            const normalColor = document.getElementById('input-bbar-text')?.value || '<?= htmlspecialchars($cfg['bottom_bar_text_color'] ?? '#ffffff') ?>';
+            const totalFrames = frameOrder.length;
 
             frameOrder.forEach((fKey) => {
                 const data = framesData[fKey];
@@ -2898,17 +2951,40 @@ $active_menu = 'brosur_settings';
                 btn.type = 'button';
                 btn.id = `sim-menu-${fKey}-btn`;
                 btn.onclick = () => switchFrame(fKey);
-                btn.className = `flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 px-1 flex-1 min-w-[48px] shrink-0 ${isActive ? '' : 'opacity-70 hover:opacity-100'}`;
+                
+                // Jika total frame > 4, setiap menu mengambil persis 25% (4 menu terlihat per layar)
+                // Jika total frame <= 4, menu terbagi rata
+                btn.className = `flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-1 px-1 shrink-0 ${isActive ? '' : 'opacity-70 hover:opacity-100'}`;
+                if (totalFrames > 4) {
+                    btn.style.flex = '0 0 25%';
+                    btn.style.maxWidth = '25%';
+                    btn.style.minWidth = '25%';
+                    btn.style.width = '25%';
+                } else {
+                    btn.style.flex = '1 1 0%';
+                    btn.style.maxWidth = `${100 / Math.max(1, totalFrames)}%`;
+                    btn.style.minWidth = '0';
+                }
                 btn.style.color = isActive ? activeColor : normalColor;
                 btn.title = `Menu ${data.name || fKey}`;
 
                 btn.innerHTML = `
-                    <i class="fas ${data.icon || 'fa-circle'} text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                    <span class="text-[9.5px] font-bold tracking-wider leading-none truncate max-w-[58px]">${escapeHtml(data.name || fKey)}</span>
+                    <i class="fas ${data.icon || 'fa-circle'} text-base sm:text-lg mb-0.5 transition-transform group-hover:scale-110"></i>
+                    <span class="text-[9px] sm:text-[9.5px] font-bold tracking-tight leading-tight truncate w-full text-center px-0.5">${escapeHtml(data.name || fKey)}</span>
                 `;
 
                 container.appendChild(btn);
             });
+
+            enableHorizontalDragScroll(container);
+
+            // Auto scroll menu aktif ke viewport
+            setTimeout(() => {
+                const activeBtn = document.getElementById(`sim-menu-${currentActiveFrame}-btn`);
+                if (activeBtn) {
+                    activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                }
+            }, 50);
         }
 
         function switchFrame(frame) {
@@ -5983,14 +6059,17 @@ $active_menu = 'brosur_settings';
             const active = document.getElementById('input-bbar-active')?.value || '#fbbf24';
 
             const bar = document.getElementById('sim-bottom-bar');
-            const homeBtn = document.getElementById('sim-menu-home-btn');
-
             if (bar) {
                 bar.style.backgroundColor = bg;
                 bar.style.color = text;
             }
-            if (homeBtn) {
-                homeBtn.style.color = active;
+            if (Array.isArray(frameOrder)) {
+                frameOrder.forEach((fKey) => {
+                    const btn = document.getElementById(`sim-menu-${fKey}-btn`);
+                    if (btn) {
+                        btn.style.color = (fKey === currentActiveFrame) ? active : text;
+                    }
+                });
             }
         }
 
