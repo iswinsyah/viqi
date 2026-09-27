@@ -258,7 +258,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
             $clean_text_items[] = [
                 'id'      => !empty($it['id']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $it['id']) : 'text_' . ($idx + 1),
                 'content' => trim($it['content'] ?? ''),
-                'format'  => in_array(strtolower($it['format'] ?? ''), ['h1','h2','h3','h4','h5','p']) ? strtolower($it['format']) : 'h2',
+                'format'  => in_array(strtolower($it['format'] ?? ''), ['h1','h2','h3','h4','h5','p','quote']) ? strtolower($it['format']) : 'h2',
                 'color'   => !empty($it['color']) ? $it['color'] : '#ffffff',
                 'font'    => !empty($it['font']) ? trim($it['font']) : 'Plus Jakarta Sans',
                 'align'   => in_array(strtolower($it['align'] ?? ''), ['left','center','right','justify']) ? strtolower($it['align']) : 'center',
@@ -2296,6 +2296,28 @@ $active_menu = 'brosur_settings';
                             <input type="hidden" name="active_frame" value="<?= $active_frame ?>" class="input-active-frame">
                             <input type="hidden" name="custom_text_items_json" id="input-text-items-json" value="">
 
+                            <!-- TOOLBAR PENGATUR JARAK PINTAR TULISAN -->
+                            <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 sm:p-3 rounded-2xl bg-teal-50/80 border border-teal-200/80 text-xs">
+                                <div class="flex items-center gap-1.5 font-bold text-teal-950">
+                                    <i class="fas fa-wand-magic-sparkles text-teal-600 text-sm"></i>
+                                    <span>Penata Jarak Tulisan:</span>
+                                </div>
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <button type="button" onclick="autoArrangeTextSpacing()" class="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-black text-xs transition flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95" title="Otomatis menyusun semua teks dari atas ke bawah secara rapi agar tidak saling bertumpuk">
+                                        <i class="fas fa-arrows-down-to-line text-xs"></i>
+                                        <span>✨ Susun Rapi Berurutan (Auto-Space)</span>
+                                    </button>
+                                    <button type="button" onclick="shiftAllTextPosY(-4)" class="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition active:scale-95 cursor-pointer" title="Geser semua teks naik 4%">
+                                        <i class="fas fa-arrow-up text-xs text-teal-600"></i>
+                                        <span>Naik</span>
+                                    </button>
+                                    <button type="button" onclick="shiftAllTextPosY(4)" class="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition active:scale-95 cursor-pointer" title="Geser semua teks turun 4%">
+                                        <i class="fas fa-arrow-down text-xs text-teal-600"></i>
+                                        <span>Turun</span>
+                                    </button>
+                                </div>
+                            </div>
+
                             <!-- DAFTAR BARIS KOLOM TULISAN (RINGKAS & SIMPEL 1 BARIS PER ITEM) -->
                             <div id="text-rows-container" class="space-y-3">
                                 <!-- Diisi secara dinamis oleh Javascript renderRows() -->
@@ -3505,6 +3527,11 @@ $active_menu = 'brosur_settings';
                     return `<h5 class="font-semibold uppercase tracking-wider leading-normal" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h5>`;
                 case 'p':
                     return `<p class="font-normal leading-relaxed" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</p>`;
+                case 'quote':
+                    return `<div class="p-2.5 sm:p-3 rounded-2xl bg-black/25 backdrop-blur-xs border-l-4 border-amber-400 text-left font-normal leading-relaxed shadow-xs" style="font-size: inherit; color: inherit; line-height: 1.45;">
+                        <i class="fas fa-quote-left text-amber-400 text-xs mr-1 opacity-80"></i>
+                        ${safeText}
+                    </div>`;
                 case 'h2':
                 default:
                     return `<h2 class="font-extrabold leading-tight" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h2>`;
@@ -4417,15 +4444,16 @@ $active_menu = 'brosur_settings';
                             <input type="text" value="${escapeHtml(item.content)}" oninput="updateItemField('${item.id}', 'content', this.value)" placeholder="Ketik isi teks di sini..." class="w-full px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b8478] focus:outline-none bg-slate-50/60 focus:bg-white transition">
                         </div>
 
-                        <!-- Format Tag (H1 - H5 / Paragraf) -->
+                        <!-- Format Tag (H1 - H5 / Paragraf / Quote) -->
                         <div class="shrink-0">
-                            <select onchange="updateItemField('${item.id}', 'format', this.value)" class="px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-black bg-white focus:border-[#0b8478] focus:outline-none cursor-pointer" title="Pilih Format Heading / Paragraf">
-                                <option value="h1" ${item.format === 'h1' ? 'selected' : ''}>H1</option>
-                                <option value="h2" ${item.format === 'h2' ? 'selected' : ''}>H2</option>
-                                <option value="h3" ${item.format === 'h3' ? 'selected' : ''}>H3</option>
-                                <option value="h4" ${item.format === 'h4' ? 'selected' : ''}>H4</option>
-                                <option value="h5" ${item.format === 'h5' ? 'selected' : ''}>H5</option>
+                            <select onchange="updateItemField('${item.id}', 'format', this.value)" class="px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-black bg-white focus:border-[#0b8478] focus:outline-none cursor-pointer" title="Pilih Format Heading / Paragraf / Kutipan">
+                                <option value="h1" ${item.format === 'h1' ? 'selected' : ''}>H1 (Heading 1)</option>
+                                <option value="h2" ${item.format === 'h2' ? 'selected' : ''}>H2 (Heading 2)</option>
+                                <option value="h3" ${item.format === 'h3' ? 'selected' : ''}>H3 (Heading 3)</option>
+                                <option value="h4" ${item.format === 'h4' ? 'selected' : ''}>H4 (Heading 4)</option>
+                                <option value="h5" ${item.format === 'h5' ? 'selected' : ''}>H5 (Nama/Sub-Judul)</option>
                                 <option value="p"  ${item.format === 'p'  ? 'selected' : ''}>P (Paragraf)</option>
+                                <option value="quote" ${item.format === 'quote' ? 'selected' : ''}>Kutipan / Testimoni Box</option>
                             </select>
                         </div>
 
@@ -4571,18 +4599,78 @@ $active_menu = 'brosur_settings';
             }
         }
 
-        function addNewTextRow() {
-            const newIndex = textItems.length + 1;
-            const newPosY = Math.min(85, 20 + ((newIndex - 1) * 14));
+        // Auto-Arrange Pintar: Otomatis menghitung dan merapikan jarak vertikal (posY) semua tulisan agar tidak bertumpuk
+        function autoArrangeTextSpacing() {
+            if (!textItems || textItems.length === 0) return;
+
+            let currentY = 8.0; // Mulai dari 8% kanvas (dibawah margin atas)
             
+            textItems.forEach((item, idx) => {
+                item.posY = Math.round(currentY * 10) / 10;
+                item.posX = item.posX || 50.0;
+
+                const textLen = (item.content || '').length;
+                const fmt = (item.format || 'h2').toLowerCase();
+                const fontSize = parseInt(item.size) || (fmt === 'h1' ? 26 : (fmt === 'h2' ? 22 : (fmt === 'h3' ? 18 : 14)));
+
+                let estimatedLines = 1;
+                if (textLen > 35) {
+                    estimatedLines = Math.ceil(textLen / 35);
+                }
+
+                // Estimasi tinggi elemen dalam persen dari canvas 600px
+                let itemHeightPct = Math.max(3.5, (fontSize / 600 * 100) * estimatedLines * 1.35);
+
+                // Jarak jeda antar teks
+                let marginPct = 2.5;
+                if (fmt === 'h1' || fmt === 'h2') {
+                    marginPct = 4.0;
+                } else if (fmt === 'h5') {
+                    marginPct = 1.5; // Nama wali santri dekat dengan isi testimoninya
+                } else if (fmt === 'quote') {
+                    marginPct = 3.5;
+                    itemHeightPct += 2.0;
+                }
+
+                currentY += itemHeightPct + marginPct;
+            });
+
+            renderRows();
+            renderSimLayers();
+            syncJsonInput();
+            showToast('Teks Ditata Rapi!', 'Jarak vertikal seluruh tulisan berhasil disesuaikan otomatis tanpa tumpang tindih.', true);
+        }
+
+        // Geser semua posY tulisan naik / turun
+        function shiftAllTextPosY(delta) {
+            if (!textItems || textItems.length === 0) return;
+            textItems.forEach(item => {
+                item.posY = Math.max(2, Math.min(96, Math.round(((item.posY || 35) + delta) * 10) / 10));
+            });
+            renderRows();
+            renderSimLayers();
+            syncJsonInput();
+        }
+
+        function addNewTextRow() {
+            let newPosY = 20.0;
+            if (textItems.length > 0) {
+                const lastItem = textItems[textItems.length - 1];
+                const lastLen = (lastItem.content || '').length;
+                const lastLines = Math.max(1, Math.ceil(lastLen / 35));
+                const estimatedHeight = Math.max(4.0, (parseInt(lastItem.size || 16) / 600 * 100) * lastLines * 1.35);
+                newPosY = Math.min(94, Math.round(((lastItem.posY || 35) + estimatedHeight + 3.0) * 10) / 10);
+            }
+
+            const newIndex = textItems.length + 1;
             const newItem = {
                 id: 'text_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
                 content: 'Teks Kolom ' + newIndex,
-                format: newIndex === 1 ? 'h2' : (newIndex === 2 ? 'h3' : 'p'),
+                format: newIndex === 1 ? 'h2' : (newIndex === 2 ? 'h5' : 'p'),
                 color: '#ffffff',
                 font: 'Plus Jakarta Sans',
                 align: 'center',
-                size: newIndex === 1 ? 24 : 16,
+                size: newIndex === 1 ? 24 : (newIndex === 2 ? 14 : 12),
                 posX: 50,
                 posY: newPosY,
                 width: 85
@@ -4605,7 +4693,11 @@ $active_menu = 'brosur_settings';
             const cloned = JSON.parse(JSON.stringify(source));
             cloned.id = 'text_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
             cloned.content = source.content ? source.content + ' (Salinan)' : 'Salinan Teks';
-            cloned.posY = Math.min(90, (source.posY || 35) + 9);
+            
+            const sourceLen = (source.content || '').length;
+            const sourceLines = Math.max(1, Math.ceil(sourceLen / 35));
+            const estimatedHeight = Math.max(4.0, (parseInt(source.size || 16) / 600 * 100) * sourceLines * 1.35);
+            cloned.posY = Math.min(94, Math.round(((source.posY || 35) + estimatedHeight + 2.5) * 10) / 10);
 
             const sourceIndex = textItems.findIndex(i => i.id === sourceId);
             if (sourceIndex >= 0) {

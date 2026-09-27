@@ -1090,6 +1090,11 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                     return `<h5 class="font-semibold uppercase tracking-wider leading-normal" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h5>`;
                 case 'p':
                     return `<p class="font-normal leading-relaxed" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</p>`;
+                case 'quote':
+                    return `<div class="p-2.5 sm:p-3 rounded-2xl bg-black/25 backdrop-blur-xs border-l-4 border-amber-400 text-left font-normal leading-relaxed shadow-xs" style="font-size: inherit; color: inherit; line-height: 1.45;">
+                        <i class="fas fa-quote-left text-amber-400 text-xs mr-1 opacity-80"></i>
+                        ${safeText}
+                    </div>`;
                 case 'h2':
                 default:
                     return `<h2 class="font-extrabold leading-tight" style="font-size: inherit; color: inherit; line-height: inherit;">${safeText}</h2>`;
