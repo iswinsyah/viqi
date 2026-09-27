@@ -105,7 +105,7 @@ fetch('api-pengaturan.php?_=' + new Date().getTime()).then(res => res.json()).th
     if (data.nama_sekolah && document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
     if (data.logo_url) {
         document.querySelectorAll('.flex-shrink-0 a').forEach(a => {
-            a.innerHTML = `<img src="${data.logo_url}" alt="Logo" class="h-10 w-auto inline-block mr-2"><span class="hidden sm:inline-block">${data.nama_sekolah || 'Villa Quran'}</span>`;
+            a.innerHTML = `<img src="${data.logo_url}" alt="Logo Villa Quran Baron Malang" class="h-10 w-auto inline-block mr-2.5"><span class="inline-block font-marlin font-bold text-xl sm:text-2xl lg:text-3xl text-emerald-900 tracking-tight uppercase">${data.nama_sekolah || 'Villa Quran Baron Malang'}</span>`;
         });
     }
 }).catch(e => console.log('Setting error'));
