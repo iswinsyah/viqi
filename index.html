@@ -3,12 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Villa Quran Indonesia | Sekolah Tahfidz Nyaman ala Villa</title>
+    <title>Villa Quran Baron Malang | Sekolah Tahfidz Nyaman ala Villa</title>
     <!-- Menggunakan Tailwind CSS dari CDN untuk purwarupa -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Menggunakan Font Awesome untuk Ikon -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts Multi-Family (Termasuk Branding Marlin Condensed / Barlow / Oswald) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Oswald:wght@400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        @font-face {
+            font-family: 'Marlin Condensed';
+            src: local('Marlin Condensed'), local('MarlinCondensed'), local('Marlin-Condensed'), local('Marlin'), local('MarlinBold');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+        .font-marlin {
+            font-family: 'Marlin Condensed', 'Barlow Condensed', 'Oswald', sans-serif;
+        }
         /* Styling khusus untuk editor HTML Tentang Kami */
         #tentang-konten p { margin-bottom: 1rem; }
         #tentang-konten ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
@@ -142,7 +156,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div>
-                    <h2 id="tentang-judul" class="text-3xl font-extrabold text-gray-900 mb-4">Tentang Villa Quran Indonesia</h2>
+                    <h2 id="tentang-judul" class="text-3xl font-extrabold text-gray-900 mb-4">Tentang Villa Quran Baron Malang</h2>
                     <div id="tentang-konten" class="text-lg text-gray-600 mb-6 leading-relaxed text-justify"><span class="text-gray-400 italic text-sm"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat profil...</span></div>
                 </div>
                 <div class="relative">
@@ -371,7 +385,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-12">
                 <h2 class="text-3xl font-extrabold text-gray-900">Artikel & Inspirasi Tahfidz</h2>
-                <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Temukan berbagai tips menghafal Al-Quran, parenting Islami, dan kabar terbaru dari Villa Quran Indonesia.</p>
+                <p class="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Temukan berbagai tips menghafal Al-Quran, parenting Islami, dan kabar terbaru dari Villa Quran Baron Malang.</p>
             </div>
             <div id="artikel-container" class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="col-span-3 text-center py-10 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i> Memuat artikel terbaru...</div>
@@ -431,7 +445,7 @@
     <footer class="bg-gray-900 text-gray-400 py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-                    <span id="footer-nama" class="font-bold text-2xl text-white block mb-4">Villa Quran Indonesia</span>
+                    <span id="footer-nama" class="font-bold text-2xl text-white block mb-4">Villa Quran Baron Malang</span>
                     <p id="footer-desk" class="text-sm leading-relaxed pr-4">Mencetak generasi Hafidz Quran bersanad yang beradab mulia, cerdas, dan mandiri di lingkungan berasrama yang nyaman ala villa.</p>
             </div>
             <div>
@@ -453,7 +467,7 @@
             </div>
         </div>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 pt-8 border-t border-gray-800 text-sm text-center">
-                &copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Indonesia</span>. All rights reserved.
+                &copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Baron Malang</span>. All rights reserved.
         </div>
     </footer>
 

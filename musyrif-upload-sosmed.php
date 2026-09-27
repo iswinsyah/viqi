@@ -284,7 +284,7 @@ if ($is_logged_in) {
         <button id="btnInstall" class="hidden mx-auto bg-indigo-900 text-amber-400 border border-indigo-800 text-[10px] font-extrabold px-3 py-2 rounded-lg shadow-md transition hover:bg-indigo-850 flex items-center space-x-1.5">
             <i class="fab fa-android"></i> <span>Instal di Layar Utama HP</span>
         </button>
-        <p class="text-[9px] text-slate-400 mt-2">© Villa Quran Indonesia. PWA Mobile Edition.</p>
+        <p class="text-[9px] text-slate-400 mt-2">© Villa Quran Baron Malang. PWA Mobile Edition.</p>
     </footer>
 
     <!-- Scripts -->

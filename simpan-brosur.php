@@ -80,7 +80,7 @@ if ($cek_res && $cek_res->num_rows > 0) {
 // ==========================================
 $pesan_wali = "🌸 *Assalamu'alaikum Warahmatullahi Wabarakatuh*\n\n"
             . "Yth. *Bapak/Ibu {$nama_wali}*,\n\n"
-            . "Alhamdulillah, terima kasih atas kepercayaan dan silaturahmi Bapak/Ibu. Formulir minat & reservasi kuota calon santri baru di *Villa Quran Indonesia* telah berhasil kami terima dengan rincian:\n\n"
+            . "Alhamdulillah, terima kasih atas kepercayaan dan silaturahmi Bapak/Ibu. Formulir minat & reservasi kuota calon santri baru di *Villa Quran Baron Malang* telah berhasil kami terima dengan rincian:\n\n"
             . "📋 *Data Calon Santri:*\n"
             . "• *Nama Ananda:* {$nama_santri}\n"
             . "• *Pilihan Jenjang:* {$jenjang}\n"
@@ -96,7 +96,7 @@ $pesan_wali = "🌸 *Assalamu'alaikum Warahmatullahi Wabarakatuh*\n\n"
             . "https://villaquranindonesia.com/brosur.php\n\n"
             . "Semoga Allah SWT senantiasa meridhoi ikhtiar kita dalam mendidik generasi Qur'ani masa depan. Aamiin.\n\n"
             . "_Wassalamu'alaikum Warahmatullahi Wabarakatuh_\n"
-            . "*Panitia SPMB — Villa Quran Indonesia*";
+            . "*Panitia SPMB — Villa Quran Baron Malang*";
 
 // Helper kirim Fonnte
 function kirimFonnte($target, $pesan, $token) {

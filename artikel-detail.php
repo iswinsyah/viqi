@@ -30,7 +30,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
     <title><?= htmlspecialchars($seo_title) ?></title>
     <meta name="description" content="<?= htmlspecialchars($seo_desc) ?>">
     <meta name="keywords" content="<?= htmlspecialchars($seo_keywords) ?>">
-    <meta name="author" content="Villa Quran Indonesia">
+    <meta name="author" content="Villa Quran Baron Malang">
     <!-- Open Graph Tags untuk memunculkan Thumbnail di WhatsApp & Facebook -->
     <meta property="og:title" content="<?= htmlspecialchars($seo_title) ?>">
     <meta property="og:description" content="<?= htmlspecialchars($seo_desc) ?>">
@@ -145,7 +145,7 @@ $seo_keywords = !empty($art['meta_keywords']) ? $art['meta_keywords'] : "sekolah
         <div class="max-w-4xl mx-auto px-4 text-center">
             <h2 class="text-white text-xl font-bold mb-4">Tertarik bergabung dengan Villa Quran?</h2>
             <a href="index.html#spmb" class="bg-amber-500 hover:bg-amber-600 text-teal-950 px-6 py-2 rounded-full font-bold text-sm transition shadow-md inline-block mb-6">Informasi Pendaftaran</a>
-                <p class="text-xs">&copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Indonesia</span>.</p>
+                <p class="text-xs">&copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Baron Malang</span>.</p>
         </div>
     </footer>
 

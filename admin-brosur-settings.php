@@ -2,7 +2,7 @@
 ob_start();
 // admin-brosur-settings.php
 // Halaman Simulasi Live Brosur & Undangan Digital Smartphone
-// Villa Quran Indonesia
+// Villa Quran Baron Malang
 
 require_once 'auth.php';
 require_once 'koneksi.php';
@@ -70,7 +70,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_brosur (
     btn_text_color VARCHAR(30) DEFAULT '#022d27',
     card_bg_style VARCHAR(30) DEFAULT 'glass_dark',
     font_family VARCHAR(50) DEFAULT 'Plus Jakarta Sans',
-    judul_utama VARCHAR(150) DEFAULT 'Villa Quran Indonesia',
+    judul_utama VARCHAR(150) DEFAULT 'Villa Quran Baron Malang',
     subjudul VARCHAR(200) DEFAULT 'Sekolah Tahfidz Berasrama Nyaman Ala Villa',
     bismillah_text VARCHAR(150) DEFAULT 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
     tamu_header_text VARCHAR(150) DEFAULT 'Kepada Yth. Calon Wali Santri:',
@@ -4107,7 +4107,7 @@ $active_menu = 'brosur_settings';
         // Format Helper HTML Generator
         function getFormatHtml(content, format) {
             let text = (content || '').trim();
-            if (!text) text = 'Villa Quran Indonesia';
+            if (!text) text = 'Villa Quran Baron Malang';
 
             const safeText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;").replace(/\n/g, "<br>");
             const fmt = (format || 'h2').toLowerCase();

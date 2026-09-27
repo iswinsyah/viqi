@@ -1,6 +1,6 @@
 <?php
 // brosur.php
-// Halaman Khusus Brosur & Undangan Digital Smartphone Villa Quran Indonesia
+// Halaman Khusus Brosur & Undangan Digital Smartphone Villa Quran Baron Malang
 // 100% Sinkron & Presisi Sesuai Layar Simulasi Admin (Adaptive Canvas Scaling + Multi-Frame Dinamis)
 
 require_once 'koneksi.php';
@@ -853,11 +853,11 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Brosur Digital & Undangan PSB | Villa Quran Indonesia</title>
+    <title>Brosur Digital & Undangan PSB | Villa Quran Baron Malang</title>
 
     <!-- Meta Tags & OpenGraph untuk WhatsApp Preview -->
-    <meta name="description" content="Undangan Khusus Silaturahmi & Brosur Pendidikan Generasi Qur'ani. Tahfidz Mutqin 15-30 Juz Bersanad, Berijazah Resmi SMP-SMA, Digital Marketing & Solopreneur di Villa Quran Indonesia.">
-    <meta property="og:title" content="Brosur Digital Villa Quran Indonesia - Khusus <?= htmlspecialchars($nama_tamu) ?>">
+    <meta name="description" content="Undangan Khusus Silaturahmi & Brosur Pendidikan Generasi Qur'ani. Tahfidz Mutqin 15-30 Juz Bersanad, Berijazah Resmi SMP-SMA, Digital Marketing & Solopreneur di Villa Quran Baron Malang.">
+    <meta property="og:title" content="Brosur Digital Villa Quran Baron Malang - Khusus <?= htmlspecialchars($nama_tamu) ?>">
     <meta property="og:description" content="Pondok Pesantren Tahfidz Berasrama Nyaman Ala Villa. Tahfidz Mutqin Bersanad, Formal SMP-SMA & Skill Digital Solopreneur.">
     <meta property="og:image" content="https://villaquranindonesia.com/upload/logo-villa-quran.png">
     <meta property="og:type" content="website">
@@ -1020,7 +1020,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         <!-- Badge Brand -->
         <div class="pointer-events-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white shadow-md">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="text-[10px] font-extrabold tracking-wider uppercase text-emerald-300">Villa Quran</span>
+            <span class="text-[10px] font-extrabold tracking-wider uppercase text-emerald-300 font-marlin">Villa Quran Baron Malang</span>
         </div>
 
         <!-- Action Buttons: Audio & Share -->
@@ -1155,7 +1155,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
         function getFormatHtml(content, format) {
             let text = replacePlaceholders(content || '').trim();
-            if (!text) text = 'Villa Quran Indonesia';
+            if (!text) text = 'Villa Quran Baron Malang';
 
             const safeText = escapeHtml(text).replace(/\n/g, "<br>");
             const fmt = (format || 'h2').toLowerCase();
@@ -2171,8 +2171,8 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             } catch(e) {}
 
             const shareData = {
-                title: 'Brosur Digital Villa Quran Indonesia',
-                text: 'Undangan Khusus & Brosur Informasi Pendidikan Santri Tahfidz Bersanad Villa Quran Indonesia.',
+                title: 'Brosur Digital Villa Quran Baron Malang',
+                text: 'Undangan Khusus & Brosur Informasi Pendidikan Santri Tahfidz Bersanad Villa Quran Baron Malang.',
                 url: shareUrl
             };
             if (navigator.share) {

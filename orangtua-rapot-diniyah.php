@@ -198,7 +198,7 @@ if ($santri_id > 0 && $ta && $sem) {
                         <!-- HEADER KOP MA'HAD -->
                         <div class="text-center border-b-4 border-double border-teal-900 pb-5 mb-6">
                             <h2 class="text-base sm:text-lg font-bold text-teal-800 tracking-wider uppercase">LAPORAN HASIL BELAJAR DINIYAH</h2>
-                            <h1 class="text-2xl sm:text-3xl font-black text-teal-950 mt-1">MA'HAD VILLA QURAN INDONESIA</h1>
+                            <h1 class="text-2xl sm:text-3xl font-black text-teal-950 mt-1">MA'HAD Villa Quran Baron Malang</h1>
                             <p class="text-xs text-slate-500 mt-1">Sistem Administrasi Digital Kepesantrenan (SADIGS 4.0)</p>
                         </div>
 

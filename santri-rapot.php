@@ -228,7 +228,7 @@ function getDeskripsiDiniyah($nilai) {
                             <div>
                                 <h1 class="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-tight">RAPOR HASIL BELAJAR PENDIDIKAN KESETARAAN</h1>
                                 <h2 class="text-sm font-extrabold text-[#0d8276] uppercase">PROGRAM <?= strtoupper($paket_tipe) ?> (SETARA <?= ($paket_tipe === 'Paket C') ? 'SMA' : 'SMP' ?>)</h2>
-                                <p class="text-[11px] text-slate-500">PKBM Villa Quran Indonesia • NPSN: P9996543 • Terakreditasi</p>
+                                <p class="text-[11px] text-slate-500">PKBM Villa Quran Baron Malang • NPSN: P9996543 • Terakreditasi</p>
                             </div>
                         </div>
                     </div>
@@ -305,7 +305,7 @@ function getDeskripsiDiniyah($nilai) {
                             </div>
                             <div>
                                 <h1 class="text-lg sm:text-xl font-black text-slate-900 uppercase tracking-tight">RAPOR DINIYAH & KEPESANTRENAN</h1>
-                                <h2 class="text-sm font-extrabold text-amber-600 uppercase">PONDOK PESANTREN VILLA QURAN INDONESIA</h2>
+                                <h2 class="text-sm font-extrabold text-amber-600 uppercase">PONDOK PESANTREN Villa Quran Baron Malang</h2>
                                 <p class="text-[11px] text-slate-500">Evaluasi Pembelajaran Kitab, Tajwid, Bahasa Arab, dan Adab</p>
                             </div>
                         </div>

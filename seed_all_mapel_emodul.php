@@ -1,7 +1,7 @@
 <?php
 /**
  * INJEKSI MASSAL E-MODUL & PERANGKAT PEMBELAJARAN LENGKAP
- * SADIGS 4.0 - Villa Quran Indonesia
+ * SADIGS 4.0 - Villa Quran Baron Malang
  * 
  * Mengisi seluruh mata pelajaran Diknas PKBM Paket B & Paket C dengan:
  * - Struktur Bab Lengkap

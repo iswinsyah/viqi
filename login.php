@@ -192,11 +192,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="text-center mb-8">
             <a href="https://villaquranindonesia.com" class="inline-block group mb-3">
                 <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center p-2 mx-auto shadow-xl border-2 border-teal-100 group-hover:scale-105 transition-transform duration-300">
-                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Indonesia" class="w-16 h-16 object-contain">
+                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Baron Malang" class="w-16 h-16 object-contain">
                 </div>
             </a>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">SADIGS 4.0</h1>
-            <p class="text-xs text-slate-500 mt-1">Sistem Administrasi Digital • Villa Quran Indonesia</p>
+            <p class="text-xs text-slate-500 mt-1">Sistem Administrasi Digital • Villa Quran Baron Malang</p>
             <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-extrabold bg-teal-50 text-[#0b8478] border border-teal-200 mt-3 shadow-xs">
                 <i class="fas fa-shield-alt"></i> Satu Pintu Masuk (Universal Member Area)
             </div>
@@ -247,7 +247,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <a href="https://villaquranindonesia.com" class="hover:text-[#0d8276] font-bold flex items-center gap-1 transition">
                 <i class="fas fa-home"></i> Beranda Web
             </a>
-            <span>Villa Quran Indonesia</span>
+            <span>Villa Quran Baron Malang</span>
         </div>
 
     </div>

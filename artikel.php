@@ -12,7 +12,7 @@ if ($result && $result->num_rows > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kumpulan Artikel & Berita | Villa Quran Indonesia</title>
+    <title>Kumpulan Artikel & Berita | Villa Quran Baron Malang</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -80,7 +80,7 @@ if ($result && $result->num_rows > 0) {
     </main>
 
     <footer class="bg-gray-900 text-gray-400 py-12 text-center mt-auto">
-        <div class="max-w-7xl mx-auto px-4"><p class="text-sm">&copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Indonesia</span>. All rights reserved.</p></div>
+        <div class="max-w-7xl mx-auto px-4"><p class="text-sm">&copy; <span id="footer-tahun">2026</span> <span id="footer-copy-nama">Villa Quran Baron Malang</span>. All rights reserved.</p></div>
     </footer>
 </body>
 </html>

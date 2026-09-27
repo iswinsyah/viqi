@@ -141,7 +141,7 @@ function periksa_dan_terbitkan_sp1_pegawai($conn) {
                               VALUES ($p_id, 'SP-1', '" . $conn->real_escape_string($alasan_sp1) . "', $total_alpa, '$semester_str', CURRENT_DATE(), 'Aktif')");
 
                 if ($wa_target) {
-                    $msg_peg = "⚠️ *SURAT PERINGATAN 1 (SP-1)*\nVilla Quran Indonesia\n\nKepada Yth: *{$p_nama}*\nRole: *{$roles_str}*\n\nBerdasarkan evaluasi presensi semester *{$semester_str}*, Anda tercatat tidak masuk kerja tanpa izin (Alpa) sebanyak *3 Hari*.\n\nDengan ini Yayasan menerbitkan *Surat Peringatan 1 (SP-1)*. Mohon tingkatkan kedisiplinan Anda.\n\n_Pesan otomatis AI HRD System Pesantren._";
+                    $msg_peg = "⚠️ *SURAT PERINGATAN 1 (SP-1)*\nVilla Quran Baron Malang\n\nKepada Yth: *{$p_nama}*\nRole: *{$roles_str}*\n\nBerdasarkan evaluasi presensi semester *{$semester_str}*, Anda tercatat tidak masuk kerja tanpa izin (Alpa) sebanyak *3 Hari*.\n\nDengan ini Yayasan menerbitkan *Surat Peringatan 1 (SP-1)*. Mohon tingkatkan kedisiplinan Anda.\n\n_Pesan otomatis AI HRD System Pesantren._";
                     $ch = curl_init();
                     curl_setopt_array($ch, [CURLOPT_URL => "https://api.fonnte.com/send", CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['target' => $wa_target, 'message' => $msg_peg]), CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"], CURLOPT_TIMEOUT => 15]);
                     curl_exec($ch); curl_close($ch);
@@ -163,7 +163,7 @@ function periksa_dan_terbitkan_sp1_pegawai($conn) {
                               VALUES ($p_id, 'SP-2', '" . $conn->real_escape_string($alasan_sp2) . "', $total_alpa, '$semester_str', CURRENT_DATE(), 'Aktif')");
 
                 if ($wa_target) {
-                    $msg_peg2 = "⚠️ *SURAT PERINGATAN 2 (SP-2)*\nVilla Quran Indonesia\n\nKepada Yth: *{$p_nama}*\nRole: *{$roles_str}*\n\nAnda terdeteksi mengulangi pelanggaran presensi dengan akumulasi *{$total_alpa} Hari Alpa Tanpa Izin* pada semester *{$semester_str}*.\n\nDengan ini Yayasan menerbitkan *SURAT PERINGATAN 2 (SP-2)*. Perhatian: Jika menambah 1 hari Alpa lagi, akun Anda akan DIBLOKIR otomatis oleh sistem.\n\n_Pesan otomatis AI HRD System Pesantren._";
+                    $msg_peg2 = "⚠️ *SURAT PERINGATAN 2 (SP-2)*\nVilla Quran Baron Malang\n\nKepada Yth: *{$p_nama}*\nRole: *{$roles_str}*\n\nAnda terdeteksi mengulangi pelanggaran presensi dengan akumulasi *{$total_alpa} Hari Alpa Tanpa Izin* pada semester *{$semester_str}*.\n\nDengan ini Yayasan menerbitkan *SURAT PERINGATAN 2 (SP-2)*. Perhatian: Jika menambah 1 hari Alpa lagi, akun Anda akan DIBLOKIR otomatis oleh sistem.\n\n_Pesan otomatis AI HRD System Pesantren._";
                     $ch = curl_init();
                     curl_setopt_array($ch, [CURLOPT_URL => "https://api.fonnte.com/send", CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['target' => $wa_target, 'message' => $msg_peg2]), CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"], CURLOPT_TIMEOUT => 15]);
                     curl_exec($ch); curl_close($ch);
@@ -187,7 +187,7 @@ function periksa_dan_terbitkan_sp1_pegawai($conn) {
                           VALUES ($p_id, 'BLOKIR', '" . $conn->real_escape_string($alasan_blokir) . "', $total_alpa, '$semester_str', CURRENT_DATE(), 'Aktif')");
 
             if ($wa_target) {
-                $msg_block = "⛔ *AKUN DIBLOKIR / DINONAKTIFKAN*\nVilla Quran Indonesia\n\nKepada Yth: *{$p_nama}*\nRole: *{$roles_str}*\n\nAkun Anda telah *DIBLOKIR / DINONAKTIFKAN* oleh sistem AI HRD karena mencapai akumulasi *{$total_alpa} Hari Alpa Tanpa Izin* di semester *{$semester_str}*.\n\nAkun Anda tidak dapat digunakan untuk login/absensi dan hanya dapat diaktifkan kembali secara manual oleh *Super Admin*.\n\n_Pesan otomatis AI HRD System Pesantren._";
+                $msg_block = "⛔ *AKUN DIBLOKIR / DINONAKTIFKAN*\nVilla Quran Baron Malang\n\nKepada Yth: *{$p_nama}*\nRole: *{$roles_str}*\n\nAkun Anda telah *DIBLOKIR / DINONAKTIFKAN* oleh sistem AI HRD karena mencapai akumulasi *{$total_alpa} Hari Alpa Tanpa Izin* di semester *{$semester_str}*.\n\nAkun Anda tidak dapat digunakan untuk login/absensi dan hanya dapat diaktifkan kembali secara manual oleh *Super Admin*.\n\n_Pesan otomatis AI HRD System Pesantren._";
                 $ch = curl_init();
                 curl_setopt_array($ch, [CURLOPT_URL => "https://api.fonnte.com/send", CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => http_build_query(['target' => $wa_target, 'message' => $msg_block]), CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"], CURLOPT_TIMEOUT => 15]);
                 curl_exec($ch); curl_close($ch);
@@ -1362,7 +1362,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
                        . "Mohon dapat menyalurkan pembayaran melalui transfer ke rekening resmi Yayasan:\n"
                        . "*Bank Syariah Indonesia (BSI)*\n"
                        . "*No Rekening: 7700889911*\n"
-                       . "*Atas Nama: Villa Quran Indonesia*\n\n"
+                       . "*Atas Nama: Villa Quran Baron Malang*\n\n"
                        . "Silakan upload bukti bayar di Ruang Orang Tua jika transfer telah selesai dilakukan. Abaikan pesan ini jika baru saja melakukan pembayaran.\n\n"
                        . "Jazaakumullahu Khairan.\n"
                        . "-- Bendahara Yayasan Villa Quran --";
@@ -1373,7 +1373,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
                        . "Mohon konfirmasinya terkait pembayaran tagihan ananda *{$s['nama_lengkap']}*:\n"
                        . $rincian . "\n"
                        . "Hingga hari ini kami belum mencatat konfirmasi pembayaran tersebut. Jika Bapak/Ibu sudah melakukan transfer, silakan konfirmasi melalui Ruang Orang Tua dengan melampirkan bukti transfer agar segera kami verifikasi.\n\n"
-                       . "Jika belum, pembayaran dapat ditransfer ke *BSI Rekening 7700889911 a.n. Villa Quran Indonesia*.\n\n"
+                       . "Jika belum, pembayaran dapat ditransfer ke *BSI Rekening 7700889911 a.n. Villa Quran Baron Malang*.\n\n"
                        . "Jazaakumullahu Khairan.\n"
                        . "-- Bendahara Yayasan Villa Quran --";
             } 
@@ -1382,7 +1382,7 @@ if (($current_hour >= '08' || $force_billing) && (!$billing_done || $force_billi
                 $pesan = "Assalamu'alaikum Wr. Wb. Yth. Bapak/Ibu {$s['nama_ortu']},\n\n"
                        . "Pengingat ulang terkait konfirmasi pembayaran tagihan ananda *{$s['nama_lengkap']}*:\n"
                        . $rincian . "\n"
-                       . "Mohon dibantu untuk melunasi kewajiban tersebut sebelum pertengahan bulan demi kelancaran operasional pendidikan santri. Pembayaran dapat dikirim ke *BSI 7700889911 a.n. Villa Quran Indonesia*.\n\n"
+                       . "Mohon dibantu untuk melunasi kewajiban tersebut sebelum pertengahan bulan demi kelancaran operasional pendidikan santri. Pembayaran dapat dikirim ke *BSI 7700889911 a.n. Villa Quran Baron Malang*.\n\n"
                        . "Jika Bapak/Ibu mengalami kendala, silakan hubungi bagian keuangan Yayasan untuk berkonsultasi.\n\n"
                        . "Jazaakumullahu Khairan.\n"
                        . "-- Bendahara Yayasan Villa Quran --";

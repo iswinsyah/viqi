@@ -106,11 +106,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="text-center mb-8">
             <a href="https://villaquranindonesia.com" class="inline-block group mb-3">
                 <div class="w-20 h-20 rounded-full bg-white flex items-center justify-center p-2 mx-auto shadow-xl border-2 border-teal-100 group-hover:scale-105 transition-transform duration-300">
-                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Indonesia" class="w-16 h-16 object-contain">
+                    <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Baron Malang" class="w-16 h-16 object-contain">
                 </div>
             </a>
             <h1 class="text-2xl font-black text-slate-900 tracking-tight">Ruang Santri</h1>
-            <p class="text-xs text-slate-500 mt-1">Portal Informasi & Pembelajaran • Villa Quran Indonesia</p>
+            <p class="text-xs text-slate-500 mt-1">Portal Informasi & Pembelajaran • Villa Quran Baron Malang</p>
         </div>
 
         <?php if($error): ?>

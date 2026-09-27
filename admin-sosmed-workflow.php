@@ -232,7 +232,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         // Watermark Teks default jika tidak ada bingkai
                         $color_gold = imagecolorallocate($canvas, 251, 191, 36);
                         if (file_exists($font_path)) {
-                            imagettftext($canvas, 16, 0, 40, 60, $color_gold, $font_path, "VILLA QURAN INDONESIA");
+                            imagettftext($canvas, 16, 0, 40, 60, $color_gold, $font_path, "Villa Quran Baron Malang");
                         }
                     }
                     

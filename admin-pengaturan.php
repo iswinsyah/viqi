@@ -25,7 +25,7 @@ $conn->query("ALTER TABLE pengaturan_web ADD COLUMN logo_url VARCHAR(255) AFTER 
 // 2. Proses Simpan
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $wa = $conn->real_escape_string($_POST['nomor_wa']);
-    $nama = $conn->real_escape_string($_POST['nama_sekolah'] ?? 'Villa Quran Indonesia');
+    $nama = $conn->real_escape_string($_POST['nama_sekolah'] ?? 'Villa Quran Baron Malang');
     $logo = $conn->real_escape_string($_POST['logo_url'] ?? '');
     $desc = $conn->real_escape_string($_POST['deskripsi_footer'] ?? '');
     $alamat = $conn->real_escape_string($_POST['alamat'] ?? '');
@@ -95,7 +95,7 @@ $active_menu = 'pengaturan';
                             <div class="space-y-4">
                                 <div>
                                     <label class="block text-sm font-bold text-gray-700 mb-1">Nama Sekolah / Lembaga</label>
-                                    <input type="text" name="nama_sekolah" value="<?= htmlspecialchars($data['nama_sekolah'] ?? 'Villa Quran Indonesia') ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
+                                    <input type="text" name="nama_sekolah" value="<?= htmlspecialchars($data['nama_sekolah'] ?? 'Villa Quran Baron Malang') ?>" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500">
                                 </div>
                             <div>
                                 <label class="block text-sm font-bold text-gray-700 mb-1">URL Logo Sekolah</label>

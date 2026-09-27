@@ -41,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
            . "Pembayaran dapat dikirimkan melalui transfer ke rekening resmi Yayasan:\n"
            . "*Bank Syariah Indonesia (BSI)*\n"
            . "*No Rekening: 7700889911*\n"
-           . "*Atas Nama: Villa Quran Indonesia*\n\n"
+           . "*Atas Nama: Villa Quran Baron Malang*\n\n"
            . "Mohon kirimkan konfirmasi pembayaran beserta struk transfer melalui menu Ruang Orang Tua setelah pembayaran berhasil. Jika Bapak/Ibu sudah melakukan transfer, silakan abaikan pesan ini.\n\n"
            . "Jazaakumullahu Khairan Katsiran.\n\n"
            . "Wassalamu'alaikum Wr. Wb.\n"

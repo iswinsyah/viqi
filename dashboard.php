@@ -870,7 +870,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SADIGS 4.0 | Villa Quran Indonesia</title>
+    <title>SADIGS 4.0 | Villa Quran Baron Malang</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1811,7 +1811,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 
             <!-- FOOTER BRANDING RINGKAS -->
             <div class="mt-6 text-center text-[11px] text-teal-800 font-semibold opacity-70">
-                Villa Quran Indonesia • SADIGS 4.0
+                Villa Quran Baron Malang • SADIGS 4.0
             </div>
 
         </main>

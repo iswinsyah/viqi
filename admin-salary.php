@@ -354,7 +354,7 @@ $status_pegawai = $user_db['status_pegawai'] ?? 'Pegawai Tetap';
 
                 <!-- FOOTER BRANDING RINGKAS -->
                 <div class="text-center text-[11px] text-slate-400 font-semibold pt-2 pb-6">
-                    Villa Quran Indonesia • SADIGS 4.0 Payroll Module
+                    Villa Quran Baron Malang • SADIGS 4.0 Payroll Module
                 </div>
 
             </div>
