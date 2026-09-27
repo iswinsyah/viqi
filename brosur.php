@@ -5,6 +5,53 @@
 
 require_once 'koneksi.php';
 
+// Pastikan kolom untuk dynamic multi-frame tersedia di database
+$columns_to_check = [
+    'custom_text_items'        => "LONGTEXT",
+    'custom_image_items'       => "LONGTEXT",
+    'custom_video_items'       => "LONGTEXT",
+    'custom_button_items'      => "LONGTEXT",
+    'bottom_bar_bg_color'      => "VARCHAR(100) DEFAULT '#022d27'",
+    'bottom_bar_text_color'    => "VARCHAR(30) DEFAULT '#ffffff'",
+    'bottom_bar_active_color'  => "VARCHAR(30) DEFAULT '#fbbf24'",
+    'prestasi_bg_url'          => "TEXT",
+    'prestasi_overlay_opacity' => "DECIMAL(3,2) DEFAULT 0.88",
+    'prestasi_text_items'      => "LONGTEXT",
+    'prestasi_image_items'     => "LONGTEXT",
+    'prestasi_video_items'     => "LONGTEXT",
+    'prestasi_button_items'    => "LONGTEXT",
+    'unggulan_bg_url'          => "TEXT",
+    'unggulan_overlay_opacity' => "DECIMAL(3,2) DEFAULT 0.88",
+    'unggulan_text_items'      => "LONGTEXT",
+    'unggulan_image_items'     => "LONGTEXT",
+    'unggulan_video_items'     => "LONGTEXT",
+    'unggulan_button_items'    => "LONGTEXT",
+    'pengajar_bg_url'          => "TEXT",
+    'pengajar_overlay_opacity' => "DECIMAL(3,2) DEFAULT 0.88",
+    'pengajar_text_items'      => "LONGTEXT",
+    'pengajar_image_items'     => "LONGTEXT",
+    'pengajar_video_items'     => "LONGTEXT",
+    'pengajar_button_items'    => "LONGTEXT",
+    'custom_slide_items'       => "LONGTEXT",
+    'prestasi_slide_items'     => "LONGTEXT",
+    'unggulan_slide_items'     => "LONGTEXT",
+    'pengajar_slide_items'     => "LONGTEXT",
+    'fasilitas_bg_url'          => "TEXT",
+    'fasilitas_overlay_opacity' => "DECIMAL(3,2) DEFAULT 0.88",
+    'fasilitas_text_items'      => "LONGTEXT",
+    'fasilitas_image_items'     => "LONGTEXT",
+    'fasilitas_video_items'     => "LONGTEXT",
+    'fasilitas_button_items'    => "LONGTEXT",
+    'fasilitas_slide_items'     => "LONGTEXT",
+    'all_frames_json'           => "LONGTEXT"
+];
+foreach ($columns_to_check as $col => $type) {
+    $res = $conn->query("SHOW COLUMNS FROM pengaturan_brosur LIKE '$col'");
+    if ($res && $res->num_rows == 0) {
+        $conn->query("ALTER TABLE pengaturan_brosur ADD COLUMN $col $type");
+    }
+}
+
 // Ambil Konfigurasi Pengaturan Brosur dari Database
 $q = $conn->query("SELECT * FROM pengaturan_brosur WHERE id = 1 LIMIT 1");
 $cfg = ($q && $q->num_rows > 0) ? $q->fetch_assoc() : [];
@@ -546,8 +593,8 @@ if (empty($all_frames_dict)) {
             'theme'        => 'emerald',
             'iconGradient' => 'from-emerald-500 to-[#0b8478]',
             'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
-            'bgUrl'        => $cfg['cover_bg_url'] ?? 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80',
-            'bgOpacity'    => isset($cfg['cover_overlay_opacity']) ? (float)$cfg['cover_overlay_opacity'] : 0.88,
+            'bgUrl'        => $cover_bg_url,
+            'bgOpacity'    => $cover_overlay_opacity,
             'texts'        => $text_items,
             'images'       => $image_items,
             'videos'       => $video_items,
@@ -631,6 +678,73 @@ if (empty($all_frames_dict)) {
             'slides'       => $fasilitas_slide_items
         ]
     ];
+} else {
+    // Sinkronisasi data kolom terkini ke dalam frame standar
+    $std_merge_map = [
+        'home' => [
+            'bgUrl'     => $cover_bg_url,
+            'bgOpacity' => $cover_overlay_opacity,
+            'texts'     => $text_items,
+            'images'    => $image_items,
+            'videos'    => $video_items,
+            'buttons'   => $button_items,
+            'slides'    => $slide_items
+        ],
+        'prestasi' => [
+            'bgUrl'     => $prestasi_bg_url,
+            'bgOpacity' => (float)$prestasi_overlay_opacity,
+            'texts'     => $prestasi_text_items,
+            'images'    => $prestasi_image_items,
+            'videos'    => $prestasi_video_items,
+            'buttons'   => $prestasi_button_items,
+            'slides'    => $prestasi_slide_items
+        ],
+        'unggulan' => [
+            'bgUrl'     => $unggulan_bg_url,
+            'bgOpacity' => (float)$unggulan_overlay_opacity,
+            'texts'     => $unggulan_text_items,
+            'images'    => $unggulan_image_items,
+            'videos'    => $unggulan_video_items,
+            'buttons'   => $unggulan_button_items,
+            'slides'    => $unggulan_slide_items
+        ],
+        'pengajar' => [
+            'bgUrl'     => $pengajar_bg_url,
+            'bgOpacity' => (float)$pengajar_overlay_opacity,
+            'texts'     => $pengajar_text_items,
+            'images'    => $pengajar_image_items,
+            'videos'    => $pengajar_video_items,
+            'buttons'   => $pengajar_button_items,
+            'slides'    => $pengajar_slide_items
+        ],
+        'fasilitas' => [
+            'bgUrl'     => $fasilitas_bg_url,
+            'bgOpacity' => (float)$fasilitas_overlay_opacity,
+            'texts'     => $fasilitas_text_items,
+            'images'    => $fasilitas_image_items,
+            'videos'    => $fasilitas_video_items,
+            'buttons'   => $fasilitas_button_items,
+            'slides'    => $fasilitas_slide_items
+        ]
+    ];
+
+    foreach ($std_merge_map as $fKey => $fData) {
+        if (!isset($all_frames_dict[$fKey])) {
+            $all_frames_dict[$fKey] = [
+                'id'       => $fKey,
+                'name'     => ucfirst($fKey === 'home' ? 'Depan' : $fKey),
+                'icon'     => ($fKey === 'home' ? 'fa-house' : ($fKey === 'prestasi' ? 'fa-trophy' : ($fKey === 'unggulan' ? 'fa-star' : ($fKey === 'pengajar' ? 'fa-chalkboard-user' : 'fa-building-columns')))),
+                'theme'    => ($fKey === 'home' ? 'emerald' : ($fKey === 'prestasi' ? 'amber' : ($fKey === 'unggulan' ? 'orange' : ($fKey === 'pengajar' ? 'teal' : 'sky')))),
+            ];
+        }
+        if (!empty($fData['texts']))   $all_frames_dict[$fKey]['texts']   = $fData['texts'];
+        if (!empty($fData['images']))  $all_frames_dict[$fKey]['images']  = $fData['images'];
+        if (!empty($fData['videos']))  $all_frames_dict[$fKey]['videos']  = $fData['videos'];
+        if (!empty($fData['buttons'])) $all_frames_dict[$fKey]['buttons'] = $fData['buttons'];
+        if (!empty($fData['slides']))  $all_frames_dict[$fKey]['slides']  = $fData['slides'];
+        if (!empty($fData['bgUrl']))   $all_frames_dict[$fKey]['bgUrl']   = $fData['bgUrl'];
+        if (isset($fData['bgOpacity'])) $all_frames_dict[$fKey]['bgOpacity'] = $fData['bgOpacity'];
+    }
 }
 
 $active_frame_param = isset($_GET['frame']) ? trim($_GET['frame']) : 'home';
