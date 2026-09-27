@@ -687,32 +687,90 @@ if (empty($all_frames_dict)) {
 
 // Auto-heal recovery: Periksa jika data frame 'home' di database sempat tertukar dengan data 'Kegiatan'
 $is_home_corrupted = false;
+// Auto-heal recovery: Periksa jika data frame 'home' di database sempat tertukar dengan data 'Kegiatan' atau 'Testimoni'
+$is_home_corrupted = false;
+$corrupted_type = '';
 if (isset($all_frames_dict['home']['texts']) && is_array($all_frames_dict['home']['texts'])) {
     foreach ($all_frames_dict['home']['texts'] as $t) {
-        if (stripos($t['content'] ?? '', 'Kegiatan') !== false || stripos($t['content'] ?? '', 'Muroja') !== false) {
+        $c = $t['content'] ?? '';
+        if (stripos($c, 'Kegiatan') !== false || stripos($c, 'Muroja') !== false) {
             $is_home_corrupted = true;
+            $corrupted_type = 'kegiatan';
+            break;
+        }
+        if (stripos($c, 'Testimoni') !== false || stripos($c, 'Wali Santri') !== false || stripos($c, 'Mahasiswi') !== false) {
+            $is_home_corrupted = true;
+            $corrupted_type = 'testimoni';
             break;
         }
     }
 }
 
 if ($is_home_corrupted) {
-    // 1. Amankan data kegiatan ke frame kegiatan jika belum ada
-    $kegiatan_key = 'frame_1790486082531';
-    if (!isset($all_frames_dict[$kegiatan_key])) {
-        $all_frames_dict[$kegiatan_key] = [
-            'id'           => $kegiatan_key,
-            'name'         => 'Kegiatan',
-            'title'        => 'Frame: Kegiatan',
-            'subtitle'     => 'Frame ini mengatur tampilan Kegiatan santri.',
-            'badge'        => 'Kegiatan Santri',
-            'icon'         => 'fa-bullseye',
+    if ($corrupted_type === 'kegiatan') {
+        $kegiatan_key = 'frame_1790486082531';
+        if (!isset($all_frames_dict[$kegiatan_key])) {
+            $all_frames_dict[$kegiatan_key] = [
+                'id'           => $kegiatan_key,
+                'name'         => 'Kegiatan',
+                'title'        => 'Frame: Kegiatan',
+                'subtitle'     => 'Frame ini mengatur tampilan Kegiatan santri.',
+                'badge'        => 'Kegiatan Santri',
+                'icon'         => 'fa-bullseye',
+                'theme'        => 'emerald',
+                'iconGradient' => 'from-emerald-500 to-[#0b8478]',
+                'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
+                'bgUrl'        => $all_frames_dict['home']['bgUrl'] ?? 'upload/bg_brosur_1790424374_668.png',
+                'bgOpacity'    => 0.02,
+                'texts'        => $all_frames_dict['home']['texts'] ?? [],
+                'images'       => $all_frames_dict['home']['images'] ?? [],
+                'videos'       => $all_frames_dict['home']['videos'] ?? [],
+                'buttons'      => $all_frames_dict['home']['buttons'] ?? [],
+                'slides'       => $all_frames_dict['home']['slides'] ?? []
+            ];
+        }
+    } else if ($corrupted_type === 'testimoni') {
+        // Temukan frame Testimoni yang sesuai
+        $testimoni_key = '';
+        foreach ($all_frames_dict as $fk => $fv) {
+            if ($fk !== 'home' && stripos($fv['name'] ?? '', 'Testimoni') !== false) {
+                $testimoni_key = $fk;
+                break;
+            }
+        }
+        if (empty($testimoni_key)) {
+            $testimoni_key = 'frame_1790514355332';
+        }
+
+        // Tata rapi posY teks testimoni
+        $saved_texts = $all_frames_dict['home']['texts'] ?? [];
+        $curY = 8.0;
+        foreach ($saved_texts as &$st) {
+            $st['posY'] = round($curY, 1);
+            $st['posX'] = $st['posX'] ?? 50;
+            $len = strlen($st['content'] ?? '');
+            $fmt = strtolower($st['format'] ?? 'h2');
+            $lines = ($len > 35) ? ceil($len / 35) : 1;
+            $sz = (int)($st['size'] ?? 16);
+            $h = max(3.5, ($sz / 600 * 100) * $lines * 1.35);
+            $margin = ($fmt === 'h1' || $fmt === 'h2') ? 4.0 : (($fmt === 'h5') ? 1.5 : 3.0);
+            $curY += $h + $margin;
+        }
+        unset($st);
+
+        $all_frames_dict[$testimoni_key] = [
+            'id'           => $testimoni_key,
+            'name'         => 'Testimoni',
+            'title'        => 'Frame: Testimoni',
+            'subtitle'     => 'Frame ini mengatur tampilan Testimoni & Kata Wali Santri.',
+            'badge'        => 'Testimoni & Review',
+            'icon'         => 'fa-comments',
             'theme'        => 'emerald',
             'iconGradient' => 'from-emerald-500 to-[#0b8478]',
             'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
             'bgUrl'        => $all_frames_dict['home']['bgUrl'] ?? 'upload/bg_brosur_1790424374_668.png',
             'bgOpacity'    => 0.02,
-            'texts'        => $all_frames_dict['home']['texts'] ?? [],
+            'texts'        => $saved_texts,
             'images'       => $all_frames_dict['home']['images'] ?? [],
             'videos'       => $all_frames_dict['home']['videos'] ?? [],
             'buttons'      => $all_frames_dict['home']['buttons'] ?? [],
@@ -814,9 +872,19 @@ if ($is_home_corrupted) {
         'slides'       => []
     ];
 
-    // Simpan auto-repair ke database
+    // Simpan auto-repair ke database agar perbaikan permanen
     $clean_heal_json = $conn->real_escape_string(json_encode($all_frames_dict, JSON_UNESCAPED_UNICODE));
-    $conn->query("UPDATE pengaturan_brosur SET all_frames_json = '$clean_heal_json' WHERE id = 1");
+    $clean_home_texts = $conn->real_escape_string(json_encode($all_frames_dict['home']['texts'], JSON_UNESCAPED_UNICODE));
+    $clean_home_imgs  = $conn->real_escape_string(json_encode($all_frames_dict['home']['images'], JSON_UNESCAPED_UNICODE));
+    $clean_home_btns  = $conn->real_escape_string(json_encode($all_frames_dict['home']['buttons'], JSON_UNESCAPED_UNICODE));
+    $conn->query("UPDATE pengaturan_brosur SET 
+                    all_frames_json = '$clean_heal_json',
+                    custom_text_items = '$clean_home_texts',
+                    custom_image_items = '$clean_home_imgs',
+                    custom_button_items = '$clean_home_btns',
+                    cover_bg_url = 'upload/bg_brosur_1790424374_668.png',
+                    cover_overlay_opacity = 0.0
+                  WHERE id = 1");
 }
 
 $active_frame_param = isset($_GET['frame']) ? trim($_GET['frame']) : 'home';
