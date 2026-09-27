@@ -1,7 +1,7 @@
 <?php
 // brosur.php
 // Halaman Khusus Brosur & Undangan Digital Smartphone Villa Quran Indonesia
-// 100% Sinkron & Presisi Sesuai Layar Simulasi Admin
+// 100% Sinkron & Presisi Sesuai Layar Simulasi Admin (Adaptive Canvas Scaling)
 
 require_once 'koneksi.php';
 
@@ -378,7 +378,7 @@ if ($raw_pengajar_images !== null && $raw_pengajar_images !== '') {
 }
 
 $raw_pengajar_videos = $cfg['pengajar_video_items'] ?? null;
-if ($raw_pengajar_videos !== null && $raw_videos !== '') {
+if ($raw_pengajar_videos !== null && $raw_pengajar_videos !== '') {
     $pengajar_video_items = json_decode($raw_pengajar_videos, true);
     if (!is_array($pengajar_video_items)) $pengajar_video_items = [];
 } else {
@@ -572,6 +572,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
         html, body {
             height: 100%;
+            width: 100%;
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -584,33 +585,28 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             font-family: 'Marlin Condensed', 'Barlow Condensed', 'Oswald', sans-serif;
         }
 
-        /* Ambient luxury pattern on desktop background */
+        /* Ambient luxury pattern on desktop backdrop */
         .desktop-backdrop {
             background-image: radial-gradient(rgba(14, 165, 233, 0.12) 1px, transparent 1px), radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px);
             background-size: 32px 32px, 24px 24px;
             background-position: 0 0, 12px 12px;
         }
 
-        /* Canvas Frame: 100% Fullscreen on Mobile, Elegant Centered Smartphone on Desktop */
-        .brosur-viewport {
-            width: 100%;
-            height: 100%;
-            height: 100dvh;
-            max-width: 480px;
+        /* Base Simulation Canvas: Persis 1:1 dengan .bg-simulation-canvas di admin-brosur-settings.php (340px x 600px) */
+        #brosur-canvas-box {
+            width: 340px;
+            height: 600px;
+            min-width: 340px;
+            min-height: 600px;
+            max-width: 340px;
+            max-height: 600px;
             position: relative;
             overflow: hidden;
-            background-color: #021a15;
-            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.08);
-            margin: 0 auto;
-            transition: all 0.3s ease;
-        }
-
-        @media (min-width: 640px) {
-            .brosur-viewport {
-                height: min(840px, calc(100vh - 32px));
-                border-radius: 36px;
-                margin: auto;
-            }
+            background-color: #0f172a;
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(255, 255, 255, 0.08);
+            border-radius: 28px;
+            transform-origin: center center;
+            user-select: none;
         }
 
         /* Shape Classes (100% Persis Layar Simulasi) */
@@ -638,7 +634,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
         /* Button Shapes */
         .shape-btn-rounded_pill { border-radius: 9999px !important; }
-        .shape-btn-persegipanjang { border-radius: 6px !important; }
+        .shape-btn-persegipanjang { border-radius: 4px !important; }
         .shape-btn-bulat { border-radius: 50% !important; aspect-ratio: 1/1 !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; }
         .shape-btn-rounded { border-radius: 14px !important; }
 
@@ -653,15 +649,15 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
         /* Smooth Layer Fade Animation */
         .fade-in-layer {
-            animation: fadeInLayer 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            animation: fadeInLayer 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
         @keyframes fadeInLayer {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
-<body class="desktop-backdrop flex items-center justify-center min-h-screen select-none">
+<body class="desktop-backdrop flex items-center justify-center min-h-screen w-screen overflow-hidden select-none">
 
     <!-- AUDIO BACKSOUND ELEMENT -->
     <audio id="audio-player" loop preload="auto">
@@ -670,94 +666,91 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         <source src="https://archive.org/download/IslamicBackgroundSoundsAahat/28-ISLAMIC%20BACKGROUND%20SOUNDS.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- WRAPPER KANVAS BROSUR DIGITAL -->
-    <div class="brosur-viewport relative w-full h-full" id="brosur-canvas">
+    <!-- FULLSCREEN AMBIENT BACKGROUND SEAMLESS (PADA SMARTPHONE & DESKTOP) -->
+    <div id="ambient-bg-screen" class="fixed inset-0 w-full h-full bg-cover bg-center transition-all duration-500 ease-out -z-10" style="background-image: url('<?= htmlspecialchars($cover_bg_url) ?>');">
+        <div id="ambient-bg-overlay" class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-opacity duration-500" style="opacity: <?= $cover_overlay_opacity ?>;"></div>
+    </div>
 
-        <!-- ======================================================= -->
-        <!-- BACKGROUND LAYER & OVERLAY DINAMIS                      -->
-        <!-- ======================================================= -->
-        <div id="live-bg-screen" class="absolute inset-0 w-full h-full bg-cover bg-center transition-all duration-500 ease-out" style="background-image: url('<?= htmlspecialchars($cover_bg_url) ?>');">
-            <!-- Overlay Gradient Syahdu -->
-            <div id="live-bg-overlay" class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-opacity duration-500" style="opacity: <?= $cover_overlay_opacity ?>;"></div>
+    <!-- FLOATING TOP CONTROLS (MUSIC & SHARE) -->
+    <div class="fixed top-3 left-3 right-3 z-50 flex items-center justify-between pointer-events-none max-w-lg mx-auto">
+        <!-- Badge Brand -->
+        <div class="pointer-events-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-white shadow-md">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-[10px] font-extrabold tracking-wider uppercase text-emerald-300">Villa Quran</span>
         </div>
 
-        <!-- ======================================================= -->
-        <!-- FLOATING TOP CONTROLS (MUSIC & SHARE)                   -->
-        <!-- ======================================================= -->
-        <div class="absolute top-3.5 left-3.5 right-3.5 z-50 flex items-center justify-between pointer-events-none">
-            <!-- Badge Brand -->
-            <div class="pointer-events-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 text-white shadow-md">
-                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="text-[10px] font-extrabold tracking-wider uppercase text-emerald-300">Villa Quran</span>
-            </div>
+        <!-- Action Buttons: Audio & Share -->
+        <div class="pointer-events-auto flex items-center gap-2">
+            <!-- Music Toggle Button -->
+            <button type="button" id="btn-audio-toggle" onclick="toggleAudio()" class="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/15 text-amber-300 flex items-center justify-center text-xs shadow-md transition active:scale-90 cursor-pointer" title="Putar / Hentikan Musik">
+                <i id="audio-toggle-icon" class="fas fa-music text-[11px]"></i>
+            </button>
 
-            <!-- Action Buttons: Audio & Share -->
-            <div class="pointer-events-auto flex items-center gap-2">
-                <!-- Music Toggle Button -->
-                <button type="button" id="btn-audio-toggle" onclick="toggleAudio()" class="w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-amber-300 flex items-center justify-center text-xs shadow-md transition active:scale-90 cursor-pointer" title="Putar / Hentikan Musik">
-                    <i id="audio-toggle-icon" class="fas fa-music text-[11px]"></i>
-                </button>
-
-                <!-- Share Button -->
-                <button type="button" onclick="shareBrosur()" class="w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/15 text-sky-300 flex items-center justify-center text-xs shadow-md transition active:scale-90 cursor-pointer" title="Bagikan Brosur Ini">
-                    <i class="fas fa-share-nodes text-[11px]"></i>
-                </button>
-            </div>
+            <!-- Share Button -->
+            <button type="button" onclick="shareBrosur()" class="w-8 h-8 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/15 text-sky-300 flex items-center justify-center text-xs shadow-md transition active:scale-90 cursor-pointer" title="Bagikan Brosur Ini">
+                <i class="fas fa-share-nodes text-[11px]"></i>
+            </button>
         </div>
+    </div>
 
-        <!-- ======================================================= -->
-        <!-- DYNAMIC LAYERS CONTAINER (PERSIS 100% SIMULASI ADMIN)    -->
-        <!-- ======================================================= -->
+    <!-- WRAPPER KANVAS RESPONSIVE AUTO-SCALER (PERSIS 340px x 600px SIMULASI ADMIN) -->
+    <div id="brosur-canvas-box" class="relative">
 
-        <!-- 1. LAYER GAMBAR SISIPAN -->
-        <div id="live-image-layers-container" class="absolute inset-0 pointer-events-none z-20"></div>
-
-        <!-- 2. LAYER SLIDE SHOWCASE (CAROUSEL) -->
-        <div id="live-slide-layers-container" class="absolute inset-0 pointer-events-none z-22"></div>
-
-        <!-- 3. LAYER VIDEO SISIPAN (YOUTUBE / DIRECT MP4) -->
-        <div id="live-video-layers-container" class="absolute inset-0 pointer-events-none z-25"></div>
-
-        <!-- 4. LAYER TULISAN DINAMIS (H1-H5 & P DENGAN TYPOGRAPHY) -->
-        <div id="live-text-layers-container" class="absolute inset-0 pointer-events-none z-30"></div>
-
-        <!-- 5. LAYER TOMBOL AKSI INTERAKTIF (WHATSAPP, FORM, DLL) -->
-        <div id="live-button-layers-container" class="absolute inset-0 pointer-events-none z-35"></div>
-
-        <!-- ======================================================= -->
-        <!-- DOCKED BOTTOM NAVIGATION BAR (5 MENU PERSIS SIMULASI)   -->
-        <!-- ======================================================= -->
-        <div id="live-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-3 sm:pb-3.5 px-2 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-10px_25px_rgba(0,0,0,0.5)] transition-all duration-300" style="background-color: <?= $bottom_bar_bg_color ?>; color: <?= $bottom_bar_text_color ?>;">
+        <!-- GAMBAR BACKGROUND PORTRAIT -->
+        <div id="preview-screen-cover" class="absolute inset-0 w-full h-full bg-cover bg-center transition-all duration-300" style="background-image: url('<?= htmlspecialchars($cover_bg_url) ?>');">
             
-            <!-- Menu 1: Depan (Home) -->
-            <button type="button" onclick="switchFrame('home')" id="menu-btn-home" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 cursor-pointer py-0.5 px-2 group flex-1" style="color: <?= $bottom_bar_active_color ?>;" title="Halaman Depan">
-                <i id="menu-icon-home" class="fas fa-house text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                <span id="menu-label-home" class="text-[9.5px] font-bold tracking-wider leading-none">Depan</span>
-            </button>
+            <!-- LAPISAN OVERLAY DINAMIS -->
+            <div id="preview-cover-overlay" class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all duration-300" style="opacity: <?= $cover_overlay_opacity ?>;"></div>
 
-            <!-- Menu 2: Prestasi -->
-            <button type="button" onclick="switchFrame('prestasi')" id="menu-btn-prestasi" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 cursor-pointer py-0.5 px-2 group flex-1 opacity-70 hover:opacity-100" style="color: <?= $bottom_bar_text_color ?>;" title="Galeri Prestasi">
-                <i id="menu-icon-prestasi" class="fas fa-trophy text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                <span id="menu-label-prestasi" class="text-[9.5px] font-bold tracking-wider leading-none">Prestasi</span>
-            </button>
+            <!-- CONTAINER LAYER GAMBAR SISIPAN DI LAYAR SIMULASI -->
+            <div id="sim-image-layers-container" class="absolute inset-0 pointer-events-none z-20"></div>
 
-            <!-- Menu 3: Unggulan -->
-            <button type="button" onclick="switchFrame('unggulan')" id="menu-btn-unggulan" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 cursor-pointer py-0.5 px-2 group flex-1 opacity-70 hover:opacity-100" style="color: <?= $bottom_bar_text_color ?>;" title="Program Unggulan">
-                <i id="menu-icon-unggulan" class="fas fa-star text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                <span id="menu-label-unggulan" class="text-[9.5px] font-bold tracking-wider leading-none">Unggulan</span>
-            </button>
+            <!-- CONTAINER LAYER SLIDE SHOWCASE DI LAYAR SIMULASI -->
+            <div id="sim-slide-layers-container" class="absolute inset-0 pointer-events-none z-22"></div>
 
-            <!-- Menu 4: Pengajar -->
-            <button type="button" onclick="switchFrame('pengajar')" id="menu-btn-pengajar" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 cursor-pointer py-0.5 px-2 group flex-1 opacity-70 hover:opacity-100" style="color: <?= $bottom_bar_text_color ?>;" title="Dewan Pengajar">
-                <i id="menu-icon-pengajar" class="fas fa-chalkboard-user text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                <span id="menu-label-pengajar" class="text-[9.5px] font-bold tracking-wider leading-none">Pengajar</span>
-            </button>
+            <!-- CONTAINER LAYER VIDEO SISIPAN DI LAYAR SIMULASI -->
+            <div id="sim-video-layers-container" class="absolute inset-0 pointer-events-none z-25"></div>
 
-            <!-- Menu 5: Fasilitas -->
-            <button type="button" onclick="switchFrame('fasilitas')" id="menu-btn-fasilitas" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 cursor-pointer py-0.5 px-2 group flex-1 opacity-70 hover:opacity-100" style="color: <?= $bottom_bar_text_color ?>;" title="Sarana & Fasilitas">
-                <i id="menu-icon-fasilitas" class="fas fa-building-columns text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
-                <span id="menu-label-fasilitas" class="text-[9.5px] font-bold tracking-wider leading-none">Fasilitas</span>
-            </button>
+            <!-- CONTAINER LAYER TULISAN DI LAYAR SIMULASI -->
+            <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none z-30"></div>
+
+            <!-- CONTAINER LAYER TOMBOL DI LAYAR SIMULASI -->
+            <div id="sim-button-layers-container" class="absolute inset-0 pointer-events-none z-35"></div>
+
+            <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (MENU HOME, PRESTASI, UNGGULAN, PENGAJAR & FASILITAS) -->
+            <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2.5 pb-2 px-3 border-t border-white/10 backdrop-blur-md flex items-center justify-around shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all duration-200" style="background-color: <?= htmlspecialchars($bottom_bar_bg_color) ?>; color: <?= htmlspecialchars($bottom_bar_text_color) ?>;">
+                
+                <!-- Menu 1: Home -->
+                <button type="button" onclick="switchFrame('home')" id="sim-menu-home-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5" style="color: <?= htmlspecialchars($bottom_bar_active_color) ?>;" title="Menu Home (Frame Depan)">
+                    <i id="sim-menu-home-icon" class="fas fa-house text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                    <span id="sim-menu-home-label" class="text-[9.5px] font-bold tracking-wider leading-none">Home</span>
+                </button>
+
+                <!-- Menu 2: Prestasi -->
+                <button type="button" onclick="switchFrame('prestasi')" id="sim-menu-prestasi-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($bottom_bar_text_color) ?>;" title="Menu Prestasi (Frame Prestasi)">
+                    <i id="sim-menu-prestasi-icon" class="fas fa-trophy text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                    <span id="sim-menu-prestasi-label" class="text-[9.5px] font-bold tracking-wider leading-none">Prestasi</span>
+                </button>
+
+                <!-- Menu 3: Unggulan -->
+                <button type="button" onclick="switchFrame('unggulan')" id="sim-menu-unggulan-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($bottom_bar_text_color) ?>;" title="Menu Unggulan (Frame Unggulan)">
+                    <i id="sim-menu-unggulan-icon" class="fas fa-star text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                    <span id="sim-menu-unggulan-label" class="text-[9.5px] font-bold tracking-wider leading-none">Unggulan</span>
+                </button>
+
+                <!-- Menu 4: Pengajar -->
+                <button type="button" onclick="switchFrame('pengajar')" id="sim-menu-pengajar-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($bottom_bar_text_color) ?>;" title="Menu Pengajar (Frame Pengajar)">
+                    <i id="sim-menu-pengajar-icon" class="fas fa-chalkboard-user text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                    <span id="sim-menu-pengajar-label" class="text-[9.5px] font-bold tracking-wider leading-none">Pengajar</span>
+                </button>
+
+                <!-- Menu 5: Fasilitas -->
+                <button type="button" onclick="switchFrame('fasilitas')" id="sim-menu-fasilitas-btn" class="flex flex-col items-center justify-center text-center transform transition active:scale-95 group cursor-pointer py-0.5 opacity-70 hover:opacity-100" style="color: <?= htmlspecialchars($bottom_bar_text_color) ?>;" title="Menu Fasilitas (Frame Fasilitas)">
+                    <i id="sim-menu-fasilitas-icon" class="fas fa-building-columns text-lg mb-0.5 transition-transform group-hover:scale-115"></i>
+                    <span id="sim-menu-fasilitas-label" class="text-[9.5px] font-bold tracking-wider leading-none">Fasilitas</span>
+                </button>
+
+            </div>
 
         </div>
 
@@ -767,7 +760,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
     <!-- JAVASCRIPT LOGIKA SINKRONISASI 100% PERSIS SIMULASI     -->
     <!-- ======================================================= -->
     <script>
-        // 1. DATA MASTER DARI PHP (5 FRAME LENGKAP)
+        // 1. DATA MASTER DARI DATABASE
         const framesData = {
             home: {
                 id: 'home',
@@ -828,13 +821,13 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
         const frameKeys = ['home', 'prestasi', 'unggulan', 'pengajar', 'fasilitas'];
         let currentFrame = '<?= $active_frame_param ?>';
-        const activeNavColor = '<?= $bottom_bar_active_color ?>';
-        const normalNavColor = '<?= $bottom_bar_text_color ?>';
+        const activeColor = '<?= htmlspecialchars($bottom_bar_active_color) ?>';
+        const normalColor = '<?= htmlspecialchars($bottom_bar_text_color) ?>';
         const guestName = <?= json_encode($nama_tamu) ?>;
 
         // Slide State
-        window.liveSlideIndices = { home: 0, prestasi: 0, unggulan: 0, pengajar: 0, fasilitas: 0 };
-        window.liveSlideTimers = {};
+        window.simSlideCurrentIndices = { home: 0, prestasi: 0, unggulan: 0, pengajar: 0, fasilitas: 0 };
+        window.simSlideTimers = { home: null, prestasi: null, unggulan: null, pengajar: null, fasilitas: null };
 
         // Helper Typography & Format
         function getFontFamily(fontName) {
@@ -899,7 +892,41 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         }
 
         // =======================================================
-        // SWITCH FRAME LOGIC (SEAMLESS PERSIS SIMULASI)
+        // ADAPTIVE RESPONSIVE CANVAS RESIZER
+        // Menjaga perbandingan 340px x 600px tetap 100% presisi
+        // =======================================================
+        function resizeCanvas() {
+            const box = document.getElementById('brosur-canvas-box');
+            if (!box) return;
+
+            const baseW = 340;
+            const baseH = 600;
+            const winW = window.innerWidth;
+            const winH = window.innerHeight;
+
+            // Hitung scale factor agar pas di layar tanpa terpotong
+            let scale;
+            if (winW <= 480) {
+                const scaleW = winW / baseW;
+                const scaleH = winH / baseH;
+                scale = Math.min(scaleW, scaleH);
+                box.style.borderRadius = (scaleH >= scaleW && winW <= 380) ? '0px' : '24px';
+            } else {
+                const maxH = winH * 0.94;
+                const maxW = winW * 0.94;
+                scale = Math.min(maxW / baseW, maxH / baseH, 1.28);
+                box.style.borderRadius = '28px';
+            }
+
+            box.style.transform = `scale(${scale})`;
+            box.style.transformOrigin = 'center center';
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('orientationchange', resizeCanvas);
+
+        // =======================================================
+        // SWITCH FRAME LOGIC (PERSIS 100% SIMULASI ADMIN)
         // =======================================================
         function switchFrame(frame) {
             if (!frameKeys.includes(frame)) frame = 'home';
@@ -908,40 +935,43 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             const data = framesData[frame];
             if (!data) return;
 
-            // 1. Update Background & Overlay
-            const bgScreen = document.getElementById('live-bg-screen');
-            const bgOverlay = document.getElementById('live-bg-overlay');
-            if (bgScreen) {
-                if (data.bgUrl) {
-                    bgScreen.style.backgroundImage = `url('${data.bgUrl}')`;
-                } else {
-                    bgScreen.style.backgroundImage = 'none';
-                }
-            }
-            if (bgOverlay) {
-                bgOverlay.style.opacity = data.bgOpacity;
-            }
+            // 1. Update Canvas Background & Overlay
+            updateCanvasBackground(data.bgUrl, data.bgOpacity);
 
             // 2. Update Bottom Bar Highlight
-            frameKeys.forEach(f => {
-                const btn = document.getElementById(`menu-btn-${f}`);
-                if (btn) {
-                    if (f === frame) {
-                        btn.style.color = activeNavColor;
-                        btn.classList.remove('opacity-70');
-                    } else {
-                        btn.style.color = normalNavColor;
-                        btn.classList.add('opacity-70');
-                    }
-                }
-            });
+            const navHome      = document.getElementById('sim-menu-home-btn');
+            const navPrestasi  = document.getElementById('sim-menu-prestasi-btn');
+            const navUnggulan  = document.getElementById('sim-menu-unggulan-btn');
+            const navPengajar  = document.getElementById('sim-menu-pengajar-btn');
+            const navFasilitas = document.getElementById('sim-menu-fasilitas-btn');
 
-            // 3. Render All Layers for the Current Frame
-            renderImages(data.images || []);
-            renderSlides(data.slides || []);
-            renderVideos(data.videos || []);
-            renderTexts(data.texts || []);
-            renderButtons(data.buttons || []);
+            if (navHome) {
+                navHome.style.color = (frame === 'home') ? activeColor : normalColor;
+                navHome.classList.toggle('opacity-70', frame !== 'home');
+            }
+            if (navPrestasi) {
+                navPrestasi.style.color = (frame === 'prestasi') ? activeColor : normalColor;
+                navPrestasi.classList.toggle('opacity-70', frame !== 'prestasi');
+            }
+            if (navUnggulan) {
+                navUnggulan.style.color = (frame === 'unggulan') ? activeColor : normalColor;
+                navUnggulan.classList.toggle('opacity-70', frame !== 'unggulan');
+            }
+            if (navPengajar) {
+                navPengajar.style.color = (frame === 'pengajar') ? activeColor : normalColor;
+                navPengajar.classList.toggle('opacity-70', frame !== 'pengajar');
+            }
+            if (navFasilitas) {
+                navFasilitas.style.color = (frame === 'fasilitas') ? activeColor : normalColor;
+                navFasilitas.classList.toggle('opacity-70', frame !== 'fasilitas');
+            }
+
+            // 3. Render All Simulation Layers
+            renderSimImageLayers(data.images || []);
+            renderSimSlideLayers(data.slides || []);
+            renderSimVideoLayers(data.videos || []);
+            renderSimLayers(data.texts || []);
+            renderSimButtonLayers(data.buttons || []);
 
             // 4. Update URL without reload
             if (history.replaceState) {
@@ -951,17 +981,44 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             }
         }
 
+        function updateCanvasBackground(url, opacity) {
+            const screenCover = document.getElementById('preview-screen-cover');
+            const overlay = document.getElementById('preview-cover-overlay');
+            const ambientScreen = document.getElementById('ambient-bg-screen');
+            const ambientOverlay = document.getElementById('ambient-bg-overlay');
+
+            if (screenCover) {
+                if (url) {
+                    screenCover.style.backgroundImage = `url('${url}')`;
+                    screenCover.style.backgroundSize = 'cover';
+                    screenCover.style.backgroundPosition = 'center';
+                } else {
+                    screenCover.style.backgroundImage = 'none';
+                }
+            }
+            if (overlay) {
+                overlay.style.opacity = opacity;
+            }
+            if (ambientScreen && url) {
+                ambientScreen.style.backgroundImage = `url('${url}')`;
+            }
+            if (ambientOverlay) {
+                ambientOverlay.style.opacity = opacity;
+            }
+        }
+
         // =======================================================
-        // RENDER 1: IMAGES
+        // 1. RENDER GAMBAR SISIPAN (PERSIS SIMULASI)
         // =======================================================
-        function renderImages(items) {
-            const container = document.getElementById('live-image-layers-container');
+        function renderSimImageLayers(imageItems) {
+            const container = document.getElementById('sim-image-layers-container');
             if (!container) return;
             container.innerHTML = '';
 
-            items.forEach((img, index) => {
+            imageItems.forEach((img, index) => {
                 const box = document.createElement('div');
-                box.className = 'absolute pointer-events-auto transition-transform fade-in-layer';
+                box.id = `sim-img-box-${img.id}`;
+                box.className = 'absolute pointer-events-auto transition-all fade-in-layer';
                 box.style.top = `${img.posY || 50}%`;
                 box.style.left = `${img.posX || 50}%`;
                 box.style.transform = `translate(-50%, -50%) rotate(${img.rotation || 0}deg)`;
@@ -980,8 +1037,8 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                 }
 
                 box.innerHTML = `
-                    <div class="w-full h-full overflow-hidden ${shapeClass} ${shadowClass}" style="${borderStyle}">
-                        <img src="${escapeHtml(img.url)}" class="w-full h-full object-cover select-none pointer-events-none" loading="lazy" alt="Foto">
+                    <div class="w-full h-full overflow-hidden ${shapeClass} ${shadowClass} transition-transform" style="${borderStyle}">
+                        <img src="${escapeHtml(img.url)}" class="w-full h-full object-cover select-none pointer-events-none" loading="lazy" alt="Gambar Sisipan">
                     </div>
                 `;
                 container.appendChild(box);
@@ -989,25 +1046,49 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         }
 
         // =======================================================
-        // RENDER 2: SLIDES SHOWCASE (CAROUSEL)
+        // 2. RENDER SLIDE SHOWCASE (PERSIS SIMULASI)
         // =======================================================
-        function renderSlides(items) {
-            const container = document.getElementById('live-slide-layers-container');
+        function setSimActiveSlide(frame, index) {
+            window.simSlideCurrentIndices[frame] = index;
+            if (framesData[frame]) {
+                renderSimSlideLayers(framesData[frame].slides || []);
+            }
+        }
+
+        function nextSimSlide(frame) {
+            const slides = (framesData[frame] && framesData[frame].slides) ? framesData[frame].slides : [];
+            if (slides.length <= 1) return;
+            let current = window.simSlideCurrentIndices[frame] || 0;
+            current = (current + 1) % slides.length;
+            setSimActiveSlide(frame, current);
+        }
+
+        function prevSimSlide(frame) {
+            const slides = (framesData[frame] && framesData[frame].slides) ? framesData[frame].slides : [];
+            if (slides.length <= 1) return;
+            let current = window.simSlideCurrentIndices[frame] || 0;
+            current = (current - 1 + slides.length) % slides.length;
+            setSimActiveSlide(frame, current);
+        }
+
+        function renderSimSlideLayers(slideItems) {
+            const container = document.getElementById('sim-slide-layers-container');
             if (!container) return;
 
-            // Bersihkan timer lama
-            if (window.liveSlideTimers[currentFrame]) {
-                clearInterval(window.liveSlideTimers[currentFrame]);
-                window.liveSlideTimers[currentFrame] = null;
+            if (window.simSlideTimers[currentFrame]) {
+                clearInterval(window.simSlideTimers[currentFrame]);
+                window.simSlideTimers[currentFrame] = null;
             }
 
             container.innerHTML = '';
-            if (!items || items.length === 0) return;
+            if (!slideItems || slideItems.length === 0) return;
 
-            const activeIndex = (window.liveSlideIndices[currentFrame] || 0) % items.length;
-            const primarySlide = items[0] || {};
+            const activeIndex = (window.simSlideCurrentIndices[currentFrame] || 0) % slideItems.length;
+            const primarySlide = slideItems[0] || {};
+            const currentSlide = slideItems[activeIndex] || primarySlide;
 
             const box = document.createElement('div');
+            box.id = `sim-box-${primarySlide.id || 'slide_showcase'}`;
             box.className = 'absolute pointer-events-auto transition-all overflow-hidden shadow-lg fade-in-layer';
             box.style.top = `${primarySlide.posY || 48}%`;
             box.style.left = `${primarySlide.posX || 50}%`;
@@ -1027,20 +1108,31 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             }
 
             let slidesHtml = '';
-            items.forEach((sld, sIdx) => {
+            slideItems.forEach((sld, sIdx) => {
                 const isActive = (sIdx === activeIndex);
                 slidesHtml += `
-                    <div class="absolute inset-0 w-full h-full transition-all duration-700 ease-in-out ${isActive ? 'opacity-100 scale-100 z-10' : 'opacity-0 scale-95 z-0 pointer-events-none'}" style="background-image: url('${escapeHtml(sld.url)}'); background-size: cover; background-position: center;">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10"></div>
-                        <div class="absolute inset-0 p-3.5 flex flex-col justify-end text-white z-10">
-                            ${sld.badge ? `<span class="self-start px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-500 text-teal-950 shadow-xs mb-1">${escapeHtml(sld.badge)}</span>` : ''}
-                            ${sld.title ? `<h4 class="text-sm font-black leading-tight drop-shadow-md">${escapeHtml(sld.title)}</h4>` : ''}
-                            ${sld.subtitle ? `<p class="text-[10px] text-slate-200 mt-0.5 line-clamp-2 leading-tight opacity-90">${escapeHtml(sld.subtitle)}</p>` : ''}
+                    <div class="absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}" style="background-image: url('${escapeHtml(sld.url || '')}'); background-size: cover; background-position: center;">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+                        
+                        ${sld.badge ? `
+                            <div class="absolute top-2.5 left-2.5 z-20">
+                                <span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-400 text-teal-950 shadow-xs backdrop-blur-xs">
+                                    ${escapeHtml(sld.badge)}
+                                </span>
+                            </div>
+                        ` : ''}
+
+                        <div class="absolute bottom-2.5 left-2.5 right-2.5 z-20 space-y-1">
+                            ${sld.title ? `<h4 class="text-white font-black text-xs sm:text-[13px] leading-tight drop-shadow-md truncate">${escapeHtml(sld.title)}</h4>` : ''}
+                            ${sld.subtitle ? `<p class="text-slate-200 text-[10px] leading-snug line-clamp-1 opacity-90">${escapeHtml(sld.subtitle)}</p>` : ''}
+                            
                             ${sld.btn_text ? `
-                                <a href="${escapeHtml(sld.btn_url || '#')}" target="_blank" class="mt-2 self-start px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[10.5px] shadow-md inline-flex items-center gap-1 active:scale-95 transition">
-                                    <span>${escapeHtml(sld.btn_text)}</span>
-                                    <i class="fas fa-chevron-right text-[8px]"></i>
-                                </a>
+                                <div class="pt-0.5">
+                                    <a href="${escapeHtml(sld.btn_url || '#')}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[9.5px] font-black bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs hover:opacity-90 active:scale-95 transition">
+                                        <span>${escapeHtml(sld.btn_text)}</span>
+                                        <i class="fas fa-arrow-right text-[8px]"></i>
+                                    </a>
+                                </div>
                             ` : ''}
                         </div>
                     </div>
@@ -1049,24 +1141,24 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
 
             // Dots Nav
             let dotsHtml = '';
-            if (primarySlide.show_dots !== 0 && items.length > 1) {
-                dotsHtml = `<div class="absolute bottom-2 left-0 right-0 z-20 flex items-center justify-center gap-1.5 pointer-events-auto">`;
-                items.forEach((_, dIdx) => {
-                    dotsHtml += `
-                        <button type="button" onclick="setLiveActiveSlide('${currentFrame}', ${dIdx})" class="w-2 h-2 rounded-full transition-all duration-300 ${dIdx === activeIndex ? 'bg-amber-400 w-5' : 'bg-white/50 hover:bg-white'}" title="Slide ${dIdx + 1}"></button>
-                    `;
-                });
-                dotsHtml += `</div>`;
+            if (primarySlide.show_dots !== 0 && slideItems.length > 1) {
+                dotsHtml = `
+                    <div class="absolute bottom-1.5 right-2.5 z-30 flex items-center gap-1 bg-black/40 px-1.5 py-0.5 rounded-full backdrop-blur-xs">
+                        ${slideItems.map((_, i) => `
+                            <button type="button" onclick="setSimActiveSlide('${currentFrame}', ${i})" class="w-1.5 h-1.5 rounded-full transition-all ${i === activeIndex ? 'bg-amber-400 w-3' : 'bg-white/50 hover:bg-white'}"></button>
+                        `).join('')}
+                    </div>
+                `;
             }
 
             // Arrows Nav
             let arrowsHtml = '';
-            if (primarySlide.show_arrows && items.length > 1) {
+            if (primarySlide.show_arrows && slideItems.length > 1) {
                 arrowsHtml = `
-                    <button type="button" onclick="prevLiveSlide('${currentFrame}')" class="absolute left-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-black/50 hover:bg-black/80 text-white text-[10px] flex items-center justify-center backdrop-blur-xs transition active:scale-90 pointer-events-auto cursor-pointer">
+                    <button type="button" onclick="prevSimSlide('${currentFrame}')" class="absolute left-1.5 top-1/2 -translate-y-1/2 z-30 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center text-[10px] transition active:scale-90 cursor-pointer">
                         <i class="fas fa-chevron-left"></i>
                     </button>
-                    <button type="button" onclick="nextLiveSlide('${currentFrame}')" class="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 w-6 h-6 rounded-full bg-black/50 hover:bg-black/80 text-white text-[10px] flex items-center justify-center backdrop-blur-xs transition active:scale-90 pointer-events-auto cursor-pointer">
+                    <button type="button" onclick="nextSimSlide('${currentFrame}')" class="absolute right-1.5 top-1/2 -translate-y-1/2 z-30 w-6 h-6 rounded-full bg-black/40 hover:bg-black/70 text-white flex items-center justify-center text-[10px] transition active:scale-90 cursor-pointer">
                         <i class="fas fa-chevron-right"></i>
                     </button>
                 `;
@@ -1075,48 +1167,25 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             box.innerHTML = slidesHtml + dotsHtml + arrowsHtml;
             container.appendChild(box);
 
-            // Autoplay Timer
-            if (primarySlide.autoplay !== 0 && items.length > 1) {
-                const intervalSec = Math.max(2, parseInt(primarySlide.interval) || 4);
-                window.liveSlideTimers[currentFrame] = setInterval(() => {
-                    nextLiveSlide(currentFrame);
-                }, intervalSec * 1000);
+            if (primarySlide.autoplay && slideItems.length > 1) {
+                const intervalMs = Math.max(2, (currentSlide.interval || 4)) * 1000;
+                window.simSlideTimers[currentFrame] = setInterval(() => {
+                    nextSimSlide(currentFrame);
+                }, intervalMs);
             }
         }
 
-        function setLiveActiveSlide(frame, index) {
-            window.liveSlideIndices[frame] = index;
-            if (framesData[frame]) {
-                renderSlides(framesData[frame].slides || []);
-            }
-        }
-
-        function nextLiveSlide(frame) {
-            const slides = (framesData[frame] && framesData[frame].slides) ? framesData[frame].slides : [];
-            if (slides.length <= 1) return;
-            let current = window.liveSlideIndices[frame] || 0;
-            current = (current + 1) % slides.length;
-            setLiveActiveSlide(frame, current);
-        }
-
-        function prevLiveSlide(frame) {
-            const slides = (framesData[frame] && framesData[frame].slides) ? framesData[frame].slides : [];
-            if (slides.length <= 1) return;
-            let current = window.liveSlideIndices[frame] || 0;
-            current = (current - 1 + slides.length) % slides.length;
-            setLiveActiveSlide(frame, current);
-        }
-
         // =======================================================
-        // RENDER 3: VIDEOS
+        // 3. RENDER VIDEO SISIPAN (PERSIS SIMULASI)
         // =======================================================
-        function renderVideos(items) {
-            const container = document.getElementById('live-video-layers-container');
+        function renderSimVideoLayers(videoItems) {
+            const container = document.getElementById('sim-video-layers-container');
             if (!container) return;
             container.innerHTML = '';
 
-            items.forEach((vid, index) => {
+            videoItems.forEach((vid, index) => {
                 const box = document.createElement('div');
+                box.id = `sim-vid-box-${vid.id}`;
                 box.className = 'absolute pointer-events-auto transition-transform fade-in-layer';
                 box.style.top = `${vid.posY || 50}%`;
                 box.style.left = `${vid.posX || 50}%`;
@@ -1167,15 +1236,16 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         }
 
         // =======================================================
-        // RENDER 4: TEXTS
+        // 4. RENDER TULISAN DINAMIS (PERSIS SIMULASI)
         // =======================================================
-        function renderTexts(items) {
-            const container = document.getElementById('live-text-layers-container');
+        function renderSimLayers(textItems) {
+            const container = document.getElementById('sim-text-layers-container');
             if (!container) return;
             container.innerHTML = '';
 
-            items.forEach((item, index) => {
+            textItems.forEach((item, index) => {
                 const box = document.createElement('div');
+                box.id = `sim-box-${item.id}`;
                 box.className = 'absolute pointer-events-auto fade-in-layer';
                 box.style.top = `${item.posY || 35}%`;
                 box.style.left = `${item.posX || 50}%`;
@@ -1184,7 +1254,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                 box.style.zIndex = 30 + index;
 
                 box.innerHTML = `
-                    <div style="color: ${item.color || '#ffffff'}; font-family: ${getFontFamily(item.font)}; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word; text-shadow: 0 2px 10px rgba(0,0,0,0.5);">
+                    <div style="color: ${item.color || '#ffffff'}; font-family: ${getFontFamily(item.font)}; text-align: ${item.align || 'center'}; font-size: ${item.size || 24}px; word-break: break-word;">
                         ${getFormatHtml(item.content, item.format)}
                     </div>
                 `;
@@ -1193,16 +1263,17 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
         }
 
         // =======================================================
-        // RENDER 5: BUTTONS
+        // 5. RENDER TOMBOL AKSI INTERAKTIF (PERSIS SIMULASI)
         // =======================================================
-        function renderButtons(items) {
-            const container = document.getElementById('live-button-layers-container');
+        function renderSimButtonLayers(buttonItems) {
+            const container = document.getElementById('sim-button-layers-container');
             if (!container) return;
             container.innerHTML = '';
 
-            items.forEach((btn, index) => {
+            buttonItems.forEach((btn, index) => {
                 const box = document.createElement('div');
-                box.className = 'absolute pointer-events-auto transition-transform active:scale-95 fade-in-layer';
+                box.id = `sim-box-${btn.id}`;
+                box.className = 'absolute pointer-events-auto transition-all fade-in-layer';
                 box.style.top = `${btn.posY || 80}%`;
                 box.style.left = `${btn.posX || 50}%`;
                 box.style.transform = 'translate(-50%, -50%)';
@@ -1333,23 +1404,21 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             const diffX = touchEndX - touchStartX;
             const diffY = touchEndY - touchStartY;
 
-            // Pastikan swipe horizontal lebih dominan daripada vertical
-            if (Math.abs(diffX) > 60 && Math.abs(diffX) > Math.abs(diffY) * 1.5) {
+            if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY) * 1.4) {
                 const currentIndex = frameKeys.indexOf(currentFrame);
                 if (diffX < 0) {
-                    // Swipe ke Kiri -> Frame Berikutnya
                     const nextIndex = (currentIndex + 1) % frameKeys.length;
                     switchFrame(frameKeys[nextIndex]);
                 } else {
-                    // Swipe ke Kanan -> Frame Sebelumnya
                     const prevIndex = (currentIndex - 1 + frameKeys.length) % frameKeys.length;
                     switchFrame(frameKeys[prevIndex]);
                 }
             }
         }, { passive: true });
 
-        // INITIAL LOAD
+        // INITIAL LOAD & SCALE
         document.addEventListener('DOMContentLoaded', () => {
+            resizeCanvas();
             switchFrame(currentFrame);
         });
     </script>
