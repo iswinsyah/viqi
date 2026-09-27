@@ -1571,10 +1571,103 @@ $std_merge_map = [
         'texts'     => $fasilitas_text_items,
         'images'    => $fasilitas_image_items,
         'videos'    => $fasilitas_video_items,
-        'buttons'      => $fasilitas_button_items,
+        'buttons'   => $fasilitas_button_items,
         'slides'    => $fasilitas_slide_items
+    ],
+    'biaya' => [
+        'name'      => 'Biaya',
+        'title'     => 'Frame: Biaya',
+        'subtitle'  => 'Frame ini menampilkan informasi rincian biaya pendidikan, uang pangkal & SPP yang otomatis tersinkron langsung dengan website.',
+        'badge'     => 'Info Biaya Pendidikan (Live Sync)',
+        'icon'      => 'fa-wallet',
+        'theme'     => 'emerald',
+        'bgUrl'     => 'upload/bg_brosur_1790424374_668.png',
+        'bgOpacity' => 0.0,
+        'embed_biaya' => 1,
+        'texts'     => [
+            [
+                'id'      => 'text_biaya_title',
+                'content' => 'Informasi Biaya Pendidikan',
+                'format'  => 'h2',
+                'color'   => '#27968f',
+                'font'    => 'Marlin Condensed',
+                'align'   => 'center',
+                'size'    => 24,
+                'posX'    => 50.0,
+                'posY'    => 9.5,
+                'width'   => 88
+            ],
+            [
+                'id'      => 'text_biaya_subtitle',
+                'content' => 'Investasi Terbaik untuk Generasi Qur\'ani Berakhlak Mulia & Mandiri',
+                'format'  => 'p',
+                'color'   => '#334155',
+                'font'    => 'Plus Jakarta Sans',
+                'align'   => 'center',
+                'size'    => 9.5,
+                'posX'    => 50.0,
+                'posY'    => 16.5,
+                'width'   => 88
+            ]
+        ],
+        'images'    => [],
+        'videos'    => [],
+        'buttons'   => [
+            [
+                'id'            => 'btn_biaya_wa',
+                'text'          => 'Konsultasi Rincian Biaya (WhatsApp)',
+                'url'           => 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20konsultasi%20rincian%20biaya%20pendidikan%20Villa%20Quran',
+                'icon'          => 'fab fa-whatsapp',
+                'shape'         => 'rounded_pill',
+                'bg_color'      => '#25d366',
+                'text_color'    => '#ffffff',
+                'border_enable' => 0,
+                'border_width'  => 0,
+                'border_color'  => '#ffffff',
+                'shadow_style'  => 'glow_wa',
+                'font_size'     => 12,
+                'font'          => 'Plus Jakarta Sans',
+                'posX'          => 50.0,
+                'posY'          => 84.5,
+                'width'         => 82,
+                'height'        => 42,
+                'target'        => '_blank'
+            ]
+        ],
+        'slides'    => []
     ]
 ];
+
+// Ambil data komponen biaya live dari tabel biaya
+$biaya_data_live = [
+    'pendaftaran' => [],
+    'pangkal'     => [],
+    'tahunan'     => [],
+    'spp'         => []
+];
+$biaya_totals_live = [
+    'pendaftaran' => 0,
+    'pangkal'     => 0,
+    'tahunan'     => 0,
+    'spp'         => 0,
+    'grand_total' => 0
+];
+$biaya_rows_q = $conn->query("SELECT * FROM biaya ORDER BY id ASC");
+if ($biaya_rows_q && $biaya_rows_q->num_rows > 0) {
+    while ($brow = $biaya_rows_q->fetch_assoc()) {
+        $k = strtolower(trim($brow['kategori']));
+        if (!isset($biaya_data_live[$k])) $biaya_data_live[$k] = [];
+        $biaya_data_live[$k][] = [
+            'id' => (int)$brow['id'],
+            'nama' => $brow['nama_komponen'],
+            'nominal' => (int)$brow['nominal']
+        ];
+        if (isset($biaya_totals_live[$k])) {
+            $biaya_totals_live[$k] += (int)$brow['nominal'];
+        }
+        $biaya_totals_live['grand_total'] += (int)$brow['nominal'];
+    }
+}
 
 foreach ($std_merge_map as $fid => $fdefs) {
     if (!isset($all_frames_dict[$fid])) {
@@ -1588,6 +1681,7 @@ foreach ($std_merge_map as $fid => $fdefs) {
             'theme'        => $fdefs['theme'],
             'bgUrl'        => $fdefs['bgUrl'],
             'bgOpacity'    => $fdefs['bgOpacity'],
+            'embed_biaya'  => $fdefs['embed_biaya'] ?? 0,
             'texts'        => $fdefs['texts'],
             'images'       => $fdefs['images'],
             'videos'       => $fdefs['videos'],
@@ -1908,7 +2002,78 @@ $active_menu = 'brosur_settings';
                                 <?= count($slide_items) ?>
                             </span>
                         </button>
+
+                        <!-- TAB 7: INFO BIAYA (LIVE SYNC) -->
+                        <button type="button" id="tab-btn-biaya" onclick="switchTab('biaya')" class="tab-nav-btn flex-1 min-w-[90px] sm:min-w-[100px] py-2.5 sm:py-3 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all duration-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 cursor-pointer whitespace-nowrap">
+                            <i class="fas fa-wallet text-sm sm:text-base text-emerald-600"></i>
+                            <span>Biaya</span>
+                            <span class="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-800">
+                                Live
+                            </span>
+                        </button>
                     </div>
+
+                <!-- ========================================== -->
+                <!-- KONTEN TAB 7: PENGATURAN INFO BIAYA LIVE   -->
+                <!-- ========================================== -->
+                <div id="tab-content-biaya" class="tab-pane hidden space-y-6">
+                    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-sm space-y-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg shadow-2xs">
+                                    <i class="fas fa-wallet"></i>
+                                </div>
+                                <div>
+                                    <h2 class="font-black text-base sm:text-lg text-slate-900">Integrasi Live Info Biaya Pendidikan</h2>
+                                    <p class="text-xs text-slate-500">Data rincian biaya ditarik otomatis secara real-time dari database menu <strong>Info Biaya</strong> di website.</p>
+                                </div>
+                            </div>
+                            <a href="admin-biaya.php" target="_blank" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 flex items-center gap-1.5 transition shrink-0 self-start sm:self-auto">
+                                <i class="fas fa-arrow-up-right-from-square"></i> Kelola Data Biaya Web
+                            </a>
+                        </div>
+
+                        <!-- Status Box Live Sync -->
+                        <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm shadow-xs">
+                                    <i class="fas fa-sync-alt fa-spin"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-xs sm:text-sm text-emerald-950">Status Integrasi: Terhubung Otomatis</h4>
+                                    <p class="text-[11px] text-emerald-800">Setiap ada penambahan, perubahan nominal atau penghapusan di menu Info Biaya, tampilan kartu di brosur digital akan otomatis sinkron.</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-black bg-white text-emerald-800 border border-emerald-300 shadow-2xs shrink-0 self-start sm:self-auto">
+                                4 Kategori Terpasang
+                            </span>
+                        </div>
+
+                        <!-- Ringkasan Komponen Biaya Saat Ini -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Pendaftaran</span>
+                                <p class="text-sm font-black text-slate-900 font-mono">Rp <?= number_format($biaya_totals_live['pendaftaran'], 0, ',', '.') ?></p>
+                                <span class="text-[10px] text-teal-600 font-medium"><?= count($biaya_data_live['pendaftaran']) ?> Komponen</span>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Uang Pangkal</span>
+                                <p class="text-sm font-black text-slate-900 font-mono">Rp <?= number_format($biaya_totals_live['pangkal'], 0, ',', '.') ?></p>
+                                <span class="text-[10px] text-amber-600 font-medium"><?= count($biaya_data_live['pangkal']) ?> Komponen</span>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Biaya Tahunan</span>
+                                <p class="text-sm font-black text-slate-900 font-mono">Rp <?= number_format($biaya_totals_live['tahunan'], 0, ',', '.') ?></p>
+                                <span class="text-[10px] text-purple-600 font-medium"><?= count($biaya_data_live['tahunan']) ?> Komponen</span>
+                            </div>
+                            <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">SPP Bulanan</span>
+                                <p class="text-sm font-black text-slate-900 font-mono">Rp <?= number_format($biaya_totals_live['spp'], 0, ',', '.') ?></p>
+                                <span class="text-[10px] text-sky-600 font-medium"><?= count($biaya_data_live['spp']) ?> Komponen</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- ========================================== -->
                 <!-- KONTEN TAB 1: PENGATURAN BACKGROUND BROSUR -->
@@ -2598,6 +2763,11 @@ $active_menu = 'brosur_settings';
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimVideoLayers() -->
                             </div>
 
+                            <!-- CONTAINER LAYER LIVE INFO BIAYA EMBED DI LAYAR SIMULASI -->
+                            <div id="sim-biaya-layers-container" class="absolute inset-0 pointer-events-none z-28">
+                                <!-- Diisi secara dinamis oleh JavaScript renderSimBiayaLayers() -->
+                            </div>
+
                             <!-- CONTAINER LAYER TULISAN DI LAYAR SIMULASI -->
                             <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none z-30">
                                 <!-- Diisi secara dinamis oleh JavaScript renderSimLayers() -->
@@ -2752,6 +2922,8 @@ $active_menu = 'brosur_settings';
         // ==========================================
         
         let framesData = <?= json_encode($all_frames_dict, JSON_UNESCAPED_UNICODE) ?>;
+        const liveBiayaData = <?= json_encode($biaya_data_live, JSON_UNESCAPED_UNICODE) ?>;
+        const liveBiayaTotals = <?= json_encode($biaya_totals_live, JSON_UNESCAPED_UNICODE) ?>;
         let frameOrder = Object.keys(framesData);
 
         let currentActiveFrame = '<?= $active_frame ?>';
@@ -2770,7 +2942,8 @@ $active_menu = 'brosur_settings';
         // Konfigurasi Ikon & Tema
         const availableFrameIcons = [
             'fa-house', 'fa-trophy', 'fa-star', 'fa-chalkboard-user', 'fa-building-columns',
-            'fa-futbol', 'fa-money-bill-wave', 'fa-book-quran', 'fa-graduation-cap', 'fa-campground',
+            'fa-wallet', 'fa-receipt', 'fa-money-bill-wave', 'fa-hand-holding-dollar', 'fa-comments',
+            'fa-futbol', 'fa-book-quran', 'fa-graduation-cap', 'fa-campground',
             'fa-camera', 'fa-calendar-days', 'fa-mosque', 'fa-utensils', 'fa-heart-pulse',
             'fa-handshake', 'fa-map-location-dot', 'fa-certificate', 'fa-shield-halved', 'fa-bullseye',
             'fa-award', 'fa-users', 'fa-envelope-open-text', 'fa-phone', 'fa-globe'
@@ -3021,6 +3194,8 @@ $active_menu = 'brosur_settings';
 
             renderSlideRows();
             renderSimSlideLayers();
+
+            renderSimBiayaLayers();
         }
 
         // ==========================================
@@ -3280,10 +3455,10 @@ $active_menu = 'brosur_settings';
         }
 
         function switchTab(tab) {
-            if (!['bg', 'text', 'image', 'video', 'button', 'slide'].includes(tab)) tab = 'bg';
+            if (!['bg', 'text', 'image', 'video', 'button', 'slide', 'biaya'].includes(tab)) tab = 'bg';
             currentActiveTab = tab;
 
-            const tabs = ['bg', 'text', 'image', 'video', 'button', 'slide'];
+            const tabs = ['bg', 'text', 'image', 'video', 'button', 'slide', 'biaya'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-btn-${t}`);
                 const pane = document.getElementById(`tab-content-${t}`);
@@ -5783,7 +5958,160 @@ $active_menu = 'brosur_settings';
         }
 
         // ==========================================
-        // 7. DRAGGABLE ENGINE DENGAN SMART SNAP & GARIS BANTU
+        // 7. RENDER BIAYA LIVE EMBED LAYER (SIMULASI)
+        // ==========================================
+        window.currentBiayaCategory = 'all';
+
+        function formatRupiah(num) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
+        }
+
+        function setBiayaCategory(cat) {
+            window.currentBiayaCategory = cat;
+            const catKeys = ['all', 'pangkal', 'tahunan', 'spp', 'pendaftaran'];
+            catKeys.forEach(k => {
+                const btn = document.getElementById(`biaya-tab-btn-${k}`);
+                if (btn) {
+                    if (k === cat) {
+                        btn.className = 'px-2.5 py-1 rounded-lg bg-emerald-500 text-white font-black shadow-xs transition';
+                    } else {
+                        btn.className = 'px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition';
+                    }
+                }
+            });
+            renderBiayaItemsContent();
+        }
+
+        function renderBiayaItemsContent() {
+            const box = document.getElementById('biaya-items-list-box');
+            const grandTotalEl = document.getElementById('biaya-grand-total-val');
+            if (!box) return;
+
+            box.innerHTML = '';
+            const cat = window.currentBiayaCategory || 'all';
+
+            const categoryMeta = {
+                pendaftaran: { title: '1. Pendaftaran & Seleksi', color: 'text-teal-300', badge: 'bg-teal-900/80 text-teal-200 border-teal-500/40' },
+                pangkal:     { title: '2. Uang Pangkal (Masuk)',   color: 'text-amber-300', badge: 'bg-amber-900/80 text-amber-200 border-amber-500/40' },
+                tahunan:     { title: '3. Biaya Tahunan',         color: 'text-purple-300', badge: 'bg-purple-900/80 text-purple-200 border-purple-500/40' },
+                spp:         { title: '4. SPP Bulanan (Makan & Asrama)', color: 'text-sky-300', badge: 'bg-sky-900/80 text-sky-200 border-sky-500/40' }
+            };
+
+            let totalFiltered = 0;
+            const catsToRender = (cat === 'all') ? ['pangkal', 'tahunan', 'spp', 'pendaftaran'] : [cat];
+
+            catsToRender.forEach(cKey => {
+                const items = liveBiayaData[cKey] || [];
+                const meta = categoryMeta[cKey];
+                if (!items || items.length === 0) return;
+
+                const subtotal = liveBiayaTotals[cKey] || 0;
+                totalFiltered += subtotal;
+
+                const sec = document.createElement('div');
+                sec.className = 'bg-white/5 p-2.5 rounded-xl border border-white/10 space-y-1.5 backdrop-blur-xs';
+
+                let rowsHtml = '';
+                items.forEach(it => {
+                    rowsHtml += `
+                        <div class="flex items-center justify-between text-[9.5px] py-1 border-b border-white/5 last:border-0">
+                            <span class="text-slate-200 font-medium truncate pr-1 flex items-center gap-1.5">
+                                <i class="fas fa-circle-check text-[8px] ${meta.color}"></i>
+                                <span>${escapeHtml(it.nama)}</span>
+                            </span>
+                            <span class="font-bold text-white shrink-0 font-mono">${formatRupiah(it.nominal)}</span>
+                        </div>
+                    `;
+                });
+
+                sec.innerHTML = `
+                    <div class="flex items-center justify-between border-b border-white/10 pb-1.5">
+                        <span class="text-[10px] font-black ${meta.color} flex items-center gap-1">
+                            ${meta.title}
+                        </span>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded-full border ${meta.badge} font-mono">
+                            ${formatRupiah(subtotal)}
+                        </span>
+                    </div>
+                    <div class="space-y-0.5 pt-1">
+                        ${rowsHtml}
+                    </div>
+                `;
+                box.appendChild(sec);
+            });
+
+            if (box.children.length === 0) {
+                box.innerHTML = `
+                    <div class="p-6 text-center text-slate-400 text-[10px] italic">
+                        Belum ada data komponen biaya pada kategori ini.
+                    </div>
+                `;
+            }
+
+            if (grandTotalEl) {
+                grandTotalEl.innerText = formatRupiah(totalFiltered);
+            }
+        }
+
+        function renderSimBiayaLayers() {
+            const container = document.getElementById('sim-biaya-layers-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const fData = framesData[currentActiveFrame];
+            const isBiayaFrame = (currentActiveFrame === 'biaya') || (fData && fData.embed_biaya) || (fData && (fData.name || '').toLowerCase().includes('biaya'));
+
+            if (!isBiayaFrame) return;
+
+            const card = document.createElement('div');
+            card.id = 'sim-biaya-card';
+            card.className = 'absolute pointer-events-auto transition-all fade-in-layer shadow-2xl rounded-2xl overflow-hidden border border-emerald-500/40 backdrop-blur-md bg-slate-950/85 text-white flex flex-col';
+            card.style.top = '51.5%';
+            card.style.left = '50%';
+            card.style.transform = 'translate(-50%, -50%)';
+            card.style.width = '88%';
+            card.style.height = '315px';
+            card.style.zIndex = '28';
+
+            card.innerHTML = `
+                <!-- Header with Live Badge -->
+                <div class="bg-gradient-to-r from-emerald-800/90 via-teal-800/90 to-emerald-900/90 p-2.5 border-b border-white/10 flex items-center justify-between shrink-0">
+                    <div class="flex items-center gap-1.5">
+                        <i class="fas fa-wallet text-amber-300 text-xs"></i>
+                        <span class="text-[10.5px] font-black uppercase tracking-wider text-white">Rincian Biaya Pendidikan</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-[8px] font-bold text-emerald-200 bg-emerald-950/90 px-2 py-0.5 rounded-full border border-emerald-400/40">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span>Live Sync Web</span>
+                    </div>
+                </div>
+
+                <!-- Filter Sub-Tabs -->
+                <div class="flex items-center gap-1 p-1 bg-black/60 border-b border-white/5 overflow-x-auto no-scrollbar shrink-0 text-[8.5px] font-bold">
+                    <button type="button" id="biaya-tab-btn-all" onclick="setBiayaCategory('all')" class="px-2.5 py-1 rounded-lg bg-emerald-500 text-white font-black shadow-xs transition">Semua</button>
+                    <button type="button" id="biaya-tab-btn-pangkal" onclick="setBiayaCategory('pangkal')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">Pangkal</button>
+                    <button type="button" id="biaya-tab-btn-tahunan" onclick="setBiayaCategory('tahunan')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">Tahunan</button>
+                    <button type="button" id="biaya-tab-btn-spp" onclick="setBiayaCategory('spp')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">SPP</button>
+                    <button type="button" id="biaya-tab-btn-pendaftaran" onclick="setBiayaCategory('pendaftaran')" class="px-2.5 py-1 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition">Pendaftaran</button>
+                </div>
+
+                <!-- Scrollable Items List -->
+                <div id="biaya-items-list-box" class="p-2 space-y-2 overflow-y-auto overflow-x-hidden flex-1 no-scrollbar text-left">
+                </div>
+
+                <!-- Footer Total -->
+                <div class="bg-black/90 p-2 border-t border-white/10 flex items-center justify-between shrink-0 text-[10px]">
+                    <span class="text-slate-300 font-medium">Estimasi Total Biaya:</span>
+                    <span id="biaya-grand-total-val" class="font-black text-amber-300 text-xs font-mono">Rp 0</span>
+                </div>
+            `;
+
+            container.appendChild(card);
+            setBiayaCategory(window.currentBiayaCategory || 'all');
+        }
+
+        // ==========================================
+        // 8. DRAGGABLE ENGINE DENGAN SMART SNAP & GARIS BANTU
         // ==========================================
 
         function initDragForLayer(box, item, layerType) {
