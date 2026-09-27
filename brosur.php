@@ -72,8 +72,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 }
 
 // 1. DATA FRAME DEPAN (HOME)
-$cover_bg_url = !empty($cfg['cover_bg_url']) ? $cfg['cover_bg_url'] : 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=1200&auto=format&fit=crop&q=80';
-$cover_overlay_opacity = isset($cfg['cover_overlay_opacity']) ? (float)$cfg['cover_overlay_opacity'] : 0.88;
+$cover_bg_url = !empty($cfg['cover_bg_url']) ? $cfg['cover_bg_url'] : 'upload/bg_brosur_1790424374_668.png';
+$cover_overlay_opacity = isset($cfg['cover_overlay_opacity']) ? (float)$cfg['cover_overlay_opacity'] : 0.0;
 
 $raw_items = $cfg['custom_text_items'] ?? null;
 if ($raw_items !== null && $raw_items !== '') {
@@ -82,16 +82,40 @@ if ($raw_items !== null && $raw_items !== '') {
 } else {
     $text_items = [
         [
-            'id'      => 'text_home_1',
-            'content' => !empty($cfg['custom_text_content']) ? $cfg['custom_text_content'] : 'Villa Quran Indonesia',
-            'format'  => !empty($cfg['custom_text_format']) ? $cfg['custom_text_format'] : 'h2',
-            'color'   => !empty($cfg['custom_text_color']) ? $cfg['custom_text_color'] : '#ffffff',
-            'font'    => !empty($cfg['custom_text_font']) ? $cfg['custom_text_font'] : 'Plus Jakarta Sans',
-            'align'   => !empty($cfg['custom_text_align']) ? $cfg['custom_text_align'] : 'center',
-            'size'    => !empty($cfg['custom_text_size']) ? (int)$cfg['custom_text_size'] : 24,
-            'posX'    => isset($cfg['custom_text_pos_x']) ? (float)$cfg['custom_text_pos_x'] : 50.0,
-            'posY'    => isset($cfg['custom_text_pos_y']) ? (float)$cfg['custom_text_pos_y'] : 35.0,
-            'width'   => !empty($cfg['custom_text_width']) ? (int)$cfg['custom_text_width'] : 85
+            'id'      => 'text_home_alhamdulillah',
+            'content' => 'Alhamdulillah',
+            'format'  => 'h2',
+            'color'   => '#27968f',
+            'font'    => 'Marlin Condensed',
+            'align'   => 'center',
+            'size'    => 28,
+            'posX'    => 50,
+            'posY'    => 10.5,
+            'width'   => 85
+        ],
+        [
+            'id'      => 'text_home_competition',
+            'content' => "International Mathematics, Science, Social Studies, and Language Competition",
+            'format'  => 'p',
+            'color'   => '#334155',
+            'font'    => 'Plus Jakarta Sans',
+            'align'   => 'center',
+            'size'    => 9,
+            'posX'    => 50,
+            'posY'    => 19.5,
+            'width'   => 88
+        ],
+        [
+            'id'      => 'text_home_prestasi',
+            'content' => 'Baru 2 Tahun Raih Banyak Prestasi',
+            'format'  => 'h2',
+            'color'   => '#ffffff',
+            'font'    => 'Marlin Condensed',
+            'align'   => 'center',
+            'size'    => 20,
+            'posX'    => 50,
+            'posY'    => 72.0,
+            'width'   => 88
         ]
     ];
 }
@@ -101,7 +125,22 @@ if ($raw_images !== null && $raw_images !== '') {
     $image_items = json_decode($raw_images, true);
     if (!is_array($image_items)) $image_items = [];
 } else {
-    $image_items = [];
+    $image_items = [
+        [
+            'id'            => 'img_home_santriwati',
+            'url'           => 'http://villaquranindonesia.com//uploads/media_69e85ba108590.jpg',
+            'shape'         => 'rounded',
+            'border_enable' => 0,
+            'border_width'  => 0,
+            'border_color'  => '#ffffff',
+            'border_style'  => 'solid',
+            'shadow_style'  => 'medium',
+            'rotation'      => 0,
+            'posX'          => 50,
+            'posY'          => 45.0,
+            'width'         => 88
+        ]
+    ];
 }
 
 $raw_videos = $cfg['custom_video_items'] ?? null;
@@ -119,24 +158,24 @@ if ($raw_buttons !== null && $raw_buttons !== '') {
 } else {
     $button_items = [
         [
-            'id'            => 'btn_home_1',
-            'text'          => 'Chat WhatsApp Panitia',
-            'url'           => 'https://wa.me/6281234567890?text=Assalamu%27alaikum%2C%20saya%20ingin%20info%20pendaftaran%20Villa%20Quran',
-            'icon'          => 'fab fa-whatsapp',
+            'id'            => 'btn_home_buka',
+            'text'          => 'BUKA',
+            'url'           => 'brosur.php?frame=prestasi',
+            'icon'          => '',
             'shape'         => 'rounded_pill',
-            'bg_color'      => '#25d366',
+            'bg_color'      => '#022d27',
             'text_color'    => '#ffffff',
             'border_enable' => 0,
-            'border_width'  => 2,
+            'border_width'  => 0,
             'border_color'  => '#ffffff',
             'shadow_style'  => 'glow_wa',
             'font_size'     => 13,
             'font'          => 'Plus Jakarta Sans',
-            'posX'          => 50.0,
-            'posY'          => 82.0,
-            'width'         => 82,
-            'height'        => 46,
-            'target'        => '_blank'
+            'posX'          => 50,
+            'posY'          => 83.5,
+            'width'         => 38,
+            'height'        => 42,
+            'target'        => '_self'
         ]
     ];
 }
@@ -683,208 +722,6 @@ if (empty($all_frames_dict)) {
             $all_frames_dict[$dfKey] = $dfVal;
         }
     }
-}
-
-// Auto-heal recovery: Periksa jika data frame 'home' di database sempat tertukar dengan data 'Kegiatan'
-$is_home_corrupted = false;
-// Auto-heal recovery: Periksa jika data frame 'home' di database sempat tertukar dengan data 'Kegiatan' atau 'Testimoni'
-$is_home_corrupted = false;
-$corrupted_type = '';
-if (isset($all_frames_dict['home']['texts']) && is_array($all_frames_dict['home']['texts'])) {
-    foreach ($all_frames_dict['home']['texts'] as $t) {
-        $c = $t['content'] ?? '';
-        if (stripos($c, 'Kegiatan') !== false || stripos($c, 'Muroja') !== false) {
-            $is_home_corrupted = true;
-            $corrupted_type = 'kegiatan';
-            break;
-        }
-        if (stripos($c, 'Testimoni') !== false || stripos($c, 'Wali Santri') !== false || stripos($c, 'Mahasiswi') !== false) {
-            $is_home_corrupted = true;
-            $corrupted_type = 'testimoni';
-            break;
-        }
-    }
-}
-
-if ($is_home_corrupted) {
-    if ($corrupted_type === 'kegiatan') {
-        $kegiatan_key = 'frame_1790486082531';
-        if (!isset($all_frames_dict[$kegiatan_key])) {
-            $all_frames_dict[$kegiatan_key] = [
-                'id'           => $kegiatan_key,
-                'name'         => 'Kegiatan',
-                'title'        => 'Frame: Kegiatan',
-                'subtitle'     => 'Frame ini mengatur tampilan Kegiatan santri.',
-                'badge'        => 'Kegiatan Santri',
-                'icon'         => 'fa-bullseye',
-                'theme'        => 'emerald',
-                'iconGradient' => 'from-emerald-500 to-[#0b8478]',
-                'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
-                'bgUrl'        => $all_frames_dict['home']['bgUrl'] ?? 'upload/bg_brosur_1790424374_668.png',
-                'bgOpacity'    => 0.02,
-                'texts'        => $all_frames_dict['home']['texts'] ?? [],
-                'images'       => $all_frames_dict['home']['images'] ?? [],
-                'videos'       => $all_frames_dict['home']['videos'] ?? [],
-                'buttons'      => $all_frames_dict['home']['buttons'] ?? [],
-                'slides'       => $all_frames_dict['home']['slides'] ?? []
-            ];
-        }
-    } else if ($corrupted_type === 'testimoni') {
-        // Temukan frame Testimoni yang sesuai
-        $testimoni_key = '';
-        foreach ($all_frames_dict as $fk => $fv) {
-            if ($fk !== 'home' && stripos($fv['name'] ?? '', 'Testimoni') !== false) {
-                $testimoni_key = $fk;
-                break;
-            }
-        }
-        if (empty($testimoni_key)) {
-            $testimoni_key = 'frame_1790514355332';
-        }
-
-        // Tata rapi posY teks testimoni
-        $saved_texts = $all_frames_dict['home']['texts'] ?? [];
-        $curY = 8.0;
-        foreach ($saved_texts as &$st) {
-            $st['posY'] = round($curY, 1);
-            $st['posX'] = $st['posX'] ?? 50;
-            $len = strlen($st['content'] ?? '');
-            $fmt = strtolower($st['format'] ?? 'h2');
-            $lines = ($len > 35) ? ceil($len / 35) : 1;
-            $sz = (int)($st['size'] ?? 16);
-            $h = max(3.5, ($sz / 600 * 100) * $lines * 1.35);
-            $margin = ($fmt === 'h1' || $fmt === 'h2') ? 4.0 : (($fmt === 'h5') ? 1.5 : 3.0);
-            $curY += $h + $margin;
-        }
-        unset($st);
-
-        $all_frames_dict[$testimoni_key] = [
-            'id'           => $testimoni_key,
-            'name'         => 'Testimoni',
-            'title'        => 'Frame: Testimoni',
-            'subtitle'     => 'Frame ini mengatur tampilan Testimoni & Kata Wali Santri.',
-            'badge'        => 'Testimoni & Review',
-            'icon'         => 'fa-comments',
-            'theme'        => 'emerald',
-            'iconGradient' => 'from-emerald-500 to-[#0b8478]',
-            'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
-            'bgUrl'        => $all_frames_dict['home']['bgUrl'] ?? 'upload/bg_brosur_1790424374_668.png',
-            'bgOpacity'    => 0.02,
-            'texts'        => $saved_texts,
-            'images'       => $all_frames_dict['home']['images'] ?? [],
-            'videos'       => $all_frames_dict['home']['videos'] ?? [],
-            'buttons'      => $all_frames_dict['home']['buttons'] ?? [],
-            'slides'       => $all_frames_dict['home']['slides'] ?? []
-        ];
-    }
-
-    // 2. Pulihkan frame 'home' (Depan) ke elemen aslinya sesuai simulasi
-    $all_frames_dict['home'] = [
-        'id'           => 'home',
-        'name'         => 'Depan',
-        'title'        => 'Frame: Depan',
-        'subtitle'     => 'Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).',
-        'badge'        => 'Cover / Halaman Depan',
-        'menuPill'     => 'Menu #1 di Bottom Bar',
-        'icon'         => 'fa-house',
-        'theme'        => 'emerald',
-        'iconGradient' => 'from-emerald-500 to-[#0b8478]',
-        'badgeClass'   => 'bg-emerald-100 text-emerald-900 border-emerald-300',
-        'bgUrl'        => 'upload/bg_brosur_1790424374_668.png',
-        'bgOpacity'    => 0.0,
-        'texts'        => [
-            [
-                'id'      => 'text_home_alhamdulillah',
-                'content' => 'Alhamdulillah',
-                'format'  => 'h2',
-                'color'   => '#27968f',
-                'font'    => 'Marlin Condensed',
-                'align'   => 'center',
-                'size'    => 28,
-                'posX'    => 50,
-                'posY'    => 10.5,
-                'width'   => 85
-            ],
-            [
-                'id'      => 'text_home_competition',
-                'content' => "International Mathematics, Science, Social Studies, and Language Competition",
-                'format'  => 'p',
-                'color'   => '#334155',
-                'font'    => 'Plus Jakarta Sans',
-                'align'   => 'center',
-                'size'    => 9,
-                'posX'    => 50,
-                'posY'    => 19.5,
-                'width'   => 88
-            ],
-            [
-                'id'      => 'text_home_prestasi',
-                'content' => 'Baru 2 Tahun Raih Banyak Prestasi',
-                'format'  => 'h2',
-                'color'   => '#ffffff',
-                'font'    => 'Marlin Condensed',
-                'align'   => 'center',
-                'size'    => 20,
-                'posX'    => 50,
-                'posY'    => 72.0,
-                'width'   => 88
-            ]
-        ],
-        'images'       => [
-            [
-                'id'            => 'img_home_santriwati',
-                'url'           => 'http://villaquranindonesia.com//uploads/media_69e85ba108590.jpg',
-                'shape'         => 'rounded',
-                'border_enable' => 0,
-                'border_width'  => 0,
-                'border_color'  => '#ffffff',
-                'border_style'  => 'solid',
-                'shadow_style'  => 'medium',
-                'rotation'      => 0,
-                'posX'          => 50,
-                'posY'          => 45.0,
-                'width'         => 88
-            ]
-        ],
-        'videos'       => [],
-        'buttons'      => [
-            [
-                'id'            => 'btn_home_buka',
-                'text'          => 'BUKA',
-                'url'           => 'brosur.php?frame=prestasi',
-                'icon'          => '',
-                'shape'         => 'rounded_pill',
-                'bg_color'      => '#022d27',
-                'text_color'    => '#ffffff',
-                'border_enable' => 0,
-                'border_width'  => 0,
-                'border_color'  => '#ffffff',
-                'shadow_style'  => 'glow_wa',
-                'font_size'     => 13,
-                'font'          => 'Plus Jakarta Sans',
-                'posX'          => 50,
-                'posY'          => 83.5,
-                'width'         => 38,
-                'height'        => 42,
-                'target'        => '_self'
-            ]
-        ],
-        'slides'       => []
-    ];
-
-    // Simpan auto-repair ke database agar perbaikan permanen
-    $clean_heal_json = $conn->real_escape_string(json_encode($all_frames_dict, JSON_UNESCAPED_UNICODE));
-    $clean_home_texts = $conn->real_escape_string(json_encode($all_frames_dict['home']['texts'], JSON_UNESCAPED_UNICODE));
-    $clean_home_imgs  = $conn->real_escape_string(json_encode($all_frames_dict['home']['images'], JSON_UNESCAPED_UNICODE));
-    $clean_home_btns  = $conn->real_escape_string(json_encode($all_frames_dict['home']['buttons'], JSON_UNESCAPED_UNICODE));
-    $conn->query("UPDATE pengaturan_brosur SET 
-                    all_frames_json = '$clean_heal_json',
-                    custom_text_items = '$clean_home_texts',
-                    custom_image_items = '$clean_home_imgs',
-                    custom_button_items = '$clean_home_btns',
-                    cover_bg_url = 'upload/bg_brosur_1790424374_668.png',
-                    cover_overlay_opacity = 0.0
-                  WHERE id = 1");
 }
 
 $active_frame_param = isset($_GET['frame']) ? trim($_GET['frame']) : 'home';
