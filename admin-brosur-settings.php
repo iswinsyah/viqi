@@ -1310,61 +1310,44 @@ $active_menu = 'brosur_settings';
                     <button type="button" id="frame-btn-home" onclick="switchFrame('home')" class="flex-1 py-2.5 px-3 rounded-2xl font-black text-xs sm:text-sm transition flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md ring-2 ring-emerald-400 cursor-pointer">
                         <i class="fas fa-house text-xs"></i>
                         <span>Depan</span>
-                        <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-900/80 text-emerald-200">Cover</span>
                     </button>
 
                     <!-- Tombol Frame 2: Prestasi -->
                     <button type="button" id="frame-btn-prestasi" onclick="switchFrame('prestasi')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
                         <i class="fas fa-trophy text-xs text-amber-400"></i>
                         <span>Prestasi</span>
-                        <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-900/60 text-amber-200">Menu #2</span>
                     </button>
 
                     <!-- Tombol Frame 3: Unggulan -->
                     <button type="button" id="frame-btn-unggulan" onclick="switchFrame('unggulan')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
                         <i class="fas fa-star text-xs text-amber-400"></i>
                         <span>Unggulan</span>
-                        <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-orange-900/60 text-amber-200">Menu #3</span>
                     </button>
 
                     <!-- Tombol Frame 4: Pengajar -->
                     <button type="button" id="frame-btn-pengajar" onclick="switchFrame('pengajar')" class="flex-1 py-2.5 px-3 rounded-2xl font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-white/10 cursor-pointer">
                         <i class="fas fa-chalkboard-user text-xs text-teal-400"></i>
                         <span>Pengajar</span>
-                        <span class="hidden md:inline px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-900/60 text-teal-200">Menu #4</span>
                     </button>
                 </div>
 
                 <!-- ============================================================== -->
-                <!-- MASTER CONTAINER: 5 TAB PENGATURAN FRAME (HOME / PRESTASI)    -->
+                <!-- MASTER CONTAINER: 5 TAB PENGATURAN FRAME                      -->
                 <!-- ============================================================== -->
                 <div class="bg-white/90 backdrop-blur-md rounded-3xl p-5 sm:p-6 border-2 border-emerald-500/30 shadow-sm space-y-5">
                     
                     <!-- FRAME HEADER: DINAMIS SESUAI FRAME TERPILIH -->
-                    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
                         <div class="flex items-center gap-3.5 min-w-0">
                             <div id="frame-header-icon-box" class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-[#0b8478] text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/20 shrink-0">
                                 <i id="frame-header-icon" class="fas fa-house"></i>
                             </div>
                             <div class="min-w-0 flex-1">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <h2 id="frame-header-title" class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Depan</h2>
-                                    <span id="frame-header-badge" class="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300">
-                                        Cover / Halaman Depan
-                                    </span>
-                                </div>
-                                <p id="frame-header-desc" class="text-xs text-slate-500 mt-1 leading-normal">
-                                    Frame ini mengatur tampilan layar pertama saat calon wali santri membuka brosur digital (Menu <strong>Depan</strong> pada Bottom Navigation Bar).
-                                </p>
+                                <h2 id="frame-header-title" class="font-black text-lg sm:text-xl text-slate-900 tracking-tight">Frame: Depan</h2>
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
-                            <span id="frame-header-menu-pill" class="px-3 py-2 rounded-xl text-xs font-bold bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-1.5 shadow-2xs whitespace-nowrap">
-                                <i class="fas fa-compass text-amber-600"></i>
-                                <span id="frame-header-menu-text">Menu #1 di Bottom Bar</span>
-                            </span>
-
+                        <div class="flex items-center gap-2.5 shrink-0">
                             <!-- TOMBOL MASTER SAVE UNTUK SELURUH PENGATURAN -->
                             <button type="button" id="btn-master-save" onclick="saveAllSettings()" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-[#0b8478] via-emerald-600 to-teal-700 hover:from-[#086b61] hover:to-teal-800 text-white font-black text-xs sm:text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 transform active:scale-95 cursor-pointer ring-2 ring-emerald-300 whitespace-nowrap" title="Simpan Semua Pengaturan (Background, Tulisan, Gambar, Video, Tombol) dalam 1 Klik">
                                 <i class="fas fa-floppy-disk text-amber-300 text-base"></i>
