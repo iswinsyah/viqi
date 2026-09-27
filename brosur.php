@@ -993,19 +993,6 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             }
         }
 
-        /* Smooth Scroll Viewport & Canvas */
-        #sim-scroll-viewport {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            overflow-y: auto;
-            overflow-x: hidden;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-        }
-
         /* No Scrollbar Utility */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -1057,31 +1044,26 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             <!-- LAPISAN OVERLAY DINAMIS -->
             <div id="preview-cover-overlay" class="absolute inset-0 bg-gradient-to-b from-[#022c22] via-[#043d35] to-[#021d19] transition-all duration-300" style="opacity: <?= $cover_overlay_opacity ?>;"></div>
 
-            <!-- SCROLLABLE VIEWPORT FOR AUTO-SCROLLING & TOUCH INTERACTION -->
-            <div id="sim-scroll-viewport" class="no-scrollbar">
-                <div id="sim-scroll-canvas" class="relative w-full h-full min-h-full">
-                    <!-- CONTAINER LAYER GAMBAR SISIPAN DI LAYAR SIMULASI -->
-                    <div id="sim-image-layers-container" class="absolute inset-0 pointer-events-none z-20"></div>
+            <!-- CONTAINER LAYER GAMBAR SISIPAN DI LAYAR SIMULASI -->
+            <div id="sim-image-layers-container" class="absolute inset-0 pointer-events-none z-20"></div>
 
-                    <!-- CONTAINER LAYER SLIDE SHOWCASE DI LAYAR SIMULASI -->
-                    <div id="sim-slide-layers-container" class="absolute inset-0 pointer-events-none z-22"></div>
+            <!-- CONTAINER LAYER SLIDE SHOWCASE DI LAYAR SIMULASI -->
+            <div id="sim-slide-layers-container" class="absolute inset-0 pointer-events-none z-22"></div>
 
-                    <!-- CONTAINER LAYER VIDEO SISIPAN DI LAYAR SIMULASI -->
-                    <div id="sim-video-layers-container" class="absolute inset-0 pointer-events-none z-25"></div>
+            <!-- CONTAINER LAYER VIDEO SISIPAN DI LAYAR SIMULASI -->
+            <div id="sim-video-layers-container" class="absolute inset-0 pointer-events-none z-25"></div>
 
-                    <!-- CONTAINER LAYER LIVE INFO BIAYA EMBED DI LAYAR SIMULASI -->
-                    <div id="sim-biaya-layers-container" class="absolute inset-0 pointer-events-none z-28"></div>
+            <!-- CONTAINER LAYER LIVE INFO BIAYA EMBED DI LAYAR SIMULASI -->
+            <div id="sim-biaya-layers-container" class="absolute inset-0 pointer-events-none z-28"></div>
 
-                    <!-- CONTAINER LAYER TULISAN DI LAYAR SIMULASI -->
-                    <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none z-30"></div>
+            <!-- CONTAINER LAYER TULISAN DI LAYAR SIMULASI -->
+            <div id="sim-text-layers-container" class="absolute inset-0 pointer-events-none z-30"></div>
 
-                    <!-- CONTAINER LAYER COUNTDOWN DI LAYAR SIMULASI -->
-                    <div id="sim-countdown-layers-container" class="absolute inset-0 pointer-events-none z-32"></div>
+            <!-- CONTAINER LAYER COUNTDOWN DI LAYAR SIMULASI -->
+            <div id="sim-countdown-layers-container" class="absolute inset-0 pointer-events-none z-32"></div>
 
-                    <!-- CONTAINER LAYER TOMBOL DI LAYAR SIMULASI -->
-                    <div id="sim-button-layers-container" class="absolute inset-0 pointer-events-none z-35"></div>
-                </div>
-            </div>
+            <!-- CONTAINER LAYER TOMBOL DI LAYAR SIMULASI -->
+            <div id="sim-button-layers-container" class="absolute inset-0 pointer-events-none z-35"></div>
 
             <!-- DOCKED BOTTOM NAVIGATION BAR DI LAYAR SIMULASI (DINAMIS SEMUA FRAME) -->
             <div id="sim-bottom-bar" class="absolute bottom-0 left-0 right-0 z-40 pt-2 pb-1.5 px-0.5 border-t border-white/10 backdrop-blur-md flex flex-nowrap items-center overflow-x-auto no-scrollbar shadow-[0_-8px_20px_rgba(0,0,0,0.4)] transition-all select-none cursor-grab active:cursor-grabbing" style="background-color: <?= htmlspecialchars($bottom_bar_bg_color) ?>; color: <?= htmlspecialchars($bottom_bar_text_color) ?>; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; touch-action: pan-x;">
@@ -1400,10 +1382,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             // 2. Update Bottom Bar
             renderPublicBottomBar();
 
-            // 3. Adjust Canvas Height for Smooth Scrolling
-            adjustScrollCanvasHeight(frame, data);
-
-            // 4. Render All Simulation Layers
+            // 3. Render All Simulation Layers
             renderSimImageLayers(data.images || []);
             renderSimSlideLayers(data.slides || []);
             renderSimVideoLayers(data.videos || []);
@@ -1412,169 +1391,11 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             renderSimCountdownLayers(frame);
             renderSimButtonLayers(data.buttons || []);
 
-            // 5. Reset Scroll Viewport Position
-            const viewport = document.getElementById('sim-scroll-viewport');
-            if (viewport) {
-                viewport.scrollTop = 0;
-            }
-
-            // 6. Manage Auto-Scrolling (Aktif pada Frame Prestasi & frame lainnya, Nonaktif pada Depan/Cover)
-            if (frame !== 'home') {
-                startInteractiveAutoScroll();
-            } else {
-                stopInteractiveAutoScroll();
-            }
-
-            // 7. Update URL without reload
+            // 4. Update URL without reload
             if (history.replaceState) {
                 const url = new URL(window.location.href);
                 url.searchParams.set('frame', frame);
                 history.replaceState(null, null, url.toString());
-            }
-        }
-
-        function adjustScrollCanvasHeight(frame, data) {
-            const canvas = document.getElementById('sim-scroll-canvas');
-            if (!canvas) return;
-
-            if (frame === 'home') {
-                canvas.style.height = '600px';
-                canvas.style.minHeight = '600px';
-                return;
-            }
-
-            let maxPosY = 82;
-            if (data.buttons && data.buttons.length > 0) {
-                data.buttons.forEach(b => { maxPosY = Math.max(maxPosY, b.posY || 80); });
-            }
-            if (data.slides && data.slides.length > 0) {
-                data.slides.forEach(s => { maxPosY = Math.max(maxPosY, (s.posY || 50) + 16); });
-            }
-            if (data.videos && data.videos.length > 0) {
-                data.videos.forEach(v => { maxPosY = Math.max(maxPosY, (v.posY || 50) + 16); });
-            }
-            if (data.images && data.images.length > 0) {
-                data.images.forEach(im => { maxPosY = Math.max(maxPosY, (im.posY || 50) + 16); });
-            }
-            if (data.texts && data.texts.length > 0) {
-                data.texts.forEach(t => { maxPosY = Math.max(maxPosY, (t.posY || 35) + 12); });
-            }
-            if (frame === 'biaya' || data.embed_biaya) {
-                maxPosY = Math.max(maxPosY, 94);
-            }
-
-            const basePixelHeight = Math.max(680, Math.round((maxPosY / 100) * 600) + 85);
-            canvas.style.height = `${basePixelHeight}px`;
-            canvas.style.minHeight = `${basePixelHeight}px`;
-        }
-
-        // =======================================================
-        // INTERACTIVE AUTO-SCROLL ENGINE WITH TOUCH PAUSE / RESUME
-        // =======================================================
-        let autoScrollRaf = null;
-        let isUserInteracting = false;
-        let userInteractionTimer = null;
-        let autoScrollPauseTimer = null;
-        let isAutoScrollPausedAtEnd = false;
-
-        function initInteractiveAutoScroll() {
-            const viewport = document.getElementById('sim-scroll-viewport');
-            if (!viewport || viewport._autoScrollListenersAttached) return;
-            viewport._autoScrollListenersAttached = true;
-
-            function handleInteractionStart() {
-                isUserInteracting = true;
-                if (userInteractionTimer) {
-                    clearTimeout(userInteractionTimer);
-                    userInteractionTimer = null;
-                }
-                if (autoScrollPauseTimer) {
-                    clearTimeout(autoScrollPauseTimer);
-                    autoScrollPauseTimer = null;
-                    isAutoScrollPausedAtEnd = false;
-                }
-            }
-
-            function handleInteractionEnd() {
-                if (userInteractionTimer) clearTimeout(userInteractionTimer);
-                // Jeda saat disentuh, lalu setelah 1.8 detik dilepas akan mulai scrolling perlahan seperti semula
-                userInteractionTimer = setTimeout(() => {
-                    isUserInteracting = false;
-                }, 1800);
-            }
-
-            // Touch events (Mobile smartphone)
-            viewport.addEventListener('touchstart', handleInteractionStart, { passive: true });
-            viewport.addEventListener('touchmove', handleInteractionStart, { passive: true });
-            viewport.addEventListener('touchend', handleInteractionEnd, { passive: true });
-            viewport.addEventListener('touchcancel', handleInteractionEnd, { passive: true });
-
-            // Mouse & wheel events (Desktop)
-            viewport.addEventListener('mousedown', handleInteractionStart, { passive: true });
-            viewport.addEventListener('wheel', () => {
-                handleInteractionStart();
-                handleInteractionEnd();
-            }, { passive: true });
-            window.addEventListener('mouseup', handleInteractionEnd, { passive: true });
-        }
-
-        function startInteractiveAutoScroll() {
-            stopInteractiveAutoScroll();
-            initInteractiveAutoScroll();
-
-            const viewport = document.getElementById('sim-scroll-viewport');
-            if (!viewport || currentFrame === 'home') return;
-
-            isUserInteracting = false;
-            isAutoScrollPausedAtEnd = false;
-
-            // Kecepatan sedang, halus & nyaman dibaca (0.42px per frame @ 60fps)
-            const scrollStep = 0.42;
-
-            function step() {
-                if (currentFrame === 'home') return;
-
-                const maxScroll = viewport.scrollHeight - viewport.clientHeight;
-
-                if (maxScroll > 15 && !isUserInteracting && !isAutoScrollPausedAtEnd) {
-                    viewport.scrollTop += scrollStep;
-
-                    if (viewport.scrollTop >= maxScroll - 1) {
-                        // Jeda 2.2 detik di ujung bawah agar user sempat membaca info/tombol bawah
-                        isAutoScrollPausedAtEnd = true;
-                        autoScrollPauseTimer = setTimeout(() => {
-                            // Scroll kembali ke atas dengan anggun
-                            viewport.scrollTo({ top: 0, behavior: 'smooth' });
-                            setTimeout(() => {
-                                isAutoScrollPausedAtEnd = false;
-                            }, 1200);
-                        }, 2200);
-                    }
-                }
-
-                autoScrollRaf = requestAnimationFrame(step);
-            }
-
-            // Beri jeda 700ms setelah frame terbuka sebelum mulai auto-scroll
-            setTimeout(() => {
-                if (currentFrame !== 'home' && !autoScrollRaf) {
-                    autoScrollRaf = requestAnimationFrame(step);
-                }
-            }, 700);
-        }
-
-        function stopInteractiveAutoScroll() {
-            if (autoScrollRaf) {
-                cancelAnimationFrame(autoScrollRaf);
-                autoScrollRaf = null;
-            }
-            if (userInteractionTimer) {
-                clearTimeout(userInteractionTimer);
-                userInteractionTimer = null;
-            }
-            if (autoScrollPauseTimer) {
-                clearTimeout(autoScrollPauseTimer);
-                autoScrollPauseTimer = null;
             }
         }
 
