@@ -825,8 +825,9 @@ if (empty($all_frames_dict)) {
 foreach ($all_frames_dict as $afk => $afv) {
     if (!isset($all_frames_dict[$afk]['countdown'])) {
         $all_frames_dict[$afk]['countdown'] = [
+            'mode'         => !empty($cfg['countdown_mode']) ? $cfg['countdown_mode'] : 'auto',
             'enabled'      => ($afk === 'home' && !empty($cfg['show_countdown'])) ? 1 : 0,
-            'title'        => !empty($cfg['countdown_title']) ? $cfg['countdown_title'] : '⏳ Sisa Waktu Pendaftaran Berakhir:',
+            'title'        => !empty($cfg['countdown_title']) ? $cfg['countdown_title'] : '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:',
             'target'       => !empty($cfg['countdown_target']) ? $cfg['countdown_target'] : '2026-12-31 23:59:59',
             'style'        => 'glass_dark',
             'posX'         => 50.0,
@@ -1820,8 +1821,55 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             });
         }
 
-        // 6. RENDER COUNTDOWN
+        // 6. RENDER COUNTDOWN (SINKRON GELOMBANG SPMB WEBSITE)
         let brosurCountdownInterval = null;
+
+        // Mendeteksi Gelombang SPMB Website Secara Otomatis Sesuai Kalender Akademik
+        function getWebGelombangInfo() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1; // 1 - 12
+            let endDate, wave, targetStr, endDateLabel;
+
+            // Logika Penentuan Gelombang Tahunan (Sama Persis dengan index.html & daftar-spmb.html)
+            if (month >= 7 && month <= 12) {
+                endDate = new Date(year, 11, 31, 23, 59, 59); // 31 Desember
+                wave = "Gelombang 1";
+                targetStr = `${year}-12-31 23:59:59`;
+                endDateLabel = `31 Des ${year}`;
+            } else if (month >= 1 && month <= 3) {
+                endDate = new Date(year, 2, 31, 23, 59, 59); // 31 Maret
+                wave = "Gelombang 2";
+                targetStr = `${year}-03-31 23:59:59`;
+                endDateLabel = `31 Mar ${year}`;
+            } else {
+                endDate = new Date(year, 5, 30, 23, 59, 59); // 30 Juni
+                wave = "Gelombang 3";
+                targetStr = `${year}-06-30 23:59:59`;
+                endDateLabel = `30 Jun ${year}`;
+            }
+
+            return {
+                now,
+                year,
+                month,
+                endDate,
+                wave,
+                targetStr,
+                endDateLabel
+            };
+        }
+
+        function formatCountdownTitleWithWave(rawTitle, waveName) {
+            if (!rawTitle) rawTitle = '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:';
+            let formatted = rawTitle;
+            if (/\{gelombang\}|\{wave\}/i.test(formatted)) {
+                formatted = formatted.replace(/\{gelombang\}|\{wave\}/gi, waveName);
+            } else if (formatted.trim() === '⏳ Sisa Waktu Pendaftaran Berakhir:') {
+                formatted = `⏳ Sisa Waktu Pendaftaran ${waveName} Berakhir:`;
+            }
+            return formatted;
+        }
 
         function renderSimCountdownLayers(frameKey) {
             const container = document.getElementById('sim-countdown-layers-container');
@@ -1840,12 +1888,14 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                 return;
             }
 
+            const webInfo = getWebGelombangInfo();
+            const mode = cd.mode || 'auto';
             const posX = cd.posX ?? 50;
             const posY = cd.posY ?? 72;
             const width = cd.width ?? 88;
-            const title = cd.title || '⏳ Sisa Waktu Pendaftaran Berakhir:';
+            const rawTitle = cd.title || '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:';
+            const displayTitle = formatCountdownTitleWithWave(rawTitle, webInfo.wave);
             const style = cd.style || 'glass_dark';
-            const targetStr = cd.target || '2026-12-31 23:59:59';
             const expiredText = cd.expired_text || 'Pendaftaran Telah Ditutup!';
 
             let boxThemeClass = 'bg-black/60 backdrop-blur-md border border-amber-400/40 text-white shadow-xl';
@@ -1888,7 +1938,15 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
             container.appendChild(card);
 
             function updateTicks() {
-                const targetDate = new Date(targetStr.replace(/-/g, '/')).getTime();
+                let targetDate;
+                if (mode === 'auto') {
+                    const currentWeb = getWebGelombangInfo();
+                    targetDate = currentWeb.endDate.getTime();
+                } else {
+                    const targetStr = cd.target || webInfo.targetStr;
+                    targetDate = new Date(targetStr.replace(/-/g, '/')).getTime();
+                }
+
                 const now = new Date().getTime();
                 const diff = targetDate - now;
 
@@ -1915,7 +1973,7 @@ $music_url               = !empty($cfg['music_url']) ? $cfg['music_url'] : 'uplo
                 card.innerHTML = `
                     <div class="text-[10px] font-extrabold mb-1.5 flex items-center justify-center gap-1.5 ${titleColorClass}">
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
-                        <span>${escapeHtml(title)}</span>
+                        <span>${escapeHtml(displayTitle)}</span>
                     </div>
                     <div class="grid grid-cols-4 gap-1.5 select-none">
                         <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">

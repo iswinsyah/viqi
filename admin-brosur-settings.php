@@ -498,8 +498,9 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                     if (strlen($cd_target) === 16) $cd_target .= ':00';
                 }
                 $clean_countdown = [
+                    'mode'         => in_array($dec_cd['mode'] ?? '', ['auto', 'manual']) ? $dec_cd['mode'] : 'auto',
                     'enabled'      => !empty($dec_cd['enabled']) ? 1 : 0,
-                    'title'        => trim($dec_cd['title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:'),
+                    'title'        => trim($dec_cd['title'] ?? '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:'),
                     'target'       => $cd_target,
                     'style'        => in_array($dec_cd['style'] ?? '', ['glass_dark', 'emerald_glow', 'amber_gold', 'white_clean', 'minimalist']) ? $dec_cd['style'] : 'glass_dark',
                     'posX'         => round(max(0, min(100, (float)($dec_cd['posX'] ?? 50.0))), 2),
@@ -516,8 +517,9 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 if (strlen($cd_target) === 16) $cd_target .= ':00';
             }
             $clean_countdown = [
+                'mode'         => in_array($_POST['countdown_mode'] ?? '', ['auto', 'manual']) ? $_POST['countdown_mode'] : 'auto',
                 'enabled'      => !empty($_POST['countdown_enabled']) ? 1 : 0,
-                'title'        => trim($_POST['countdown_title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:'),
+                'title'        => trim($_POST['countdown_title'] ?? '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:'),
                 'target'       => $cd_target,
                 'style'        => in_array($_POST['countdown_style'] ?? '', ['glass_dark', 'emerald_glow', 'amber_gold', 'white_clean', 'minimalist']) ? $_POST['countdown_style'] : 'glass_dark',
                 'posX'         => round(max(0, min(100, (float)($_POST['countdown_pos_x'] ?? 50.0))), 2),
@@ -560,10 +562,11 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         }
 
         if ($active_frame === 'home') {
+            $cd_mode_db = $conn->real_escape_string($clean_countdown['mode']);
             $cd_en_db = $clean_countdown['enabled'];
             $cd_tar_db = $conn->real_escape_string($clean_countdown['target']);
             $cd_tit_db = $conn->real_escape_string($clean_countdown['title']);
-            $conn->query("UPDATE pengaturan_brosur SET show_countdown = $cd_en_db, countdown_target = '$cd_tar_db', countdown_title = '$cd_tit_db' WHERE id = 1");
+            $conn->query("UPDATE pengaturan_brosur SET countdown_mode = '$cd_mode_db', show_countdown = $cd_en_db, countdown_target = '$cd_tar_db', countdown_title = '$cd_tit_db' WHERE id = 1");
         }
 
         $ok = $conn->query($sql_master);
@@ -602,8 +605,9 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                     if (strlen($cd_target) === 16) $cd_target .= ':00';
                 }
                 $clean_countdown = [
+                    'mode'         => in_array($dec_cd['mode'] ?? '', ['auto', 'manual']) ? $dec_cd['mode'] : 'auto',
                     'enabled'      => !empty($dec_cd['enabled']) ? 1 : 0,
-                    'title'        => trim($dec_cd['title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:'),
+                    'title'        => trim($dec_cd['title'] ?? '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:'),
                     'target'       => $cd_target,
                     'style'        => in_array($dec_cd['style'] ?? '', ['glass_dark', 'emerald_glow', 'amber_gold', 'white_clean', 'minimalist']) ? $dec_cd['style'] : 'glass_dark',
                     'posX'         => round(max(0, min(100, (float)($dec_cd['posX'] ?? 50.0))), 2),
@@ -620,8 +624,9 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
                 if (strlen($cd_target) === 16) $cd_target .= ':00';
             }
             $clean_countdown = [
+                'mode'         => in_array($_POST['countdown_mode'] ?? '', ['auto', 'manual']) ? $_POST['countdown_mode'] : 'auto',
                 'enabled'      => !empty($_POST['countdown_enabled']) ? 1 : 0,
-                'title'        => trim($_POST['countdown_title'] ?? '⏳ Sisa Waktu Pendaftaran Berakhir:'),
+                'title'        => trim($_POST['countdown_title'] ?? '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:'),
                 'target'       => $cd_target,
                 'style'        => in_array($_POST['countdown_style'] ?? '', ['glass_dark', 'emerald_glow', 'amber_gold', 'white_clean', 'minimalist']) ? $_POST['countdown_style'] : 'glass_dark',
                 'posX'         => round(max(0, min(100, (float)($_POST['countdown_pos_x'] ?? 50.0))), 2),
@@ -648,10 +653,11 @@ if (($_SERVER["REQUEST_METHOD"] ?? '') === "POST") {
         $ok = $conn->query("UPDATE pengaturan_brosur SET all_frames_json = '$final_all_esc' WHERE id = 1");
 
         if ($active_frame === 'home') {
+            $cd_mode_db = $conn->real_escape_string($clean_countdown['mode']);
             $cd_en_db = $clean_countdown['enabled'];
             $cd_tar_db = $conn->real_escape_string($clean_countdown['target']);
             $cd_tit_db = $conn->real_escape_string($clean_countdown['title']);
-            $conn->query("UPDATE pengaturan_brosur SET show_countdown = $cd_en_db, countdown_target = '$cd_tar_db', countdown_title = '$cd_tit_db' WHERE id = 1");
+            $conn->query("UPDATE pengaturan_brosur SET countdown_mode = '$cd_mode_db', show_countdown = $cd_en_db, countdown_target = '$cd_tar_db', countdown_title = '$cd_tit_db' WHERE id = 1");
         }
 
         $frame_label = ($active_frame === 'prestasi') ? 'Frame Prestasi' : (($active_frame === 'unggulan') ? 'Frame Unggulan' : (($active_frame === 'pengajar') ? 'Frame Pengajar' : (($active_frame === 'fasilitas') ? 'Frame Fasilitas' : 'Frame Depan')));
@@ -1778,8 +1784,9 @@ foreach ($std_merge_map as $smKey => $smVal) {
     }
     if (!isset($all_frames_dict[$smKey]['countdown'])) {
         $all_frames_dict[$smKey]['countdown'] = [
+            'mode'         => !empty($cfg['countdown_mode']) ? $cfg['countdown_mode'] : 'auto',
             'enabled'      => ($smKey === 'home' && !empty($cfg['show_countdown'])) ? 1 : 0,
-            'title'        => !empty($cfg['countdown_title']) ? $cfg['countdown_title'] : '⏳ Sisa Waktu Pendaftaran Berakhir:',
+            'title'        => !empty($cfg['countdown_title']) ? $cfg['countdown_title'] : '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:',
             'target'       => !empty($cfg['countdown_target']) ? $cfg['countdown_target'] : '2026-12-31 23:59:59',
             'style'        => 'glass_dark',
             'posX'         => 50.0,
@@ -2249,10 +2256,14 @@ $active_menu = 'brosur_settings';
                                     <i class="fas fa-stopwatch"></i>
                                 </div>
                                 <div>
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-2 flex-wrap">
                                         <h2 class="font-black text-base sm:text-lg text-slate-900">Pengaturan Countdown Timer Frame</h2>
                                         <span id="countdown-status-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-slate-100 text-slate-600 border border-slate-200">
                                             Nonaktif
+                                        </span>
+                                        <span id="countdown-wave-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                            <i class="fas fa-satellite-dish text-[10px] text-amber-600 animate-pulse"></i>
+                                            <span id="label-live-wave-badge">Gelombang Web</span>
                                         </span>
                                     </div>
                                     <p class="text-xs text-slate-500">Tampilkan hitung mundur waktu pendaftaran / promo batas waktu pada frame ini.</p>
@@ -2283,28 +2294,106 @@ $active_menu = 'brosur_settings';
                                 </label>
                             </div>
 
-                            <!-- 2. Judul / Teks Label -->
-                            <div class="space-y-1.5">
-                                <label class="block text-xs font-bold text-slate-700">Judul / Teks Label Countdown</label>
-                                <input type="text" id="input-cd-title" oninput="updateCountdownField('title', this.value)" placeholder="Contoh: ⏳ Sisa Waktu Pendaftaran Berakhir:" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 font-semibold">
-                                <p class="text-[11px] text-slate-400">Gunakan emoji seperti ⏳, 🔥, ⚡ untuk menarik perhatian calon wali santri.</p>
+                            <!-- 2. Pilihan Mode Countdown (Otomatis Web vs Manual) -->
+                            <div class="space-y-2">
+                                <label class="block text-xs font-bold text-slate-700">Mode Sinkronisasi Countdown</label>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <!-- Mode Otomatis Web -->
+                                    <label class="p-3.5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 cursor-pointer flex items-start gap-3 transition bg-white cd-mode-option" id="cd-mode-opt-auto" onclick="setCountdownMode('auto')">
+                                        <input type="radio" name="cd_mode_radio" value="auto" class="sr-only">
+                                        <div class="w-4 h-4 rounded-full border border-emerald-500 flex items-center justify-center shrink-0 mt-0.5 cd-mode-indicator-auto">
+                                            <div class="w-2 h-2 rounded-full bg-emerald-600"></div>
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="text-xs font-black text-slate-900">⚡ Otomatis Gelombang Web</span>
+                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-100 text-emerald-800">Rekomendasi</span>
+                                            </div>
+                                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                                Otomatis sinkron dengan jadwal SPMB Website: <strong>Gelombang 1</strong> (Jul-Des), <strong>Gelombang 2</strong> (Jan-Mar), <strong>Gelombang 3</strong> (Apr-Jun).
+                                            </p>
+                                        </div>
+                                    </label>
+
+                                    <!-- Mode Manual -->
+                                    <label class="p-3.5 rounded-2xl border-2 border-slate-200 hover:border-rose-400 cursor-pointer flex items-start gap-3 transition bg-white cd-mode-option" id="cd-mode-opt-manual" onclick="setCountdownMode('manual')">
+                                        <input type="radio" name="cd_mode_radio" value="manual" class="sr-only">
+                                        <div class="w-4 h-4 rounded-full border border-slate-300 flex items-center justify-center shrink-0 mt-0.5 cd-mode-indicator-manual"></div>
+                                        <div class="flex-1">
+                                            <span class="text-xs font-black text-slate-900">🛠️ Mode Manual / Kustom</span>
+                                            <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                                                Tentukan tanggal dan jam target batas waktu countdown secara manual sesuai keinginan Anda.
+                                            </p>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
 
-                            <!-- 3. Tanggal & Jam Target Selesai + Preset -->
+                            <!-- Banner Status Gelombang Web Aktif -->
+                            <div id="box-cd-auto-info" class="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm shrink-0 shadow-2xs">
+                                        <i class="fas fa-globe"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-xs font-black text-emerald-950" id="info-current-wave-title">Gelombang Aktif: Gelombang 1</p>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-200 text-emerald-900" id="info-current-wave-date">s/d 31 Des 2026</span>
+                                        </div>
+                                        <p class="text-[11px] text-emerald-700">Batas waktu dan teks <strong>{gelombang}</strong> disinkronkan otomatis dengan halaman utama website.</p>
+                                    </div>
+                                </div>
+                                <div class="shrink-0">
+                                    <button type="button" onclick="setCountdownPreset('wave_auto')" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-black shadow-2xs transition flex items-center gap-1.5 cursor-pointer">
+                                        <i class="fas fa-sync-alt text-[10px]"></i>
+                                        <span>Sinkronkan Sekarang</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 3. Judul / Teks Label dengan Tag Helper -->
+                            <div class="space-y-1.5">
+                                <div class="flex items-center justify-between flex-wrap gap-2">
+                                    <label class="block text-xs font-bold text-slate-700">Judul / Teks Label Countdown</label>
+                                    <div class="flex items-center gap-1.5">
+                                        <button type="button" onclick="insertGelombangTag()" class="px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-[10px] font-extrabold transition flex items-center gap-1 cursor-pointer">
+                                            <i class="fas fa-tags text-[9px]"></i>
+                                            <span>+ Sisipkan {gelombang}</span>
+                                        </button>
+                                        <button type="button" onclick="resetDefaultWaveTitle()" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer">
+                                            <i class="fas fa-undo text-[9px]"></i>
+                                            <span>Default Web</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="text" id="input-cd-title" oninput="updateCountdownField('title', this.value)" placeholder="Contoh: ⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 font-semibold">
+                                <p class="text-[11px] text-slate-500">
+                                    💡 <em>Tips:</em> Tag <strong><code>{gelombang}</code></strong> akan otomatis berubah menjadi nama gelombang aktif website (misal: <em>Gelombang 1</em>, <em>Gelombang 2</em>, atau <em>Gelombang 3</em>).
+                                </p>
+                            </div>
+
+                            <!-- 4. Tanggal & Jam Target Selesai + Preset -->
                             <div class="space-y-2">
-                                <label class="block text-xs font-bold text-slate-700">Waktu Target Selesai (Batas Waktu)</label>
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-xs font-bold text-slate-700">Waktu Target Selesai (Batas Waktu)</label>
+                                    <span id="badge-cd-target-mode" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                        Otomatis Sesuai Gelombang Web
+                                    </span>
+                                </div>
                                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                     <input type="datetime-local" id="input-cd-target" oninput="updateCountdownField('target', this.value)" class="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 font-mono font-bold">
-                                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                                        <button type="button" onclick="setCountdownPreset(7)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+7 Hari</button>
-                                        <button type="button" onclick="setCountdownPreset(14)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+14 Hari</button>
-                                        <button type="button" onclick="setCountdownPreset(30)" class="px-2.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+30 Hari</button>
-                                        <button type="button" onclick="setCountdownPreset('year_end')" class="px-2.5 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-bold transition whitespace-nowrap">Akhir Tahun</button>
+                                    <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                                        <button type="button" onclick="setCountdownPreset('wave1')" class="px-2.5 py-2 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-extrabold transition whitespace-nowrap border border-emerald-200">🎯 Gel. 1 (31 Des)</button>
+                                        <button type="button" onclick="setCountdownPreset('wave2')" class="px-2.5 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 text-[11px] font-extrabold transition whitespace-nowrap border border-sky-200">🎯 Gel. 2 (31 Mar)</button>
+                                        <button type="button" onclick="setCountdownPreset('wave3')" class="px-2.5 py-2 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 text-[11px] font-extrabold transition whitespace-nowrap border border-amber-200">🎯 Gel. 3 (30 Jun)</button>
+                                        <button type="button" onclick="setCountdownPreset(7)" class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+7 Hari</button>
+                                        <button type="button" onclick="setCountdownPreset(14)" class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+14 Hari</button>
+                                        <button type="button" onclick="setCountdownPreset(30)" class="px-2 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold transition whitespace-nowrap">+30 Hari</button>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 4. Pilihan Desain / Style Tampilan Kartu -->
+                            <!-- 5. Pilihan Desain / Style Tampilan Kartu -->
                             <div class="space-y-2">
                                 <label class="block text-xs font-bold text-slate-700">Pilihan Desain Kotak Countdown</label>
                                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
@@ -2355,7 +2444,7 @@ $active_menu = 'brosur_settings';
                                 </div>
                             </div>
 
-                            <!-- 5. Posisi dan Lebar (Pos X, Pos Y, Width) -->
+                            <!-- 6. Posisi dan Lebar (Pos X, Pos Y, Width) -->
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-200">
                                 <div class="space-y-1.5">
                                     <div class="flex items-center justify-between text-xs font-bold text-slate-700">
@@ -2382,7 +2471,7 @@ $active_menu = 'brosur_settings';
                                 </div>
                             </div>
 
-                            <!-- 6. Teks Waktu Habis (Expired Text) -->
+                            <!-- 7. Teks Waktu Habis (Expired Text) -->
                             <div class="space-y-1.5">
                                 <label class="block text-xs font-bold text-slate-700">Pesan Setelah Waktu Berakhir (Expired)</label>
                                 <input type="text" id="input-cd-expired" oninput="updateCountdownField('expired_text', this.value)" placeholder="Contoh: ⏳ Pendaftaran Telah Ditutup!" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-100 font-semibold">
@@ -6448,17 +6537,88 @@ $active_menu = 'brosur_settings';
         }
 
         // ==========================================
-        // 7.5. PENGATURAN & SIMULASI LIVE COUNTDOWN
+        // 7.5. PENGATURAN & SIMULASI LIVE COUNTDOWN (SINKRON GELOMBANG WEB)
         // ==========================================
 
         let countdownInterval = null;
 
+        // Mendeteksi Gelombang SPMB Website Secara Otomatis Sesuai Kalender Akademik
+        function getWebGelombangInfo() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1; // 1 - 12
+            let endDate, wave, targetStr, endDateLabel;
+
+            // Logika Penentuan Gelombang Tahunan (Sama Persis dengan index.html & daftar-spmb.html)
+            if (month >= 7 && month <= 12) {
+                endDate = new Date(year, 11, 31, 23, 59, 59); // 31 Desember
+                wave = "Gelombang 1";
+                targetStr = `${year}-12-31 23:59:59`;
+                endDateLabel = `31 Des ${year}`;
+            } else if (month >= 1 && month <= 3) {
+                endDate = new Date(year, 2, 31, 23, 59, 59); // 31 Maret
+                wave = "Gelombang 2";
+                targetStr = `${year}-03-31 23:59:59`;
+                endDateLabel = `31 Mar ${year}`;
+            } else {
+                endDate = new Date(year, 5, 30, 23, 59, 59); // 30 Juni
+                wave = "Gelombang 3";
+                targetStr = `${year}-06-30 23:59:59`;
+                endDateLabel = `30 Jun ${year}`;
+            }
+
+            return {
+                now,
+                year,
+                month,
+                endDate,
+                wave,
+                targetStr,
+                endDateLabel,
+                formattedTargetLocal: `${targetStr.substring(0, 10)}T${targetStr.substring(11, 16)}`,
+                defaultTitle: `⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:`
+            };
+        }
+
+        function formatCountdownTitleWithWave(rawTitle, waveName) {
+            if (!rawTitle) rawTitle = '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:';
+            let formatted = rawTitle;
+            if (/\{gelombang\}|\{wave\}/i.test(formatted)) {
+                formatted = formatted.replace(/\{gelombang\}|\{wave\}/gi, waveName);
+            } else if (formatted.trim() === '⏳ Sisa Waktu Pendaftaran Berakhir:') {
+                formatted = `⏳ Sisa Waktu Pendaftaran ${waveName} Berakhir:`;
+            }
+            return formatted;
+        }
+
         function renderCountdownForm() {
+            const webInfo = getWebGelombangInfo();
             const cd = (framesData[currentActiveFrame] && framesData[currentActiveFrame].countdown) 
                        ? framesData[currentActiveFrame].countdown 
-                       : { enabled: 0, title: '⏳ Sisa Waktu Pendaftaran Berakhir:', target: '2026-12-31 23:59:59', style: 'glass_dark', posX: 50.0, posY: 72.0, width: 88, expired_text: 'Pendaftaran Telah Ditutup!' };
-                       
-            countdownData = Object.assign({}, cd);
+                       : { 
+                           mode: 'auto', 
+                           enabled: 0, 
+                           title: '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:', 
+                           target: webInfo.targetStr, 
+                           style: 'glass_dark', 
+                           posX: 50.0, 
+                           posY: 72.0, 
+                           width: 88, 
+                           expired_text: 'Pendaftaran Telah Ditutup!' 
+                         };
+                        
+            countdownData = Object.assign({
+                mode: 'auto',
+                enabled: 0,
+                title: '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:',
+                target: webInfo.targetStr,
+                style: 'glass_dark',
+                posX: 50.0,
+                posY: 72.0,
+                width: 88,
+                expired_text: 'Pendaftaran Telah Ditutup!'
+            }, cd);
+
             if (framesData[currentActiveFrame]) {
                 framesData[currentActiveFrame].countdown = countdownData;
             }
@@ -6475,13 +6635,25 @@ $active_menu = 'brosur_settings';
             const posXVal = document.getElementById('val-cd-pos-x');
             const posYVal = document.getElementById('val-cd-pos-y');
             const widthVal = document.getElementById('val-cd-width');
+            const liveWaveBadge = document.getElementById('label-live-wave-badge');
+            const waveTitleInfo = document.getElementById('info-current-wave-title');
+            const waveDateInfo = document.getElementById('info-current-wave-date');
+            const targetModeBadge = document.getElementById('badge-cd-target-mode');
+            const autoInfoBox = document.getElementById('box-cd-auto-info');
             
+            if (liveWaveBadge) liveWaveBadge.innerText = `${webInfo.wave} (Web)`;
+            if (waveTitleInfo) waveTitleInfo.innerText = `Gelombang Aktif: ${webInfo.wave}`;
+            if (waveDateInfo) waveDateInfo.innerText = `s/d ${webInfo.endDateLabel}`;
+
             if (enInp) enInp.checked = (countdownData.enabled == 1);
-            if (titleInp) titleInp.value = countdownData.title || '';
-            if (expiredInp) expiredInp.value = countdownData.expired_text || '';
+            if (titleInp) titleInp.value = countdownData.title || '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:';
+            if (expiredInp) expiredInp.value = countdownData.expired_text || 'Pendaftaran Telah Ditutup!';
             
+            const currentMode = countdownData.mode || 'auto';
+            updateCountdownModeUI(currentMode, webInfo);
+
             if (targetInp) {
-                let tVal = (countdownData.target || '').replace(' ', 'T');
+                let tVal = (countdownData.target || webInfo.targetStr).replace(' ', 'T');
                 if (tVal.length > 16) tVal = tVal.substring(0, 16);
                 targetInp.value = tVal;
             }
@@ -6528,6 +6700,84 @@ $active_menu = 'brosur_settings';
                     tabBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-200 text-slate-600';
                 }
             }
+        }
+
+        function updateCountdownModeUI(mode, webInfo) {
+            if (!webInfo) webInfo = getWebGelombangInfo();
+            const optAuto = document.getElementById('cd-mode-opt-auto');
+            const optManual = document.getElementById('cd-mode-opt-manual');
+            const indAuto = document.querySelector('.cd-mode-indicator-auto');
+            const indManual = document.querySelector('.cd-mode-indicator-manual');
+            const targetModeBadge = document.getElementById('badge-cd-target-mode');
+            const targetInp = document.getElementById('input-cd-target');
+
+            if (mode === 'auto') {
+                if (optAuto) {
+                    optAuto.classList.add('ring-2', 'ring-emerald-500', 'border-emerald-500', 'bg-emerald-50/40');
+                    optAuto.classList.remove('border-slate-200');
+                }
+                if (optManual) {
+                    optManual.classList.remove('ring-2', 'ring-rose-500', 'border-rose-500', 'bg-rose-50/40');
+                    optManual.classList.add('border-slate-200');
+                }
+                if (indAuto) indAuto.innerHTML = '<div class="w-2 h-2 rounded-full bg-emerald-600"></div>';
+                if (indManual) indManual.innerHTML = '';
+                if (targetModeBadge) {
+                    targetModeBadge.innerText = `⚡ Otomatis Sesuai ${webInfo.wave} (${webInfo.endDateLabel})`;
+                    targetModeBadge.className = 'text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200';
+                }
+            } else {
+                if (optAuto) {
+                    optAuto.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500', 'bg-emerald-50/40');
+                    optAuto.classList.add('border-slate-200');
+                }
+                if (optManual) {
+                    optManual.classList.add('ring-2', 'ring-rose-500', 'border-rose-500', 'bg-rose-50/40');
+                    optManual.classList.remove('border-slate-200');
+                }
+                if (indAuto) indAuto.innerHTML = '';
+                if (indManual) indManual.innerHTML = '<div class="w-2 h-2 rounded-full bg-rose-600"></div>';
+                if (targetModeBadge) {
+                    targetModeBadge.innerText = '🛠️ Mode Target Manual / Kustom';
+                    targetModeBadge.className = 'text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200';
+                }
+            }
+        }
+
+        function setCountdownMode(mode) {
+            updateCountdownField('mode', mode);
+            const webInfo = getWebGelombangInfo();
+            if (mode === 'auto') {
+                updateCountdownField('target', webInfo.targetStr);
+                const targetInp = document.getElementById('input-cd-target');
+                if (targetInp) targetInp.value = webInfo.formattedTargetLocal;
+            }
+            updateCountdownModeUI(mode, webInfo);
+            renderSimCountdownLayers();
+        }
+
+        function insertGelombangTag() {
+            const titleInp = document.getElementById('input-cd-title');
+            if (!titleInp) return;
+            const tag = '{gelombang}';
+            if (titleInp.value.includes(tag)) {
+                showToast('Info', 'Tag {gelombang} sudah ada dalam judul countdown.', true);
+                return;
+            }
+            const start = titleInp.selectionStart || titleInp.value.length;
+            const end = titleInp.selectionEnd || titleInp.value.length;
+            const text = titleInp.value;
+            titleInp.value = text.substring(0, start) + ' ' + tag + ' ' + text.substring(end);
+            updateCountdownField('title', titleInp.value);
+            titleInp.focus();
+        }
+
+        function resetDefaultWaveTitle() {
+            const def = '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:';
+            const titleInp = document.getElementById('input-cd-title');
+            if (titleInp) titleInp.value = def;
+            updateCountdownField('title', def);
+            showToast('Reset Judul', 'Judul diatur ke standar website dengan sinkronisasi gelombang otomatis.', true);
         }
 
         function updateCountdownField(key, value) {
@@ -6579,11 +6829,33 @@ $active_menu = 'brosur_settings';
         function setCountdownPreset(preset) {
             let now = new Date();
             let target = new Date();
-            if (preset === 'year_end') {
-                target = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
+            const year = now.getFullYear();
+
+            if (preset === 'wave_auto') {
+                setCountdownMode('auto');
+                showToast('Sinkron Gelombang Web', 'Countdown berhasil disinkronkan dengan jadwal aktif website.', true);
+                return;
+            } else if (preset === 'wave1') {
+                target = new Date(year, 11, 31, 23, 59, 59);
+                updateCountdownField('mode', 'manual');
+                updateCountdownModeUI('manual');
+            } else if (preset === 'wave2') {
+                target = new Date(year, 2, 31, 23, 59, 59);
+                updateCountdownField('mode', 'manual');
+                updateCountdownModeUI('manual');
+            } else if (preset === 'wave3') {
+                target = new Date(year, 5, 30, 23, 59, 59);
+                updateCountdownField('mode', 'manual');
+                updateCountdownModeUI('manual');
+            } else if (preset === 'year_end') {
+                target = new Date(year, 11, 31, 23, 59, 59);
+                updateCountdownField('mode', 'manual');
+                updateCountdownModeUI('manual');
             } else if (typeof preset === 'number') {
                 target.setDate(target.getDate() + preset);
                 target.setHours(23, 59, 59, 0);
+                updateCountdownField('mode', 'manual');
+                updateCountdownModeUI('manual');
             }
             
             const yr = target.getFullYear();
@@ -6642,13 +6914,15 @@ $active_menu = 'brosur_settings';
                 container.innerHTML = '';
                 return;
             }
-            
+
+            const webInfo = getWebGelombangInfo();
+            const mode = cd.mode || 'auto';
             const posX = cd.posX ?? 50;
             const posY = cd.posY ?? 72;
             const width = cd.width ?? 88;
-            const title = cd.title || '⏳ Sisa Waktu Pendaftaran Berakhir:';
+            const rawTitle = cd.title || '⏳ Sisa Waktu Pendaftaran {gelombang} Berakhir:';
+            const displayTitle = formatCountdownTitleWithWave(rawTitle, webInfo.wave);
             const style = cd.style || 'glass_dark';
-            const targetStr = cd.target || '2026-12-31 23:59:59';
             const expiredText = cd.expired_text || 'Pendaftaran Telah Ditutup!';
             
             let boxThemeClass = 'bg-black/60 backdrop-blur-md border border-amber-400/40 text-white shadow-xl';
@@ -6691,7 +6965,15 @@ $active_menu = 'brosur_settings';
             container.appendChild(card);
             
             function updateTicks() {
-                const targetDate = new Date(targetStr.replace(/-/g, '/')).getTime();
+                let targetDate;
+                if (mode === 'auto') {
+                    const currentWeb = getWebGelombangInfo();
+                    targetDate = currentWeb.endDate.getTime();
+                } else {
+                    const targetStr = cd.target || webInfo.targetStr;
+                    targetDate = new Date(targetStr.replace(/-/g, '/')).getTime();
+                }
+
                 const now = new Date().getTime();
                 const diff = targetDate - now;
                 
@@ -6718,7 +7000,7 @@ $active_menu = 'brosur_settings';
                 card.innerHTML = `
                     <div class="text-[10px] font-extrabold mb-1.5 flex items-center justify-center gap-1.5 ${titleColorClass}">
                         <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span>
-                        <span>${escapeHtml(title)}</span>
+                        <span>${escapeHtml(displayTitle)}</span>
                     </div>
                     <div class="grid grid-cols-4 gap-1.5 select-none">
                         <div class="flex flex-col items-center justify-center p-1 rounded-xl ${numBgClass}">
