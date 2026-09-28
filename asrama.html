@@ -12,7 +12,13 @@
     <style>
         @font-face {
             font-family: 'Marlin Condensed';
-            src: local('Marlin Condensed'), local('MarlinCondensed'), local('Marlin-Condensed'), local('Marlin'), local('MarlinBold');
+            src: local('Marlin Condensed Bold'),
+                 local('Marlin Condensed'),
+                 local('MarlinCondensed'),
+                 local('Marlin-Condensed'),
+                 local('Marlin'),
+                 local('MarlinBold'),
+                 url('fonts/MarlinCondensed-Bold.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;
@@ -36,52 +42,71 @@
     height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <!-- End Google Tag Manager (noscript) -->
 
-    <!-- HEADER / NAVIGASI -->
+    <!-- HEADER / NAVIGASI (2-ROW CLEAN & SPACIOUS LAYOUT) -->
     <header class="bg-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-20">
-                <div class="flex-shrink-0 flex items-center">
-                    <a href="index.html" class="flex items-center space-x-2.5 text-emerald-900 hover:text-emerald-700 transition">
-                        <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Baron Malang" class="h-10 w-auto inline-block">
-                        <span class="inline-block font-marlin font-bold text-xl sm:text-2xl lg:text-3xl text-emerald-900 tracking-tight uppercase">Villa Quran Baron Malang</span>
-                    </a>
-                </div>
-                <nav class="hidden md:flex space-x-6 lg:space-x-8">
-                    <a href="index.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Beranda</a>
-                    <a href="profil-pengajar.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Pengajar</a>
-                    <a href="program.html" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Kurikulum</a>
-                    <a href="asrama.html" class="text-emerald-700 font-bold transition border-b-2 border-emerald-600">Fasilitas</a>
-                    <a href="index.html#artikel" class="text-gray-600 hover:text-emerald-700 font-semibold transition">Parenting</a>
-                    <a href="brosur.php" class="text-amber-600 hover:text-amber-700 font-bold transition flex items-center"><i class="fas fa-envelope-open-text mr-1.5 text-xs text-amber-500"></i> Brosur Digital</a>
-                    <!-- Member Area Link (Universal Login) -->
-                    <a href="login.php" class="text-gray-600 hover:text-emerald-700 font-semibold transition flex items-center">
-                        <i class="fas fa-user-circle mr-1.5 text-emerald-600 text-sm"></i> Member
-                    </a>
-                </nav>
-                <div class="hidden md:flex">
-                    <a href="index.html#spmb" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
-                </div>
-                <div class="flex items-center md:hidden">
-                    <button id="mobile-menu-btn" class="text-gray-600 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-md p-2">
-                        <i class="fas fa-bars text-2xl"></i>
-                    </button>
+        <!-- BARIS 1: BRANDING LOGO/TITLE & CTA / MEMBER -->
+        <div class="border-b border-gray-100 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16 sm:h-20">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="index.html" class="flex items-center space-x-2.5 sm:space-x-3 text-emerald-900 hover:text-emerald-700 transition">
+                            <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Baron Malang" class="h-10 sm:h-12 w-auto inline-block">
+                            <span class="inline-block font-marlin font-bold text-2xl sm:text-3xl lg:text-4xl text-emerald-900 tracking-tight uppercase leading-none">Villa Quran Baron Malang</span>
+                        </a>
+                    </div>
+                    <div class="flex items-center space-x-2.5 sm:space-x-3">
+                        <a href="login.php" class="hidden sm:inline-flex items-center px-3.5 py-2 text-xs sm:text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition border border-emerald-200">
+                            <i class="fas fa-user-circle mr-1.5 text-emerald-600"></i> Member Area
+                        </a>
+                        <a href="index.html#spmb" class="hidden sm:inline-flex items-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold transition duration-200 shadow-sm shadow-emerald-500/30">
+                            <i class="fas fa-user-plus mr-1.5"></i> Daftar SPMB
+                        </a>
+                        <div class="flex items-center md:hidden">
+                            <button id="mobile-menu-btn" class="text-gray-700 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded-lg p-2">
+                                <i class="fas fa-bars text-2xl"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        
+
+        <!-- BARIS 2: MENU NAVIGASI HORIZONTAL (DESKTOP) -->
+        <div class="hidden md:block bg-slate-50/90 backdrop-blur border-b border-gray-200/80">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <nav class="flex items-center justify-between py-2">
+                    <div class="flex items-center space-x-1 lg:space-x-2">
+                        <a href="index.html" class="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition">Beranda</a>
+                        <a href="index.html#profil" class="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition">Profil</a>
+                        <a href="profil-pengajar.html" class="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition">Pengajar</a>
+                        <a href="program.html" class="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition">Kurikulum</a>
+                        <a href="asrama.html" class="px-3 py-1.5 text-sm font-bold text-emerald-700 bg-emerald-100/70 rounded-lg transition">Fasilitas</a>
+                        <a href="biaya.html" class="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition">Informasi Biaya</a>
+                        <a href="artikel.php" class="px-3 py-1.5 text-sm font-semibold text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition">Parenting & Artikel</a>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <a href="brosur.php" class="inline-flex items-center px-3.5 py-1.5 text-xs sm:text-sm font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition border border-amber-200/80">
+                            <i class="fas fa-envelope-open-text mr-1.5 text-amber-600"></i> Brosur Digital
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
         <!-- Mobile Menu (Dropdown) -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-xl absolute w-full left-0 top-20">
-            <div class="px-4 pt-2 pb-6 space-y-2">
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-100 shadow-xl">
+            <div class="px-4 pt-3 pb-6 space-y-2">
                 <a href="index.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Beranda</a>
+                <a href="index.html#profil" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Profil</a>
                 <a href="profil-pengajar.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Pengajar</a>
                 <a href="program.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Kurikulum</a>
-                <a href="asrama.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Fasilitas</a>
-                <a href="index.html#artikel" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Parenting</a>
-                <div class="pt-2 pb-1 border-t border-gray-100 mt-2">
-                    <a href="login.php" class="block px-3 py-2 text-base font-semibold text-emerald-700 bg-emerald-50 rounded-md"><i class="fas fa-user-circle mr-2 text-emerald-600"></i> Member Area (Login)</a>
-                </div>
-                <div class="pt-4 pb-2 border-t border-gray-100">
-                    <a href="index.html#spmb" class="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-bold transition duration-300 shadow-md">Daftar SPMB</a>
+                <a href="asrama.html" class="block px-3 py-2 text-base font-semibold text-emerald-700 bg-emerald-50 rounded-md">Fasilitas</a>
+                <a href="biaya.html" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Informasi Biaya</a>
+                <a href="artikel.php" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-md">Parenting & Artikel</a>
+                <a href="brosur.php" class="block px-3 py-2 text-base font-bold text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-md"><i class="fas fa-envelope-open-text mr-2 text-amber-500"></i> Brosur Digital</a>
+                <div class="pt-2 pb-1 border-t border-gray-100 mt-2 space-y-2">
+                    <a href="login.php" class="block px-3 py-2.5 text-base font-bold text-emerald-700 bg-emerald-50 rounded-xl"><i class="fas fa-user-circle mr-2 text-emerald-600"></i> Member Area (Login)</a>
+                    <a href="index.html#spmb" class="block w-full text-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-3 rounded-xl font-bold transition duration-300 shadow-md">Daftar SPMB</a>
                 </div>
             </div>
         </div>
@@ -156,7 +181,7 @@
             if (data.nama_sekolah && document.getElementById('footer-copy-nama')) document.getElementById('footer-copy-nama').textContent = data.nama_sekolah;
         if (data.logo_url) {
             document.querySelectorAll('.flex-shrink-0 a').forEach(a => {
-                a.innerHTML = `<img src="${data.logo_url}" alt="Logo Villa Quran Baron Malang" class="h-10 w-auto inline-block mr-2.5"><span class="inline-block font-marlin font-bold text-xl sm:text-2xl lg:text-3xl text-emerald-900 tracking-tight uppercase">${data.nama_sekolah || 'Villa Quran Baron Malang'}</span>`;
+                a.innerHTML = `<img src="${data.logo_url}" alt="Logo Villa Quran Baron Malang" class="h-10 sm:h-12 w-auto inline-block mr-2.5 sm:mr-3"><span class="inline-block font-marlin font-bold text-2xl sm:text-3xl lg:text-4xl text-emerald-900 tracking-tight uppercase leading-none">${data.nama_sekolah || 'Villa Quran Baron Malang'}</span>`;
             });
         }
         }).catch(e => console.log('Setting error'));

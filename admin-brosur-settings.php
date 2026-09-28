@@ -1873,7 +1873,13 @@ $active_menu = 'brosur_settings';
     <style>
         @font-face {
             font-family: 'Marlin Condensed';
-            src: local('Marlin Condensed'), local('MarlinCondensed'), local('Marlin-Condensed'), local('Marlin'), local('MarlinBold');
+            src: local('Marlin Condensed Bold'),
+                 local('Marlin Condensed'),
+                 local('MarlinCondensed'),
+                 local('Marlin-Condensed'),
+                 local('Marlin'),
+                 local('MarlinBold'),
+                 url('fonts/MarlinCondensed-Bold.ttf') format('truetype');
             font-weight: normal;
             font-style: normal;
             font-display: swap;

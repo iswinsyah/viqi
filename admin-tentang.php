@@ -10,9 +10,12 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengaturan_tentang (
     gambar_url VARCHAR(255)
 )");
 
+// Auto migrate jika judul masih lama
+@$conn->query("UPDATE pengaturan_tentang SET judul = 'Tentang Sekolah Tahfidz Villa Quran Baron Malang' WHERE judul = 'Tentang Villa Quran Indonesia' OR judul = 'Tentang Sekolah Tahfidz Villa Quran Indonesia' OR judul = 'Tentang Villa Quran' OR judul = 'Tentang Villa Quran Baron Malang'");
+
 // Insert default data jika masih kosong
 $conn->query("INSERT IGNORE INTO pengaturan_tentang (id, judul, konten, gambar_url) 
-VALUES (1, 'Tentang Villa Quran Baron Malang', '<p>Berawal dari cita-cita mulia untuk menghadirkan lingkungan tahfidz yang jauh dari kesan kumuh dan menekan, Villa Quran Baron Malang hadir dengan konsep pendidikan modern. Kami memadukan kurikulum Islam, adab, dan keterampilan abad 21 di lingkungan yang membahagiakan layaknya sebuah villa.</p><ul><li>Terakreditasi & Berizin Resmi Kementerian</li><li>Didukung Asatidz Bersanad & Profesional IT</li></ul>', 'https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')");
+VALUES (1, 'Tentang Sekolah Tahfidz Villa Quran Baron Malang', '<p>Berawal dari cita-cita mulia untuk menghadirkan lingkungan tahfidz yang jauh dari kesan kumuh dan menekan, Villa Quran Baron Malang hadir dengan konsep pendidikan modern. Kami memadukan kurikulum Islam, adab, dan keterampilan abad 21 di lingkungan yang membahagiakan layaknya sebuah villa.</p><ul><li>Terakreditasi & Berizin Resmi Kementerian</li><li>Didukung Asatidz Bersanad & Profesional IT</li></ul>', 'https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')");
 
 // 2. Proses Simpan
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
