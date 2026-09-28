@@ -154,6 +154,11 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                     <i class="fas fa-handshake text-emerald-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
                     <span class="text-sm font-bold text-gray-700 mt-1 text-center">Data Agen</span>
                 </a>
+                <a href="admin-siaran-wa.php" class="bg-white hover:bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group relative overflow-hidden">
+                    <span class="absolute top-2 right-2 bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">BARU</span>
+                    <i class="fab fa-whatsapp text-emerald-600 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-emerald-800 mt-1 text-center">Siaran WA Mitra</span>
+                </a>
                 <a href="admin-analisa.php" class="bg-white hover:bg-purple-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
                     <i class="fas fa-brain text-purple-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
                     <span class="text-sm font-bold text-gray-700 mt-1 text-center">Analisa Persona</span>

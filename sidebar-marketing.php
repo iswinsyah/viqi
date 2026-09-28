@@ -28,6 +28,10 @@
                 <i class="fas fa-tachometer-alt w-4 text-center"></i>
                 <span>Dashboard Marketing</span>
             </a>
+            <a href="admin-siaran-wa.php" class="<?= (isset($active_menu) && $active_menu == 'siaran_wa') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
+                <i class="fas fa-broadcast-tower w-4 text-center"></i>
+                <span>Siaran WA Mitra</span>
+            </a>
             <a href="data-pipeline.php" class="<?= (isset($active_menu) && $active_menu == 'pipeline') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
                 <i class="fas fa-filter w-4 text-center"></i>
                 <span>Pipeline Prospek</span>

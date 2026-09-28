@@ -684,6 +684,7 @@ $ruang_web_cards = [
 // Data Menu Grid Card Ruang Marketing (AI & Prospek)
 $ruang_marketing_cards = [
     ['label' => 'Dashboard Mkt', 'icon' => 'fas fa-tachometer-alt', 'href' => 'dashboard-marketing.php'],
+    ['label' => 'Siaran WA Mitra', 'icon' => 'fas fa-broadcast-tower', 'href' => 'admin-siaran-wa.php'],
     ['label' => 'Brosur Digital', 'icon' => 'fas fa-envelope-open-text', 'href' => 'admin-brosur-settings.php'],
     ['label' => 'Pipeline', 'icon' => 'fas fa-filter', 'href' => 'data-pipeline.php'],
     ['label' => 'Data Agen', 'icon' => 'fas fa-users', 'href' => 'data-agen.php'],
