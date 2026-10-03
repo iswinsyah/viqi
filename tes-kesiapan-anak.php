@@ -199,15 +199,15 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 </div>
             </div>
 
-            <!-- Form Data Awal Calon Wali & Santri -->
-            <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-gray-100">
-                <div class="border-b border-gray-100 pb-5 mb-6">
-                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 flex items-center">
+            <!-- Form Data Awal Calon Wali Santri -->
+            <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-gray-100 max-w-2xl mx-auto">
+                <div class="border-b border-gray-100 pb-5 mb-6 text-center sm:text-left">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 flex items-center justify-center sm:justify-start">
                         <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center mr-3 text-sm font-black">1</span>
-                        Data Calon Santri & Orang Tua
+                        Data Calon Wali Santri
                     </h2>
                     <p class="text-xs sm:text-sm text-gray-500 mt-1">
-                        Informasi ini digunakan untuk personalisasi sertifikat hasil asesmen dan pengiriman resume via WhatsApp.
+                        Masukkan Nama & WhatsApp Anda untuk memulai tes dan menerima resume diagnosis hasil asesmen.
                     </p>
                 </div>
 
@@ -221,92 +221,44 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     </div>
                     <?php endif; ?>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                        <!-- Nama Wali -->
-                        <div>
-                            <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
-                                Nama Ayah / Bunda <span class="text-red-500">*</span>
-                            </label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
-                                    <i class="fas fa-user"></i>
-                                </span>
-                                <input type="text" id="input_nama_wali" required placeholder="Contoh: Bpk. Muhammad Ilham"
-                                    class="w-full pl-10 pr-4 py-3 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
-                            </div>
-                        </div>
-
-                        <!-- WhatsApp -->
-                        <div>
-                            <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
-                                No. WhatsApp Aktif <span class="text-red-500">*</span>
-                            </label>
-                            <div class="relative">
-                                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 font-semibold text-xs">
-                                    <i class="fab fa-whatsapp text-emerald-600 text-sm"></i>
-                                </span>
-                                <input type="tel" id="input_whatsapp" required placeholder="Contoh: 081234567890"
-                                    class="w-full pl-10 pr-4 py-3 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
-                            </div>
-                            <span class="text-[11px] text-gray-400 mt-1 block">Untuk menerima salinan resume analisis kesiapan ananda.</span>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 pt-1">
-                        <!-- Nama Ananda -->
-                        <div>
-                            <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
-                                Nama Panggilan Ananda <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" id="input_nama_santri" required placeholder="Contoh: Faris / Zahra"
-                                class="w-full px-4 py-3 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
-                        </div>
-
-                        <!-- Jenis Kelamin -->
-                        <div>
-                            <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
-                                Jenis Kelamin <span class="text-red-500">*</span>
-                            </label>
-                            <select id="input_gender" required
-                                class="w-full px-4 py-3 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition cursor-pointer">
-                                <option value="Putra">Putra (Laki-laki)</option>
-                                <option value="Putri">Putri (Perempuan)</option>
-                            </select>
-                        </div>
-
-                        <!-- Jenjang Rencana -->
-                        <div>
-                            <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
-                                Rencana Jenjang <span class="text-red-500">*</span>
-                            </label>
-                            <select id="input_jenjang" required
-                                class="w-full px-4 py-3 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition cursor-pointer">
-                                <option value="SMP (Tingkat Menengah Pertama)">SMP / MTs (Usia 11-13 Th)</option>
-                                <option value="SMA (Tingkat Menengah Atas)">SMA / MA (Usia 14-17 Th)</option>
-                                <option value="SD Akhir (Persiapan Masuk Pondok)">Kelas 5-6 SD (Persiapan)</option>
-                                <option value="Takhasus Tahfidz Quran">Takhasus Tahfidz Intensif</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Kota Domisili -->
+                    <!-- Nama Wali -->
                     <div>
                         <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
-                            Kota / Kabupaten Domisili Saat Ini <span class="text-red-500">*</span>
+                            Nama Lengkap / Panggilan Bapak / Ibu <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" id="input_kota" required placeholder="Contoh: Malang, Surabaya, Jakarta, Balikpapan..."
-                            class="w-full px-4 py-3 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <input type="text" id="input_nama_wali" required placeholder="Contoh: Bpk. Muhammad Ilham / Ibu Rahma"
+                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
+                        </div>
+                    </div>
+
+                    <!-- WhatsApp -->
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
+                            Nomor WhatsApp Aktif <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 font-semibold text-xs">
+                                <i class="fab fa-whatsapp text-emerald-600 text-sm"></i>
+                            </span>
+                            <input type="tel" id="input_whatsapp" required placeholder="Contoh: 081234567890"
+                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
+                        </div>
+                        <span class="text-[11px] text-gray-400 mt-1 block">Untuk menerima salinan resume analisis kesiapan dan E-Book gratis.</span>
                     </div>
 
                     <!-- Tombol Mulai Tes -->
                     <div class="pt-4 text-center">
                         <button type="submit" id="btn-start-test"
-                            class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-base sm:text-lg rounded-2xl shadow-lg shadow-emerald-700/30 transition transform hover:-translate-y-0.5">
-                            <span>Mulai Tes Kesiapan Sekarang</span>
+                            class="w-full inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-base sm:text-lg rounded-2xl shadow-lg shadow-emerald-700/30 transition transform hover:-translate-y-0.5">
+                            <span>Mulai Tes Kesiapan Sekarang (15 Soal)</span>
                             <i class="fas fa-arrow-right ml-3 text-amber-300"></i>
                         </button>
                         <p class="text-xs text-gray-400 mt-2.5 flex items-center justify-center">
-                            <i class="fas fa-lock mr-1.5 text-gray-400"></i> Data Anda 100% aman & terjaga kerahasiaannya.
+                            <i class="fas fa-lock mr-1.5 text-gray-400"></i> Data Anda 100% aman & langsung terhubung ke sistem.
                         </p>
                     </div>
                 </form>
@@ -717,28 +669,20 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             e.preventDefault();
             const namaWali = document.getElementById('input_nama_wali').value.trim();
             const whatsapp = document.getElementById('input_whatsapp').value.trim();
-            const namaSantri = document.getElementById('input_nama_santri').value.trim();
-            const gender = document.getElementById('input_gender').value;
-            const jenjang = document.getElementById('input_jenjang').value;
-            const kota = document.getElementById('input_kota').value.trim();
             const kodeRef = document.getElementById('kode_ref').value;
 
-            if (!namaWali || !whatsapp || !namaSantri) {
-                alert('Mohon lengkapi Nama Orang Tua, No. WhatsApp, dan Nama Ananda.');
+            if (!namaWali || !whatsapp) {
+                alert('Mohon lengkapi Nama Anda dan Nomor WhatsApp.');
                 return;
             }
 
             leadData = {
                 nama_wali: namaWali,
                 whatsapp: whatsapp,
-                nama_santri: namaSantri,
-                gender: gender,
-                jenjang: jenjang,
-                kota: kota,
                 kode_ref: kodeRef
             };
 
-            labelSantriTarget.innerHTML = `Evaluasi Ananda: <strong>${namaSantri}</strong>`;
+            labelSantriTarget.innerHTML = `Evaluasi Ananda: <strong>Keluarga ${namaWali}</strong>`;
 
             // Transition to Quiz
             sectionIntro.classList.add('hidden');
@@ -881,25 +825,25 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             if (percentage >= 85) {
                 kategori = "SANGAT SIAP & POTENSIAL BERPRESTASI";
                 kategoriBadgeClass = "bg-emerald-500 text-white";
-                narasi = `Alhamdulillah! Ananda <strong>${leadData.nama_santri}</strong> memiliki modal kemandirian, kematangan emosi, dan motivasi spiritual yang sangat prima. Ananda siap menjalani pola hidup asrama mandiri dengan daya adaptasi tinggi dan berpeluang besar melesat dalam hafalan Al-Quran serta prestasi akademik di Villa Quran Baron Malang.`;
+                narasi = `Alhamdulillah! Ananda di keluarga Bapak/Ibu <strong>${leadData.nama_wali}</strong> memiliki modal kemandirian, kematangan emosi, dan motivasi spiritual yang sangat prima. Ananda siap menjalani pola hidup asrama mandiri dengan daya adaptasi tinggi dan berpeluang besar melesat dalam hafalan Al-Quran serta prestasi akademik di Villa Quran Baron Malang.`;
                 kekuatan = `Ananda memiliki pondasi niat ibadah yang kuat, kemandirian self-care yang baik, serta ketahanan mental yang tangguh saat jauh dari rumah.`;
                 growth = `Pertahankan ritme muroja'ah hafalan dan berikan apresiasi positif atas kemandirian yang sudah terbentuk.`;
             } else if (percentage >= 65) {
                 kategori = "SIAP DENGAN PENDAMPINGAN ADAPTASI";
                 kategoriBadgeClass = "bg-amber-400 text-emerald-950";
-                narasi = `Masya Allah! Ananda <strong>${leadData.nama_santri}</strong> memiliki potensi dan kesiapan dasar yang baik untuk masuk pesantren. Ananda membutuhkan sedikit pembiasaan bertahap di 1-2 aspek (seperti adaptasi perpisahan di pekan awal atau manajemen disiplin gadget). Dengan bimbingan musyrif asrama yang penuh kasih sayang di Villa Quran, ananda insya Allah akan cepat nyaman.`;
+                narasi = `Masya Allah! Ananda di keluarga Bapak/Ibu <strong>${leadData.nama_wali}</strong> memiliki potensi dan kesiapan dasar yang baik untuk masuk pesantren. Ananda membutuhkan sedikit pembiasaan bertahap di 1-2 aspek (seperti adaptasi perpisahan di pekan awal atau manajemen disiplin gadget). Dengan bimbingan musyrif asrama yang penuh kasih sayang di Villa Quran, ananda insya Allah akan cepat nyaman.`;
                 kekuatan = `Kecerdasan sosial yang baik, mau bekerja sama dengan teman sebaya, dan memiliki rasa hormat pada ustadz/pembimbing.`;
                 growth = `Tingkatkan latihan mandiri merapikan barang dan kurangi ketergantungan pada gawai 30 hari sebelum masuk pondok.`;
             } else {
                 kategori = "PERLU PROGRAM PEMBIASAAN PRA-PESANTREN";
                 kategoriBadgeClass = "bg-rose-500 text-white";
-                narasi = `Ananda <strong>${leadData.nama_santri}</strong> memerlukan masa transisi dan pembiasaan pra-pondok terlebih dahulu bersama Ayah & Bunda di rumah. Fokuskan pada penyelarasan niat belajar agama tanpa paksaan, membangun rasa percaya diri, dan melatih kemandirian dasar agar saat masuk asrama ananda tidak mengalami kejutan budaya (culture shock).`;
+                narasi = `Ananda di keluarga Bapak/Ibu <strong>${leadData.nama_wali}</strong> memerlukan masa transisi dan pembiasaan pra-pondok terlebih dahulu bersama Ayah & Bunda di rumah. Fokuskan pada penyelarasan niat belajar agama tanpa paksaan, membangun rasa percaya diri, dan melatih kemandirian dasar agar saat masuk asrama ananda tidak mengalami kejutan budaya (culture shock).`;
                 kekuatan = `Ananda memiliki rasa ingin tahu yang tinggi dan sangat membutuhkan figur teladan/sahabat yang hangat dalam mengarahkan potensinya.`;
                 growth = `Perlu penguatan ketahanan emosi saat berpisah, pembiasaan sholat 5 waktu berjamaah, dan latihan tanggung jawab harian di rumah.`;
             }
 
             // Tampilkan ke View
-            document.getElementById('res-nama-santri').innerText = `${leadData.nama_santri} (${leadData.gender})`;
+            document.getElementById('res-nama-santri').innerText = `(Keluarga ${leadData.nama_wali})`;
             document.getElementById('res-score-number').innerText = `${percentage}%`;
             const badgeEl = document.getElementById('res-kategori-badge');
             badgeEl.className = `inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wide shadow-md ${kategoriBadgeClass}`;
@@ -936,7 +880,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             document.getElementById('res-breakdown-container').innerHTML = breakdownHtml;
 
             // Setup WhatsApp Consultation Link
-            const waMsg = `Assalamu'alaikum Warahmatullahi Wabarakatuh Admin/Konselor PSB Villa Quran Baron Malang,%0A%0ASaya *${encodeURIComponent(leadData.nama_wali)}* dari *${encodeURIComponent(leadData.kota)}*.%0ABaru saja menyelesaikan *Tes Kesiapan Masuk Pondok* untuk Ananda:%0A• Nama: *${encodeURIComponent(leadData.nama_santri)}* (${encodeURIComponent(leadData.gender)})%0A• Jenjang Target: *${encodeURIComponent(leadData.jenjang)}*%0A• Skor Kesiapan: *${percentage}%* (${encodeURIComponent(kategori)})%0A%0AMohon informasi lebih lanjut mengenai konsultasi hasil asesmen ini, jadwal survey lokasi, dan pendaftaran santri baru.%0ATerima kasih.`;
+            const waMsg = `Assalamu'alaikum Warahmatullahi Wabarakatuh Admin/Konselor PSB Villa Quran Baron Malang,%0A%0ASaya *${encodeURIComponent(leadData.nama_wali)}*.%0ABaru saja menyelesaikan *Tes Kesiapan Masuk Pondok* untuk Ananda tercinta dengan hasil:%0A• Skor Kesiapan: *${percentage}%* (${encodeURIComponent(kategori)})%0A%0AMohon informasi lebih lanjut mengenai konsultasi hasil asesmen ini, jadwal survey lokasi, dan pendaftaran santri baru.%0ATerima kasih.`;
             document.getElementById('btn-wa-consult').href = `https://wa.me/${CS_PHONE}?text=${waMsg}`;
 
             // Simpan ke Database via AJAX
@@ -966,10 +910,10 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             const formData = new FormData();
             formData.append('nama_wali', leadData.nama_wali);
             formData.append('whatsapp', leadData.whatsapp);
-            formData.append('nama_santri', leadData.nama_santri);
-            formData.append('gender', leadData.gender);
-            formData.append('jenjang', leadData.jenjang);
-            formData.append('kota', leadData.kota);
+            formData.append('nama_santri', 'Ananda (Keluarga ' + leadData.nama_wali + ')');
+            formData.append('gender', '-');
+            formData.append('jenjang', '-');
+            formData.append('kota', '-');
             formData.append('kode_ref', leadData.kode_ref || 'organik');
             formData.append('skor_persen', skor);
             formData.append('kategori', kategori);

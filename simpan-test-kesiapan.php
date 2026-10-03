@@ -54,8 +54,8 @@ if (substr($wa_clean, 0, 2) === '08') {
     $wa_formatted = $wa_clean;
 }
 
-$sumber_info = "Lead Magnet Test Kesiapan ($skor_persen% - $kategori | $jenjang - $gender: $nama_santri, Asal: $kota)";
-$catatan = "Hasil Tes Kesiapan: Skor $skor_persen% ($kategori). Gender: $gender, Jenjang Target: $jenjang. Ref: $kode_ref.";
+$sumber_info = "Lead Magnet Test Kesiapan ($skor_persen% - $kategori | Wali: $nama_wali)";
+$catatan = "Hasil Tes Kesiapan: Skor $skor_persen% ($kategori). Ref: $kode_ref.";
 
 // Cek apakah nomor WA ini sudah pernah tercatat
 $cek_sql = "SELECT id, kode_ref FROM leads WHERE whatsapp = '$whatsapp' OR whatsapp = '$wa_formatted' LIMIT 1";
