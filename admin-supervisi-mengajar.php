@@ -56,8 +56,8 @@ if (isset($_GET['action']) && $_GET['action'] === 'delete_supervisi' && isset($_
     }
 }
 
-// Fetch all staff members that have the 'ustadz' or 'ustadzah' role
-$res_guru = $conn->query("SELECT id, nama FROM akun_ustadz WHERE role LIKE '%ustadz%' OR role LIKE '%ustadzah%' OR role LIKE '%guru%' ORDER BY nama ASC");
+// Fetch all staff members that have the 'tutor' role
+$res_guru = $conn->query("SELECT id, nama FROM akun_ustadz WHERE role LIKE '%tutor%' ORDER BY nama ASC");
 $guru_list = [];
 if ($res_guru) {
     while ($row = $res_guru->fetch_assoc()) {
@@ -108,7 +108,7 @@ if ($res_sup_list) {
                 <div>
                     <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
                         <i class="fas fa-clipboard-check text-indigo-600"></i>
-                        <span>Supervisi Mengajar Ustadz</span>
+                        <span>Supervisi Mengajar Tutor</span>
                     </h1>
                     <p class="text-xs text-slate-500 mt-1">Formulir pencatatan hasil supervisi klinis KBM kelas dan riwayat log supervisi pengajaran bulanan.</p>
                 </div>
@@ -138,9 +138,9 @@ if ($res_sup_list) {
                     </h2>
                     <form method="POST" class="space-y-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Ustadz/Ustadzah yang Disupervisi</label>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">Tutor yang Direvisi</label>
                             <select name="supervised_ustadz_id" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500" required>
-                                <option value="">-- Pilih Guru --</option>
+                                <option value="">-- Pilih Tutor --</option>
                                 <?php foreach ($guru_list as $g): ?>
                                     <option value="<?= $g['id'] ?>"><?= htmlspecialchars($g['nama']) ?></option>
                                 <?php endforeach; ?>
@@ -156,7 +156,7 @@ if ($res_sup_list) {
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">Catatan Evaluasi / Rekomendasi</label>
-                            <textarea name="catatan" rows="4" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500" placeholder="Tulis masukan untuk guru di sini..."></textarea>
+                            <textarea name="catatan" rows="4" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500" placeholder="Tulis masukan untuk tutor di sini..."></textarea>
                         </div>
                         <button type="submit" name="save_supervisi_log" class="w-full bg-indigo-650 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl transition text-xs flex items-center justify-center gap-1.5 shadow-sm">
                             <i class="fas fa-plus"></i> Simpan Hasil Supervisi
@@ -174,7 +174,7 @@ if ($res_sup_list) {
                         <table class="w-full text-left border-collapse text-xs">
                             <thead>
                                 <tr class="border-b text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-                                    <th class="px-4 py-3">Nama Ustadz/ah</th>
+                                    <th class="px-4 py-3">Tutor yang Direvisi</th>
                                     <th class="px-4 py-3">Tanggal</th>
                                     <th class="px-4 py-3 text-center">Skor</th>
                                     <th class="px-4 py-3">Supervisor</th>
