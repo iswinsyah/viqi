@@ -4,27 +4,37 @@ name: Auto Deploy to Hostinger
 on:
   push:
     branches:
-      - main 
-      # Jika branch utama Anda bernama 'master', ganti 'main' di atas menjadi 'master'
-
-  # Mengizinkan deploy dijalankan secara manual (tombol 'Run workflow' di GitHub)
+      - main
+  # Mengizinkan deploy dijalankan secara manual dari tab Actions GitHub
   workflow_dispatch:
 
 jobs:
   web-deploy:
-    name: 🎉 Deploy
+    name: ⚡ Fast Delta Deploy
     runs-on: ubuntu-latest
     steps:
-    - name: 🚚 Get latest code
+    - name: 🚚 Get latest code with git history
       uses: actions/checkout@v4
-    
-    - name: 📂 Sync files to Hostinger via SFTP
-      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+      with:
+        fetch-depth: 2
+
+    - name: 🚀 Sync only changed files to Hostinger via SFTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         port: 65002
-        local_path: './*'
-        remote_path: 'domains/villaquranindonesia.com/public_html'
-        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents --exclude=uploads'
+        protocol: sftp
+        server-dir: 'domains/villaquranindonesia.com/public_html/'
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/.github/**
+          **/.agents/**
+          **/scratch/**
+          **/agent_*_log.txt
+          **/saved_*.txt
+          **/autopilot_status.txt
+          **/config-key.php
+          **/.gitignore
