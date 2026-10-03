@@ -10,25 +10,20 @@ on:
 
 jobs:
   web-deploy:
-    name: 🎉 Fast SFTP Deploy
+    name: 🎉 Deploy
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
     
-    - name: ⚡ Fast Parallel SFTP Sync to Hostinger
-      env:
-        FTP_SERVER: ${{ secrets.FTP_SERVER }}
-        FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
-        FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-      run: |
-        sudo apt-get update -qq && sudo apt-get install -y lftp
-        lftp -e "
-          set sftp:auto-confirm yes;
-          set net:timeout 30;
-          set net:max-retries 3;
-          open -u \"\$FTP_USERNAME\",\"\$FTP_PASSWORD\" sftp://\$FTP_SERVER:65002;
-          mirror -R --only-newer --parallel=6 -x '^\.git' -x '^\.github' -x '^\.agents' ./ domains/villaquranindonesia.com/public_html/;
-          quit
-        "
+    - name: 📂 Sync files to Hostinger via SFTP
+      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: 65002
+        local_path: './'
+        remote_path: 'domains/villaquranindonesia.com/public_html'
+        sftpArgs: '-o ConnectTimeout=30'
+        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents'
