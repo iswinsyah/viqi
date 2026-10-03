@@ -90,6 +90,9 @@ if ($cek_res && $cek_res->num_rows > 0) {
 // -------------------------------------------------------------
 $wa_sent = false;
 if (!empty($FONNTE_TOKEN) && $FONNTE_TOKEN !== 'YOUR_FONNTE_TOKEN_HERE') {
+    $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . ($_SERVER['HTTP_HOST'] ?? 'villaquranbaronmalang.com');
+    $pdf_url = $base_url . "/RAHASIA%20MENYIAPKAN%20ANAK%20REMAJA%20MENJADI%20HAFIDZ%20QURAN.pdf";
+
     $pesan_wali = "🌿 *Assalamu'alaikum Warahmatullahi Wabarakatuh*\n\n"
                 . "Yth. *Bapak/Ibu {$nama_wali}*,\n\n"
                 . "Alhamdulillah, terima kasih telah menyelesaikan *Tes Kesiapan Masuk Pondok Pesantren* untuk Ananda tercinta:\n\n"
@@ -101,7 +104,7 @@ if (!empty($FONNTE_TOKEN) && $FONNTE_TOKEN !== 'YOUR_FONNTE_TOKEN_HERE') {
                 . "• *Kategori:* *{$kategori}*\n\n"
                 . "🎁 *BONUS E-BOOK EKSKLUSIF ORANG TUA:*\n"
                 . "Silakan download E-Book Panduan: *'Rahasia Menyiapkan Anak Remaja Menjadi Hafidz Quran'*\n"
-                . "Link Download: https://pesantren.villakeluargaislami.com/RAHASIA%20MENYIAPKAN%20ANAK%20REMAJA%20MENJADI%20HAFIDZ%20QURAN.pdf\n\n"
+                . "Link Download: {$pdf_url}\n\n"
                 . "💬 Jika Bapak/Ibu ingin berkonsultasi lebih lanjut mengenai program pembiasaan mandiri, asrama villa bernuansa alam, atau informasi pendaftaran SPMB Villa Quran Baron Malang, silakan balas pesan ini.\n\n"
                 . "Jazakumullahu Khairan Katsiran.\n"
                 . "_Panitia Penerimaan Santri Baru (PSB)_\n"
