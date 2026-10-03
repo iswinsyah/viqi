@@ -144,6 +144,7 @@ if ($conn) {
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('supervisi_mengajar', 'kepala_sekolah,kepala_mahad,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_admin_sekolah', 'admin_sekolah')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('salary_admin', 'admin_sekolah')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_kbm', 'kepala_sekolah,admin_sekolah,sekretaris_sekolah,super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan')");
 }
 
 // Load custom menu labels from database
@@ -223,6 +224,15 @@ if ($res_chk_rapat && $res_chk_rapat->num_rows === 0) {
     $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
     $new_ord = $max_ord + 1;
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'jadwal_rapat', $new_ord, 'fa-handshake', 'admin-jadwal-rapat.php')");
+}
+
+// Pastikan menu 'rekap_kbm' terdaftar jika belum ada (Self-Healing)
+$res_chk_rekap_kbm = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'rekap_kbm'");
+if ($res_chk_rekap_kbm && $res_chk_rekap_kbm->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'rekap_kbm', $new_ord, 'fa-clipboard-user', 'admin-rekap-kbm.php')");
 }
 
 // Cek apakah data sudah ada
@@ -326,6 +336,7 @@ if ($res_db_struct) {
             'rekap_uang_saku' => 'Validasi Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
             'kontrol_jam_kosong' => 'Kontrol Jam Kosong',
+            'rekap_kbm' => 'Rekap KBM Bulanan',
             'kpi_admin_sekolah' => 'KPI Admin Sekolah',
             'salary_admin' => 'Salary Admin Sekolah',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',
