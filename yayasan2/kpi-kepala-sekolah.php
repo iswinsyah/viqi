@@ -145,6 +145,20 @@ $score_supervisi = min(100, ($total_supervisi / 2) * 100);
 
 // 3. Mengontrol pengadaan RPP (Bobot 20%)
 // Target: 100% RPP diknas diadakan & dikontrol
+if ($rpp_total <= 0) {
+    // Check automatic count from modul_ajar_rpp
+    $res_rpp_tot = $conn->query("SELECT COUNT(*) as total FROM modul_ajar_rpp WHERE DATE(created_at) BETWEEN '$start_date' AND '$end_date'");
+    $auto_rpp_tot = $res_rpp_tot ? (int)$res_rpp_tot->fetch_assoc()['total'] : 0;
+    
+    $res_rpp_acc = $conn->query("SELECT COUNT(*) as total FROM modul_ajar_rpp WHERE status = 'disetujui' AND (disetujui_oleh = $selected_kepsek_id OR disetujui_oleh IS NOT NULL) AND DATE(disetujui_pada) BETWEEN '$start_date' AND '$end_date'");
+    $auto_rpp_acc = $res_rpp_acc ? (int)$res_rpp_acc->fetch_assoc()['total'] : 0;
+    
+    if ($auto_rpp_tot > 0) {
+        $rpp_total = $auto_rpp_tot;
+        $rpp_dikontrol = $auto_rpp_acc;
+    }
+}
+
 if ($rpp_total > 0) {
     $score_rpp = min(100, ($rpp_dikontrol / $rpp_total) * 100);
 } else {
