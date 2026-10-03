@@ -158,8 +158,25 @@ $active_menu = 'pipeline';
                     <!-- Isi Kartu (Scrollable Vertical) -->
                     <div class="p-3 overflow-y-auto flex-1 space-y-3 kanban-cards" data-level="<?= $level ?>" style="scrollbar-width: none;">
                         <?php foreach($items as $lead) { 
-                            $badge_color = ($lead['jenis_lead'] == 'acara_dan_ebook') ? 'bg-purple-100 text-purple-700' : (($lead['jenis_lead'] == 'biaya') ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700');
-                            $badge_text = ($lead['jenis_lead'] == 'acara_dan_ebook') ? 'Acara & Ebook' : (($lead['jenis_lead'] == 'hanya_ebook') ? 'Hanya Ebook' : (($lead['jenis_lead'] == 'biaya') ? 'Cek Biaya' : 'Brosur'));
+                            $badge_color = 'bg-blue-100 text-blue-700';
+                            $badge_text = 'Brosur';
+                            if ($lead['jenis_lead'] == 'acara_dan_ebook') {
+                                $badge_color = 'bg-purple-100 text-purple-700';
+                                $badge_text = 'Acara & Ebook';
+                            } elseif ($lead['jenis_lead'] == 'test_kesiapan_pondok') {
+                                $badge_color = 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-300';
+                                $skor_badge = !empty($lead['skor_kesiapan']) ? " (" . $lead['skor_kesiapan'] . "%)" : "";
+                                $badge_text = '🎯 Tes Kesiapan' . $skor_badge;
+                            } elseif ($lead['jenis_lead'] == 'brosur_digital') {
+                                $badge_color = 'bg-amber-100 text-amber-800';
+                                $badge_text = 'Brosur Digital';
+                            } elseif ($lead['jenis_lead'] == 'daftar_spmb') {
+                                $badge_color = 'bg-teal-100 text-teal-800';
+                                $badge_text = 'Daftar SPMB';
+                            } elseif ($lead['jenis_lead'] == 'biaya') {
+                                $badge_color = 'bg-rose-100 text-rose-700';
+                                $badge_text = 'Cek Biaya';
+                            }
                         ?>
                         <div class="bg-white p-3 rounded-lg shadow-sm border border-gray-200 hover:border-emerald-400 cursor-grab active:cursor-grabbing hover:shadow-md transition group" data-id="<?= $lead['id'] ?>">
                             <div class="flex justify-between items-start mb-2">
