@@ -344,162 +344,33 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             </div>
         </section>
 
-        <!-- STEP 3: HASIL ASESMEN & DIAGNOSIS LENGKAP (RESULT DASHBOARD) -->
-        <section id="section-result" class="hidden space-y-8">
-            <!-- Summary Banner -->
-            <div class="bg-white rounded-3xl overflow-hidden shadow-2xl border border-emerald-100">
-                <!-- Header Banner -->
-                <div
-                    class="bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-950 text-white p-6 sm:p-10 text-center relative">
-                    <div
-                        class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-emerald-800/90 text-amber-300 text-xs font-bold mb-3 border border-emerald-600/40">
-                        <i class="fas fa-award text-amber-400"></i>
-                        <span>LAPORAN RESMI DIAGNOSIS KESIAPAN SANTRI</span>
-                    </div>
-                    <h2 class="font-marlin text-2xl sm:text-4xl font-bold tracking-tight text-white mb-1">
-                        Hasil Evaluasi Kesiapan <span id="res-nama-santri" class="text-amber-300">-</span>
+        <!-- STEP 3: PENGALIHAN LANGSUNG KE WHATSAPP KONSULTAN -->
+        <section id="section-result" class="hidden max-w-xl mx-auto py-8">
+            <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-2xl border border-emerald-100 text-center space-y-6">
+                <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner animate-pulse">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+
+                <div class="space-y-2">
+                    <h2 class="font-marlin text-2xl sm:text-4xl font-bold text-gray-900 leading-tight">
+                        Asesmen Berhasil Diselesaikan!
                     </h2>
-                    <p class="text-xs sm:text-sm text-emerald-100">
-                        Diproses secara otomatis berdasarkan 5 pilar utama adaptasi pesantren Villa Quran Baron Malang.
+                    <p class="text-sm text-gray-600 leading-relaxed">
+                        Laporan diagnosis kesiapan Ananda dan rekomendasi parenting telah disiapkan oleh sistem. Sedang menghubungkan ke WhatsApp Konsultan...
                     </p>
-
-                    <!-- Score Radial / Circle Display -->
-                    <div class="mt-6 flex flex-col items-center justify-center">
-                        <div
-                            class="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-white/10 backdrop-blur-md border-4 border-amber-400/80 flex flex-col items-center justify-center shadow-xl">
-                            <span id="res-score-number"
-                                class="text-4xl sm:text-5xl font-black text-white font-marlin tracking-tight">0%</span>
-                            <span
-                                class="text-[10px] sm:text-xs text-amber-300 font-bold uppercase tracking-wider mt-0.5">Indeks
-                                Kesiapan</span>
-                        </div>
-                        <div class="mt-4">
-                            <span id="res-kategori-badge"
-                                class="inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wide bg-amber-400 text-emerald-950 shadow-md">
-                                Menghitung Kategori...
-                            </span>
-                        </div>
-                    </div>
                 </div>
 
-                <!-- Detail Diagnosis Body -->
-                <div class="p-6 sm:p-10 space-y-8 bg-white">
-                    <!-- Narasi Analisa -->
-                    <div class="p-5 sm:p-6 rounded-2xl bg-emerald-50/80 border border-emerald-200">
-                        <h3 class="text-base sm:text-lg font-bold text-emerald-950 flex items-center mb-2">
-                            <i class="fas fa-comment-medical text-emerald-700 mr-2 text-xl"></i>
-                            Kesimpulan & Analisa Ahli Parenting:
-                        </h3>
-                        <p id="res-narasi" class="text-sm text-gray-700 leading-relaxed">
-                            Sedang memproses narasi hasil...
-                        </p>
-                    </div>
-
-                    <!-- 5 Pilar Breakdown Progress -->
-                    <div>
-                        <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-4 flex items-center">
-                            <i class="fas fa-layer-group text-emerald-700 mr-2"></i>
-                            Rincian Skor Per Dimensi Kesiapan:
-                        </h3>
-                        <div id="res-breakdown-container" class="space-y-4">
-                            <!-- Injected by JS -->
-                        </div>
-                    </div>
-
-                    <!-- Kekuatan & Aspek Penguatan (2 Kolom) -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                        <!-- Super Power -->
-                        <div class="p-5 rounded-2xl bg-teal-50 border border-teal-200">
-                            <h4 class="text-sm font-bold text-teal-900 flex items-center mb-2.5">
-                                <i class="fas fa-star text-amber-500 mr-2 text-base"></i>
-                                Potensi & Kekuatan Utama Ananda:
-                            </h4>
-                            <p id="res-strength" class="text-xs sm:text-sm text-teal-950 leading-relaxed">
-                                -
-                            </p>
-                        </div>
-
-                        <!-- Growth Area -->
-                        <div class="p-5 rounded-2xl bg-amber-50 border border-amber-200">
-                            <h4 class="text-sm font-bold text-amber-900 flex items-center mb-2.5">
-                                <i class="fas fa-seedling text-amber-600 mr-2 text-base"></i>
-                                Aspek Perlu Penguatan (Growth Area):
-                            </h4>
-                            <p id="res-growth" class="text-xs sm:text-sm text-amber-950 leading-relaxed">
-                                -
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Action Plan 30 Hari -->
-                    <div class="p-5 sm:p-6 rounded-2xl bg-gray-50 border border-gray-200">
-                        <h4 class="text-base font-bold text-gray-900 flex items-center mb-3">
-                            <i class="fas fa-calendar-check text-emerald-700 mr-2"></i>
-                            Langkah Tindakan (Action Plan) Pra-Pondok di Rumah:
-                        </h4>
-                        <ul id="res-action-plan"
-                            class="space-y-2 text-xs sm:text-sm text-gray-700 list-disc list-inside">
-                            <li>Kurangi durasi screen time / gadget harian secara bertahap 30-60 menit setiap pekan.
-                            </li>
-                            <li>Latih ananda mencuci pakaian dalam, merapikan tempat tidur, dan menyiapkan perlengkapan
-                                sholat mandiri.</li>
-                            <li>Tingkatkan tilawah bersama Ayah & Bunda 1 lembar ba'da Maghrib/Subuh untuk menumbuhkan
-                                rasa cinta Al-Quran.</li>
-                            <li>Perkuat komunikasi positif: ceritakan keindahan asrama villa, sejuknya hawa pegunungan,
-                                dan serunya teman baru.</li>
-                        </ul>
-                    </div>
-
-                    <!-- ACTION CTA BUTTONS -->
-                    <div id="cta-action-box" class="pt-4 space-y-4 no-print">
-                        <div
-                            class="p-6 rounded-3xl bg-gradient-to-br from-emerald-800 to-teal-900 text-white text-center space-y-4 shadow-xl">
-                            <h3 class="font-marlin text-2xl sm:text-3xl font-bold text-amber-300">
-                                Mau Konsultasi Lebih Dalam atau Amankan Kuota SPMB?
-                            </h3>
-                            <p class="text-xs sm:text-sm text-emerald-100 max-w-xl mx-auto">
-                                Tim Konselor Pendidikan & Pengasuh Asrama Villa Quran Baron Malang siap berdiskusi
-                                mengenai pemetaan karakter dan program bimbingan ananda.
-                            </p>
-
-                            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-                                <!-- WA CTA -->
-                                <a id="btn-wa-consult" href="#" target="_blank"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 font-bold text-sm sm:text-base rounded-2xl shadow-lg transition transform hover:-translate-y-0.5">
-                                    <i class="fab fa-whatsapp text-lg mr-2"></i>
-                                    Konsultasi Hasil Tes via WA
-                                </a>
-
-                                <!-- E-Book Download -->
-                                <a href="RAHASIA%20MENYIAPKAN%20ANAK%20REMAJA%20MENJADI%20HAFIDZ%20QURAN.pdf" download
-                                    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold text-sm sm:text-base rounded-2xl shadow-lg transition transform hover:-translate-y-0.5">
-                                    <i class="fas fa-file-pdf mr-2 text-red-600"></i>
-                                    Download E-Book Gratis (PDF)
-                                </a>
-
-                                <!-- SPMB Link -->
-                                <a href="daftar-spmb.html"
-                                    class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3.5 bg-white/20 hover:bg-white/30 text-white font-bold text-sm sm:text-base rounded-2xl border border-white/30 transition">
-                                    <i class="fas fa-edit mr-2"></i>
-                                    Daftar SPMB Online
-                                </a>
-                            </div>
-                        </div>
-
-                        <!-- Print / Share CTA -->
-                        <div class="flex items-center justify-center space-x-4 pt-2">
-                            <button onclick="window.print()"
-                                class="text-xs text-gray-600 hover:text-emerald-700 font-bold inline-flex items-center transition">
-                                <i class="fas fa-print mr-1.5"></i> Cetak / Simpan PDF
-                            </button>
-                            <span class="text-gray-300">•</span>
-                            <button onclick="restartQuiz()"
-                                class="text-xs text-gray-600 hover:text-emerald-700 font-bold inline-flex items-center transition">
-                                <i class="fas fa-redo mr-1.5"></i> Ulangi Tes
-                            </button>
-                        </div>
-                    </div>
+                <div class="pt-2">
+                    <a id="btn-wa-consult" href="#"
+                        class="w-full inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-emerald-700/25 transition transform hover:-translate-y-0.5">
+                        <i class="fab fa-whatsapp text-2xl mr-3 text-emerald-200"></i>
+                        <span>Buka WhatsApp & Terima Hasil Tes</span>
+                    </a>
                 </div>
+
+                <p class="text-xs text-gray-400">
+                    Jika WhatsApp tidak terbuka secara otomatis dalam beberapa detik, silakan klik tombol hijau di atas.
+                </p>
             </div>
         </section>
 
@@ -919,63 +790,13 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     growth = `Perlu penguatan ketahanan emosi saat berpisah, pembiasaan sholat 5 waktu berjamaah, dan latihan tanggung jawab harian di rumah.`;
                 }
 
-                // Tampilkan ke View
-                const elNamaSantri = document.getElementById('res-nama-santri');
-                if (elNamaSantri) elNamaSantri.innerText = `(Keluarga ${namaWaliDisplay})`;
-                
-                const elScoreNum = document.getElementById('res-score-number');
-                if (elScoreNum) elScoreNum.innerText = `${percentage}%`;
-
-                const badgeEl = document.getElementById('res-kategori-badge');
-                if (badgeEl) {
-                    badgeEl.className = `inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wide shadow-md ${kategoriBadgeClass}`;
-                    badgeEl.innerText = kategori;
-                }
-
-                const elNarasi = document.getElementById('res-narasi');
-                if (elNarasi) elNarasi.innerHTML = narasi;
-
-                const elStrength = document.getElementById('res-strength');
-                if (elStrength) elStrength.innerHTML = kekuatan;
-
-                const elGrowth = document.getElementById('res-growth');
-                if (elGrowth) elGrowth.innerHTML = growth;
-
-                // Render 5 Pilar Breakdown Progress
-                let breakdownHtml = "";
-                for (let pid in pilarScores) {
-                    const p = pilarScores[pid];
-                    const pPct = Math.round((p.earned / p.max) * 100);
-                    let pColor = "bg-emerald-500";
-                    if (pPct < 65) pColor = "bg-rose-500";
-                    else if (pPct < 85) pColor = "bg-amber-400";
-
-                    breakdownHtml += `
-                        <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
-                            <div class="flex items-center justify-between text-xs sm:text-sm font-bold text-gray-800 mb-1.5">
-                                <span class="flex items-center">
-                                    <i class="fas ${p.icon} text-emerald-700 mr-2 text-sm sm:text-base"></i>
-                                    ${p.name}
-                                </span>
-                                <span class="text-emerald-900">${pPct}% (${p.earned}/${p.max})</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                                <div class="${pColor} h-full rounded-full transition-all duration-500" style="width: ${pPct}%"></div>
-                            </div>
-                        </div>
-                    `;
-                }
-                const elBreakdown = document.getElementById('res-breakdown-container');
-                if (elBreakdown) elBreakdown.innerHTML = breakdownHtml;
-
-                // Setup WhatsApp Consultation Link
+                // Setup WhatsApp Consultation Link (Pesan Singkat & Jelas)
                 const cleanPhone = (typeof CS_PHONE !== 'undefined' && CS_PHONE) ? CS_PHONE.replace(/[^0-9]/g, '') : '6285189918115';
                 const waMsg = encodeURIComponent("Mohon dikirim analisa asesmen nya");
                 const waUrl = `https://wa.me/${cleanPhone}?text=${waMsg}`;
                 const btnWa = document.getElementById('btn-wa-consult');
                 if (btnWa) {
                     btnWa.href = waUrl;
-                    btnWa.innerHTML = '<i class="fab fa-whatsapp text-lg mr-2"></i> Buka WhatsApp & Terima Analisa';
                 }
 
                 // Simpan ke Database via AJAX
@@ -985,19 +806,15 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     growth: growth
                 });
 
-                // Transition UI ke Halaman Hasil
+                // Transition UI ke Halaman Pengalihan WhatsApp
                 sectionQuiz.classList.add('hidden');
                 sectionResult.classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                // Trigger Confetti Perayaan
-                if (typeof confetti === 'function') {
-                    confetti({
-                        particleCount: 100,
-                        spread: 80,
-                        origin: { y: 0.6 }
-                    });
-                }
+                // Redirect Langsung ke WhatsApp
+                setTimeout(() => {
+                    window.location.href = waUrl;
+                }, 600);
             } catch (err) {
                 console.error('Error saat memproses analisa:', err);
                 // Fallback UI transition jika terjadi error tak terduga
