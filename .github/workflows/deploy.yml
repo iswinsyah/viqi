@@ -22,6 +22,7 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         port: 65002
-        local_path: './*'
+        local_path: './'
         remote_path: 'domains/villaquranindonesia.com/public_html'
         sftpArgs: '-o ConnectTimeout=30'
+        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents'
