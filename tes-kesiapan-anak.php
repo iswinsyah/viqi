@@ -828,7 +828,14 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     currentQuestionIndex++;
                     renderQuestion(currentQuestionIndex);
                 } else {
-                    btnNextQ.disabled = false;
+                    // Di Soal Terakhir: Aktifkan tombol dan otomatis proses analisa
+                    if (btnNextQ) {
+                        btnNextQ.disabled = false;
+                        btnNextQ.innerHTML = '<i class="fas fa-spinner fa-spin mr-2 text-amber-300"></i> Menghitung Analisa Kesiapan...';
+                    }
+                    setTimeout(() => {
+                        calculateAndShowResult();
+                    }, 350);
                 }
             }, 250);
         }
@@ -852,130 +859,156 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 renderQuestion(currentQuestionIndex);
             } else {
                 // Selesai -> Proses Penilaian
+                btnNextQ.disabled = true;
+                btnNextQ.innerHTML = '<i class="fas fa-spinner fa-spin mr-2 text-amber-300"></i> Memproses Hasil Analisa...';
                 calculateAndShowResult();
             }
         });
 
         // Step 3: Calculation & Result Generation
         function calculateAndShowResult() {
-            // Hitung Skor Total & Per Pilar
-            let totalScore = 0;
-            const maxScore = quizData.length * 4; // 15 * 4 = 60
-            const pilarScores = {
-                1: { name: "Kemandirian Fisik & Keseharian", earned: 0, max: 12, icon: "fa-tshirt" },
-                2: { name: "Kematangan Emosi & Ketahanan Mental", earned: 0, max: 12, icon: "fa-heart" },
-                3: { name: "Motivasi Spiritual & Niat Al-Quran", earned: 0, max: 12, icon: "fa-quran" },
-                4: { name: "Adaptasi Sosial & Adab Sebaya", earned: 0, max: 12, icon: "fa-users" },
-                5: { name: "Kesiapan & Dukungan Orang Tua", earned: 0, max: 12, icon: "fa-home" }
-            };
+            try {
+                // Hitung Skor Total & Per Pilar
+                let totalScore = 0;
+                const maxScore = quizData.length * 4; // 15 * 4 = 60
+                const pilarScores = {
+                    1: { name: "Kemandirian Fisik & Keseharian", earned: 0, max: 12, icon: "fa-tshirt" },
+                    2: { name: "Kematangan Emosi & Ketahanan Mental", earned: 0, max: 12, icon: "fa-heart" },
+                    3: { name: "Motivasi Spiritual & Niat Al-Quran", earned: 0, max: 12, icon: "fa-quran" },
+                    4: { name: "Adaptasi Sosial & Adab Sebaya", earned: 0, max: 12, icon: "fa-users" },
+                    5: { name: "Kesiapan & Dukungan Orang Tua", earned: 0, max: 12, icon: "fa-home" }
+                };
 
-            quizData.forEach((q, idx) => {
-                const chosenOptIndex = answers[idx];
-                const score = q.options[chosenOptIndex].score;
-                totalScore += score;
-                pilarScores[q.pilarId].earned += score;
-            });
-
-            // Persentase Kesiapan: (totalScore / maxScore) * 100
-            const percentage = Math.round((totalScore / maxScore) * 100);
-
-            // Kategori & Diagnosis
-            let kategori = "";
-            let kategoriBadgeClass = "";
-            let narasi = "";
-            let kekuatan = "";
-            let growth = "";
-
-            if (percentage >= 85) {
-                kategori = "SANGAT SIAP & POTENSIAL BERPRESTASI";
-                kategoriBadgeClass = "bg-emerald-500 text-white";
-                narasi = `Alhamdulillah! Ananda di keluarga Bapak/Ibu <strong>${leadData.nama_wali}</strong> memiliki modal kemandirian, kematangan emosi, dan motivasi spiritual yang sangat prima. Ananda siap menjalani pola hidup asrama mandiri dengan daya adaptasi tinggi dan berpeluang besar melesat dalam hafalan Al-Quran serta prestasi akademik di Villa Quran Baron Malang.`;
-                kekuatan = `Ananda memiliki pondasi niat ibadah yang kuat, kemandirian self-care yang baik, serta ketahanan mental yang tangguh saat jauh dari rumah.`;
-                growth = `Pertahankan ritme muroja'ah hafalan dan berikan apresiasi positif atas kemandirian yang sudah terbentuk.`;
-            } else if (percentage >= 65) {
-                kategori = "SIAP DENGAN PENDAMPINGAN ADAPTASI";
-                kategoriBadgeClass = "bg-amber-400 text-emerald-950";
-                narasi = `Masya Allah! Ananda di keluarga Bapak/Ibu <strong>${leadData.nama_wali}</strong> memiliki potensi dan kesiapan dasar yang baik untuk masuk pesantren. Ananda membutuhkan sedikit pembiasaan bertahap di 1-2 aspek (seperti adaptasi perpisahan di pekan awal atau manajemen disiplin gadget). Dengan bimbingan musyrif asrama yang penuh kasih sayang di Villa Quran, ananda insya Allah akan cepat nyaman.`;
-                kekuatan = `Kecerdasan sosial yang baik, mau bekerja sama dengan teman sebaya, dan memiliki rasa hormat pada ustadz/pembimbing.`;
-                growth = `Tingkatkan latihan mandiri merapikan barang dan kurangi ketergantungan pada gawai 30 hari sebelum masuk pondok.`;
-            } else {
-                kategori = "PERLU PROGRAM PEMBIASAAN PRA-PESANTREN";
-                kategoriBadgeClass = "bg-rose-500 text-white";
-                narasi = `Ananda di keluarga Bapak/Ibu <strong>${leadData.nama_wali}</strong> memerlukan masa transisi dan pembiasaan pra-pondok terlebih dahulu bersama Ayah & Bunda di rumah. Fokuskan pada penyelarasan niat belajar agama tanpa paksaan, membangun rasa percaya diri, dan melatih kemandirian dasar agar saat masuk asrama ananda tidak mengalami kejutan budaya (culture shock).`;
-                kekuatan = `Ananda memiliki rasa ingin tahu yang tinggi dan sangat membutuhkan figur teladan/sahabat yang hangat dalam mengarahkan potensinya.`;
-                growth = `Perlu penguatan ketahanan emosi saat berpisah, pembiasaan sholat 5 waktu berjamaah, dan latihan tanggung jawab harian di rumah.`;
-            }
-
-            // Tampilkan ke View
-            document.getElementById('res-nama-santri').innerText = `(Keluarga ${leadData.nama_wali})`;
-            document.getElementById('res-score-number').innerText = `${percentage}%`;
-            const badgeEl = document.getElementById('res-kategori-badge');
-            badgeEl.className = `inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wide shadow-md ${kategoriBadgeClass}`;
-            badgeEl.innerText = kategori;
-
-            document.getElementById('res-narasi').innerHTML = narasi;
-            document.getElementById('res-strength').innerHTML = kekuatan;
-            document.getElementById('res-growth').innerHTML = growth;
-
-            // Render 5 Pilar Breakdown Progress
-            let breakdownHtml = "";
-            for (let pid in pilarScores) {
-                const p = pilarScores[pid];
-                const pPct = Math.round((p.earned / p.max) * 100);
-                let pColor = "bg-emerald-500";
-                if (pPct < 65) pColor = "bg-rose-500";
-                else if (pPct < 85) pColor = "bg-amber-400";
-
-                breakdownHtml += `
-                    <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
-                        <div class="flex items-center justify-between text-xs sm:text-sm font-bold text-gray-800 mb-1.5">
-                            <span class="flex items-center">
-                                <i class="fas ${p.icon} text-emerald-700 mr-2 text-sm sm:text-base"></i>
-                                ${p.name}
-                            </span>
-                            <span class="text-emerald-900">${pPct}% (${p.earned}/${p.max})</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                            <div class="${pColor} h-full rounded-full transition-all duration-500" style="width: ${pPct}%"></div>
-                        </div>
-                    </div>
-                `;
-            }
-            document.getElementById('res-breakdown-container').innerHTML = breakdownHtml;
-
-            // Setup WhatsApp Consultation Link (Pesan Singkat & Langsung)
-            const waMsg = encodeURIComponent("Mohon dikirim analisa asesmen nya");
-            const waUrl = `https://wa.me/${CS_PHONE}?text=${waMsg}`;
-            const btnWa = document.getElementById('btn-wa-consult');
-            if (btnWa) {
-                btnWa.href = waUrl;
-                btnWa.innerHTML = '<i class="fab fa-whatsapp text-lg mr-2"></i> Buka WhatsApp & Terima Analisa';
-            }
-
-            // Simpan ke Database via AJAX
-            saveLeadToDatabase(percentage, kategori, {
-                pilarScores: pilarScores,
-                strength: kekuatan,
-                growth: growth
-            });
-
-            // Transition UI
-            sectionQuiz.classList.add('hidden');
-            sectionResult.classList.remove('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            // Otomatis Redirect Langsung ke WhatsApp setelah jeda 1 detik agar proses simpan selesai
-            setTimeout(() => {
-                window.location.href = waUrl;
-            }, 1000);
-
-            // Trigger Confetti
-            if (typeof confetti === 'function') {
-                confetti({
-                    particleCount: 80,
-                    spread: 70,
-                    origin: { y: 0.6 }
+                quizData.forEach((q, idx) => {
+                    const chosenOptIndex = (answers[idx] !== undefined) ? answers[idx] : 0;
+                    const score = (q.options[chosenOptIndex] && q.options[chosenOptIndex].score) ? q.options[chosenOptIndex].score : 3;
+                    totalScore += score;
+                    if (pilarScores[q.pilarId]) {
+                        pilarScores[q.pilarId].earned += score;
+                    }
                 });
+
+                // Persentase Kesiapan: (totalScore / maxScore) * 100
+                const percentage = Math.round((totalScore / maxScore) * 100);
+                const namaWaliDisplay = (leadData && leadData.nama_wali) ? leadData.nama_wali : 'Orang Tua';
+
+                // Kategori & Diagnosis
+                let kategori = "";
+                let kategoriBadgeClass = "";
+                let narasi = "";
+                let kekuatan = "";
+                let growth = "";
+
+                if (percentage >= 85) {
+                    kategori = "SANGAT SIAP & POTENSIAL BERPRESTASI";
+                    kategoriBadgeClass = "bg-emerald-500 text-white";
+                    narasi = `Alhamdulillah! Ananda di keluarga Bapak/Ibu <strong>${namaWaliDisplay}</strong> memiliki modal kemandirian, kematangan emosi, dan motivasi spiritual yang sangat prima. Ananda siap menjalani pola hidup asrama mandiri dengan daya adaptasi tinggi dan berpeluang besar melesat dalam hafalan Al-Quran serta prestasi akademik di Villa Quran Baron Malang.`;
+                    kekuatan = `Ananda memiliki pondasi niat ibadah yang kuat, kemandirian self-care yang baik, serta ketahanan mental yang tangguh saat jauh dari rumah.`;
+                    growth = `Pertahankan ritme muroja'ah hafalan dan berikan apresiasi positif atas kemandirian yang sudah terbentuk.`;
+                } else if (percentage >= 65) {
+                    kategori = "SIAP DENGAN PENDAMPINGAN ADAPTASI";
+                    kategoriBadgeClass = "bg-amber-400 text-emerald-950";
+                    narasi = `Masya Allah! Ananda di keluarga Bapak/Ibu <strong>${namaWaliDisplay}</strong> memiliki potensi dan kesiapan dasar yang baik untuk masuk pesantren. Ananda membutuhkan sedikit pembiasaan bertahap di 1-2 aspek (seperti adaptasi perpisahan di pekan awal atau manajemen disiplin gadget). Dengan bimbingan musyrif asrama yang penuh kasih sayang di Villa Quran, ananda insya Allah akan cepat nyaman.`;
+                    kekuatan = `Kecerdasan sosial yang baik, mau bekerja sama dengan teman sebaya, dan memiliki rasa hormat pada ustadz/pembimbing.`;
+                    growth = `Tingkatkan latihan mandiri merapikan barang dan kurangi ketergantungan pada gawai 30 hari sebelum masuk pondok.`;
+                } else {
+                    kategori = "PERLU PROGRAM PEMBIASAAN PRA-PESANTREN";
+                    kategoriBadgeClass = "bg-rose-500 text-white";
+                    narasi = `Ananda di keluarga Bapak/Ibu <strong>${namaWaliDisplay}</strong> memerlukan masa transisi dan pembiasaan pra-pondok terlebih dahulu bersama Ayah & Bunda di rumah. Fokuskan pada penyelarasan niat belajar agama tanpa paksaan, membangun rasa percaya diri, dan melatih kemandirian dasar agar saat masuk asrama ananda tidak mengalami kejutan budaya (culture shock).`;
+                    kekuatan = `Ananda memiliki rasa ingin tahu yang tinggi dan sangat membutuhkan figur teladan/sahabat yang hangat dalam mengarahkan potensinya.`;
+                    growth = `Perlu penguatan ketahanan emosi saat berpisah, pembiasaan sholat 5 waktu berjamaah, dan latihan tanggung jawab harian di rumah.`;
+                }
+
+                // Tampilkan ke View
+                const elNamaSantri = document.getElementById('res-nama-santri');
+                if (elNamaSantri) elNamaSantri.innerText = `(Keluarga ${namaWaliDisplay})`;
+                
+                const elScoreNum = document.getElementById('res-score-number');
+                if (elScoreNum) elScoreNum.innerText = `${percentage}%`;
+
+                const badgeEl = document.getElementById('res-kategori-badge');
+                if (badgeEl) {
+                    badgeEl.className = `inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wide shadow-md ${kategoriBadgeClass}`;
+                    badgeEl.innerText = kategori;
+                }
+
+                const elNarasi = document.getElementById('res-narasi');
+                if (elNarasi) elNarasi.innerHTML = narasi;
+
+                const elStrength = document.getElementById('res-strength');
+                if (elStrength) elStrength.innerHTML = kekuatan;
+
+                const elGrowth = document.getElementById('res-growth');
+                if (elGrowth) elGrowth.innerHTML = growth;
+
+                // Render 5 Pilar Breakdown Progress
+                let breakdownHtml = "";
+                for (let pid in pilarScores) {
+                    const p = pilarScores[pid];
+                    const pPct = Math.round((p.earned / p.max) * 100);
+                    let pColor = "bg-emerald-500";
+                    if (pPct < 65) pColor = "bg-rose-500";
+                    else if (pPct < 85) pColor = "bg-amber-400";
+
+                    breakdownHtml += `
+                        <div class="bg-gray-50/80 p-3.5 sm:p-4 rounded-2xl border border-gray-100">
+                            <div class="flex items-center justify-between text-xs sm:text-sm font-bold text-gray-800 mb-1.5">
+                                <span class="flex items-center">
+                                    <i class="fas ${p.icon} text-emerald-700 mr-2 text-sm sm:text-base"></i>
+                                    ${p.name}
+                                </span>
+                                <span class="text-emerald-900">${pPct}% (${p.earned}/${p.max})</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                                <div class="${pColor} h-full rounded-full transition-all duration-500" style="width: ${pPct}%"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                const elBreakdown = document.getElementById('res-breakdown-container');
+                if (elBreakdown) elBreakdown.innerHTML = breakdownHtml;
+
+                // Setup WhatsApp Consultation Link
+                const cleanPhone = (typeof CS_PHONE !== 'undefined' && CS_PHONE) ? CS_PHONE.replace(/[^0-9]/g, '') : '6285189918115';
+                const waMsg = encodeURIComponent("Mohon dikirim analisa asesmen nya");
+                const waUrl = `https://wa.me/${cleanPhone}?text=${waMsg}`;
+                const btnWa = document.getElementById('btn-wa-consult');
+                if (btnWa) {
+                    btnWa.href = waUrl;
+                    btnWa.innerHTML = '<i class="fab fa-whatsapp text-lg mr-2"></i> Buka WhatsApp & Terima Analisa';
+                }
+
+                // Simpan ke Database via AJAX
+                saveLeadToDatabase(percentage, kategori, {
+                    pilarScores: pilarScores,
+                    strength: kekuatan,
+                    growth: growth
+                });
+
+                // Transition UI
+                sectionQuiz.classList.add('hidden');
+                sectionResult.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                // Otomatis Redirect ke WhatsApp setelah jeda 1.2 detik
+                setTimeout(() => {
+                    window.location.href = waUrl;
+                }, 1200);
+
+                // Trigger Confetti
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 80,
+                        spread: 70,
+                        origin: { y: 0.6 }
+                    });
+                }
+            } catch (err) {
+                console.error('Error saat memproses analisa:', err);
+                // Fallback UI transition jika terjadi error tak terduga
+                sectionQuiz.classList.add('hidden');
+                sectionResult.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
