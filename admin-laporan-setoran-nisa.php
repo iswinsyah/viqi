@@ -1,3 +1,4 @@
 <?php
-// Proxy file for backward compatibility
-require_once __DIR__ . '/admin/admin-laporan-setoran-nisa.php';
+header("Location: admin-laporan-setoran-hafalan.php");
+exit;
+?>

@@ -1,3 +1,4 @@
 <?php
-// Proxy file for backward compatibility
-require_once __DIR__ . '/admin/admin-ibadah-rijal.php';
+header("Location: admin-ibadah-santri.php?gender=putra");
+exit;
+?>

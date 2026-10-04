@@ -1,3 +1,5 @@
 <?php
-// Proxy file for backward compatibility
-require_once __DIR__ . '/admin/admin-dashboard-asrama.php';
+// Redirect permanen ke URL baru yang dinamis
+header("Location: admin-ustadz.php?view=dashboard_asrama", true, 301);
+exit;
+?>
