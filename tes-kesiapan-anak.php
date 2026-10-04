@@ -703,7 +703,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             btnPrevQ.disabled = (index === 0);
             btnNextQ.disabled = (currentAnswer === undefined);
             if (index === quizData.length - 1) {
-                btnNextQ.innerHTML = 'Lihat Hasil Asesmen <i class="fas fa-check-circle ml-1.5 text-amber-300"></i>';
+                btnNextQ.innerHTML = 'Dapatkan Analisa Lengkap Sekarang <i class="fas fa-arrow-right ml-2 text-amber-300"></i>';
             } else {
                 btnNextQ.innerHTML = 'Selanjutnya <i class="fas fa-chevron-right ml-1.5"></i>';
             }
@@ -875,9 +875,14 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             }
             document.getElementById('res-breakdown-container').innerHTML = breakdownHtml;
 
-            // Setup WhatsApp Consultation Link
-            const waMsg = `Assalamu'alaikum Warahmatullahi Wabarakatuh Admin/Konselor PSB Villa Quran Baron Malang,%0A%0ASaya *${encodeURIComponent(leadData.nama_wali)}*.%0ABaru saja menyelesaikan *Tes Kesiapan Masuk Pondok* untuk Ananda tercinta dengan hasil:%0A• Skor Kesiapan: *${percentage}%* (${encodeURIComponent(kategori)})%0A%0AMohon informasi lebih lanjut mengenai konsultasi hasil asesmen ini, jadwal survey lokasi, dan pendaftaran santri baru.%0ATerima kasih.`;
-            document.getElementById('btn-wa-consult').href = `https://wa.me/${CS_PHONE}?text=${waMsg}`;
+            // Setup WhatsApp Consultation Link (Pesan Singkat & Langsung)
+            const waMsg = encodeURIComponent("Mohon dikirim analisa asesmen nya");
+            const waUrl = `https://wa.me/${CS_PHONE}?text=${waMsg}`;
+            const btnWa = document.getElementById('btn-wa-consult');
+            if (btnWa) {
+                btnWa.href = waUrl;
+                btnWa.innerHTML = '<i class="fab fa-whatsapp text-lg mr-2"></i> Buka WhatsApp & Terima Analisa';
+            }
 
             // Simpan ke Database via AJAX
             saveLeadToDatabase(percentage, kategori, {
@@ -890,6 +895,11 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             sectionQuiz.classList.add('hidden');
             sectionResult.classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Otomatis Redirect Langsung ke WhatsApp setelah jeda 1 detik agar proses simpan selesai
+            setTimeout(() => {
+                window.location.href = waUrl;
+            }, 1000);
 
             // Trigger Confetti
             if (typeof confetti === 'function') {
