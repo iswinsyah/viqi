@@ -23,17 +23,21 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 ?>
 <!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tes Kesiapan Anak Masuk Pondok Pesantren | <?= htmlspecialchars($nama_pesantren) ?></title>
-    <meta name="description" content="Ketahui sejauh mana kesiapan mandiri, emosional, spiritual, dan sosial ananda masuk pondok pesantren dalam 3 menit. Dapatkan skor akurat & rekomendasi pengasuhan dari ahli!">
-    
+    <meta name="description"
+        content="Ketahui sejauh mana kesiapan mandiri, emosional, spiritual, dan sosial ananda masuk pondok pesantren dalam 3 menit. Dapatkan skor akurat & rekomendasi pengasuhan dari ahli!">
+
     <!-- Open Graph / Meta Sosmed -->
-    <meta property="og:title" content="Tes Kesiapan Anak Masuk Pondok Pesantren - <?= htmlspecialchars($nama_pesantren) ?>">
-    <meta property="og:description" content="Asesmen psikologis & kemandirian 15 indikator untuk mengetahui kesiapan ananda dan panduan orang tua. Gratis & instan!">
+    <meta property="og:title"
+        content="Tes Kesiapan Anak Masuk Pondok Pesantren - <?= htmlspecialchars($nama_pesantren) ?>">
+    <meta property="og:description"
+        content="Asesmen psikologis & kemandirian 15 indikator untuk mengetahui kesiapan ananda dan panduan orang tua. Gratis & instan!">
     <meta property="og:image" content="upload/logo-villa-quran.png">
-    
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -66,11 +70,13 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             }
         }
     </script>
-    
+
     <!-- Google Fonts & Font Awesome -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -81,42 +87,65 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             font-weight: bold;
             font-display: swap;
         }
+
         .font-marlin {
             font-family: 'Marlin Condensed', 'Barlow Condensed', sans-serif;
         }
+
         /* Custom Radio Card */
         .option-card {
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .option-card:hover {
             border-color: #059669;
             transform: translateY(-2px);
             box-shadow: 0 10px 20px -5px rgba(5, 150, 105, 0.12);
         }
+
         .option-card.selected {
             border-color: #059669;
             background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
             box-shadow: 0 0 0 2px #059669, 0 8px 16px -4px rgba(5, 150, 105, 0.2);
         }
+
         .animate-bounce-slow {
             animation: bounce 2.5s infinite;
         }
+
         @keyframes pulse-subtle {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.94; transform: scale(1.02); }
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.94;
+                transform: scale(1.02);
+            }
         }
+
         .pulse-subtle {
             animation: pulse-subtle 3s ease-in-out infinite;
         }
+
         /* Print Styles */
         @media print {
-            header, footer, .no-print, #cta-action-box {
+
+            header,
+            footer,
+            .no-print,
+            #cta-action-box {
                 display: none !important;
             }
+
             body {
                 background: white !important;
                 color: black !important;
             }
+
             .print-full {
                 max-width: 100% !important;
                 margin: 0 !important;
@@ -127,15 +156,19 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         }
     </style>
 </head>
-<body class="bg-gradient-to-b from-slate-50 via-emerald-50/30 to-slate-100 font-sans text-gray-800 min-h-screen flex flex-col selection:bg-emerald-600 selection:text-white">
+
+<body
+    class="bg-gradient-to-b from-slate-50 via-emerald-50/30 to-slate-100 font-sans text-gray-800 min-h-screen flex flex-col selection:bg-emerald-600 selection:text-white">
 
     <!-- HEADER / TOP NAV -->
     <header class="bg-white/95 backdrop-blur-md sticky top-0 z-40 border-b border-emerald-100 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-20 flex items-center justify-between">
             <a href="index.html" class="flex items-center space-x-2.5 sm:space-x-3 group">
-                <img src="upload/logo-villa-quran.png" alt="Logo" class="h-10 sm:h-12 w-auto object-contain transition group-hover:scale-105">
+                <img src="upload/logo-villa-quran.png" alt="Logo"
+                    class="h-10 sm:h-12 w-auto object-contain transition group-hover:scale-105">
                 <div>
-                    <span class="block font-marlin font-bold text-xl sm:text-2xl text-emerald-950 tracking-tight leading-none uppercase">
+                    <span
+                        class="block font-marlin font-bold text-xl sm:text-2xl text-emerald-950 tracking-tight leading-none uppercase">
                         <?= htmlspecialchars($nama_pesantren) ?>
                     </span>
                     <span class="block text-[10px] sm:text-xs font-semibold text-emerald-700 tracking-wider uppercase">
@@ -144,10 +177,12 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 </div>
             </a>
             <div class="flex items-center space-x-3">
-                <a href="index.html" class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-emerald-700 transition hidden sm:inline-flex items-center">
+                <a href="index.html"
+                    class="text-xs sm:text-sm font-semibold text-gray-600 hover:text-emerald-700 transition hidden sm:inline-flex items-center">
                     <i class="fas fa-home mr-1.5 text-gray-400"></i> Beranda
                 </a>
-                <a href="daftar-spmb.html" class="inline-flex items-center px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-700 text-white hover:bg-emerald-800 transition shadow-sm shadow-emerald-700/20">
+                <a href="daftar-spmb.html"
+                    class="inline-flex items-center px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-700 text-white hover:bg-emerald-800 transition shadow-sm shadow-emerald-700/20">
                     <i class="fas fa-user-plus mr-1.5"></i> SPMB Online
                 </a>
             </div>
@@ -160,22 +195,31 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         <!-- STEP 1: HERO & REGISTRATION FORM (LEAD CAPTURE) -->
         <section id="section-intro" class="space-y-6 sm:space-y-8">
             <!-- Hero Card -->
-            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-900 via-teal-900 to-emerald-950 text-white p-6 sm:p-10 shadow-2xl border border-emerald-800">
-                <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                <div class="absolute -left-16 -top-16 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div
+                class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-900 via-teal-900 to-emerald-950 text-white p-6 sm:p-10 shadow-2xl border border-emerald-800">
+                <div
+                    class="absolute -right-16 -bottom-16 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none">
+                </div>
+                <div
+                    class="absolute -left-16 -top-16 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none">
+                </div>
 
                 <div class="relative z-10 text-center max-w-2xl mx-auto space-y-4">
-                    <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-800/80 border border-emerald-600/40 text-amber-300 text-xs sm:text-sm font-bold tracking-wide">
+                    <div
+                        class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-800/80 border border-emerald-600/40 text-amber-300 text-xs sm:text-sm font-bold tracking-wide">
                         <i class="fas fa-certificate text-amber-400"></i>
                         <span>LEAD MAGNET PSB • GRATIS 100%</span>
                     </div>
 
-                    <h1 class="font-marlin text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
+                    <h1
+                        class="font-marlin text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
                         Apakah Ananda Sudah Benar-Benar Siap Masuk Pondok?
                     </h1>
 
                     <p class="text-sm sm:text-base text-emerald-100 font-normal leading-relaxed">
-                        Cari tahu kesiapan <span class="text-amber-300 font-semibold">Kemandirian, Emosional, Spiritual & Sosial</span> ananda dalam 3 menit. Dapatkan skor akurat, peta diagnosis psikologis, serta E-Book Panduan Eksklusif!
+                        Cari tahu kesiapan <span class="text-amber-300 font-semibold">Kemandirian, Emosional, Spiritual
+                            & Sosial</span> ananda dalam 3 menit. Dapatkan skor akurat, peta diagnosis psikologis, serta
+                        E-Book Panduan Eksklusif!
                     </p>
 
                     <!-- Feature Badges -->
@@ -211,10 +255,12 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     <input type="hidden" id="kode_ref" name="kode_ref" value="<?= htmlspecialchars($kode_ref) ?>">
 
                     <?php if (!empty($nama_agen)): ?>
-                    <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center">
-                        <i class="fas fa-user-tag text-emerald-600 mr-2 text-base"></i>
-                        <span>Direkomendasikan oleh Konsultan Pendidikan: <strong><?= htmlspecialchars($nama_agen) ?></strong></span>
-                    </div>
+                        <div
+                            class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center">
+                            <i class="fas fa-user-tag text-emerald-600 mr-2 text-base"></i>
+                            <span>Direkomendasikan oleh Konsultan Pendidikan:
+                                <strong><?= htmlspecialchars($nama_agen) ?></strong></span>
+                        </div>
                     <?php endif; ?>
 
                     <!-- Nama Wali -->
@@ -223,10 +269,12 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             Nama Lengkap / Panggilan Bapak / Ibu <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                            <span
+                                class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
                                 <i class="fas fa-user"></i>
                             </span>
-                            <input type="text" id="input_nama_wali" required placeholder="Contoh: Bpk. Muhammad Ilham / Ibu Rahma"
+                            <input type="text" id="input_nama_wali" required
+                                placeholder="Contoh: Bpk. Muhammad Ilham / Ibu Rahma"
                                 class="w-full pl-10 pr-4 py-3.5 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
                         </div>
                     </div>
@@ -237,13 +285,15 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             Nomor WhatsApp Aktif <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 font-semibold text-xs">
+                            <span
+                                class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 font-semibold text-xs">
                                 <i class="fab fa-whatsapp text-emerald-600 text-sm"></i>
                             </span>
                             <input type="tel" id="input_whatsapp" required placeholder="Contoh: 081234567890"
                                 class="w-full pl-10 pr-4 py-3.5 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
                         </div>
-                        <span class="text-[11px] text-gray-400 mt-1 block">Untuk menerima salinan resume analisis kesiapan dan E-Book gratis.</span>
+                        <span class="text-[11px] text-gray-400 mt-1 block">Untuk menerima salinan resume analisis
+                            kesiapan dan E-Book gratis.</span>
                     </div>
 
                     <!-- Tombol Mulai Tes -->
@@ -254,7 +304,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             <i class="fas fa-arrow-right ml-3 text-amber-300"></i>
                         </button>
                         <p class="text-xs text-gray-400 mt-2.5 flex items-center justify-center">
-                            <i class="fas fa-lock mr-1.5 text-gray-400"></i> Data Anda 100% aman & langsung terhubung ke sistem.
+                            <i class="fas fa-lock mr-1.5 text-gray-400"></i> Data Anda 100% aman & langsung terhubung ke
+                            sistem.
                         </p>
                     </div>
                 </form>
@@ -273,7 +324,9 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     <span id="quiz-progress-text" class="text-gray-500">Soal 1 dari 15</span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-                    <div id="quiz-progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-300" style="width: 6.66%;"></div>
+                    <div id="quiz-progress-bar"
+                        class="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-300"
+                        style="width: 6.66%;"></div>
                 </div>
             </div>
 
@@ -284,10 +337,12 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
             <!-- Navigation Buttons -->
             <div class="flex items-center justify-between pt-2">
-                <button type="button" id="btn-prev-q" class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed">
+                <button type="button" id="btn-prev-q"
+                    class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-100 text-sm font-bold transition disabled:opacity-40 disabled:cursor-not-allowed">
                     <i class="fas fa-chevron-left mr-1.5"></i> Sebelumnya
                 </button>
-                <button type="button" id="btn-next-q" class="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
+                <button type="button" id="btn-next-q"
+                    class="px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold transition shadow-sm disabled:opacity-40 disabled:cursor-not-allowed">
                     Selanjutnya <i class="fas fa-chevron-right ml-1.5"></i>
                 </button>
             </div>
@@ -298,8 +353,10 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             <!-- Summary Banner -->
             <div class="bg-white rounded-3xl overflow-hidden shadow-2xl border border-emerald-100">
                 <!-- Header Banner -->
-                <div class="bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-950 text-white p-6 sm:p-10 text-center relative">
-                    <div class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-emerald-800/90 text-amber-300 text-xs font-bold mb-3 border border-emerald-600/40">
+                <div
+                    class="bg-gradient-to-r from-emerald-900 via-teal-900 to-emerald-950 text-white p-6 sm:p-10 text-center relative">
+                    <div
+                        class="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-emerald-800/90 text-amber-300 text-xs font-bold mb-3 border border-emerald-600/40">
                         <i class="fas fa-award text-amber-400"></i>
                         <span>LAPORAN RESMI DIAGNOSIS KESIAPAN SANTRI</span>
                     </div>
@@ -312,12 +369,17 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
                     <!-- Score Radial / Circle Display -->
                     <div class="mt-6 flex flex-col items-center justify-center">
-                        <div class="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-white/10 backdrop-blur-md border-4 border-amber-400/80 flex flex-col items-center justify-center shadow-xl">
-                            <span id="res-score-number" class="text-4xl sm:text-5xl font-black text-white font-marlin tracking-tight">0%</span>
-                            <span class="text-[10px] sm:text-xs text-amber-300 font-bold uppercase tracking-wider mt-0.5">Indeks Kesiapan</span>
+                        <div
+                            class="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-white/10 backdrop-blur-md border-4 border-amber-400/80 flex flex-col items-center justify-center shadow-xl">
+                            <span id="res-score-number"
+                                class="text-4xl sm:text-5xl font-black text-white font-marlin tracking-tight">0%</span>
+                            <span
+                                class="text-[10px] sm:text-xs text-amber-300 font-bold uppercase tracking-wider mt-0.5">Indeks
+                                Kesiapan</span>
                         </div>
                         <div class="mt-4">
-                            <span id="res-kategori-badge" class="inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wide bg-amber-400 text-emerald-950 shadow-md">
+                            <span id="res-kategori-badge"
+                                class="inline-block px-4 py-1.5 rounded-full text-xs sm:text-sm font-extrabold uppercase tracking-wide bg-amber-400 text-emerald-950 shadow-md">
                                 Menghitung Kategori...
                             </span>
                         </div>
@@ -379,22 +441,29 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             <i class="fas fa-calendar-check text-emerald-700 mr-2"></i>
                             Langkah Tindakan (Action Plan) Pra-Pondok di Rumah:
                         </h4>
-                        <ul id="res-action-plan" class="space-y-2 text-xs sm:text-sm text-gray-700 list-disc list-inside">
-                            <li>Kurangi durasi screen time / gadget harian secara bertahap 30-60 menit setiap pekan.</li>
-                            <li>Latih ananda mencuci pakaian dalam, merapikan tempat tidur, dan menyiapkan perlengkapan sholat mandiri.</li>
-                            <li>Tingkatkan tilawah bersama Ayah & Bunda 1 lembar ba'da Maghrib/Subuh untuk menumbuhkan rasa cinta Al-Quran.</li>
-                            <li>Perkuat komunikasi positif: ceritakan keindahan asrama villa, sejuknya hawa pegunungan, dan serunya teman baru.</li>
+                        <ul id="res-action-plan"
+                            class="space-y-2 text-xs sm:text-sm text-gray-700 list-disc list-inside">
+                            <li>Kurangi durasi screen time / gadget harian secara bertahap 30-60 menit setiap pekan.
+                            </li>
+                            <li>Latih ananda mencuci pakaian dalam, merapikan tempat tidur, dan menyiapkan perlengkapan
+                                sholat mandiri.</li>
+                            <li>Tingkatkan tilawah bersama Ayah & Bunda 1 lembar ba'da Maghrib/Subuh untuk menumbuhkan
+                                rasa cinta Al-Quran.</li>
+                            <li>Perkuat komunikasi positif: ceritakan keindahan asrama villa, sejuknya hawa pegunungan,
+                                dan serunya teman baru.</li>
                         </ul>
                     </div>
 
                     <!-- ACTION CTA BUTTONS -->
                     <div id="cta-action-box" class="pt-4 space-y-4 no-print">
-                        <div class="p-6 rounded-3xl bg-gradient-to-br from-emerald-800 to-teal-900 text-white text-center space-y-4 shadow-xl">
+                        <div
+                            class="p-6 rounded-3xl bg-gradient-to-br from-emerald-800 to-teal-900 text-white text-center space-y-4 shadow-xl">
                             <h3 class="font-marlin text-2xl sm:text-3xl font-bold text-amber-300">
                                 Mau Konsultasi Lebih Dalam atau Amankan Kuota SPMB?
                             </h3>
                             <p class="text-xs sm:text-sm text-emerald-100 max-w-xl mx-auto">
-                                Tim Konselor Pendidikan & Pengasuh Asrama Villa Quran Baron Malang siap berdiskusi mengenai pemetaan karakter dan program bimbingan ananda.
+                                Tim Konselor Pendidikan & Pengasuh Asrama Villa Quran Baron Malang siap berdiskusi
+                                mengenai pemetaan karakter dan program bimbingan ananda.
                             </p>
 
                             <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -423,11 +492,13 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
                         <!-- Print / Share CTA -->
                         <div class="flex items-center justify-center space-x-4 pt-2">
-                            <button onclick="window.print()" class="text-xs text-gray-600 hover:text-emerald-700 font-bold inline-flex items-center transition">
+                            <button onclick="window.print()"
+                                class="text-xs text-gray-600 hover:text-emerald-700 font-bold inline-flex items-center transition">
                                 <i class="fas fa-print mr-1.5"></i> Cetak / Simpan PDF
                             </button>
                             <span class="text-gray-300">•</span>
-                            <button onclick="restartQuiz()" class="text-xs text-gray-600 hover:text-emerald-700 font-bold inline-flex items-center transition">
+                            <button onclick="restartQuiz()"
+                                class="text-xs text-gray-600 hover:text-emerald-700 font-bold inline-flex items-center transition">
                                 <i class="fas fa-redo mr-1.5"></i> Ulangi Tes
                             </button>
                         </div>
@@ -442,7 +513,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
     <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 text-xs text-center mt-12 no-print">
         <div class="max-w-4xl mx-auto px-4 space-y-2">
             <p class="font-bold text-white text-sm">Villa Quran Baron Malang</p>
-            <p>Pondok Pesantren Berbasis Villa Alam • Tahfidz Al-Quran Mutqin • Kurikulum Akademik Unggul & Life-Skills Solopreneur</p>
+            <p>Pondok Pesantren Berbasis Villa Alam • Tahfidz Al-Quran Mutqin • Kurikulum Akademik Unggul & Life-Skills
+                Solopreneur</p>
             <p class="text-slate-500 pt-2">&copy; <?= date('Y') ?> Villa Quran Baron Malang. All Rights Reserved.</p>
         </div>
     </footer>
@@ -661,7 +733,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         const labelSantriTarget = document.getElementById('label-santri-target');
 
         // Step 1: Submit Form Data Awal
-        formAwal.addEventListener('submit', function(e) {
+        formAwal.addEventListener('submit', function (e) {
             e.preventDefault();
             const namaWali = document.getElementById('input_nama_wali').value.trim();
             const whatsapp = document.getElementById('input_whatsapp').value.trim();
@@ -929,13 +1001,13 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 method: 'POST',
                 body: formData
             })
-            .then(res => res.json())
-            .then(data => {
-                console.log('Lead test saved:', data);
-            })
-            .catch(err => {
-                console.warn('Gagal menyimpan lead:', err);
-            });
+                .then(res => res.json())
+                .then(data => {
+                    console.log('Lead test saved:', data);
+                })
+                .catch(err => {
+                    console.warn('Gagal menyimpan lead:', err);
+                });
         }
 
         function restartQuiz() {
@@ -949,4 +1021,5 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
         }
     </script>
 </body>
+
 </html>
