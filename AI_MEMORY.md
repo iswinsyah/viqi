@@ -169,9 +169,37 @@ Setiap kali Anda melakukan `git commit` dan `git push` ke branch `main`, GitHub 
 
 ---
 
+## 📁 STRUKTUR MODULAR REPOSITORI (REFACTORING OKTOBER 2026)
+Repositori telah dimodularisasi penuh menjadi arsitektur subfolder bersih dengan **Zero-Breaking Backward Compatibility Proxy** di root:
+* `includes/` : `koneksi.php`, `config-key.php` (Konfigurasi & database terpusat).
+* `api/` : 16 Endpoint REST & Webhook (`gemini.php`, `ai.php`, `wa-webhook.php`, `cp-ai.php`, dll.).
+* `auth/` : Autentikasi, session guard, login, & logout semua role (`auth.php`, `login-santri.php`, dll.).
+* `components/` : Komponen UI (`sidebar.php`, `sidebar-marketing.php`, `footer.php`, `bottombar-*`, dll.).
+* `admin/` : 80 modul administrasi dan panel kontrol manajemen web/sekolah.
+* `santri/` & `orangtua/` : Portal layanan santri dan wali santri.
+* `marketing/` : Portal marketing, pipeline, dan data agen.
+* `handlers/` : Form submit & AJAX processor (`simpan-test-kesiapan.php`, `simpan-brosur.php`, dll.).
+* `cron/` : Background worker, autopilot marketing agent, dan cron health check.
+* `database/` : Migration schema, database setup, dan seeder.
+* `Root Directory` : Halaman publik (`index.php`, `tes-kesiapan-anak.php`, `brosur.php`, `artikel.php`, dll.) + file proxy 1 baris untuk kompatibilitas tautan lama.
+
+---
+
+## 🧠 CS AI TRAINING CENTER & WHATSAPP WEBHOOK CONSULTANT
+1. **Panel Training CS AI (`admin/admin-ai-cs-training.php`)**:
+   - Tabel database: `ai_cs_knowledge` (Self-healing).
+   - Fitur CRUD Materi: Kategori, Topik Pertanyaan, Kata Kunci Pemicu (*Keywords*), Instruksi Fakta/SOP Resmi, dan Arahan Closing Open House.
+   - Built-in Live AI Simulator: Admin dapat menguji langsung respons percakapan Gemini AI secara real-time.
+2. **Webhook Engine WhatsApp (`api/wa-webhook.php`)**:
+   - Menghubungkan nomor Fonnte (`6285189918115`) dengan AI Consultant Persona.
+   - Otomatis membaca riwayat skor kesiapan dan profil anak dari tabel `leads` saat pesan masuk (`"Mohon dikirim analisa asesmen nya"`).
+   - Menerapkan SOP Jawaban dari Knowledge Base aktif dan secara konsisten mengarahkan orang tua untuk reservasi agenda **Open House & Survey Pesantren**.
+
+---
+
 ## 🛠️ KETENTUAN KHUSUS & BUG-FIX TERBARU
-1. **Auto-Deploy Webhook Hostinger**: Cukup commit dan push ke `main`, website langsung terupdate 1-2 detik.
-2. **Form Lead Magnet Bersih**: Teks judul kaku telah dihapus dari form tes kesiapan agar alur pengerjaan terasa natural dan modern.
+1. **Auto-Deploy Webhook Hostinger**: Cukup commit dan push ke `main`, website langsung terupdate 1-2 detik via SFTP action.
+2. **Lead Magnet Curiosity Funnel**: Di `tes-kesiapan-anak.php`, skor tidak dimunculkan di web. User langsung dialihkan ke WhatsApp CS resmi dengan pesan instan untuk menciptakan percakapan konsultasi yang dipandu AI.
 3. **Anti-Crash MySQL (`pastikanKoneksiDb()`):**
    Gunakan fungsi `pastikanKoneksiDb()` sebelum melakukan query database setelah request cURL eksternal yang lama.
 4. **Normalisasi WhatsApp Gateway (Fonnte):**
@@ -182,5 +210,5 @@ Setiap kali Anda melakukan `git commit` dan `git push` ke branch `main`, GitHub 
 ## 📋 INSTRUKSI UNTUK AI AGENT BERIKUTNYA
 Jika sesi chat baru dibuka atau laptop baru dinyalakan:
 1. **Baca file `AI_MEMORY.md` ini** secara utuh untuk langsung melanjutkan pekerjaan tanpa kehilangan konteks.
-2. Cek status database `leads` dan integrasi WhatsApp di `simpan-test-kesiapan.php` dan `tes-kesiapan-anak.php`.
+2. Cek status database `leads`, modul `admin/admin-ai-cs-training.php`, dan webhook `api/wa-webhook.php`.
 3. Selalu lakukan `git commit` dan `git push origin main` setiap menyelesaikan modifikasi agar otomatis ter-deploy ke Hostinger.
