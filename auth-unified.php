@@ -48,130 +48,175 @@ function normalizeCanonicalRole($role) {
     return $r;
 }
 
+function ensureAppUsersSchema() {
+    global $conn;
+    if (!$conn || !($conn instanceof mysqli)) return;
+    try {
+        @$conn->query("CREATE TABLE IF NOT EXISTS app_users (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            username VARCHAR(100) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            nama_lengkap VARCHAR(150) NOT NULL,
+            roles VARCHAR(255) NOT NULL,
+            user_type VARCHAR(50) NOT NULL DEFAULT 'pegawai',
+            ref_id INT NULL,
+            foto_profil VARCHAR(255) NULL,
+            status_aktif TINYINT(1) NOT NULL DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+
+        // Seed default super admin users jika belum ada
+        $all_master_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,kepala_sekolah,tutor,musyrif,ustadz,walisantri,web,marketing';
+        $pass_winsyah = password_hash('Khilafet@1924', PASSWORD_DEFAULT);
+        $pass_viqi = password_hash('Bismillah99!', PASSWORD_DEFAULT);
+
+        @$conn->query("INSERT IGNORE INTO app_users (username, password, nama_lengkap, roles, user_type, ref_id, status_aktif) VALUES 
+            ('winsyah', '$pass_winsyah', 'Ustadz Winsyah (Super Admin)', '$all_master_roles', 'pegawai', 1, 1),
+            ('viqi', '$pass_viqi', 'Master Admin Viqi', '$all_master_roles', 'pegawai', 2, 1)
+        ");
+    } catch (Throwable $e) {
+        // Abaikan error agar halaman tidak error 500
+    }
+}
+
 function ensureSantriDatabaseSchema() {
     global $conn;
     if (!$conn || !($conn instanceof mysqli)) return;
-    
-    // 1. Cek apakah buku_induk_santri ada
-    $check_table = $conn->query("SHOW TABLES LIKE 'buku_induk_santri'");
-    if (!$check_table || $check_table->num_rows === 0) return;
-
-    // 2. Cek kolom-kolom penting
-    $cols = [];
-    $r = $conn->query("SHOW COLUMNS FROM buku_induk_santri");
-    if ($r) {
-        while ($c = $r->fetch_assoc()) $cols[] = $c['Field'];
-    }
-
-    if (!in_array('nis', $cols)) {
-        @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nis VARCHAR(50) NULL AFTER nama_lengkap");
-    }
-    if (!in_array('nisn', $cols)) {
-        @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nisn VARCHAR(50) NULL AFTER nis");
-    }
-    if (!in_array('username', $cols)) {
-        @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN username VARCHAR(50) NULL AFTER nisn");
-    }
-    if (!in_array('password', $cols)) {
-        @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN password VARCHAR(255) NULL AFTER username");
-    }
-
-    // 3. Pastikan minimal data santri tersedia (seed jika masih kosong di Hostinger)
-    $cnt_check = $conn->query("SELECT COUNT(*) as c FROM buku_induk_santri");
-    $total_santri = $cnt_check ? (int)$cnt_check->fetch_assoc()['c'] : 0;
-    if ($total_santri === 0) {
-        $conn->query("INSERT INTO buku_induk_santri (id, nama_lengkap, nis, nisn, username, password, kelas_sekarang, kamar_asrama, jenis_kelamin, status_santri) VALUES 
-            (1, 'Ahmad Fauzan (Kakak)', '2024001', '0081234001', 'fauzan', '123456', 'Kelas X-A', 'Abu Bakar 01', 'Laki-laki', 'Aktif'),
-            (2, 'Muhammad Rayhan (Adik)', '2024002', '0081234002', 'rayhan', '123456', 'Kelas VII-B', 'Abu Bakar 02', 'Laki-laki', 'Aktif'),
-            (3, 'Zaid bin Tsabit', '2024003', '0081234003', 'zaid', '123456', 'Kelas IX-C', 'Utsman 04', 'Laki-laki', 'Aktif')
-        ");
-    }
-
-    // 4. Pastikan username & password default jika kosong
-    @$conn->query("UPDATE buku_induk_santri SET 
-        username = CASE 
-            WHEN (username IS NOT NULL AND username != '') THEN username
-            WHEN (nisn IS NOT NULL AND nisn != '') THEN nisn 
-            WHEN (nis IS NOT NULL AND nis != '') THEN nis 
-            ELSE CONCAT('santri_', id) 
-        END 
-        WHERE username IS NULL OR username = ''");
+    try {
+        ensureAppUsersSchema();
         
-    @$conn->query("UPDATE buku_induk_santri SET password = '123456' WHERE password IS NULL OR password = ''");
+        // 1. Cek apakah buku_induk_santri ada
+        $check_table = @$conn->query("SHOW TABLES LIKE 'buku_induk_santri'");
+        if (!$check_table || $check_table->num_rows === 0) return;
 
-    // 5. Pastikan semua santri tersinkronisasi ke app_users
-    @$conn->query("INSERT INTO app_users (username, password, nama_lengkap, roles, user_type, ref_id, status_aktif)
-        SELECT 
-            username,
-            password,
-            nama_lengkap,
-            IF(LOWER(TRIM(jenis_kelamin)) = 'perempuan', 'santri_nisa,santri', 'santri_rijal,santri'),
-            'santri',
-            id,
-            1
-        FROM buku_induk_santri
-        ON DUPLICATE KEY UPDATE 
-            nama_lengkap = VALUES(nama_lengkap),
-            roles = VALUES(roles),
-            ref_id = VALUES(ref_id),
-            status_aktif = 1
-    ");
+        // 2. Cek kolom-kolom penting
+        $cols = [];
+        $r = @$conn->query("SHOW COLUMNS FROM buku_induk_santri");
+        if ($r) {
+            while ($c = $r->fetch_assoc()) $cols[] = $c['Field'];
+        }
+
+        if (!in_array('nis', $cols)) {
+            @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nis VARCHAR(50) NULL AFTER nama_lengkap");
+        }
+        if (!in_array('nisn', $cols)) {
+            @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN nisn VARCHAR(50) NULL AFTER nis");
+        }
+        if (!in_array('username', $cols)) {
+            @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN username VARCHAR(50) NULL AFTER nisn");
+        }
+        if (!in_array('password', $cols)) {
+            @$conn->query("ALTER TABLE buku_induk_santri ADD COLUMN password VARCHAR(255) NULL AFTER username");
+        }
+
+        // 3. Pastikan minimal data santri tersedia (seed jika masih kosong di Hostinger)
+        $cnt_check = @$conn->query("SELECT COUNT(*) as c FROM buku_induk_santri");
+        $total_santri = $cnt_check ? (int)$cnt_check->fetch_assoc()['c'] : 0;
+        if ($total_santri === 0) {
+            @$conn->query("INSERT INTO buku_induk_santri (id, nama_lengkap, nis, nisn, username, password, kelas_sekarang, kamar_asrama, jenis_kelamin, status_santri) VALUES 
+                (1, 'Ahmad Fauzan (Kakak)', '2024001', '0081234001', 'fauzan', '123456', 'Kelas X-A', 'Abu Bakar 01', 'Laki-laki', 'Aktif'),
+                (2, 'Muhammad Rayhan (Adik)', '2024002', '0081234002', 'rayhan', '123456', 'Kelas VII-B', 'Abu Bakar 02', 'Laki-laki', 'Aktif'),
+                (3, 'Zaid bin Tsabit', '2024003', '0081234003', 'zaid', '123456', 'Kelas IX-C', 'Utsman 04', 'Laki-laki', 'Aktif')
+            ");
+        }
+
+        // 4. Pastikan username & password default jika kosong
+        @$conn->query("UPDATE buku_induk_santri SET 
+            username = CASE 
+                WHEN (username IS NOT NULL AND username != '') THEN username
+                WHEN (nisn IS NOT NULL AND nisn != '') THEN nisn 
+                WHEN (nis IS NOT NULL AND nis != '') THEN nis 
+                ELSE CONCAT('santri_', id) 
+            END 
+            WHERE username IS NULL OR username = ''");
+            
+        @$conn->query("UPDATE buku_induk_santri SET password = '123456' WHERE password IS NULL OR password = ''");
+
+        // 5. Pastikan semua santri tersinkronisasi ke app_users
+        @$conn->query("INSERT INTO app_users (username, password, nama_lengkap, roles, user_type, ref_id, status_aktif)
+            SELECT 
+                username,
+                password,
+                nama_lengkap,
+                IF(LOWER(TRIM(jenis_kelamin)) = 'perempuan', 'santri_nisa,santri', 'santri_rijal,santri'),
+                'santri',
+                id,
+                1
+            FROM buku_induk_santri
+            ON DUPLICATE KEY UPDATE 
+                nama_lengkap = VALUES(nama_lengkap),
+                roles = VALUES(roles),
+                ref_id = VALUES(ref_id),
+                status_aktif = 1
+        ");
+    } catch (Throwable $e) {
+        // Safe fallback
+    }
 }
 
 function bridgeActiveLegacySessions() {
     global $conn;
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    
-    // Auto-bridge Sesi Santri (misal login dari login-santri.php atau login-as-santri.php)
-    if ((!isset($_SESSION['app_user_id']) || empty($_SESSION['app_user_id'])) && isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true) {
-        $santri_id = (int)($_SESSION['santri_id'] ?? 0);
-        if ($santri_id > 0 && $conn && $conn instanceof mysqli) {
-            ensureSantriDatabaseSchema();
-            $r_s = $conn->query("SELECT * FROM buku_induk_santri WHERE id = $santri_id LIMIT 1");
-            if ($r_s && $r_s->num_rows > 0) {
-                $s_row = $r_s->fetch_assoc();
-                $s_gender = strtolower(trim($s_row['jenis_kelamin'] ?? ''));
-                $s_role = ($s_gender === 'perempuan') ? 'santri_nisa,santri' : 'santri_rijal,santri';
-                $s_uname = !empty($s_row['username']) ? $s_row['username'] : (!empty($s_row['nisn']) ? $s_row['nisn'] : (!empty($s_row['nis']) ? $s_row['nis'] : 'santri_' . $santri_id));
-                
-                $_SESSION['app_user_id'] = $santri_id;
-                $_SESSION['app_username'] = $s_uname;
-                $_SESSION['app_user_nama'] = $s_row['nama_lengkap'];
-                $_SESSION['app_user_roles'] = $s_role;
-                if (!isset($_SESSION['active_role_views']) || empty($_SESSION['active_role_views'])) {
-                    $_SESSION['active_role_views'] = ['santri'];
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        
+        // Auto-bridge Sesi Santri (misal login dari login-santri.php atau login-as-santri.php)
+        if ((!isset($_SESSION['app_user_id']) || empty($_SESSION['app_user_id'])) && isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true) {
+            $santri_id = (int)($_SESSION['santri_id'] ?? 0);
+            if ($santri_id > 0 && $conn && $conn instanceof mysqli) {
+                ensureSantriDatabaseSchema();
+                $r_s = @$conn->query("SELECT * FROM buku_induk_santri WHERE id = $santri_id LIMIT 1");
+                if ($r_s && $r_s->num_rows > 0) {
+                    $s_row = $r_s->fetch_assoc();
+                    $s_gender = strtolower(trim($s_row['jenis_kelamin'] ?? ''));
+                    $s_role = ($s_gender === 'perempuan') ? 'santri_nisa,santri' : 'santri_rijal,santri';
+                    $s_uname = !empty($s_row['username']) ? $s_row['username'] : (!empty($s_row['nisn']) ? $s_row['nisn'] : (!empty($s_row['nis']) ? $s_row['nis'] : 'santri_' . $santri_id));
+                    
+                    $_SESSION['app_user_id'] = $santri_id;
+                    $_SESSION['app_username'] = $s_uname;
+                    $_SESSION['app_user_nama'] = $s_row['nama_lengkap'];
+                    $_SESSION['app_user_roles'] = $s_role;
+                    if (!isset($_SESSION['active_role_views']) || empty($_SESSION['active_role_views'])) {
+                        $_SESSION['active_role_views'] = ['santri'];
+                    }
                 }
             }
         }
-    }
 
-    // Auto-bridge Sesi Walisantri
-    if ((!isset($_SESSION['app_user_id']) || empty($_SESSION['app_user_id'])) && isset($_SESSION['orangtua_logged_in']) && $_SESSION['orangtua_logged_in'] === true) {
-        $orangtua_id = (int)($_SESSION['orangtua_id'] ?? 0);
-        if ($orangtua_id > 0 && $conn && $conn instanceof mysqli) {
-            $r_o = $conn->query("SELECT * FROM akun_orangtua WHERE id = $orangtua_id LIMIT 1");
-            if ($r_o && $r_o->num_rows > 0) {
-                $o_row = $r_o->fetch_assoc();
-                $o_uname = !empty($o_row['username']) ? $o_row['username'] : 'orangtua_' . $orangtua_id;
-                $o_nama = $o_row['nama_orangtua'] ?? $o_row['nama_lengkap'] ?? 'Orang Tua / Wali';
-                
-                $_SESSION['app_user_id'] = $orangtua_id;
-                $_SESSION['app_username'] = $o_uname;
-                $_SESSION['app_user_nama'] = $o_nama;
-                $_SESSION['app_user_roles'] = 'orangtua,walisantri';
-                if (!isset($_SESSION['active_role_views']) || empty($_SESSION['active_role_views'])) {
-                    $_SESSION['active_role_views'] = ['orangtua'];
+        // Auto-bridge Sesi Walisantri
+        if ((!isset($_SESSION['app_user_id']) || empty($_SESSION['app_user_id'])) && isset($_SESSION['orangtua_logged_in']) && $_SESSION['orangtua_logged_in'] === true) {
+            $orangtua_id = (int)($_SESSION['orangtua_id'] ?? 0);
+            if ($orangtua_id > 0 && $conn && $conn instanceof mysqli) {
+                $r_o = @$conn->query("SELECT * FROM akun_orangtua WHERE id = $orangtua_id LIMIT 1");
+                if ($r_o && $r_o->num_rows > 0) {
+                    $o_row = $r_o->fetch_assoc();
+                    $o_uname = !empty($o_row['username']) ? $o_row['username'] : 'orangtua_' . $orangtua_id;
+                    $o_nama = $o_row['nama_orangtua'] ?? $o_row['nama_lengkap'] ?? 'Orang Tua / Wali';
+                    
+                    $_SESSION['app_user_id'] = $orangtua_id;
+                    $_SESSION['app_username'] = $o_uname;
+                    $_SESSION['app_user_nama'] = $o_nama;
+                    $_SESSION['app_user_roles'] = 'orangtua,walisantri';
+                    if (!isset($_SESSION['active_role_views']) || empty($_SESSION['active_role_views'])) {
+                        $_SESSION['active_role_views'] = ['orangtua'];
+                    }
                 }
             }
         }
+    } catch (Throwable $e) {
+        // Safe fallback
     }
 }
 
 // Inisialisasi schema & bridge otomatis saat file auth dimuat
-ensureSantriDatabaseSchema();
-bridgeActiveLegacySessions();
+try {
+    ensureAppUsersSchema();
+    ensureSantriDatabaseSchema();
+    bridgeActiveLegacySessions();
+} catch (Throwable $e) {
+    // Suppress error
+}
 
 function getCurrentUser() {
     global $conn;
