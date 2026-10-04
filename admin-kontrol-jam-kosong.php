@@ -183,18 +183,7 @@ if ($res_mpl && $res_mpl->num_rows > 0) {
 // ----------------------------------------------------
 // 1. REKAPITULASI JAM MENGAJAR PER GURU (KHUSUS MAPEL OFFLINE / TATAP MUKA)
 // ----------------------------------------------------
-// Ambil semua jadwal pelajaran aktif khusus pengampu fisik (Tutor, Ustadz, Trainer)
-$sql_jadwal = "SELECT j.*, m.nama_mapel, m.kategori_mapel, m.metode_belajar, k.nama_kelas, u.nama as nama_guru
-               FROM jadwal_pelajaran j
-               LEFT JOIN master_mapel m ON j.mapel_id = m.id
-               LEFT JOIN master_kelas k ON j.kelas_id = k.id
-               LEFT JOIN akun_ustadz u ON j.ustadz_id = u.id
-               WHERE j.ustadz_id IS NOT NULL AND j.ustadz_id > 0
-               AND (m.metode_belajar IS NULL OR m.metode_belajar = 'offline' OR m.metode_belajar != 'ai_agentic')";
-$res_j = $conn->query($sql_jadwal);
-$all_jadwal = ($res_j) ? $res_j->fetch_all(MYSQLI_ASSOC) : [];
-
-// Hitung Jam Mengajar Terjadwal per Guru
+// Inisialisasi struktur rekap untuk SEMUA Ustadz / Guru
 $rekap_guru = [];
 foreach ($asatidz_list as $ast) {
     $gid = (int)$ast['id'];
@@ -213,6 +202,14 @@ foreach ($asatidz_list as $ast) {
         'bulan_solopreneur' => 0,
         'bulan_lainnya' => 0,
         'bulan_total' => 0,
+        // Data Jurnal KBM Mengajar Terisi (jurnal_mengajar)
+        'jurnal_diknas' => 0,
+        'jurnal_diniyah' => 0,
+        'jurnal_solopreneur' => 0,
+        'jurnal_lainnya' => 0,
+        'jurnal_total' => 0,
+        // Data Presensi Scan Absen KBM (absensi_pegawai)
+        'total_scan_absen' => 0,
         // Jam Kosong / Izin Bulan Ini
         'jam_kosong_diknas' => 0,
         'jam_kosong_diniyah' => 0,
@@ -223,9 +220,21 @@ foreach ($asatidz_list as $ast) {
         // Realisasi & Detail
         'realisasi_jam' => 0,
         'persen_kehadiran' => 100,
-        'detail_mapel' => []
+        'detail_mapel' => [],
+        'detail_jurnal' => []
     ];
 }
+
+// A. Tarik Jam dari Jadwal Pelajaran (jadwal_pelajaran)
+$sql_jadwal = "SELECT j.*, m.nama_mapel, m.kategori_mapel, m.metode_belajar, k.nama_kelas, u.nama as nama_guru
+               FROM jadwal_pelajaran j
+               LEFT JOIN master_mapel m ON j.mapel_id = m.id
+               LEFT JOIN master_kelas k ON j.kelas_id = k.id
+               LEFT JOIN akun_ustadz u ON j.ustadz_id = u.id
+               WHERE j.ustadz_id IS NOT NULL AND j.ustadz_id > 0
+               AND (m.metode_belajar IS NULL OR m.metode_belajar = 'offline' OR m.metode_belajar != 'ai_agentic')";
+$res_j = $conn->query($sql_jadwal);
+$all_jadwal = ($res_j) ? $res_j->fetch_all(MYSQLI_ASSOC) : [];
 
 foreach ($all_jadwal as $j) {
     $gid = (int)($j['ustadz_id'] ?? 0);
@@ -261,8 +270,59 @@ foreach ($all_jadwal as $j) {
     }
 }
 
+// B. Sinkronisasi Data Jurnal Mengajar Nyata (jurnal_mengajar)
+$sql_jurnal = "SELECT jm.*, u.id as u_id, u.nama as u_nama 
+               FROM jurnal_mengajar jm
+               LEFT JOIN akun_ustadz u ON jm.ustadz_id = u.id
+               WHERE MONTH(jm.tanggal) = $filter_bulan AND YEAR(jm.tanggal) = $filter_tahun
+               ORDER BY jm.tanggal DESC, jm.id DESC";
+$res_jur = $conn->query($sql_jurnal);
+if ($res_jur && $res_jur->num_rows > 0) {
+    while ($jm = $res_jur->fetch_assoc()) {
+        $u_id = (int)($jm['ustadz_id'] ?? 0);
+        if ($u_id > 0 && isset($rekap_guru[$u_id])) {
+            $mpl = $jm['mata_pelajaran'];
+            $kat = strtolower($mapel_cat_map[$mpl] ?? '');
+
+            if (strpos($kat, 'diknas') !== false || strpos($kat, 'pkbm') !== false) {
+                $rekap_guru[$u_id]['jurnal_diknas']++;
+            } elseif (strpos($kat, 'diniyah') !== false || strpos($kat, 'tahfidz') !== false || strpos($kat, 'pesantren') !== false) {
+                $rekap_guru[$u_id]['jurnal_diniyah']++;
+            } elseif (strpos($kat, 'solo') !== false || strpos($kat, 'bisnis') !== false || strpos($kat, 'entrepreneur') !== false || strpos($kat, 'skill') !== false) {
+                $rekap_guru[$u_id]['jurnal_solopreneur']++;
+            } else {
+                $rekap_guru[$u_id]['jurnal_lainnya']++;
+            }
+            $rekap_guru[$u_id]['jurnal_total']++;
+            $rekap_guru[$u_id]['detail_jurnal'][] = [
+                'tanggal' => $jm['tanggal'],
+                'kelas' => $jm['kelas'],
+                'mapel' => $jm['mata_pelajaran'],
+                'materi' => $jm['materi'],
+                'absensi' => $jm['absensi']
+            ];
+        }
+    }
+}
+
+// C. Sinkronisasi Data Presensi Absensi Mengajar (absensi_pegawai)
+$sql_absen = "SELECT ustadz_id, DATE(waktu_absen) as tgl, status_kehadiran, COUNT(*) as jml
+              FROM absensi_pegawai 
+              WHERE MONTH(waktu_absen) = $filter_bulan AND YEAR(waktu_absen) = $filter_tahun 
+              AND jenis_absen = 'Mengajar' AND status_kehadiran IN ('Masuk', 'Hadir', 'Pulang')
+              GROUP BY ustadz_id, DATE(waktu_absen)";
+$res_abs = $conn->query($sql_absen);
+if ($res_abs && $res_abs->num_rows > 0) {
+    while ($ab = $res_abs->fetch_assoc()) {
+        $u_id = (int)$ab['ustadz_id'];
+        if ($u_id > 0 && isset($rekap_guru[$u_id])) {
+            $rekap_guru[$u_id]['total_scan_absen']++;
+        }
+    }
+}
+
 // ----------------------------------------------------
-// 2. DATA LOG JAM KOSONG BULAN INI
+// 2. DATA LOG JAM KOSONG BULAN INI (kontrol_jam_kosong)
 // ----------------------------------------------------
 $sql_logs = "SELECT k.*, u1.nama as nama_guru_utama, u2.nama as nama_guru_pengganti, uc.nama as nama_creator
              FROM kontrol_jam_kosong k
@@ -299,7 +359,7 @@ foreach ($logs as $l) {
     }
 }
 
-// Hitung Final Realisasi & Persentase
+// Hitung Final Realisasi & Persentase Kehadiran
 $grand_total_diknas = 0;
 $grand_total_diniyah = 0;
 $grand_total_solopreneur = 0;
@@ -307,11 +367,32 @@ $grand_total_terjadwal = 0;
 $grand_total_kosong = 0;
 $grand_total_inval = 0;
 $grand_total_realisasi = 0;
+$grand_total_jurnal = 0;
+$grand_total_absen = 0;
 
 foreach ($rekap_guru as $gid => &$rg) {
-    $rg['realisasi_jam'] = max(0, $rg['bulan_total'] - $rg['jam_kosong_total'] + $rg['jam_inval']);
+    // Jika belum diplot slot di jadwal tetapi guru sudah mengisi jurnal / absen mengajar
+    if ($rg['bulan_total'] === 0 && ($rg['jurnal_total'] > 0 || $rg['total_scan_absen'] > 0)) {
+        $rg['bulan_diknas'] = $rg['jurnal_diknas'];
+        $rg['bulan_diniyah'] = $rg['jurnal_diniyah'];
+        $rg['bulan_solopreneur'] = $rg['jurnal_solopreneur'];
+        $rg['bulan_lainnya'] = $rg['jurnal_lainnya'];
+        $rg['bulan_total'] = max($rg['jurnal_total'], $rg['total_scan_absen']);
+    }
+
+    // Realisasi jam mengajar = realisasi jurnal terisi ATAU jam terjadwal dikurangi jam kosong ditambah jam inval
+    if ($rg['jurnal_total'] > 0) {
+        $rg['realisasi_jam'] = $rg['jurnal_total'] + $rg['jam_inval'];
+    } else {
+        $rg['realisasi_jam'] = max(0, $rg['bulan_total'] - $rg['jam_kosong_total'] + $rg['jam_inval']);
+    }
+
+    // Persentase kehadiran
     if ($rg['bulan_total'] > 0) {
         $rg['persen_kehadiran'] = round((($rg['bulan_total'] - $rg['jam_kosong_total']) / $rg['bulan_total']) * 100, 1);
+        if ($rg['jurnal_total'] > 0 && $rg['persen_kehadiran'] < 100) {
+            $rg['persen_kehadiran'] = min(100, round(($rg['jurnal_total'] / $rg['bulan_total']) * 100, 1));
+        }
     } else {
         $rg['persen_kehadiran'] = 100;
     }
@@ -323,16 +404,13 @@ foreach ($rekap_guru as $gid => &$rg) {
     $grand_total_kosong += $rg['jam_kosong_total'];
     $grand_total_inval += $rg['jam_inval'];
     $grand_total_realisasi += $rg['realisasi_jam'];
+    $grand_total_jurnal += $rg['jurnal_total'];
+    $grand_total_absen += $rg['total_scan_absen'];
 }
 unset($rg);
 
-// Filter Guru yang memiliki jadwal atau aktivitas jam kosong
-$rekap_guru_aktif = array_filter($rekap_guru, function($g) {
-    return $g['bulan_total'] > 0 || $g['jam_kosong_total'] > 0 || $g['jam_inval'] > 0;
-});
-if (empty($rekap_guru_aktif)) {
-    $rekap_guru_aktif = $rekap_guru;
-}
+// Semua ustadz tampil lengkap agar Yayasan & Kepsek dapat memantau seluruh staf
+$rekap_guru_aktif = $rekap_guru;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -897,19 +975,31 @@ if (empty($rekap_guru_aktif)) {
                 </div>
             <?php endif; ?>
 
-            <!-- MODAL DETAIL JADWAL GURU -->
+            <!-- MODAL DETAIL JADWAL & JURNAL GURU -->
             <div id="modal-detail-guru" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
                 <div class="flex items-center justify-center min-h-screen p-4 text-center">
                     <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="tutupModalDetailGuru()"></div>
-                    <div class="inline-block bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:max-w-xl sm:w-full p-6 relative z-10 border border-slate-100">
+                    <div class="inline-block bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:max-w-2xl sm:w-full p-6 relative z-10 border border-slate-100">
                         <div class="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
                             <div>
-                                <h3 id="modal-guru-nama" class="text-base font-black text-slate-900">Rincian Jadwal Mengajar</h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Daftar mata pelajaran yang diampu oleh ustadz.</p>
+                                <h3 id="modal-guru-nama" class="text-base font-black text-slate-900">Rincian Aktivitas Mengajar</h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Rincian jadwal terjadwal & riwayat pengisian Jurnal KBM ustadz.</p>
                             </div>
                             <button type="button" onclick="tutupModalDetailGuru()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100"><i class="fas fa-times text-base"></i></button>
                         </div>
-                        <div class="overflow-x-auto max-h-80">
+                        
+                        <!-- TAB NAV MODAL -->
+                        <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
+                            <button type="button" id="btn-tab-jadwal" onclick="switchModalTab('jadwal')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0b8478] text-white">
+                                <i class="fas fa-calendar-alt mr-1"></i> Slot Jadwal Terjadwal (<span id="modal-count-jadwal">0</span>)
+                            </button>
+                            <button type="button" id="btn-tab-jurnal" onclick="switchModalTab('jurnal')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">
+                                <i class="fas fa-book-open mr-1"></i> Riwayat Jurnal KBM (<span id="modal-count-jurnal">0</span>)
+                            </button>
+                        </div>
+
+                        <!-- SECTION JADWAL -->
+                        <div id="section-modal-jadwal" class="overflow-x-auto max-h-80">
                             <table class="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px]">
@@ -924,6 +1014,23 @@ if (empty($rekap_guru_aktif)) {
                                 </tbody>
                             </table>
                         </div>
+
+                        <!-- SECTION JURNAL -->
+                        <div id="section-modal-jurnal" class="overflow-x-auto max-h-80 hidden">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px]">
+                                        <th class="py-2.5 px-3">Tanggal</th>
+                                        <th class="py-2.5 px-3">Kelas</th>
+                                        <th class="py-2.5 px-3">Mata Pelajaran</th>
+                                        <th class="py-2.5 px-4">Materi Pembelajaran</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modal-jurnal-tbody" class="divide-y divide-slate-100">
+                                </tbody>
+                            </table>
+                        </div>
+
                         <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end">
                             <button type="button" onclick="tutupModalDetailGuru()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold px-5 py-2.5 rounded-xl text-xs transition">
                                 Tutup Rincian
@@ -997,13 +1104,36 @@ if (empty($rekap_guru_aktif)) {
             document.getElementById('modal-edit-pengganti').classList.add('hidden');
         }
 
+        function switchModalTab(tab) {
+            const btnJadwal = document.getElementById('btn-tab-jadwal');
+            const btnJurnal = document.getElementById('btn-tab-jurnal');
+            const secJadwal = document.getElementById('section-modal-jadwal');
+            const secJurnal = document.getElementById('section-modal-jurnal');
+
+            if (tab === 'jadwal') {
+                btnJadwal.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0b8478] text-white';
+                btnJurnal.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100';
+                secJadwal.classList.remove('hidden');
+                secJurnal.classList.add('hidden');
+            } else {
+                btnJurnal.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0b8478] text-white';
+                btnJadwal.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100';
+                secJurnal.classList.remove('hidden');
+                secJadwal.classList.add('hidden');
+            }
+        }
+
         function bukaModalDetailGuru(guru) {
-            document.getElementById('modal-guru-nama').innerText = 'Rincian Jadwal: ' + guru.nama;
-            const tbody = document.getElementById('modal-guru-tbody');
-            tbody.innerHTML = '';
+            document.getElementById('modal-guru-nama').innerText = 'Rincian Aktivitas: ' + guru.nama;
             
-            if (!guru.detail_mapel || guru.detail_mapel.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400 italic">Tidak ada slot jadwal yang terdaftar.</td></tr>';
+            // 1. Render Jadwal
+            const tbodyJadwal = document.getElementById('modal-guru-tbody');
+            tbodyJadwal.innerHTML = '';
+            const jmlJadwal = guru.detail_mapel ? guru.detail_mapel.length : 0;
+            document.getElementById('modal-count-jadwal').innerText = jmlJadwal;
+
+            if (jmlJadwal === 0) {
+                tbodyJadwal.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400 italic">Belum ada slot jadwal yang diplot pada Jadwal Pelajaran.</td></tr>';
             } else {
                 guru.detail_mapel.forEach(d => {
                     const tr = document.createElement('tr');
@@ -1015,9 +1145,34 @@ if (empty($rekap_guru_aktif)) {
                         <td class="py-2.5 px-3 font-extrabold text-slate-900">${d.mapel}</td>
                         <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-slate-100 text-slate-700">${d.kategori}</span></td>
                     `;
-                    tbody.appendChild(tr);
+                    tbodyJadwal.appendChild(tr);
                 });
             }
+
+            // 2. Render Jurnal Mengajar
+            const tbodyJurnal = document.getElementById('modal-jurnal-tbody');
+            tbodyJurnal.innerHTML = '';
+            const jmlJurnal = guru.detail_jurnal ? guru.detail_jurnal.length : 0;
+            document.getElementById('modal-count-jurnal').innerText = jmlJurnal;
+
+            if (jmlJurnal === 0) {
+                tbodyJurnal.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400 italic">Belum ada pengisian Jurnal KBM pada bulan ini.</td></tr>';
+            } else {
+                guru.detail_jurnal.forEach(j => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50 transition';
+                    tr.innerHTML = `
+                        <td class="py-2.5 px-3 font-bold text-slate-800">${j.tanggal}</td>
+                        <td class="py-2.5 px-3 font-medium text-teal-700 font-bold">${j.kelas}</td>
+                        <td class="py-2.5 px-3 font-extrabold text-slate-900">${j.mapel}</td>
+                        <td class="py-2.5 px-4 text-slate-600 text-[11px]">${j.materi || '-'}</td>
+                    `;
+                    tbodyJurnal.appendChild(tr);
+                });
+            }
+
+            // Reset tab ke jadwal
+            switchModalTab('jadwal');
             document.getElementById('modal-detail-guru').classList.remove('hidden');
         }
 
@@ -1025,5 +1180,6 @@ if (empty($rekap_guru_aktif)) {
             document.getElementById('modal-detail-guru').classList.add('hidden');
         }
     </script>
+
 </body>
 </html>
