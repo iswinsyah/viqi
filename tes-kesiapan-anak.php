@@ -615,7 +615,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             btnPrevQ.disabled = (index === 0);
             btnNextQ.disabled = (currentAnswer === undefined);
             if (index === quizData.length - 1) {
-                btnNextQ.innerHTML = 'Dapatkan Analisa Lengkap Sekarang <i class="fas fa-arrow-right ml-2 text-amber-300"></i>';
+                btnNextQ.innerHTML = 'Dapatkan Analisa Lengkap Sekarang <i class="fab fa-whatsapp ml-2 text-amber-300 text-lg"></i>';
             } else {
                 btnNextQ.innerHTML = 'Selanjutnya <i class="fas fa-chevron-right ml-1.5"></i>';
             }
@@ -666,22 +666,15 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             answers[qIndex] = optIndex;
             renderQuestion(qIndex);
 
-            // Auto advance after slight delay for smooth mobile UX
-            setTimeout(() => {
-                if (currentQuestionIndex < quizData.length - 1) {
-                    currentQuestionIndex++;
-                    renderQuestion(currentQuestionIndex);
-                } else {
-                    // Di Soal Terakhir: Aktifkan tombol dan otomatis proses analisa
-                    if (btnNextQ) {
-                        btnNextQ.disabled = false;
-                        btnNextQ.innerHTML = '<i class="fas fa-spinner fa-spin mr-2 text-amber-300"></i> Menghitung Analisa Kesiapan...';
+            // Auto advance hanya untuk soal 1 s.d 14
+            if (currentQuestionIndex < quizData.length - 1) {
+                setTimeout(() => {
+                    if (currentQuestionIndex < quizData.length - 1) {
+                        currentQuestionIndex++;
+                        renderQuestion(currentQuestionIndex);
                     }
-                    setTimeout(() => {
-                        calculateAndShowResult();
-                    }, 350);
-                }
-            }, 250);
+                }, 220);
+            }
         }
 
         // Prev & Next Buttons
@@ -702,14 +695,12 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 currentQuestionIndex++;
                 renderQuestion(currentQuestionIndex);
             } else {
-                // Selesai -> Proses Penilaian
-                btnNextQ.disabled = true;
-                btnNextQ.innerHTML = '<i class="fas fa-spinner fa-spin mr-2 text-amber-300"></i> Memproses Hasil Analisa...';
+                // Selesai -> Langsung Proses & Masuk WhatsApp
                 calculateAndShowResult();
             }
         });
 
-        // Step 3: Calculation & Result Generation
+        // Step 3: Calculation & Direct WhatsApp Redirect
         function calculateAndShowResult() {
             try {
                 // Hitung Skor Total & Per Pilar
@@ -738,39 +729,31 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
                 // Kategori & Diagnosis
                 let kategori = "";
-                let kategoriBadgeClass = "";
                 let narasi = "";
                 let kekuatan = "";
                 let growth = "";
 
                 if (percentage >= 85) {
                     kategori = "SANGAT SIAP & POTENSIAL BERPRESTASI";
-                    kategoriBadgeClass = "bg-emerald-500 text-white";
-                    narasi = `Alhamdulillah! Ananda di keluarga Bapak/Ibu <strong>${namaWaliDisplay}</strong> memiliki modal kemandirian, kematangan emosi, dan motivasi spiritual yang sangat prima. Ananda siap menjalani pola hidup asrama mandiri dengan daya adaptasi tinggi dan berpeluang besar melesat dalam hafalan Al-Quran serta prestasi akademik di Villa Quran Baron Malang.`;
-                    kekuatan = `Ananda memiliki pondasi niat ibadah yang kuat, kemandirian self-care yang baik, serta ketahanan mental yang tangguh saat jauh dari rumah.`;
-                    growth = `Pertahankan ritme muroja'ah hafalan dan berikan apresiasi positif atas kemandirian yang sudah terbentuk.`;
+                    narasi = `Alhamdulillah! Ananda di keluarga Bapak/Ibu ${namaWaliDisplay} memiliki modal kemandirian, kematangan emosi, dan motivasi spiritual yang sangat prima.`;
+                    kekuatan = `Ananda memiliki pondasi niat ibadah yang kuat dan self-care yang baik.`;
+                    growth = `Pertahankan ritme muroja'ah hafalan dan apresiasi kemandirian.`;
                 } else if (percentage >= 65) {
                     kategori = "SIAP DENGAN PENDAMPINGAN ADAPTASI";
-                    kategoriBadgeClass = "bg-amber-400 text-emerald-950";
-                    narasi = `Masya Allah! Ananda di keluarga Bapak/Ibu <strong>${namaWaliDisplay}</strong> memiliki potensi dan kesiapan dasar yang baik untuk masuk pesantren. Ananda membutuhkan sedikit pembiasaan bertahap di 1-2 aspek (seperti adaptasi perpisahan di pekan awal atau manajemen disiplin gadget). Dengan bimbingan musyrif asrama yang penuh kasih sayang di Villa Quran, ananda insya Allah akan cepat nyaman.`;
-                    kekuatan = `Kecerdasan sosial yang baik, mau bekerja sama dengan teman sebaya, dan memiliki rasa hormat pada ustadz/pembimbing.`;
-                    growth = `Tingkatkan latihan mandiri merapikan barang dan kurangi ketergantungan pada gawai 30 hari sebelum masuk pondok.`;
+                    narasi = `Masya Allah! Ananda di keluarga Bapak/Ibu ${namaWaliDisplay} memiliki kesiapan dasar yang baik dengan sedikit bimbingan adaptasi.`;
+                    kekuatan = `Kecerdasan sosial yang baik dan menghormati ustadz/pembimbing.`;
+                    growth = `Latih kemandirian merapikan barang dan manajemen gadget.`;
                 } else {
                     kategori = "PERLU PROGRAM PEMBIASAAN PRA-PESANTREN";
-                    kategoriBadgeClass = "bg-rose-500 text-white";
-                    narasi = `Ananda di keluarga Bapak/Ibu <strong>${namaWaliDisplay}</strong> memerlukan masa transisi dan pembiasaan pra-pondok terlebih dahulu bersama Ayah & Bunda di rumah. Fokuskan pada penyelarasan niat belajar agama tanpa paksaan, membangun rasa percaya diri, dan melatih kemandirian dasar agar saat masuk asrama ananda tidak mengalami kejutan budaya (culture shock).`;
-                    kekuatan = `Ananda memiliki rasa ingin tahu yang tinggi dan sangat membutuhkan figur teladan/sahabat yang hangat dalam mengarahkan potensinya.`;
-                    growth = `Perlu penguatan ketahanan emosi saat berpisah, pembiasaan sholat 5 waktu berjamaah, dan latihan tanggung jawab harian di rumah.`;
+                    narasi = `Ananda di keluarga Bapak/Ibu ${namaWaliDisplay} memerlukan masa pembiasaan pra-pondok bersama orang tua di rumah.`;
+                    kekuatan = `Memiliki rasa ingin tahu yang tinggi.`;
+                    growth = `Penguatan ketahanan emosi dan pembiasaan ibadah harian.`;
                 }
 
                 // Setup WhatsApp Consultation Link (Pesan Singkat & Jelas)
                 const cleanPhone = (typeof CS_PHONE !== 'undefined' && CS_PHONE) ? CS_PHONE.replace(/[^0-9]/g, '') : '6285189918115';
                 const waMsg = encodeURIComponent("Mohon dikirim analisa asesmen nya");
                 const waUrl = `https://wa.me/${cleanPhone}?text=${waMsg}`;
-                const btnWa = document.getElementById('btn-wa-consult');
-                if (btnWa) {
-                    btnWa.href = waUrl;
-                }
 
                 // Simpan ke Database via AJAX
                 saveLeadToDatabase(percentage, kategori, {
@@ -779,17 +762,12 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     growth: growth
                 });
 
-                // Transition UI ke Halaman Pengalihan WhatsApp
-                sectionQuiz.classList.add('hidden');
-                sectionResult.classList.remove('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
                 // Redirect Langsung ke WhatsApp Seketika
-                window.location.href = waUrl;
+                window.location.assign(waUrl);
             } catch (err) {
                 console.error('Error saat memproses analisa:', err);
                 const cleanPhone = (typeof CS_PHONE !== 'undefined' && CS_PHONE) ? CS_PHONE.replace(/[^0-9]/g, '') : '6285189918115';
-                window.location.href = `https://wa.me/${cleanPhone}?text=` + encodeURIComponent("Mohon dikirim analisa asesmen nya");
+                window.location.assign(`https://wa.me/${cleanPhone}?text=` + encodeURIComponent("Mohon dikirim analisa asesmen nya"));
             }
         }
 
