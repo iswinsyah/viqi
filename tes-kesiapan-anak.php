@@ -985,21 +985,16 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                     growth: growth
                 });
 
-                // Transition UI
+                // Transition UI ke Halaman Hasil
                 sectionQuiz.classList.add('hidden');
                 sectionResult.classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                // Otomatis Redirect ke WhatsApp setelah jeda 1.2 detik
-                setTimeout(() => {
-                    window.location.href = waUrl;
-                }, 1200);
-
-                // Trigger Confetti
+                // Trigger Confetti Perayaan
                 if (typeof confetti === 'function') {
                     confetti({
-                        particleCount: 80,
-                        spread: 70,
+                        particleCount: 100,
+                        spread: 80,
                         origin: { y: 0.6 }
                     });
                 }
