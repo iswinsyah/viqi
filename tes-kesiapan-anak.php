@@ -259,34 +259,36 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
                     <!-- Nama Wali -->
                     <div>
-                        <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs sm:text-sm font-bold text-gray-800 mb-1.5">
                             Nama Lengkap / Panggilan Bapak / Ibu <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
                             <span
-                                class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
-                                <i class="fas fa-user"></i>
+                                class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                                <i class="fas fa-user text-sm"></i>
                             </span>
                             <input type="text" id="input_nama_wali" required
                                 placeholder="Contoh: Bpk. Muhammad Ilham / Ibu Rahma"
-                                class="w-full pl-10 pr-4 py-3.5 bg-white rounded-xl border-2 border-gray-300 hover:border-gray-400 focus:bg-white focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/20 text-sm font-medium transition shadow-sm">
+                                style="border: 2px solid #94a3b8 !important;"
+                                class="w-full pl-10 pr-4 py-3.5 bg-slate-50/50 hover:bg-white focus:bg-white rounded-xl text-gray-900 font-semibold text-sm transition shadow-sm outline-none focus:ring-4 focus:ring-emerald-500/20">
                         </div>
                     </div>
 
                     <!-- WhatsApp -->
                     <div>
-                        <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">
+                        <label class="block text-xs sm:text-sm font-bold text-gray-800 mb-1.5">
                             Nomor WhatsApp Aktif <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
                             <span
-                                class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 font-semibold text-xs">
-                                <i class="fab fa-whatsapp text-emerald-600 text-sm"></i>
+                                class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500 font-semibold text-xs">
+                                <i class="fab fa-whatsapp text-emerald-600 text-base"></i>
                             </span>
                             <input type="tel" id="input_whatsapp" required placeholder="Contoh: 081234567890"
-                                class="w-full pl-10 pr-4 py-3.5 bg-white rounded-xl border-2 border-gray-300 hover:border-gray-400 focus:bg-white focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/20 text-sm font-medium transition shadow-sm">
+                                style="border: 2px solid #94a3b8 !important;"
+                                class="w-full pl-10 pr-4 py-3.5 bg-slate-50/50 hover:bg-white focus:bg-white rounded-xl text-gray-900 font-semibold text-sm transition shadow-sm outline-none focus:ring-4 focus:ring-emerald-500/20">
                         </div>
-                        <span class="text-[11px] text-gray-400 mt-1 block">Untuk menerima salinan resume analisis
+                        <span class="text-[11px] text-gray-500 mt-1 block">Untuk menerima salinan resume analisis
                             kesiapan dan E-Book gratis.</span>
                     </div>
 
