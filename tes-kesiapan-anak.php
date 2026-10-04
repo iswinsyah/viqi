@@ -246,7 +246,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             <!-- Form Data Awal Calon Wali Santri -->
             <div class="bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-gray-100 max-w-2xl mx-auto">
                 <div class="border-b border-gray-100 pb-4 mb-6 text-center">
-                    <p class="text-xs sm:text-sm text-gray-500">
+                    <p class="text-sm sm:text-base text-black font-semibold">
                         Masukkan Nama & WhatsApp Anda untuk memulai tes dan menerima resume diagnosis hasil asesmen.
                     </p>
                 </div>
