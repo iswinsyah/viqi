@@ -269,7 +269,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                             </span>
                             <input type="text" id="input_nama_wali" required
                                 placeholder="Contoh: Bpk. Muhammad Ilham / Ibu Rahma"
-                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
+                                class="w-full pl-10 pr-4 py-3.5 bg-white rounded-xl border-2 border-gray-300 hover:border-gray-400 focus:bg-white focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/20 text-sm font-medium transition shadow-sm">
                         </div>
                     </div>
 
@@ -284,7 +284,7 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                                 <i class="fab fa-whatsapp text-emerald-600 text-sm"></i>
                             </span>
                             <input type="tel" id="input_whatsapp" required placeholder="Contoh: 081234567890"
-                                class="w-full pl-10 pr-4 py-3.5 bg-gray-50/60 rounded-xl border border-gray-200 focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/20 text-sm font-medium transition">
+                                class="w-full pl-10 pr-4 py-3.5 bg-white rounded-xl border-2 border-gray-300 hover:border-gray-400 focus:bg-white focus:border-emerald-600 focus:ring-4 focus:ring-emerald-500/20 text-sm font-medium transition shadow-sm">
                         </div>
                         <span class="text-[11px] text-gray-400 mt-1 block">Untuk menerima salinan resume analisis
                             kesiapan dan E-Book gratis.</span>
