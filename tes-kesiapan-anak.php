@@ -344,35 +344,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
             </div>
         </section>
 
-        <!-- STEP 3: PENGALIHAN LANGSUNG KE WHATSAPP KONSULTAN -->
-        <section id="section-result" class="hidden max-w-xl mx-auto py-8">
-            <div class="bg-white rounded-3xl p-8 sm:p-12 shadow-2xl border border-emerald-100 text-center space-y-6">
-                <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-4xl shadow-inner animate-pulse">
-                    <i class="fab fa-whatsapp"></i>
-                </div>
-
-                <div class="space-y-2">
-                    <h2 class="font-marlin text-2xl sm:text-4xl font-bold text-gray-900 leading-tight">
-                        Asesmen Berhasil Diselesaikan!
-                    </h2>
-                    <p class="text-sm text-gray-600 leading-relaxed">
-                        Laporan diagnosis kesiapan Ananda dan rekomendasi parenting telah disiapkan oleh sistem. Sedang menghubungkan ke WhatsApp Konsultan...
-                    </p>
-                </div>
-
-                <div class="pt-2">
-                    <a id="btn-wa-consult" href="#"
-                        class="w-full inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-base sm:text-lg rounded-2xl shadow-xl shadow-emerald-700/25 transition transform hover:-translate-y-0.5">
-                        <i class="fab fa-whatsapp text-2xl mr-3 text-emerald-200"></i>
-                        <span>Buka WhatsApp & Terima Hasil Tes</span>
-                    </a>
-                </div>
-
-                <p class="text-xs text-gray-400">
-                    Jika WhatsApp tidak terbuka secara otomatis dalam beberapa detik, silakan klik tombol hijau di atas.
-                </p>
-            </div>
-        </section>
+        <!-- Placeholder Hasil (Langsung Redirect WhatsApp) -->
+        <section id="section-result" class="hidden"></section>
 
     </main>
 
@@ -811,25 +784,21 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 sectionResult.classList.remove('hidden');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
 
-                // Redirect Langsung ke WhatsApp
-                setTimeout(() => {
-                    window.location.href = waUrl;
-                }, 600);
+                // Redirect Langsung ke WhatsApp Seketika
+                window.location.href = waUrl;
             } catch (err) {
                 console.error('Error saat memproses analisa:', err);
-                // Fallback UI transition jika terjadi error tak terduga
-                sectionQuiz.classList.add('hidden');
-                sectionResult.classList.remove('hidden');
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                const cleanPhone = (typeof CS_PHONE !== 'undefined' && CS_PHONE) ? CS_PHONE.replace(/[^0-9]/g, '') : '6285189918115';
+                window.location.href = `https://wa.me/${cleanPhone}?text=` + encodeURIComponent("Mohon dikirim analisa asesmen nya");
             }
         }
 
         // AJAX Saver
         function saveLeadToDatabase(skor, kategori, details) {
             const formData = new FormData();
-            formData.append('nama_wali', leadData.nama_wali);
-            formData.append('whatsapp', leadData.whatsapp);
-            formData.append('nama_santri', 'Ananda (Keluarga ' + leadData.nama_wali + ')');
+            formData.append('nama_wali', leadData.nama_wali || 'Orang Tua');
+            formData.append('whatsapp', leadData.whatsapp || '');
+            formData.append('nama_santri', 'Ananda (Keluarga ' + (leadData.nama_wali || 'Orang Tua') + ')');
             formData.append('gender', '-');
             formData.append('jenjang', '-');
             formData.append('kota', '-');
@@ -840,7 +809,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
 
             fetch('simpan-test-kesiapan.php', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                keepalive: true
             })
                 .then(res => res.json())
                 .then(data => {
