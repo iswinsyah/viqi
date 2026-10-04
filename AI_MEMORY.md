@@ -142,32 +142,46 @@ Cron job server berjalan otomatis pada jam-jam tertentu. Namun, Anda dapat memak
 ---
 
 ## 🚀 ALUR DEPLOYMENT & SINKRONISASI
-Projek ini dideploy secara otomatis menggunakan **GitHub Actions** (`.github/workflows/deploy.yml`).
-Setiap kali Anda melakukan `git commit` dan `git push` ke branch `main`, workflow GitHub akan memicu proses sinkronisasi file menggunakan FTP/SFTP langsung ke server Hostinger.
+Projek ini dideploy secara otomatis menggunakan **Hostinger Native Git Auto-Deploy Webhook**.
+Setiap kali Anda melakukan `git commit` dan `git push` ke branch `main`, GitHub Webhook langsung memicu Hostinger untuk melakukan `git pull` dalam 1–2 detik secara instan.
+*   **Workflow GitHub Actions FTP/SFTP lama dinonaktifkan**: Karena SFTP membutuhkan 20+ menit untuk transfer 286 file, sistem beralih 100% ke Webhook Hostinger yang cepat dan stabil.
 
-*   **Penting:** Selalu edit file di repositori lokal terlebih dahulu, lalu push ke GitHub. Jangan mengedit langsung di File Manager Hostinger agar kode lokal dan server tidak mengalami konflik (out of sync).
+---
+
+## 🎯 LEAD MAGNET & STRATEGI FUNNELING KOMUNITAS DAKWAH (TERBARU)
+### 1. Profil & Target Market
+* **Target:** Komunitas Aktivis Dakwah (orang tua yang menginginkan anak sholeh & hafidz Quran 30 juz, melek pendidikan tapi kritis dan anti hard-selling).
+* **Saluran Distribusi:** Disebar oleh Mitra/Agen di tiap kota ke grup WhatsApp komunitas.
+* **Umpan (Lead Magnet):** **Tes Kesiapan Anak Masuk Pondok** ([tes-kesiapan-anak.php](file:///d:/LOCALHOST/viqi%202/tes-kesiapan-anak.php)).
+
+### 2. Alur Konversi (Funnel)
+1. Orang tua mengisi Nama & WhatsApp (Form awal simpel tanpa step number).
+2. Mengerjakan 15 pertanyaan asesmen multi-dimensi (Kemandirian, Emosi, Spiritual, Sosial, Orang Tua).
+3. Di soal ke-15, tombol bertuliskan: **"Dapatkan Analisa Lengkap Sekarang"**.
+4. Saat diklik:
+   - Data & skor otomatis tersimpan di tabel database `leads` (`simpan-test-kesiapan.php`).
+   - Browser otomatis me-redirect ke WhatsApp CS resmi dengan pesan:  
+     `"Mohon dikirim analisa asesmen nya"`
+5. **Peran CS / AI Assistant di WhatsApp:**
+   - Bertindak sebagai **Konsultan Parenting & Pendidikan Islam**, bukan sales.
+   - Memberikan analisa objektif berdasarkan 3 kategori kesiapan (Sangat Siap, Siap dengan Pendampingan, Butuh Pembiasaan).
+   - Membimbing percakapan konsultasi secara hangat dan elegan.
+   - **Closing Goal:** Mengundang orang tua mengikuti **Open House Online (Webinar Parenting & Bedah Ekosistem Pesantren)** via Zoom.
 
 ---
 
 ## 🛠️ KETENTUAN KHUSUS & BUG-FIX TERBARU
-Jika Anda melanjutkan pengerjaan projek ini, harap perhatikan arsitektur penting berikut yang telah diperbaiki:
-
-1.  **Anti-Crash MySQL (`pastikanKoneksiDb()`):**
-    Karena request Gemini API memakan waktu respons yang lama (hingga 2 menit), koneksi MySQL di server Hostinger sering terputus dengan error `MySQL server has gone away`. Gunakan fungsi `pastikanKoneksiDb()` sebelum melakukan query database setelah request cURL eksternal yang lama.
-2.  **Normalisasi WhatsApp Gateway (Fonnte):**
-    Nomor WhatsApp agen dan wali santri harus selalu dibersihkan dan diformat dengan awalan `62...`. Di dalam `cron-agent.php`, normalisasi dilakukan dengan mengganti awalan `0` atau `+` menjadi `62`. Status balasan dari API Fonnte juga dicatat secara lengkap di file log `agent_cron_log.txt`.
-3.  **Dynamic Host Resolution Bug (GAS cURL Loopback):**
-    Di dalam `cron-agent.php`, variabel host penentu GAS dinamis diubah dari `$host` menjadi `$http_host`. Hal ini penting karena nama variabel `$host` bentrok dengan variabel koneksi database `$host = "localhost"`. Jika bentrok, database Hostinger akan gagal diakses karena mencoba tersambung ke domain web, bukan ke localhost database.
-4.  **Format Tautan Thumbnail Sosmed (Open Graph):**
-    Halaman detail artikel (`artikel-detail.php`) telah disesuaikan agar mengubah letak link cover gambar lokal yang relatif (`/upload/cover.jpg`) menjadi link absolut (`https://villaquranindonesia.com/upload/cover.jpg`). Ini wajib agar card thumbnail di Facebook dan WhatsApp terrender dengan ukuran penuh secara horizontal (landscape large card).
+1. **Auto-Deploy Webhook Hostinger**: Cukup commit dan push ke `main`, website langsung terupdate 1-2 detik.
+2. **Form Lead Magnet Bersih**: Teks judul kaku telah dihapus dari form tes kesiapan agar alur pengerjaan terasa natural dan modern.
+3. **Anti-Crash MySQL (`pastikanKoneksiDb()`):**
+   Gunakan fungsi `pastikanKoneksiDb()` sebelum melakukan query database setelah request cURL eksternal yang lama.
+4. **Normalisasi WhatsApp Gateway (Fonnte):**
+   Nomor WhatsApp agen dan wali santri harus selalu dibersihkan dan diformat dengan awalan `62...`.
 
 ---
 
 ## 📋 INSTRUKSI UNTUK AI AGENT BERIKUTNYA
-Jika quota AI habis dan Anda digantikan oleh agent lain:
-1.  **Baca file ini (`AI_MEMORY.md`)** secara utuh untuk memahami semua relasi file dan arsitektur database.
-2.  **Periksa status terakhir di file log:**
-    *   Log Harian/Koneksi: [agent_cron_log.txt](file:///d:/LOCALHOST/viqi/agent_cron_log.txt)
-    *   Log Komunitas: `agent_community_log.txt`
-3.  **Gunakan file `config-key.php`** untuk melihat atau menambah API Key rahasia (seperti Pixabay Key atau Google API Key). File ini diabaikan oleh git (`.gitignore`), jadi pastikan nilainya sesuai di server Hostinger.
-4.  Jangan membuat ulang roda (tabel atau helper) jika sudah ada. Manfaatkan helper koneksi dan normalisasi yang sudah tersedia.
+Jika sesi chat baru dibuka atau laptop baru dinyalakan:
+1. **Baca file `AI_MEMORY.md` ini** secara utuh untuk langsung melanjutkan pekerjaan tanpa kehilangan konteks.
+2. Cek status database `leads` dan integrasi WhatsApp di `simpan-test-kesiapan.php` dan `tes-kesiapan-anak.php`.
+3. Selalu lakukan `git commit` dan `git push origin main` setiap menyelesaikan modifikasi agar otomatis ter-deploy ke Hostinger.
