@@ -1,0 +1,337 @@
+<?php
+require_once 'auth.php';
+require_once 'koneksi.php';
+
+// Ambil data perilaku Leads dari Pipeline untuk dianalisa (Maksimal 200 data terbaru agar tidak membebani token)
+$leads_data = [];
+// Kita hanya mengambil jenis_lead, sumber_info, dan status untuk dianalisa (Nama dan WA tidak dikirim demi privasi)
+$sql = "SELECT jenis_lead, sumber_info, status FROM leads ORDER BY id DESC LIMIT 200";
+$result = $conn->query($sql);
+if ($result && $result->num_rows > 0) {
+    while($row = $result->fetch_assoc()) {
+        $leads_data[] = $row;
+    }
+}
+$leads_json = json_encode($leads_data);
+
+// Ambil data jejak pengunjung (Mata AI) untuk dianalisa
+$footprints_data = [];
+$sql_fp = "SELECT device, location, source, campaign FROM visitor_footprints ORDER BY id DESC LIMIT 200";
+$result_fp = $conn->query($sql_fp);
+if ($result_fp && $result_fp->num_rows > 0) {
+    while($row = $result_fp->fetch_assoc()) {
+        $footprints_data[] = $row;
+    }
+}
+$footprints_json = json_encode($footprints_data);
+
+// --- PROMPT MANAGEMENT ---
+$prompt_file = 'prompt_persona.txt';
+$default_prompt = "PENTING: Lakukan analisa mendalam dari data yang diberikan. Buat laporan analisa Buyer Persona yang terstruktur tegas berdasarkan 3 level Funnel Marketing:\n\n1. **TOFU (Top of Funnel - Awareness)**: Siapa profil demografi mereka? Apa masalah/keresahan utama mereka terkait pendidikan anak? Konten organik/ads seperti apa yang cocok untuk memancing mereka?\n2. **MOFU (Middle of Funnel - Consideration)**: Apa yang menjadi pertimbangan utama mereka dalam memilih pesantren? Fasilitas atau program apa yang paling mereka soroti dari data tersebut?\n3. **BOFU (Bottom of Funnel - Decision)**: Apa pemicu (trigger) utama yang membuat mereka akhirnya mendaftar/membayar? Apa hambatan (objection) terakhir mereka dan bagaimana cara CS mengatasinya?\n\nGunakan format Markdown yang rapi dengan Heading, Bullet Points, dan bahasa yang profesional namun mudah dipahami.";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
+    file_put_contents($prompt_file, $_POST['prompt_content']);
+    // Redirect to avoid form resubmission
+    header("Location: admin-analisa.php?prompt_saved=1");
+    exit;
+}
+
+$prompt_persona = file_exists($prompt_file) ? file_get_contents($prompt_file) : $default_prompt;
+$prompt_saved_notif = isset($_GET['prompt_saved']);
+
+
+// Proses Simpan Hasil Analisa ke file lokal
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_persona') {
+    $content = $_POST['content'] ?? '';
+    file_put_contents('saved_persona.txt', $content);
+    echo "Sukses";
+    exit;
+}
+
+$saved_persona = file_exists('saved_persona.txt') ? file_get_contents('saved_persona.txt') : '';
+
+$active_menu = 'analisa';
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisa Buyer Persona (AI) | Admin Villa Quran</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Gunakan Marked.js untuk mem-parsing Markdown dari Gemini menjadi HTML yang cantik -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Styling untuk hasil render Markdown */
+        .markdown-body h1, .markdown-body h2 { font-size: 1.5rem; font-weight: bold; color: #064e3b; margin-top: 1.5rem; margin-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; }
+        .markdown-body h3 { font-size: 1.25rem; font-weight: bold; color: #047857; margin-top: 1rem; margin-bottom: 0.5rem; }
+        .markdown-body p { margin-bottom: 1rem; line-height: 1.6; color: #334155; }
+        .markdown-body ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; color: #334155; }
+        .markdown-body ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 1rem; color: #334155; }
+        .markdown-body li { margin-bottom: 0.25rem; }
+        .markdown-body strong { color: #0f172a; }
+        /* Styling untuk Tabel (jika AI memunculkan tabel) */
+        .markdown-body table { width: 100%; border-collapse: collapse; margin-top: 1rem; margin-bottom: 1.5rem; font-size: 0.875rem; }
+        .markdown-body th, .markdown-body td { border: 1px solid #cbd5e1; padding: 0.75rem; text-align: left; }
+        .markdown-body th { background-color: #f8fafc; font-weight: bold; color: #0f172a; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
+
+    <!-- INCLUDE SIDEBAR MARKETING -->
+    <?php include 'sidebar-marketing.php'; ?>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+            <h2 class="font-bold text-gray-800">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
+            <div class="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-sm">A</div>
+        </header>
+
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-robot text-purple-600 mr-2"></i>AI Analisa Buyer Persona</h1>
+                    <p class="text-sm text-gray-500 mt-1">Ditenagai oleh Google Gemini AI. Membaca data pendaftar dari Pipeline secara otomatis.</p>
+                </div>
+            </div>
+
+            <?php if($prompt_saved_notif): ?>
+            <div class="bg-emerald-100 text-emerald-800 p-4 rounded-lg mb-6 shadow-sm border border-emerald-200">
+                <i class="fas fa-check-circle mr-2"></i> Prompt berhasil diperbarui! Perubahan akan diterapkan pada analisa berikutnya.
+            </div>
+            <?php endif; ?>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Panel Kiri: Kontrol & Status -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h3 class="font-bold text-gray-800 mb-4 border-b pb-2">Status Data Tersedia</h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-gray-600">Total Sampel Data:</span>
+                            <span class="font-bold text-emerald-600 bg-emerald-100 px-3 py-1 rounded-full"><?= count($leads_data) ?> Leads & <?= count($footprints_data) ?> Jejak</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-6 italic">Data yang dikirim ke AI dienkripsi secara anonim (Nama dan Nomor WA disembunyikan demi privasi).</p>
+                        
+                        <button id="btn-analisa" onclick="jalankanAnalisa()" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition shadow-md flex items-center justify-center group">
+                            <i class="fas fa-magic mr-2 group-hover:rotate-12 transition transform"></i> Mulai Analisa Data
+                        </button>
+                    </div>
+
+                    <div class="bg-purple-50 rounded-xl shadow-sm border border-purple-100 p-6">
+                        <h4 class="font-bold text-purple-900 mb-2"><i class="fas fa-lightbulb text-amber-500 mr-2"></i> Mengapa Fitur Ini Penting?</h4>
+                        <p class="text-sm text-purple-800 leading-relaxed">AI akan mempelajari darimana prospek Anda berasal (Iklan, Brosur, dll) dan melihat interaksi mereka. Ini membantu Anda menyusun materi promosi sekaligus merekomendasikan platform media (Ads/Organik) yang paling efektif!</p>
+                    </div>
+                </div>
+
+                <!-- Panel Kanan: Hasil Analisa -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 h-full min-h-[400px] flex flex-col overflow-hidden">
+                        <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                            <h3 class="font-bold text-gray-800"><i class="fas fa-chart-pie mr-2"></i> Laporan Analisa</h3>
+                            <div class="flex items-center space-x-2">
+                                <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan</button>
+                                <button id="btn-save-as" onclick="simpanSebagai()" class="hidden bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-indigo-200"><i class="fas fa-file-download mr-1"></i> Save As</button>
+                                <span id="badge-status" class="text-xs font-semibold px-2 py-1 rounded-full <?= !empty($saved_persona) ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-600' ?>"><?= !empty($saved_persona) ? 'Tersimpan' : 'Menunggu Perintah' ?></span>
+                            </div>
+                        </div>
+                        
+                        <div id="result-container" class="p-6 flex-1 overflow-y-auto relative">
+                            <!-- Layar Awal -->
+                            <div id="state-idle" class="<?= !empty($saved_persona) ? 'hidden' : 'flex flex-col items-center justify-center h-full text-gray-400 py-12' ?>">
+                                <i class="fas fa-brain text-6xl mb-4 opacity-50"></i>
+                                <p>Klik "Mulai Analisa Data" untuk merancang Buyer Persona Anda.</p>
+                            </div>
+                            
+                            <!-- Layar Loading -->
+                            <div id="state-loading" class="hidden flex flex-col items-center justify-center h-full text-purple-600 py-12">
+                                <i class="fas fa-spinner fa-spin text-5xl mb-4"></i>
+                                <p class="font-bold animate-pulse">AI Gemini sedang berpikir & meracik strategi...</p>
+                                <p class="text-sm text-gray-500 mt-2">Ini membutuhkan waktu sekitar 5 - 10 detik.</p>
+                            </div>
+
+                            <!-- Layar Hasil -->
+                            <div id="state-result" class="<?= !empty($saved_persona) ? 'markdown-body' : 'hidden markdown-body' ?>">
+                                <!-- Hasil render Markdown dari Gemini akan masuk ke sini -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prompt Editor -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mt-6">
+                <details>
+                    <summary class="px-6 py-4 font-bold text-gray-800 cursor-pointer flex justify-between items-center">
+                        <span><i class="fas fa-cogs mr-2"></i> Pengaturan Prompt AI</span>
+                        <i class="fas fa-chevron-down transition-transform duration-300"></i>
+                    </summary>
+                    <div class="p-6 border-t border-gray-100">
+                        <form action="admin-analisa.php" method="POST">
+                            <input type="hidden" name="action" value="save_prompt">
+                            <label for="prompt_content" class="block text-sm font-medium text-gray-700 mb-2">Ini adalah "perintah" yang diberikan kepada AI untuk menganalisa data. Anda bisa mengubahnya jika diperlukan.</label>
+                            <textarea id="prompt_content" name="prompt_content" rows="10" class="w-full p-3 border border-gray-300 rounded-lg font-mono text-xs focus:ring-purple-500 focus:border-purple-500"><?= htmlspecialchars($prompt_persona) ?></textarea>
+                            <button type="submit" class="mt-4 bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-5 rounded-lg transition shadow-sm"><i class="fas fa-save mr-2"></i> Simpan Prompt</button>
+                        </form>
+                    </div>
+                </details>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ==========================================
+        // SETTING: PASTE URL WEB APP GAS DI BAWAH INI
+        // ==========================================
+        const GAS_WEB_APP_URL = "api-gemini.php"; 
+        
+        const rawLeadsData = <?= $leads_json ?>;
+        const rawFootprintsData = <?= $footprints_json ?>;
+        const savedPersonaMarkdown = <?= json_encode($saved_persona) ?>;
+        let currentMarkdown = savedPersonaMarkdown;
+
+        // Render data tersimpan saat halaman dimuat
+        document.addEventListener("DOMContentLoaded", () => {
+            if (savedPersonaMarkdown) {
+                document.getElementById('state-result').innerHTML = marked.parse(savedPersonaMarkdown);
+                const btnSave = document.getElementById('btn-save');
+                btnSave.classList.remove('hidden');
+                btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
+                btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
+                btnSave.classList.replace('text-emerald-700', 'text-gray-500');
+                btnSave.disabled = true;
+                document.getElementById('btn-save-as').classList.remove('hidden');
+            }
+        });
+
+        function jalankanAnalisa() {
+            if (rawLeadsData.length === 0) {
+                alert("Belum ada data pendaftar/prospek di Pipeline untuk dianalisa!");
+                return;
+            }
+            
+            if (GAS_WEB_APP_URL === "URL_GAS_BOS_DI_SINI") {
+                alert("Mohon masukkan URL Google Apps Script Anda terlebih dahulu di source code (baris bawah)!");
+                return;
+            }
+
+            // Atur UI State ke Loading
+            document.getElementById('state-idle').classList.add('hidden');
+            document.getElementById('state-result').classList.add('hidden');
+            document.getElementById('state-loading').classList.remove('hidden');
+            document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-600 animate-pulse";
+            document.getElementById('badge-status').textContent = "Menganalisa...";
+            document.getElementById('btn-analisa').disabled = true;
+            document.getElementById('btn-analisa').classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Reset tombol save
+            const btnSave = document.getElementById('btn-save');
+            btnSave.classList.add('hidden');
+            btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan';
+            document.getElementById('btn-save-as').classList.add('hidden');
+            if(btnSave.classList.contains('bg-gray-100')) {
+                btnSave.classList.replace('bg-gray-100', 'bg-emerald-100');
+                btnSave.classList.replace('text-gray-500', 'text-emerald-700');
+            }
+            btnSave.disabled = false;
+
+            // Gabungkan data Leads dengan data Footprint Mata AI agar Gemini bisa menganalisa keduanya
+            const payloadLeads = JSON.parse(JSON.stringify(rawLeadsData));
+            if (rawFootprintsData.length > 0) {
+                payloadLeads.unshift({
+                    jenis_lead: "DATA_JEJAK_PENGUNJUNG_MATA_AI",
+                    sumber_info: JSON.stringify(rawFootprintsData),
+                    status: "TOLONG_ANALISA_JUGA_LOKASI_DAN_DEVICE_MEREKA"
+                });
+            }
+
+            // Injeksi prompt dari textarea
+            payloadLeads.unshift({
+                jenis_lead: "SYSTEM_COMMAND",
+                sumber_info: document.getElementById('prompt_content').value,
+                status: "URGENT"
+            });
+
+            // Tembak data ke Google Apps Script (GAS) menggunakan POST
+            fetch(GAS_WEB_APP_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8' // GAS Web App lebih stabil menerima plain text
+                },
+                body: JSON.stringify({ leads: payloadLeads, type: 'persona' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === "success") {
+                    // Ubah Markdown dari Gemini menjadi format HTML menggunakan Marked.js
+                    currentMarkdown = data.result;
+                    document.getElementById('state-result').innerHTML = marked.parse(currentMarkdown);
+                    document.getElementById('btn-save').classList.remove('hidden');
+                    document.getElementById('btn-save-as').classList.remove('hidden');
+                    
+                    document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
+                    document.getElementById('badge-status').textContent = "Selesai";
+                } else {
+                    throw new Error(data.message || "Gagal memproses data AI");
+                }
+            })
+            .catch(error => {
+                console.error("Error AI:", error);
+                document.getElementById('state-result').innerHTML = `<div class="text-red-500 bg-red-50 p-4 rounded-lg border border-red-200"><i class="fas fa-exclamation-triangle mr-2"></i> Terjadi kesalahan: ${error.message}</div>`;
+                document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700";
+                document.getElementById('badge-status').textContent = "Error";
+            })
+            .finally(() => {
+                // Kembalikan UI State dari Loading ke Selesai
+                document.getElementById('state-loading').classList.add('hidden');
+                document.getElementById('state-result').classList.remove('hidden');
+                
+                // Aktifkan tombol kembali
+                document.getElementById('btn-analisa').disabled = false;
+                document.getElementById('btn-analisa').classList.remove('opacity-50', 'cursor-not-allowed');
+            });
+        }
+
+        function simpanHasil() {
+            if (!currentMarkdown) return;
+
+            const formData = new FormData();
+            formData.append('action', 'save_persona');
+            formData.append('content', currentMarkdown);
+
+            const btnSave = document.getElementById('btn-save');
+            btnSave.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan...';
+
+            fetch('admin-analisa.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.text())
+            .then(text => {
+                btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
+                btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
+                btnSave.classList.replace('text-emerald-700', 'text-gray-500');
+                btnSave.disabled = true;
+                document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-700";
+                document.getElementById('badge-status').textContent = "Tersimpan";
+            })
+            .catch(err => alert("Gagal menyimpan hasil: " + err));
+        }
+
+        function simpanSebagai() {
+            if (!currentMarkdown) return;
+            const blob = new Blob([currentMarkdown], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const tgl = new Date().toISOString().slice(0,10);
+            a.download = `Buyer_Persona_${tgl}.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
