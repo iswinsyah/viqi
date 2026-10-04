@@ -12,8 +12,18 @@ if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
         $user_roles[] = 'super_admin';
     }
 }
-$user_roles = array_map('trim', $user_roles);
-$is_admin = in_array('admin_sekolah', $user_roles) || in_array('super_admin', $user_roles) || in_array('kepala_sekolah', $user_roles) || in_array('ketua_yayasan', $user_roles);
+$norm_roles = array_map(function($r) {
+    return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
+}, $user_roles);
+
+// Hak akses & wewenang: Pengurus Yayasan, Kepala Sekolah, Kepala Ma'had, Admin Sekolah, Super Admin
+$is_yayasan = in_array('ketua_yayasan', $norm_roles) || in_array('sekretaris_yayasan', $norm_roles) || in_array('bendahara_yayasan', $norm_roles) || in_array('yayasan', $norm_roles) || in_array('yayasan2', $norm_roles);
+$is_kepsek = in_array('kepala_sekolah', $norm_roles);
+$is_kepala_mahad = in_array('kepala_mahad', $norm_roles) || in_array('kepala_asrama', $norm_roles) || in_array('kepala_asrama_rijal', $norm_roles) || in_array('kepala_asrama_nisa', $norm_roles);
+$is_super_admin = in_array('super_admin', $norm_roles) || (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999);
+$is_admin_sekolah = in_array('admin_sekolah', $norm_roles) || in_array('sekretaris_sekolah', $norm_roles) || in_array('bendahara_sekolah', $norm_roles);
+
+$is_admin = $is_yayasan || $is_kepsek || $is_kepala_mahad || $is_admin_sekolah || $is_super_admin;
 
 // Database self-healing
 $conn->query("CREATE TABLE IF NOT EXISTS kontrol_jam_kosong (
