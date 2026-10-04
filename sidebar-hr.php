@@ -142,6 +142,7 @@ if ($conn) {
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('supervisi_mengajar', 'kepala_sekolah,kepala_mahad,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_admin_sekolah', 'admin_sekolah')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('salary_admin', 'admin_sekolah')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin') ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin'");
 }
 
 // Load custom menu labels from database
@@ -323,7 +324,7 @@ if ($res_db_struct) {
             'uangsaku' => 'Saldo Uang Saku Santri',
             'rekap_uang_saku' => 'Validasi Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
-            'kontrol_jam_kosong' => 'Rekap Jam Mengajar & Jam Kosong',
+            'kontrol_jam_kosong' => 'Rekap Ajar (3 Tab)',
             'kpi_admin_sekolah' => 'KPI Admin Sekolah',
             'salary_admin' => 'Salary Admin Sekolah',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',

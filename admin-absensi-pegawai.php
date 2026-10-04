@@ -87,18 +87,33 @@ if ($res_kelas && $res_kelas->num_rows > 0) {
     ];
 }
 
-// Ambil daftar mapel dari Master Mapel
-$daftar_mapel = [];
-$res_mapel = $conn->query("SELECT nama_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
+// Ambil daftar mapel dari Master Mapel beserta kategorinya
+$daftar_mapel_grouped = ['Diknas' => [], 'Diniyah' => [], 'Solopreneur' => [], 'Lainnya' => []];
+$mapel_kategori_lookup = [];
+$res_mapel = $conn->query("SELECT nama_mapel, kategori_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY kategori_mapel ASC, nama_mapel ASC");
 if ($res_mapel && $res_mapel->num_rows > 0) {
     while($row = $res_mapel->fetch_assoc()) {
-        $daftar_mapel[] = $row['nama_mapel'];
+        $kat = trim($row['kategori_mapel'] ?? '');
+        $kat_lower = strtolower($kat);
+        if (strpos($kat_lower, 'diknas') !== false || strpos($kat_lower, 'pkbm') !== false) {
+            $group_key = 'Diknas';
+        } elseif (strpos($kat_lower, 'diniyah') !== false || strpos($kat_lower, 'tahfidz') !== false || strpos($kat_lower, 'pesantren') !== false) {
+            $group_key = 'Diniyah';
+        } elseif (strpos($kat_lower, 'solo') !== false || strpos($kat_lower, 'bisnis') !== false || strpos($kat_lower, 'entrepreneur') !== false || strpos($kat_lower, 'vokasi') !== false || strpos($kat_lower, 'trainer') !== false) {
+            $group_key = 'Solopreneur';
+        } else {
+            $group_key = 'Lainnya';
+        }
+        $daftar_mapel_grouped[$group_key][] = $row['nama_mapel'];
+        $mapel_kategori_lookup[$row['nama_mapel']] = $group_key;
     }
 } else {
-    $daftar_mapel = [
-        'Tahfidz Al-Qur\'an', 'Aqidah Akhlak', 'Fiqih', 'Hadits', 'Bahasa Arab',
-        'Matematika', 'Bahasa Indonesia', 'IPA', 'IPS', 'Bahasa Inggris', 'PKn'
-    ];
+    $daftar_mapel_grouped['Diniyah'] = ['Tahfidz Al-Qur\'an', 'Aqidah Akhlak', 'Fiqih', 'Hadits', 'Bahasa Arab'];
+    $daftar_mapel_grouped['Diknas'] = ['Matematika', 'Bahasa Indonesia', 'IPA', 'IPS', 'Bahasa Inggris', 'PKn'];
+    $daftar_mapel_grouped['Solopreneur'] = ['Inkubator Bisnis', 'Digital Marketing', 'Coding & AI', 'Public Speaking'];
+    foreach ($daftar_mapel_grouped as $g => $list) {
+        foreach ($list as $m) $mapel_kategori_lookup[$m] = $g;
+    }
 }
 
 // Query santri tidak masuk hari ini
@@ -562,19 +577,25 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                             </div>
                             
                             <div>
+                            <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1">Mata Pelajaran</label>
                                 <select name="mata_pelajaran" required class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-cyan-500 bg-white">
                                     <option value="">-- Pilih Mapel --</option>
                                     <?php
                                     $mapel_tersimpan = $edit_jurnal_mode ? $jurnal_edit_data['mata_pelajaran'] : '';
                                     $mapel_ada = false;
-                                    foreach ($daftar_mapel as $nama_mapel) {
-                                        $sel = ($mapel_tersimpan == $nama_mapel) ? 'selected' : '';
-                                        if ($sel) $mapel_ada = true;
-                                        echo "<option value=\"".htmlspecialchars($nama_mapel)."\" $sel>".htmlspecialchars($nama_mapel)."</option>";
+                                    foreach ($daftar_mapel_grouped as $grp_name => $m_list) {
+                                        if (empty($m_list)) continue;
+                                        echo "<optgroup label=\"Mapel ".htmlspecialchars($grp_name)."\">";
+                                        foreach ($m_list as $nama_mapel) {
+                                            $sel = ($mapel_tersimpan == $nama_mapel) ? 'selected' : '';
+                                            if ($sel) $mapel_ada = true;
+                                            echo "<option value=\"".htmlspecialchars($nama_mapel)."\" $sel>".htmlspecialchars($nama_mapel)." (".htmlspecialchars($grp_name).")</option>";
+                                        }
+                                        echo "</optgroup>";
                                     }
                                     if ($edit_jurnal_mode && !$mapel_ada && !empty($mapel_tersimpan)) {
-                                        echo "<option value=\"".htmlspecialchars($mapel_tersimpan)."\" selected>".htmlspecialchars($mapel_tersimpan)." (Data Lama)</option>";
+                                        echo "<option value=\"".htmlspecialchars($mapel_tersimpan)."\" selected>".htmlspecialchars($mapel_tersimpan)." (Data Lainnya)</option>";
                                     }
                                     ?>
                                 </select>
@@ -606,11 +627,14 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                     </form>
                 </div>
                 
-                <!-- 2. RIWAYAT JURNAL -->
+                <!-- 2. RIWAYAT JURNAL MENGAJAR -->
                 <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 text-left">
-                    <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b pb-2">
-                        <i class="fas fa-history text-cyan-600"></i> Riwayat Jurnal Mengajar
-                    </h3>
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 border-b pb-2">
+                        <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fas fa-history text-cyan-600"></i> Riwayat Jurnal Mengajar
+                        </h3>
+                        <span class="text-[11px] text-gray-500 font-medium">Tercatat di form dashboard pengajar</span>
+                    </div>
                     
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-150 text-xs">
@@ -618,16 +642,24 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                 <tr class="bg-gray-50 text-gray-500">
                                     <th class="px-3 py-2 text-left font-bold">Tanggal</th>
                                     <th class="px-3 py-2 text-left font-bold">Kelas & Mapel</th>
-                                    <th class="px-3 py-2 text-left font-bold">Materi</th>
+                                    <th class="px-3 py-2 text-left font-bold">Kategori</th>
+                                    <th class="px-3 py-2 text-left font-bold">Materi Pembelajaran</th>
                                     <th class="px-3 py-2 text-left font-bold">Absensi/Kendala</th>
                                     <th class="px-3 py-2 text-center font-bold">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 <?php
-                                $res_jurnal = $conn->query("SELECT * FROM jurnal_mengajar WHERE ustadz_id = $ustadz_id ORDER BY tanggal DESC, id DESC");
+                                $res_jurnal = $conn->query("SELECT * FROM jurnal_mengajar WHERE ustadz_id = $ustadz_id ORDER BY tanggal DESC, id DESC LIMIT 50");
                                 if ($res_jurnal && $res_jurnal->num_rows > 0):
                                     while ($row = $res_jurnal->fetch_assoc()):
+                                        $mpl_name = $row['mata_pelajaran'];
+                                        $kat_jurnal = $mapel_kategori_lookup[$mpl_name] ?? 'Lainnya';
+                                        
+                                        $badge_class = "bg-gray-100 text-gray-700 border-gray-200";
+                                        if ($kat_jurnal === 'Diknas') $badge_class = "bg-blue-50 text-blue-700 border-blue-200";
+                                        elseif ($kat_jurnal === 'Diniyah') $badge_class = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                                        elseif ($kat_jurnal === 'Solopreneur') $badge_class = "bg-amber-50 text-amber-700 border-amber-200";
                                 ?>
                                         <tr class="hover:bg-slate-50/55 transition">
                                             <td class="px-3 py-3 text-gray-700 font-medium whitespace-nowrap">
@@ -635,13 +667,18 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                             </td>
                                             <td class="px-3 py-3">
                                                 <span class="font-bold text-cyan-700 block"><?= htmlspecialchars($row['kelas']) ?></span>
-                                                <span class="text-gray-500 text-[10px] font-medium"><?= htmlspecialchars($row['mata_pelajaran']) ?></span>
+                                                <span class="text-gray-600 text-[11px] font-semibold"><?= htmlspecialchars($row['mata_pelajaran']) ?></span>
+                                            </td>
+                                            <td class="px-3 py-3 whitespace-nowrap">
+                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border <?= $badge_class ?>">
+                                                    <?= htmlspecialchars($kat_jurnal) ?>
+                                                </span>
                                             </td>
                                             <td class="px-3 py-3 text-gray-600 font-medium max-w-xs truncate" title="<?= htmlspecialchars($row['materi']) ?>">
                                                 <?= htmlspecialchars($row['materi']) ?>
                                             </td>
                                             <td class="px-3 py-3 text-rose-500 font-medium max-w-xs truncate" title="<?= htmlspecialchars($row['absensi'] ?? '') ?>">
-                                                <?= empty($row['absensi']) ? 'Nihil' : htmlspecialchars($row['absensi']) ?>
+                                                <?= empty($row['absensi']) ? '<span class="text-gray-400 italic">Nihil</span>' : htmlspecialchars($row['absensi']) ?>
                                             </td>
                                             <td class="px-3 py-3 text-center whitespace-nowrap">
                                                 <a href="admin-absensi-pegawai.php?edit_jurnal_id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700 mr-2.5" title="Edit"><i class="fas fa-edit"></i></a>
@@ -653,7 +690,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                 else:
                                 ?>
                                     <tr>
-                                        <td colspan="5" class="px-3 py-4 text-center text-gray-400 italic">Belum ada riwayat jurnal mengajar.</td>
+                                        <td colspan="6" class="px-3 py-4 text-center text-gray-400 italic">Belum ada riwayat jurnal mengajar.</td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>

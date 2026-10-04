@@ -16,16 +16,37 @@ $norm_roles = array_map(function($r) {
     return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
 }, $user_roles);
 
-// Hak akses & wewenang: Pengurus Yayasan, Kepala Sekolah, Kepala Ma'had, Admin Sekolah, Super Admin
-$is_yayasan = in_array('ketua_yayasan', $norm_roles) || in_array('sekretaris_yayasan', $norm_roles) || in_array('bendahara_yayasan', $norm_roles) || in_array('yayasan', $norm_roles) || in_array('yayasan2', $norm_roles);
-$is_kepsek = in_array('kepala_sekolah', $norm_roles);
-$is_kepala_mahad = in_array('kepala_mahad', $norm_roles) || in_array('kepala_asrama', $norm_roles) || in_array('kepala_asrama_rijal', $norm_roles) || in_array('kepala_asrama_nisa', $norm_roles);
+// Hak akses & wewenang spesifik
 $is_super_admin = in_array('super_admin', $norm_roles) || (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999);
-$is_admin_sekolah = in_array('admin_sekolah', $norm_roles) || in_array('sekretaris_sekolah', $norm_roles) || in_array('bendahara_sekolah', $norm_roles);
+$is_yayasan = $is_super_admin || in_array('ketua_yayasan', $norm_roles) || in_array('sekretaris_yayasan', $norm_roles) || in_array('bendahara_yayasan', $norm_roles) || in_array('pengurus_yayasan', $norm_roles) || in_array('yayasan', $norm_roles) || in_array('yayasan2', $norm_roles);
+$is_kepsek = $is_super_admin || in_array('kepala_sekolah', $norm_roles) || in_array('admin_sekolah', $norm_roles);
+$is_kepala_mahad = $is_super_admin || in_array('kepala_mahad', $norm_roles) || in_array('kepala_asrama', $norm_roles) || in_array('kepala_asrama_rijal', $norm_roles) || in_array('kepala_asrama_nisa', $norm_roles);
+$is_kepala_ldu = $is_super_admin || in_array('kepala_ldu', $norm_roles) || in_array('direktur_ldu', $norm_roles) || in_array('staff_ldu', $norm_roles);
 
-$is_admin = $is_yayasan || $is_kepsek || $is_kepala_mahad || $is_admin_sekolah || $is_super_admin;
+// Cek apakah punya akses ke modul Rekap Ajar
+if (!$is_super_admin && !$is_yayasan && !$is_kepsek && !$is_kepala_mahad && !$is_kepala_ldu) {
+    die("Akses ditolak: Menu Rekap Ajar hanya dapat diakses oleh Kepala Sekolah, Kepala Ma'had, Kepala LDU, dan Pengurus Yayasan.");
+}
 
 // Database self-healing
+$conn->query("CREATE TABLE IF NOT EXISTS validasi_rekap_ajar (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    periode VARCHAR(7) NOT NULL,
+    kategori VARCHAR(50) NOT NULL,
+    status_validasi ENUM('draft', 'validated') DEFAULT 'draft',
+    validator_id INT NULL,
+    validator_role VARCHAR(100) NULL,
+    validator_nama VARCHAR(150) NULL,
+    catatan_validasi TEXT NULL,
+    total_jam_terjadwal INT DEFAULT 0,
+    total_jam_terisi INT DEFAULT 0,
+    total_guru_aktif INT DEFAULT 0,
+    validated_at DATETIME NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_periode_kategori (periode, kategori)
+)");
+
 $conn->query("CREATE TABLE IF NOT EXISTS kontrol_jam_kosong (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tanggal DATE NOT NULL,
@@ -61,15 +82,76 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_pelajaran (
     UNIQUE KEY unique_slot (hari, jam_ke, kelas_id)
 )");
 
+// Filter Periode
+$filter_bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
+$filter_tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
+$periode_key = sprintf('%04d-%02d', $filter_tahun, $filter_bulan);
+
+$nama_bulan_indo = [
+    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+    7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+];
+
 $pesan_sukses = '';
 $pesan_error = '';
 
-// Handle POST actions
+// Helper Nama Validator
+$nama_user_aktif = $_SESSION['nama'] ?? ($_SESSION['nama_lengkap'] ?? 'Pimpinan');
+
+// Handle Validasi & Aksi POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!$is_admin) {
-        $pesan_error = "Akses ditolak: Hanya Manajemen & Admin Sekolah yang berhak mengubah data.";
-    } else {
-        if (isset($_POST['action']) && $_POST['action'] === 'tambah') {
+    if (isset($_POST['action']) && $_POST['action'] === 'validasi_kategori') {
+        $kat = strtolower(trim($_POST['kategori'] ?? ''));
+        $catatan = $conn->real_escape_string($_POST['catatan'] ?? '');
+        $can_val = false;
+        $val_role = '';
+
+        if ($kat === 'diknas' && ($is_kepsek || $is_super_admin)) {
+            $can_val = true;
+            $val_role = 'Kepala Sekolah';
+        } elseif ($kat === 'diniyah' && ($is_kepala_mahad || $is_super_admin)) {
+            $can_val = true;
+            $val_role = 'Kepala Ma\'had';
+        } elseif ($kat === 'solopreneur' && ($is_kepala_ldu || $is_super_admin)) {
+            $can_val = true;
+            $val_role = 'Kepala LDU';
+        }
+
+        if ($can_val) {
+            $v_nama = $conn->real_escape_string($nama_user_aktif);
+            $v_role = $conn->real_escape_string($val_role);
+            $total_jadwal = (int)($_POST['total_jadwal'] ?? 0);
+            $total_terisi = (int)($_POST['total_terisi'] ?? 0);
+            $total_guru = (int)($_POST['total_guru'] ?? 0);
+
+            $sql_val = "INSERT INTO validasi_rekap_ajar (periode, kategori, status_validasi, validator_id, validator_role, validator_nama, catatan_validasi, total_jam_terjadwal, total_jam_terisi, total_guru_aktif, validated_at)
+                        VALUES ('$periode_key', '$kat', 'validated', $ustadz_id, '$v_role', '$v_nama', '$catatan', $total_jadwal, $total_terisi, $total_guru, NOW())
+                        ON DUPLICATE KEY UPDATE 
+                        status_validasi='validated', validator_id=$ustadz_id, validator_role='$v_role', validator_nama='$v_nama', catatan_validasi='$catatan', total_jam_terjadwal=$total_jadwal, total_jam_terisi=$total_terisi, total_guru_aktif=$total_guru, validated_at=NOW()";
+            if ($conn->query($sql_val)) {
+                $pesan_sukses = "✅ Tab Rekap Mapel " . ucfirst($kat) . " berhasil divalidasi dan disahkan!";
+            } else {
+                $pesan_error = "Gagal memvalidasi: " . $conn->error;
+            }
+        } else {
+            $pesan_error = "Akses ditolak: Anda tidak memiliki wewenang untuk memvalidasi pilar " . ucfirst($kat) . ".";
+        }
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'buka_kunci_validasi') {
+        $kat = strtolower(trim($_POST['kategori'] ?? ''));
+        $can_unlock = false;
+
+        if ($kat === 'diknas' && ($is_kepsek || $is_super_admin)) $can_unlock = true;
+        elseif ($kat === 'diniyah' && ($is_kepala_mahad || $is_super_admin)) $can_unlock = true;
+        elseif ($kat === 'solopreneur' && ($is_kepala_ldu || $is_super_admin)) $can_unlock = true;
+
+        if ($can_unlock) {
+            $conn->query("UPDATE validasi_rekap_ajar SET status_validasi = 'draft', catatan_validasi = CONCAT(COALESCE(catatan_validasi, ''), ' [Kunci dibuka untuk revisi]') WHERE periode = '$periode_key' AND kategori = '$kat'");
+            $pesan_sukses = "Kunci validasi pilar " . ucfirst($kat) . " dibuka untuk revisi.";
+        } else {
+            $pesan_error = "Akses ditolak untuk membuka kunci validasi.";
+        }
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'tambah_jam_kosong') {
+        if ($is_super_admin || $is_kepsek || $is_kepala_mahad || $is_yayasan) {
             $tanggal = $conn->real_escape_string($_POST['tanggal']);
             $kelas = $conn->real_escape_string($_POST['kelas']);
             $mapel = $conn->real_escape_string($_POST['mapel']);
@@ -82,57 +164,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     VALUES ('$tanggal', '$kelas', '$mapel', $guru_utama_id, $guru_pengganti_id, '$status_kontrol', '$catatan', $ustadz_id)";
             if ($conn->query($sql)) {
                 $pesan_sukses = "Log jam kosong baru berhasil dicatat!";
-            } else {
-                $pesan_error = "Gagal menyimpan data: " . $conn->error;
-            }
-        } elseif (isset($_POST['action']) && $_POST['action'] === 'update_pengganti') {
-            $id = (int)$_POST['id'];
-            $guru_pengganti_id = !empty($_POST['guru_pengganti_id']) ? (int)$_POST['guru_pengganti_id'] : 'NULL';
-            $status_kontrol = $guru_pengganti_id !== 'NULL' ? 'Terisi' : 'Perlu Pengganti';
-            $catatan = $conn->real_escape_string($_POST['catatan'] ?? '');
-
-            $sql = "UPDATE kontrol_jam_kosong SET 
-                    guru_pengganti_id = $guru_pengganti_id, 
-                    status_kontrol = '$status_kontrol', 
-                    catatan = '$catatan' 
-                    WHERE id = $id";
-            if ($conn->query($sql)) {
-                $pesan_sukses = "Data guru pengganti (inval) berhasil diperbarui!";
-            } else {
-                $pesan_error = "Gagal memperbarui data: " . $conn->error;
-            }
-        } elseif (isset($_POST['action']) && $_POST['action'] === 'batal') {
-            $id = (int)$_POST['id'];
-            $sql = "UPDATE kontrol_jam_kosong SET status_kontrol = 'Batal' WHERE id = $id";
-            if ($conn->query($sql)) {
-                $pesan_sukses = "Log jam kosong dibatalkan.";
-            } else {
-                $pesan_error = "Gagal memperbarui status: " . $conn->error;
             }
         }
     }
 }
 
-// Filter Periode
-$filter_bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
-$filter_tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
-$current_tab = $_GET['tab'] ?? 'rekap';
+// Menentukan tab yang diizinkan untuk dibuka user
+$allowed_tabs = [];
+if ($is_yayasan || $is_super_admin) {
+    $allowed_tabs = ['yayasan', 'diknas', 'diniyah', 'solopreneur', 'jam_kosong'];
+} else {
+    if ($is_kepsek) $allowed_tabs[] = 'diknas';
+    if ($is_kepala_mahad) $allowed_tabs[] = 'diniyah';
+    if ($is_kepala_ldu) $allowed_tabs[] = 'solopreneur';
+    if ($is_kepsek || $is_kepala_mahad) $allowed_tabs[] = 'jam_kosong';
+}
 
-$nama_bulan_indo = [
-    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
-    7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+// Default tab yang aktif
+$default_active_tab = $allowed_tabs[0] ?? 'diknas';
+$current_tab = $_GET['tab'] ?? $default_active_tab;
+if (!in_array($current_tab, $allowed_tabs)) {
+    $current_tab = $default_active_tab;
+}
+
+// Load data status validasi periode ini
+$status_validasi = [
+    'diknas' => null,
+    'diniyah' => null,
+    'solopreneur' => null
 ];
+$res_v = $conn->query("SELECT * FROM validasi_rekap_ajar WHERE periode = '$periode_key'");
+if ($res_v) {
+    while ($r = $res_v->fetch_assoc()) {
+        $status_validasi[$r['kategori']] = $r;
+    }
+}
 
-// Hitung jumlah kemunculan hari dalam bulan & tahun yang dipilih
+// Hitung hari dalam bulan untuk pengali jadwal pekanan
 $total_hari_bulan = cal_days_in_month(CAL_GREGORIAN, $filter_bulan, $filter_tahun);
-$hari_count = [
-    'Senin' => 0, 'Selasa' => 0, 'Rabu' => 0, 'Kamis' => 0, 'Jumat' => 0, 'Sabtu' => 0, 'Ahad' => 0
-];
-$map_day_en_id = [
-    'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu',
-    'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Ahad'
-];
-
+$hari_count = ['Senin' => 0, 'Selasa' => 0, 'Rabu' => 0, 'Kamis' => 0, 'Jumat' => 0, 'Sabtu' => 0, 'Ahad' => 0];
+$map_day_en_id = ['Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Ahad'];
 for ($d = 1; $d <= $total_hari_bulan; $d++) {
     $time = mktime(0, 0, 0, $filter_bulan, $d, $filter_tahun);
     $day_en = date('l', $time);
@@ -141,7 +212,7 @@ for ($d = 1; $d <= $total_hari_bulan; $d++) {
     }
 }
 
-// Fetch all Ustadz / Guru
+// Fetch all Guru / Ustadz
 $asatidz_list = [];
 $asatidz_map = [];
 $res_ast = $conn->query("SELECT id, nama FROM akun_ustadz ORDER BY nama ASC");
@@ -152,80 +223,53 @@ if ($res_ast) {
     }
 }
 
-// Fetch classes
-$kelas_list = [];
-$res_kls = $conn->query("SELECT id, nama_kelas FROM master_kelas ORDER BY nama_kelas ASC");
-if ($res_kls && $res_kls->num_rows > 0) {
-    while ($row = $res_kls->fetch_assoc()) {
-        $kelas_list[] = $row;
-    }
-} else {
-    $kelas_list = [
-        ['id' => 1, 'nama_kelas' => 'E4 406'],
-        ['id' => 2, 'nama_kelas' => 'E4 402'],
-        ['id' => 3, 'nama_kelas' => 'E4 157'],
-        ['id' => 4, 'nama_kelas' => 'E4.2']
-    ];
-}
-
-// Fetch master mapel list (Khusus Mapel Offline / Tatap Muka)
-$mapel_list = [];
+// Fetch Master Mapel Lookup (Khusus Mapel Offline)
 $mapel_cat_map = [];
-$res_mpl = $conn->query("SELECT id, nama_mapel, kategori_mapel, metode_belajar, pengampu_id FROM master_mapel WHERE status_aktif = 1 AND (metode_belajar = 'offline' OR (metode_belajar != 'ai_agentic' AND pengampu_id IS NOT NULL) OR metode_belajar IS NULL) ORDER BY nama_mapel ASC");
-if ($res_mpl && $res_mpl->num_rows > 0) {
+$res_mpl = $conn->query("SELECT id, nama_mapel, kategori_mapel, metode_belajar, pengampu_id FROM master_mapel WHERE status_aktif = 1 AND (metode_belajar = 'offline' OR (metode_belajar != 'ai_agentic' AND pengampu_id IS NOT NULL) OR metode_belajar IS NULL)");
+if ($res_mpl) {
     while ($row = $res_mpl->fetch_assoc()) {
-        $mapel_list[] = $row;
-        $mapel_cat_map[$row['id']] = $row['kategori_mapel'];
-        $mapel_cat_map[$row['nama_mapel']] = $row['kategori_mapel'];
+        $kat = trim($row['kategori_mapel'] ?? '');
+        $kat_lower = strtolower($kat);
+        $norm_cat = 'diknas';
+        if (strpos($kat_lower, 'diniyah') !== false || strpos($kat_lower, 'tahfidz') !== false || strpos($kat_lower, 'pesantren') !== false) {
+            $norm_cat = 'diniyah';
+        } elseif (strpos($kat_lower, 'solo') !== false || strpos($kat_lower, 'bisnis') !== false || strpos($kat_lower, 'entrepreneur') !== false || strpos($kat_lower, 'vokasi') !== false || strpos($kat_lower, 'trainer') !== false) {
+            $norm_cat = 'solopreneur';
+        } elseif (strpos($kat_lower, 'diknas') !== false || strpos($kat_lower, 'pkbm') !== false) {
+            $norm_cat = 'diknas';
+        }
+        $mapel_cat_map[$row['id']] = $norm_cat;
+        $mapel_cat_map[$row['nama_mapel']] = $norm_cat;
     }
 }
 
-// ----------------------------------------------------
-// 1. REKAPITULASI JAM MENGAJAR PER GURU (KHUSUS MAPEL OFFLINE / TATAP MUKA)
-// ----------------------------------------------------
-// Inisialisasi struktur rekap untuk SEMUA Ustadz / Guru
-$rekap_guru = [];
-foreach ($asatidz_list as $ast) {
-    $gid = (int)$ast['id'];
-    $rekap_guru[$gid] = [
-        'id' => $gid,
-        'nama' => $ast['nama'],
-        // JP per pekan
-        'pekan_diknas' => 0,
-        'pekan_diniyah' => 0,
-        'pekan_solopreneur' => 0,
-        'pekan_lainnya' => 0,
-        'pekan_total' => 0,
-        // JP Terjadwal Bulan ini
-        'bulan_diknas' => 0,
-        'bulan_diniyah' => 0,
-        'bulan_solopreneur' => 0,
-        'bulan_lainnya' => 0,
-        'bulan_total' => 0,
-        // Data Jurnal KBM Mengajar Terisi (jurnal_mengajar)
-        'jurnal_diknas' => 0,
-        'jurnal_diniyah' => 0,
-        'jurnal_solopreneur' => 0,
-        'jurnal_lainnya' => 0,
-        'jurnal_total' => 0,
-        // Data Presensi Scan Absen KBM (absensi_pegawai)
-        'total_scan_absen' => 0,
-        // Jam Kosong / Izin Bulan Ini
-        'jam_kosong_diknas' => 0,
-        'jam_kosong_diniyah' => 0,
-        'jam_kosong_solopreneur' => 0,
-        'jam_kosong_total' => 0,
-        // Jam Menggantikan / Inval
-        'jam_inval' => 0,
-        // Realisasi & Detail
-        'realisasi_jam' => 0,
-        'persen_kehadiran' => 100,
-        'detail_mapel' => [],
-        'detail_jurnal' => []
-    ];
+// Inisialisasi Rekap Per Guru per 3 Pilar
+$rekap_data = [
+    'diknas' => [],
+    'diniyah' => [],
+    'solopreneur' => []
+];
+
+foreach (['diknas', 'diniyah', 'solopreneur'] as $k_pilar) {
+    foreach ($asatidz_list as $ast) {
+        $gid = (int)$ast['id'];
+        $rekap_data[$k_pilar][$gid] = [
+            'id' => $gid,
+            'nama' => $ast['nama'],
+            'mapel_diampu' => [],
+            'pekan_jp' => 0,
+            'bulan_jp_target' => 0,
+            'jurnal_jp_terisi' => 0,
+            'total_scan_absen' => 0,
+            'jam_kosong' => 0,
+            'jam_inval' => 0,
+            'detail_jurnal' => [],
+            'detail_jadwal' => []
+        ];
+    }
 }
 
-// A. Tarik Jam dari Jadwal Pelajaran (jadwal_pelajaran)
+// 1. Tarik Data Jadwal Pelajaran (jadwal_pelajaran)
 $sql_jadwal = "SELECT j.*, m.nama_mapel, m.kategori_mapel, m.metode_belajar, k.nama_kelas, u.nama as nama_guru
                FROM jadwal_pelajaran j
                LEFT JOIN master_mapel m ON j.mapel_id = m.id
@@ -234,67 +278,53 @@ $sql_jadwal = "SELECT j.*, m.nama_mapel, m.kategori_mapel, m.metode_belajar, k.n
                WHERE j.ustadz_id IS NOT NULL AND j.ustadz_id > 0
                AND (m.metode_belajar IS NULL OR m.metode_belajar = 'offline' OR m.metode_belajar != 'ai_agentic')";
 $res_j = $conn->query($sql_jadwal);
-$all_jadwal = ($res_j) ? $res_j->fetch_all(MYSQLI_ASSOC) : [];
-
-foreach ($all_jadwal as $j) {
-    $gid = (int)($j['ustadz_id'] ?? 0);
-    if ($gid > 0 && isset($rekap_guru[$gid])) {
+if ($res_j) {
+    while ($j = $res_j->fetch_assoc()) {
+        $gid = (int)($j['ustadz_id'] ?? 0);
         $hari = trim($j['hari']);
-        $kat = strtolower(trim($j['kategori_mapel'] ?? ''));
+        $mpl_id = (int)$j['mapel_id'];
+        $mpl_nama = $j['nama_mapel'] ?? 'Mapel';
         $multiplier = $hari_count[$hari] ?? 4;
+        
+        $pilar = $mapel_cat_map[$mpl_id] ?? ($mapel_cat_map[$mpl_nama] ?? 'diknas');
+        if (!in_array($pilar, ['diknas', 'diniyah', 'solopreneur'])) $pilar = 'diknas';
 
-        if (strpos($kat, 'diknas') !== false || strpos($kat, 'pkbm') !== false) {
-            $rekap_guru[$gid]['pekan_diknas']++;
-            $rekap_guru[$gid]['bulan_diknas'] += $multiplier;
-        } elseif (strpos($kat, 'diniyah') !== false || strpos($kat, 'tahfidz') !== false || strpos($kat, 'pesantren') !== false) {
-            $rekap_guru[$gid]['pekan_diniyah']++;
-            $rekap_guru[$gid]['bulan_diniyah'] += $multiplier;
-        } elseif (strpos($kat, 'solo') !== false || strpos($kat, 'bisnis') !== false || strpos($kat, 'entrepreneur') !== false || strpos($kat, 'skill') !== false) {
-            $rekap_guru[$gid]['pekan_solopreneur']++;
-            $rekap_guru[$gid]['bulan_solopreneur'] += $multiplier;
-        } else {
-            $rekap_guru[$gid]['pekan_lainnya']++;
-            $rekap_guru[$gid]['bulan_lainnya'] += $multiplier;
+        if (isset($rekap_data[$pilar][$gid])) {
+            $rekap_data[$pilar][$gid]['pekan_jp']++;
+            $rekap_data[$pilar][$gid]['bulan_jp_target'] += $multiplier;
+            if (!in_array($mpl_nama, $rekap_data[$pilar][$gid]['mapel_diampu'])) {
+                $rekap_data[$pilar][$gid]['mapel_diampu'][] = $mpl_nama;
+            }
+            $rekap_data[$pilar][$gid]['detail_jadwal'][] = [
+                'hari' => $hari,
+                'jam_ke' => $j['jam_ke'],
+                'kelas' => $j['nama_kelas'] ?? 'Kelas',
+                'mapel' => $mpl_nama
+            ];
         }
-
-        $rekap_guru[$gid]['pekan_total']++;
-        $rekap_guru[$gid]['bulan_total'] += $multiplier;
-
-        $rekap_guru[$gid]['detail_mapel'][] = [
-            'hari' => $hari,
-            'jam_ke' => $j['jam_ke'],
-            'kelas' => $j['nama_kelas'] ?? 'Kelas',
-            'mapel' => $j['nama_mapel'] ?? 'Mapel',
-            'kategori' => $j['kategori_mapel'] ?? 'Umum'
-        ];
     }
 }
 
-// B. Sinkronisasi Data Jurnal Mengajar Nyata (jurnal_mengajar)
-$sql_jurnal = "SELECT jm.*, u.id as u_id, u.nama as u_nama 
+// 2. Tarik Data Jurnal Mengajar (jurnal_mengajar)
+$sql_jurnal = "SELECT jm.*, u.nama as u_nama 
                FROM jurnal_mengajar jm
                LEFT JOIN akun_ustadz u ON jm.ustadz_id = u.id
                WHERE MONTH(jm.tanggal) = $filter_bulan AND YEAR(jm.tanggal) = $filter_tahun
                ORDER BY jm.tanggal DESC, jm.id DESC";
 $res_jur = $conn->query($sql_jurnal);
-if ($res_jur && $res_jur->num_rows > 0) {
+if ($res_jur) {
     while ($jm = $res_jur->fetch_assoc()) {
-        $u_id = (int)($jm['ustadz_id'] ?? 0);
-        if ($u_id > 0 && isset($rekap_guru[$u_id])) {
-            $mpl = $jm['mata_pelajaran'];
-            $kat = strtolower($mapel_cat_map[$mpl] ?? '');
+        $gid = (int)($jm['ustadz_id'] ?? 0);
+        $mpl = $jm['mata_pelajaran'];
+        $pilar = $mapel_cat_map[$mpl] ?? 'diknas';
+        if (!in_array($pilar, ['diknas', 'diniyah', 'solopreneur'])) $pilar = 'diknas';
 
-            if (strpos($kat, 'diknas') !== false || strpos($kat, 'pkbm') !== false) {
-                $rekap_guru[$u_id]['jurnal_diknas']++;
-            } elseif (strpos($kat, 'diniyah') !== false || strpos($kat, 'tahfidz') !== false || strpos($kat, 'pesantren') !== false) {
-                $rekap_guru[$u_id]['jurnal_diniyah']++;
-            } elseif (strpos($kat, 'solo') !== false || strpos($kat, 'bisnis') !== false || strpos($kat, 'entrepreneur') !== false || strpos($kat, 'skill') !== false) {
-                $rekap_guru[$u_id]['jurnal_solopreneur']++;
-            } else {
-                $rekap_guru[$u_id]['jurnal_lainnya']++;
+        if (isset($rekap_data[$pilar][$gid])) {
+            $rekap_data[$pilar][$gid]['jurnal_jp_terisi']++;
+            if (!in_array($mpl, $rekap_data[$pilar][$gid]['mapel_diampu'])) {
+                $rekap_data[$pilar][$gid]['mapel_diampu'][] = $mpl;
             }
-            $rekap_guru[$u_id]['jurnal_total']++;
-            $rekap_guru[$u_id]['detail_jurnal'][] = [
+            $rekap_data[$pilar][$gid]['detail_jurnal'][] = [
                 'tanggal' => $jm['tanggal'],
                 'kelas' => $jm['kelas'],
                 'mapel' => $jm['mata_pelajaran'],
@@ -305,25 +335,25 @@ if ($res_jur && $res_jur->num_rows > 0) {
     }
 }
 
-// C. Sinkronisasi Data Presensi Absensi Mengajar (absensi_pegawai)
-$sql_absen = "SELECT ustadz_id, DATE(waktu_absen) as tgl, status_kehadiran, COUNT(*) as jml
+// 3. Tarik Presensi Absensi Mengajar (absensi_pegawai)
+$sql_absen = "SELECT ustadz_id, DATE(waktu_absen) as tgl, COUNT(*) as jml
               FROM absensi_pegawai 
               WHERE MONTH(waktu_absen) = $filter_bulan AND YEAR(waktu_absen) = $filter_tahun 
               AND jenis_absen = 'Mengajar' AND status_kehadiran IN ('Masuk', 'Hadir', 'Pulang')
               GROUP BY ustadz_id, DATE(waktu_absen)";
 $res_abs = $conn->query($sql_absen);
-if ($res_abs && $res_abs->num_rows > 0) {
+if ($res_abs) {
     while ($ab = $res_abs->fetch_assoc()) {
-        $u_id = (int)$ab['ustadz_id'];
-        if ($u_id > 0 && isset($rekap_guru[$u_id])) {
-            $rekap_guru[$u_id]['total_scan_absen']++;
+        $gid = (int)$ab['ustadz_id'];
+        foreach (['diknas', 'diniyah', 'solopreneur'] as $p) {
+            if (isset($rekap_data[$p][$gid])) {
+                $rekap_data[$p][$gid]['total_scan_absen']++;
+            }
         }
     }
 }
 
-// ----------------------------------------------------
-// 2. DATA LOG JAM KOSONG BULAN INI (kontrol_jam_kosong)
-// ----------------------------------------------------
+// 4. Tarik Log Jam Kosong & Inval
 $sql_logs = "SELECT k.*, u1.nama as nama_guru_utama, u2.nama as nama_guru_pengganti, uc.nama as nama_creator
              FROM kontrol_jam_kosong k
              JOIN akun_ustadz u1 ON k.guru_utama_id = u1.id
@@ -332,854 +362,930 @@ $sql_logs = "SELECT k.*, u1.nama as nama_guru_utama, u2.nama as nama_guru_pengga
              WHERE MONTH(k.tanggal) = $filter_bulan AND YEAR(k.tanggal) = $filter_tahun
              ORDER BY k.tanggal DESC, k.created_at DESC";
 $res_logs = $conn->query($sql_logs);
-$logs = ($res_logs) ? $res_logs->fetch_all(MYSQLI_ASSOC) : [];
+$logs_jam_kosong = ($res_logs) ? $res_logs->fetch_all(MYSQLI_ASSOC) : [];
 
-// Aggregate Jam Kosong & Inval ke Rekap Guru
-foreach ($logs as $l) {
+foreach ($logs_jam_kosong as $l) {
     if ($l['status_kontrol'] !== 'Batal') {
         $u_id = (int)$l['guru_utama_id'];
         $p_id = (int)$l['guru_pengganti_id'];
         $mpl_name = $l['mapel'];
-        $kat = strtolower($mapel_cat_map[$mpl_name] ?? '');
+        $pilar = $mapel_cat_map[$mpl_name] ?? 'diknas';
+        if (!in_array($pilar, ['diknas', 'diniyah', 'solopreneur'])) $pilar = 'diknas';
 
-        if (isset($rekap_guru[$u_id])) {
-            $rekap_guru[$u_id]['jam_kosong_total']++;
-            if (strpos($kat, 'diknas') !== false) {
-                $rekap_guru[$u_id]['jam_kosong_diknas']++;
-            } elseif (strpos($kat, 'diniyah') !== false) {
-                $rekap_guru[$u_id]['jam_kosong_diniyah']++;
-            } elseif (strpos($kat, 'solo') !== false) {
-                $rekap_guru[$u_id]['jam_kosong_solopreneur']++;
-            }
+        if (isset($rekap_data[$pilar][$u_id])) {
+            $rekap_data[$pilar][$u_id]['jam_kosong']++;
         }
-
-        if ($p_id > 0 && isset($rekap_guru[$p_id]) && $l['status_kontrol'] === 'Terisi') {
-            $rekap_guru[$p_id]['jam_inval']++;
+        if ($p_id > 0 && isset($rekap_data[$pilar][$p_id]) && $l['status_kontrol'] === 'Terisi') {
+            $rekap_data[$pilar][$p_id]['jam_inval']++;
         }
     }
 }
 
-// Hitung Final Realisasi & Persentase Kehadiran
-$grand_total_diknas = 0;
-$grand_total_diniyah = 0;
-$grand_total_solopreneur = 0;
-$grand_total_terjadwal = 0;
-$grand_total_kosong = 0;
-$grand_total_inval = 0;
-$grand_total_realisasi = 0;
-$grand_total_jurnal = 0;
-$grand_total_absen = 0;
+// Ringkasan Statistik 3 Pilar
+$stats_pilar = [];
+foreach (['diknas', 'diniyah', 'solopreneur'] as $p) {
+    $tot_jadwal = 0;
+    $tot_jurnal = 0;
+    $tot_kosong = 0;
+    $guru_aktif = 0;
 
-foreach ($rekap_guru as $gid => &$rg) {
-    // Jika belum diplot slot di jadwal tetapi guru sudah mengisi jurnal / absen mengajar
-    if ($rg['bulan_total'] === 0 && ($rg['jurnal_total'] > 0 || $rg['total_scan_absen'] > 0)) {
-        $rg['bulan_diknas'] = $rg['jurnal_diknas'];
-        $rg['bulan_diniyah'] = $rg['jurnal_diniyah'];
-        $rg['bulan_solopreneur'] = $rg['jurnal_solopreneur'];
-        $rg['bulan_lainnya'] = $rg['jurnal_lainnya'];
-        $rg['bulan_total'] = max($rg['jurnal_total'], $rg['total_scan_absen']);
-    }
-
-    // Realisasi jam mengajar = realisasi jurnal terisi ATAU jam terjadwal dikurangi jam kosong ditambah jam inval
-    if ($rg['jurnal_total'] > 0) {
-        $rg['realisasi_jam'] = $rg['jurnal_total'] + $rg['jam_inval'];
-    } else {
-        $rg['realisasi_jam'] = max(0, $rg['bulan_total'] - $rg['jam_kosong_total'] + $rg['jam_inval']);
-    }
-
-    // Persentase kehadiran
-    if ($rg['bulan_total'] > 0) {
-        $rg['persen_kehadiran'] = round((($rg['bulan_total'] - $rg['jam_kosong_total']) / $rg['bulan_total']) * 100, 1);
-        if ($rg['jurnal_total'] > 0 && $rg['persen_kehadiran'] < 100) {
-            $rg['persen_kehadiran'] = min(100, round(($rg['jurnal_total'] / $rg['bulan_total']) * 100, 1));
+    foreach ($rekap_data[$p] as $gid => $g) {
+        if ($g['bulan_jp_target'] > 0 || $g['jurnal_jp_terisi'] > 0) {
+            $guru_aktif++;
+            $tot_jadwal += $g['bulan_jp_target'];
+            $tot_jurnal += $g['jurnal_jp_terisi'];
+            $tot_kosong += $g['jam_kosong'];
         }
-    } else {
-        $rg['persen_kehadiran'] = 100;
     }
 
-    $grand_total_diknas += $rg['bulan_diknas'];
-    $grand_total_diniyah += $rg['bulan_diniyah'];
-    $grand_total_solopreneur += $rg['bulan_solopreneur'];
-    $grand_total_terjadwal += $rg['bulan_total'];
-    $grand_total_kosong += $rg['jam_kosong_total'];
-    $grand_total_inval += $rg['jam_inval'];
-    $grand_total_realisasi += $rg['realisasi_jam'];
-    $grand_total_jurnal += $rg['jurnal_total'];
-    $grand_total_absen += $rg['total_scan_absen'];
+    $pct = ($tot_jadwal > 0) ? round(($tot_jurnal / $tot_jadwal) * 100, 1) : ($tot_jurnal > 0 ? 100 : 0);
+    $stats_pilar[$p] = [
+        'guru_aktif' => $guru_aktif,
+        'tot_jadwal' => $tot_jadwal,
+        'tot_jurnal' => $tot_jurnal,
+        'tot_kosong' => $tot_kosong,
+        'persentase' => $pct
+    ];
 }
-unset($rg);
-
-// Semua ustadz tampil lengkap agar Yayasan & Kepsek dapat memantau seluruh staf
-$rekap_guru_aktif = $rekap_guru;
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekapitulasi Jam Mengajar & Kontrol Jam Kosong | SADIGS 4.0</title>
+    <title>Rekap Ajar (3 Tab Validasi) - Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); }
+        .tab-btn.active {
+            color: #0f766e;
+            border-bottom: 3px solid #0f766e;
+            font-weight: 700;
+        }
         @media print {
             .no-print { display: none !important; }
-            .print-full { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-            body { background: white !important; }
+            .print-only { display: block !important; }
+            body { background: #fff !important; }
         }
     </style>
 </head>
-<body class="bg-slate-50 font-sans antialiased text-slate-800 flex h-screen overflow-hidden">
+<body class="text-slate-800 antialiased min-h-screen">
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- SIDEBAR -->
+        <div class="w-full md:w-64 flex-shrink-0 no-print">
+            <?php include 'sidebar-hr.php'; ?>
+        </div>
 
-    <div class="no-print">
-        <?php include 'sidebar-hr.php'; ?>
-    </div>
-
-    <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 z-10 flex-shrink-0 no-print">
-            <div class="flex items-center gap-3">
-                <button id="open-sidebar-hr" class="text-slate-500 hover:text-slate-700 md:hidden p-2 rounded-xl hover:bg-slate-100 transition">
-                    <i class="fas fa-bars text-lg"></i>
-                </button>
-                <div class="flex items-center gap-2">
-                    <span class="px-2.5 py-1 rounded-md bg-teal-50 text-[#0b8478] text-[11px] font-black uppercase tracking-wider border border-teal-200">KBM & Kurikulum</span>
-                    <span class="text-slate-400 text-xs">•</span>
-                    <h2 class="font-bold text-slate-800 text-sm hidden sm:inline-block">Rekapitulasi Jam Mengajar & Jam Kosong</h2>
-                </div>
-            </div>
-            <div class="flex items-center gap-3">
-                <button onclick="window.print()" class="px-3.5 py-1.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-100 font-bold text-xs flex items-center gap-2 transition shadow-xs">
-                    <i class="fas fa-print text-teal-600"></i>
-                    <span>Cetak Laporan</span>
-                </button>
-                <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-[#0b8478] to-teal-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-teal-100">
-                    <?= strtoupper(substr($_SESSION['ustadz_nama'] ?? 'A', 0, 1)) ?>
-                </div>
-            </div>
-        </header>
-
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8 print-full">
+        <!-- CONTENT -->
+        <main class="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
             
-            <!-- HEADER BANNER -->
-            <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <!-- HEADER SECTION -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
                 <div>
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0b8478] to-teal-600 flex items-center justify-center text-white shadow-lg shadow-teal-600/20">
-                            <i class="fas fa-chalkboard-teacher text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h1 class="text-2xl font-black text-slate-900 tracking-tight">Rekapitulasi Jam Mengajar & Jam Kosong</h1>
-                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800 border border-teal-300">Khusus Mapel Offline</span>
-                            </div>
-                            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Rekapitulasi beban jam tatap muka langsung (Luring / Offline) yang diampu oleh <strong>Tutor Diknas</strong>, <strong>Ustadz Diniyah</strong>, dan <strong>Trainer Solopreneur</strong>.</p>
-                        </div>
+                    <div class="flex items-center gap-2 text-xs text-teal-700 font-bold uppercase tracking-wider mb-1">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <span>Sistem Rekapitulasi & Validasi KBM Offline</span>
                     </div>
+                    <h1 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                        Rekap Ajar & Jam Kosong
+                    </h1>
+                    <p class="text-xs md:text-sm text-slate-500 mt-0.5">
+                        Alur Terintegrasi: Jurnal KBM Guru ➔ Riwayat Mengajar ➔ Rekap 3 Tab ➔ Validasi Pimpinan (Kepsek, Kepala Ma'had, Kepala LDU) ➔ Laporan Yayasan
+                    </p>
                 </div>
 
                 <!-- FILTER BULAN & TAHUN -->
-                <form method="GET" class="no-print flex items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-xs">
+                <form method="GET" class="flex items-center gap-2 bg-white p-2 rounded-2xl shadow-sm border border-slate-200 no-print">
                     <input type="hidden" name="tab" value="<?= htmlspecialchars($current_tab) ?>">
-                    <div class="flex items-center gap-1 text-xs font-bold text-slate-500 pl-2">
-                        <i class="fas fa-calendar-alt text-teal-600"></i>
-                        <span>Periode:</span>
+                    <div class="flex items-center gap-1.5 pl-2">
+                        <i class="fas fa-calendar-alt text-teal-600 text-sm"></i>
+                        <span class="text-xs font-bold text-slate-600 hidden sm:inline">Periode:</span>
                     </div>
-                    <select name="bulan" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700 focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                        <?php for ($m=1; $m<=12; $m++): ?>
-                            <option value="<?= $m ?>" <?= $filter_bulan === $m ? 'selected' : '' ?>><?= $nama_bulan_indo[$m] ?></option>
+                    <select name="bulan" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                        <?php foreach ($nama_bulan_indo as $num => $nama): ?>
+                            <option value="<?= $num ?>" <?= ($filter_bulan == $num) ? 'selected' : '' ?>><?= $nama ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <select name="tahun" class="text-xs font-bold bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 focus:ring-2 focus:ring-teal-500 focus:outline-none">
+                        <?php for ($y = date('Y') - 1; $y <= date('Y') + 1; $y++): ?>
+                            <option value="<?= $y ?>" <?= ($filter_tahun == $y) ? 'selected' : '' ?>><?= $y ?></option>
                         <?php endfor; ?>
                     </select>
-                    <select name="tahun" class="px-3 py-1.5 border border-slate-200 rounded-xl text-xs bg-slate-50 font-bold text-slate-700 focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                        <?php for ($y=date('Y')-2; $y<=date('Y')+1; $y++): ?>
-                            <option value="<?= $y ?>" <?= $filter_tahun === $y ? 'selected' : '' ?>><?= $y ?></option>
-                        <?php endfor; ?>
-                    </select>
-                    <button type="submit" class="bg-[#0b8478] hover:bg-teal-700 text-white font-extrabold px-4 py-1.5 rounded-xl text-xs transition shadow-xs">
-                        Terapkan
+                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm">
+                        Filter
                     </button>
                 </form>
             </div>
 
-            <!-- MESSAGES -->
+            <!-- NOTIFIKASI SUKSES / ERROR -->
             <?php if (!empty($pesan_sukses)): ?>
-                <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-2xl mb-6 shadow-xs flex items-center justify-between text-xs font-bold">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-check-circle text-base text-emerald-600"></i>
-                        <span><?= $pesan_sukses ?></span>
-                    </div>
-                    <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700"><i class="fas fa-times"></i></button>
+                <div class="bg-emerald-50 border border-emerald-200 text-emerald-900 px-4 py-3 rounded-2xl mb-6 shadow-sm flex items-center gap-2 text-xs font-semibold">
+                    <i class="fas fa-check-circle text-emerald-600 text-base"></i>
+                    <span><?= $pesan_sukses ?></span>
                 </div>
             <?php endif; ?>
             <?php if (!empty($pesan_error)): ?>
-                <div class="bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-2xl mb-6 shadow-xs flex items-center justify-between text-xs font-bold">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-exclamation-circle text-base text-rose-600"></i>
-                        <span><?= $pesan_error ?></span>
-                    </div>
-                    <button onclick="this.parentElement.remove()" class="text-rose-500 hover:text-rose-700"><i class="fas fa-times"></i></button>
+                <div class="bg-rose-50 border border-rose-200 text-rose-900 px-4 py-3 rounded-2xl mb-6 shadow-sm flex items-center gap-2 text-xs font-semibold">
+                    <i class="fas fa-exclamation-triangle text-rose-600 text-base"></i>
+                    <span><?= $pesan_error ?></span>
                 </div>
             <?php endif; ?>
 
-            <!-- STATISTIC SUMMARY CARDS (4 PILAR OFFLINE) -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <!-- Diknas Card -->
-                <div class="bg-white rounded-2xl p-5 border border-blue-100 shadow-xs relative overflow-hidden group hover:shadow-md transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">Tutor Diknas (Offline)</span>
-                            <h3 class="text-2xl font-black text-slate-900 mt-2"><?= number_format($grand_total_diknas) ?> <span class="text-xs font-bold text-slate-400">JP/Bln</span></h3>
-                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Tatap Muka PKBM / Nasional</p>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
-                            <i class="fas fa-graduation-cap"></i>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
-                        <div class="bg-blue-600 h-full rounded-full" style="width: <?= $grand_total_terjadwal > 0 ? min(100, round(($grand_total_diknas/$grand_total_terjadwal)*100)) : 0 ?>%"></div>
-                    </div>
-                </div>
-
-                <!-- Diniyah Card -->
-                <div class="bg-white rounded-2xl p-5 border border-emerald-100 shadow-xs relative overflow-hidden group hover:shadow-md transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">Ustadz Diniyah (Offline)</span>
-                            <h3 class="text-2xl font-black text-slate-900 mt-2"><?= number_format($grand_total_diniyah) ?> <span class="text-xs font-bold text-slate-400">JP/Bln</span></h3>
-                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Tatap Muka Tahfidz & Kitab</p>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
-                            <i class="fas fa-quran"></i>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
-                        <div class="bg-emerald-600 h-full rounded-full" style="width: <?= $grand_total_terjadwal > 0 ? min(100, round(($grand_total_diniyah/$grand_total_terjadwal)*100)) : 0 ?>%"></div>
-                    </div>
-                </div>
-
-                <!-- Solopreneur Card -->
-                <div class="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs relative overflow-hidden group hover:shadow-md transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">Trainer Solopreneur (Offline)</span>
-                            <h3 class="text-2xl font-black text-slate-900 mt-2"><?= number_format($grand_total_solopreneur) ?> <span class="text-xs font-bold text-slate-400">JP/Bln</span></h3>
-                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Praktik Kemandirian & Skill</p>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
-                            <i class="fas fa-rocket"></i>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
-                        <div class="bg-purple-600 h-full rounded-full" style="width: <?= $grand_total_terjadwal > 0 ? min(100, round(($grand_total_solopreneur/$grand_total_terjadwal)*100)) : 0 ?>%"></div>
-                    </div>
-                </div>
-
-                <!-- Jam Kosong & Inval Card -->
-                <div class="bg-white rounded-2xl p-5 border border-amber-100 shadow-xs relative overflow-hidden group hover:shadow-md transition">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">Jam Kosong & Inval</span>
-                            <h3 class="text-2xl font-black text-slate-900 mt-2"><?= number_format($grand_total_kosong) ?> <span class="text-xs font-bold text-slate-400">Kasus</span></h3>
-                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Terisi Inval: <strong class="text-emerald-700"><?= number_format($grand_total_inval) ?> JP</strong></p>
-                        </div>
-                        <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
-                            <i class="fas fa-user-clock"></i>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-100 h-1.5 rounded-full mt-4 overflow-hidden">
-                        <div class="bg-amber-500 h-full rounded-full" style="width: <?= $grand_total_kosong > 0 ? min(100, round(($grand_total_inval/max(1, $grand_total_kosong))*100)) : 100 ?>%"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- NAVIGATION TABS -->
-            <div class="no-print flex items-center gap-2 border-b border-slate-200 mb-6 pb-2">
-                <a href="?bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>&tab=rekap" class="px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition <?= $current_tab === 'rekap' ? 'bg-[#0b8478] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/70' ?>">
-                    <i class="fas fa-table text-sm"></i>
-                    <span>Rekap Jam Mengajar Guru</span>
-                </a>
-                <a href="?bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>&tab=jadwal" class="px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition <?= $current_tab === 'jadwal' ? 'bg-[#0b8478] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/70' ?>">
-                    <i class="fas fa-calendar-week text-sm"></i>
-                    <span>Sebaran Jadwal per Kategori</span>
-                </a>
-                <a href="?bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>&tab=jam_kosong" class="px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition <?= $current_tab === 'jam_kosong' ? 'bg-[#0b8478] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-200/70' ?>">
-                    <i class="fas fa-calendar-times text-sm"></i>
-                    <span>Log & Kontrol Jam Kosong</span>
-                    <?php if ($grand_total_kosong > 0): ?>
-                        <span class="px-1.5 py-0.5 rounded-full bg-amber-400 text-slate-900 text-[10px] font-black"><?= $grand_total_kosong ?></span>
+            <!-- KARTU STATUS VALIDASI 3 PILAR (UNTUK YAYASAN & EXECUTIVE OVERVIEW) -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <i class="fas fa-shield-halved text-teal-600"></i> Status Validasi Rekap Ajar Periode <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?>
+                    </h2>
+                    <?php if ($is_yayasan): ?>
+                        <span class="bg-teal-100 text-teal-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-teal-200">
+                            Akses Pengurus Yayasan (Semua Tab Terbuka)
+                        </span>
                     <?php endif; ?>
-                </a>
-            </div>
-
-            <!-- TAB 1: REKAPITULASI JAM MENGAJAR GURU -->
-            <?php if ($current_tab === 'rekap'): ?>
-                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-                    <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <h2 class="text-base font-black text-slate-900 flex items-center gap-2">
-                                <i class="fas fa-file-invoice text-teal-600"></i>
-                                <span>Rekap Beban Mengajar Asatidz (Periode <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?>)</span>
-                            </h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Rincian akumulasi jam mengajar terjadwal (Diknas, Diniyah, Solopreneur) dan realisasi kehadiran.</p>
-                        </div>
-                        <div class="flex items-center gap-2 no-print">
-                            <span class="text-xs font-bold text-slate-500">Total Pengajar Aktif: <strong class="text-teal-700"><?= count($rekap_guru_aktif) ?></strong></span>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold uppercase tracking-wider text-[11px]">
-                                    <th class="py-3.5 px-4 text-center w-12">No</th>
-                                    <th class="py-3.5 px-4">Nama Guru / Ustadz</th>
-                                    <th class="py-3.5 px-3 text-center bg-blue-50/50 text-blue-800 border-x border-blue-100">Diknas<br><span class="text-[9px] font-medium text-blue-600">(Pekan / Bulan)</span></th>
-                                    <th class="py-3.5 px-3 text-center bg-emerald-50/50 text-emerald-800 border-r border-emerald-100">Diniyah<br><span class="text-[9px] font-medium text-emerald-600">(Pekan / Bulan)</span></th>
-                                    <th class="py-3.5 px-3 text-center bg-purple-50/50 text-purple-800 border-r border-purple-100">Solopreneur<br><span class="text-[9px] font-medium text-purple-600">(Pekan / Bulan)</span></th>
-                                    <th class="py-3.5 px-3 text-center bg-slate-100/80 font-black text-slate-800">Total Terjadwal<br><span class="text-[9px] font-medium text-slate-600">(Bulan Ini)</span></th>
-                                    <th class="py-3.5 px-3 text-center text-rose-700 bg-rose-50/40">Jam Kosong<br><span class="text-[9px] font-medium text-rose-500">(Izin/Absen)</span></th>
-                                    <th class="py-3.5 px-3 text-center text-teal-700 bg-teal-50/40">Inval<br><span class="text-[9px] font-medium text-teal-600">(Pengganti)</span></th>
-                                    <th class="py-3.5 px-4 text-center font-black bg-slate-800 text-white">Realisasi Jam<br><span class="text-[9px] font-normal text-slate-300">(Total JP)</span></th>
-                                    <th class="py-3.5 px-4 text-center">Kehadiran</th>
-                                    <th class="py-3.5 px-4 text-center no-print">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <?php $no = 1; foreach ($rekap_guru_aktif as $rg): ?>
-                                    <tr class="hover:bg-teal-50/30 transition">
-                                        <td class="py-3 px-4 text-center font-bold text-slate-400"><?= $no++ ?></td>
-                                        <td class="py-3 px-4">
-                                            <div class="font-extrabold text-slate-900"><?= htmlspecialchars($rg['nama']) ?></div>
-                                            <div class="text-[10px] text-slate-400 mt-0.5">Beban: <?= $rg['pekan_total'] ?> JP / Pekan</div>
-                                        </td>
-                                        
-                                        <!-- Diknas -->
-                                        <td class="py-3 px-3 text-center bg-blue-50/30 font-bold text-blue-900 border-x border-blue-50">
-                                            <span><?= $rg['pekan_diknas'] ?> JP</span>
-                                            <div class="text-[10px] text-blue-600 font-semibold"><?= $rg['bulan_diknas'] ?> JP/bln</div>
-                                        </td>
-
-                                        <!-- Diniyah -->
-                                        <td class="py-3 px-3 text-center bg-emerald-50/30 font-bold text-emerald-900 border-r border-emerald-50">
-                                            <span><?= $rg['pekan_diniyah'] ?> JP</span>
-                                            <div class="text-[10px] text-emerald-600 font-semibold"><?= $rg['bulan_diniyah'] ?> JP/bln</div>
-                                        </td>
-
-                                        <!-- Solopreneur -->
-                                        <td class="py-3 px-3 text-center bg-purple-50/30 font-bold text-purple-900 border-r border-purple-50">
-                                            <span><?= $rg['pekan_solopreneur'] ?> JP</span>
-                                            <div class="text-[10px] text-purple-600 font-semibold"><?= $rg['bulan_solopreneur'] ?> JP/bln</div>
-                                        </td>
-
-                                        <!-- Total Terjadwal -->
-                                        <td class="py-3 px-3 text-center bg-slate-50 font-black text-slate-900 text-sm">
-                                            <?= $rg['bulan_total'] ?> <span class="text-[10px] text-slate-400 font-bold">JP</span>
-                                        </td>
-
-                                        <!-- Jam Kosong -->
-                                        <td class="py-3 px-3 text-center font-bold text-rose-700 bg-rose-50/20">
-                                            <?php if ($rg['jam_kosong_total'] > 0): ?>
-                                                <span class="px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-extrabold">-<?= $rg['jam_kosong_total'] ?> JP</span>
-                                            <?php else: ?>
-                                                <span class="text-slate-300">0</span>
-                                            <?php endif; ?>
-                                        </td>
-
-                                        <!-- Jam Inval -->
-                                        <td class="py-3 px-3 text-center font-bold text-teal-700 bg-teal-50/20">
-                                            <?php if ($rg['jam_inval'] > 0): ?>
-                                                <span class="px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 text-[10px] font-extrabold">+<?= $rg['jam_inval'] ?> JP</span>
-                                            <?php else: ?>
-                                                <span class="text-slate-300">0</span>
-                                            <?php endif; ?>
-                                        </td>
-
-                                        <!-- Realisasi Jam -->
-                                        <td class="py-3 px-4 text-center font-black bg-slate-800 text-amber-400 text-sm">
-                                            <?= $rg['realisasi_jam'] ?> <span class="text-[10px] text-slate-300 font-medium">JP</span>
-                                        </td>
-
-                                        <!-- Kehadiran -->
-                                        <td class="py-3 px-4 text-center">
-                                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold <?= $rg['persen_kehadiran'] >= 95 ? 'bg-emerald-100 text-emerald-800' : ($rg['persen_kehadiran'] >= 80 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800') ?>">
-                                                <i class="fas <?= $rg['persen_kehadiran'] >= 95 ? 'fa-check-circle' : 'fa-exclamation-triangle' ?>"></i>
-                                                <span><?= $rg['persen_kehadiran'] ?>%</span>
-                                            </div>
-                                        </td>
-
-                                        <!-- Aksi -->
-                                        <td class="py-3 px-4 text-center no-print">
-                                            <button type="button" onclick="bukaModalDetailGuru(<?= htmlspecialchars(json_encode($rg)) ?>)" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-teal-50 text-slate-700 hover:text-[#0b8478] font-bold text-[10px] border border-slate-200 transition">
-                                                <i class="fas fa-eye mr-1"></i> Rincian
-                                            </button>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                            <tfoot class="bg-slate-900 text-white font-black text-xs border-t-2 border-slate-700">
-                                <tr>
-                                    <td colspan="2" class="py-4 px-4 text-center uppercase tracking-wider text-amber-300">TOTAL AKUMULASI KESELURUHAN</td>
-                                    <td class="py-4 px-3 text-center text-blue-300"><?= number_format($grand_total_diknas) ?> JP</td>
-                                    <td class="py-4 px-3 text-center text-emerald-300"><?= number_format($grand_total_diniyah) ?> JP</td>
-                                    <td class="py-4 px-3 text-center text-purple-300"><?= number_format($grand_total_solopreneur) ?> JP</td>
-                                    <td class="py-4 px-3 text-center text-white"><?= number_format($grand_total_terjadwal) ?> JP</td>
-                                    <td class="py-4 px-3 text-center text-rose-400">-<?= number_format($grand_total_kosong) ?> JP</td>
-                                    <td class="py-4 px-3 text-center text-teal-300">+<?= number_format($grand_total_inval) ?> JP</td>
-                                    <td class="py-4 px-4 text-center text-amber-400 text-base"><?= number_format($grand_total_realisasi) ?> JP</td>
-                                    <td colspan="2" class="py-4 px-4 text-center text-slate-400 text-[10px] font-normal">Tercatat di SADIGS 4.0</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
                 </div>
-            <?php endif; ?>
 
-            <!-- TAB 2: SEBARAN JADWAL PELAJARAN PER KATEGORI -->
-            <?php if ($current_tab === 'jadwal'): ?>
-                <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6 mb-8">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
-                        <div>
-                            <h2 class="text-base font-black text-slate-900 flex items-center gap-2">
-                                <i class="fas fa-calendar-alt text-teal-600"></i>
-                                <span>Distribusi Jadwal Pelajaran (Diknas, Diniyah, Solopreneur)</span>
-                            </h2>
-                            <p class="text-xs text-slate-500 mt-0.5">Pemetaan seluruh jadwal belajar santri berdasarkan kategori kurikulum.</p>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <a href="admin-jadwal-pelajaran.php" class="px-3.5 py-1.5 bg-[#0b8478] hover:bg-teal-700 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-1.5">
-                                <i class="fas fa-cog"></i>
-                                <span>Kelola Jadwal Pelajaran</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold uppercase tracking-wider text-[11px]">
-                                    <th class="py-3 px-4">Hari</th>
-                                    <th class="py-3 px-3 text-center">Jam Ke</th>
-                                    <th class="py-3 px-4">Kelas</th>
-                                    <th class="py-3 px-4">Mata Pelajaran</th>
-                                    <th class="py-3 px-4 text-center">Kategori</th>
-                                    <th class="py-3 px-4">Guru Pengampu</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <?php if (empty($all_jadwal)): ?>
-                                    <tr>
-                                        <td colspan="6" class="py-8 text-center text-slate-400 italic">Belum ada data jadwal pelajaran yang tersimpan.</td>
-                                    </tr>
-                                <?php else: foreach ($all_jadwal as $j): 
-                                    $kat = strtolower(trim($j['kategori_mapel'] ?? ''));
-                                    $badge_class = 'bg-slate-100 text-slate-700 border-slate-200';
-                                    if (strpos($kat, 'diknas') !== false) {
-                                        $badge_class = 'bg-blue-50 text-blue-700 border-blue-200';
-                                    } elseif (strpos($kat, 'diniyah') !== false || strpos($kat, 'tahfidz') !== false) {
-                                        $badge_class = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                                    } elseif (strpos($kat, 'solo') !== false) {
-                                        $badge_class = 'bg-purple-50 text-purple-700 border-purple-200';
-                                    }
-                                ?>
-                                    <tr class="hover:bg-slate-50/60 transition">
-                                        <td class="py-3 px-4 font-bold text-slate-800"><?= htmlspecialchars($j['hari']) ?></td>
-                                        <td class="py-3 px-3 text-center font-extrabold text-teal-700">Jam ke-<?= $j['jam_ke'] ?></td>
-                                        <td class="py-3 px-4 font-semibold text-slate-700"><?= htmlspecialchars($j['nama_kelas'] ?? 'Kelas') ?></td>
-                                        <td class="py-3 px-4 font-extrabold text-slate-900"><?= htmlspecialchars($j['nama_mapel'] ?? 'Mapel') ?></td>
-                                        <td class="py-3 px-4 text-center">
-                                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black border <?= $badge_class ?>">
-                                                <?= htmlspecialchars($j['kategori_mapel'] ?? 'Lainnya') ?>
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-4 font-bold text-slate-700">
-                                            <i class="fas fa-chalkboard-teacher text-teal-600 mr-1.5"></i>
-                                            <?= htmlspecialchars($j['nama_guru'] ?? 'Belum diplot') ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            <?php endif; ?>
-
-            <!-- TAB 3: LOG & KONTROL JAM KOSONG (INVAL) -->
-            <?php if ($current_tab === 'jam_kosong'): ?>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     
-                    <!-- FORM CARD (Admin Only) -->
-                    <div class="lg:col-span-1 no-print">
-                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                            <div class="px-6 py-4 bg-gradient-to-r from-[#0b8478] to-teal-600 text-white flex items-center justify-between">
-                                <h2 class="font-extrabold text-sm flex items-center gap-2">
-                                    <i class="fas fa-plus-circle text-teal-200"></i>
-                                    <span>Catat Log Jam Kosong Baru</span>
-                                </h2>
-                            </div>
-                            
-                            <?php if ($is_admin): ?>
-                                <form method="POST" class="p-6 space-y-4">
-                                    <input type="hidden" name="action" value="tambah">
-                                    
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Kejadian <span class="text-rose-500">*</span></label>
-                                        <input type="date" name="tanggal" value="<?= $today ?>" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">Kelas <span class="text-rose-500">*</span></label>
-                                        <select name="kelas" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white">
-                                            <option value="">-- Pilih Kelas --</option>
-                                            <?php foreach ($kelas_list as $kls): ?>
-                                                <option value="<?= htmlspecialchars($kls['nama_kelas']) ?>"><?= htmlspecialchars($kls['nama_kelas']) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">Mata Pelajaran <span class="text-rose-500">*</span></label>
-                                        <select name="mapel" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white">
-                                            <option value="">-- Pilih Mapel --</option>
-                                            <?php foreach ($mapel_list as $mpl): ?>
-                                                <option value="<?= htmlspecialchars($mpl['nama_mapel']) ?>">
-                                                    <?= htmlspecialchars($mpl['nama_mapel']) ?> (<?= htmlspecialchars($mpl['kategori_mapel']) ?>)
-                                                </option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">Guru Utama (Absen/Izin) <span class="text-rose-500">*</span></label>
-                                        <select name="guru_utama_id" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white">
-                                            <option value="">-- Pilih Guru Utama --</option>
-                                            <?php foreach ($asatidz_list as $ast): ?>
-                                                <option value="<?= $ast['id'] ?>"><?= htmlspecialchars($ast['nama']) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">Guru Pengganti (Inval)</label>
-                                        <select name="guru_pengganti_id" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white">
-                                            <option value="">-- Pilih Guru Pengganti (Opsional) --</option>
-                                            <?php foreach ($asatidz_list as $ast): ?>
-                                                <option value="<?= $ast['id'] ?>"><?= htmlspecialchars($ast['nama']) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                        <p class="text-[10px] text-slate-400 mt-1">Kosongkan jika guru pengganti belum ditentukan.</p>
-                                    </div>
-
-                                    <div>
-                                        <label class="block text-xs font-bold text-slate-700 mb-1">Catatan / Alasan</label>
-                                        <textarea name="catatan" rows="3" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="Contoh: Izin dinas luar, materi halaman 24..."></textarea>
-                                    </div>
-
-                                    <button type="submit" class="w-full bg-[#0b8478] hover:bg-teal-700 text-white font-extrabold py-3 px-4 rounded-xl transition text-xs shadow-md shadow-teal-700/20 flex items-center justify-center gap-2">
-                                        <i class="fas fa-save"></i>
-                                        <span>Simpan Log Jam Kosong</span>
-                                    </button>
-                                </form>
+                    <!-- 1. STATUS TAB DIKNAS (KEPALA SEKOLAH) -->
+                    <?php 
+                    $v_diknas = $status_validasi['diknas'];
+                    $is_diknas_valid = ($v_diknas && $v_diknas['status_validasi'] === 'validated');
+                    ?>
+                    <div class="bg-white rounded-2xl p-4 border transition hover:shadow-md <?= $is_diknas_valid ? 'border-blue-200 shadow-sm' : 'border-slate-200' ?>">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-extrabold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
+                                Tab 1: Mapel Diknas
+                            </span>
+                            <?php if ($is_diknas_valid): ?>
+                                <span class="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <i class="fas fa-circle-check text-emerald-600"></i> Tervalidasi
+                                </span>
                             <?php else: ?>
-                                <div class="p-6 text-center text-xs text-slate-400 italic">
-                                    Mode baca data aktif. Hubungi Admin Sekolah untuk mencatat jam kosong baru.
-                                </div>
+                                <span class="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                    <i class="fas fa-clock text-amber-600"></i> Menunggu Validasi
+                                </span>
                             <?php endif; ?>
                         </div>
+                        <div class="text-sm font-bold text-slate-800 mb-1">
+                            Validasi: <span class="text-blue-900">Kepala Sekolah</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-3">
+                            <?php if ($is_diknas_valid): ?>
+                                Disahkan oleh <b><?= htmlspecialchars($v_diknas['validator_nama']) ?></b> pada <?= date('d M Y H:i', strtotime($v_diknas['validated_at'])) ?>
+                            <?php else: ?>
+                                Rekap jam mengajar Diknas belum divalidasi resmi.
+                            <?php endif; ?>
+                        </p>
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-600">
+                            <span>Realisasi KBM:</span>
+                            <span class="text-blue-700 font-extrabold"><?= $stats_pilar['diknas']['tot_jurnal'] ?> / <?= $stats_pilar['diknas']['tot_jadwal'] ?> JP (<?= $stats_pilar['diknas']['persentase'] ?>%)</span>
+                        </div>
                     </div>
 
-                    <!-- LIST CARD -->
-                    <div class="lg:col-span-2 space-y-6">
-                        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden p-6">
-                            <div class="flex items-center justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
-                                <h3 class="font-black text-slate-900 text-sm uppercase tracking-wider flex items-center gap-2">
-                                    <i class="fas fa-history text-teal-600"></i>
-                                    <span>Riwayat Jam Kosong (<?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?>)</span>
-                                </h3>
-                                <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">Total: <?= count($logs) ?> Log</span>
+                    <!-- 2. STATUS TAB DINIYAH (KEPALA MA'HAD) -->
+                    <?php 
+                    $v_diniyah = $status_validasi['diniyah'];
+                    $is_diniyah_valid = ($v_diniyah && $v_diniyah['status_validasi'] === 'validated');
+                    ?>
+                    <div class="bg-white rounded-2xl p-4 border transition hover:shadow-md <?= $is_diniyah_valid ? 'border-emerald-200 shadow-sm' : 'border-slate-200' ?>">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
+                                Tab 2: Mapel Diniyah
+                            </span>
+                            <?php if ($is_diniyah_valid): ?>
+                                <span class="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <i class="fas fa-circle-check text-emerald-600"></i> Tervalidasi
+                                </span>
+                            <?php else: ?>
+                                <span class="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                    <i class="fas fa-clock text-amber-600"></i> Menunggu Validasi
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="text-sm font-bold text-slate-800 mb-1">
+                            Validasi: <span class="text-emerald-900">Kepala Ma'had</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-3">
+                            <?php if ($is_diniyah_valid): ?>
+                                Disahkan oleh <b><?= htmlspecialchars($v_diniyah['validator_nama']) ?></b> pada <?= date('d M Y H:i', strtotime($v_diniyah['validated_at'])) ?>
+                            <?php else: ?>
+                                Rekap jam mengajar Diniyah belum divalidasi resmi.
+                            <?php endif; ?>
+                        </p>
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-600">
+                            <span>Realisasi KBM:</span>
+                            <span class="text-emerald-700 font-extrabold"><?= $stats_pilar['diniyah']['tot_jurnal'] ?> / <?= $stats_pilar['diniyah']['tot_jadwal'] ?> JP (<?= $stats_pilar['diniyah']['persentase'] ?>%)</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. STATUS TAB SOLOPRENEUR (KEPALA LDU) -->
+                    <?php 
+                    $v_solo = $status_validasi['solopreneur'];
+                    $is_solo_valid = ($v_solo && $v_solo['status_validasi'] === 'validated');
+                    ?>
+                    <div class="bg-white rounded-2xl p-4 border transition hover:shadow-md <?= $is_solo_valid ? 'border-amber-200 shadow-sm' : 'border-slate-200' ?>">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-extrabold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                                Tab 3: Mapel Solopreneur
+                            </span>
+                            <?php if ($is_solo_valid): ?>
+                                <span class="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <i class="fas fa-circle-check text-emerald-600"></i> Tervalidasi
+                                </span>
+                            <?php else: ?>
+                                <span class="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                    <i class="fas fa-clock text-amber-600"></i> Menunggu Validasi
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="text-sm font-bold text-slate-800 mb-1">
+                            Validasi: <span class="text-amber-900">Kepala LDU</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-3">
+                            <?php if ($is_solo_valid): ?>
+                                Disahkan oleh <b><?= htmlspecialchars($v_solo['validator_nama']) ?></b> pada <?= date('d M Y H:i', strtotime($v_solo['validated_at'])) ?>
+                            <?php else: ?>
+                                Rekap jam mengajar Solopreneur belum divalidasi resmi.
+                            <?php endif; ?>
+                        </p>
+                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-600">
+                            <span>Realisasi KBM:</span>
+                            <span class="text-amber-700 font-extrabold"><?= $stats_pilar['solopreneur']['tot_jurnal'] ?> / <?= $stats_pilar['solopreneur']['tot_jadwal'] ?> JP (<?= $stats_pilar['solopreneur']['persentase'] ?>%)</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- NAVIGATION TAB BAR -->
+            <div class="bg-white rounded-2xl border border-slate-200 p-1.5 mb-6 shadow-sm no-print flex flex-wrap items-center gap-1">
+                
+                <?php if ($is_yayasan || $is_super_admin): ?>
+                    <a href="?tab=yayasan&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" 
+                       class="px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 <?= ($current_tab === 'yayasan') ? 'bg-teal-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100' ?>">
+                        <i class="fas fa-building-columns"></i>
+                        <span>Ringkasan Lengkap Yayasan</span>
+                    </a>
+                <?php endif; ?>
+
+                <?php if (in_array('diknas', $allowed_tabs)): ?>
+                    <a href="?tab=diknas&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" 
+                       class="px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 <?= ($current_tab === 'diknas') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100' ?>">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>Tab 1: Rekap Mapel Diknas (Kepala Sekolah)</span>
+                    </a>
+                <?php endif; ?>
+
+                <?php if (in_array('diniyah', $allowed_tabs)): ?>
+                    <a href="?tab=diniyah&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" 
+                       class="px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 <?= ($current_tab === 'diniyah') ? 'bg-emerald-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100' ?>">
+                        <i class="fas fa-book-quran"></i>
+                        <span>Tab 2: Rekap Mapel Diniyah (Kepala Ma'had)</span>
+                    </a>
+                <?php endif; ?>
+
+                <?php if (in_array('solopreneur', $allowed_tabs)): ?>
+                    <a href="?tab=solopreneur&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" 
+                       class="px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 <?= ($current_tab === 'solopreneur') ? 'bg-amber-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100' ?>">
+                        <i class="fas fa-rocket"></i>
+                        <span>Tab 3: Rekap Mapel Solopreneur (Kepala LDU)</span>
+                    </a>
+                <?php endif; ?>
+
+                <?php if (in_array('jam_kosong', $allowed_tabs)): ?>
+                    <a href="?tab=jam_kosong&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" 
+                       class="px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 <?= ($current_tab === 'jam_kosong') ? 'bg-rose-600 text-white shadow-md' : 'text-slate-600 hover:bg-slate-100' ?>">
+                        <i class="fas fa-person-chalkboard"></i>
+                        <span>Log Jam Kosong & Guru Inval</span>
+                    </a>
+                <?php endif; ?>
+
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- CONTENT PER TAB -->
+            <!-- ======================================================== -->
+
+            <!-- ---------------------------------------------------- -->
+            <!-- TAB 1: REKAP MAPEL DIKNAS (KEPALA SEKOLAH) -->
+            <!-- ---------------------------------------------------- -->
+            <?php if ($current_tab === 'diknas'): ?>
+                <div class="space-y-6">
+                    <!-- Banner Validasi Tab Diknas -->
+                    <div class="bg-white rounded-2xl border <?= $is_diknas_valid ? 'border-emerald-200 bg-emerald-50/40' : 'border-blue-200 bg-blue-50/30' ?> p-5 shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-blue-600 text-white">
+                                        Wewenang: Kepala Sekolah
+                                    </span>
+                                    <h3 class="text-base font-black text-slate-800">
+                                        Validasi Rekapitulasi Mapel Diknas - <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?>
+                                    </h3>
+                                </div>
+                                <p class="text-xs text-slate-600">
+                                    <?php if ($is_diknas_valid): ?>
+                                        <span class="text-emerald-700 font-bold">✓ Data telah divalidasi resmi oleh <?= htmlspecialchars($v_diknas['validator_nama']) ?> (<?= htmlspecialchars($v_diknas['validator_role']) ?>)</span> pada <?= date('d M Y H:i', strtotime($v_diknas['validated_at'])) ?>. Catatan: "<?= htmlspecialchars($v_diknas['catatan_validasi'] ?: 'Tidak ada catatan khusus.') ?>"
+                                    <?php else: ?>
+                                        Kepala Sekolah memeriksa log jurnal mengajar pengajar Mapel Diknas offline dan menekan tombol validasi untuk mengesahkan laporan bulan ini.
+                                    <?php endif; ?>
+                                </p>
                             </div>
 
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left text-xs border-collapse">
-                                    <thead>
-                                        <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold uppercase tracking-wider text-[11px]">
-                                            <th class="py-3 px-4">Tanggal & Kelas</th>
-                                            <th class="py-3 px-4">Mata Pelajaran</th>
-                                            <th class="py-3 px-4">Guru Utama</th>
-                                            <th class="py-3 px-4">Guru Pengganti (Inval)</th>
-                                            <th class="py-3 px-3 text-center">Status</th>
-                                            <?php if ($is_admin): ?>
-                                                <th class="py-3 px-4 text-center no-print">Aksi</th>
-                                            <?php endif; ?>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-slate-100">
-                                        <?php if (empty($logs)): ?>
-                                            <tr>
-                                                <td colspan="<?= $is_admin ? 6 : 5 ?>" class="py-8 text-center text-slate-400 italic">Alhamdulillah, tidak ada data jam kosong pada bulan ini.</td>
-                                            </tr>
-                                        <?php else: foreach ($logs as $l): ?>
-                                            <tr class="hover:bg-slate-50/60 transition">
-                                                <td class="py-3 px-4">
-                                                    <div class="font-extrabold text-slate-900"><?= date('d/m/Y', strtotime($l['tanggal'])) ?></div>
-                                                    <div class="text-[10px] text-teal-700 font-bold"><?= htmlspecialchars($l['kelas']) ?></div>
+                            <!-- Tombol Aksi Validasi Diknas -->
+                            <div class="flex items-center gap-2 no-print flex-shrink-0">
+                                <?php if ($is_kepsek || $is_super_admin): ?>
+                                    <?php if (!$is_diknas_valid): ?>
+                                        <button onclick="bukaModalValidasi('diknas', 'Kepala Sekolah', <?= $stats_pilar['diknas']['tot_jadwal'] ?>, <?= $stats_pilar['diknas']['tot_jurnal'] ?>, <?= $stats_pilar['diknas']['guru_aktif'] ?>)" 
+                                                class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-1.5">
+                                            <i class="fas fa-check-double"></i> Validasi Rekap Diknas
+                                        </button>
+                                    <?php else: ?>
+                                        <form method="POST" onsubmit="return confirm('Buka kunci validasi untuk revisi?')">
+                                            <input type="hidden" name="action" value="buka_kunci_validasi">
+                                            <input type="hidden" name="kategori" value="diknas">
+                                            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs shadow transition flex items-center gap-1">
+                                                <i class="fas fa-unlock"></i> Buka Kunci Revisi
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition">
+                                    <i class="fas fa-print"></i> Cetak
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Guru Mapel Diknas -->
+                    <?php render_table_rekap($rekap_data['diknas'], 'Diknas', 'blue', $filter_bulan, $filter_tahun); ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- ---------------------------------------------------- -->
+            <!-- TAB 2: REKAP MAPEL DINIYAH (KEPALA MA'HAD) -->
+            <!-- ---------------------------------------------------- -->
+            <?php if ($current_tab === 'diniyah'): ?>
+                <div class="space-y-6">
+                    <!-- Banner Validasi Tab Diniyah -->
+                    <div class="bg-white rounded-2xl border <?= $is_diniyah_valid ? 'border-emerald-200 bg-emerald-50/40' : 'border-emerald-200 bg-emerald-50/30' ?> p-5 shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-emerald-600 text-white">
+                                        Wewenang: Kepala Ma'had
+                                    </span>
+                                    <h3 class="text-base font-black text-slate-800">
+                                        Validasi Rekapitulasi Mapel Diniyah - <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?>
+                                    </h3>
+                                </div>
+                                <p class="text-xs text-slate-600">
+                                    <?php if ($is_diniyah_valid): ?>
+                                        <span class="text-emerald-700 font-bold">✓ Data telah divalidasi resmi oleh <?= htmlspecialchars($v_diniyah['validator_nama']) ?> (<?= htmlspecialchars($v_diniyah['validator_role']) ?>)</span> pada <?= date('d M Y H:i', strtotime($v_diniyah['validated_at'])) ?>. Catatan: "<?= htmlspecialchars($v_diniyah['catatan_validasi'] ?: 'Tidak ada catatan khusus.') ?>"
+                                    <?php else: ?>
+                                        Kepala Ma'had memeriksa log jurnal mengajar pengampu Mapel Diniyah/Tahfidz offline dan menekan tombol validasi untuk mengesahkan laporan bulan ini.
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+
+                            <!-- Tombol Aksi Validasi Diniyah -->
+                            <div class="flex items-center gap-2 no-print flex-shrink-0">
+                                <?php if ($is_kepala_mahad || $is_super_admin): ?>
+                                    <?php if (!$is_diniyah_valid): ?>
+                                        <button onclick="bukaModalValidasi('diniyah', 'Kepala Ma\'had', <?= $stats_pilar['diniyah']['tot_jadwal'] ?>, <?= $stats_pilar['diniyah']['tot_jurnal'] ?>, <?= $stats_pilar['diniyah']['guru_aktif'] ?>)" 
+                                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-1.5">
+                                            <i class="fas fa-check-double"></i> Validasi Rekap Diniyah
+                                        </button>
+                                    <?php else: ?>
+                                        <form method="POST" onsubmit="return confirm('Buka kunci validasi untuk revisi?')">
+                                            <input type="hidden" name="action" value="buka_kunci_validasi">
+                                            <input type="hidden" name="kategori" value="diniyah">
+                                            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs shadow transition flex items-center gap-1">
+                                                <i class="fas fa-unlock"></i> Buka Kunci Revisi
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition">
+                                    <i class="fas fa-print"></i> Cetak
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Guru Mapel Diniyah -->
+                    <?php render_table_rekap($rekap_data['diniyah'], 'Diniyah', 'emerald', $filter_bulan, $filter_tahun); ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- ---------------------------------------------------- -->
+            <!-- TAB 3: REKAP MAPEL SOLOPRENEUR (KEPALA LDU) -->
+            <!-- ---------------------------------------------------- -->
+            <?php if ($current_tab === 'solopreneur'): ?>
+                <div class="space-y-6">
+                    <!-- Banner Validasi Tab Solopreneur -->
+                    <div class="bg-white rounded-2xl border <?= $is_solo_valid ? 'border-emerald-200 bg-emerald-50/40' : 'border-amber-200 bg-amber-50/30' ?> p-5 shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="px-2.5 py-0.5 rounded-lg text-xs font-extrabold bg-amber-600 text-white">
+                                        Wewenang: Kepala LDU
+                                    </span>
+                                    <h3 class="text-base font-black text-slate-800">
+                                        Validasi Rekapitulasi Mapel Solopreneur - <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?>
+                                    </h3>
+                                </div>
+                                <p class="text-xs text-slate-600">
+                                    <?php if ($is_solo_valid): ?>
+                                        <span class="text-emerald-700 font-bold">✓ Data telah divalidasi resmi oleh <?= htmlspecialchars($v_solo['validator_nama']) ?> (<?= htmlspecialchars($v_solo['validator_role']) ?>)</span> pada <?= date('d M Y H:i', strtotime($v_solo['validated_at'])) ?>. Catatan: "<?= htmlspecialchars($v_solo['catatan_validasi'] ?: 'Tidak ada catatan khusus.') ?>"
+                                    <?php else: ?>
+                                        Kepala LDU memeriksa log jurnal mengajar trainer/tutor Solopreneur offline dan menekan tombol validasi untuk mengesahkan laporan bulan ini.
+                                    <?php endif; ?>
+                                </p>
+                            </div>
+
+                            <!-- Tombol Aksi Validasi Solopreneur -->
+                            <div class="flex items-center gap-2 no-print flex-shrink-0">
+                                <?php if ($is_kepala_ldu || $is_super_admin): ?>
+                                    <?php if (!$is_solo_valid): ?>
+                                        <button onclick="bukaModalValidasi('solopreneur', 'Kepala LDU', <?= $stats_pilar['solopreneur']['tot_jadwal'] ?>, <?= $stats_pilar['solopreneur']['tot_jurnal'] ?>, <?= $stats_pilar['solopreneur']['guru_aktif'] ?>)" 
+                                                class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition flex items-center gap-1.5">
+                                            <i class="fas fa-check-double"></i> Validasi Rekap Solopreneur
+                                        </button>
+                                    <?php else: ?>
+                                        <form method="POST" onsubmit="return confirm('Buka kunci validasi untuk revisi?')">
+                                            <input type="hidden" name="action" value="buka_kunci_validasi">
+                                            <input type="hidden" name="kategori" value="solopreneur">
+                                            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-2 rounded-xl text-xs shadow transition flex items-center gap-1">
+                                                <i class="fas fa-unlock"></i> Buka Kunci Revisi
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                                <button onclick="window.print()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs transition">
+                                    <i class="fas fa-print"></i> Cetak
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Guru Mapel Solopreneur -->
+                    <?php render_table_rekap($rekap_data['solopreneur'], 'Solopreneur', 'amber', $filter_bulan, $filter_tahun); ?>
+                </div>
+            <?php endif; ?>
+
+            <!-- ---------------------------------------------------- -->
+            <!-- TAB YAYASAN: RINGKASAN LENGKAP 3 PILAR & VALIDASI -->
+            <!-- ---------------------------------------------------- -->
+            <?php if ($current_tab === 'yayasan' && ($is_yayasan || $is_super_admin)): ?>
+                <div class="space-y-8">
+                    
+                    <div class="bg-gradient-to-r from-teal-800 to-teal-950 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <span class="bg-teal-500/30 text-teal-200 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider border border-teal-400/30">
+                                    Laporan Konsolidasi Yayasan
+                                </span>
+                                <h2 class="text-xl md:text-2xl font-black mt-2 tracking-tight">
+                                    Rekapitulasi KBM Terpadu (3 Pilar Pembelajaran)
+                                </h2>
+                                <p class="text-xs text-teal-100/80 mt-1 max-w-2xl">
+                                    Ringkasan monitoring jam ajar offline santri Villa Quran Indonesia periode <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?> yang siap dievaluasi Pengurus Yayasan.
+                                </p>
+                            </div>
+                            <button onclick="window.print()" class="bg-white hover:bg-teal-50 text-teal-900 font-extrabold px-4 py-2.5 rounded-2xl text-xs transition shadow-lg flex items-center gap-2 self-start md:self-auto flex-shrink-0">
+                                <i class="fas fa-file-pdf text-rose-600 text-sm"></i>
+                                <span>Cetak Laporan Lengkap Yayasan</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ringkasan Tab 1 (Diknas) -->
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4 border-b pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-blue-600"></span>
+                                <h3 class="font-extrabold text-slate-800 text-sm">Pilar 1: Mapel Diknas & PKBM (Validasi Kepala Sekolah)</h3>
+                            </div>
+                            <span class="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg">
+                                <?= $is_diknas_valid ? '✓ Telah Divalidasi Kepsek' : '⏳ Menunggu Validasi Kepsek' ?>
+                            </span>
+                        </div>
+                        <?php render_table_rekap($rekap_data['diknas'], 'Diknas', 'blue', $filter_bulan, $filter_tahun); ?>
+                    </div>
+
+                    <!-- Ringkasan Tab 2 (Diniyah) -->
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4 border-b pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-emerald-600"></span>
+                                <h3 class="font-extrabold text-slate-800 text-sm">Pilar 2: Mapel Diniyah & Tahfidz (Validasi Kepala Ma'had)</h3>
+                            </div>
+                            <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg">
+                                <?= $is_diniyah_valid ? '✓ Telah Divalidasi Kepala Ma\'had' : '⏳ Menunggu Validasi Kepala Ma\'had' ?>
+                            </span>
+                        </div>
+                        <?php render_table_rekap($rekap_data['diniyah'], 'Diniyah', 'emerald', $filter_bulan, $filter_tahun); ?>
+                    </div>
+
+                    <!-- Ringkasan Tab 3 (Solopreneur) -->
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                        <div class="flex items-center justify-between mb-4 border-b pb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-amber-600"></span>
+                                <h3 class="font-extrabold text-slate-800 text-sm">Pilar 3: Mapel Solopreneur & Vokasi (Validasi Kepala LDU)</h3>
+                            </div>
+                            <span class="text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg">
+                                <?= $is_solo_valid ? '✓ Telah Divalidasi Kepala LDU' : '⏳ Menunggu Validasi Kepala LDU' ?>
+                            </span>
+                        </div>
+                        <?php render_table_rekap($rekap_data['solopreneur'], 'Solopreneur', 'amber', $filter_bulan, $filter_tahun); ?>
+                    </div>
+
+                </div>
+            <?php endif; ?>
+
+            <!-- ---------------------------------------------------- -->
+            <!-- TAB JAM KOSONG & INVAL -->
+            <!-- ---------------------------------------------------- -->
+            <?php if ($current_tab === 'jam_kosong'): ?>
+                <div class="space-y-6">
+                    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b pb-4">
+                            <div>
+                                <h3 class="font-black text-slate-900 text-base flex items-center gap-2">
+                                    <i class="fas fa-person-chalkboard text-rose-600"></i>
+                                    <span>Log Guru Izin / Jam Kosong & Guru Pengganti (Inval)</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">
+                                    Mencatat guru yang berhalangan hadir dan asatidz pengganti yang mengisi jam tersebut pada periode <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?>.
+                                </p>
+                            </div>
+                            <button onclick="document.getElementById('modal-tambah-kosong').classList.remove('hidden')" 
+                                    class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow flex items-center gap-1.5 self-start md:self-auto">
+                                <i class="fas fa-plus"></i> Catat Jam Kosong
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200 text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600">
+                                        <th class="px-3 py-3 text-left font-bold">Tanggal</th>
+                                        <th class="px-3 py-3 text-left font-bold">Kelas & Mapel</th>
+                                        <th class="px-3 py-3 text-left font-bold">Guru Utama</th>
+                                        <th class="px-3 py-3 text-left font-bold">Guru Pengganti (Inval)</th>
+                                        <th class="px-3 py-3 text-center font-bold">Status</th>
+                                        <th class="px-3 py-3 text-left font-bold">Catatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <?php if (!empty($logs_jam_kosong)): ?>
+                                        <?php foreach ($logs_jam_kosong as $l): ?>
+                                            <tr class="hover:bg-slate-50 transition">
+                                                <td class="px-3 py-3 font-semibold text-slate-800 whitespace-nowrap">
+                                                    <?= date('d M Y', strtotime($l['tanggal'])) ?>
                                                 </td>
-                                                <td class="py-3 px-4 font-bold text-slate-800"><?= htmlspecialchars($l['mapel']) ?></td>
-                                                <td class="py-3 px-4 font-bold text-rose-700">
-                                                    <i class="fas fa-user-times mr-1 text-rose-500"></i>
+                                                <td class="px-3 py-3">
+                                                    <span class="font-bold text-slate-800 block"><?= htmlspecialchars($l['kelas']) ?></span>
+                                                    <span class="text-slate-500 text-[11px]"><?= htmlspecialchars($l['mapel']) ?></span>
+                                                </td>
+                                                <td class="px-3 py-3 text-rose-700 font-bold whitespace-nowrap">
                                                     <?= htmlspecialchars($l['nama_guru_utama']) ?>
                                                 </td>
-                                                <td class="py-3 px-4">
-                                                    <?php if ($l['guru_pengganti_id']): ?>
-                                                        <span class="font-extrabold text-emerald-700"><i class="fas fa-user-check mr-1"></i><?= htmlspecialchars($l['nama_guru_pengganti']) ?></span>
+                                                <td class="px-3 py-3 font-bold whitespace-nowrap">
+                                                    <?php if (!empty($l['nama_guru_pengganti'])): ?>
+                                                        <span class="text-emerald-700 font-bold"><?= htmlspecialchars($l['nama_guru_pengganti']) ?></span>
                                                     <?php else: ?>
-                                                        <span class="text-amber-600 font-bold italic"><i class="fas fa-spinner fa-spin mr-1 text-[10px]"></i>Menunggu Plot Inval</span>
-                                                    <?php endif; ?>
-                                                    <?php if(!empty($l['catatan'])): ?>
-                                                        <div class="text-[10px] text-slate-400 mt-0.5 italic"><?= htmlspecialchars($l['catatan']) ?></div>
+                                                        <span class="text-slate-400 italic">Belum ada pengganti</span>
                                                     <?php endif; ?>
                                                 </td>
-                                                <td class="py-3 px-3 text-center">
-                                                    <?php if ($l['status_kontrol'] === 'Terisi'): ?>
-                                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800">Terisi Inval</span>
-                                                    <?php elseif ($l['status_kontrol'] === 'Batal'): ?>
-                                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">Batal</span>
-                                                    <?php else: ?>
-                                                        <span class="px-2.5 py-1 rounded-full text-[10px] font-black bg-amber-100 text-amber-800 animate-pulse">Butuh Pengganti</span>
-                                                    <?php endif; ?>
+                                                <td class="px-3 py-3 text-center whitespace-nowrap">
+                                                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold border <?= ($l['status_kontrol'] === 'Terisi') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200' ?>">
+                                                        <?= htmlspecialchars($l['status_kontrol']) ?>
+                                                    </span>
                                                 </td>
-                                                <?php if ($is_admin): ?>
-                                                    <td class="py-3 px-4 text-center no-print whitespace-nowrap">
-                                                        <?php if ($l['status_kontrol'] !== 'Batal'): ?>
-                                                            <button type="button" onclick="bukaModalEditPengganti(<?= $l['id'] ?>, <?= (int)$l['guru_pengganti_id'] ?>, '<?= htmlspecialchars(addslashes($l['catatan'] ?? '')) ?>')" class="px-2.5 py-1 rounded-lg bg-teal-50 hover:bg-teal-100 text-[#0b8478] font-extrabold text-[10px] border border-teal-200 transition">
-                                                                Plot Inval
-                                                            </button>
-                                                            <button type="button" onclick="if(confirm('Batalkan log jam kosong ini?')) { document.getElementById('form-batal-<?= $l['id'] ?>').submit(); }" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-[10px] border border-rose-200 transition">
-                                                                Batal
-                                                            </button>
-                                                            <form id="form-batal-<?= $l['id'] ?>" method="POST" action="admin-kontrol-jam-kosong.php?tab=jam_kosong&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" class="hidden">
-                                                                <input type="hidden" name="action" value="batal">
-                                                                <input type="hidden" name="id" value="<?= $l['id'] ?>">
-                                                            </form>
-                                                        <?php else: ?>
-                                                            <span class="text-slate-300">-</span>
-                                                        <?php endif; ?>
-                                                    </td>
-                                                <?php endif; ?>
+                                                <td class="px-3 py-3 text-slate-500 max-w-xs truncate">
+                                                    <?= htmlspecialchars($l['catatan'] ?: '-') ?>
+                                                </td>
                                             </tr>
-                                        <?php endforeach; endif; ?>
-                                    </tbody>
-                                </table>
-                            </div>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="6" class="px-3 py-6 text-center text-slate-400 italic">
+                                                Alhamdulillah, tidak ada catatan jam kosong pada bulan ini.
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
             <?php endif; ?>
-
-            <!-- MODAL DETAIL JADWAL & JURNAL GURU -->
-            <div id="modal-detail-guru" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                <div class="flex items-center justify-center min-h-screen p-4 text-center">
-                    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="tutupModalDetailGuru()"></div>
-                    <div class="inline-block bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:max-w-2xl sm:w-full p-6 relative z-10 border border-slate-100">
-                        <div class="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
-                            <div>
-                                <h3 id="modal-guru-nama" class="text-base font-black text-slate-900">Rincian Aktivitas Mengajar</h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Rincian jadwal terjadwal & riwayat pengisian Jurnal KBM ustadz.</p>
-                            </div>
-                            <button type="button" onclick="tutupModalDetailGuru()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100"><i class="fas fa-times text-base"></i></button>
-                        </div>
-                        
-                        <!-- TAB NAV MODAL -->
-                        <div class="flex items-center gap-2 mb-4 border-b border-slate-100 pb-2">
-                            <button type="button" id="btn-tab-jadwal" onclick="switchModalTab('jadwal')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0b8478] text-white">
-                                <i class="fas fa-calendar-alt mr-1"></i> Slot Jadwal Terjadwal (<span id="modal-count-jadwal">0</span>)
-                            </button>
-                            <button type="button" id="btn-tab-jurnal" onclick="switchModalTab('jurnal')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100">
-                                <i class="fas fa-book-open mr-1"></i> Riwayat Jurnal KBM (<span id="modal-count-jurnal">0</span>)
-                            </button>
-                        </div>
-
-                        <!-- SECTION JADWAL -->
-                        <div id="section-modal-jadwal" class="overflow-x-auto max-h-80">
-                            <table class="w-full text-left text-xs border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px]">
-                                        <th class="py-2.5 px-3">Hari</th>
-                                        <th class="py-2.5 px-2 text-center">Jam</th>
-                                        <th class="py-2.5 px-3">Kelas</th>
-                                        <th class="py-2.5 px-3">Mapel</th>
-                                        <th class="py-2.5 px-3 text-center">Kategori</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="modal-guru-tbody" class="divide-y divide-slate-100">
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- SECTION JURNAL -->
-                        <div id="section-modal-jurnal" class="overflow-x-auto max-h-80 hidden">
-                            <table class="w-full text-left text-xs border-collapse">
-                                <thead>
-                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-extrabold uppercase text-[10px]">
-                                        <th class="py-2.5 px-3">Tanggal</th>
-                                        <th class="py-2.5 px-3">Kelas</th>
-                                        <th class="py-2.5 px-3">Mata Pelajaran</th>
-                                        <th class="py-2.5 px-4">Materi Pembelajaran</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="modal-jurnal-tbody" class="divide-y divide-slate-100">
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="mt-6 pt-4 border-t border-slate-100 flex justify-end">
-                            <button type="button" onclick="tutupModalDetailGuru()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold px-5 py-2.5 rounded-xl text-xs transition">
-                                Tutup Rincian
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- MODAL EDIT GURU PENGGANTI (INVAL) -->
-            <div id="modal-edit-pengganti" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-                <div class="flex items-center justify-center min-h-screen p-4 text-center">
-                    <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onclick="tutupModalEditPengganti()"></div>
-                    <div class="inline-block bg-white rounded-3xl text-left overflow-hidden shadow-2xl transform transition-all sm:max-w-lg sm:w-full p-6 relative z-10 border border-slate-100">
-                        <div class="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
-                            <div>
-                                <h3 class="text-base font-black text-slate-900">Plot Guru Pengganti (Inval)</h3>
-                                <p class="text-xs text-slate-400 mt-0.5">Tugaskan ustadz pengganti untuk mengisi jam pelajaran kosong.</p>
-                            </div>
-                            <button type="button" onclick="tutupModalEditPengganti()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100"><i class="fas fa-times text-base"></i></button>
-                        </div>
-                        <form method="POST" action="admin-kontrol-jam-kosong.php?tab=jam_kosong&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" class="space-y-4">
-                            <input type="hidden" name="action" value="update_pengganti">
-                            <input type="hidden" name="id" id="edit-log-id">
-                            
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Guru Pengganti (Inval) <span class="text-rose-500">*</span></label>
-                                <select name="guru_pengganti_id" id="edit-guru-pengganti-id" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white">
-                                    <option value="">-- Pilih Guru Pengganti --</option>
-                                    <?php foreach ($asatidz_list as $ast): ?>
-                                        <option value="<?= $ast['id'] ?>"><?= htmlspecialchars($ast['nama']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Tambahan</label>
-                                <textarea name="catatan" id="edit-catatan" rows="3" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="Catatan tugas inval..."></textarea>
-                            </div>
-                            
-                            <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
-                                <button type="button" onclick="tutupModalEditPengganti()" class="bg-slate-100 text-slate-700 font-extrabold px-4 py-2.5 rounded-xl text-xs hover:bg-slate-200 transition">
-                                    Batal
-                                </button>
-                                <button type="submit" class="bg-[#0b8478] hover:bg-teal-700 text-white font-extrabold px-5 py-2.5 rounded-xl transition text-xs shadow-md shadow-teal-700/20">
-                                    Tugaskan Pengganti
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
 
         </main>
     </div>
 
+    <!-- ======================================================== -->
+    <!-- MODAL FORM VALIDASI REKAP PILAR -->
+    <!-- ======================================================== -->
+    <div id="modal-validasi" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                        <i class="fas fa-signature"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-800 text-sm" id="modal-val-title">Pengesahan & Validasi Rekap</h3>
+                        <p class="text-[10px] text-slate-500" id="modal-val-subtitle">Wewenang Pimpinan</p>
+                    </div>
+                </div>
+                <button type="button" onclick="tutupModalValidasi()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form method="POST" action="admin-kontrol-jam-kosong.php?tab=<?= htmlspecialchars($current_tab) ?>&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" class="space-y-4">
+                <input type="hidden" name="action" value="validasi_kategori">
+                <input type="hidden" name="kategori" id="form-val-kategori" value="">
+                <input type="hidden" name="total_jadwal" id="form-val-jadwal" value="0">
+                <input type="hidden" name="total_terisi" id="form-val-terisi" value="0">
+                <input type="hidden" name="total_guru" id="form-val-guru" value="0">
+
+                <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80 space-y-1.5 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Periode:</span>
+                        <span class="font-bold text-slate-800"><?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-500">Validator:</span>
+                        <span class="font-bold text-teal-700"><?= htmlspecialchars($nama_user_aktif) ?> (<span id="txt-val-role">Pimpinan</span>)</span>
+                    </div>
+                    <div class="flex justify-between border-t pt-1.5">
+                        <span class="text-slate-500">Total KBM Terlaksana:</span>
+                        <span class="font-extrabold text-slate-900" id="txt-val-ringkasan">0 JP</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Validasi (Opsional)</label>
+                    <textarea name="catatan" rows="3" class="w-full px-3 py-2 border rounded-xl text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="Tuliskan catatan evaluasi KBM atau instruksi tindak lanjut..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="tutupModalValidasi()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-xs font-extrabold bg-teal-600 hover:bg-teal-700 text-white shadow-md transition flex items-center gap-1.5">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Sahkan & Validasi</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL DETAIL JURNAL MENGAJAR GURU -->
+    <!-- ======================================================== -->
+    <div id="modal-detail-jurnal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4 flex-shrink-0">
+                <div>
+                    <h3 class="font-extrabold text-slate-900 text-base" id="modal-guru-nama">Rincian Jurnal KBM</h3>
+                    <p class="text-xs text-slate-500" id="modal-guru-subtitle">Periode: <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?></p>
+                </div>
+                <button type="button" onclick="tutupModalJurnal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto flex-1 space-y-3 pr-1" id="modal-jurnal-content">
+                <!-- Diisi via Javascript -->
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex justify-end flex-shrink-0 mt-4">
+                <button type="button" onclick="tutupModalJurnal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL TAMBAH JAM KOSONG -->
+    <!-- ======================================================== -->
+    <div id="modal-tambah-kosong" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <h3 class="font-extrabold text-slate-900 text-sm">Catat Jam Kosong / Izin</h3>
+                <button type="button" onclick="document.getElementById('modal-tambah-kosong').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form method="POST" action="admin-kontrol-jam-kosong.php?tab=jam_kosong&bulan=<?= $filter_bulan ?>&tahun=<?= $filter_tahun ?>" class="space-y-3 text-xs">
+                <input type="hidden" name="action" value="tambah_jam_kosong">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Tanggal</label>
+                    <input type="date" name="tanggal" value="<?= date('Y-m-d') ?>" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-rose-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Kelas</label>
+                    <input type="text" name="kelas" placeholder="Contoh: Kelas 10 / Rijal" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-rose-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Mata Pelajaran</label>
+                    <input type="text" name="mapel" placeholder="Contoh: Matematika" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-rose-500">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Guru Utama (Yang Izin/Kosong)</label>
+                    <select name="guru_utama_id" required class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-rose-500 bg-white">
+                        <option value="">-- Pilih Guru --</option>
+                        <?php foreach ($asatidz_list as $ast): ?>
+                            <option value="<?= $ast['id'] ?>"><?= htmlspecialchars($ast['nama']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Guru Pengganti / Inval (Jika ada)</label>
+                    <select name="guru_pengganti_id" class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-rose-500 bg-white">
+                        <option value="">-- Belum Ada Pengganti --</option>
+                        <?php foreach ($asatidz_list as $ast): ?>
+                            <option value="<?= $ast['id'] ?>"><?= htmlspecialchars($ast['nama']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">Catatan / Keterangan</label>
+                    <textarea name="catatan" rows="2" placeholder="Alasan izin / kendala..." class="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-rose-500"></textarea>
+                </div>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="document.getElementById('modal-tambah-kosong').classList.add('hidden')" class="px-4 py-2 rounded-xl font-bold bg-slate-100 hover:bg-slate-200 text-slate-700">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl font-extrabold bg-rose-600 hover:bg-rose-700 text-white shadow-md">
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- JAVASCRIPT LOGIC -->
+    <!-- ======================================================== -->
     <script>
-        document.getElementById('open-sidebar-hr')?.addEventListener('click', () => { 
-            document.getElementById('sidebar-hr')?.classList.toggle('hidden'); 
-            document.getElementById('sidebar-overlay-hr')?.classList.toggle('hidden'); 
-        });
+        const allRekapData = <?= json_encode($rekap_data) ?>;
 
-        function bukaModalEditPengganti(id, penggantiId, catatan) {
-            document.getElementById('edit-log-id').value = id;
-            document.getElementById('edit-guru-pengganti-id').value = penggantiId || '';
-            document.getElementById('edit-catatan').value = catatan || '';
-            document.getElementById('modal-edit-pengganti').classList.remove('hidden');
+        function bukaModalValidasi(kategori, roleLabel, totalJadwal, totalTerisi, totalGuru) {
+            document.getElementById('form-val-kategori').value = kategori;
+            document.getElementById('form-val-jadwal').value = totalJadwal;
+            document.getElementById('form-val-terisi').value = totalTerisi;
+            document.getElementById('form-val-guru').value = totalGuru;
+
+            document.getElementById('modal-val-title').innerText = `Validasi Rekap Mapel ${kategori.toUpperCase()}`;
+            document.getElementById('modal-val-subtitle').innerText = `Wewenang: ${roleLabel}`;
+            document.getElementById('txt-val-role').innerText = roleLabel;
+            document.getElementById('txt-val-ringkasan').innerText = `${totalTerisi} JP Terisi dari ${totalJadwal} JP Target (${totalGuru} Pengampu)`;
+
+            document.getElementById('modal-validasi').classList.remove('hidden');
         }
 
-        function tutupModalEditPengganti() {
-            document.getElementById('modal-edit-pengganti').classList.add('hidden');
+        function tutupModalValidasi() {
+            document.getElementById('modal-validasi').classList.add('hidden');
         }
 
-        function switchModalTab(tab) {
-            const btnJadwal = document.getElementById('btn-tab-jadwal');
-            const btnJurnal = document.getElementById('btn-tab-jurnal');
-            const secJadwal = document.getElementById('section-modal-jadwal');
-            const secJurnal = document.getElementById('section-modal-jurnal');
+        function tampilkanDetailJurnal(pilar, guruId) {
+            const dataPilar = allRekapData[pilar] || {};
+            const guru = dataPilar[guruId];
+            if (!guru) return;
 
-            if (tab === 'jadwal') {
-                btnJadwal.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0b8478] text-white';
-                btnJurnal.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100';
-                secJadwal.classList.remove('hidden');
-                secJurnal.classList.add('hidden');
-            } else {
-                btnJurnal.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold bg-[#0b8478] text-white';
-                btnJadwal.className = 'px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100';
-                secJurnal.classList.remove('hidden');
-                secJadwal.classList.add('hidden');
-            }
-        }
+            document.getElementById('modal-guru-nama').innerText = `Riwayat Mengajar: ${guru.nama}`;
+            document.getElementById('modal-guru-subtitle').innerText = `Pilar ${pilar.toUpperCase()} • Mapel: ${guru.mapel_diampu.join(', ') || '-'}`;
 
-        function bukaModalDetailGuru(guru) {
-            document.getElementById('modal-guru-nama').innerText = 'Rincian Aktivitas: ' + guru.nama;
-            
-            // 1. Render Jadwal
-            const tbodyJadwal = document.getElementById('modal-guru-tbody');
-            tbodyJadwal.innerHTML = '';
-            const jmlJadwal = guru.detail_mapel ? guru.detail_mapel.length : 0;
-            document.getElementById('modal-count-jadwal').innerText = jmlJadwal;
+            const container = document.getElementById('modal-jurnal-content');
+            container.innerHTML = '';
 
-            if (jmlJadwal === 0) {
-                tbodyJadwal.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-400 italic">Belum ada slot jadwal yang diplot pada Jadwal Pelajaran.</td></tr>';
-            } else {
-                guru.detail_mapel.forEach(d => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-slate-50 transition';
-                    tr.innerHTML = `
-                        <td class="py-2.5 px-3 font-bold text-slate-800">${d.hari}</td>
-                        <td class="py-2.5 px-2 text-center font-bold text-teal-700">Jam ke-${d.jam_ke}</td>
-                        <td class="py-2.5 px-3 font-medium text-slate-700">${d.kelas}</td>
-                        <td class="py-2.5 px-3 font-extrabold text-slate-900">${d.mapel}</td>
-                        <td class="py-2.5 px-3 text-center"><span class="px-2 py-0.5 rounded-full text-[9px] font-black bg-slate-100 text-slate-700">${d.kategori}</span></td>
+            if (guru.detail_jurnal && guru.detail_jurnal.length > 0) {
+                guru.detail_jurnal.forEach((j, idx) => {
+                    const card = document.createElement('div');
+                    card.className = 'bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-2 text-xs';
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <span class="font-extrabold text-teal-800">${j.tanggal}</span>
+                            <span class="px-2 py-0.5 rounded-md font-bold bg-white text-slate-700 border text-[11px]">${j.kelas} • ${j.mapel}</span>
+                        </div>
+                        <div>
+                            <div class="text-[10px] uppercase font-bold text-slate-400">Materi Pembelajaran</div>
+                            <div class="font-semibold text-slate-800 mt-0.5">${j.materi || '-'}</div>
+                        </div>
+                        ${j.absensi ? `
+                        <div class="pt-1 text-[11px] text-rose-600 font-medium">
+                            <i class="fas fa-info-circle mr-1"></i> ${j.absensi}
+                        </div>
+                        ` : ''}
                     `;
-                    tbodyJadwal.appendChild(tr);
+                    container.appendChild(card);
                 });
-            }
-
-            // 2. Render Jurnal Mengajar
-            const tbodyJurnal = document.getElementById('modal-jurnal-tbody');
-            tbodyJurnal.innerHTML = '';
-            const jmlJurnal = guru.detail_jurnal ? guru.detail_jurnal.length : 0;
-            document.getElementById('modal-count-jurnal').innerText = jmlJurnal;
-
-            if (jmlJurnal === 0) {
-                tbodyJurnal.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-400 italic">Belum ada pengisian Jurnal KBM pada bulan ini.</td></tr>';
             } else {
-                guru.detail_jurnal.forEach(j => {
-                    const tr = document.createElement('tr');
-                    tr.className = 'hover:bg-slate-50 transition';
-                    tr.innerHTML = `
-                        <td class="py-2.5 px-3 font-bold text-slate-800">${j.tanggal}</td>
-                        <td class="py-2.5 px-3 font-medium text-teal-700 font-bold">${j.kelas}</td>
-                        <td class="py-2.5 px-3 font-extrabold text-slate-900">${j.mapel}</td>
-                        <td class="py-2.5 px-4 text-slate-600 text-[11px]">${j.materi || '-'}</td>
-                    `;
-                    tbodyJurnal.appendChild(tr);
-                });
+                container.innerHTML = `
+                    <div class="p-8 text-center text-slate-400 italic">
+                        <i class="fas fa-clipboard text-3xl mb-2 text-slate-300 block"></i>
+                        Belum ada entri jurnal KBM yang tercatat untuk bulan ini.
+                    </div>
+                `;
             }
 
-            // Reset tab ke jadwal
-            switchModalTab('jadwal');
-            document.getElementById('modal-detail-guru').classList.remove('hidden');
+            document.getElementById('modal-detail-jurnal').classList.remove('hidden');
         }
 
-        function tutupModalDetailGuru() {
-            document.getElementById('modal-detail-guru').classList.add('hidden');
+        function tutupModalJurnal() {
+            document.getElementById('modal-detail-jurnal').classList.add('hidden');
         }
     </script>
-
 </body>
 </html>
+
+<?php
+/**
+ * Helper function untuk merender tabel rekap per pilar
+ */
+function render_table_rekap($data_list, $pilar_nama, $theme_color, $filter_bulan, $filter_tahun) {
+    // Filter hanya guru yang memiliki jam terjadwal atau telah mengisi jurnal
+    $filtered = array_filter($data_list, function($g) {
+        return ($g['bulan_jp_target'] > 0 || $g['jurnal_jp_terisi'] > 0 || $g['jam_kosong'] > 0);
+    });
+?>
+    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-xs">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-600">
+                        <th class="px-3 py-3 text-center font-bold w-10">No</th>
+                        <th class="px-3 py-3 text-left font-bold">Nama Guru / Tutor</th>
+                        <th class="px-3 py-3 text-left font-bold">Mapel Diampu</th>
+                        <th class="px-3 py-3 text-center font-bold">JP/Pekan</th>
+                        <th class="px-3 py-3 text-center font-bold">Target Bulan</th>
+                        <th class="px-3 py-3 text-center font-bold text-teal-800">Jurnal KBM (JP)</th>
+                        <th class="px-3 py-3 text-center font-bold">Scan Presensi</th>
+                        <th class="px-3 py-3 text-center font-bold text-rose-600">Jam Kosong</th>
+                        <th class="px-3 py-3 text-center font-bold">Realisasi %</th>
+                        <th class="px-3 py-3 text-center font-bold no-print">Rincian Jurnal</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <?php if (!empty($filtered)): ?>
+                        <?php $no = 1; foreach ($filtered as $g): 
+                            $target = $g['bulan_jp_target'];
+                            $terisi = $g['jurnal_jp_terisi'];
+                            $pct = ($target > 0) ? round(($terisi / $target) * 100, 1) : ($terisi > 0 ? 100 : 0);
+                            $pct_color = ($pct >= 90) ? 'text-emerald-700 bg-emerald-50 border-emerald-200' : (($pct >= 70) ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-rose-700 bg-rose-50 border-rose-200');
+                        ?>
+                            <tr class="hover:bg-slate-50/70 transition">
+                                <td class="px-3 py-3 text-center font-bold text-slate-400"><?= $no++ ?></td>
+                                <td class="px-3 py-3 font-bold text-slate-800 whitespace-nowrap">
+                                    <?= htmlspecialchars($g['nama']) ?>
+                                </td>
+                                <td class="px-3 py-3 font-medium text-slate-600 max-w-xs">
+                                    <?= !empty($g['mapel_diampu']) ? htmlspecialchars(implode(', ', $g['mapel_diampu'])) : '<span class="text-slate-400 italic">-</span>' ?>
+                                </td>
+                                <td class="px-3 py-3 text-center font-bold text-slate-700"><?= $g['pekan_jp'] ?> JP</td>
+                                <td class="px-3 py-3 text-center font-bold text-slate-800"><?= $g['bulan_jp_target'] ?> JP</td>
+                                <td class="px-3 py-3 text-center font-black text-teal-700 bg-teal-50/30"><?= $g['jurnal_jp_terisi'] ?> JP</td>
+                                <td class="px-3 py-3 text-center font-semibold text-slate-600"><?= $g['total_scan_absen'] ?>x</td>
+                                <td class="px-3 py-3 text-center font-bold <?= ($g['jam_kosong'] > 0) ? 'text-rose-600 bg-rose-50/30' : 'text-slate-400' ?>"><?= $g['jam_kosong'] ?></td>
+                                <td class="px-3 py-3 text-center whitespace-nowrap">
+                                    <span class="px-2.5 py-1 rounded-full font-black border text-[11px] <?= $pct_color ?>">
+                                        <?= $pct ?>%
+                                    </span>
+                                </td>
+                                <td class="px-3 py-3 text-center whitespace-nowrap no-print">
+                                    <button type="button" onclick="tampilkanDetailJurnal('<?= strtolower($pilar_nama) ?>', <?= $g['id'] ?>)" 
+                                            class="bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-700 font-bold px-2.5 py-1.5 rounded-xl transition text-[11px] inline-flex items-center gap-1 border border-slate-200 shadow-sm">
+                                        <i class="fas fa-eye text-teal-600"></i>
+                                        <span>Lihat Log Jurnal</span>
+                                    </button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <tr>
+                            <td colspan="10" class="px-3 py-8 text-center text-slate-400 italic">
+                                Belum ada jadwal atau jurnal mengajar yang tercatat untuk pilar <?= htmlspecialchars($pilar_nama) ?> pada periode ini.
+                            </td>
+                        </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<?php
+}
+?>
