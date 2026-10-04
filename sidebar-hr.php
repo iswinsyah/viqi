@@ -260,7 +260,7 @@ if ($count_struct === 0) {
             'penagihan_spp' => ['href' => 'admin-penagihan-spp.php', 'icon' => 'fa-comment-dollar'],
             'rekap_uang_saku' => ['href' => 'admin-rekap-uang-saku.php', 'icon' => 'fa-wallet'],
             'sekolah_pembukuan' => ['href' => 'sekolah-pembukuan.php', 'icon' => 'fa-book'],
-            'kontrol_jam_kosong' => ['href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fa-calendar-times'],
+            'kontrol_jam_kosong' => ['href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fa-chalkboard-teacher'],
         ],
         'Asatidz' => [
             'kesediaan_mengajar' => ['href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fa-clock'],
@@ -335,7 +335,7 @@ if ($res_db_struct) {
             'uangsaku' => 'Saldo Uang Saku Santri',
             'rekap_uang_saku' => 'Validasi Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
-            'kontrol_jam_kosong' => 'Kontrol Jam Kosong',
+            'kontrol_jam_kosong' => 'Rekap Jam Mengajar & Jam Kosong',
             'rekap_kbm' => 'Rekap KBM Bulanan',
             'kpi_admin_sekolah' => 'KPI Admin Sekolah',
             'salary_admin' => 'Salary Admin Sekolah',
