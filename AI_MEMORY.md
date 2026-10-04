@@ -142,9 +142,8 @@ Cron job server berjalan otomatis pada jam-jam tertentu. Namun, Anda dapat memak
 ---
 
 ## 🚀 ALUR DEPLOYMENT & SINKRONISASI
-Projek ini dideploy secara otomatis menggunakan **Hostinger Native Git Auto-Deploy Webhook**.
-Setiap kali Anda melakukan `git commit` dan `git push` ke branch `main`, GitHub Webhook langsung memicu Hostinger untuk melakukan `git pull` dalam 1–2 detik secara instan.
-*   **Workflow GitHub Actions FTP/SFTP lama dinonaktifkan**: Karena SFTP membutuhkan 20+ menit untuk transfer 286 file, sistem beralih 100% ke Webhook Hostinger yang cepat dan stabil.
+Projek ini dideploy secara otomatis menggunakan **GitHub Actions SFTP Deploy Action (`.github/workflows/deploy.yml`)** ke server Hostinger (`domains/villaquranindonesia.com/public_html` pada port `65002`).
+Setiap kali Anda melakukan `git commit` dan `git push` ke branch `main`, GitHub Actions langsung berjalan secara otomatis menyinkronkan file perubahan (delta rsync sync).
 
 ---
 

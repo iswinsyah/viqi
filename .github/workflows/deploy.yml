@@ -1,0 +1,29 @@
+name: Auto Deploy to Hostinger
+
+# Trigger deploy otomatis setiap ada push ke branch 'main'
+on:
+  push:
+    branches:
+      - main 
+  # Mengizinkan deploy dijalankan secara manual dari GitHub
+  workflow_dispatch:
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+    
+    - name: 📂 Sync files to Hostinger via SFTP
+      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: 65002
+        local_path: './'
+        remote_path: 'domains/villaquranindonesia.com/public_html'
+        sftpArgs: '-o ConnectTimeout=30'
+        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents'

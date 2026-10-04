@@ -205,14 +205,8 @@ if (!empty($kode_ref) && $kode_ref !== 'organik') {
                 </div>
 
                 <div class="relative z-10 text-center max-w-2xl mx-auto space-y-4">
-                    <div
-                        class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-800/80 border border-emerald-600/40 text-amber-300 text-xs sm:text-sm font-bold tracking-wide">
-                        <i class="fas fa-certificate text-amber-400"></i>
-                        <span>LEAD MAGNET PSB • GRATIS 100%</span>
-                    </div>
-
                     <h1
-                        class="font-marlin text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight">
+                        class="font-marlin text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight pt-2">
                         Apakah Ananda Sudah Benar-Benar Siap Masuk Pondok?
                     </h1>
 
