@@ -153,14 +153,13 @@ Setiap kali Anda melakukan `git commit` dan `git push` ke branch `main`, GitHub 
 * **Saluran Distribusi:** Disebar oleh Mitra/Agen di tiap kota ke grup WhatsApp komunitas.
 * **Umpan (Lead Magnet):** **Tes Kesiapan Anak Masuk Pondok** ([tes-kesiapan-anak.php](file:///d:/LOCALHOST/viqi%202/tes-kesiapan-anak.php)).
 
-### 2. Alur Konversi (Curiosity Gap Funnel)
-1. Orang tua mengisi Nama & WhatsApp (Form awal simpel dengan border abu-abu jelas).
+### 2. Alur Konversi (Funnel)
+1. Orang tua mengisi Nama & WhatsApp (Form awal simpel tanpa step number).
 2. Mengerjakan 15 pertanyaan asesmen multi-dimensi (Kemandirian, Emosi, Spiritual, Sosial, Orang Tua).
-3. Di soal ke-15, tombol bertuliskan: **"Dapatkan Analisa Lengkap Sekarang"** (dengan ikon WhatsApp).
+3. Di soal ke-15, tombol bertuliskan: **"Dapatkan Analisa Lengkap Sekarang"**.
 4. Saat diklik:
-   - Data & skor otomatis tersimpan di tabel database `leads` (`simpan-test-kesiapan.php`) via background keepalive.
-   - **Tidak ada skor / diagnosis / perayaan yang dimunculkan di website** untuk menjaga rasa penasaran (Curiosity Gap).
-   - Browser otomatis langsung mengalihkan seketika ke WhatsApp CS resmi dengan pesan:  
+   - Data & skor otomatis tersimpan di tabel database `leads` (`simpan-test-kesiapan.php`).
+   - Browser otomatis me-redirect ke WhatsApp CS resmi dengan pesan:  
      `"Mohon dikirim analisa asesmen nya"`
 5. **Peran CS / AI Assistant di WhatsApp:**
    - Bertindak sebagai **Konsultan Parenting & Pendidikan Islam**, bukan sales.
