@@ -158,10 +158,10 @@ if ($res_kls && $res_kls->num_rows > 0) {
     ];
 }
 
-// Fetch master mapel list with categories
+// Fetch master mapel list (Khusus Mapel Offline / Tatap Muka)
 $mapel_list = [];
 $mapel_cat_map = [];
-$res_mpl = $conn->query("SELECT id, nama_mapel, kategori_mapel FROM master_mapel WHERE status_aktif = 1 ORDER BY nama_mapel ASC");
+$res_mpl = $conn->query("SELECT id, nama_mapel, kategori_mapel, metode_belajar, pengampu_id FROM master_mapel WHERE status_aktif = 1 AND (metode_belajar = 'offline' OR (metode_belajar != 'ai_agentic' AND pengampu_id IS NOT NULL) OR metode_belajar IS NULL) ORDER BY nama_mapel ASC");
 if ($res_mpl && $res_mpl->num_rows > 0) {
     while ($row = $res_mpl->fetch_assoc()) {
         $mapel_list[] = $row;
@@ -171,14 +171,16 @@ if ($res_mpl && $res_mpl->num_rows > 0) {
 }
 
 // ----------------------------------------------------
-// 1. REKAPITULASI JAM MENGAJAR PER GURU (DIKNAS, DINIYAH, SOLOPRENEUR)
+// 1. REKAPITULASI JAM MENGAJAR PER GURU (KHUSUS MAPEL OFFLINE / TATAP MUKA)
 // ----------------------------------------------------
-// Ambil semua jadwal pelajaran aktif
-$sql_jadwal = "SELECT j.*, m.nama_mapel, m.kategori_mapel, k.nama_kelas, u.nama as nama_guru
+// Ambil semua jadwal pelajaran aktif khusus pengampu fisik (Tutor, Ustadz, Trainer)
+$sql_jadwal = "SELECT j.*, m.nama_mapel, m.kategori_mapel, m.metode_belajar, k.nama_kelas, u.nama as nama_guru
                FROM jadwal_pelajaran j
                LEFT JOIN master_mapel m ON j.mapel_id = m.id
                LEFT JOIN master_kelas k ON j.kelas_id = k.id
-               LEFT JOIN akun_ustadz u ON j.ustadz_id = u.id";
+               LEFT JOIN akun_ustadz u ON j.ustadz_id = u.id
+               WHERE j.ustadz_id IS NOT NULL AND j.ustadz_id > 0
+               AND (m.metode_belajar IS NULL OR m.metode_belajar = 'offline' OR m.metode_belajar != 'ai_agentic')";
 $res_j = $conn->query($sql_jadwal);
 $all_jadwal = ($res_j) ? $res_j->fetch_all(MYSQLI_ASSOC) : [];
 
@@ -379,8 +381,11 @@ if (empty($rekap_guru_aktif)) {
                             <i class="fas fa-chalkboard-teacher text-xl"></i>
                         </div>
                         <div>
-                            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Rekapitulasi Jam Mengajar & Jam Kosong</h1>
-                            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Integrasi Rekapan Jam Mapel Diknas, Diniyah, Solopreneur, serta Pengendalian Jam Kosong & Inval.</p>
+                            <div class="flex items-center gap-2">
+                                <h1 class="text-2xl font-black text-slate-900 tracking-tight">Rekapitulasi Jam Mengajar & Jam Kosong</h1>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-teal-100 text-teal-800 border border-teal-300">Khusus Mapel Offline</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Rekapitulasi beban jam tatap muka langsung (Luring / Offline) yang diampu oleh <strong>Tutor Diknas</strong>, <strong>Ustadz Diniyah</strong>, dan <strong>Trainer Solopreneur</strong>.</p>
                         </div>
                     </div>
                 </div>
@@ -428,15 +433,15 @@ if (empty($rekap_guru_aktif)) {
                 </div>
             <?php endif; ?>
 
-            <!-- STATISTIC SUMMARY CARDS (4 PILAR) -->
+            <!-- STATISTIC SUMMARY CARDS (4 PILAR OFFLINE) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <!-- Diknas Card -->
                 <div class="bg-white rounded-2xl p-5 border border-blue-100 shadow-xs relative overflow-hidden group hover:shadow-md transition">
                     <div class="flex items-center justify-between">
                         <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">Mapel Diknas</span>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">Tutor Diknas (Offline)</span>
                             <h3 class="text-2xl font-black text-slate-900 mt-2"><?= number_format($grand_total_diknas) ?> <span class="text-xs font-bold text-slate-400">JP/Bln</span></h3>
-                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Kurikulum Nasional & PKBM</p>
+                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Tatap Muka PKBM / Nasional</p>
                         </div>
                         <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
                             <i class="fas fa-graduation-cap"></i>
@@ -451,9 +456,9 @@ if (empty($rekap_guru_aktif)) {
                 <div class="bg-white rounded-2xl p-5 border border-emerald-100 shadow-xs relative overflow-hidden group hover:shadow-md transition">
                     <div class="flex items-center justify-between">
                         <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">Mapel Diniyah</span>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">Ustadz Diniyah (Offline)</span>
                             <h3 class="text-2xl font-black text-slate-900 mt-2"><?= number_format($grand_total_diniyah) ?> <span class="text-xs font-bold text-slate-400">JP/Bln</span></h3>
-                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Tahfidz & Kepesantrenan</p>
+                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Tatap Muka Tahfidz & Kitab</p>
                         </div>
                         <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
                             <i class="fas fa-quran"></i>
@@ -468,9 +473,9 @@ if (empty($rekap_guru_aktif)) {
                 <div class="bg-white rounded-2xl p-5 border border-purple-100 shadow-xs relative overflow-hidden group hover:shadow-md transition">
                     <div class="flex items-center justify-between">
                         <div>
-                            <span class="text-[11px] font-black uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">Mapel Solopreneur</span>
+                            <span class="text-[11px] font-black uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">Trainer Solopreneur (Offline)</span>
                             <h3 class="text-2xl font-black text-slate-900 mt-2"><?= number_format($grand_total_solopreneur) ?> <span class="text-xs font-bold text-slate-400">JP/Bln</span></h3>
-                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Kemandirian, Digital & Skill</p>
+                            <p class="text-[11px] text-slate-500 font-medium mt-0.5">Praktik Kemandirian & Skill</p>
                         </div>
                         <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl group-hover:scale-110 transition">
                             <i class="fas fa-rocket"></i>
