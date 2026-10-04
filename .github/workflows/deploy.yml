@@ -5,25 +5,30 @@ on:
   push:
     branches:
       - main 
-  # Mengizinkan deploy dijalankan secara manual dari GitHub
   workflow_dispatch:
 
 jobs:
   web-deploy:
-    name: 🎉 Deploy
+    name: 🎉 Fast Delta Deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 2
     
-    - name: 📂 Sync files to Hostinger via SFTP
-      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+    - name: ⚡ Fast Sync files to Hostinger
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
-        port: 65002
-        local_path: './'
-        remote_path: 'domains/villaquranindonesia.com/public_html'
-        sftpArgs: '-o ConnectTimeout=30'
-        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents'
+        protocol: ftp
+        port: 21
+        server-dir: domains/villaquranindonesia.com/public_html/
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/.github/**
+          **/.agents/**
