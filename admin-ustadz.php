@@ -469,6 +469,10 @@ if ($view === 'dashboard_asrama') {
             $predikat = "Dhaif (Grade E)";
             $predikat_class = "bg-rose-100 text-rose-800 border border-rose-200 shadow-sm animate-pulse";
         }
+
+        // Ambil Laporan Evaluasi Tersimpan dari Pimpinan
+        $res_eval_mus = $conn->query("SELECT * FROM evaluasi_kpi_musyrif WHERE musyrif_id = $selected_musyrif_id AND bulan = $selected_month AND tahun = $selected_year LIMIT 1");
+        $eval_mus = ($res_eval_mus && $res_eval_mus->num_rows > 0) ? $res_eval_mus->fetch_assoc() : null;
     }
 } else { // default view
     header("Location: admin-absensi-pegawai.php");
@@ -1068,6 +1072,43 @@ if ($view === 'dashboard_asrama') {
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- LAPORAN EVALUASI & REKOMENDASI KINERJA DARI PIMPINAN -->
+                <div class="bg-white rounded-2xl shadow-sm border border-cyan-200/80 p-6 mb-8 font-outfit">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-2">
+                        <div>
+                            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <i class="fas fa-clipboard-check text-cyan-600"></i> Laporan Evaluasi Kinerja & Rekomendasi Pimpinan
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Catatan evaluasi bulanan, arahan pembinaan HRD, dan nasihat Syariah dari Pimpinan / Yayasan untuk Anda.</p>
+                        </div>
+                        <?php if ($eval_mus && !empty($eval_mus['updated_at'])): ?>
+                            <span class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-xs whitespace-nowrap self-start sm:self-auto">
+                                <i class="fas fa-check-circle"></i> Diterbitkan: <?= date('d/m/Y', strtotime($eval_mus['updated_at'])) ?> (<?= htmlspecialchars($eval_mus['saved_by'] ?? 'Pimpinan') ?>)
+                            </span>
+                        <?php endif; ?>
+                    </div>
+
+                    <?php if ($eval_mus && !empty($eval_mus['evaluasi_ai'])): ?>
+                        <div id="evaluasi-musyrif-content" class="text-xs text-slate-700 markdown-body bg-slate-50/60 p-5 rounded-xl border border-slate-100">
+                            <!-- Rendered via marked.js -->
+                        </div>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const rawMd = <?= json_encode($eval_mus['evaluasi_ai']) ?>;
+                                const el = document.getElementById('evaluasi-musyrif-content');
+                                if (el && typeof marked !== 'undefined') {
+                                    el.innerHTML = marked.parse(rawMd);
+                                }
+                            });
+                        </script>
+                    <?php else: ?>
+                        <div class="text-slate-400 italic py-6 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                            <i class="fas fa-comment-dots text-3xl mb-2 text-slate-200 block"></i>
+                            Belum ada catatan evaluasi khusus yang diterbitkan oleh Pimpinan / Yayasan untuk periode bulan ini. Tetap pertahankan dan tingkatkan kualitas pendampingan santri binaan Anda!
+                        </div>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 

@@ -1,8 +1,57 @@
 <?php
+// Prevent caching (Bypass Litespeed/Cloudflare/Browser Caches)
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 require_once '../koneksi.php';
+
+// Self-healing: Buat tabel penyimpanan evaluasi KPI Musyrif jika belum ada
+$conn->query("CREATE TABLE IF NOT EXISTS evaluasi_kpi_musyrif (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    musyrif_id INT NOT NULL,
+    bulan INT NOT NULL,
+    tahun INT NOT NULL,
+    skor_kpi DECIMAL(5,2) DEFAULT 0,
+    predikat VARCHAR(50),
+    evaluasi_ai LONGTEXT,
+    catatan_pimpinan TEXT,
+    saved_by VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_musyrif_period (musyrif_id, bulan, tahun)
+)");
+
+// Handler Simpan Evaluasi Kinerja (Save Button)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'save_evaluasi') {
+    $m_id = (int)$_POST['musyrif_id'];
+    $bln = (int)$_POST['bulan'];
+    $thn = (int)$_POST['tahun'];
+    $skor = (float)$_POST['skor_kpi'];
+    $pred = $conn->real_escape_string($_POST['predikat'] ?? '');
+    $ai_text = $_POST['evaluasi_ai'] ?? '';
+    $s_by = $_SESSION['app_user_nama'] ?? ($_SESSION['nama_lengkap'] ?? ($_SESSION['ustadz_nama'] ?? ($_SESSION['username'] ?? 'Pimpinan / Yayasan')));
+
+    $stmt = $conn->prepare("INSERT INTO evaluasi_kpi_musyrif (musyrif_id, bulan, tahun, skor_kpi, predikat, evaluasi_ai, saved_by) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE skor_kpi = VALUES(skor_kpi), predikat = VALUES(predikat), evaluasi_ai = VALUES(evaluasi_ai), saved_by = VALUES(saved_by), updated_at = NOW()");
+    $stmt->bind_param("iiidsss", $m_id, $bln, $thn, $skor, $pred, $ai_text, $s_by);
+    $ok = $stmt->execute();
+    
+    if (isset($_POST['ajax']) && $_POST['ajax'] == 1) {
+        header('Content-Type: application/json');
+        echo json_encode([
+            'status' => $ok ? 'success' : 'error', 
+            'message' => $ok ? 'Hasil evaluasi kinerja berhasil disimpan ke database!' : 'Gagal menyimpan evaluasi: ' . $conn->error,
+            'updated_at' => date('d/m/Y H:i'),
+            'saved_by' => $s_by
+        ]);
+        exit;
+    }
+    header("Location: kpi-musyrif.php?musyrif_id=$m_id&bulan=$bln&tahun=$thn&sukses=" . urlencode("Hasil evaluasi kinerja berhasil disimpan!"));
+    exit;
+}
 
 // Validasi akses (Super Admin / Yayasan / Kepala Sekolah / Kepala Ma'had / Musyrif)
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
@@ -58,6 +107,15 @@ $staf = null;
 if ($selected_musyrif_id > 0) {
     $res_det = $conn->query("SELECT * FROM akun_ustadz WHERE id = $selected_musyrif_id LIMIT 1");
     if ($res_det) $staf = $res_det->fetch_assoc();
+}
+
+// Ambil Evaluasi Tersimpan (Jika ada)
+$saved_eval = null;
+if ($selected_musyrif_id > 0) {
+    $res_ev = $conn->query("SELECT * FROM evaluasi_kpi_musyrif WHERE musyrif_id = $selected_musyrif_id AND bulan = $selected_month AND tahun = $selected_year LIMIT 1");
+    if ($res_ev && $res_ev->num_rows > 0) {
+        $saved_eval = $res_ev->fetch_assoc();
+    }
 }
 
 $kpi_data = [];
@@ -519,22 +577,50 @@ $active_menu = 'kpi_musyrif';
                 <!-- ANALISA STRATEGIS AI HRD YAYASAN -->
                 <div class="bg-white rounded-2xl shadow-sm border border-amber-200 p-6 mb-8 flex flex-col md:flex-row gap-6 items-start">
                     <div class="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6">
-                        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 mb-2">
-                            <i class="fas fa-brain text-amber-700"></i> AI HRD Evaluator
-                        </h3>
-                        <p class="text-xs text-slate-500 mb-4">Mintalah evaluasi mendalam tentang kontribusi Musyrif ini. AI akan memberikan rekomendasi pembinaan HRD berdasarkan dalil Sharia Islam.</p>
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                <i class="fas fa-brain text-amber-700"></i> Laporan Evaluasi Kinerja
+                            </h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mb-4">Laporan evaluasi mendalam tentang kontribusi Musyrif ini beserta rekomendasi pembinaan HRD dan dalil Sharia Islam.</p>
                         
-                        <button type="button" id="btn-analisa-kpi" class="w-full bg-amber-800 hover:bg-amber-900 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-sm transition inline-flex items-center justify-center gap-2">
-                            <i class="fas fa-magic"></i> Evaluasi Kinerja Musyrif
-                        </button>
+                        <?php if ($is_pimpinan): ?>
+                            <div class="space-y-2.5">
+                                <button type="button" id="btn-analisa-kpi" class="w-full bg-amber-800 hover:bg-amber-900 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-sm transition inline-flex items-center justify-center gap-2">
+                                    <i class="fas fa-magic"></i> <?= !empty($saved_eval['evaluasi_ai']) ? 'Generate Ulang Evaluasi AI' : 'Evaluasi Kinerja Musyrif' ?>
+                                </button>
+                                
+                                <button type="button" id="btn-simpan-evaluasi" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md transition inline-flex items-center justify-center gap-2 <?= empty($saved_eval['evaluasi_ai']) ? 'hidden' : '' ?>">
+                                    <i class="fas fa-save"></i> Simpan Hasil Evaluasi
+                                </button>
+                            </div>
+
+                            <div id="eval-status-badge" class="<?= empty($saved_eval['evaluasi_ai']) ? 'hidden' : '' ?> mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 font-bold flex flex-col gap-0.5">
+                                <div class="flex items-center gap-1.5 text-emerald-700">
+                                    <i class="fas fa-check-circle"></i> <span id="status-badge-title">Evaluasi Tersimpan</span>
+                                </div>
+                                <span class="text-[10px] text-emerald-600 font-normal" id="status-badge-meta">
+                                    <?= !empty($saved_eval['updated_at']) ? 'Disimpan oleh: ' . htmlspecialchars($saved_eval['saved_by'] ?? 'Pimpinan') . ' (' . date('d/m/Y H:i', strtotime($saved_eval['updated_at'])) . ')' : '' ?>
+                                </span>
+                            </div>
+                        <?php else: ?>
+                            <div class="p-3 bg-cyan-50 border border-cyan-200 rounded-xl text-xs text-cyan-900 flex items-start gap-2">
+                                <i class="fas fa-info-circle text-cyan-600 mt-0.5"></i>
+                                <span>Hasil evaluasi resmi dari Pimpinan Pesantren / Yayasan untuk pembinaan dan peningkatan mutu pendampingan santri.</span>
+                            </div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="flex-1 w-full min-h-[150px]">
                         <div id="ai-kpi-result" class="text-xs text-slate-700 markdown-body">
-                            <div class="text-slate-400 italic py-6 text-center">
-                                <i class="fas fa-comment-dots text-3xl mb-2 text-slate-200 block"></i>
-                                Klik tombol di sebelah kiri untuk menghasilkan laporan evaluasi HRD dari AI Gemini.
-                            </div>
+                            <?php if (!empty($saved_eval['evaluasi_ai'])): ?>
+                                <!-- Konten akan dirender otomatis via marked.js saat DOM ready -->
+                            <?php else: ?>
+                                <div class="text-slate-400 italic py-6 text-center">
+                                    <i class="fas fa-comment-dots text-3xl mb-2 text-slate-200 block"></i>
+                                    <?= $is_pimpinan ? 'Klik tombol <strong>Evaluasi Kinerja Musyrif</strong> di sebelah kiri untuk menghasilkan laporan evaluasi HRD dari AI Gemini, kemudian klik tombol <strong>Simpan</strong> agar tersimpan permanen.' : 'Belum ada catatan evaluasi khusus yang diterbitkan oleh Pimpinan untuk periode bulan ini.' ?>
+                                </div>
+                            <?php endif; ?>
                         </div>
                         <div id="ai-kpi-loading" class="hidden text-center text-slate-500 py-6">
                             <i class="fas fa-circle-notch fa-spin text-3xl text-amber-700 mb-2"></i>
@@ -554,6 +640,9 @@ $active_menu = 'kpi_musyrif';
         </main>
     </div>
 
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
     <script>
         // Toggle Sidebar Mobile
         document.getElementById('open-sidebar-yayasan2').addEventListener('click', () => { 
@@ -561,8 +650,41 @@ $active_menu = 'kpi_musyrif';
             document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); 
         });
 
-        // Trigger AI Evaluation
+        // Toast Notification Function
+        function showToast(message, isSuccess = true) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-4 opacity-0 pointer-events-auto ${isSuccess ? 'bg-emerald-800 text-emerald-100 border border-emerald-600' : 'bg-rose-800 text-rose-100 border border-rose-600'}`;
+            toast.innerHTML = `<i class="fas ${isSuccess ? 'fa-check-circle text-emerald-300 text-sm' : 'fa-exclamation-circle text-rose-300 text-sm'}"></i> <div>${message}</div>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Simpan markdown di memory
+        let currentEvaluasiMarkdown = <?= json_encode($saved_eval['evaluasi_ai'] ?? '') ?>;
+
+        // Render jika ada evaluasi tersimpan saat pertama kali dibuka
+        document.addEventListener('DOMContentLoaded', () => {
+            if (currentEvaluasiMarkdown && currentEvaluasiMarkdown.trim() !== '') {
+                const resultDiv = document.getElementById('ai-kpi-result');
+                if (resultDiv && typeof marked !== 'undefined') {
+                    resultDiv.innerHTML = marked.parse(currentEvaluasiMarkdown);
+                }
+            }
+        });
+
+        // Trigger AI Evaluation Generator
         const btnAnalisa = document.getElementById('btn-analisa-kpi');
+        const btnSimpan = document.getElementById('btn-simpan-evaluasi');
+
         if (btnAnalisa) {
             btnAnalisa.addEventListener('click', function() {
                 const resultDiv = document.getElementById('ai-kpi-result');
@@ -627,7 +749,13 @@ Gunakan gaya bahasa yang formal, bijak, mendalam, dan inspiratif untuk membantu 
                     btnAnalisa.disabled = false;
                     
                     if (data.status === 'success') {
+                        currentEvaluasiMarkdown = data.result;
                         resultDiv.innerHTML = marked.parse(data.result);
+                        if (btnSimpan) {
+                            btnSimpan.classList.remove('hidden');
+                            btnSimpan.innerHTML = '<i class="fas fa-save"></i> Simpan Hasil Evaluasi';
+                        }
+                        showToast('Laporan evaluasi berhasil di-generate! Klik tombol Simpan agar tersimpan permanen.', true);
                     } else {
                         resultDiv.innerHTML = `<div class="text-rose-600 bg-rose-50 p-4 border rounded-xl font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Gagal menganalisis KPI: ${data.message}</div>`;
                     }
@@ -637,6 +765,63 @@ Gunakan gaya bahasa yang formal, bijak, mendalam, dan inspiratif untuk membantu 
                     resultDiv.classList.remove('hidden');
                     btnAnalisa.disabled = false;
                     resultDiv.innerHTML = `<div class="text-rose-600 bg-rose-50 p-4 border rounded-xl font-bold"><i class="fas fa-exclamation-triangle mr-2"></i>Terjadi kesalahan koneksi: ${err.message}</div>`;
+                });
+            });
+        }
+
+        // Save Evaluation Handler
+        if (btnSimpan) {
+            btnSimpan.addEventListener('click', function() {
+                if (!currentEvaluasiMarkdown || currentEvaluasiMarkdown.trim() === '') {
+                    showToast('Belum ada evaluasi yang di-generate.', false);
+                    return;
+                }
+
+                btnSimpan.disabled = true;
+                btnSimpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+                const formData = new URLSearchParams();
+                formData.append('action', 'save_evaluasi');
+                formData.append('ajax', '1');
+                formData.append('musyrif_id', '<?= (int)$selected_musyrif_id ?>');
+                formData.append('bulan', '<?= (int)$selected_month ?>');
+                formData.append('tahun', '<?= (int)$selected_year ?>');
+                formData.append('skor_kpi', '<?= (float)$total_kpi ?>');
+                formData.append('predikat', '<?= addslashes($predikat) ?>');
+                formData.append('evaluasi_ai', currentEvaluasiMarkdown);
+
+                fetch('kpi-musyrif.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btnSimpan.disabled = false;
+                    btnSimpan.innerHTML = '<i class="fas fa-save"></i> Simpan Hasil Evaluasi';
+                    
+                    if (data.status === 'success') {
+                        showToast(data.message, true);
+                        const statusBadge = document.getElementById('eval-status-badge');
+                        const statusMeta = document.getElementById('status-badge-meta');
+                        if (statusBadge) {
+                            statusBadge.classList.remove('hidden');
+                            if (statusMeta) {
+                                statusMeta.innerText = `Disimpan oleh: ${data.saved_by} (${data.updated_at})`;
+                            }
+                        }
+                        if (btnAnalisa) {
+                            btnAnalisa.innerHTML = '<i class="fas fa-magic"></i> Generate Ulang Evaluasi AI';
+                        }
+                    } else {
+                        showToast(data.message, false);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    btnSimpan.disabled = false;
+                    btnSimpan.innerHTML = '<i class="fas fa-save"></i> Simpan Hasil Evaluasi';
+                    showToast('Terjadi kesalahan saat menyimpan evaluasi.', false);
                 });
             });
         }
