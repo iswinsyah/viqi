@@ -268,17 +268,19 @@ if ($view === 'dashboard_asrama') {
     
     if ($staf) {
 
-        // Get Santri Binaan IDs in halaqoh group
+        // Get Santri Binaan IDs in halaqoh group dari Manajemen Halaqoh
         $santri_ids = [];
         $res_sb = $conn->query("
-            SELECT DISTINCT s.id 
-            FROM buku_induk_santri s 
-            JOIN halaqoh_anggota a ON s.id = a.santri_id 
+            SELECT DISTINCT a.santri_id as id 
+            FROM halaqoh_anggota a 
             JOIN halaqoh_grup g ON a.grup_id = g.id 
-            WHERE g.musyrif_id = $selected_musyrif_id AND s.status_santri = 'Aktif'
+            WHERE g.musyrif_id = $selected_musyrif_id
         ");
         if ($res_sb) {
-            while ($r = $res_sb->fetch_assoc()) $santri_ids[] = (int)$r['id'];
+            while ($r = $res_sb->fetch_assoc()) {
+                $s_val = (int)$r['id'];
+                if ($s_val > 0) $santri_ids[] = $s_val;
+            }
         }
         $total_santri_binaan = count($santri_ids);
         $santri_list_str = !empty($santri_ids) ? implode(',', $santri_ids) : '0';

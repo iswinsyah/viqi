@@ -135,17 +135,28 @@ $skor_absensi_rapat = 100;
 $details = [];
 
 if ($staf) {
-    // Get Santri Binaan IDs in halaqoh group
+    // Ambil info nama halaqoh grup dari Manajemen Halaqoh
+    $nama_halaqoh_arr = [];
+    $res_hg = $conn->query("SELECT id, nama_grup FROM halaqoh_grup WHERE musyrif_id = $selected_musyrif_id ORDER BY nama_grup ASC");
+    if ($res_hg) {
+        while ($hg = $res_hg->fetch_assoc()) {
+            if (!empty($hg['nama_grup'])) $nama_halaqoh_arr[] = $hg['nama_grup'];
+        }
+    }
+
+    // Get Santri Binaan IDs in halaqoh group dari Manajemen Halaqoh (halaqoh_grup + halaqoh_anggota)
     $santri_ids = [];
     $res_sb = $conn->query("
-        SELECT DISTINCT s.id 
-        FROM buku_induk_santri s 
-        JOIN halaqoh_anggota a ON s.id = a.santri_id 
+        SELECT DISTINCT a.santri_id as id 
+        FROM halaqoh_anggota a 
         JOIN halaqoh_grup g ON a.grup_id = g.id 
-        WHERE g.musyrif_id = $selected_musyrif_id AND s.status_santri = 'Aktif'
+        WHERE g.musyrif_id = $selected_musyrif_id
     ");
     if ($res_sb) {
-        while ($r = $res_sb->fetch_assoc()) $santri_ids[] = (int)$r['id'];
+        while ($r = $res_sb->fetch_assoc()) {
+            $s_val = (int)$r['id'];
+            if ($s_val > 0) $santri_ids[] = $s_val;
+        }
     }
     $total_santri_binaan = count($santri_ids);
     $santri_list_str = !empty($santri_ids) ? implode(',', $santri_ids) : '0';
@@ -330,14 +341,26 @@ if ($staf) {
     $santri_binaan_detail = [];
     if (!empty($santri_ids)) {
         $res_all_santri = $conn->query("
-            SELECT s.id, s.nama_santri, s.kamar, s.jenjang, s.foto, s.nomor_wa_ortu, s.nama_ayah, s.nama_ibu
-            FROM buku_induk_santri s
-            WHERE s.id IN ($santri_list_str) AND s.status_santri = 'Aktif'
-            ORDER BY s.nama_santri ASC
+            SELECT s.id, 
+                   s.nama_lengkap, 
+                   s.kamar_asrama, 
+                   s.kelas_sekarang, 
+                   s.foto_santri, 
+                   COALESCE(NULLIF(s.no_whatsapp_ayah, ''), NULLIF(s.no_whatsapp_ibu, ''), s.no_whatsapp_wali, '') as nomor_wa_ortu, 
+                   s.nama_ayah, 
+                   s.nama_ibu, 
+                   s.nama_wali,
+                   g.nama_grup
+            FROM halaqoh_anggota a
+            JOIN halaqoh_grup g ON a.grup_id = g.id AND g.musyrif_id = $selected_musyrif_id
+            JOIN buku_induk_santri s ON a.santri_id = s.id
+            WHERE a.santri_id IN ($santri_list_str)
+            ORDER BY s.nama_lengkap ASC
         ");
         if ($res_all_santri) {
             while ($s = $res_all_santri->fetch_assoc()) {
                 $sid = (int)$s['id'];
+                $s_nama = !empty($s['nama_lengkap']) ? $s['nama_lengkap'] : ('Santri #' . $sid);
                 
                 // 1. Ibadah Santri Bulan Ini
                 $res_ib_s = $conn->query("
@@ -353,11 +376,12 @@ if ($staf) {
                 $jamaah_5 = (int)($data_ib_s['sholat_5_jamaah'] ?? 0);
                 
                 // 2. Setoran Hafalan Bulan Ini & Terakhir
+                $s_nama_esc = $conn->real_escape_string($s_nama);
                 $res_haf_s = $conn->query("
                     SELECT COUNT(*) as total_setoran,
                            SUM(CASE WHEN grade LIKE '%Mutqin%' OR grade LIKE '%Mumtaz%' THEN 1 ELSE 0 END) as setoran_mutqin
                     FROM laporan_setoran_hafalan
-                    WHERE santri_id = $sid AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'
+                    WHERE (santri_id = $sid OR nama_santri = '$s_nama_esc') AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'
                 ");
                 $data_haf_s = $res_haf_s ? $res_haf_s->fetch_assoc() : [];
                 $total_setoran_bln = (int)($data_haf_s['total_setoran'] ?? 0);
@@ -367,7 +391,7 @@ if ($staf) {
                 $res_last_haf = $conn->query("
                     SELECT nama_surat, ayat_mulai, ayat_sampai, juz, grade, created_at
                     FROM laporan_setoran_hafalan
-                    WHERE santri_id = $sid
+                    WHERE santri_id = $sid OR nama_santri = '$s_nama_esc'
                     ORDER BY created_at DESC, id DESC LIMIT 1
                 ");
                 $last_haf = ($res_last_haf && $res_last_haf->num_rows > 0) ? $res_last_haf->fetch_assoc() : null;
@@ -381,8 +405,8 @@ if ($staf) {
                 $total_sakit = $res_sakit ? (int)$res_sakit->fetch_assoc()['total_sakit'] : 0;
                 
                 $res_mut = $conn->query("
-                    SELECT kondisi_mental, catatan, created_at
-                    FROM mutabaah_santri
+                    SELECT kondisi_mental, COALESCE(permasalahan, catatan, '') as catatan, created_at
+                    FROM buku_mutabaah
                     WHERE santri_id = $sid
                     ORDER BY tanggal DESC, id DESC LIMIT 1
                 ");
@@ -397,14 +421,17 @@ if ($staf) {
                 $data_ortu = $res_ortu ? $res_ortu->fetch_assoc() : [];
                 $total_kontak = (int)($data_ortu['total_kontak'] ?? 0);
                 
+                $nama_ortu_display = !empty($s['nama_ayah']) ? $s['nama_ayah'] : (!empty($s['nama_ibu']) ? $s['nama_ibu'] : (!empty($s['nama_wali']) ? $s['nama_wali'] : 'Walisantri'));
+
                 $santri_binaan_detail[] = [
                     'id' => $sid,
-                    'nama' => $s['nama_santri'],
-                    'kamar' => $s['kamar'] ?? '-',
-                    'jenjang' => $s['jenjang'] ?? '-',
-                    'foto' => $s['foto'] ?? '',
+                    'nama' => $s_nama,
+                    'nama_grup' => $s['nama_grup'] ?? '',
+                    'kamar' => !empty($s['kamar_asrama']) ? $s['kamar_asrama'] : '-',
+                    'jenjang' => !empty($s['kelas_sekarang']) ? $s['kelas_sekarang'] : '-',
+                    'foto' => !empty($s['foto_santri']) ? $s['foto_santri'] : '',
                     'nomor_wa' => $s['nomor_wa_ortu'] ?? '',
-                    'nama_ortu' => $s['nama_ayah'] ?? ($s['nama_ibu'] ?? 'Walisantri'),
+                    'nama_ortu' => $nama_ortu_display,
                     'total_hari_ib' => $total_hari_ib,
                     'rata_ibadah' => $rata_ibadah,
                     'jamaah_5' => $jamaah_5,
@@ -678,9 +705,16 @@ $active_menu = 'kpi_musyrif';
                             </h2>
                             <p class="text-xs text-slate-500 mt-0.5">Monitoring mendalam progress hafalan, kepatuhan ibadah, mutaba'ah, dan kesehatan untuk setiap santri binaan <?= htmlspecialchars($staf['nama'] ?? '') ?> (Periode: <?= $months[$selected_month] ?> <?= $selected_year ?>).</p>
                         </div>
-                        <span class="px-3.5 py-1.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold self-start sm:self-auto flex items-center gap-1.5 shadow-xs">
-                            <i class="fas fa-user-graduate text-amber-600"></i> Total: <?= count($santri_binaan_detail) ?> Santri Binaan
-                        </span>
+                        <div class="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+                            <?php if (!empty($nama_halaqoh_arr)): ?>
+                                <span class="px-3 py-1.5 bg-cyan-50 text-cyan-800 border border-cyan-200 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs" title="Grup Manajemen Halaqoh">
+                                    <i class="fas fa-layer-group text-cyan-600"></i> <?= htmlspecialchars(implode(', ', $nama_halaqoh_arr)) ?>
+                                </span>
+                            <?php endif; ?>
+                            <span class="px-3.5 py-1.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs">
+                                <i class="fas fa-user-graduate text-amber-600"></i> Total: <?= count($santri_binaan_detail) ?> Santri Binaan
+                            </span>
+                        </div>
                     </div>
 
                     <?php if (!empty($santri_binaan_detail)): ?>
