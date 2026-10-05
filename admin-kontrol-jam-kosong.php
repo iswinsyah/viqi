@@ -230,12 +230,17 @@ if ($res_mpl) {
     while ($row = $res_mpl->fetch_assoc()) {
         $kat = trim($row['kategori_mapel'] ?? '');
         $kat_lower = strtolower($kat);
+        $nm_lower = strtolower(trim($row['nama_mapel'] ?? ''));
+        
         $norm_cat = 'diknas';
-        if (strpos($kat_lower, 'diniyah') !== false || strpos($kat_lower, 'tahfidz') !== false || strpos($kat_lower, 'pesantren') !== false) {
+        if (strpos($kat_lower, 'diniyah') !== false || strpos($kat_lower, 'tahfidz') !== false || strpos($kat_lower, 'pesantren') !== false ||
+            strpos($nm_lower, 'tahfidz') !== false || strpos($nm_lower, 'fiqih') !== false || strpos($nm_lower, 'hadits') !== false || strpos($nm_lower, 'arab') !== false || strpos($nm_lower, 'aqidah') !== false || strpos($nm_lower, 'tajwid') !== false || strpos($nm_lower, 'kitab') !== false) {
             $norm_cat = 'diniyah';
-        } elseif (strpos($kat_lower, 'solo') !== false || strpos($kat_lower, 'bisnis') !== false || strpos($kat_lower, 'entrepreneur') !== false || strpos($kat_lower, 'vokasi') !== false || strpos($kat_lower, 'trainer') !== false) {
+        } elseif (strpos($kat_lower, 'solo') !== false || strpos($kat_lower, 'bisnis') !== false || strpos($kat_lower, 'entrepreneur') !== false || strpos($kat_lower, 'vokasi') !== false || strpos($kat_lower, 'trainer') !== false ||
+                  strpos($nm_lower, 'solo') !== false || strpos($nm_lower, 'bisnis') !== false || strpos($nm_lower, 'marketing') !== false || strpos($nm_lower, 'coding') !== false || strpos($nm_lower, 'desain') !== false) {
             $norm_cat = 'solopreneur';
-        } elseif (strpos($kat_lower, 'diknas') !== false || strpos($kat_lower, 'pkbm') !== false) {
+        } elseif (strpos($kat_lower, 'diknas') !== false || strpos($kat_lower, 'pkbm') !== false || strpos($kat_lower, 'nasional') !== false || strpos($kat_lower, 'umum') !== false ||
+                  strpos($nm_lower, 'matematika') !== false || strpos($nm_lower, 'indonesia') !== false || strpos($nm_lower, 'inggris') !== false || strpos($nm_lower, 'ipa') !== false || strpos($nm_lower, 'ips') !== false || strpos($nm_lower, 'biologi') !== false || strpos($nm_lower, 'fisika') !== false || strpos($nm_lower, 'kimia') !== false || strpos($nm_lower, 'sosiologi') !== false || strpos($nm_lower, 'geografi') !== false || strpos($nm_lower, 'ekonomi') !== false || strpos($nm_lower, 'sejarah') !== false || strpos($nm_lower, 'pkn') !== false || strpos($nm_lower, 'pancasila') !== false) {
             $norm_cat = 'diknas';
         }
         $mapel_cat_map[$row['id']] = $norm_cat;
@@ -266,6 +271,28 @@ foreach (['diknas', 'diniyah', 'solopreneur'] as $k_pilar) {
             'detail_jurnal' => [],
             'detail_jadwal' => []
         ];
+    }
+}
+
+// 0. Tarik Guru Pengampu Resmi dari Master Mapel (master_mapel)
+$sql_pengampu = "SELECT m.id, m.nama_mapel, m.kategori_mapel, m.pengampu_id, u.nama as nama_guru 
+                 FROM master_mapel m 
+                 JOIN akun_ustadz u ON m.pengampu_id = u.id 
+                 WHERE m.status_aktif = 1 AND m.pengampu_id IS NOT NULL AND m.pengampu_id > 0";
+$res_pmp = $conn->query($sql_pengampu);
+if ($res_pmp) {
+    while ($pm = $res_pmp->fetch_assoc()) {
+        $gid = (int)$pm['pengampu_id'];
+        $mpl_nama = $pm['nama_mapel'];
+        $mpl_id = (int)$pm['id'];
+        $pilar = $mapel_cat_map[$mpl_id] ?? ($mapel_cat_map[$mpl_nama] ?? 'diknas');
+        if (!in_array($pilar, ['diknas', 'diniyah', 'solopreneur'])) $pilar = 'diknas';
+
+        if (isset($rekap_data[$pilar][$gid])) {
+            if (!in_array($mpl_nama, $rekap_data[$pilar][$gid]['mapel_diampu'])) {
+                $rekap_data[$pilar][$gid]['mapel_diampu'][] = $mpl_nama;
+            }
+        }
     }
 }
 
@@ -390,7 +417,7 @@ foreach (['diknas', 'diniyah', 'solopreneur'] as $p) {
     $guru_aktif = 0;
 
     foreach ($rekap_data[$p] as $gid => $g) {
-        if ($g['bulan_jp_target'] > 0 || $g['jurnal_jp_terisi'] > 0) {
+        if ($g['bulan_jp_target'] > 0 || $g['jurnal_jp_terisi'] > 0 || !empty($g['mapel_diampu'])) {
             $guru_aktif++;
             $tot_jadwal += $g['bulan_jp_target'];
             $tot_jurnal += $g['jurnal_jp_terisi'];
@@ -1218,9 +1245,9 @@ foreach (['diknas', 'diniyah', 'solopreneur'] as $p) {
  * Helper function untuk merender tabel rekap per pilar
  */
 function render_table_rekap($data_list, $pilar_nama, $theme_color, $filter_bulan, $filter_tahun) {
-    // Filter hanya guru yang memiliki jam terjadwal atau telah mengisi jurnal
+    // Filter guru yang memiliki jam terjadwal, telah mengisi jurnal, ada jam kosong, atau pengampu resmi mapel di pilar ini
     $filtered = array_filter($data_list, function($g) {
-        return ($g['bulan_jp_target'] > 0 || $g['jurnal_jp_terisi'] > 0 || $g['jam_kosong'] > 0);
+        return ($g['bulan_jp_target'] > 0 || $g['jurnal_jp_terisi'] > 0 || $g['jam_kosong'] > 0 || !empty($g['mapel_diampu']));
     });
 ?>
     <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
