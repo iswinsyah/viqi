@@ -326,6 +326,98 @@ if ($staf) {
         $predikat = "Dhaif (Grade E)";
         $predikat_class = "bg-rose-100 text-rose-800 border border-rose-200 shadow-sm animate-pulse";
     }
+    // Ambil Data Rinci Per-Individu Santri Binaan untuk Tabel & Grafik Perkembangan
+    $santri_binaan_detail = [];
+    if (!empty($santri_ids)) {
+        $res_all_santri = $conn->query("
+            SELECT s.id, s.nama_santri, s.kamar, s.jenjang, s.foto, s.nomor_wa_ortu, s.nama_ayah, s.nama_ibu
+            FROM buku_induk_santri s
+            WHERE s.id IN ($santri_list_str) AND s.status_santri = 'Aktif'
+            ORDER BY s.nama_santri ASC
+        ");
+        if ($res_all_santri) {
+            while ($s = $res_all_santri->fetch_assoc()) {
+                $sid = (int)$s['id'];
+                
+                // 1. Ibadah Santri Bulan Ini
+                $res_ib_s = $conn->query("
+                    SELECT COUNT(*) as total_hari,
+                           AVG(total_persen_ibadah) as rata_persen,
+                           SUM(CASE WHEN sholat_subuh='Berjamaah' AND sholat_dhuhur='Berjamaah' AND sholat_ashar='Berjamaah' AND sholat_maghrib='Berjamaah' AND sholat_isya='Berjamaah' THEN 1 ELSE 0 END) as sholat_5_jamaah
+                    FROM ibadah_harian_santri
+                    WHERE santri_id = $sid AND tanggal BETWEEN '$start_date' AND '$end_date'
+                ");
+                $data_ib_s = $res_ib_s ? $res_ib_s->fetch_assoc() : [];
+                $total_hari_ib = (int)($data_ib_s['total_hari'] ?? 0);
+                $rata_ibadah = round((float)($data_ib_s['rata_persen'] ?? 0), 1);
+                $jamaah_5 = (int)($data_ib_s['sholat_5_jamaah'] ?? 0);
+                
+                // 2. Setoran Hafalan Bulan Ini & Terakhir
+                $res_haf_s = $conn->query("
+                    SELECT COUNT(*) as total_setoran,
+                           SUM(CASE WHEN grade LIKE '%Mutqin%' OR grade LIKE '%Mumtaz%' THEN 1 ELSE 0 END) as setoran_mutqin
+                    FROM laporan_setoran_hafalan
+                    WHERE santri_id = $sid AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'
+                ");
+                $data_haf_s = $res_haf_s ? $res_haf_s->fetch_assoc() : [];
+                $total_setoran_bln = (int)($data_haf_s['total_setoran'] ?? 0);
+                $mutqin_cnt = (int)($data_haf_s['setoran_mutqin'] ?? 0);
+                
+                // Setoran Terakhir
+                $res_last_haf = $conn->query("
+                    SELECT nama_surat, ayat_mulai, ayat_sampai, juz, grade, created_at
+                    FROM laporan_setoran_hafalan
+                    WHERE santri_id = $sid
+                    ORDER BY created_at DESC, id DESC LIMIT 1
+                ");
+                $last_haf = ($res_last_haf && $res_last_haf->num_rows > 0) ? $res_last_haf->fetch_assoc() : null;
+                
+                // 3. Catatan Kesehatan & Mutabaah
+                $res_sakit = $conn->query("
+                    SELECT COUNT(*) as total_sakit
+                    FROM jurnal_kesehatan_santri
+                    WHERE santri_id = $sid AND tanggal BETWEEN '$start_date' AND '$end_date'
+                ");
+                $total_sakit = $res_sakit ? (int)$res_sakit->fetch_assoc()['total_sakit'] : 0;
+                
+                $res_mut = $conn->query("
+                    SELECT kondisi_mental, catatan, created_at
+                    FROM mutabaah_santri
+                    WHERE santri_id = $sid
+                    ORDER BY tanggal DESC, id DESC LIMIT 1
+                ");
+                $last_mut = ($res_mut && $res_mut->num_rows > 0) ? $res_mut->fetch_assoc() : null;
+                
+                // 4. Kontak Orang Tua
+                $res_ortu = $conn->query("
+                    SELECT COUNT(*) as total_kontak, MAX(tanggal) as tanggal_terakhir
+                    FROM jurnal_kontak_orangtua
+                    WHERE santri_id = $sid AND ustadz_id = $selected_musyrif_id AND tanggal BETWEEN '$start_date' AND '$end_date'
+                ");
+                $data_ortu = $res_ortu ? $res_ortu->fetch_assoc() : [];
+                $total_kontak = (int)($data_ortu['total_kontak'] ?? 0);
+                
+                $santri_binaan_detail[] = [
+                    'id' => $sid,
+                    'nama' => $s['nama_santri'],
+                    'kamar' => $s['kamar'] ?? '-',
+                    'jenjang' => $s['jenjang'] ?? '-',
+                    'foto' => $s['foto'] ?? '',
+                    'nomor_wa' => $s['nomor_wa_ortu'] ?? '',
+                    'nama_ortu' => $s['nama_ayah'] ?? ($s['nama_ibu'] ?? 'Walisantri'),
+                    'total_hari_ib' => $total_hari_ib,
+                    'rata_ibadah' => $rata_ibadah,
+                    'jamaah_5' => $jamaah_5,
+                    'total_setoran' => $total_setoran_bln,
+                    'mutqin_cnt' => $mutqin_cnt,
+                    'last_haf' => $last_haf,
+                    'total_sakit' => $total_sakit,
+                    'last_mut' => $last_mut,
+                    'total_kontak' => $total_kontak
+                ];
+            }
+        }
+    }
 }
 
 $active_menu = 'kpi_musyrif';
@@ -340,6 +432,7 @@ $active_menu = 'kpi_musyrif';
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Outfit', sans-serif; }
         .markdown-body { font-size: 0.85rem; line-height: 1.6; }
@@ -572,6 +665,184 @@ $active_menu = 'kpi_musyrif';
 
                         </div>
                     </div>
+                </div>
+
+                <!-- ============================================================== -->
+                <!-- TABEL & GRAFIK PERKEMBANGAN PER-INDIVIDU SANTRI BINAAN         -->
+                <!-- ============================================================== -->
+                <div class="bg-white rounded-2xl shadow-sm border border-amber-200/80 p-6 mb-8 overflow-hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-amber-100 pb-4 mb-6 gap-3">
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                                <i class="fas fa-users-viewfinder text-amber-700"></i> Rekap Perkembangan Per-Individu Santri Binaan
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Monitoring mendalam progress hafalan, kepatuhan ibadah, mutaba'ah, dan kesehatan untuk setiap santri binaan <?= htmlspecialchars($staf['nama'] ?? '') ?> (Periode: <?= $months[$selected_month] ?> <?= $selected_year ?>).</p>
+                        </div>
+                        <span class="px-3.5 py-1.5 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold self-start sm:self-auto flex items-center gap-1.5 shadow-xs">
+                            <i class="fas fa-user-graduate text-amber-600"></i> Total: <?= count($santri_binaan_detail) ?> Santri Binaan
+                        </span>
+                    </div>
+
+                    <?php if (!empty($santri_binaan_detail)): ?>
+                        <!-- GRAFIK STATISTIK SANTRI BINAAN -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                            <!-- Grafik 1: Rata-Rata Skor Ibadah -->
+                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
+                                <h4 class="text-xs font-bold text-slate-800 mb-3 flex items-center justify-between">
+                                    <span><i class="fas fa-mosque text-emerald-600 mr-1.5"></i> Kepatuhan Ibadah Santri Binaan (%)</span>
+                                    <span class="text-[10px] text-slate-400 font-normal">Target: 100%</span>
+                                </h4>
+                                <div class="h-48">
+                                    <canvas id="chartIbadahSantri"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- Grafik 2: Total Setoran Hafalan -->
+                            <div class="bg-slate-50/70 p-4 rounded-xl border border-slate-200/70">
+                                <h4 class="text-xs font-bold text-slate-800 mb-3 flex items-center justify-between">
+                                    <span><i class="fas fa-quran text-amber-600 mr-1.5"></i> Progress Setoran Hafalan (Bulan Ini)</span>
+                                    <span class="text-[10px] text-slate-400 font-normal">Target: 4x Setoran</span>
+                                </h4>
+                                <div class="h-48">
+                                    <canvas id="chartHafalanSantri"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TABEL DETAIL SANTRI BINAAN -->
+                        <div class="overflow-x-auto -mx-6 px-6">
+                            <table class="min-w-full divide-y divide-slate-100 text-xs">
+                                <thead>
+                                    <tr class="bg-amber-50/60 text-slate-600 text-[11px] font-bold uppercase tracking-wider">
+                                        <th class="py-3 px-3 text-left">Santri</th>
+                                        <th class="py-3 px-3 text-left">Kamar / Jenjang</th>
+                                        <th class="py-3 px-3 text-left">Prestasi Ibadah (Bulan Ini)</th>
+                                        <th class="py-3 px-3 text-left">Progress Hafalan</th>
+                                        <th class="py-3 px-3 text-left">Mutaba'ah & Kesehatan</th>
+                                        <th class="py-3 px-3 text-center">Kontak Walisantri</th>
+                                        <th class="py-3 px-3 text-center">Aksi Cepat</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 font-sans">
+                                    <?php foreach ($santri_binaan_detail as $sb): ?>
+                                    <?php
+                                        // Status Ibadah Badge
+                                        $ib_score = $sb['rata_ibadah'];
+                                        $ib_badge = 'bg-rose-50 text-rose-700 border-rose-200';
+                                        if ($ib_score >= 85) $ib_badge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                        elseif ($ib_score >= 70) $ib_badge = 'bg-amber-50 text-amber-700 border-amber-200';
+
+                                        // Status Hafalan Badge
+                                        $haf_cnt = $sb['total_setoran'];
+                                        $haf_badge = 'bg-rose-50 text-rose-700 border-rose-200';
+                                        if ($haf_cnt >= 4) $haf_badge = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                        elseif ($haf_cnt >= 2) $haf_badge = 'bg-amber-50 text-amber-700 border-amber-200';
+                                    ?>
+                                    <tr class="hover:bg-amber-50/30 transition">
+                                        <td class="py-3 px-3 whitespace-nowrap font-bold text-slate-900">
+                                            <div class="flex items-center gap-2.5">
+                                                <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs shadow-xs border border-amber-200 overflow-hidden flex-shrink-0">
+                                                    <?php if (!empty($sb['foto'])): ?>
+                                                        <img src="../upload/santri/<?= htmlspecialchars($sb['foto']) ?>" alt="" class="w-full h-full object-cover">
+                                                    <?php else: ?>
+                                                        <?= strtoupper(substr($sb['nama'], 0, 1)) ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div>
+                                                    <span class="text-slate-900 font-bold"><?= htmlspecialchars($sb['nama']) ?></span>
+                                                    <span class="block text-[10px] text-slate-400 font-normal">ID: #<?= $sb['id'] ?></span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 whitespace-nowrap text-slate-600">
+                                            <span class="font-semibold text-slate-700 block"><?= htmlspecialchars($sb['kamar']) ?></span>
+                                            <span class="text-[10px] text-slate-400"><?= htmlspecialchars($sb['jenjang']) ?></span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <div class="w-36">
+                                                <div class="flex items-center justify-between text-[11px] mb-1">
+                                                    <span class="font-bold text-slate-700"><?= $sb['rata_ibadah'] ?>%</span>
+                                                    <span class="text-[9px] px-1.5 py-0.5 rounded border font-semibold <?= $ib_badge ?>">
+                                                        <?= $sb['rata_ibadah'] >= 85 ? 'Mumtaz' : ($sb['rata_ibadah'] >= 70 ? 'Jayyid' : 'Perlu Bimbingan') ?>
+                                                    </span>
+                                                </div>
+                                                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                                    <div class="bg-emerald-500 h-full rounded-full" style="width: <?= min(100, $sb['rata_ibadah']) ?>%"></div>
+                                                </div>
+                                                <span class="text-[9px] text-slate-400 block mt-0.5">Shalat 5 Waktu Jamaah: <strong><?= $sb['jamaah_5'] ?> hari</strong></span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <div class="w-44">
+                                                <div class="flex items-center justify-between text-[11px] mb-1">
+                                                    <span class="font-bold text-slate-800"><?= $sb['total_setoran'] ?>x Setoran</span>
+                                                    <span class="text-[9px] px-1.5 py-0.5 rounded border font-semibold <?= $haf_badge ?>">
+                                                        <?= $sb['total_setoran'] >= 4 ? 'Target Tercapai' : ($sb['total_setoran'] > 0 ? 'Kurang ' . (4 - $sb['total_setoran']) . 'x' : 'Belum Setor') ?>
+                                                    </span>
+                                                </div>
+                                                <?php if (!empty($sb['last_haf'])): ?>
+                                                    <div class="text-[10px] text-slate-600 bg-amber-50/60 px-2 py-1 rounded border border-amber-100">
+                                                        <span class="font-bold text-amber-900"><?= htmlspecialchars($sb['last_haf']['nama_surat'] ?? '') ?></span>: Ayat <?= $sb['last_haf']['ayat_mulai'] ?>-<?= $sb['last_haf']['ayat_sampai'] ?> (Juz <?= $sb['last_haf']['juz'] ?>)
+                                                        <span class="block text-[9px] text-amber-700 font-medium">Grade: <?= htmlspecialchars($sb['last_haf']['grade'] ?? 'Mutqin') ?></span>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="text-[10px] text-slate-400 italic">Belum ada riwayat setoran</span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <div class="text-[11px] space-y-1">
+                                                <div>
+                                                    <span class="text-slate-500">Kesehatan:</span>
+                                                    <?php if ($sb['total_sakit'] > 0): ?>
+                                                        <span class="font-bold text-rose-600"><?= $sb['total_sakit'] ?>x Sakit / Izin</span>
+                                                    <?php else: ?>
+                                                        <span class="font-bold text-emerald-600">Sehat Walafiat</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <?php if (!empty($sb['last_mut'])): ?>
+                                                    <div class="text-[10px] text-slate-600 truncate max-w-[160px]" title="<?= htmlspecialchars($sb['last_mut']['catatan'] ?? '') ?>">
+                                                        <span class="text-slate-500">Mental:</span> <strong class="text-slate-700"><?= htmlspecialchars($sb['last_mut']['kondisi_mental'] ?? 'Stabil') ?></strong>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3 text-center whitespace-nowrap">
+                                            <?php if ($sb['total_kontak'] > 0): ?>
+                                                <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold inline-flex items-center gap-1">
+                                                    <i class="fas fa-check"></i> <?= $sb['total_kontak'] ?>x Dikontak
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full text-[10px] font-bold inline-flex items-center gap-1">
+                                                    <i class="fas fa-clock"></i> Belum Dikontak
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="py-3 px-3 text-center whitespace-nowrap">
+                                            <?php if (!empty($sb['nomor_wa'])): ?>
+                                                <?php 
+                                                    $clean_wa = preg_replace('/[^0-9]/', '', $sb['nomor_wa']);
+                                                    if (substr($clean_wa, 0, 1) === '0') $clean_wa = '62' . substr($clean_wa, 1);
+                                                    $wa_msg = urlencode("Assalamu'alaikum Warahmatullah Bapak/Ibu {$sb['nama_ortu']}, kami dari Musyrif Villa Quran ingin mengabarkan perkembangan ananda {$sb['nama']}. Skor kepatuhan ibadah: {$sb['rata_ibadah']}%, total setoran hafalan: {$sb['total_setoran']}x bulan ini.");
+                                                ?>
+                                                <a href="https://wa.me/<?= $clean_wa ?>?text=<?= $wa_msg ?>" target="_blank" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 shadow-xs transition" title="Kirim Pesan WA ke Orang Tua">
+                                                    <i class="fab fa-whatsapp"></i> WA Ortu
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-slate-300 text-[10px] italic">No WA -</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="p-8 text-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                            <i class="fas fa-user-slash text-3xl mb-2 text-slate-300 block"></i>
+                            Musyrif ini belum memiliki santri binaan yang terdaftar di halaqoh asrama.
+                        </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- ANALISA STRATEGIS AI HRD YAYASAN -->
@@ -826,6 +1097,69 @@ Gunakan gaya bahasa yang formal, bijak, mendalam, dan inspiratif untuk membantu 
                 });
             });
         }
+
+        // Chart Initialization untuk Santri Binaan
+        document.addEventListener('DOMContentLoaded', () => {
+            const santriNames = <?= json_encode(array_column($santri_binaan_detail, 'nama')) ?>;
+            const ibadahScores = <?= json_encode(array_column($santri_binaan_detail, 'rata_ibadah')) ?>;
+            const hafalanCounts = <?= json_encode(array_column($santri_binaan_detail, 'total_setoran')) ?>;
+
+            if (document.getElementById('chartIbadahSantri') && santriNames.length > 0) {
+                new Chart(document.getElementById('chartIbadahSantri'), {
+                    type: 'bar',
+                    data: {
+                        labels: santriNames.map(n => n.length > 12 ? n.substring(0, 10) + '...' : n),
+                        datasets: [{
+                            label: 'Kepatuhan Ibadah (%)',
+                            data: ibadahScores,
+                            backgroundColor: 'rgba(16, 185, 129, 0.75)',
+                            borderColor: 'rgb(16, 185, 129)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { min: 0, max: 100, ticks: { callback: v => v + '%' } },
+                            x: { ticks: { font: { size: 9 } } }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+
+            if (document.getElementById('chartHafalanSantri') && santriNames.length > 0) {
+                new Chart(document.getElementById('chartHafalanSantri'), {
+                    type: 'bar',
+                    data: {
+                        labels: santriNames.map(n => n.length > 12 ? n.substring(0, 10) + '...' : n),
+                        datasets: [{
+                            label: 'Jumlah Setoran (Kali)',
+                            data: hafalanCounts,
+                            backgroundColor: 'rgba(245, 158, 11, 0.75)',
+                            borderColor: 'rgb(245, 158, 11)',
+                            borderWidth: 1.5,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { min: 0, ticks: { stepSize: 1 } },
+                            x: { ticks: { font: { size: 9 } } }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>
