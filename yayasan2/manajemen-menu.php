@@ -70,13 +70,20 @@ if ($res_chk_rapat && $res_chk_rapat->num_rows === 0) {
 }
 
 // Pastikan menu 'pengaturan_brosur' terdaftar di Web & Marketing (Self-Healing)
-$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
-    VALUES ('Web & Marketing', 'pengaturan_brosur', 3, 'fa-envelope-open-text', 'admin-brosur-settings.php') 
-    ON DUPLICATE KEY UPDATE menu_group='Web & Marketing', icon='fa-envelope-open-text', href='admin-brosur-settings.php'");
-$conn->query("UPDATE menu_structure SET menu_group='Web & Marketing' WHERE menu_key='pengaturan_brosur'");
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
-    VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah') 
-    ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah'");
+$chk_br = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'pengaturan_brosur'");
+if (!$chk_br || $chk_br->num_rows === 0) {
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+        VALUES ('Web & Marketing', 'pengaturan_brosur', 3, 'fa-envelope-open-text', 'admin-brosur-settings.php')");
+} else {
+    $conn->query("UPDATE menu_structure SET menu_group = 'Web & Marketing', href = 'admin-brosur-settings.php', icon = 'fa-envelope-open-text' WHERE menu_key = 'pengaturan_brosur'");
+}
+$chk_p = $conn->query("SELECT id FROM menu_permissions WHERE menu_key = 'pengaturan_brosur'");
+if (!$chk_p || $chk_p->num_rows === 0) {
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+        VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah')");
+} else {
+    $conn->query("UPDATE menu_permissions SET allowed_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah' WHERE menu_key = 'pengaturan_brosur'");
+}
 $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
     VALUES ('pengaturan_brosur', 'Pengaturan Brosur Digital', 'Brosur') 
     ON DUPLICATE KEY UPDATE custom_label='Pengaturan Brosur Digital', short_label='Brosur'");
@@ -285,6 +292,17 @@ if ($res_db_menus) {
         $title = $default_titles[$key] ?? ucwords(str_replace('_', ' ', $key));
         $defined_menus[$group][$key] = $title;
     }
+}
+
+// Jaminan menu Web & Marketing selalu terdaftar di tabel Manajemen Menu
+if (!isset($defined_menus['Web & Marketing']['ruang_web'])) {
+    $defined_menus['Web & Marketing']['ruang_web'] = 'Ruang Web (CMS & Website)';
+}
+if (!isset($defined_menus['Web & Marketing']['ruang_marketing'])) {
+    $defined_menus['Web & Marketing']['ruang_marketing'] = 'Ruang Marketing & AI';
+}
+if (!isset($defined_menus['Web & Marketing']['pengaturan_brosur'])) {
+    $defined_menus['Web & Marketing']['pengaturan_brosur'] = 'Pengaturan Brosur Digital';
 }
 
 $group_order = [
