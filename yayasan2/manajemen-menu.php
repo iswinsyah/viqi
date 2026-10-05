@@ -69,16 +69,17 @@ if ($res_chk_rapat && $res_chk_rapat->num_rows === 0) {
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'jadwal_rapat', $new_ord, 'fa-handshake', 'admin-jadwal-rapat.php')");
 }
 
-// Pastikan menu 'pengaturan_brosur' terdaftar jika belum ada (Self-Healing)
-$res_chk_brosur = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'pengaturan_brosur'");
-if ($res_chk_brosur && $res_chk_brosur->num_rows === 0) {
-    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure WHERE menu_group = 'Administrasi'");
-    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
-    $new_ord = $max_ord + 1;
-    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'pengaturan_brosur', $new_ord, 'fa-envelope-open-text', 'admin-brosur-settings.php')");
-}
-$conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah')");
-$conn->query("INSERT IGNORE INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('pengaturan_brosur', 'Pengaturan Brosur Digital', 'Brosur')");
+// Pastikan menu 'pengaturan_brosur' terdaftar di Web & Marketing (Self-Healing)
+$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+    VALUES ('Web & Marketing', 'pengaturan_brosur', 3, 'fa-envelope-open-text', 'admin-brosur-settings.php') 
+    ON DUPLICATE KEY UPDATE menu_group='Web & Marketing', icon='fa-envelope-open-text', href='admin-brosur-settings.php'");
+$conn->query("UPDATE menu_structure SET menu_group='Web & Marketing' WHERE menu_key='pengaturan_brosur'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+    VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah') 
+    ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah'");
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('pengaturan_brosur', 'Pengaturan Brosur Digital', 'Brosur') 
+    ON DUPLICATE KEY UPDATE custom_label='Pengaturan Brosur Digital', short_label='Brosur'");
 
 // Pastikan menu 'kpi_admin_sekolah' & 'salary_admin' terdaftar jika belum ada (Self-Healing)
 $res_chk_kpi_adm = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kpi_admin_sekolah'");
@@ -201,6 +202,11 @@ if ($count_struct === 0) {
         ],
         'Solopreneur & AI' => [
             'kurikulum_solopreneur_trainer' => ['href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fa-rocket']
+        ],
+        'Web & Marketing' => [
+            'ruang_web' => ['href' => 'admin.php', 'icon' => 'fa-globe'],
+            'ruang_marketing' => ['href' => 'dashboard-marketing.php', 'icon' => 'fa-bullseye'],
+            'pengaturan_brosur' => ['href' => 'admin-brosur-settings.php', 'icon' => 'fa-envelope-open-text']
         ]
     ];
     
