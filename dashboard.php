@@ -168,149 +168,153 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && isset($_POST['action']))
 // =========================================================
 // SELF-HEALING & SINKRONISASI MANAJEMEN MENU DATABASE
 // =========================================================
-if ($conn && $conn instanceof mysqli) {
-    @$conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        menu_group VARCHAR(100) NOT NULL,
-        menu_key VARCHAR(100) UNIQUE NOT NULL,
-        sort_order INT NOT NULL DEFAULT 0,
-        icon VARCHAR(100) NOT NULL,
-        href VARCHAR(255) NOT NULL
-    )");
-    @$conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        menu_key VARCHAR(100) UNIQUE NOT NULL,
-        allowed_roles TEXT NOT NULL
-    )");
-    @$conn->query("CREATE TABLE IF NOT EXISTS menu_custom_labels (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        menu_key VARCHAR(100) UNIQUE NOT NULL,
-        custom_label VARCHAR(100) NOT NULL,
-        short_label VARCHAR(50) NOT NULL
-    )");
-}
-
-$yayasan_pengurus_roles = ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'];
-$is_yayasan_pengurus = $is_admin || !empty(array_intersect($yayasan_pengurus_roles, $roles));
-
-// Self-Healing Database: Pastikan seluruh menu Ruang Yayasan & Operasional terdaftar kuat
-$res_cnt_check = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure WHERE menu_group = 'Ruang Yayasan'");
-$cnt_yayasan = $res_cnt_check ? (int)$res_cnt_check->fetch_assoc()['cnt'] : 0;
-if ($cnt_yayasan < 20) {
-    $master_seed_menus = [
-        // Ruang Yayasan (Khusus Pengurus: Ketua, Sekretaris, Bendahara)
-        ['yayasan_pegawai', 'Ruang Yayasan', 1, 'fas fa-users-gear', 'yayasan2/asatidz.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Pegawai', 'Daftar Pegawai & Asatidz'],
-        ['yayasan_menu', 'Ruang Yayasan', 2, 'fas fa-sliders', 'yayasan2/manajemen-menu.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Manajemen Menu', 'Manajemen Menu & Hak Akses'],
-        ['yayasan_kelas', 'Ruang Yayasan', 3, 'fas fa-school', 'yayasan2/master-kelas.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kelas', 'Master Data Kelas'],
-        ['yayasan_mapel', 'Ruang Yayasan', 4, 'fas fa-book', 'yayasan2/master-mapel.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Mapel', 'Master Mata Pelajaran'],
-        ['yayasan_elearning', 'Ruang Yayasan', 5, 'fas fa-robot', 'yayasan2/elearning-yayasan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'E-Learning', 'Kurikulum & E-Learning (AI)'],
-        ['yayasan_kitab', 'Ruang Yayasan', 6, 'fas fa-book-open', 'yayasan2/kitab-rujukan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kitab', 'Master Kitab Rujukan'],
-        ['yayasan_hafalan', 'Ruang Yayasan', 7, 'fas fa-book-quran', 'yayasan2/laporan-setoran-hafalan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Hafalan', 'Laporan Setoran Hafalan'],
-        ['yayasan_ibadah', 'Ruang Yayasan', 8, 'fas fa-mosque', 'yayasan2/ibadah-harian-santri.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Ibadah', 'Rekap Ibadah Harian Santri'],
-        ['yayasan_raport', 'Ruang Yayasan', 9, 'fas fa-file-invoice', 'yayasan2/rapot-pkbm.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Raport', 'Monitoring Raport PKBM'],
-        ['yayasan_kas', 'Ruang Yayasan', 10, 'fas fa-calculator', 'yayasan2/pembukuan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kas', 'Pembukuan Terpusat Lembaga'],
-        ['yayasan_cashflow', 'Ruang Yayasan', 11, 'fas fa-funnel-dollar', 'yayasan2/pembukuan.php?tab=proyeksi', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Cashflow', 'Perencanaan & Cashflow Kas'],
-        ['yayasan_kpi', 'Ruang Yayasan', 12, 'fas fa-chart-bar', 'yayasan2/kpi.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'KPI', 'Monitoring AI & Kinerja Pegawai'],
-        ['yayasan_supervisi', 'Ruang Yayasan', 15, 'fas fa-clipboard-check', 'admin-supervisi-mengajar.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Supervisi', 'Supervisi Mengajar Asatidz'],
-        ['yayasan_gaji', 'Ruang Yayasan', 16, 'fas fa-coins', 'yayasan2/gaji-pegawai.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Gaji', 'Rekap Gaji (Payroll)'],
-        ['yayasan_tarif_gaji', 'Ruang Yayasan', 17, 'fas fa-sliders', 'yayasan2/gaji-asatidz.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Tarif', 'Pengaturan Tarif Gaji'],
-        ['yayasan_ai_hrd', 'Ruang Yayasan', 18, 'fas fa-robot', 'yayasan2/ai-agent-hrd.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'AI-HRD', 'AI Agent HRD & Personalia'],
-        ['yayasan_spp', 'Ruang Yayasan', 19, 'fas fa-file-invoice-dollar', 'yayasan2/rekap-spp.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SPP', 'Rekap Pembayaran SPP/Keuangan'],
-        ['yayasan_saku', 'Ruang Yayasan', 20, 'fas fa-wallet', 'yayasan2/rekap-uang-saku.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Saku', 'Rekap Uang Saku Santri'],
-        ['yayasan_tunjangan', 'Ruang Yayasan', 21, 'fas fa-award', 'yayasan2/tunjangan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Tunjangan', 'Pengaturan Tunjangan'],
-        ['yayasan_swot', 'Ruang Yayasan', 22, 'fas fa-chart-line', 'yayasan2/analisis-swot.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SWOT', 'Analisis SWOT & Strategi'],
-        ['yayasan_struktur', 'Ruang Yayasan', 23, 'fas fa-sitemap', 'yayasan2/struktur-jobdesc.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Struktur', 'Struktur Organisasi'],
-        ['yayasan_jobdesc', 'Ruang Yayasan', 24, 'fas fa-id-card', 'yayasan2/jobdesc.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Jobdesc', 'Job Description Pegawai'],
-        ['yayasan_peraturan', 'Ruang Yayasan', 25, 'fas fa-gavel', 'yayasan2/admin-peraturan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SOP', 'SOP & Peraturan Yayasan'],
-        ['yayasan_solopreneur', 'Ruang Yayasan', 26, 'fas fa-rocket', 'yayasan2/kurikulum-solopreneur.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Solopreneur', 'Inkubator Kurikulum Solopreneur'],
-        ['yayasan_cp', 'Ruang Yayasan', 6, 'fas fa-brain', 'yayasan2/kurikulum-cp.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'CP (AI)', 'Capaian Pembelajaran (CP) AI']
-    ];
-    foreach ($master_seed_menus as $m) {
-        list($key, $grp, $ord, $ico, $hrf, $al_roles, $sh_lbl, $fl_lbl) = $m;
-        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('$grp', '$key', $ord, '$ico', '$hrf') ON DUPLICATE KEY UPDATE menu_group='$grp', sort_order=$ord, icon='$ico', href='$hrf'");
-        $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('$key', '$al_roles') ON DUPLICATE KEY UPDATE allowed_roles='$al_roles'");
-        $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('$key', '$fl_lbl', '$sh_lbl') ON DUPLICATE KEY UPDATE custom_label='$fl_lbl', short_label='$sh_lbl'");
+try {
+    if ($conn && $conn instanceof mysqli) {
+        @$conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            menu_group VARCHAR(100) NOT NULL,
+            menu_key VARCHAR(100) UNIQUE NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0,
+            icon VARCHAR(100) NOT NULL,
+            href VARCHAR(255) NOT NULL
+        )");
+        @$conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            menu_key VARCHAR(100) UNIQUE NOT NULL,
+            allowed_roles TEXT NOT NULL
+        )");
+        @$conn->query("CREATE TABLE IF NOT EXISTS menu_custom_labels (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            menu_key VARCHAR(100) UNIQUE NOT NULL,
+            custom_label VARCHAR(255) NOT NULL DEFAULT '',
+            short_label VARCHAR(50) NULL DEFAULT ''
+        )");
+        @$conn->query("ALTER TABLE menu_custom_labels MODIFY COLUMN short_label VARCHAR(50) NULL DEFAULT ''");
+        @$conn->query("ALTER TABLE menu_custom_labels MODIFY COLUMN custom_label VARCHAR(255) NOT NULL DEFAULT ''");
     }
-}
 
-// =========================================================
-// MIGRATION & SELF-HEALING: PINDAHKAN KPI KEPSEK & MUSYRIF KE FRAME UTAMA (OPERASIONAL)
-// =========================================================
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('yayasan_kpi_musyrif', 'yayasan_kpi_kepsek') AND menu_group = 'Ruang Yayasan'");
+    $yayasan_pengurus_roles = ['super_admin', 'ketua_yayasan', 'sekretaris_yayasan', 'bendahara_yayasan'];
+    $is_yayasan_pengurus = $is_admin || !empty(array_intersect($yayasan_pengurus_roles, $roles));
 
-// Pastikan kpi_kepsek terdaftar di Frame Utama (Administrasi)
-$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
-    VALUES ('Administrasi', 'kpi_kepsek', 51, 'fas fa-chart-pie', 'yayasan2/kpi-kepala-sekolah.php') 
-    ON DUPLICATE KEY UPDATE menu_group='Administrasi', icon='fas fa-chart-pie', href='yayasan2/kpi-kepala-sekolah.php'");
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
-    VALUES ('kpi_kepsek', 'kepala_sekolah,ketua_yayasan,super_admin') 
-    ON DUPLICATE KEY UPDATE allowed_roles = IF(allowed_roles LIKE '%kepala_sekolah%', allowed_roles, CONCAT(allowed_roles, ',kepala_sekolah,ketua_yayasan,super_admin'))");
-$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
-    VALUES ('kpi_kepsek', 'KPI Kepala Sekolah', 'KPI Kepsek') 
-    ON DUPLICATE KEY UPDATE custom_label='KPI Kepala Sekolah', short_label='KPI Kepsek'");
+    // Self-Healing Database: Pastikan seluruh menu Ruang Yayasan & Operasional terdaftar kuat
+    $res_cnt_check = $conn->query("SELECT COUNT(*) as cnt FROM menu_structure WHERE menu_group = 'Ruang Yayasan'");
+    $cnt_yayasan = $res_cnt_check ? (int)$res_cnt_check->fetch_assoc()['cnt'] : 0;
+    if ($cnt_yayasan < 20) {
+        $master_seed_menus = [
+            // Ruang Yayasan (Khusus Pengurus: Ketua, Sekretaris, Bendahara)
+            ['yayasan_pegawai', 'Ruang Yayasan', 1, 'fas fa-users-gear', 'yayasan2/asatidz.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Pegawai', 'Daftar Pegawai & Asatidz'],
+            ['yayasan_menu', 'Ruang Yayasan', 2, 'fas fa-sliders', 'yayasan2/manajemen-menu.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Manajemen Menu', 'Manajemen Menu & Hak Akses'],
+            ['yayasan_kelas', 'Ruang Yayasan', 3, 'fas fa-school', 'yayasan2/master-kelas.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kelas', 'Master Data Kelas'],
+            ['yayasan_mapel', 'Ruang Yayasan', 4, 'fas fa-book', 'yayasan2/master-mapel.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Mapel', 'Master Mata Pelajaran'],
+            ['yayasan_elearning', 'Ruang Yayasan', 5, 'fas fa-robot', 'yayasan2/elearning-yayasan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'E-Learning', 'Kurikulum & E-Learning (AI)'],
+            ['yayasan_kitab', 'Ruang Yayasan', 6, 'fas fa-book-open', 'yayasan2/kitab-rujukan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kitab', 'Master Kitab Rujukan'],
+            ['yayasan_hafalan', 'Ruang Yayasan', 7, 'fas fa-book-quran', 'yayasan2/laporan-setoran-hafalan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Hafalan', 'Laporan Setoran Hafalan'],
+            ['yayasan_ibadah', 'Ruang Yayasan', 8, 'fas fa-mosque', 'yayasan2/ibadah-harian-santri.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Ibadah', 'Rekap Ibadah Harian Santri'],
+            ['yayasan_raport', 'Ruang Yayasan', 9, 'fas fa-file-invoice', 'yayasan2/rapot-pkbm.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Raport', 'Monitoring Raport PKBM'],
+            ['yayasan_kas', 'Ruang Yayasan', 10, 'fas fa-calculator', 'yayasan2/pembukuan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Kas', 'Pembukuan Terpusat Lembaga'],
+            ['yayasan_cashflow', 'Ruang Yayasan', 11, 'fas fa-funnel-dollar', 'yayasan2/pembukuan.php?tab=proyeksi', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Cashflow', 'Perencanaan & Cashflow Kas'],
+            ['yayasan_kpi', 'Ruang Yayasan', 12, 'fas fa-chart-bar', 'yayasan2/kpi.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'KPI', 'Monitoring AI & Kinerja Pegawai'],
+            ['yayasan_supervisi', 'Ruang Yayasan', 15, 'fas fa-clipboard-check', 'admin-supervisi-mengajar.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Supervisi', 'Supervisi Mengajar Asatidz'],
+            ['yayasan_gaji', 'Ruang Yayasan', 16, 'fas fa-coins', 'yayasan2/gaji-pegawai.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Gaji', 'Rekap Gaji (Payroll)'],
+            ['yayasan_tarif_gaji', 'Ruang Yayasan', 17, 'fas fa-sliders', 'yayasan2/gaji-asatidz.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Tarif', 'Pengaturan Tarif Gaji'],
+            ['yayasan_ai_hrd', 'Ruang Yayasan', 18, 'fas fa-robot', 'yayasan2/ai-agent-hrd.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'AI-HRD', 'AI Agent HRD & Personalia'],
+            ['yayasan_spp', 'Ruang Yayasan', 19, 'fas fa-file-invoice-dollar', 'yayasan2/rekap-spp.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SPP', 'Rekap Pembayaran SPP/Keuangan'],
+            ['yayasan_saku', 'Ruang Yayasan', 20, 'fas fa-wallet', 'yayasan2/rekap-uang-saku.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Saku', 'Rekap Uang Saku Santri'],
+            ['yayasan_tunjangan', 'Ruang Yayasan', 21, 'fas fa-award', 'yayasan2/tunjangan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Tunjangan', 'Pengaturan Tunjangan'],
+            ['yayasan_swot', 'Ruang Yayasan', 22, 'fas fa-chart-line', 'yayasan2/analisis-swot.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SWOT', 'Analisis SWOT & Strategi'],
+            ['yayasan_struktur', 'Ruang Yayasan', 23, 'fas fa-sitemap', 'yayasan2/struktur-jobdesc.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Struktur', 'Struktur Organisasi'],
+            ['yayasan_jobdesc', 'Ruang Yayasan', 24, 'fas fa-id-card', 'yayasan2/jobdesc.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Jobdesc', 'Job Description Pegawai'],
+            ['yayasan_peraturan', 'Ruang Yayasan', 25, 'fas fa-gavel', 'yayasan2/admin-peraturan.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'SOP', 'SOP & Peraturan Yayasan'],
+            ['yayasan_solopreneur', 'Ruang Yayasan', 26, 'fas fa-rocket', 'yayasan2/kurikulum-solopreneur.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'Solopreneur', 'Inkubator Kurikulum Solopreneur'],
+            ['yayasan_cp', 'Ruang Yayasan', 6, 'fas fa-brain', 'yayasan2/kurikulum-cp.php', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan', 'CP (AI)', 'Capaian Pembelajaran (CP) AI']
+        ];
+        foreach ($master_seed_menus as $m) {
+            list($key, $grp, $ord, $ico, $hrf, $al_roles, $sh_lbl, $fl_lbl) = $m;
+            $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('$grp', '$key', $ord, '$ico', '$hrf') ON DUPLICATE KEY UPDATE menu_group='$grp', sort_order=$ord, icon='$ico', href='$hrf'");
+            $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('$key', '$al_roles') ON DUPLICATE KEY UPDATE allowed_roles='$al_roles'");
+            $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('$key', '$fl_lbl', '$sh_lbl') ON DUPLICATE KEY UPDATE custom_label='$fl_lbl', short_label='$sh_lbl'");
+        }
+    }
 
-// Pastikan kpi_musyrif terdaftar di Frame Utama (Musyrif)
-$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
-    VALUES ('Musyrif', 'kpi_musyrif', 52, 'fas fa-chart-line', 'yayasan2/kpi-musyrif.php') 
-    ON DUPLICATE KEY UPDATE menu_group='Musyrif', icon='fas fa-chart-line', href='yayasan2/kpi-musyrif.php'");
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
-    VALUES ('kpi_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,ketua_yayasan,super_admin,kepala_sekolah') 
-    ON DUPLICATE KEY UPDATE allowed_roles = IF(allowed_roles LIKE '%musyrif%', allowed_roles, CONCAT(allowed_roles, ',musyrif,musyrifah,kepala_asrama,kepala_mahad,ketua_yayasan,super_admin,kepala_sekolah'))");
-$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
-    VALUES ('kpi_musyrif', 'KPI Musyrif Asrama', 'KPI Musyrif') 
-    ON DUPLICATE KEY UPDATE custom_label='KPI Musyrif Asrama', short_label='KPI Musyrif'");
+    // Migration KPI
+    $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('yayasan_kpi_musyrif', 'yayasan_kpi_kepsek') AND menu_group = 'Ruang Yayasan'");
 
-// Pastikan yayasan_cp terdaftar di Ruang Yayasan (Capaian Pembelajaran AI)
-$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
-    VALUES ('Ruang Yayasan', 'yayasan_cp', 6, 'fas fa-brain', 'yayasan2/kurikulum-cp.php') 
-    ON DUPLICATE KEY UPDATE menu_group='Ruang Yayasan', icon='fas fa-brain', href='yayasan2/kurikulum-cp.php'");
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
-    VALUES ('yayasan_cp', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan') 
-    ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan'");
-$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
-    VALUES ('yayasan_cp', 'Capaian Pembelajaran (CP) AI', 'CP (AI)') 
-    ON DUPLICATE KEY UPDATE custom_label='Capaian Pembelajaran (CP) AI', short_label='CP (AI)'");
-
-// Pastikan yayasan_rekap_ajar terdaftar di Ruang Yayasan (Grid Card Menu Rekap Ajar Yayasan)
-$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
-    VALUES ('Ruang Yayasan', 'yayasan_rekap_ajar', 8, 'fas fa-chalkboard-user', 'admin-kontrol-jam-kosong.php') 
-    ON DUPLICATE KEY UPDATE menu_group='Ruang Yayasan', sort_order=8, icon='fas fa-chalkboard-user', href='admin-kontrol-jam-kosong.php'");
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
-    VALUES ('yayasan_rekap_ajar', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan') 
-    ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan'");
-$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
-    VALUES ('yayasan_rekap_ajar', 'Rekap Ajar (3 Tab Validasi)', 'Rekap Ajar') 
-    ON DUPLICATE KEY UPDATE custom_label='Rekap Ajar (3 Tab Validasi)', short_label='Rekap Ajar'");
-
-// Pastikan kontrol_jam_kosong terdaftar di Menu Operasional (Grid Card Menu Rekap Ajar untuk Kepsek, Mahad, LDU)
-$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
-    VALUES ('Administrasi', 'kontrol_jam_kosong', 10, 'fas fa-chalkboard-user', 'admin-kontrol-jam-kosong.php') 
-    ON DUPLICATE KEY UPDATE menu_group='Administrasi', icon='fas fa-chalkboard-user', href='admin-kontrol-jam-kosong.php'");
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
-    VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_ldu,direktur_ldu,staff_ldu,admin_sekolah,sekretaris_sekolah,bendahara_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,super_admin,tutor,trainer,ustadz') 
-    ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_ldu,direktur_ldu,staff_ldu,admin_sekolah,sekretaris_sekolah,bendahara_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,super_admin,tutor,trainer,ustadz'");
-$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
-    VALUES ('kontrol_jam_kosong', 'Rekap Ajar (3 Tab)', 'Rekap Ajar') 
-    ON DUPLICATE KEY UPDATE custom_label='Rekap Ajar (3 Tab)', short_label='Rekap Ajar'");
-
-// Pastikan pengaturan_brosur terdaftar di Web & Marketing (Grid Card Menu Brosur)
-$chk_br = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'pengaturan_brosur'");
-if (!$chk_br || $chk_br->num_rows === 0) {
+    // KPI Kepsek
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
-        VALUES ('Web & Marketing', 'pengaturan_brosur', 3, 'fas fa-envelope-open-text', 'admin-brosur-settings.php')");
-} else {
-    $conn->query("UPDATE menu_structure SET menu_group = 'Web & Marketing', href = 'admin-brosur-settings.php', icon = 'fas fa-envelope-open-text' WHERE menu_key = 'pengaturan_brosur'");
-}
-$chk_p = $conn->query("SELECT id FROM menu_permissions WHERE menu_key = 'pengaturan_brosur'");
-if (!$chk_p || $chk_p->num_rows === 0) {
+        VALUES ('Administrasi', 'kpi_kepsek', 51, 'fas fa-chart-pie', 'yayasan2/kpi-kepala-sekolah.php') 
+        ON DUPLICATE KEY UPDATE menu_group='Administrasi', icon='fas fa-chart-pie', href='yayasan2/kpi-kepala-sekolah.php'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
-        VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah')");
-} else {
-    $conn->query("UPDATE menu_permissions SET allowed_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah' WHERE menu_key = 'pengaturan_brosur'");
+        VALUES ('kpi_kepsek', 'kepala_sekolah,ketua_yayasan,super_admin') 
+        ON DUPLICATE KEY UPDATE allowed_roles = IF(allowed_roles LIKE '%kepala_sekolah%', allowed_roles, CONCAT(allowed_roles, ',kepala_sekolah,ketua_yayasan,super_admin'))");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('kpi_kepsek', 'KPI Kepala Sekolah', 'KPI Kepsek') 
+        ON DUPLICATE KEY UPDATE custom_label='KPI Kepala Sekolah', short_label='KPI Kepsek'");
+
+    // KPI Musyrif
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+        VALUES ('Musyrif', 'kpi_musyrif', 52, 'fas fa-chart-line', 'yayasan2/kpi-musyrif.php') 
+        ON DUPLICATE KEY UPDATE menu_group='Musyrif', icon='fas fa-chart-line', href='yayasan2/kpi-musyrif.php'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+        VALUES ('kpi_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,ketua_yayasan,super_admin,kepala_sekolah') 
+        ON DUPLICATE KEY UPDATE allowed_roles = IF(allowed_roles LIKE '%musyrif%', allowed_roles, CONCAT(allowed_roles, ',musyrif,musyrifah,kepala_asrama,kepala_mahad,ketua_yayasan,super_admin,kepala_sekolah'))");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('kpi_musyrif', 'KPI Musyrif Asrama', 'KPI Musyrif') 
+        ON DUPLICATE KEY UPDATE custom_label='KPI Musyrif Asrama', short_label='KPI Musyrif'");
+
+    // Yayasan CP
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+        VALUES ('Ruang Yayasan', 'yayasan_cp', 6, 'fas fa-brain', 'yayasan2/kurikulum-cp.php') 
+        ON DUPLICATE KEY UPDATE menu_group='Ruang Yayasan', icon='fas fa-brain', href='yayasan2/kurikulum-cp.php'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+        VALUES ('yayasan_cp', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan') 
+        ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan'");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('yayasan_cp', 'Capaian Pembelajaran (CP) AI', 'CP (AI)') 
+        ON DUPLICATE KEY UPDATE custom_label='Capaian Pembelajaran (CP) AI', short_label='CP (AI)'");
+
+    // Rekap Ajar Yayasan
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+        VALUES ('Ruang Yayasan', 'yayasan_rekap_ajar', 8, 'fas fa-chalkboard-user', 'admin-kontrol-jam-kosong.php') 
+        ON DUPLICATE KEY UPDATE menu_group='Ruang Yayasan', sort_order=8, icon='fas fa-chalkboard-user', href='admin-kontrol-jam-kosong.php'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+        VALUES ('yayasan_rekap_ajar', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan') 
+        ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan'");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('yayasan_rekap_ajar', 'Rekap Ajar (3 Tab Validasi)', 'Rekap Ajar') 
+        ON DUPLICATE KEY UPDATE custom_label='Rekap Ajar (3 Tab Validasi)', short_label='Rekap Ajar'");
+
+    // Kontrol Jam Kosong
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+        VALUES ('Administrasi', 'kontrol_jam_kosong', 10, 'fas fa-chalkboard-user', 'admin-kontrol-jam-kosong.php') 
+        ON DUPLICATE KEY UPDATE menu_group='Administrasi', icon='fas fa-chalkboard-user', href='admin-kontrol-jam-kosong.php'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+        VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_ldu,direktur_ldu,staff_ldu,admin_sekolah,sekretaris_sekolah,bendahara_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,super_admin,tutor,trainer,ustadz') 
+        ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_ldu,direktur_ldu,staff_ldu,admin_sekolah,sekretaris_sekolah,bendahara_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,super_admin,tutor,trainer,ustadz'");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('kontrol_jam_kosong', 'Rekap Ajar (3 Tab)', 'Rekap Ajar') 
+        ON DUPLICATE KEY UPDATE custom_label='Rekap Ajar (3 Tab)', short_label='Rekap Ajar'");
+
+    // Pengaturan Brosur
+    $chk_br = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'pengaturan_brosur'");
+    if (!$chk_br || $chk_br->num_rows === 0) {
+        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+            VALUES ('Web & Marketing', 'pengaturan_brosur', 3, 'fas fa-envelope-open-text', 'admin-brosur-settings.php')");
+    } else {
+        $conn->query("UPDATE menu_structure SET menu_group = 'Web & Marketing', href = 'admin-brosur-settings.php', icon = 'fas fa-envelope-open-text' WHERE menu_key = 'pengaturan_brosur'");
+    }
+    $chk_p = $conn->query("SELECT id FROM menu_permissions WHERE menu_key = 'pengaturan_brosur'");
+    if (!$chk_p || $chk_p->num_rows === 0) {
+        $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+            VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah')");
+    } else {
+        $conn->query("UPDATE menu_permissions SET allowed_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah' WHERE menu_key = 'pengaturan_brosur'");
+    }
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('pengaturan_brosur', 'Pengaturan Brosur Digital', 'Brosur') 
+        ON DUPLICATE KEY UPDATE custom_label='Pengaturan Brosur Digital', short_label='Brosur'");
+} catch (Throwable $e) {
+    // Graceful error handling - log jika diperlukan
 }
-$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
-    VALUES ('pengaturan_brosur', 'Pengaturan Brosur Digital', 'Brosur') 
-    ON DUPLICATE KEY UPDATE custom_label='Pengaturan Brosur Digital', short_label='Brosur'");
 
 $db_permissions = [];
 $res_perm = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
