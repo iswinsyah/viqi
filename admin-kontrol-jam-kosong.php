@@ -215,7 +215,7 @@ for ($d = 1; $d <= $total_hari_bulan; $d++) {
 // Fetch all Guru / Ustadz
 $asatidz_list = [];
 $asatidz_map = [];
-$res_ast = $conn->query("SELECT id, nama FROM akun_ustadz ORDER BY nama ASC");
+$res_ast = $conn->query("SELECT id, nama, role FROM akun_ustadz ORDER BY nama ASC");
 if ($res_ast) {
     while ($row = $res_ast->fetch_assoc()) {
         $asatidz_list[] = $row;
@@ -234,7 +234,7 @@ if ($res_mpl) {
         
         $norm_cat = 'diknas';
         if (strpos($kat_lower, 'diniyah') !== false || strpos($kat_lower, 'tahfidz') !== false || strpos($kat_lower, 'pesantren') !== false ||
-            strpos($nm_lower, 'tahfidz') !== false || strpos($nm_lower, 'fiqih') !== false || strpos($nm_lower, 'hadits') !== false || strpos($nm_lower, 'arab') !== false || strpos($nm_lower, 'aqidah') !== false || strpos($nm_lower, 'tajwid') !== false || strpos($nm_lower, 'kitab') !== false) {
+            strpos($nm_lower, 'tahfidz') !== false || strpos($nm_lower, 'fiqih') !== false || strpos($nm_lower, 'hadits') !== false || strpos($nm_lower, 'arab') !== false || strpos($nm_lower, 'aqidah') !== false || strpos($nm_lower, 'tajwid') !== false || strpos($nm_lower, 'kitab') !== false || strpos($nm_lower, 'qur\'an') !== false || strpos($nm_lower, 'quran') !== false) {
             $norm_cat = 'diniyah';
         } elseif (strpos($kat_lower, 'solo') !== false || strpos($kat_lower, 'bisnis') !== false || strpos($kat_lower, 'entrepreneur') !== false || strpos($kat_lower, 'vokasi') !== false || strpos($kat_lower, 'trainer') !== false ||
                   strpos($nm_lower, 'solo') !== false || strpos($nm_lower, 'bisnis') !== false || strpos($nm_lower, 'marketing') !== false || strpos($nm_lower, 'coding') !== false || strpos($nm_lower, 'desain') !== false) {
@@ -258,10 +258,18 @@ $rekap_data = [
 foreach (['diknas', 'diniyah', 'solopreneur'] as $k_pilar) {
     foreach ($asatidz_list as $ast) {
         $gid = (int)$ast['id'];
+        $role_str = strtolower(trim($ast['role'] ?? ''));
+        $default_mapel = [];
+
+        // Auto-assign mapel fallback berdasarkan role akun
+        if ($k_pilar === 'diniyah' && (strpos($role_str, 'ustadz') !== false || strpos($role_str, 'tahfidz') !== false || strpos($role_str, 'diniyah') !== false)) {
+            $default_mapel[] = 'Tahfidz & Diniyah';
+        }
+
         $rekap_data[$k_pilar][$gid] = [
             'id' => $gid,
             'nama' => $ast['nama'],
-            'mapel_diampu' => [],
+            'mapel_diampu' => $default_mapel,
             'pekan_jp' => 0,
             'bulan_jp_target' => 0,
             'jurnal_jp_terisi' => 0,
