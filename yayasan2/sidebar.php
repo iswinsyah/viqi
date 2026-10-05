@@ -65,18 +65,6 @@ $y_foto = $_SESSION['foto_profil'] ?? '';
             <i class="fas fa-clock w-4 text-center"></i>
             <span>Jadwal</span>
         </a>
-        <a href="kurikulum-cp.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-            <i class="fas fa-brain w-4 text-center"></i>
-            <span>CP Kurikulum (AI)</span>
-        </a>
-        <a href="team-pengajar-ai.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-            <i class="fas fa-chalkboard-user w-4 text-center"></i>
-            <span>Team Pengajar AI</span>
-        </a>
-        <a href="../admin-kontrol-jam-kosong.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-            <i class="fas fa-clipboard-list w-4 text-center"></i>
-            <span>Rekap Ajar</span>
-        </a>
         <a href="../pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
             <i class="fas fa-bullhorn w-4 text-center"></i>
             <span>Info</span>

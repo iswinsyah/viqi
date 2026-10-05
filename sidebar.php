@@ -23,76 +23,28 @@
     <!-- SIDEBAR NAVIGATION LINKS -->
     <div class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
         <nav class="space-y-1">
-            <p class="px-2 text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-2 mt-1">Menu Utama</p>
-            <a href="admin.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-tachometer-alt w-4 text-center"></i>
-                <span>Dashboard Web</span>
+            <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-house w-4 text-center"></i>
+                <span>Beranda</span>
             </a>
-            <a href="admin-hero.php" class="<?= (isset($active_menu) && $active_menu == 'hero') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-home w-4 text-center"></i>
-                <span>Pengaturan Hero</span>
+            <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-calendar-alt w-4 text-center"></i>
+                <span>Kalender</span>
             </a>
-            <a href="admin-tentang.php" class="<?= (isset($active_menu) && $active_menu == 'tentang') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-info-circle w-4 text-center"></i>
-                <span>Tentang Kami</span>
+            <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-clock w-4 text-center"></i>
+                <span>Jadwal</span>
             </a>
-            <a href="admin-pengajar.php" class="<?= (isset($active_menu) && $active_menu == 'pengajar') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-chalkboard-teacher w-4 text-center"></i>
-                <span>Profil Pengajar</span>
-            </a>
-            <a href="admin-fasilitas.php" class="<?= (isset($active_menu) && $active_menu == 'fasilitas') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-building w-4 text-center"></i>
-                <span>Fasilitas Asrama</span>
-            </a>
-            <a href="admin-kurikulum.php" class="<?= (isset($active_menu) && $active_menu == 'kurikulum') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-book w-4 text-center"></i>
-                <span>Kurikulum</span>
-            </a>
-            <a href="admin-galeri.php" class="<?= (isset($active_menu) && $active_menu == 'galeri') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-images w-4 text-center"></i>
-                <span>Galeri Kegiatan</span>
-            </a>
-            <a href="admin-testimoni.php" class="<?= (isset($active_menu) && $active_menu == 'testimoni') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-comments w-4 text-center"></i>
-                <span>Testimoni</span>
-            </a>
-            <a href="admin-biaya.php" class="<?= (isset($active_menu) && $active_menu == 'biaya') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-money-bill-wave w-4 text-center"></i>
-                <span>Info Biaya</span>
-            </a>
-            <a href="admin-parenting.php" class="<?= (isset($active_menu) && $active_menu == 'parenting') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-calendar-check w-4 text-center"></i>
-                <span>Jadwal Parenting</span>
-            </a>
-            <a href="admin-artikel.php" class="<?= (isset($active_menu) && $active_menu == 'artikel') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-file-alt w-4 text-center"></i>
-                <span>Artikel & Blog</span>
-            </a>
-            <a href="admin-popup.php" class="<?= (isset($active_menu) && $active_menu == 'popup') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
+            <a href="pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-bullhorn w-4 text-center"></i>
-                <span>Lead Magnet</span>
-            </a>
-            <a href="admin-media.php" class="<?= (isset($active_menu) && $active_menu == 'media') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-folder-open w-4 text-center"></i>
-                <span>Penyimpanan Media</span>
-            </a>
-            <a href="admin-brosur-settings.php" class="<?= (isset($active_menu) && $active_menu == 'brosur_settings') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-envelope-open-text w-4 text-center text-amber-300"></i>
-                <span>Brosur PSB Digital</span>
-            </a>
-            <a href="admin-pengaturan.php" class="<?= (isset($active_menu) && $active_menu == 'pengaturan') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-cog w-4 text-center"></i>
-                <span>Pengaturan Web</span>
+                <span>Info</span>
             </a>
         </nav>
     </div>
 
     <!-- SIDEBAR FOOTER -->
-    <div class="p-4 border-t border-teal-700/60 space-y-2 bg-teal-900/30">
-        <a href="dashboard.php" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow transition">
-            <i class="fas fa-house"></i> Dashboard Utama
-        </a>
-        <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
+    <div class="p-4 border-t border-teal-700/60 bg-teal-900/30">
+        <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
             <i class="fas fa-arrow-right-from-bracket"></i> Keluar
         </a>
     </div>

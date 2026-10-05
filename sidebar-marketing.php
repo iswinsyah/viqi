@@ -23,75 +23,28 @@
     <!-- SIDEBAR NAVIGATION LINKS -->
     <div class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
         <nav class="space-y-1">
-            <p class="px-2 text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-2 mt-1">Analitik & Laporan</p>
-            <a href="dashboard-marketing.php" class="<?= (isset($active_menu) && $active_menu == 'dashboard_marketing') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-tachometer-alt w-4 text-center"></i>
-                <span>Dashboard Marketing</span>
+            <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-house w-4 text-center"></i>
+                <span>Beranda</span>
             </a>
-            <a href="admin-siaran-wa.php" class="<?= (isset($active_menu) && $active_menu == 'siaran_wa') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-broadcast-tower w-4 text-center"></i>
-                <span>Siaran WA Mitra</span>
+            <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-calendar-alt w-4 text-center"></i>
+                <span>Kalender</span>
             </a>
-            <a href="data-pipeline.php" class="<?= (isset($active_menu) && $active_menu == 'pipeline') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-filter w-4 text-center"></i>
-                <span>Pipeline Prospek</span>
+            <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-clock w-4 text-center"></i>
+                <span>Jadwal</span>
             </a>
-            <a href="data-agen.php" class="<?= (isset($active_menu) && $active_menu == 'agen') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-users w-4 text-center"></i>
-                <span>Data Agen</span>
-            </a>
-            <a href="admin-spmb.php" class="<?= (isset($active_menu) && $active_menu == 'spmb') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-user-graduate w-4 text-center"></i>
-                <span>Data Pendaftar SPMB</span>
-            </a>
-
-            <p class="px-2 text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-2 mt-6">Kecerdasan Buatan (AI)</p>
-            <a href="admin-ai-hub.php" class="<?= (isset($active_menu) && $active_menu == 'ai-hub') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-robot w-4 text-center"></i>
-                <span>Pusat Kendali AI</span>
-            </a>
-            <a href="admin-analisa.php" class="<?= (isset($active_menu) && $active_menu == 'analisa') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-brain w-4 text-center"></i>
-                <span>Analisa Persona</span>
-            </a>
-            <a href="admin-trend-scout.php" class="<?= (isset($active_menu) && $active_menu == 'trend_scout') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-chart-line w-4 text-center"></i>
-                <span>Trend Scout</span>
-            </a>
-            <a href="admin-community-scout.php" class="<?= (isset($active_menu) && $active_menu == 'community_scout') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-search-location w-4 text-center"></i>
-                <span>Community Scout</span>
-            </a>
-            <a href="admin-kalender.php" class="<?= (isset($active_menu) && $active_menu == 'kalender') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-search-dollar w-4 text-center"></i>
-                <span>Hook & Keyword</span>
-            </a>
-            <a href="admin-seo.php" class="<?= (isset($active_menu) && $active_menu == 'seo') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-pen-nib w-4 text-center"></i>
-                <span>Penulis Artikel SEO</span>
-            </a>
-            <a href="admin-publisher.php" class="<?= (isset($active_menu) && $active_menu == 'publisher') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-paper-plane w-4 text-center"></i>
-                <span>Publisher</span>
-            </a>
-
-            <p class="px-2 text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-2 mt-6">Sosmed Workflow</p>
-            <a href="admin-sosmed-workflow.php" class="<?= (isset($active_menu) && $active_menu == 'sosmed_workflow') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition">
-                <i class="fas fa-route w-4 text-center"></i>
-                <span>Pusat Kendali Sosmed</span>
+            <a href="pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-bullhorn w-4 text-center"></i>
+                <span>Info</span>
             </a>
         </nav>
     </div>
 
     <!-- SIDEBAR FOOTER -->
-    <div class="p-4 border-t border-teal-700/60 space-y-2 bg-teal-900/30">
-        <a href="dashboard.php" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-teal-950 font-black text-xs shadow transition">
-            <i class="fas fa-house"></i> Dashboard Utama
-        </a>
-        <a href="admin.php" class="flex items-center justify-center text-xs font-semibold text-teal-200 hover:text-white transition-all py-1">
-            <i class="fas fa-globe mr-1.5"></i> Ke Ruang Web
-        </a>
-        <a href="logout.php" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
+    <div class="p-4 border-t border-teal-700/60 bg-teal-900/30">
+        <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
             <i class="fas fa-arrow-right-from-bracket"></i> Keluar
         </a>
     </div>

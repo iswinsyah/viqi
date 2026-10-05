@@ -1005,13 +1005,6 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 <i class="fas fa-bullhorn w-4 text-center"></i>
                 <span>Info</span>
             </a>
-            <?php if ($is_yayasan_pengurus): ?>
-            <a href="yayasan2/manajemen-menu.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-amber-400/20 text-amber-200 hover:bg-amber-400/30 hover:text-white font-bold transition border border-amber-300/30 mt-1">
-                <i class="fas fa-sliders w-4 text-center text-amber-300"></i>
-                <span>Manajemen Menu</span>
-            </a>
-            <?php endif; ?>
-
         </nav>
 
         <!-- SIDEBAR FOOTER: LOGOUT -->
