@@ -143,6 +143,7 @@ if ($conn) {
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_admin_sekolah', 'admin_sekolah')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('salary_admin', 'admin_sekolah')");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin') ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah') ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah'");
 }
 
 // Load custom menu labels from database
@@ -363,7 +364,8 @@ if ($res_db_struct) {
             'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
             'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)',
             'manajemen_elearning' => 'E-Modul & Flipbook Belajar',
-            'prota_promes' => 'Pekan Efektif, Prota & Promes'
+            'prota_promes' => 'Pekan Efektif, Prota & Promes',
+            'pengaturan_brosur' => 'Pengaturan Brosur Digital'
         ];
         
         $title = $default_titles[$key] ?? ucwords(str_replace('_', ' ', $key));

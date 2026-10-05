@@ -291,7 +291,16 @@ $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles)
     ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_ldu,direktur_ldu,staff_ldu,admin_sekolah,sekretaris_sekolah,bendahara_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,super_admin,tutor,trainer,ustadz'");
 $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
     VALUES ('kontrol_jam_kosong', 'Rekap Ajar (3 Tab)', 'Rekap Ajar') 
-    ON DUPLICATE KEY UPDATE custom_label='Rekap Ajar (3 Tab)', short_label='Rekap Ajar'");
+// Pastikan pengaturan_brosur terdaftar di Menu Operasional & Yayasan (Grid Card Menu Brosur)
+$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+    VALUES ('Administrasi', 'pengaturan_brosur', 15, 'fas fa-envelope-open-text', 'admin-brosur-settings.php') 
+    ON DUPLICATE KEY UPDATE menu_group='Administrasi', icon='fas fa-envelope-open-text', href='admin-brosur-settings.php'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+    VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah') 
+    ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah'");
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('pengaturan_brosur', 'Pengaturan Brosur Digital', 'Brosur') 
+    ON DUPLICATE KEY UPDATE custom_label='Pengaturan Brosur Digital', short_label='Brosur'");
 
 $db_permissions = [];
 $res_perm = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
@@ -369,6 +378,8 @@ $default_1word_labels = [
     'jadwal_rapat'       => 'Rapat',
     'salary_admin'       => 'Salary Admin',
     'manajemen_elearning'=> 'E-Learning Guru',
+    'pengaturan_brosur'  => 'Brosur',
+    'brosur_settings'    => 'Brosur',
     'ruang_web'          => 'Web Admin',
     'ruang_marketing'    => 'Marketing' 
 ];
