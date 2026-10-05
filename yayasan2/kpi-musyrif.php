@@ -586,12 +586,12 @@ $active_menu = 'kpi_musyrif';
                         
                         <?php if ($is_pimpinan): ?>
                             <div class="space-y-2.5">
-                                <button type="button" id="btn-analisa-kpi" class="w-full bg-amber-800 hover:bg-amber-900 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-sm transition inline-flex items-center justify-center gap-2">
-                                    <i class="fas fa-magic"></i> <?= !empty($saved_eval['evaluasi_ai']) ? 'Generate Ulang Evaluasi AI' : 'Evaluasi Kinerja Musyrif' ?>
+                                <button type="button" id="btn-analisa-kpi" class="w-full bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white font-bold py-3 px-4 rounded-xl text-xs shadow-md transition inline-flex items-center justify-center gap-2">
+                                    <i class="fas fa-magic"></i> <span id="label-btn-analisa"><?= !empty($saved_eval['evaluasi_ai']) ? 'Generate Ulang Evaluasi AI' : 'Evaluasi Kinerja Musyrif' ?></span>
                                 </button>
                                 
-                                <button type="button" id="btn-simpan-evaluasi" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md transition inline-flex items-center justify-center gap-2 <?= empty($saved_eval['evaluasi_ai']) ? 'hidden' : '' ?>">
-                                    <i class="fas fa-save"></i> Simpan Hasil Evaluasi
+                                <button type="button" id="btn-simpan-evaluasi" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold py-3 px-4 rounded-xl text-xs shadow-md transition inline-flex items-center justify-center gap-2">
+                                    <i class="fas fa-save"></i> <span>Simpan Hasil Evaluasi</span>
                                 </button>
                             </div>
 
@@ -773,7 +773,7 @@ Gunakan gaya bahasa yang formal, bijak, mendalam, dan inspiratif untuk membantu 
         if (btnSimpan) {
             btnSimpan.addEventListener('click', function() {
                 if (!currentEvaluasiMarkdown || currentEvaluasiMarkdown.trim() === '') {
-                    showToast('Belum ada evaluasi yang di-generate.', false);
+                    showToast('Silakan klik tombol "Evaluasi Kinerja Musyrif" terlebih dahulu untuk menghasilkan laporan AI sebelum menyimpan.', false);
                     return;
                 }
 
@@ -798,7 +798,7 @@ Gunakan gaya bahasa yang formal, bijak, mendalam, dan inspiratif untuk membantu 
                 .then(res => res.json())
                 .then(data => {
                     btnSimpan.disabled = false;
-                    btnSimpan.innerHTML = '<i class="fas fa-save"></i> Simpan Hasil Evaluasi';
+                    btnSimpan.innerHTML = '<i class="fas fa-save"></i> <span>Simpan Hasil Evaluasi</span>';
                     
                     if (data.status === 'success') {
                         showToast(data.message, true);
@@ -810,8 +810,9 @@ Gunakan gaya bahasa yang formal, bijak, mendalam, dan inspiratif untuk membantu 
                                 statusMeta.innerText = `Disimpan oleh: ${data.saved_by} (${data.updated_at})`;
                             }
                         }
-                        if (btnAnalisa) {
-                            btnAnalisa.innerHTML = '<i class="fas fa-magic"></i> Generate Ulang Evaluasi AI';
+                        const labelAnalisa = document.getElementById('label-btn-analisa');
+                        if (labelAnalisa) {
+                            labelAnalisa.innerText = 'Generate Ulang Evaluasi AI';
                         }
                     } else {
                         showToast(data.message, false);
@@ -820,7 +821,7 @@ Gunakan gaya bahasa yang formal, bijak, mendalam, dan inspiratif untuk membantu 
                 .catch(err => {
                     console.error(err);
                     btnSimpan.disabled = false;
-                    btnSimpan.innerHTML = '<i class="fas fa-save"></i> Simpan Hasil Evaluasi';
+                    btnSimpan.innerHTML = '<i class="fas fa-save"></i> <span>Simpan Hasil Evaluasi</span>';
                     showToast('Terjadi kesalahan saat menyimpan evaluasi.', false);
                 });
             });
