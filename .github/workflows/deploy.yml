@@ -15,8 +15,22 @@ jobs:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
     
-    - name: 📂 Sync files to Hostinger via SFTP
+    - name: 📂 Sync files to Hostinger (villaquranbaronmalang.com)
       uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+      continue-on-error: true
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: 65002
+        local_path: './'
+        remote_path: 'domains/villaquranbaronmalang.com/public_html'
+        sftpArgs: '-o ConnectTimeout=30'
+        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents'
+
+    - name: 📂 Sync files to Hostinger (villaquranindonesia.com)
+      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+      continue-on-error: true
       with:
         server: ${{ secrets.FTP_SERVER }}
         username: ${{ secrets.FTP_USERNAME }}
@@ -24,5 +38,18 @@ jobs:
         port: 65002
         local_path: './'
         remote_path: 'domains/villaquranindonesia.com/public_html'
+        sftpArgs: '-o ConnectTimeout=30'
+        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents'
+
+    - name: 📂 Sync files to Hostinger Root (public_html)
+      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+      continue-on-error: true
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        port: 65002
+        local_path: './'
+        remote_path: 'public_html'
         sftpArgs: '-o ConnectTimeout=30'
         rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents'
