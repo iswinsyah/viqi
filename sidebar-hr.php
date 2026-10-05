@@ -204,7 +204,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
 // Pembersihan paksa untuk penggabungan menu KPI, Akunku, Jurnal Mengajar, Santri Tidak Masuk, Duplikat E-Modul/Hafalan & Rekap KBM Lama
 $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz', 'rekap_kbm')");
 $conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'hafalan', 'rekap_kbm')");
-$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'rekap_kbm')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'rekap_kbm', 'kontrol_jam_kosong')");
 
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
@@ -222,6 +222,15 @@ if ($res_chk_rapat && $res_chk_rapat->num_rows === 0) {
     $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
     $new_ord = $max_ord + 1;
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'jadwal_rapat', $new_ord, 'fa-handshake', 'admin-jadwal-rapat.php')");
+}
+
+// Pastikan menu 'kontrol_jam_kosong' (Rekap Ajar) terdaftar jika belum ada (Self-Healing)
+$res_chk_rekap = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kontrol_jam_kosong'");
+if ($res_chk_rekap && $res_chk_rekap->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure WHERE menu_group = 'Administrasi'");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'kontrol_jam_kosong', $new_ord, 'fa-chalkboard-user', 'admin-kontrol-jam-kosong.php')");
 }
 
 // Cek apakah data sudah ada
@@ -324,7 +333,7 @@ if ($res_db_struct) {
             'uangsaku' => 'Saldo Uang Saku Santri',
             'rekap_uang_saku' => 'Validasi Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
-            'kontrol_jam_kosong' => 'Rekap Ajar (3 Tab)',
+            'kontrol_jam_kosong' => 'Rekap Ajar',
             'kpi_admin_sekolah' => 'KPI Admin Sekolah',
             'salary_admin' => 'Salary Admin Sekolah',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',

@@ -232,7 +232,7 @@ if ($res_db_menus) {
             'uangsaku' => 'Saldo Uang Saku Santri',
             'rekap_uang_saku' => 'Validasi Uang Saku',
             'sekolah_pembukuan' => 'Buku Kas Sekolah',
-            'kontrol_jam_kosong' => 'Rekap Jam Mengajar & Jam Kosong',
+            'kontrol_jam_kosong' => 'Rekap Ajar',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',
             'kalender_akademik' => 'Kalender Akademik',
             'jadwal_pelajaran' => 'Jadwal Pelajaran',
