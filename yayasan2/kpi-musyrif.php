@@ -377,7 +377,7 @@ if ($staf) {
                 $sid = (int)$s['id'];
                 $s_nama = !empty($s['nama_lengkap']) ? $s['nama_lengkap'] : ('Santri #' . $sid);
                 
-                // 1. Ibadah Santri Bulan Ini
+                // 1. Ibadah Santri Bulan Ini & Rincian Lengkap (Wajib, Sunnah, Puasa)
                 $res_ib_s = $conn->query("
                     SELECT COUNT(*) as total_hari,
                            AVG(
@@ -403,7 +403,20 @@ if ($staf) {
                                    THEN 1 
                                    ELSE 0 
                                END
-                           ) as sholat_5_jamaah
+                           ) as sholat_5_jamaah,
+                           SUM(CASE WHEN LOWER(sholat_subuh) LIKE '%jamaah%' OR LOWER(sholat_subuh) LIKE '%masjid%' OR LOWER(sholat_subuh) LIKE '%mushola%' OR LOWER(sholat_subuh) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as subuh_jamaah,
+                           SUM(CASE WHEN LOWER(sholat_dhuhur) LIKE '%jamaah%' OR LOWER(sholat_dhuhur) LIKE '%masjid%' OR LOWER(sholat_dhuhur) LIKE '%mushola%' OR LOWER(sholat_dhuhur) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as dhuhur_jamaah,
+                           SUM(CASE WHEN LOWER(sholat_ashar) LIKE '%jamaah%' OR LOWER(sholat_ashar) LIKE '%masjid%' OR LOWER(sholat_ashar) LIKE '%mushola%' OR LOWER(sholat_ashar) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as ashar_jamaah,
+                           SUM(CASE WHEN LOWER(sholat_maghrib) LIKE '%jamaah%' OR LOWER(sholat_maghrib) LIKE '%masjid%' OR LOWER(sholat_maghrib) LIKE '%mushola%' OR LOWER(sholat_maghrib) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as maghrib_jamaah,
+                           SUM(CASE WHEN LOWER(sholat_isya) LIKE '%jamaah%' OR LOWER(sholat_isya) LIKE '%masjid%' OR LOWER(sholat_isya) LIKE '%mushola%' OR LOWER(sholat_isya) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as isya_jamaah,
+                           SUM(CASE WHEN LOWER(sholat_subuh) LIKE '%munfarid%' THEN 1 ELSE 0 END + CASE WHEN LOWER(sholat_dhuhur) LIKE '%munfarid%' THEN 1 ELSE 0 END + CASE WHEN LOWER(sholat_ashar) LIKE '%munfarid%' THEN 1 ELSE 0 END + CASE WHEN LOWER(sholat_maghrib) LIKE '%munfarid%' THEN 1 ELSE 0 END + CASE WHEN LOWER(sholat_isya) LIKE '%munfarid%' THEN 1 ELSE 0 END) as total_munfarid,
+                           SUM(CASE WHEN is_haid = 1 OR LOWER(sholat_subuh) LIKE '%udzur%' OR LOWER(sholat_dhuhur) LIKE '%udzur%' OR LOWER(sholat_ashar) LIKE '%udzur%' OR LOWER(sholat_maghrib) LIKE '%udzur%' OR LOWER(sholat_isya) LIKE '%udzur%' THEN 1 ELSE 0 END) as total_udzur,
+                           SUM(CASE WHEN sholat_tahajud = 1 THEN 1 ELSE 0 END) as tahajud_cnt,
+                           SUM(CASE WHEN sholat_witir = 1 THEN 1 ELSE 0 END) as witir_cnt,
+                           SUM(CASE WHEN sholat_dhuha = 1 THEN 1 ELSE 0 END) as dhuha_cnt,
+                           SUM(COALESCE(sholat_qobliyah_subuh, 0) + COALESCE(sholat_qobli_dhuhur, 0) + COALESCE(sholat_bakdiyah_dhuhur, 0) + COALESCE(sholat_qobliyah_ashar, 0) + COALESCE(sholat_bakdiyah_maghrib, 0) + COALESCE(sholat_qobliyah_isya, 0) + COALESCE(sholat_bakdiyah_isya, 0)) as rawatib_cnt,
+                           SUM(CASE WHEN puasa_senin = 1 THEN 1 ELSE 0 END) as puasa_senin_cnt,
+                           SUM(CASE WHEN puasa_kamis = 1 THEN 1 ELSE 0 END) as puasa_kamis_cnt
                     FROM ibadah_harian_santri
                     WHERE santri_id = $sid AND (tanggal BETWEEN '$start_date' AND '$end_date' OR (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year) OR (MONTH(created_at) = $selected_month AND YEAR(created_at) = $selected_year))
                 ");
@@ -411,6 +424,20 @@ if ($staf) {
                 $total_hari_ib = (int)($data_ib_s['total_hari'] ?? 0);
                 $rata_ibadah = round((float)($data_ib_s['rata_persen'] ?? 0), 1);
                 $jamaah_5 = (int)($data_ib_s['sholat_5_jamaah'] ?? 0);
+
+                $subuh_jamaah = (int)($data_ib_s['subuh_jamaah'] ?? 0);
+                $dhuhur_jamaah = (int)($data_ib_s['dhuhur_jamaah'] ?? 0);
+                $ashar_jamaah = (int)($data_ib_s['ashar_jamaah'] ?? 0);
+                $maghrib_jamaah = (int)($data_ib_s['maghrib_jamaah'] ?? 0);
+                $isya_jamaah = (int)($data_ib_s['isya_jamaah'] ?? 0);
+                $total_munfarid = (int)($data_ib_s['total_munfarid'] ?? 0);
+                $total_udzur = (int)($data_ib_s['total_udzur'] ?? 0);
+                $tahajud_cnt = (int)($data_ib_s['tahajud_cnt'] ?? 0);
+                $witir_cnt = (int)($data_ib_s['witir_cnt'] ?? 0);
+                $dhuha_cnt = (int)($data_ib_s['dhuha_cnt'] ?? 0);
+                $rawatib_cnt = (int)($data_ib_s['rawatib_cnt'] ?? 0);
+                $puasa_senin_cnt = (int)($data_ib_s['puasa_senin_cnt'] ?? 0);
+                $puasa_kamis_cnt = (int)($data_ib_s['puasa_kamis_cnt'] ?? 0);
 
                 // Fallback jika belum ada data di bulan aktif, cek data historis santri
                 if ($total_hari_ib == 0) {
@@ -439,7 +466,20 @@ if ($staf) {
                                        THEN 1 
                                        ELSE 0 
                                    END
-                               ) as sholat_5_jamaah
+                               ) as sholat_5_jamaah,
+                               SUM(CASE WHEN LOWER(sholat_subuh) LIKE '%jamaah%' OR LOWER(sholat_subuh) LIKE '%masjid%' OR LOWER(sholat_subuh) LIKE '%mushola%' OR LOWER(sholat_subuh) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as subuh_jamaah,
+                               SUM(CASE WHEN LOWER(sholat_dhuhur) LIKE '%jamaah%' OR LOWER(sholat_dhuhur) LIKE '%masjid%' OR LOWER(sholat_dhuhur) LIKE '%mushola%' OR LOWER(sholat_dhuhur) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as dhuhur_jamaah,
+                               SUM(CASE WHEN LOWER(sholat_ashar) LIKE '%jamaah%' OR LOWER(sholat_ashar) LIKE '%masjid%' OR LOWER(sholat_ashar) LIKE '%mushola%' OR LOWER(sholat_ashar) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as ashar_jamaah,
+                               SUM(CASE WHEN LOWER(sholat_maghrib) LIKE '%jamaah%' OR LOWER(sholat_maghrib) LIKE '%masjid%' OR LOWER(sholat_maghrib) LIKE '%mushola%' OR LOWER(sholat_maghrib) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as maghrib_jamaah,
+                               SUM(CASE WHEN LOWER(sholat_isya) LIKE '%jamaah%' OR LOWER(sholat_isya) LIKE '%masjid%' OR LOWER(sholat_isya) LIKE '%mushola%' OR LOWER(sholat_isya) LIKE '%berjamaah%' THEN 1 ELSE 0 END) as isya_jamaah,
+                               SUM(CASE WHEN LOWER(sholat_subuh) LIKE '%munfarid%' THEN 1 ELSE 0 END + CASE WHEN LOWER(sholat_dhuhur) LIKE '%munfarid%' THEN 1 ELSE 0 END + CASE WHEN LOWER(sholat_ashar) LIKE '%munfarid%' THEN 1 ELSE 0 END + CASE WHEN LOWER(sholat_maghrib) LIKE '%munfarid%' THEN 1 ELSE 0 END + CASE WHEN LOWER(sholat_isya) LIKE '%munfarid%' THEN 1 ELSE 0 END) as total_munfarid,
+                               SUM(CASE WHEN is_haid = 1 OR LOWER(sholat_subuh) LIKE '%udzur%' OR LOWER(sholat_dhuhur) LIKE '%udzur%' OR LOWER(sholat_ashar) LIKE '%udzur%' OR LOWER(sholat_maghrib) LIKE '%udzur%' OR LOWER(sholat_isya) LIKE '%udzur%' THEN 1 ELSE 0 END) as total_udzur,
+                               SUM(CASE WHEN sholat_tahajud = 1 THEN 1 ELSE 0 END) as tahajud_cnt,
+                               SUM(CASE WHEN sholat_witir = 1 THEN 1 ELSE 0 END) as witir_cnt,
+                               SUM(CASE WHEN sholat_dhuha = 1 THEN 1 ELSE 0 END) as dhuha_cnt,
+                               SUM(COALESCE(sholat_qobliyah_subuh, 0) + COALESCE(sholat_qobli_dhuhur, 0) + COALESCE(sholat_bakdiyah_dhuhur, 0) + COALESCE(sholat_qobliyah_ashar, 0) + COALESCE(sholat_bakdiyah_maghrib, 0) + COALESCE(sholat_qobliyah_isya, 0) + COALESCE(sholat_bakdiyah_isya, 0)) as rawatib_cnt,
+                               SUM(CASE WHEN puasa_senin = 1 THEN 1 ELSE 0 END) as puasa_senin_cnt,
+                               SUM(CASE WHEN puasa_kamis = 1 THEN 1 ELSE 0 END) as puasa_kamis_cnt
                         FROM ibadah_harian_santri
                         WHERE santri_id = $sid
                     ");
@@ -449,6 +489,19 @@ if ($staf) {
                             $total_hari_ib = (int)$fb_data['total_hari'];
                             $rata_ibadah = round((float)($fb_data['rata_persen'] ?? 0), 1);
                             $jamaah_5 = (int)($fb_data['sholat_5_jamaah'] ?? 0);
+                            $subuh_jamaah = (int)($fb_data['subuh_jamaah'] ?? 0);
+                            $dhuhur_jamaah = (int)($fb_data['dhuhur_jamaah'] ?? 0);
+                            $ashar_jamaah = (int)($fb_data['ashar_jamaah'] ?? 0);
+                            $maghrib_jamaah = (int)($fb_data['maghrib_jamaah'] ?? 0);
+                            $isya_jamaah = (int)($fb_data['isya_jamaah'] ?? 0);
+                            $total_munfarid = (int)($fb_data['total_munfarid'] ?? 0);
+                            $total_udzur = (int)($fb_data['total_udzur'] ?? 0);
+                            $tahajud_cnt = (int)($fb_data['tahajud_cnt'] ?? 0);
+                            $witir_cnt = (int)($fb_data['witir_cnt'] ?? 0);
+                            $dhuha_cnt = (int)($fb_data['dhuha_cnt'] ?? 0);
+                            $rawatib_cnt = (int)($fb_data['rawatib_cnt'] ?? 0);
+                            $puasa_senin_cnt = (int)($fb_data['puasa_senin_cnt'] ?? 0);
+                            $puasa_kamis_cnt = (int)($fb_data['puasa_kamis_cnt'] ?? 0);
                         }
                     }
                 }
@@ -513,6 +566,20 @@ if ($staf) {
                     'total_hari_ib' => $total_hari_ib,
                     'rata_ibadah' => $rata_ibadah,
                     'jamaah_5' => $jamaah_5,
+                    'subuh_jamaah' => $subuh_jamaah,
+                    'dhuhur_jamaah' => $dhuhur_jamaah,
+                    'ashar_jamaah' => $ashar_jamaah,
+                    'maghrib_jamaah' => $maghrib_jamaah,
+                    'isya_jamaah' => $isya_jamaah,
+                    'total_munfarid' => $total_munfarid,
+                    'total_udzur' => $total_udzur,
+                    'tahajud_cnt' => $tahajud_cnt,
+                    'witir_cnt' => $witir_cnt,
+                    'dhuha_cnt' => $dhuha_cnt,
+                    'rawatib_cnt' => $rawatib_cnt,
+                    'puasa_senin_cnt' => $puasa_senin_cnt,
+                    'puasa_kamis_cnt' => $puasa_kamis_cnt,
+                    'total_puasa' => ($puasa_senin_cnt + $puasa_kamis_cnt),
                     'total_setoran' => $total_setoran_bln,
                     'mutqin_cnt' => $mutqin_cnt,
                     'last_haf' => $last_haf,
@@ -871,17 +938,92 @@ $active_menu = 'kpi_musyrif';
                                             <span class="text-[10px] text-slate-400"><?= htmlspecialchars($sb['jenjang']) ?></span>
                                         </td>
                                         <td class="py-3 px-3">
-                                            <div class="w-36">
-                                                <div class="flex items-center justify-between text-[11px] mb-1">
-                                                    <span class="font-bold text-slate-700"><?= $sb['rata_ibadah'] ?>%</span>
-                                                    <span class="text-[9px] px-1.5 py-0.5 rounded border font-semibold <?= $ib_badge ?>">
-                                                        <?= $sb['rata_ibadah'] >= 85 ? 'Mumtaz' : ($sb['rata_ibadah'] >= 70 ? 'Jayyid' : 'Perlu Bimbingan') ?>
-                                                    </span>
+                                            <div class="min-w-[220px] max-w-[260px] space-y-2">
+                                                <!-- Total Compliance & Progress Bar -->
+                                                <div>
+                                                    <div class="flex items-center justify-between text-[11px] mb-1">
+                                                        <span class="font-bold text-slate-800 flex items-center gap-1">
+                                                            <i class="fas fa-chart-line text-emerald-600"></i> <?= $sb['rata_ibadah'] ?>%
+                                                        </span>
+                                                        <span class="text-[9px] px-1.5 py-0.5 rounded border font-semibold <?= $ib_badge ?>">
+                                                            <?= $sb['rata_ibadah'] >= 85 ? 'Mumtaz' : ($sb['rata_ibadah'] >= 70 ? 'Jayyid' : 'Perlu Bimbingan') ?>
+                                                        </span>
+                                                    </div>
+                                                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                                        <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: <?= min(100, $sb['rata_ibadah']) ?>%"></div>
+                                                    </div>
                                                 </div>
-                                                <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                                    <div class="bg-emerald-500 h-full rounded-full" style="width: <?= min(100, $sb['rata_ibadah']) ?>%"></div>
+
+                                                <!-- 1. Sholat Wajib Breakdown -->
+                                                <div class="bg-slate-50/90 p-1.5 rounded-lg border border-slate-200/80 text-[10px]">
+                                                    <div class="flex items-center justify-between font-semibold text-slate-700 mb-1">
+                                                        <span class="flex items-center gap-1 text-emerald-800">
+                                                            <i class="fas fa-mosque text-emerald-600 text-[10px]"></i> Sholat Wajib:
+                                                        </span>
+                                                        <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100/70 px-1 py-0.2 rounded">
+                                                            5 Waktu: <?= $sb['jamaah_5'] ?> hr
+                                                        </span>
+                                                    </div>
+                                                    <div class="grid grid-cols-5 gap-0.5 text-center text-[9px] font-medium">
+                                                        <div class="bg-white py-0.5 px-0.5 rounded border border-slate-100" title="Subuh Jamaah">
+                                                            <span class="text-slate-400 block text-[8px]">Sbh</span>
+                                                            <strong class="text-slate-800"><?= $sb['subuh_jamaah'] ?></strong>
+                                                        </div>
+                                                        <div class="bg-white py-0.5 px-0.5 rounded border border-slate-100" title="Dhuhur Jamaah">
+                                                            <span class="text-slate-400 block text-[8px]">Dhr</span>
+                                                            <strong class="text-slate-800"><?= $sb['dhuhur_jamaah'] ?></strong>
+                                                        </div>
+                                                        <div class="bg-white py-0.5 px-0.5 rounded border border-slate-100" title="Ashar Jamaah">
+                                                            <span class="text-slate-400 block text-[8px]">Ash</span>
+                                                            <strong class="text-slate-800"><?= $sb['ashar_jamaah'] ?></strong>
+                                                        </div>
+                                                        <div class="bg-white py-0.5 px-0.5 rounded border border-slate-100" title="Maghrib Jamaah">
+                                                            <span class="text-slate-400 block text-[8px]">Mgh</span>
+                                                            <strong class="text-slate-800"><?= $sb['maghrib_jamaah'] ?></strong>
+                                                        </div>
+                                                        <div class="bg-white py-0.5 px-0.5 rounded border border-slate-100" title="Isya Jamaah">
+                                                            <span class="text-slate-400 block text-[8px]">Isy</span>
+                                                            <strong class="text-slate-800"><?= $sb['isya_jamaah'] ?></strong>
+                                                        </div>
+                                                    </div>
+                                                    <?php if ($sb['total_munfarid'] > 0 || $sb['total_udzur'] > 0): ?>
+                                                        <div class="flex items-center gap-1.5 mt-1 text-[8.5px] text-slate-500">
+                                                            <?php if ($sb['total_munfarid'] > 0): ?>
+                                                                <span class="text-amber-700 bg-amber-50 px-1 rounded">Munfarid: <?= $sb['total_munfarid'] ?>x</span>
+                                                            <?php endif; ?>
+                                                            <?php if ($sb['total_udzur'] > 0): ?>
+                                                                <span class="text-purple-700 bg-purple-50 px-1 rounded">Udzur/Haid: <?= $sb['total_udzur'] ?>x</span>
+                                                            <?php endif; ?>
+                                                        </div>
+                                                    <?php endif; ?>
                                                 </div>
-                                                <span class="text-[9px] text-slate-400 block mt-0.5">Shalat 5 Waktu Jamaah: <strong><?= $sb['jamaah_5'] ?> hari</strong></span>
+
+                                                <!-- 2. Sholat Sunnah & Puasa Pills -->
+                                                <div class="grid grid-cols-2 gap-1 text-[9.5px]">
+                                                    <div class="bg-amber-50/70 border border-amber-200/60 p-1 rounded-md text-amber-900" title="Tahajud: <?= $sb['tahajud_cnt'] ?>, Witir: <?= $sb['witir_cnt'] ?>, Dhuha: <?= $sb['dhuha_cnt'] ?>, Rawatib: <?= $sb['rawatib_cnt'] ?>">
+                                                        <div class="font-bold flex items-center gap-0.5 text-[8.5px] text-amber-800 uppercase tracking-tight">
+                                                            <i class="fas fa-moon text-amber-600"></i> Sunnah:
+                                                        </div>
+                                                        <div class="text-[9px] font-semibold text-slate-700 mt-0.5 leading-tight">
+                                                            Qiyam: <strong><?= $sb['tahajud_cnt'] ?></strong> | Dhuha: <strong><?= $sb['dhuha_cnt'] ?></strong>
+                                                        </div>
+                                                    </div>
+                                                    <div class="bg-emerald-50/70 border border-emerald-200/60 p-1 rounded-md text-emerald-900" title="Senin: <?= $sb['puasa_senin_cnt'] ?>, Kamis: <?= $sb['puasa_kamis_cnt'] ?>">
+                                                        <div class="font-bold flex items-center gap-0.5 text-[8.5px] text-emerald-800 uppercase tracking-tight">
+                                                            <i class="fas fa-leaf text-emerald-600"></i> Puasa:
+                                                        </div>
+                                                        <div class="text-[9px] font-semibold text-slate-700 mt-0.5 leading-tight">
+                                                            <strong><?= $sb['total_puasa'] ?> hr</strong> <span class="text-slate-400 text-[8px]">(Sn:<?= $sb['puasa_senin_cnt'] ?>, Km:<?= $sb['puasa_kamis_cnt'] ?>)</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Button Rincian Modal -->
+                                                <button type="button" 
+                                                        onclick="openDetailIbadahModal(<?= htmlspecialchars(json_encode($sb), ENT_QUOTES, 'UTF-8') ?>)"
+                                                        class="w-full py-1 px-2 bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 text-[9.5px] font-semibold rounded border border-slate-200 shadow-2xs flex items-center justify-center gap-1 transition">
+                                                    <i class="fas fa-list-check text-amber-600"></i> Rincian Ibadah Lengkap
+                                                </button>
                                             </div>
                                         </td>
                                         <td class="py-3 px-3">
@@ -935,7 +1077,13 @@ $active_menu = 'kpi_musyrif';
                                                 <?php 
                                                     $clean_wa = preg_replace('/[^0-9]/', '', $sb['nomor_wa']);
                                                     if (substr($clean_wa, 0, 1) === '0') $clean_wa = '62' . substr($clean_wa, 1);
-                                                    $wa_msg = urlencode("Assalamu'alaikum Warahmatullah Bapak/Ibu {$sb['nama_ortu']}, kami dari Musyrif Villa Quran ingin mengabarkan perkembangan ananda {$sb['nama']}. Skor kepatuhan ibadah: {$sb['rata_ibadah']}%, total setoran hafalan: {$sb['total_setoran']}x bulan ini.");
+                                                    $wa_msg = urlencode("Assalamu'alaikum Warahmatullah Bapak/Ibu {$sb['nama_ortu']}, kami dari Musyrif Villa Quran ingin mengabarkan perkembangan ananda {$sb['nama']} (Bulan {$bulan_nama} {$selected_year}):\n" .
+                                                        "1. Kepatuhan Ibadah: {$sb['rata_ibadah']}%\n" .
+                                                        "2. Sholat 5 Waktu Jamaah: {$sb['jamaah_5']} hari\n" .
+                                                        "3. Sholat Sunnah: Tahajud ({$sb['tahajud_cnt']}x), Dhuha ({$sb['dhuha_cnt']}x), Rawatib ({$sb['rawatib_cnt']}x)\n" .
+                                                        "4. Puasa Sunnah: {$sb['total_puasa']} hari (Senin: {$sb['puasa_senin_cnt']}x, Kamis: {$sb['puasa_kamis_cnt']}x)\n" .
+                                                        "5. Setoran Hafalan: {$sb['total_setoran']}x pertemuan\n\n" .
+                                                        "Semoga ananda terus istiqomah. Jazakumullah khair.");
                                                 ?>
                                                 <a href="https://wa.me/<?= $clean_wa ?>?text=<?= $wa_msg ?>" target="_blank" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold inline-flex items-center gap-1 shadow-xs transition" title="Kirim Pesan WA ke Orang Tua">
                                                     <i class="fab fa-whatsapp"></i> WA Ortu
@@ -1272,6 +1420,228 @@ Gunakan gaya bahasa yang formal, bijak, mendalam, dan inspiratif untuk membantu 
                 });
             }
         });
+
+        // Modal Detail Ibadah Santri
+        function openDetailIbadahModal(sb) {
+            if (!sb) return;
+
+            document.getElementById('modal-ib-nama').innerText = sb.nama || 'Santri';
+            document.getElementById('modal-ib-meta').innerText = `ID #${sb.id} • Kamar: ${sb.kamar} • Jenjang: ${sb.jenjang} • Grup: ${sb.nama_grup || '-'}`;
+            document.getElementById('modal-ib-persen').innerText = `${sb.rata_ibadah}%`;
+            document.getElementById('modal-ib-bar').style.width = `${Math.min(100, sb.rata_ibadah)}%`;
+            
+            const badgeEl = document.getElementById('modal-ib-predikat');
+            if (sb.rata_ibadah >= 85) {
+                badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300';
+                badgeEl.innerText = 'Mumtaz (Sangat Baik)';
+            } else if (sb.rata_ibadah >= 70) {
+                badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300';
+                badgeEl.innerText = 'Jayyid (Baik)';
+            } else {
+                badgeEl.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300';
+                badgeEl.innerText = 'Perlu Pembinaan Khusus';
+            }
+
+            // Sholat Wajib
+            document.getElementById('modal-ib-jamaah5').innerText = `${sb.jamaah_5} Hari`;
+            document.getElementById('modal-ib-subuh').innerText = `${sb.subuh_jamaah}x`;
+            document.getElementById('modal-ib-dhuhur').innerText = `${sb.dhuhur_jamaah}x`;
+            document.getElementById('modal-ib-ashar').innerText = `${sb.ashar_jamaah}x`;
+            document.getElementById('modal-ib-maghrib').innerText = `${sb.maghrib_jamaah}x`;
+            document.getElementById('modal-ib-isya').innerText = `${sb.isya_jamaah}x`;
+            document.getElementById('modal-ib-munfarid').innerText = `${sb.total_munfarid}x`;
+            document.getElementById('modal-ib-udzur').innerText = `${sb.total_udzur}x`;
+
+            // Sholat Sunnah
+            document.getElementById('modal-ib-tahajud').innerText = `${sb.tahajud_cnt}x`;
+            document.getElementById('modal-ib-witir').innerText = `${sb.witir_cnt}x`;
+            document.getElementById('modal-ib-dhuha').innerText = `${sb.dhuha_cnt}x`;
+            document.getElementById('modal-ib-rawatib').innerText = `${sb.rawatib_cnt}x`;
+
+            // Puasa Sunnah
+            document.getElementById('modal-ib-totalpuasa').innerText = `${sb.total_puasa} Hari`;
+            document.getElementById('modal-ib-senin').innerText = `${sb.puasa_senin_cnt}x`;
+            document.getElementById('modal-ib-kamis').innerText = `${sb.puasa_kamis_cnt}x`;
+
+            // WA Link
+            const waBtn = document.getElementById('modal-ib-wabtn');
+            if (sb.nomor_wa && sb.nomor_wa.trim() !== '') {
+                let cleanWa = sb.nomor_wa.replace(/[^0-9]/g, '');
+                if (cleanWa.startsWith('0')) cleanWa = '62' + cleanWa.substring(1);
+                const msg = encodeURIComponent(`Assalamu'alaikum Warahmatullah Bapak/Ibu ${sb.nama_ortu || ''}, kami dari Tim Musyrif Villa Quran ingin mengabarkan rekap ibadah ananda ${sb.nama}:\n` +
+                    `- Kepatuhan Ibadah: ${sb.rata_ibadah}%\n` +
+                    `- 5 Waktu Jamaah Penuh: ${sb.jamaah_5} hari\n` +
+                    `- Rincian Jamaah: Subuh(${sb.subuh_jamaah}x), Dhuhur(${sb.dhuhur_jamaah}x), Ashar(${sb.ashar_jamaah}x), Maghrib(${sb.maghrib_jamaah}x), Isya(${sb.isya_jamaah}x)\n` +
+                    `- Sholat Sunnah: Tahajud(${sb.tahajud_cnt}x), Dhuha(${sb.dhuha_cnt}x), Witir(${sb.witir_cnt}x), Rawatib(${sb.rawatib_cnt}x)\n` +
+                    `- Puasa Sunnah: ${sb.total_puasa} hari (Senin: ${sb.puasa_senin_cnt}x, Kamis: ${sb.puasa_kamis_cnt}x)\n` +
+                    `- Setoran Hafalan: ${sb.total_setoran}x pertemuan\n\n` +
+                    `Semoga ananda terus istiqomah. Jazakumullah khair.`);
+                waBtn.href = `https://wa.me/${cleanWa}?text=${msg}`;
+                waBtn.classList.remove('hidden');
+            } else {
+                waBtn.classList.add('hidden');
+            }
+
+            const modal = document.getElementById('modal-detail-ibadah');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeDetailIbadahModal() {
+            const modal = document.getElementById('modal-detail-ibadah');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
     </script>
+
+    <!-- MODAL DETAIL LENGKAP IBADAH SANTRI -->
+    <div id="modal-detail-ibadah" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center p-4 transition-all duration-300">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-100 overflow-hidden transform transition-all animate-fadeIn">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-emerald-700 via-emerald-800 to-teal-800 px-6 py-4 text-white flex items-center justify-between shadow-md">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center font-bold text-amber-200 border border-white/30 text-base">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-white tracking-wide" id="modal-ib-nama">Detail Santri</h3>
+                        <p class="text-xs text-emerald-100 font-light" id="modal-ib-meta">Kamar • Jenjang</p>
+                    </div>
+                </div>
+                <button onclick="closeDetailIbadahModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition" title="Tutup Modal">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 space-y-5 max-h-[80vh] overflow-y-auto font-sans">
+                <!-- Summary Card -->
+                <div class="bg-gradient-to-br from-slate-50 to-emerald-50/40 p-4 rounded-xl border border-emerald-100/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-0.5">Tingkat Kepatuhan Ibadah</span>
+                        <div class="flex items-baseline gap-2">
+                            <span class="text-3xl font-black text-slate-900" id="modal-ib-persen">0%</span>
+                            <span id="modal-ib-predikat" class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800">Mumtaz</span>
+                        </div>
+                    </div>
+                    <div class="w-full sm:w-1/2">
+                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden mb-1">
+                            <div id="modal-ib-bar" class="bg-gradient-to-r from-emerald-500 to-teal-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <span class="text-[11px] text-slate-500 text-right block">Dihitung otomatis dari log harian ibadah santri</span>
+                    </div>
+                </div>
+
+                <!-- 3 Columns Breakdown -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- 1. Sholat Wajib -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-emerald-300 transition">
+                        <div class="flex items-center gap-2 text-emerald-800 font-bold text-xs pb-2 border-b border-slate-100 mb-3">
+                            <i class="fas fa-mosque text-emerald-600 text-sm"></i>
+                            <span>Sholat Wajib (5 Waktu)</span>
+                        </div>
+                        <div class="space-y-2 text-xs">
+                            <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                                <span class="text-slate-600 font-medium">5 Waktu Jamaah:</span>
+                                <strong class="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded" id="modal-ib-jamaah5">0 Hari</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-0.5 text-slate-500 text-[11px]">
+                                <span>Subuh Berjamaah:</span>
+                                <strong class="text-slate-800" id="modal-ib-subuh">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-0.5 text-slate-500 text-[11px]">
+                                <span>Dhuhur Berjamaah:</span>
+                                <strong class="text-slate-800" id="modal-ib-dhuhur">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-0.5 text-slate-500 text-[11px]">
+                                <span>Ashar Berjamaah:</span>
+                                <strong class="text-slate-800" id="modal-ib-ashar">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-0.5 text-slate-500 text-[11px]">
+                                <span>Maghrib Berjamaah:</span>
+                                <strong class="text-slate-800" id="modal-ib-maghrib">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-0.5 text-slate-500 text-[11px]">
+                                <span>Isya Berjamaah:</span>
+                                <strong class="text-slate-800" id="modal-ib-isya">0x</strong>
+                            </div>
+                            <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-[10.5px]">
+                                <span class="text-amber-700">Munfarid (Sendiri):</span>
+                                <strong class="text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded" id="modal-ib-munfarid">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center text-[10.5px]">
+                                <span class="text-purple-700">Udzur Syar'i / Haid:</span>
+                                <strong class="text-purple-800 bg-purple-50 px-1.5 py-0.5 rounded" id="modal-ib-udzur">0x</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Sholat Sunnah -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-amber-300 transition">
+                        <div class="flex items-center gap-2 text-amber-800 font-bold text-xs pb-2 border-b border-slate-100 mb-3">
+                            <i class="fas fa-moon text-amber-600 text-sm"></i>
+                            <span>Sholat Sunnah</span>
+                        </div>
+                        <div class="space-y-2.5 text-xs">
+                            <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                                <span class="text-slate-600 font-medium">Qiyam / Tahajud:</span>
+                                <strong class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-bold" id="modal-ib-tahajud">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                                <span class="text-slate-600 font-medium">Sholat Witir:</span>
+                                <strong class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-bold" id="modal-ib-witir">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                                <span class="text-slate-600 font-medium">Sholat Dhuha:</span>
+                                <strong class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-bold" id="modal-ib-dhuha">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                                <span class="text-slate-600 font-medium">Sholat Rawatib:</span>
+                                <strong class="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-bold" id="modal-ib-rawatib">0x</strong>
+                            </div>
+                            <p class="text-[10px] text-slate-400 italic pt-1 leading-normal">
+                                *Rawatib meliputi Qobliyah/Ba'diyah Subuh, Dhuhur, Ashar, Maghrib, Isya.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 3. Puasa Sunnah -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-teal-300 transition">
+                        <div class="flex items-center gap-2 text-teal-800 font-bold text-xs pb-2 border-b border-slate-100 mb-3">
+                            <i class="fas fa-leaf text-teal-600 text-sm"></i>
+                            <span>Puasa Sunnah</span>
+                        </div>
+                        <div class="space-y-3 text-xs">
+                            <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                                <span class="text-slate-600 font-medium">Total Hari Puasa:</span>
+                                <strong class="text-teal-700 bg-teal-50 px-2 py-0.5 rounded text-sm font-bold" id="modal-ib-totalpuasa">0 Hari</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                                <span class="text-slate-600 font-medium">Puasa Hari Senin:</span>
+                                <strong class="text-slate-800 bg-slate-50 px-1.5 py-0.5 rounded" id="modal-ib-senin">0x</strong>
+                            </div>
+                            <div class="flex justify-between items-center py-1 border-b border-slate-50">
+                                <span class="text-slate-600 font-medium">Puasa Hari Kamis:</span>
+                                <strong class="text-slate-800 bg-slate-50 px-1.5 py-0.5 rounded" id="modal-ib-kamis">0x</strong>
+                            </div>
+                            <div class="p-2.5 bg-emerald-50/60 rounded-lg border border-emerald-100 text-[10.5px] text-emerald-800 leading-tight">
+                                <i class="fas fa-check-circle text-emerald-600 mr-1"></i> Data diperbarui setiap musyrif mengisi mutaba'ah ibadah santri.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-100 flex items-center justify-between">
+                <a id="modal-ib-wabtn" href="#" target="_blank" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl inline-flex items-center gap-1.5 shadow-xs transition">
+                    <i class="fab fa-whatsapp text-sm"></i> Kirim Laporan ke Walisantri
+                </a>
+                <button onclick="closeDetailIbadahModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
