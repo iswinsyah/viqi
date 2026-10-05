@@ -60,7 +60,7 @@ if ($view === 'dashboard_asrama') {
         }
     }
     if (isset($_GET['hapus_grup_id'])) { $id = (int)$_GET['hapus_grup_id']; $conn->query("DELETE FROM halaqoh_grup WHERE id = $id"); header("Location: admin-ustadz.php?view=halaqoh"); exit; }
-    $musyrif_list = []; $res_m = $conn->query("SELECT id, nama FROM akun_ustadz WHERE role LIKE '%musyrif%' OR role LIKE '%kepala_asrama%' ORDER BY nama ASC"); if($res_m) while($r = $res_m->fetch_assoc()) $musyrif_list[] = $r;
+    $musyrif_list = []; $res_m = $conn->query("SELECT id, nama FROM akun_ustadz WHERE (is_active = 1 OR is_active IS NULL) AND (status_pegawai != 'Nonaktif' OR status_pegawai IS NULL) AND (FIND_IN_SET('musyrif', REPLACE(role, ' ', '')) OR FIND_IN_SET('musyrifah', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama_rijal', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama_nisa', REPLACE(role, ' ', '')) OR role = 'musyrif' OR role = 'musyrifah') ORDER BY nama ASC"); if($res_m) while($r = $res_m->fetch_assoc()) $musyrif_list[] = $r;
     $grup_list = []; $res_g = $conn->query("SELECT g.*, u.nama as nama_musyrif, COUNT(a.id) as jumlah_anggota FROM halaqoh_grup g JOIN akun_ustadz u ON g.musyrif_id = u.id LEFT JOIN halaqoh_anggota a ON g.id = a.grup_id GROUP BY g.id ORDER BY g.nama_grup ASC"); if($res_g) while($r = $res_g->fetch_assoc()) $grup_list[] = $r;
     $active_grup_id = $_GET['grup_id'] ?? ($grup_list[0]['id'] ?? 0);
     $active_grup = null; if ($active_grup_id > 0) { foreach($grup_list as $g) { if ($g['id'] == $active_grup_id) $active_grup = $g; } }

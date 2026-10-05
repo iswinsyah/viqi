@@ -81,9 +81,24 @@ $is_pimpinan = $is_super_admin || !empty(array_intersect($norm_roles, [
     'kepala_sekolah', 'admin_sekolah', 'kepala_mahad', 'sekretaris_sekolah', 'kepala_asrama'
 ]));
 
-// 1. Ambil daftar Musyrif & Musyrifah
+// 1. Ambil daftar Musyrif & Musyrifah yang Aktif
 $musyrif_list = [];
-$res_m = $conn->query("SELECT id, nama FROM akun_ustadz WHERE role LIKE '%musyrif%' OR role LIKE '%kepala_asrama%' ORDER BY nama ASC");
+$res_m = $conn->query("
+    SELECT id, nama, role 
+    FROM akun_ustadz 
+    WHERE (is_active = 1 OR is_active IS NULL)
+      AND (status_pegawai != 'Nonaktif' OR status_pegawai IS NULL)
+      AND (
+          FIND_IN_SET('musyrif', REPLACE(role, ' ', '')) 
+          OR FIND_IN_SET('musyrifah', REPLACE(role, ' ', ''))
+          OR FIND_IN_SET('kepala_asrama', REPLACE(role, ' ', ''))
+          OR FIND_IN_SET('kepala_asrama_rijal', REPLACE(role, ' ', ''))
+          OR FIND_IN_SET('kepala_asrama_nisa', REPLACE(role, ' ', ''))
+          OR role = 'musyrif'
+          OR role = 'musyrifah'
+      )
+    ORDER BY nama ASC
+");
 if ($res_m) {
     while ($r = $res_m->fetch_assoc()) {
         $musyrif_list[] = $r;
@@ -365,10 +380,32 @@ if ($staf) {
                 // 1. Ibadah Santri Bulan Ini
                 $res_ib_s = $conn->query("
                     SELECT COUNT(*) as total_hari,
-                           AVG(total_persen_ibadah) as rata_persen,
-                           SUM(CASE WHEN sholat_subuh='Berjamaah' AND sholat_dhuhur='Berjamaah' AND sholat_ashar='Berjamaah' AND sholat_maghrib='Berjamaah' AND sholat_isya='Berjamaah' THEN 1 ELSE 0 END) as sholat_5_jamaah
+                           AVG(
+                               CASE 
+                                   WHEN is_haid = 1 THEN 100
+                                   ELSE (
+                                       (CASE WHEN sholat_subuh LIKE '%Jamaah%' OR sholat_subuh LIKE '%Udzur%' THEN 20 WHEN sholat_subuh = 'Munfarid' THEN 10 ELSE 0 END) +
+                                       (CASE WHEN sholat_dhuhur LIKE '%Jamaah%' OR sholat_dhuhur LIKE '%Udzur%' THEN 20 WHEN sholat_dhuhur = 'Munfarid' THEN 10 ELSE 0 END) +
+                                       (CASE WHEN sholat_ashar LIKE '%Jamaah%' OR sholat_ashar LIKE '%Udzur%' THEN 20 WHEN sholat_ashar = 'Munfarid' THEN 10 ELSE 0 END) +
+                                       (CASE WHEN sholat_maghrib LIKE '%Jamaah%' OR sholat_maghrib LIKE '%Udzur%' THEN 20 WHEN sholat_maghrib = 'Munfarid' THEN 10 ELSE 0 END) +
+                                       (CASE WHEN sholat_isya LIKE '%Jamaah%' OR sholat_isya LIKE '%Udzur%' THEN 20 WHEN sholat_isya = 'Munfarid' THEN 10 ELSE 0 END)
+                                   )
+                               END
+                           ) as rata_persen,
+                           SUM(
+                               CASE 
+                                   WHEN is_haid = 1 THEN 1
+                                   WHEN (sholat_subuh LIKE '%Jamaah%' OR sholat_subuh LIKE '%Udzur%')
+                                    AND (sholat_dhuhur LIKE '%Jamaah%' OR sholat_dhuhur LIKE '%Udzur%')
+                                    AND (sholat_ashar LIKE '%Jamaah%' OR sholat_ashar LIKE '%Udzur%')
+                                    AND (sholat_maghrib LIKE '%Jamaah%' OR sholat_maghrib LIKE '%Udzur%')
+                                    AND (sholat_isya LIKE '%Jamaah%' OR sholat_isya LIKE '%Udzur%')
+                                   THEN 1 
+                                   ELSE 0 
+                               END
+                           ) as sholat_5_jamaah
                     FROM ibadah_harian_santri
-                    WHERE santri_id = $sid AND tanggal BETWEEN '$start_date' AND '$end_date'
+                    WHERE santri_id = $sid AND (tanggal BETWEEN '$start_date' AND '$end_date' OR (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year))
                 ");
                 $data_ib_s = $res_ib_s ? $res_ib_s->fetch_assoc() : [];
                 $total_hari_ib = (int)($data_ib_s['total_hari'] ?? 0);
