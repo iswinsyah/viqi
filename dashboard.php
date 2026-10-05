@@ -271,6 +271,28 @@ $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_labe
     VALUES ('yayasan_cp', 'Capaian Pembelajaran (CP) AI', 'CP (AI)') 
     ON DUPLICATE KEY UPDATE custom_label='Capaian Pembelajaran (CP) AI', short_label='CP (AI)'");
 
+// Pastikan yayasan_rekap_ajar terdaftar di Ruang Yayasan (Grid Card Menu Rekap Ajar Yayasan)
+$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+    VALUES ('Ruang Yayasan', 'yayasan_rekap_ajar', 8, 'fas fa-chalkboard-user', 'admin-kontrol-jam-kosong.php') 
+    ON DUPLICATE KEY UPDATE menu_group='Ruang Yayasan', sort_order=8, icon='fas fa-chalkboard-user', href='admin-kontrol-jam-kosong.php'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+    VALUES ('yayasan_rekap_ajar', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan') 
+    ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan'");
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('yayasan_rekap_ajar', 'Rekap Ajar (3 Tab Validasi)', 'Rekap Ajar') 
+    ON DUPLICATE KEY UPDATE custom_label='Rekap Ajar (3 Tab Validasi)', short_label='Rekap Ajar'");
+
+// Pastikan kontrol_jam_kosong terdaftar di Menu Operasional (Grid Card Menu Rekap Ajar untuk Kepsek, Mahad, LDU)
+$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+    VALUES ('Administrasi', 'kontrol_jam_kosong', 10, 'fas fa-chalkboard-user', 'admin-kontrol-jam-kosong.php') 
+    ON DUPLICATE KEY UPDATE menu_group='Administrasi', icon='fas fa-chalkboard-user', href='admin-kontrol-jam-kosong.php'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+    VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_ldu,direktur_ldu,staff_ldu,admin_sekolah,sekretaris_sekolah,bendahara_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,super_admin,tutor,trainer,ustadz') 
+    ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_ldu,direktur_ldu,staff_ldu,admin_sekolah,sekretaris_sekolah,bendahara_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,super_admin,tutor,trainer,ustadz'");
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('kontrol_jam_kosong', 'Rekap Ajar (3 Tab)', 'Rekap Ajar') 
+    ON DUPLICATE KEY UPDATE custom_label='Rekap Ajar (3 Tab)', short_label='Rekap Ajar'");
+
 $db_permissions = [];
 $res_perm = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
 if ($res_perm) {
@@ -340,7 +362,8 @@ $default_1word_labels = [
     'rekap_ibadah_santri'=> 'Ibadah Asrama',
     'rekap_setoran_santri'=> 'Rekap Setoran',
     'setoran_hafalan_santri'=> 'Hafalan',
-    'kontrol_jam_kosong' => 'Jam Kosong',
+    'kontrol_jam_kosong' => 'Rekap Ajar',
+    'yayasan_rekap_ajar' => 'Rekap Ajar',
     'penagihan_spp'      => 'Tagihan SPP',
     'kpi_admin_sekolah'  => 'KPI Admin',
     'jadwal_rapat'       => 'Rapat',
