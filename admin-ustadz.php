@@ -292,8 +292,7 @@ if ($view === 'dashboard_asrama') {
                        SUM(CASE WHEN status_validasi IN ('Disetujui', 'Ditolak') THEN 1 ELSE 0 END) as divalidasi
                 FROM ibadah_harian_santri
                 WHERE santri_id IN ($santri_list_str) 
-                  AND MONTH(tanggal) = $selected_month 
-                  AND YEAR(tanggal) = $selected_year
+                  AND (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year OR MONTH(created_at) = $selected_month AND YEAR(created_at) = $selected_year)
             ");
             $row_ib = $res_ib ? $res_ib->fetch_assoc() : ['total' => 0, 'divalidasi' => 0];
             $total_ib = (int)($row_ib['total'] ?? 0);
@@ -307,10 +306,9 @@ if ($view === 'dashboard_asrama') {
                        SUM(CASE WHEN catatan_musyrif IS NOT NULL AND TRIM(catatan_musyrif) != '' THEN 1 ELSE 0 END) as dibimbing
                 FROM ibadah_harian_santri
                 WHERE santri_id IN ($santri_list_str)
-                  AND MONTH(tanggal) = $selected_month 
-                  AND YEAR(tanggal) = $selected_year
-                  AND is_haid = 0
-                  AND (sholat_subuh = 'Munfarid' OR sholat_dhuhur = 'Munfarid' OR sholat_ashar = 'Munfarid' OR sholat_maghrib = 'Munfarid' OR sholat_isya = 'Munfarid')
+                  AND (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year OR MONTH(created_at) = $selected_month AND YEAR(created_at) = $selected_year)
+                  AND (is_haid = 0 OR is_haid IS NULL)
+                  AND (LOWER(sholat_subuh) LIKE '%munfarid%' OR LOWER(sholat_dhuhur) LIKE '%munfarid%' OR LOWER(sholat_ashar) LIKE '%munfarid%' OR LOWER(sholat_maghrib) LIKE '%munfarid%' OR LOWER(sholat_isya) LIKE '%munfarid%')
             ");
             $row_bim = $res_bim ? $res_bim->fetch_assoc() : ['total_perlu' => 0, 'dibimbing' => 0];
             $total_perlu_bim = (int)($row_bim['total_perlu'] ?? 0);

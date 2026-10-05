@@ -183,7 +183,7 @@ if ($staf) {
                    SUM(CASE WHEN status_validasi IN ('Disetujui', 'Ditolak') THEN 1 ELSE 0 END) as divalidasi
             FROM ibadah_harian_santri
             WHERE santri_id IN ($santri_list_str) 
-              AND tanggal BETWEEN '$start_date' AND '$end_date'
+              AND (tanggal BETWEEN '$start_date' AND '$end_date' OR (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year) OR (MONTH(created_at) = $selected_month AND YEAR(created_at) = $selected_year))
         ");
         $row_ib = $res_ib ? $res_ib->fetch_assoc() : ['total' => 0, 'divalidasi' => 0];
         $total_ib = (int)($row_ib['total'] ?? 0);
@@ -197,9 +197,9 @@ if ($staf) {
                    SUM(CASE WHEN catatan_musyrif IS NOT NULL AND TRIM(catatan_musyrif) != '' THEN 1 ELSE 0 END) as dibimbing
             FROM ibadah_harian_santri
             WHERE santri_id IN ($santri_list_str)
-              AND tanggal BETWEEN '$start_date' AND '$end_date'
-              AND is_haid = 0
-              AND (sholat_subuh = 'Munfarid' OR sholat_dhuhur = 'Munfarid' OR sholat_ashar = 'Munfarid' OR sholat_maghrib = 'Munfarid' OR sholat_isya = 'Munfarid')
+              AND (tanggal BETWEEN '$start_date' AND '$end_date' OR (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year) OR (MONTH(created_at) = $selected_month AND YEAR(created_at) = $selected_year))
+              AND (is_haid = 0 OR is_haid IS NULL)
+              AND (LOWER(sholat_subuh) LIKE '%munfarid%' OR LOWER(sholat_dhuhur) LIKE '%munfarid%' OR LOWER(sholat_ashar) LIKE '%munfarid%' OR LOWER(sholat_maghrib) LIKE '%munfarid%' OR LOWER(sholat_isya) LIKE '%munfarid%')
         ");
         $row_bim = $res_bim ? $res_bim->fetch_assoc() : ['total_perlu' => 0, 'dibimbing' => 0];
         $total_perlu_bim = (int)($row_bim['total_perlu'] ?? 0);
@@ -384,33 +384,74 @@ if ($staf) {
                                CASE 
                                    WHEN is_haid = 1 THEN 100
                                    ELSE (
-                                       (CASE WHEN sholat_subuh LIKE '%Jamaah%' OR sholat_subuh LIKE '%Udzur%' THEN 20 WHEN sholat_subuh = 'Munfarid' THEN 10 ELSE 0 END) +
-                                       (CASE WHEN sholat_dhuhur LIKE '%Jamaah%' OR sholat_dhuhur LIKE '%Udzur%' THEN 20 WHEN sholat_dhuhur = 'Munfarid' THEN 10 ELSE 0 END) +
-                                       (CASE WHEN sholat_ashar LIKE '%Jamaah%' OR sholat_ashar LIKE '%Udzur%' THEN 20 WHEN sholat_ashar = 'Munfarid' THEN 10 ELSE 0 END) +
-                                       (CASE WHEN sholat_maghrib LIKE '%Jamaah%' OR sholat_maghrib LIKE '%Udzur%' THEN 20 WHEN sholat_maghrib = 'Munfarid' THEN 10 ELSE 0 END) +
-                                       (CASE WHEN sholat_isya LIKE '%Jamaah%' OR sholat_isya LIKE '%Udzur%' THEN 20 WHEN sholat_isya = 'Munfarid' THEN 10 ELSE 0 END)
+                                       (CASE WHEN LOWER(sholat_subuh) LIKE '%jamaah%' OR LOWER(sholat_subuh) LIKE '%masjid%' OR LOWER(sholat_subuh) LIKE '%mushola%' OR LOWER(sholat_subuh) LIKE '%berjamaah%' OR LOWER(sholat_subuh) LIKE '%udzur%' OR LOWER(sholat_subuh) = 'ya' OR sholat_subuh = '1' THEN 20 WHEN LOWER(sholat_subuh) LIKE '%munfarid%' OR (sholat_subuh IS NOT NULL AND TRIM(sholat_subuh) != '' AND sholat_subuh != '0' AND LOWER(sholat_subuh) != 'tidak') THEN 10 ELSE 0 END) +
+                                       (CASE WHEN LOWER(sholat_dhuhur) LIKE '%jamaah%' OR LOWER(sholat_dhuhur) LIKE '%masjid%' OR LOWER(sholat_dhuhur) LIKE '%mushola%' OR LOWER(sholat_dhuhur) LIKE '%berjamaah%' OR LOWER(sholat_dhuhur) LIKE '%udzur%' OR LOWER(sholat_dhuhur) = 'ya' OR sholat_dhuhur = '1' THEN 20 WHEN LOWER(sholat_dhuhur) LIKE '%munfarid%' OR (sholat_dhuhur IS NOT NULL AND TRIM(sholat_dhuhur) != '' AND sholat_dhuhur != '0' AND LOWER(sholat_dhuhur) != 'tidak') THEN 10 ELSE 0 END) +
+                                       (CASE WHEN LOWER(sholat_ashar) LIKE '%jamaah%' OR LOWER(sholat_ashar) LIKE '%masjid%' OR LOWER(sholat_ashar) LIKE '%mushola%' OR LOWER(sholat_ashar) LIKE '%berjamaah%' OR LOWER(sholat_ashar) LIKE '%udzur%' OR LOWER(sholat_ashar) = 'ya' OR sholat_ashar = '1' THEN 20 WHEN LOWER(sholat_ashar) LIKE '%munfarid%' OR (sholat_ashar IS NOT NULL AND TRIM(sholat_ashar) != '' AND sholat_ashar != '0' AND LOWER(sholat_ashar) != 'tidak') THEN 10 ELSE 0 END) +
+                                       (CASE WHEN LOWER(sholat_maghrib) LIKE '%jamaah%' OR LOWER(sholat_maghrib) LIKE '%masjid%' OR LOWER(sholat_maghrib) LIKE '%mushola%' OR LOWER(sholat_maghrib) LIKE '%berjamaah%' OR LOWER(sholat_maghrib) LIKE '%udzur%' OR LOWER(sholat_maghrib) = 'ya' OR sholat_maghrib = '1' THEN 20 WHEN LOWER(sholat_maghrib) LIKE '%munfarid%' OR (sholat_maghrib IS NOT NULL AND TRIM(sholat_maghrib) != '' AND sholat_maghrib != '0' AND LOWER(sholat_maghrib) != 'tidak') THEN 10 ELSE 0 END) +
+                                       (CASE WHEN LOWER(sholat_isya) LIKE '%jamaah%' OR LOWER(sholat_isya) LIKE '%masjid%' OR LOWER(sholat_isya) LIKE '%mushola%' OR LOWER(sholat_isya) LIKE '%berjamaah%' OR LOWER(sholat_isya) LIKE '%udzur%' OR LOWER(sholat_isya) = 'ya' OR sholat_isya = '1' THEN 20 WHEN LOWER(sholat_isya) LIKE '%munfarid%' OR (sholat_isya IS NOT NULL AND TRIM(sholat_isya) != '' AND sholat_isya != '0' AND LOWER(sholat_isya) != 'tidak') THEN 10 ELSE 0 END)
                                    )
                                END
                            ) as rata_persen,
                            SUM(
                                CASE 
                                    WHEN is_haid = 1 THEN 1
-                                   WHEN (sholat_subuh LIKE '%Jamaah%' OR sholat_subuh LIKE '%Udzur%')
-                                    AND (sholat_dhuhur LIKE '%Jamaah%' OR sholat_dhuhur LIKE '%Udzur%')
-                                    AND (sholat_ashar LIKE '%Jamaah%' OR sholat_ashar LIKE '%Udzur%')
-                                    AND (sholat_maghrib LIKE '%Jamaah%' OR sholat_maghrib LIKE '%Udzur%')
-                                    AND (sholat_isya LIKE '%Jamaah%' OR sholat_isya LIKE '%Udzur%')
+                                   WHEN (LOWER(sholat_subuh) LIKE '%jamaah%' OR LOWER(sholat_subuh) LIKE '%masjid%' OR LOWER(sholat_subuh) LIKE '%mushola%' OR LOWER(sholat_subuh) LIKE '%udzur%')
+                                    AND (LOWER(sholat_dhuhur) LIKE '%jamaah%' OR LOWER(sholat_dhuhur) LIKE '%masjid%' OR LOWER(sholat_dhuhur) LIKE '%mushola%' OR LOWER(sholat_dhuhur) LIKE '%udzur%')
+                                    AND (LOWER(sholat_ashar) LIKE '%jamaah%' OR LOWER(sholat_ashar) LIKE '%masjid%' OR LOWER(sholat_ashar) LIKE '%mushola%' OR LOWER(sholat_ashar) LIKE '%udzur%')
+                                    AND (LOWER(sholat_maghrib) LIKE '%jamaah%' OR LOWER(sholat_maghrib) LIKE '%masjid%' OR LOWER(sholat_maghrib) LIKE '%mushola%' OR LOWER(sholat_maghrib) LIKE '%udzur%')
+                                    AND (LOWER(sholat_isya) LIKE '%jamaah%' OR LOWER(sholat_isya) LIKE '%masjid%' OR LOWER(sholat_isya) LIKE '%mushola%' OR LOWER(sholat_isya) LIKE '%udzur%')
                                    THEN 1 
                                    ELSE 0 
                                END
                            ) as sholat_5_jamaah
                     FROM ibadah_harian_santri
-                    WHERE santri_id = $sid AND (tanggal BETWEEN '$start_date' AND '$end_date' OR (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year))
+                    WHERE santri_id = $sid AND (tanggal BETWEEN '$start_date' AND '$end_date' OR (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year) OR (MONTH(created_at) = $selected_month AND YEAR(created_at) = $selected_year))
                 ");
                 $data_ib_s = $res_ib_s ? $res_ib_s->fetch_assoc() : [];
                 $total_hari_ib = (int)($data_ib_s['total_hari'] ?? 0);
                 $rata_ibadah = round((float)($data_ib_s['rata_persen'] ?? 0), 1);
                 $jamaah_5 = (int)($data_ib_s['sholat_5_jamaah'] ?? 0);
+
+                // Fallback jika belum ada data di bulan aktif, cek data historis santri
+                if ($total_hari_ib == 0) {
+                    $res_ib_fb = $conn->query("
+                        SELECT COUNT(*) as total_hari,
+                               AVG(
+                                   CASE 
+                                       WHEN is_haid = 1 THEN 100
+                                       ELSE (
+                                           (CASE WHEN LOWER(sholat_subuh) LIKE '%jamaah%' OR LOWER(sholat_subuh) LIKE '%masjid%' OR LOWER(sholat_subuh) LIKE '%mushola%' OR LOWER(sholat_subuh) LIKE '%berjamaah%' OR LOWER(sholat_subuh) LIKE '%udzur%' OR LOWER(sholat_subuh) = 'ya' OR sholat_subuh = '1' THEN 20 WHEN LOWER(sholat_subuh) LIKE '%munfarid%' OR (sholat_subuh IS NOT NULL AND TRIM(sholat_subuh) != '' AND sholat_subuh != '0' AND LOWER(sholat_subuh) != 'tidak') THEN 10 ELSE 0 END) +
+                                           (CASE WHEN LOWER(sholat_dhuhur) LIKE '%jamaah%' OR LOWER(sholat_dhuhur) LIKE '%masjid%' OR LOWER(sholat_dhuhur) LIKE '%mushola%' OR LOWER(sholat_dhuhur) LIKE '%berjamaah%' OR LOWER(sholat_dhuhur) LIKE '%udzur%' OR LOWER(sholat_dhuhur) = 'ya' OR sholat_dhuhur = '1' THEN 20 WHEN LOWER(sholat_dhuhur) LIKE '%munfarid%' OR (sholat_dhuhur IS NOT NULL AND TRIM(sholat_dhuhur) != '' AND sholat_dhuhur != '0' AND LOWER(sholat_dhuhur) != 'tidak') THEN 10 ELSE 0 END) +
+                                           (CASE WHEN LOWER(sholat_ashar) LIKE '%jamaah%' OR LOWER(sholat_ashar) LIKE '%masjid%' OR LOWER(sholat_ashar) LIKE '%mushola%' OR LOWER(sholat_ashar) LIKE '%berjamaah%' OR LOWER(sholat_ashar) LIKE '%udzur%' OR LOWER(sholat_ashar) = 'ya' OR sholat_ashar = '1' THEN 20 WHEN LOWER(sholat_ashar) LIKE '%munfarid%' OR (sholat_ashar IS NOT NULL AND TRIM(sholat_ashar) != '' AND sholat_ashar != '0' AND LOWER(sholat_ashar) != 'tidak') THEN 10 ELSE 0 END) +
+                                           (CASE WHEN LOWER(sholat_maghrib) LIKE '%jamaah%' OR LOWER(sholat_maghrib) LIKE '%masjid%' OR LOWER(sholat_maghrib) LIKE '%mushola%' OR LOWER(sholat_maghrib) LIKE '%berjamaah%' OR LOWER(sholat_maghrib) LIKE '%udzur%' OR LOWER(sholat_maghrib) = 'ya' OR sholat_maghrib = '1' THEN 20 WHEN LOWER(sholat_maghrib) LIKE '%munfarid%' OR (sholat_maghrib IS NOT NULL AND TRIM(sholat_maghrib) != '' AND sholat_maghrib != '0' AND LOWER(sholat_maghrib) != 'tidak') THEN 10 ELSE 0 END) +
+                                           (CASE WHEN LOWER(sholat_isya) LIKE '%jamaah%' OR LOWER(sholat_isya) LIKE '%masjid%' OR LOWER(sholat_isya) LIKE '%mushola%' OR LOWER(sholat_isya) LIKE '%berjamaah%' OR LOWER(sholat_isya) LIKE '%udzur%' OR LOWER(sholat_isya) = 'ya' OR sholat_isya = '1' THEN 20 WHEN LOWER(sholat_isya) LIKE '%munfarid%' OR (sholat_isya IS NOT NULL AND TRIM(sholat_isya) != '' AND sholat_isya != '0' AND LOWER(sholat_isya) != 'tidak') THEN 10 ELSE 0 END)
+                                       )
+                                   END
+                               ) as rata_persen,
+                               SUM(
+                                   CASE 
+                                       WHEN is_haid = 1 THEN 1
+                                       WHEN (LOWER(sholat_subuh) LIKE '%jamaah%' OR LOWER(sholat_subuh) LIKE '%masjid%' OR LOWER(sholat_subuh) LIKE '%mushola%' OR LOWER(sholat_subuh) LIKE '%udzur%')
+                                        AND (LOWER(sholat_dhuhur) LIKE '%jamaah%' OR LOWER(sholat_dhuhur) LIKE '%masjid%' OR LOWER(sholat_dhuhur) LIKE '%mushola%' OR LOWER(sholat_dhuhur) LIKE '%udzur%')
+                                        AND (LOWER(sholat_ashar) LIKE '%jamaah%' OR LOWER(sholat_ashar) LIKE '%masjid%' OR LOWER(sholat_ashar) LIKE '%mushola%' OR LOWER(sholat_ashar) LIKE '%udzur%')
+                                        AND (LOWER(sholat_maghrib) LIKE '%jamaah%' OR LOWER(sholat_maghrib) LIKE '%masjid%' OR LOWER(sholat_maghrib) LIKE '%mushola%' OR LOWER(sholat_maghrib) LIKE '%udzur%')
+                                        AND (LOWER(sholat_isya) LIKE '%jamaah%' OR LOWER(sholat_isya) LIKE '%masjid%' OR LOWER(sholat_isya) LIKE '%mushola%' OR LOWER(sholat_isya) LIKE '%udzur%')
+                                       THEN 1 
+                                       ELSE 0 
+                                   END
+                               ) as sholat_5_jamaah
+                        FROM ibadah_harian_santri
+                        WHERE santri_id = $sid
+                    ");
+                    if ($res_ib_fb) {
+                        $fb_data = $res_ib_fb->fetch_assoc();
+                        if ((int)($fb_data['total_hari'] ?? 0) > 0) {
+                            $total_hari_ib = (int)$fb_data['total_hari'];
+                            $rata_ibadah = round((float)($fb_data['rata_persen'] ?? 0), 1);
+                            $jamaah_5 = (int)($fb_data['sholat_5_jamaah'] ?? 0);
+                        }
+                    }
+                }
                 
                 // 2. Setoran Hafalan Bulan Ini & Terakhir
                 $s_nama_esc = $conn->real_escape_string($s_nama);
