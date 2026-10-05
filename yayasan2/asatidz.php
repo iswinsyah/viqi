@@ -153,25 +153,65 @@ $res_status_col = $conn->query("SHOW COLUMNS FROM akun_ustadz LIKE 'status_pegaw
 if ($res_status_col && $res_status_col->num_rows == 0) {
     $conn->query("ALTER TABLE akun_ustadz ADD COLUMN status_pegawai VARCHAR(50) DEFAULT 'Pengabdian' AFTER role");
 }
+// Self-healing: Tambahkan kolom is_active jika belum ada
+$res_active_col = $conn->query("SHOW COLUMNS FROM akun_ustadz LIKE 'is_active'");
+if ($res_active_col && $res_active_col->num_rows == 0) {
+    $conn->query("ALTER TABLE akun_ustadz ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER status_pegawai");
+    $conn->query("UPDATE akun_ustadz SET is_active = 0 WHERE status_pegawai = 'Nonaktif'");
+}
 // Self-healing: Tambahkan kolom whatsapp jika belum ada
 $res_wa_col = $conn->query("SHOW COLUMNS FROM akun_ustadz LIKE 'whatsapp'");
 if ($res_wa_col && $res_wa_col->num_rows == 0) {
-    $conn->query("ALTER TABLE akun_ustadz ADD COLUMN whatsapp VARCHAR(20) DEFAULT NULL AFTER status_pegawai");
+    $conn->query("ALTER TABLE akun_ustadz ADD COLUMN whatsapp VARCHAR(20) DEFAULT NULL AFTER is_active");
 }
 $pesan_sukses = isset($_GET['sukses']) ? $_GET['sukses'] : null;
 $pesan_error = isset($_GET['error']) ? $_GET['error'] : null;
 
+// Handler Toggle Status Keaktifan (ON / OFF)
+if (isset($_GET['toggle_status_id'])) {
+    $id = (int)$_GET['toggle_status_id'];
+    $res_cur = $conn->query("SELECT is_active, status_pegawai, nama FROM akun_ustadz WHERE id = $id");
+    if ($res_cur && $res_cur->num_rows > 0) {
+        $cur = $res_cur->fetch_assoc();
+        $is_currently_active = ($cur['is_active'] == 1 && ($cur['status_pegawai'] ?? '') !== 'Nonaktif');
+        $new_status = $is_currently_active ? 0 : 1;
+        $nama_ust = $cur['nama'];
+        
+        if ($new_status === 1) {
+            $new_st_peg = ($cur['status_pegawai'] === 'Nonaktif' || empty($cur['status_pegawai'])) ? 'Pengabdian' : $cur['status_pegawai'];
+            $conn->query("UPDATE akun_ustadz SET is_active = 1, status_pegawai = '$new_st_peg' WHERE id = $id");
+            $msg = "Status akun <strong>" . htmlspecialchars($nama_ust) . "</strong> berhasil DI-AKTIFKAN (ON)!";
+        } else {
+            $conn->query("UPDATE akun_ustadz SET is_active = 0 WHERE id = $id");
+            $msg = "Status akun <strong>" . htmlspecialchars($nama_ust) . "</strong> berhasil DI-NONAKTIFKAN (OFF). Data tetap aman tersimpan.";
+        }
+        
+        if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'new_status' => $new_status,
+                'message' => $msg
+            ]);
+            exit;
+        }
+        
+        header("Location: asatidz.php?sukses=" . urlencode($msg));
+        exit;
+    }
+}
+
 if (isset($_GET['hapus_id'])) {
     $id = (int)$_GET['hapus_id'];
     $conn->query("DELETE FROM akun_ustadz WHERE id = $id");
-    header("Location: asatidz.php?sukses=" . urlencode("Akun ustadz berhasil dihapus!"));
+    header("Location: asatidz.php?sukses=" . urlencode("Akun ustadz berhasil dihapus permanen!"));
     exit;
 }
 
 if (isset($_GET['aktifkan_id'])) {
     $id = (int)$_GET['aktifkan_id'];
-    $conn->query("UPDATE akun_ustadz SET status_pegawai = 'Aktif' WHERE id = $id");
-    header("Location: asatidz.php?sukses=" . urlencode("Akun berhasil diaktifkan kembali! Blokir dan akses presensi telah dipulihkan oleh Super Admin."));
+    $conn->query("UPDATE akun_ustadz SET is_active = 1, status_pegawai = 'Pengabdian' WHERE id = $id");
+    header("Location: asatidz.php?sukses=" . urlencode("Akun berhasil diaktifkan kembali!"));
     exit;
 }
 
@@ -179,10 +219,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
     $nama = $conn->real_escape_string($_POST['nama']);
     $username = $conn->real_escape_string($_POST['username']);
-    $password = $conn->real_escape_string($_POST['password']); // Password disimpan plain text sesuai struktur saat ini
+    $password = $conn->real_escape_string($_POST['password']);
     $roles_array = $_POST['roles'] ?? [];
     $role = implode(',', $roles_array);
     $status_pegawai = $conn->real_escape_string($_POST['status_pegawai']);
+    $is_active = isset($_POST['is_active']) ? (int)$_POST['is_active'] : 1;
     $whatsapp = $conn->real_escape_string(trim($_POST['whatsapp']));
 
     $cek = $conn->query("SELECT id FROM akun_ustadz WHERE username = '$username' AND id != $id");
@@ -190,10 +231,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $pesan_error = "Username '$username' sudah terpakai!";
     } else {
         if ($id > 0) {
-            $sql = "UPDATE akun_ustadz SET nama='$nama', username='$username', password='$password', role='$role', status_pegawai='$status_pegawai', whatsapp='$whatsapp' WHERE id=$id";
+            $sql = "UPDATE akun_ustadz SET nama='$nama', username='$username', password='$password', role='$role', status_pegawai='$status_pegawai', is_active=$is_active, whatsapp='$whatsapp' WHERE id=$id";
             $pesan_sukses = "Akun ustadz berhasil diupdate!";
         } else {
-            $sql = "INSERT INTO akun_ustadz (nama, username, password, role, status_pegawai, whatsapp) VALUES ('$nama', '$username', '$password', '$role', '$status_pegawai', '$whatsapp')";
+            $sql = "INSERT INTO akun_ustadz (nama, username, password, role, status_pegawai, is_active, whatsapp) VALUES ('$nama', '$username', '$password', '$role', '$status_pegawai', $is_active, '$whatsapp')";
             $pesan_sukses = "Akun ustadz baru berhasil ditambahkan!";
         }
         if ($conn->query($sql)) {
@@ -237,10 +278,10 @@ $active_menu = 'asatidz';
                 <div class="px-6 py-4 bg-amber-50 border-b border-amber-100"><h2 class="font-bold text-amber-800"><i class="fas <?= $edit_mode ? 'fa-edit' : 'fa-user-plus' ?> mr-2"></i><?= $edit_mode ? 'Edit Akun' : 'Buat Akun Baru' ?></h2></div>
                 <form action="asatidz.php" method="POST" class="p-6">
                     <input type="hidden" name="id" value="<?= $edit_mode ? $data_edit['id'] : '' ?>">
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-                        <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label><input type="text" name="nama" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: Ust. Ahmad"></div>
-                        <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: ahmad123"></div>
-                        <div class="md:col-span-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+                        <div class="sm:col-span-1 md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nama Lengkap</label><input type="text" name="nama" value="<?= $edit_mode ? htmlspecialchars($data_edit['nama']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: Ust. Ahmad"></div>
+                        <div class="sm:col-span-1 md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Username Login</label><input type="text" name="username" value="<?= $edit_mode ? htmlspecialchars($data_edit['username']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: ahmad123"></div>
+                        <div class="sm:col-span-1 md:col-span-1">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                             <div class="relative font-mono">
                                 <input type="password" id="input-password" name="password" value="<?= $edit_mode ? htmlspecialchars($data_edit['password']) : '12345678' ?>" required class="w-full pl-4 pr-10 py-2 border rounded-lg focus:ring-amber-500 focus:border-amber-500 text-sm" placeholder="Kata sandi...">
@@ -249,8 +290,8 @@ $active_menu = 'asatidz';
                                 </button>
                             </div>
                         </div>
-                        <div class="md:col-span-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                        <div class="sm:col-span-1 md:col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status Pegawai</label>
                             <select name="status_pegawai" required class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500">
                                 <?php
                                 $statuses = ['Pengurus Yayasan', 'Pengabdian', 'Honorer', 'Pegawai Muda', 'Pegawai Utama'];
@@ -261,8 +302,18 @@ $active_menu = 'asatidz';
                                 ?>
                             </select>
                         </div>
-                        <div class="md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp</label><input type="text" name="whatsapp" value="<?= $edit_mode ? htmlspecialchars($data_edit['whatsapp'] ?? '') : '' ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: 62851xxxxxx"></div>
-                        <div class="md:col-span-5">
+                        <div class="sm:col-span-1 md:col-span-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status Akun</label>
+                            <?php
+                            $form_is_active = $edit_mode ? ((isset($data_edit['is_active']) && (int)$data_edit['is_active'] === 0) || ($data_edit['status_pegawai'] ?? '') === 'Nonaktif' ? 0 : 1) : 1;
+                            ?>
+                            <select name="is_active" class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500 font-bold <?= $form_is_active ? 'text-emerald-700 bg-emerald-50/50' : 'text-rose-700 bg-rose-50/50' ?>">
+                                <option value="1" <?= $form_is_active === 1 ? 'selected' : '' ?> class="text-emerald-700">🟢 Aktif (Bisa Login)</option>
+                                <option value="0" <?= $form_is_active === 0 ? 'selected' : '' ?> class="text-rose-700">🔴 Nonaktif (Cuti / Blokir)</option>
+                            </select>
+                        </div>
+                        <div class="sm:col-span-1 md:col-span-1"><label class="block text-sm font-medium text-gray-700 mb-1">Nomor WhatsApp</label><input type="text" name="whatsapp" value="<?= $edit_mode ? htmlspecialchars($data_edit['whatsapp'] ?? '') : '' ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-amber-500" placeholder="Contoh: 62851xxxxxx"></div>
+                        <div class="sm:col-span-2 md:col-span-6">
                             <label class="block text-sm font-medium text-gray-700 mb-2">Peran (Bisa pilih lebih dari satu)</label>
                             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 border p-4 rounded-lg bg-gray-50">
                                 <?php
@@ -301,7 +352,12 @@ $active_menu = 'asatidz';
                 </form>
             </div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Daftar Akun Terdaftar</h2></div>
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h2 class="font-bold text-gray-800">Daftar Akun Terdaftar</h2>
+                        <p class="text-xs text-gray-500">Gunakan toggle <strong>ON / OFF</strong> untuk mengaktifkan/menonaktifkan ustadz tanpa kehilangan data jika sewaktu-waktu kembali mengajar.</p>
+                    </div>
+                </div>
                 <div class="overflow-x-auto p-4">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-white">
@@ -312,6 +368,7 @@ $active_menu = 'asatidz';
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">WhatsApp</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Peran</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Keaktifan (ON/OFF)</th>
                                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Gaji Pokok</th>
                                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Tunjangan</th>
                                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Honor</th>
@@ -321,9 +378,11 @@ $active_menu = 'asatidz';
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <?php 
-                            $res = $conn->query("SELECT * FROM akun_ustadz ORDER BY nama ASC"); 
+                            $res = $conn->query("SELECT * FROM akun_ustadz ORDER BY (CASE WHEN is_active=1 AND status_pegawai!='Nonaktif' THEN 1 ELSE 2 END), nama ASC"); 
                             if ($res && $res->num_rows > 0) { 
                                 while($row = $res->fetch_assoc()) { 
+                                    $is_active_flag = (isset($row['is_active']) ? (int)$row['is_active'] === 1 : true) && (($row['status_pegawai'] ?? '') !== 'Nonaktif');
+                                    
                                     $roles_display_html = '';
                                     if (!empty($row['role'])) {
                                         $role_list = explode(',', $row['role']);
@@ -343,6 +402,7 @@ $active_menu = 'asatidz';
                                     if ($status_display === 'Honorer') $status_color = 'bg-amber-50 text-amber-700 border-amber-200';
                                     if ($status_display === 'Pegawai Muda') $status_color = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                                     if ($status_display === 'Pegawai Utama') $status_color = 'bg-purple-50 text-purple-700 border-purple-200';
+                                    if ($status_display === 'Nonaktif') $status_color = 'bg-rose-50 text-rose-700 border-rose-200';
 
                                     // 1. Gaji Pokok
                                     $gaji_pokok = 0;
@@ -368,16 +428,14 @@ $active_menu = 'asatidz';
                                     $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr) || in_array('tutor', $roles_arr) || in_array('guru', $roles_arr);
                                     $is_utama_or_muda = ($status_display === 'Pegawai Utama' || $status_display === 'Pegawai Muda');
                                     
-                                     if ($is_utama_or_muda && $has_ustadz_role) {
-                                         // Wajib mengajar 3 jam pelajaran per minggu (total 12 jam per bulan). Hanya dibayar kelebihannya.
-                                         $kelebihan_jam = max(0, $total_pertemuan - 12);
-                                         $honor = $kelebihan_jam * $active_rate;
-                                         $honor_note = "Kelebihan: {$kelebihan_jam}x (Grade {$active_grade})";
-                                     } else {
-                                         // Pegawai biasa / honorer / pengabdian dibayar seluruh jam mengajarnya
-                                         $honor = $total_pertemuan * $active_rate;
-                                         $honor_note = "{$total_pertemuan}x (Grade {$active_grade})";
-                                     }
+                                    if ($is_utama_or_muda && $has_ustadz_role) {
+                                        $kelebihan_jam = max(0, $total_pertemuan - 12);
+                                        $honor = $kelebihan_jam * $active_rate;
+                                        $honor_note = "Kelebihan: {$kelebihan_jam}x (Grade {$active_grade})";
+                                    } else {
+                                        $honor = $total_pertemuan * $active_rate;
+                                        $honor_note = "{$total_pertemuan}x (Grade {$active_grade})";
+                                    }
 
                                     // 2. Tunjangan Jabatan (Disesuaikan dengan KPI Grade bulan ini)
                                     $tunjangan = 0;
@@ -410,13 +468,13 @@ $active_menu = 'asatidz';
                                     // 4. Total Gaji
                                     $total_gaji = $gaji_pokok + $tunjangan + $honor;
 
-                                    $btn_aktifkan = "";
-                                    if (($row['status_pegawai'] ?? '') === 'Nonaktif') {
-                                        $btn_aktifkan = "<a href='?aktifkan_id={$row['id']}' onclick=\"return confirm('Buka blokir dan aktifkan kembali akun ini?')\" class='bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-bold px-2 py-1 rounded text-[10px] mr-2 inline-flex items-center gap-1 border border-emerald-300 shadow-sm'><i class='fas fa-unlock'></i> Aktifkan</a>";
-                                    }
+                                    $row_bg = $is_active_flag ? 'hover:bg-gray-50' : 'bg-slate-100/70 opacity-80 hover:opacity-100 transition-opacity';
 
-                                    echo "<tr class='hover:bg-gray-50 text-xs'>
-                                        <td class='px-4 py-3 font-bold text-gray-900'>".htmlspecialchars($row['nama'])."</td>
+                                    echo "<tr id='row-ustadz-{$row['id']}' class='$row_bg text-xs'>
+                                        <td class='px-4 py-3 font-bold text-gray-900'>
+                                            ".htmlspecialchars($row['nama'])."
+                                            ".(!$is_active_flag ? "<span class='ml-1 text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-extrabold'>OFF / NONAKTIF</span>" : "")."
+                                        </td>
                                         <td class='px-4 py-3'><span class='px-2 py-1 bg-gray-100 rounded font-mono text-gray-700'>".htmlspecialchars($row['username'])."</span></td>
                                         <td class='px-4 py-3 font-mono relative'>
                                             <span id='pwd-text-{$row['id']}' style='display:none;'>".htmlspecialchars($row['password'])."</span>
@@ -428,20 +486,39 @@ $active_menu = 'asatidz';
                                         <td class='px-4 py-3 font-mono font-bold text-gray-700'>".htmlspecialchars($row['whatsapp'] ?? '-')."</td>
                                         <td class='px-4 py-3'>$roles_display_html</td>
                                         <td class='px-4 py-3'><span class='inline-block px-2.5 py-0.5 rounded text-[10px] font-bold border $status_color'>$status_display</span></td>
+                                        
+                                        <!-- TOGGLE SWITCH KEAKTIFAN ON / OFF -->
+                                        <td class='px-4 py-3 text-center whitespace-nowrap'>
+                                            <div class='inline-flex items-center justify-center gap-2'>
+                                                <button type='button' 
+                                                    id='toggle-btn-{$row['id']}'
+                                                    onclick='toggleStatusUstadz({$row['id']}, ".($is_active_flag ? 1 : 0).", this)' 
+                                                    class='relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-inner ".($is_active_flag ? 'bg-emerald-500' : 'bg-gray-300')."' 
+                                                    title='".($is_active_flag ? 'Klik untuk NONAKTIFKAN (OFF)' : 'Klik untuk AKTIFKAN (ON)')."'>
+                                                    <span class='sr-only'>Toggle status</span>
+                                                    <span id='toggle-knob-{$row['id']}' class='pointer-events-none inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out text-[9px] ".($is_active_flag ? 'translate-x-5 text-emerald-600' : 'translate-x-0 text-gray-400')."'>
+                                                        <i id='toggle-icon-{$row['id']}' class='fas ".($is_active_flag ? 'fa-check' : 'fa-power-off')."'></i>
+                                                    </span>
+                                                </button>
+                                                <span id='toggle-label-{$row['id']}' class='text-[10px] font-extrabold w-12 text-left ".($is_active_flag ? 'text-emerald-700' : 'text-gray-400')."'>
+                                                    ".($is_active_flag ? 'ON' : 'OFF')."
+                                                </span>
+                                            </div>
+                                        </td>
+
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($gaji_pokok, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($tunjangan, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-right font-semibold text-slate-700'>Rp ".number_format($honor, 0, ',', '.')." <span class='text-[9px] text-gray-400 block'>($honor_note)</span></td>
                                         <td class='px-4 py-3 text-right font-bold text-amber-600 bg-amber-50/20'>Rp ".number_format($total_gaji, 0, ',', '.')."</td>
                                         <td class='px-4 py-3 text-center whitespace-nowrap'>
-                                            {$btn_aktifkan}
                                             <a href='../login-as.php?id={$row['id']}' class='bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold px-2 py-1 rounded text-[10px] mr-2 inline-flex items-center gap-1 border border-purple-300 shadow-sm' title='Login sebagai user ini untuk inspeksi error'><i class='fas fa-user-secret'></i> Login As</a>
-                                            <a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-2' title='Edit Akun'><i class='fas fa-edit'></i></a>
-                                            <a href='?hapus_id={$row['id']}' onclick=\"return confirm('Hapus akses login untuk ustadz ini?')\" class='text-red-500 hover:text-red-700' title='Hapus Akun'><i class='fas fa-trash'></i></a>
+                                            <a href='?edit_id={$row['id']}' class='text-blue-500 hover:text-blue-700 mr-2 p-1' title='Edit Data Akun'><i class='fas fa-edit'></i></a>
+                                            <a href='?hapus_id={$row['id']}' onclick=\"return confirm('PERINGATAN: Menghapus akan menghapus akun ini secara PERMANEN dari database.\\n\\nJika ustadz hanya keluar/cuti sementara, cukup gunakan toggle OFF agar data tidak hilang.\\n\\nYakin ingin HAPUS PERMANEN?')\" class='text-red-500 hover:text-red-700 p-1' title='Hapus Akun Permanen'><i class='fas fa-trash'></i></a>
                                         </td>
                                     </tr>"; 
                                 } 
                             } else { 
-                                echo "<tr><td colspan='11' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
+                                echo "<tr><td colspan='12' class='text-center py-6 text-gray-500 italic'>Belum ada akun Asatidz yang didaftarkan.</td></tr>"; 
                             } 
                             ?>
                         </tbody>
@@ -450,15 +527,86 @@ $active_menu = 'asatidz';
             </div>
         </main>
     </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
     <script>
         document.getElementById('open-sidebar-yayasan2').addEventListener('click', () => { 
             document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); 
             document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); 
         }); 
         document.getElementById('sidebar-overlay-yayasan2').addEventListener('click', () => { 
-            document.getElementById('sidebar-yayasan2').classList.toggle('hidden'); 
             document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden'); 
         });
+
+        function showToast(message, isSuccess = true) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 transform transition-all duration-300 translate-y-4 opacity-0 pointer-events-auto ${isSuccess ? 'bg-emerald-800 text-emerald-100 border border-emerald-600' : 'bg-rose-800 text-rose-100 border border-rose-600'}`;
+            toast.innerHTML = `<i class="fas ${isSuccess ? 'fa-check-circle text-emerald-300 text-sm' : 'fa-exclamation-circle text-rose-300 text-sm'}"></i> <div>${message}</div>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-4', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function toggleStatusUstadz(id, currentStatus, btn) {
+            const isCurrentlyActive = currentStatus === 1;
+            const newStatus = isCurrentlyActive ? 0 : 1;
+            
+            const btnEl = document.getElementById('toggle-btn-' + id);
+            const knobEl = document.getElementById('toggle-knob-' + id);
+            const iconEl = document.getElementById('toggle-icon-' + id);
+            const labelEl = document.getElementById('toggle-label-' + id);
+            const rowEl = document.getElementById('row-ustadz-' + id);
+
+            // Optimistic UI Update
+            if (newStatus === 1) {
+                btnEl.className = 'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-inner bg-emerald-500';
+                knobEl.className = 'pointer-events-none inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out text-[9px] translate-x-5 text-emerald-600';
+                iconEl.className = 'fas fa-check';
+                labelEl.className = 'text-[10px] font-extrabold w-12 text-left text-emerald-700';
+                labelEl.innerText = 'ON';
+                if(rowEl) {
+                    rowEl.classList.remove('bg-slate-100/70', 'opacity-80');
+                    rowEl.classList.add('hover:bg-gray-50');
+                }
+            } else {
+                btnEl.className = 'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-inner bg-gray-300';
+                knobEl.className = 'pointer-events-none inline-flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out text-[9px] translate-x-0 text-gray-400';
+                iconEl.className = 'fas fa-power-off';
+                labelEl.className = 'text-[10px] font-extrabold w-12 text-left text-gray-400';
+                labelEl.innerText = 'OFF';
+                if(rowEl) {
+                    rowEl.classList.add('bg-slate-100/70', 'opacity-80');
+                }
+            }
+
+            // Update onclick with newStatus
+            btnEl.setAttribute('onclick', `toggleStatusUstadz(${id}, ${newStatus}, this)`);
+
+            // Send Ajax Request
+            fetch(`asatidz.php?toggle_status_id=${id}&ajax=1`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message, newStatus === 1);
+                    } else {
+                        showToast('Gagal mengubah status', false);
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    showToast('Terjadi kesalahan koneksi', false);
+                });
+        }
 
         function togglePasswordVisibility(inputId, iconId) {
             var input = document.getElementById(inputId);
