@@ -27,6 +27,26 @@
                 <i class="fas fa-house w-4 text-center"></i>
                 <span>Beranda</span>
             </a>
+            <a href="dashboard-marketing.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-tachometer-alt w-4 text-center"></i>
+                <span>Dashboard Mkt</span>
+            </a>
+            <a href="admin-spmb.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-teal-800/80 text-white font-bold transition shadow-sm">
+                <i class="fas fa-user-graduate w-4 text-center"></i>
+                <span>Database PSB</span>
+            </a>
+            <a href="admin-brosur-settings.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-envelope-open-text w-4 text-center"></i>
+                <span>Brosur Digital</span>
+            </a>
+            <a href="admin-siaran-wa.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-broadcast-tower w-4 text-center"></i>
+                <span>Siaran WA Mitra</span>
+            </a>
+            <a href="admin-ai-hub.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-robot w-4 text-center"></i>
+                <span>AI Control Hub</span>
+            </a>
             <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-calendar-alt w-4 text-center"></i>
                 <span>Kalender</span>

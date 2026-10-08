@@ -753,6 +753,7 @@ $ruang_orangtua_cards = [
 // Data Menu Grid Card Ruang Web (Pengaturan Web)
 $ruang_web_cards = [
     ['label' => 'Dashboard Web', 'icon' => 'fas fa-tachometer-alt', 'href' => 'admin.php'],
+    ['label' => 'Database PSB', 'icon' => 'fas fa-user-graduate', 'href' => 'admin-spmb.php'],
     ['label' => 'Hero Banner', 'icon' => 'fas fa-home', 'href' => 'admin-hero.php'],
     ['label' => 'Tentang Kami', 'icon' => 'fas fa-info-circle', 'href' => 'admin-tentang.php'],
     ['label' => 'Pengajar', 'icon' => 'fas fa-chalkboard-teacher', 'href' => 'admin-pengajar.php'],
@@ -772,11 +773,11 @@ $ruang_web_cards = [
 // Data Menu Grid Card Ruang Marketing (AI & Prospek)
 $ruang_marketing_cards = [
     ['label' => 'Dashboard Mkt', 'icon' => 'fas fa-tachometer-alt', 'href' => 'dashboard-marketing.php'],
+    ['label' => 'Database PSB', 'icon' => 'fas fa-user-graduate', 'href' => 'admin-spmb.php'],
     ['label' => 'Siaran WA Mitra', 'icon' => 'fas fa-broadcast-tower', 'href' => 'admin-siaran-wa.php'],
     ['label' => 'Brosur Digital', 'icon' => 'fas fa-envelope-open-text', 'href' => 'admin-brosur-settings.php'],
     ['label' => 'Pipeline', 'icon' => 'fas fa-filter', 'href' => 'data-pipeline.php'],
     ['label' => 'Data Agen', 'icon' => 'fas fa-users', 'href' => 'data-agen.php'],
-    ['label' => 'Pendaftar SPMB', 'icon' => 'fas fa-user-graduate', 'href' => 'admin-spmb.php'],
     ['label' => 'AI Control Hub', 'icon' => 'fas fa-robot', 'href' => 'admin-ai-hub.php'],
     ['label' => 'Analisa Persona', 'icon' => 'fas fa-brain', 'href' => 'admin-analisa.php'],
     ['label' => 'Trend Scout', 'icon' => 'fas fa-chart-line', 'href' => 'admin-trend-scout.php'],

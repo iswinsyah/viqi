@@ -306,6 +306,9 @@ if (!isset($defined_menus['Web & Marketing']['ruang_marketing'])) {
 if (!isset($defined_menus['Web & Marketing']['pengaturan_brosur'])) {
     $defined_menus['Web & Marketing']['pengaturan_brosur'] = 'Pengaturan Brosur Digital';
 }
+if (!isset($defined_menus['Web & Marketing']['database_psb'])) {
+    $defined_menus['Web & Marketing']['database_psb'] = 'Database PSB Online';
+}
 
 $group_order = [
     'Ruang Yayasan' => 0,
