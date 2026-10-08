@@ -1,9 +1,13 @@
 <?php
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 require_once 'auth.php';
 require_once '../koneksi.php';
 
 // 1. Definisikan semua menu dan role yang ada di Ruang Asatidz
-// 1. Inisialisasi table menu_structure (Self-Healing)
+// Inisialisasi table menu_structure (Self-Healing)
 $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
     id INT AUTO_INCREMENT PRIMARY KEY,
     menu_group VARCHAR(100) NOT NULL,
@@ -12,6 +16,17 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
     icon VARCHAR(100) NOT NULL,
     href VARCHAR(255) NOT NULL
 )");
+
+// Sinkronisasi Pasti Menu Database PSB (Web & Marketing)
+$conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+    VALUES ('Web & Marketing', 'database_psb', 4, 'fa-user-graduate', 'admin-spmb.php') 
+    ON DUPLICATE KEY UPDATE menu_group='Web & Marketing', href='admin-spmb.php', icon='fa-user-graduate'");
+$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+    VALUES ('database_psb', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah,sekretaris_sekolah') 
+    ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah,sekretaris_sekolah'");
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('database_psb', 'Database PSB Online', 'Database PSB') 
+    ON DUPLICATE KEY UPDATE custom_label='Database PSB Online', short_label='Database PSB'");
 
 // Cek dan seed jika kosong
 $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'yayasan_kpi_musyrif', 'yayasan_kpi_kepsek', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
