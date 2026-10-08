@@ -88,6 +88,25 @@ $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_labe
     VALUES ('pengaturan_brosur', 'Pengaturan Brosur Digital', 'Brosur') 
     ON DUPLICATE KEY UPDATE custom_label='Pengaturan Brosur Digital', short_label='Brosur'");
 
+// Pastikan menu 'database_psb' terdaftar di Web & Marketing (Self-Healing)
+$chk_psb = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'database_psb'");
+if (!$chk_psb || $chk_psb->num_rows === 0) {
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+        VALUES ('Web & Marketing', 'database_psb', 4, 'fa-user-graduate', 'admin-spmb.php')");
+} else {
+    $conn->query("UPDATE menu_structure SET menu_group = 'Web & Marketing', href = 'admin-spmb.php', icon = 'fa-user-graduate' WHERE menu_key = 'database_psb'");
+}
+$chk_psb_p = $conn->query("SELECT id FROM menu_permissions WHERE menu_key = 'database_psb'");
+if (!$chk_psb_p || $chk_psb_p->num_rows === 0) {
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+        VALUES ('database_psb', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah,sekretaris_sekolah')");
+} else {
+    $conn->query("UPDATE menu_permissions SET allowed_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah,sekretaris_sekolah' WHERE menu_key = 'database_psb'");
+}
+$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+    VALUES ('database_psb', 'Database PSB Online', 'Database PSB') 
+    ON DUPLICATE KEY UPDATE custom_label='Database PSB Online', short_label='Database PSB'");
+
 // Pastikan menu 'kpi_admin_sekolah' & 'salary_admin' terdaftar jika belum ada (Self-Healing)
 $res_chk_kpi_adm = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kpi_admin_sekolah'");
 if ($res_chk_kpi_adm && $res_chk_kpi_adm->num_rows === 0) {
@@ -213,7 +232,8 @@ if ($count_struct === 0) {
         'Web & Marketing' => [
             'ruang_web' => ['href' => 'admin.php', 'icon' => 'fa-globe'],
             'ruang_marketing' => ['href' => 'dashboard-marketing.php', 'icon' => 'fa-bullseye'],
-            'pengaturan_brosur' => ['href' => 'admin-brosur-settings.php', 'icon' => 'fa-envelope-open-text']
+            'pengaturan_brosur' => ['href' => 'admin-brosur-settings.php', 'icon' => 'fa-envelope-open-text'],
+            'database_psb' => ['href' => 'admin-spmb.php', 'icon' => 'fa-user-graduate']
         ]
     ];
     
