@@ -1,6 +1,5 @@
 name: Auto Deploy to Hostinger
 
-# Trigger deploy otomatis setiap ada push ke branch 'main'
 on:
   push:
     branches:
@@ -11,7 +10,7 @@ jobs:
   web-deploy:
     name: 🎉 Fast Delta Deploy to Hostinger
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
@@ -36,6 +35,8 @@ jobs:
           **/node_modules/**
           **/upload/**
           **/uploads/**
+          **/assets/**
+          **/fonts/**
 
     - name: ⚡ Fast Sync to villaquranindonesia.com
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -55,6 +56,8 @@ jobs:
           **/node_modules/**
           **/upload/**
           **/uploads/**
+          **/assets/**
+          **/fonts/**
 
     - name: ⚡ Fast Sync to Root public_html
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
@@ -74,3 +77,5 @@ jobs:
           **/node_modules/**
           **/upload/**
           **/uploads/**
+          **/assets/**
+          **/fonts/**
