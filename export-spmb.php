@@ -1,6 +1,16 @@
 <?php
-require_once 'auth.php'; // Pastikan hanya admin yang bisa download
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once 'koneksi.php';
+require_once 'auth-unified.php';
+
+// Validasi Akses: Boleh diakses jika logged in
+$user = getCurrentUser();
+if (!$user && !isset($_SESSION['admin_logged_in']) && !isset($_SESSION['yayasan_logged_in']) && !isset($_SESSION['yayasan_user']) && !isset($_SESSION['app_user_id'])) {
+    header("Location: login.php");
+    exit;
+}
 
 // Perintahkan browser untuk mendownload sebagai file Excel (.xls)
 header("Content-Type: application/vnd-ms-excel");
