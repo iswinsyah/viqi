@@ -284,6 +284,8 @@ if ($res_db_menus) {
             'rekap_uang_saku_musyrif' => 'Rekap Uang Saku Santri',
             'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)',
             'yayasan_cp' => 'Capaian Pembelajaran (CP) AI',
+            'yayasan_psb' => 'Database PSB Online',
+            'database_psb' => 'Database PSB Online',
             'pengaturan_brosur' => 'Pengaturan Brosur Digital',
             'ruang_web' => 'Ruang Web (CMS & Website)',
             'ruang_marketing' => 'Ruang Marketing & AI'

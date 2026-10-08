@@ -31,11 +31,22 @@ $total_asatidz = $q_asatidz ? ($q_asatidz->fetch_assoc()['tot'] ?? 0) : 0;
                 <h1 class="text-2xl font-bold text-gray-900">Selamat Datang di Ruang Yayasan 2</h1>
                 <p class="text-gray-500 mt-1">Area baru yang lebih segar, cepat, dan terorganisir.</p>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center md:col-span-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
                     <div class="p-4 rounded-full bg-amber-100 text-amber-600 mr-4"><i class="fas fa-users-cog text-2xl"></i></div>
                     <div><p class="text-sm font-medium text-gray-500">Total Akun Asatidz</p><p class="text-2xl font-bold text-gray-900"><?= $total_asatidz ?></p></div>
                 </div>
+
+                <a href="../admin-spmb.php" class="bg-white hover:bg-emerald-50/60 rounded-xl shadow-sm border border-emerald-200 p-6 flex items-center justify-between transition group">
+                    <div class="flex items-center">
+                        <div class="p-4 rounded-full bg-emerald-100 text-emerald-700 mr-4 group-hover:scale-105 transition-transform"><i class="fas fa-user-graduate text-2xl"></i></div>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800 group-hover:text-emerald-800 transition-colors">Database PSB Online</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Monitoring data pendaftar santri baru</p>
+                        </div>
+                    </div>
+                    <span class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs group-hover:translate-x-1 transition-transform"><i class="fas fa-arrow-right"></i></span>
+                </a>
             </div>
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-amber-900 max-w-3xl">
                 <h3 class="font-bold mb-2 flex items-center"><i class="fas fa-shield-alt mr-2 text-amber-600"></i>Otoritas Akses Ruang Asatidz</h3>
