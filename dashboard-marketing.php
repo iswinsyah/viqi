@@ -142,6 +142,15 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
             
             <!-- SHORTCUTS AI AGENTS -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <a href="admin-spmb.php" class="bg-white hover:bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group relative overflow-hidden">
+                    <span class="absolute top-2 right-2 bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">PSB</span>
+                    <i class="fas fa-user-graduate text-emerald-600 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-emerald-900 mt-1 text-center">Database PSB</span>
+                </a>
+                <a href="admin-brosur-settings.php" class="bg-white hover:bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
+                    <i class="fas fa-envelope-open-text text-amber-600 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
+                    <span class="text-sm font-bold text-amber-900 mt-1 text-center">Brosur Digital</span>
+                </a>
                 <a href="admin-ai-hub.php" class="bg-white hover:bg-indigo-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
                     <i class="fas fa-robot text-indigo-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
                     <span class="text-sm font-bold text-gray-700 mt-1 text-center">Pusat Kendali AI</span>

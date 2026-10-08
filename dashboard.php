@@ -331,6 +331,25 @@ try {
     $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
         VALUES ('database_psb', 'Database PSB Online', 'Database PSB') 
         ON DUPLICATE KEY UPDATE custom_label='Database PSB Online', short_label='Database PSB'");
+
+    // Database PSB Online (Ruang Yayasan)
+    $chk_ypsb = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'yayasan_psb'");
+    if (!$chk_ypsb || $chk_ypsb->num_rows === 0) {
+        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+            VALUES ('Ruang Yayasan', 'yayasan_psb', 27, 'fas fa-user-graduate', 'admin-spmb.php')");
+    } else {
+        $conn->query("UPDATE menu_structure SET menu_group = 'Ruang Yayasan', href = 'admin-spmb.php', icon = 'fas fa-user-graduate' WHERE menu_key = 'yayasan_psb'");
+    }
+    $chk_ypsb_p = $conn->query("SELECT id FROM menu_permissions WHERE menu_key = 'yayasan_psb'");
+    if (!$chk_ypsb_p || $chk_ypsb_p->num_rows === 0) {
+        $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+            VALUES ('yayasan_psb', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah')");
+    } else {
+        $conn->query("UPDATE menu_permissions SET allowed_roles = 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah' WHERE menu_key = 'yayasan_psb'");
+    }
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('yayasan_psb', 'Database PSB Online', 'Database PSB') 
+        ON DUPLICATE KEY UPDATE custom_label='Database PSB Online', short_label='Database PSB'");
 } catch (Throwable $e) {
     // Graceful error handling - log jika diperlukan
 }
@@ -368,6 +387,8 @@ $default_1word_labels = [
     'yayasan_kas'        => 'Kas',
     'yayasan_cashflow'   => 'Cashflow',
     'yayasan_kpi'        => 'KPI',
+    'yayasan_psb'        => 'Database PSB',
+    'database_psb'       => 'Database PSB',
     'kpi_kepsek'         => 'KPI Kepsek',
     'kpi_musyrif'        => 'KPI Musyrif',
     'yayasan_kpi_musyrif'=> 'KPI Asrama',
