@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jepret-vq-cache-v1';
+const CACHE_NAME = 'jepret-vq-cache-v2';
 const urlsToCache = [
   'musyrif-upload-sosmed.php',
   'manifest.json'

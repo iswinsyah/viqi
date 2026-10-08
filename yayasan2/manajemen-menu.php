@@ -507,7 +507,11 @@ $active_menu = 'manajemen_menu';
         </header>
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-slate-900"><i class="fas fa-sitemap text-[#0b8478] mr-2"></i>Manajemen Menu & Hak Akses Beranda</h1>
+                <h1 class="text-2xl font-bold text-slate-900 flex items-center flex-wrap gap-2">
+                    <i class="fas fa-sitemap text-[#0b8478]"></i>
+                    <span>Manajemen Menu & Hak Akses Beranda</span>
+                    <span class="text-xs bg-teal-600 text-white px-3 py-1 rounded-full font-bold shadow-xs">Pembaruan PSB Online</span>
+                </h1>
                 <p class="text-slate-500 mt-1 text-sm">Atur hak akses menu apa saja yang muncul di Beranda Super-App untuk setiap dari 16 Peran/Jabatan.</p>
             </div>
             <?php if(isset($pesan_sukses)) echo "<div class='bg-teal-50 border border-teal-200 text-[#0b8478] px-4 py-3 rounded-xl mb-6 shadow-sm flex items-center font-bold text-sm'><i class='fas fa-check-circle text-lg mr-2.5'></i> $pesan_sukses</div>"; ?>
