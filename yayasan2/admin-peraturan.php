@@ -12,24 +12,22 @@ $conn->query("CREATE TABLE IF NOT EXISTS peraturan_pegawai (
 )");
 
 // Self-healing: Pastikan Aturan Anti-Fake GPS & Integritas Kehadiran terdaftar
-$check_rule_gps = $conn->query("SELECT id FROM peraturan_pegawai WHERE jabatan = 'Semua Pegawai & Asatidz (Kebijakan Anti-Fake GPS & Disiplin Lokasi)' LIMIT 1");
-if ($check_rule_gps && $check_rule_gps->num_rows == 0) {
-    $rule_anti_fake = "<h3>KEBIJAKAN INTEGRITAS KEHADIRAN & LARANGAN MANIPULASI LOKASI (ANTI-FAKE GPS)</h3>"
-        . "<p>Dalam rangka menjaga amanah, kedisiplinan kerja, dan keberkahan lembaga pendidikan Villa Quran, seluruh pegawai dan asatidz wajib menaati ketentuan absensi kehadiran sebagai berikut:</p>"
-        . "<ol>"
-        . "<li><b>Kewajiban Kehadiran Fisik:</b> Absensi kehadiran (Masuk, Mengajar, Rapat, dan Pulang) hanya sah apabila dilakukan secara langsung dan fisik di titik lokasi gedung lembaga yang telah ditentukan (Kantor Utama, Asrama Rijal, Asrama Nisa, atau Masjid At Taqwa).</li>"
-        . "<li><b>Larangan Keras Manipulasi Lokasi:</b> Dilarang keras menggunakan aplikasi Fake GPS, Mock Location, emulator, VPN spoofing, maupun alat manipulasi perangkat lainnya untuk memalsukan posisi koordinat GPS saat melakukan absensi.</li>"
-        . "<li><b>Larangan Titip Absen:</b> Dilarang keras membagikan akun login (username & password) kepada pegawai lain untuk tujuan diabsenkan secara curang tanpa kehadiran fisik yang bersangkutan di lokasi.</li>"
-        . "<li><b>Pemantauan Forensik Digital Cerdas:</b> Sistem SADIGS 4.0 dilengkapi algoritma pendeteksi kecurangan (Anti-Fake GPS) yang secara otomatis mendeteksi koordinat statis kembar, anomali sinyal satelit, serta langsung mengirimkan laporan peringatan ke WhatsApp Pengurus Yayasan.</li>"
-        . "<li><b>Sanksi Pelanggaran:</b>"
-        . "<ul>"
-        . "<li><b>Pelanggaran Pertama:</b> Status kehadiran dibatalkan otomatis menjadi Alpa (Tanpa Keterangan) dan pemotongan tunjangan kehadiran hari berjalan.</li>"
-        . "<li><b>Pelanggaran Kedua:</b> Penerbitan Surat Peringatan (SP 1) tertulis dan pemotongan honor/gaji sesuai ketentuan evaluasi kedisiplinan HRD.</li>"
-        . "<li><b>Pelanggaran Berulang:</b> Evaluasi status kepegawaian oleh Badan Pengurus Yayasan.</li>"
-        . "</ul></li></ol>";
-    $esc_rule = $conn->real_escape_string($rule_anti_fake);
-    $conn->query("INSERT INTO peraturan_pegawai (jabatan, konten) VALUES ('Semua Pegawai & Asatidz (Kebijakan Anti-Fake GPS & Disiplin Lokasi)', '$esc_rule')");
-}
+// Self-healing: Pastikan Aturan Anti-Fake GPS & Integritas Kehadiran terdaftar dan selalu terbarui
+$rule_anti_fake = "<h3>KEBIJAKAN KETAT INTEGRITAS KEHADIRAN & LARANGAN MANIPULASI LOKASI (ANTI-FAKE GPS)</h3>"
+    . "<p><b>Pernyataan Ketua Yayasan:</b> Lembaga sama sekali tidak mentolerir ketidakjujuran dan segala bentuk manipulasi data kehadiran (akal-akalan). Seluruh pegawai dan asatidz wajib menjunjung tinggi amanah dan kejujuran.</p>"
+    . "<ol>"
+    . "<li><b>Kewajiban Kehadiran Fisik:</b> Absensi kehadiran (Masuk, Mengajar, Rapat, dan Pulang) hanya sah apabila dilakukan secara langsung dan fisik di titik lokasi gedung lembaga yang telah ditentukan (Kantor Utama, Asrama Rijal, Asrama Nisa, atau Masjid At Taqwa).</li>"
+    . "<li><b>Larangan Keras Manipulasi Lokasi:</b> Dilarang keras menggunakan aplikasi Fake GPS, Mock Location, emulator, VPN spoofing, maupun alat manipulasi perangkat lainnya untuk memalsukan posisi koordinat GPS saat melakukan absensi.</li>"
+    . "<li><b>Larangan Titip Absen:</b> Dilarang keras membagikan akun login (username & password) kepada pegawai lain untuk tujuan diabsenkan secara curang tanpa kehadiran fisik yang bersangkutan di lokasi.</li>"
+    . "<li><b>Pemantauan Forensik Digital Cerdas:</b> Sistem SADIGS 4.0 dilengkapi algoritma pendeteksi kecurangan (Anti-Fake GPS) yang secara otomatis mendeteksi koordinat statis kembar, anomali sinyal satelit, serta langsung mengirimkan laporan peringatan ke WhatsApp Pengurus Yayasan.</li>"
+    . "<li><b>Sanksi Ketat & Tanpa Toleransi (Zero Tolerance):</b>"
+    . "<ul>"
+    . "<li><b>AKUN LANGSUNG DIMATIKAN SEKETIKA:</b> Setiap pegawai yang terdeteksi melakukan manipulasi absensi (Fake GPS/titip absen), akun sistemnya akan dinonaktifkan/dimatikan secara otomatis saat itu juga dan status kehadiran hari berjalan dibatalkan (Alpa).</li>"
+    . "<li><b>PROSEDUR PEMULIHAN AKUN:</b> Akun yang telah dimatikan <u>HANYA DAPAT DIAKTIFKAN KEMBALI</u> setelah pegawai yang bersangkutan <b>menghadap langsung secara tatap muka kepada Ketua Yayasan</b>. Jika permohonan klarifikasi dan komitmen kejujuran diterima oleh Ketua Yayasan, barulah akun akan dipulihkan.</li>"
+    . "<li><b>Sanksi Tambahan:</b> Pemotongan tunjangan kehadiran, evaluasi kedisiplinan kerja, dan penerbitan Surat Peringatan (SP) sesuai keputusan Ketua Yayasan.</li>"
+    . "</ul></li></ol>";
+$esc_rule = $conn->real_escape_string($rule_anti_fake);
+$conn->query("INSERT INTO peraturan_pegawai (jabatan, konten) VALUES ('Semua Pegawai & Asatidz (Kebijakan Anti-Fake GPS & Disiplin Lokasi)', '$esc_rule') ON DUPLICATE KEY UPDATE konten = VALUES(konten)");
 
 // 2. Proses Simpan ke Database
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_peraturan'])) {

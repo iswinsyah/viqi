@@ -2211,7 +2211,14 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                             const warnNote = data.warning_msg ? `<div class="mt-2 text-amber-600 bg-amber-50 p-2 rounded-lg text-xs font-semibold">${data.warning_msg}</div>` : '';
                             showDashAbsenModal('🎉 Absensi Berhasil!', `<span class="font-bold text-slate-800">${data.message}</span>${warnNote}<div class="mt-2 text-[11px] text-slate-400">Halaman akan otomatis dimuat ulang...</div>`, 'success', true);
                         } else if (data.status === 'rejected') {
-                            showDashAbsenModal('⚠️ Di Luar Jangkauan', data.message, 'rejected');
+                            if (data.account_disabled) {
+                                showDashAbsenModal('🚨 AKUN DINONAKTIFKAN', `<div class="text-left bg-rose-50 border border-rose-200 p-3 rounded-xl text-rose-800 text-xs font-semibold leading-relaxed mb-2">${data.message.replace(/\n/g, '<br>')}</div><div class="text-[11px] text-slate-500 font-bold">Mengalihkan ke halaman login...</div>`, 'rejected');
+                                setTimeout(() => {
+                                    window.location.href = 'login.php?blocked=1';
+                                }, 7000);
+                            } else {
+                                showDashAbsenModal('⚠️ Di Luar Jangkauan', data.message, 'rejected');
+                            }
                         } else {
                             showDashAbsenModal('Gagal Absensi', data.message || 'Terjadi kendala saat memproses absensi.', 'error');
                         }

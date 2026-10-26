@@ -1028,9 +1028,16 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                     }
                     setTimeout(() => window.location.reload(), 4000);
                 } else if (data.status === 'rejected') {
-                    showAlertModal('Absensi Ditolak', data.message, 'rejected');
-                    btnElement.disabled = false;
-                    btnElement.innerHTML = originalHTML;
+                    if (data.account_disabled) {
+                        showAlertModal('🚨 AKUN DINONAKTIFKAN', data.message, 'rejected');
+                        setTimeout(() => {
+                            window.location.href = 'login.php?blocked=1';
+                        }, 7000);
+                    } else {
+                        showAlertModal('Absensi Ditolak', data.message, 'rejected');
+                        btnElement.disabled = false;
+                        btnElement.innerHTML = originalHTML;
+                    }
                 } else {
                     showAlertModal('Gagal Absensi', data.message, 'error');
                     btnElement.disabled = false;

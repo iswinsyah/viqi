@@ -63,9 +63,9 @@ function haversine_distance($lat1, $lon1, $lat2, $lon2) {
     return $earth_radius * $c;
 }
 
-function kirim_notifikasi_wa_yayasan($pesan) {
+function kirim_notifikasi_wa_yayasan($pesan, $target_custom = null) {
     $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
-    $no_wa = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223';
+    $no_wa = !empty($target_custom) ? $target_custom : (defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223');
     
     $waFd = ['target' => $no_wa, 'message' => $pesan];
     $ch = curl_init();
@@ -308,13 +308,14 @@ if (!$is_fake_gps) {
     }
 }
 
-// 4. Jika Terdeteksi Fake GPS: TOLAK & CATAT KE DATABASE SERTA NOTIFIKASI WA YAYASAN
+// 4. Jika Terdeteksi Fake GPS: NONAKTIFKAN AKUN SEKETIKA, TOLAK, CATAT KE DATABASE & NOTIFIKASI
 if ($is_fake_gps) {
-    $status_fake = 'Ditolak (Fake GPS)';
+    $status_fake = 'Ditolak (Akun Dimatikan)';
     $waktu_sekarang = date('Y-m-d H:i:s');
     $koordinat_pegawai = "$user_lat, $user_lon";
-    $keterangan_fake = 'Ditolak: ' . $fake_gps_reason;
+    $keterangan_fake = 'Pelanggaran Berat: Terdeteksi Fake GPS (' . $fake_gps_reason . '). Akun dinonaktifkan otomatis.';
 
+    // A. Simpan catatan penolakan ke database absensi
     $stmt_f = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan, rapat_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
     if ($stmt_f) {
         $stmt_f->bind_param("isssssi", $ustadz_id, $waktu_sekarang, $req_jenis_absen, $status_fake, $koordinat_pegawai, $keterangan_fake, $rapat_id);
@@ -322,22 +323,51 @@ if ($is_fake_gps) {
         $stmt_f->close();
     }
 
-    // Kirim notifikasi WA Yayasan
+    // B. TINDAKAN TEGAS: MATIKAN / NONAKTIFKAN AKUN SECARA OTOMATIS
+    $app_u_id = (int)($_SESSION['app_user_id'] ?? 0);
+    $conn->query("UPDATE akun_ustadz SET status_pegawai = 'Nonaktif' WHERE id = $ustadz_id");
+    $conn->query("UPDATE app_users SET status_aktif = 0 WHERE ref_id = $ustadz_id OR id = $app_u_id");
+
     $nama_pegawai = $_SESSION['ustadz_nama'] ?? 'Pegawai';
-    $pesan_wa_fake = "🚨 *PERINGATAN PELANGGARAN: FAKE GPS TERDETEKSI*\n\n"
+
+    // C. Notifikasi WhatsApp ke Ketua/Manajemen Yayasan
+    $pesan_wa_fake = "🚨 *TINDAKAN TEGAS: AKUN PEGAWAI DINONAKTIFKAN OTOMATIS*\n\n"
                   . "Pegawai: *$nama_pegawai*\n"
                   . "Waktu: " . date('H:i:s') . " WIB\n"
                   . "Jenis Absen: *$req_jenis_absen*\n"
-                  . "Status: *DITOLAK (Terindikasi Fake GPS)*\n"
-                  . "Penyebab: _$fake_gps_reason_\n"
-                  . "Koordinat Terdeteksi: `$user_lat, $user_lon`\n\n"
-                  . "⚠️ _Sistem telah otomatis membatalkan kehadiran dan mencatat upaya manipulasi lokasi ini ke database kepegawaian yayasan._\n\n"
+                  . "Pelanggaran: *Manipulasi Lokasi (Fake GPS / Tidak Jujur)*\n"
+                  . "Indikator: _$fake_gps_reason_\n"
+                  . "Koordinat: `$user_lat, $user_lon`\n\n"
+                  . "⛔ *STATUS: AKUN TELAH DIMATIKAN SISTEM*\n"
+                  . "Sesuai instruksi Ketua Yayasan, akun telah dinonaktifkan permanen dan hanya dapat diaktifkan kembali setelah pegawai yang bersangkutan menghadap langsung ke Ketua Yayasan.\n\n"
                   . "-- SADIGS 4.0 Villa Quran --";
     kirim_notifikasi_wa_yayasan($pesan_wa_fake);
 
+    // D. Notifikasi WhatsApp ke nomor pegawai yang bersangkutan jika nomornya terdaftar
+    $res_p_wa = $conn->query("SELECT whatsapp FROM akun_ustadz WHERE id = $ustadz_id LIMIT 1");
+    if ($res_p_wa && $r_pwa = $res_p_wa->fetch_assoc()) {
+        $p_wa_num = preg_replace('/[^0-9]/', '', $r_pwa['whatsapp'] ?? '');
+        if (!empty($p_wa_num)) {
+            if (substr($p_wa_num, 0, 1) === '0') $p_wa_num = '62' . substr($p_wa_num, 1);
+            $pesan_wa_pegawai = "🚨 *PEMBERITAHUAN PENONAKTIFAN AKUN*\n\n"
+                              . "Kepada Yth: *$nama_pegawai*\n\n"
+                              . "Akun Anda di sistem SADIGS Villa Quran telah *DINONAKTIFKAN SECARA OTOMATIS* oleh sistem karena terdeteksi melakukan manipulasi lokasi absensi (Fake GPS / tidak jujur).\n\n"
+                              . "⚠️ Sesuai ketetapan Yayasan, akun Anda tidak dapat digunakan dan *HANYA BISA DIAKTIFKAN KEMBALI* setelah Anda menghadap langsung kepada *Ketua Yayasan*. Jika klarifikasi dan permohonan Anda diterima, akun baru akan dipulihkan.\n\n"
+                              . "-- Manajemen Villa Quran --";
+            kirim_notifikasi_wa_yayasan($pesan_wa_pegawai, $p_wa_num);
+        }
+    }
+
+    // E. Hancurkan sesi login
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_unset();
+        session_destroy();
+    }
+
     die(json_encode([
         'status' => 'rejected',
-        'message' => '⚠️ Absensi Ditolak! Sistem mendeteksi adanya manipulasi lokasi (' . $fake_gps_reason . '). Sesuai aturan yayasan, seluruh pegawai dilarang menggunakan aplikasi Fake GPS/Mock Location dan wajib hadir fisik di lokasi kerja.'
+        'account_disabled' => true,
+        'message' => "🚨 PELANGGARAN BERAT: AKUN ANDA TELAH DIMATIKAN!\n\nSistem mendeteksi adanya manipulasi lokasi absensi/Fake GPS (indikasi ketidakjujuran).\n\nAkun Anda telah dinonaktifkan oleh sistem dan HANYA BISA DIAKTIFKAN KEMBALI setelah Anda menghadap langsung kepada Ketua Yayasan. Jika permohonan/klarifikasi Anda diterima, akun baru akan dipulihkan."
     ]));
 }
 

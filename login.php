@@ -8,6 +8,9 @@ if (isset($_SESSION['app_user_id'])) {
 }
 
 $error = '';
+if (isset($_GET['blocked'])) {
+    $error = "🚨 AKUN DINONAKTIFKAN: Akun Anda telah dimatikan oleh sistem karena terdeteksi melakukan manipulasi absensi (Fake GPS / ketidakjujuran). Akun HANYA BISA DIAKTIFKAN KEMBALI setelah Anda menghadap langsung kepada Ketua Yayasan. Jika permohonan/klarifikasi Anda diterima, akun akan dipulihkan.";
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST['username'] ?? '');
@@ -16,8 +19,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (!empty($username) && !empty($password)) {
         $username_esc = $conn->real_escape_string($username);
         
-        // 1. Cari user di tabel terpadu app_users
-        $res = $conn->query("SELECT * FROM app_users WHERE username = '$username_esc' AND status_aktif = 1 LIMIT 1");
+        // Cek apakah akun dinonaktifkan (karena pelanggaran Fake GPS / sanksi disiplin)
+        $chk_block_app = $conn->query("SELECT id FROM app_users WHERE username = '$username_esc' AND status_aktif = 0 LIMIT 1");
+        $chk_block_ust = $conn->query("SELECT id FROM akun_ustadz WHERE username = '$username_esc' AND status_pegawai = 'Nonaktif' LIMIT 1");
+        if (($chk_block_app && $chk_block_app->num_rows > 0) || ($chk_block_ust && $chk_block_ust->num_rows > 0)) {
+            $error = "🚨 AKUN DINONAKTIFKAN: Akun Anda telah dimatikan oleh sistem karena terdeteksi melakukan manipulasi absensi (Fake GPS / ketidakjujuran). Akun HANYA BISA DIAKTIFKAN KEMBALI setelah Anda menghadap langsung kepada Ketua Yayasan. Jika permohonan/klarifikasi Anda diterima, akun akan dipulihkan.";
+        } else {
+            // 1. Cari user di tabel terpadu app_users
+            $res = $conn->query("SELECT * FROM app_users WHERE username = '$username_esc' AND status_aktif = 1 LIMIT 1");
         
         $login_success = false;
         $user_data = null;
@@ -164,9 +173,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $error = 'Username atau Password salah. Silakan periksa kembali!';
         }
-    } else {
-        $error = 'Harap isi Username dan Password!';
     }
+} else {
+    $error = 'Harap isi Username dan Password!';
+}
 }
 ?>
 <!DOCTYPE html>

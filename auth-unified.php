@@ -10,6 +10,38 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/koneksi.php';
 
+// Cek status keaktifan akun pengguna yang sedang login
+if (!empty($_SESSION['app_user_id']) || !empty($_SESSION['ustadz_id'])) {
+    $c_uid = (int)($_SESSION['app_user_id'] ?? 0);
+    $c_ust = (int)($_SESSION['ustadz_id'] ?? 0);
+    // Lewatkan akun Super Admin 9999
+    if ($c_ust != 9999 && $c_uid != 9999) {
+        $is_account_suspended = false;
+        if ($c_uid > 0 && isset($conn) && $conn) {
+            $q_act = $conn->query("SELECT status_aktif FROM app_users WHERE id = $c_uid LIMIT 1");
+            if ($q_act && $r_act = $q_act->fetch_assoc()) {
+                if (isset($r_act['status_aktif']) && (int)$r_act['status_aktif'] === 0) {
+                    $is_account_suspended = true;
+                }
+            }
+        }
+        if (!$is_account_suspended && $c_ust > 0 && isset($conn) && $conn) {
+            $q_ust = $conn->query("SELECT status_pegawai FROM akun_ustadz WHERE id = $c_ust LIMIT 1");
+            if ($q_ust && $r_ust = $q_ust->fetch_assoc()) {
+                if (($r_ust['status_pegawai'] ?? '') === 'Nonaktif') {
+                    $is_account_suspended = true;
+                }
+            }
+        }
+        if ($is_account_suspended) {
+            session_unset();
+            session_destroy();
+            header("Location: login.php?blocked=1");
+            exit;
+        }
+    }
+}
+
 function getRoleAliases($role) {
     $r = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($role)));
     $map = [
