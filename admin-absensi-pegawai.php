@@ -982,6 +982,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                         (position) => {
                             userLatitude = position.coords.latitude;
                             userLongitude = position.coords.longitude;
+                            window.userAccuracy = position.coords.accuracy || 0;
+                            window.isMocked = (position.coords.isMock || position.mocked || (window.userAccuracy === 0)) ? 1 : 0;
                             document.getElementById('alert-modal').classList.add('hidden'); // Tutup modal
                             sendAbsensiRequest(jenisAbsen, btn);
                         },
@@ -1008,6 +1010,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             const formData = new FormData();
             formData.append('user_lat', userLatitude);
             formData.append('user_lon', userLongitude);
+            formData.append('gps_accuracy', window.userAccuracy || 0);
+            formData.append('is_mock', window.isMocked || 0);
             formData.append('jenis_absen', jenisAbsen);
 
             fetch('proses-absen.php', {

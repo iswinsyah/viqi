@@ -123,6 +123,8 @@ $ustadz_id = $_SESSION['ustadz_id'];
 $qr_data_base64 = $_POST['qr_data'] ?? '';
 $user_lat = (float)($_POST['user_lat'] ?? 0);
 $user_lon = (float)($_POST['user_lon'] ?? 0);
+$gps_accuracy = isset($_POST['gps_accuracy']) ? (float)$_POST['gps_accuracy'] : null;
+$is_mock_client = (int)($_POST['is_mock'] ?? 0);
 $req_jenis_absen = $_POST['jenis_absen'] ?? 'Harian';
 
 // F. Validasi Hak Akses Role Khusus Harian/Pegawai
@@ -259,6 +261,84 @@ if ($req_jenis_absen === 'Rapat') {
 
 if ($user_lat == 0 || $user_lon == 0) {
     json_response('error', 'Koordinat lokasi Anda tidak valid atau gagal dibaca.');
+}
+
+// =========================================================================
+// ATURAN PROTEKSI ANTI-FAKE GPS & DETEKSI MANIPULASI LOKASI
+// =========================================================================
+$is_fake_gps = false;
+$fake_gps_reason = '';
+
+// 1. Cek Flag Mock Location dari perangkat/browser
+if ($is_mock_client === 1) {
+    $is_fake_gps = true;
+    $fake_gps_reason = 'Terdeteksi atribut Mock Location / Aplikasi Tiruan aktif pada perangkat Anda';
+}
+
+// 2. Cek Akurasi GPS tidak wajar (Fake GPS / Emulator seringkali mengirim akurasi 0 atau < 1 meter)
+if (!$is_fake_gps && $gps_accuracy !== null) {
+    if ($gps_accuracy < 1.0 && $gps_accuracy >= 0) {
+        $is_fake_gps = true;
+        $fake_gps_reason = "Akurasi GPS tidak wajar/artifisial (" . round($gps_accuracy, 2) . "m)";
+    }
+}
+
+// 3. Cek Koordinat Kembar Identik Lintas Hari (The Static Pin Exploit)
+// Antena satelit GPS smartphone asli yang menangkap sinyal selalu memiliki jitter/fluktuasi mikroskopik.
+// Mustahil dua hari berbeda menghasilkan angka koordinat yang identik hingga sub-centimeter (< 0.0000008 derajat).
+$today = date('Y-m-d');
+if (!$is_fake_gps) {
+    $res_hist = $conn->query("SELECT waktu_absen, koordinat_pegawai FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND koordinat_pegawai IS NOT NULL AND status_kehadiran IN ('Masuk', 'Pulang') AND DATE(waktu_absen) != '$today' ORDER BY id DESC LIMIT 50");
+    if ($res_hist && $res_hist->num_rows > 0) {
+        while ($rh = $res_hist->fetch_assoc()) {
+            $h_parts = explode(',', $rh['koordinat_pegawai']);
+            if (count($h_parts) == 2) {
+                $h_lat = (float)trim($h_parts[0]);
+                $h_lon = (float)trim($h_parts[1]);
+                $d_lat = abs($user_lat - $h_lat);
+                $d_lon = abs($user_lon - $h_lon);
+                // Jika selisih kurang dari 0.0000008 derajat (~8 cm di bumi) pada hari yang berbeda
+                if ($d_lat < 0.0000008 && $d_lon < 0.0000008) {
+                    $is_fake_gps = true;
+                    $fake_gps_reason = "Koordinat terdeteksi statis & identik dengan riwayat tanggal " . date('d-m-Y', strtotime($rh['waktu_absen'])) . " (indikasi pin Fake GPS tersimpan)";
+                    break;
+                }
+            }
+        }
+    }
+}
+
+// 4. Jika Terdeteksi Fake GPS: TOLAK & CATAT KE DATABASE SERTA NOTIFIKASI WA YAYASAN
+if ($is_fake_gps) {
+    $status_fake = 'Ditolak (Fake GPS)';
+    $waktu_sekarang = date('Y-m-d H:i:s');
+    $koordinat_pegawai = "$user_lat, $user_lon";
+    $keterangan_fake = 'Ditolak: ' . $fake_gps_reason;
+
+    $stmt_f = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, status_kehadiran, koordinat_pegawai, keterangan, rapat_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    if ($stmt_f) {
+        $stmt_f->bind_param("isssssi", $ustadz_id, $waktu_sekarang, $req_jenis_absen, $status_fake, $koordinat_pegawai, $keterangan_fake, $rapat_id);
+        $stmt_f->execute();
+        $stmt_f->close();
+    }
+
+    // Kirim notifikasi WA Yayasan
+    $nama_pegawai = $_SESSION['ustadz_nama'] ?? 'Pegawai';
+    $pesan_wa_fake = "🚨 *PERINGATAN PELANGGARAN: FAKE GPS TERDETEKSI*\n\n"
+                  . "Pegawai: *$nama_pegawai*\n"
+                  . "Waktu: " . date('H:i:s') . " WIB\n"
+                  . "Jenis Absen: *$req_jenis_absen*\n"
+                  . "Status: *DITOLAK (Terindikasi Fake GPS)*\n"
+                  . "Penyebab: _$fake_gps_reason_\n"
+                  . "Koordinat Terdeteksi: `$user_lat, $user_lon`\n\n"
+                  . "⚠️ _Sistem telah otomatis membatalkan kehadiran dan mencatat upaya manipulasi lokasi ini ke database kepegawaian yayasan._\n\n"
+                  . "-- SADIGS 4.0 Villa Quran --";
+    kirim_notifikasi_wa_yayasan($pesan_wa_fake);
+
+    die(json_encode([
+        'status' => 'rejected',
+        'message' => '⚠️ Absensi Ditolak! Sistem mendeteksi adanya manipulasi lokasi (' . $fake_gps_reason . '). Sesuai aturan yayasan, seluruh pegawai dilarang menggunakan aplikasi Fake GPS/Mock Location dan wajib hadir fisik di lokasi kerja.'
+    ]));
 }
 
 $qr_location_key = '';

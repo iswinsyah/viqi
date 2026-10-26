@@ -2189,12 +2189,16 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                 (position) => {
                     const userLat = position.coords.latitude;
                     const userLon = position.coords.longitude;
+                    const userAcc = position.coords.accuracy || 0;
+                    const isMock = (position.coords.isMock || position.mocked || (userAcc === 0)) ? 1 : 0;
 
-                    showDashAbsenModal('Menyimpan Absensi...', `Koordinat terdeteksi (${userLat.toFixed(4)}, ${userLon.toFixed(4)}). Sedang mencatat ke database...`, 'loading');
+                    showDashAbsenModal('Menyimpan Absensi...', `Koordinat terdeteksi (${userLat.toFixed(4)}, ${userLon.toFixed(4)}). Sedang memverifikasi keaslian GPS...`, 'loading');
 
                     const fd = new FormData();
                     fd.append('user_lat', userLat);
                     fd.append('user_lon', userLon);
+                    fd.append('gps_accuracy', userAcc);
+                    fd.append('is_mock', isMock);
                     fd.append('jenis_absen', jenisAbsen);
 
                     fetch('proses-absen.php', {
