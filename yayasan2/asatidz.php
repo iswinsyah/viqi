@@ -77,14 +77,14 @@ function getUstadzGradeRate($conn, $ust_id, $role_str, $gaji_grade_a, $gaji_grad
     }
 
     // C. Kehadiran Harian/Pegawai (Periode Kustom)
-    $res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen IN ('Pegawai', 'Harian') AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
+    $res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen IN ('Pegawai', 'Harian') AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
     $jml_hadir = $res_hadir ? (int)($res_hadir->fetch_assoc()['jml'] ?? 0) : 0;
 
     if ($is_daily_worker) {
         $skor_kehadiran = $jml_hadir > 0 ? min(100, ($jml_hadir / 20) * 100) : 0;
     } else {
         // Jika ustadz honorer saja
-        $res_hadir_mengajar = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
+        $res_hadir_mengajar = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
         $jml_hadir_mengajar = $res_hadir_mengajar ? (int)($res_hadir_mengajar->fetch_assoc()['jml'] ?? 0) : 0;
         
         $res_total_teaching_days = $conn->query("SELECT COUNT(DISTINCT tanggal) as total_days FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
@@ -94,7 +94,7 @@ function getUstadzGradeRate($conn, $ust_id, $role_str, $gaji_grade_a, $gaji_grad
     }
 
     // D. Kehadiran Rapat (Periode Kustom)
-    $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Rapat' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
+    $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Rapat' AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
     $jml_rapat = $res_rapat ? (int)($res_rapat->fetch_assoc()['jml'] ?? 0) : 0;
 
     $res_total_rapat = $conn->query("SELECT COUNT(*) as total FROM jadwal_rapat WHERE DATE(waktu_mulai) BETWEEN '$start_date' AND '$end_date'");
@@ -422,7 +422,7 @@ $active_menu = 'asatidz';
                                     $res_jurnal = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
                                     $cnt_jurnal = $res_jurnal ? (int)$res_jurnal->fetch_assoc()['total'] : 0;
                                     
-                                    $res_abs = $conn->query("SELECT COUNT(*) as total FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
+                                    $res_abs = $conn->query("SELECT COUNT(*) as total FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
                                     $cnt_abs = $res_abs ? (int)$res_abs->fetch_assoc()['total'] : 0;
 
                                     $total_pertemuan = max($cnt_jurnal, $cnt_abs);
