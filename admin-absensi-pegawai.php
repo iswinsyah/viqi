@@ -983,7 +983,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                             userLatitude = position.coords.latitude;
                             userLongitude = position.coords.longitude;
                             window.userAccuracy = position.coords.accuracy || 0;
-                            window.isMocked = (position.coords.isMock || position.mocked || (window.userAccuracy === 0)) ? 1 : 0;
+                            window.isMocked = (position.coords.isMock || position.mocked) ? 1 : 0;
                             document.getElementById('alert-modal').classList.add('hidden'); // Tutup modal
                             sendAbsensiRequest(jenisAbsen, btn);
                         },

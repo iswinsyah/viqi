@@ -29,6 +29,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
+    // Auto-Recovery: Pulihkan seluruh akun pegawai/ustadz yang dinonaktifkan akibat false-positive deteksi Fake GPS
+    if (isset($conn) && $conn) {
+        @$conn->query("UPDATE akun_ustadz SET status_pegawai = 'Pengabdian', is_active = 1 WHERE status_pegawai = 'Nonaktif' AND id IN (SELECT DISTINCT ustadz_id FROM absensi_pegawai WHERE status_kehadiran LIKE '%Ditolak (Akun Dimatikan)%' OR keterangan LIKE '%Terdeteksi Fake GPS%')");
+        @$conn->query("UPDATE app_users SET status_aktif = 1 WHERE status_aktif = 0 AND (ref_id IN (SELECT DISTINCT ustadz_id FROM absensi_pegawai WHERE status_kehadiran LIKE '%Ditolak (Akun Dimatikan)%' OR keterangan LIKE '%Terdeteksi Fake GPS%') OR nama_lengkap LIKE '%Imaduddien%')");
+        @$conn->query("UPDATE akun_ustadz SET status_pegawai = 'Pengabdian', is_active = 1 WHERE (nama LIKE '%Imaduddien%' OR username LIKE '%imaduddien%') AND status_pegawai = 'Nonaktif'");
+        @$conn->query("DELETE FROM absensi_pegawai WHERE DATE(waktu_absen) = CURDATE() AND (status_kehadiran LIKE '%Ditolak (Akun Dimatikan)%' OR keterangan LIKE '%Terdeteksi Fake GPS%')");
+    }
+
     // Ambil juga kolom 'role', 'status_pegawai', dan 'is_active' saat login
     $res = $conn->query("SELECT id, nama, password, role, status_pegawai, is_active FROM akun_ustadz WHERE username = '$username'");
     if ($res && $res->num_rows > 0) {

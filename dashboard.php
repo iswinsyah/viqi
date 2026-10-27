@@ -2190,7 +2190,7 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                     const userLat = position.coords.latitude;
                     const userLon = position.coords.longitude;
                     const userAcc = position.coords.accuracy || 0;
-                    const isMock = (position.coords.isMock || position.mocked || (userAcc === 0)) ? 1 : 0;
+                    const isMock = (position.coords.isMock || position.mocked) ? 1 : 0;
 
                     showDashAbsenModal('Menyimpan Absensi...', `Koordinat terdeteksi (${userLat.toFixed(4)}, ${userLon.toFixed(4)}). Sedang memverifikasi keaslian GPS...`, 'loading');
 

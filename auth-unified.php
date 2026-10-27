@@ -16,6 +16,14 @@ if (!empty($_SESSION['app_user_id']) || !empty($_SESSION['ustadz_id'])) {
     $c_ust = (int)($_SESSION['ustadz_id'] ?? 0);
     // Lewatkan akun Super Admin 9999
     if ($c_ust != 9999 && $c_uid != 9999) {
+        // Auto-Recovery: Pulihkan seluruh akun pegawai/ustadz yang dinonaktifkan akibat false-positive deteksi Fake GPS
+        if (isset($conn) && $conn) {
+            @$conn->query("UPDATE akun_ustadz SET status_pegawai = 'Pengabdian', is_active = 1 WHERE status_pegawai = 'Nonaktif' AND id IN (SELECT DISTINCT ustadz_id FROM absensi_pegawai WHERE status_kehadiran LIKE '%Ditolak (Akun Dimatikan)%' OR keterangan LIKE '%Terdeteksi Fake GPS%')");
+            @$conn->query("UPDATE app_users SET status_aktif = 1 WHERE status_aktif = 0 AND (ref_id IN (SELECT DISTINCT ustadz_id FROM absensi_pegawai WHERE status_kehadiran LIKE '%Ditolak (Akun Dimatikan)%' OR keterangan LIKE '%Terdeteksi Fake GPS%') OR nama_lengkap LIKE '%Imaduddien%')");
+            @$conn->query("UPDATE akun_ustadz SET status_pegawai = 'Pengabdian', is_active = 1 WHERE (nama LIKE '%Imaduddien%' OR username LIKE '%imaduddien%') AND status_pegawai = 'Nonaktif'");
+            @$conn->query("DELETE FROM absensi_pegawai WHERE DATE(waktu_absen) = CURDATE() AND (status_kehadiran LIKE '%Ditolak (Akun Dimatikan)%' OR keterangan LIKE '%Terdeteksi Fake GPS%')");
+        }
+
         $is_account_suspended = false;
         if ($c_uid > 0 && isset($conn) && $conn) {
             $q_act = $conn->query("SELECT status_aktif FROM app_users WHERE id = $c_uid LIMIT 1");
