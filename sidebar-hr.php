@@ -142,6 +142,7 @@ if ($conn) {
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('supervisi_mengajar', 'kepala_sekolah,kepala_mahad,super_admin')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_admin_sekolah', 'admin_sekolah')");
     $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('salary_admin', 'admin_sekolah')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('slip_gaji', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,admin_sekolah,super_admin')");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin') ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin'");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah') ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah'");
 }
@@ -161,7 +162,7 @@ if ($conn) {
 function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) {
     if ($is_super_admin) return true;
     // Menu dasar yang wajib tampil untuk seluruh pegawai terdaftar (bahkan jika belum diset role-nya)
-    if (in_array($menu_key, ['absensi_pegawai', 'perizinan_pegawai', 'ganti_password'])) return true;
+    if (in_array($menu_key, ['absensi_pegawai', 'perizinan_pegawai', 'slip_gaji', 'ganti_password'])) return true;
     if (!isset($menu_permissions[$menu_key])) return false; // Default: sembunyikan jika belum diatur
 
     // Normalisasi allowed roles dari database
@@ -232,6 +233,15 @@ if ($res_chk_rekap && $res_chk_rekap->num_rows === 0) {
     $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
     $new_ord = $max_ord + 1;
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'kontrol_jam_kosong', $new_ord, 'fa-chalkboard-user', 'admin-kontrol-jam-kosong.php')");
+}
+
+// Pastikan menu 'slip_gaji' terdaftar jika belum ada (Self-Healing)
+$res_chk_slip = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'slip_gaji'");
+if ($res_chk_slip && $res_chk_slip->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure WHERE menu_group = 'Menu Utama'");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'slip_gaji', $new_ord, 'fa-file-invoice-dollar', 'slip-gaji.php')");
 }
 
 // Cek apakah data sudah ada
@@ -337,6 +347,7 @@ if ($res_db_struct) {
             'kontrol_jam_kosong' => 'Rekap Ajar',
             'kpi_admin_sekolah' => 'KPI Admin Sekolah',
             'salary_admin' => 'Salary Admin Sekolah',
+            'slip_gaji' => 'Slip Gaji Saya',
             'kesediaan_mengajar' => 'Kesediaan Mengajar',
             'kalender_akademik' => 'Kalender Akademik',
             'jadwal_pelajaran' => 'Jadwal Pelajaran',

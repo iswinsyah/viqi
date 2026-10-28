@@ -1,222 +1,31 @@
 <?php
 require_once 'auth.php';
 require_once '../koneksi.php';
+require_once '../helper-payroll.php';
 
 $active_menu = 'gaji_pegawai';
 
-// --- FETCH CONFIGURATION ---
-$res_gaji = $conn->query("SELECT * FROM pengaturan_gaji WHERE id=1");
-$data_gaji = $res_gaji ? $res_gaji->fetch_assoc() : [];
-$gaji_grade_a = $data_gaji['gaji_grade_a'] ?? 25000;
-$gaji_grade_b = $data_gaji['gaji_grade_b'] ?? 22500;
-$gaji_grade_c = $data_gaji['gaji_grade_c'] ?? 20000;
-$gaji_pokok_muda = $data_gaji['gaji_pokok_muda'] ?? 2500000;
-$gaji_pokok_utama = $data_gaji['gaji_pokok_utama'] ?? 3500000;
-$tunj_kepsek_a = $data_gaji['tunj_kepsek_a'] ?? 1500000;
-$tunj_kepsek_b = $data_gaji['tunj_kepsek_b'] ?? 1000000;
-$tunj_kepsek_c = $data_gaji['tunj_kepsek_c'] ?? 500000;
-
-$tunj_mahad_a = $data_gaji['tunj_mahad_a'] ?? 1500000;
-$tunj_mahad_b = $data_gaji['tunj_mahad_b'] ?? 1000000;
-$tunj_mahad_c = $data_gaji['tunj_mahad_c'] ?? 500000;
-
-$tunj_asrama_a = $data_gaji['tunj_asrama_a'] ?? 1200000;
-$tunj_asrama_b = $data_gaji['tunj_asrama_b'] ?? 800000;
-$tunj_asrama_c = $data_gaji['tunj_asrama_c'] ?? 400000;
-
-$tunj_admin_a = $data_gaji['tunj_admin_a'] ?? 1000000;
-$tunj_admin_b = $data_gaji['tunj_admin_b'] ?? 700000;
-$tunj_admin_c = $data_gaji['tunj_admin_c'] ?? 400000;
-
 // --- PERIOD SELECTION ---
-$selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
-$selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
-
-$start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
-$end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
-
 $months = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
     7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
 ];
 
-function getUstadzGradeRateForPeriod($conn, $ust_id, $role_str, $gaji_grade_a, $gaji_grade_b, $gaji_grade_c, $start_date, $end_date) {
-    $user_roles = !empty($role_str) ? array_map('trim', array_map('strtolower', explode(',', $role_str))) : [];
-    $is_teacher = in_array('ustadz', $user_roles) || in_array('ustadzah', $user_roles) || in_array('guru', $user_roles) || in_array('tutor', $user_roles);
-    $eligible_roles_pegawai = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'kepala_asrama_rijal', 'kepala_asrama_nisa', 'musyrif'];
-    $is_daily_worker = !empty(array_intersect($eligible_roles_pegawai, $user_roles));
+$selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
+$selected_year  = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 
-    // A. Jurnal Periode Ini
-    $res_jurnal = $conn->query("SELECT 
-        COUNT(*) as total_jurnal, 
-        SUM(CASE WHEN DATE(created_at) = tanggal THEN 1 ELSE 0 END) as tepat_waktu 
-        FROM jurnal_mengajar 
-        WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
-    $data_jurnal = $res_jurnal ? $res_jurnal->fetch_assoc() : ['total_jurnal' => 0, 'tepat_waktu' => 0];
-    $jumlah_pertemuan = (int)($data_jurnal['total_jurnal'] ?? 0);
-    $tepat_waktu = (int)($data_jurnal['tepat_waktu'] ?? 0);
+$start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
+$end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
 
-    // B. Hitung skor jurnal
-    if ($is_teacher) {
-        $skor_jurnal = $jumlah_pertemuan > 0 ? ($tepat_waktu / $jumlah_pertemuan) * 100 : 100;
-    } else {
-        $skor_jurnal = 100;
-    }
-
-    // C. Kehadiran Harian/Pegawai
-    $res_hadir = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen IN ('Pegawai', 'Harian') AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
-    $jml_hadir = $res_hadir ? (int)($res_hadir->fetch_assoc()['jml'] ?? 0) : 0;
-
-    if ($is_daily_worker) {
-        $skor_kehadiran = $jml_hadir > 0 ? min(100, ($jml_hadir / 20) * 100) : 0;
-    } else {
-        // Jika ustadz honorer saja
-        $res_hadir_mengajar = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
-        $jml_hadir_mengajar = $res_hadir_mengajar ? (int)($res_hadir_mengajar->fetch_assoc()['jml'] ?? 0) : 0;
-        
-        $res_total_teaching_days = $conn->query("SELECT COUNT(DISTINCT tanggal) as total_days FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
-        $total_teaching_days = $res_total_teaching_days ? (int)($res_total_teaching_days->fetch_assoc()['total_days'] ?? 0) : 0;
-        
-        $skor_kehadiran = $total_teaching_days > 0 ? min(100, ($jml_hadir_mengajar / $total_teaching_days) * 100) : 100;
-    }
-
-    // D. Kehadiran Rapat
-    $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Rapat' AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
-    $jml_rapat = $res_rapat ? (int)($res_rapat->fetch_assoc()['jml'] ?? 0) : 0;
-
-    $res_total_rapat = $conn->query("SELECT COUNT(*) as total FROM jadwal_rapat WHERE DATE(waktu_mulai) BETWEEN '$start_date' AND '$end_date'");
-    $total_rapat = $res_total_rapat ? (int)($res_total_rapat->fetch_assoc()['total'] ?? 0) : 0;
-    $skor_kehadiran_rapat = $total_rapat > 0 ? min(100, ($jml_rapat / $total_rapat) * 100) : 100;
-
-    $skor_administrasi = (($skor_jurnal * 0.4) + ($skor_kehadiran * 0.4) + ($skor_kehadiran_rapat * 0.2));
-
-    // E. Kualitas Pengajaran
-    $res_ai = $conn->query("SELECT COUNT(*) as pemakaian FROM log_aktivitas_ai WHERE user_id = $ust_id AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'");
-    $jumlah_pakai_ai = $res_ai ? (int)($res_ai->fetch_assoc()['pemakaian'] ?? 0) : 0;
-    $skor_penggunaan_ai = $jumlah_pakai_ai >= 5 ? 100 : ($jumlah_pakai_ai > 0 ? 85 : 70);
-
-    if ($is_teacher) {
-        $res_sup = $conn->query("SELECT skor FROM supervisi_mengajar WHERE user_id = $ust_id ORDER BY tanggal_supervisi DESC LIMIT 1");
-        $skor_supervisi = $res_sup && $res_sup->num_rows > 0 ? (int)($res_sup->fetch_assoc()['skor']) : 85;
-    } else {
-        $skor_supervisi = 100;
-    }
-    $skor_kualitas_pengajaran = (($skor_penggunaan_ai * 0.4) + ($skor_supervisi * 0.6));
-
-    // F. Capaian Santri
-    $res_leger = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE created_by = $ust_id AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'");
-    $avg_nilai = $res_leger ? (float)($res_leger->fetch_assoc()['rata_rata'] ?? 0) : 0;
-    if ($avg_nilai <= 0) {
-        $res_fb = $conn->query("SELECT AVG(nilai) as rata_rata FROM leger_nilai WHERE created_by = $ust_id");
-        $avg_nilai = $res_fb ? (float)($res_fb->fetch_assoc()['rata_rata'] ?? 0) : 0;
-    }
-    $skor_rata_nilai = $avg_nilai >= 75 ? 100 : ($avg_nilai > 0 ? ($avg_nilai / 75) * 100 : 0);
-
-    $res_koreksi = $conn->query("SELECT SUM(CASE WHEN status_koreksi = 'Tuntas' THEN 1 ELSE 0 END) as tuntas, COUNT(*) as total FROM leger_koreksi WHERE ustadz_id = $ust_id AND DATE(created_at) BETWEEN '$start_date' AND '$end_date'");
-    $data_koreksi = $res_koreksi ? $res_koreksi->fetch_assoc() : ['tuntas' => 0, 'total' => 0];
-    $tuntas_koreksi = (int)($data_koreksi['tuntas'] ?? 0);
-    $total_koreksi = (int)($data_koreksi['total'] ?? 0);
-    $skor_pertumbuhan = $total_koreksi > 0 ? ($tuntas_koreksi / $total_koreksi) * 100 : 100;
-
-    $skor_capaian_santri = (($skor_rata_nilai * 0.5) + ($skor_pertumbuhan * 0.5));
-
-    // G. Pengembangan Diri
-    $skor_pengembangan_diri = 100;
-
-    // Total KPI
-    $total_skor_kpi = ($skor_administrasi * 0.20) + ($skor_kualitas_pengajaran * 0.40) + ($skor_capaian_santri * 0.30) + ($skor_pengembangan_diri * 0.10);
-
-    if ($total_skor_kpi >= 90) {
-        return [$gaji_grade_a, 'A', $total_skor_kpi];
-    } elseif ($total_skor_kpi >= 80) {
-        return [$gaji_grade_b, 'B', $total_skor_kpi];
-    } else {
-        return [$gaji_grade_c, 'C', $total_skor_kpi];
-    }
-}
-
-// Compile payroll list
+// --- COMPILE PAYROLL LIST WITH COMPREHENSIVE KPI & ATTENDANCE BREAKDOWN ---
 $payroll_list = [];
-$res_pegawai = $conn->query("SELECT * FROM akun_ustadz WHERE status_pegawai != 'Nonaktif' ORDER BY nama ASC");
+$res_pegawai = $conn->query("SELECT id FROM akun_ustadz WHERE status_pegawai != 'Nonaktif' ORDER BY nama ASC");
 if ($res_pegawai && $res_pegawai->num_rows > 0) {
     while ($row = $res_pegawai->fetch_assoc()) {
-        $ust_id = (int)$row['id'];
-        $status_display = htmlspecialchars($row['status_pegawai'] ?? 'Pengabdian');
-        
-        // 1. Gaji Pokok
-        $gaji_pokok = 0;
-        if ($status_display === 'Pegawai Muda') {
-            $gaji_pokok = $gaji_pokok_muda;
-        } elseif ($status_display === 'Pegawai Utama') {
-            $gaji_pokok = $gaji_pokok_utama;
+        $p = hitung_payroll_pegawai($conn, (int)$row['id'], $selected_month, $selected_year);
+        if ($p) {
+            $payroll_list[] = $p;
         }
-
-        // 3. Honor Mengajar (Kombinasi Jurnal Mengajar & Absensi QR Mengajar)
-        $res_jurnal = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
-        $cnt_jurnal = $res_jurnal ? (int)$res_jurnal->fetch_assoc()['total'] : 0;
-        
-        $res_abs = $conn->query("SELECT COUNT(*) as total FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
-        $cnt_abs = $res_abs ? (int)$res_abs->fetch_assoc()['total'] : 0;
-
-        $total_pertemuan = max($cnt_jurnal, $cnt_abs);
-        
-        list($active_rate, $active_grade, $kpi_score) = getUstadzGradeRateForPeriod($conn, $ust_id, $row['role'], $gaji_grade_a, $gaji_grade_b, $gaji_grade_c, $start_date, $end_date);
-
-        $roles_arr = !empty($row['role']) ? array_map('trim', array_map('strtolower', explode(',', $row['role']))) : [];
-        $has_ustadz_role = in_array('ustadz', $roles_arr) || in_array('ustadzah', $roles_arr) || in_array('tutor', $roles_arr) || in_array('guru', $roles_arr);
-        $is_utama_or_muda = ($status_display === 'Pegawai Utama' || $status_display === 'Pegawai Muda');
-        
-        if ($is_utama_or_muda && $has_ustadz_role) {
-            $kelebihan_jam = max(0, $total_pertemuan - 12);
-            $honor = $kelebihan_jam * $active_rate;
-            $honor_note = "Kelebihan: {$kelebihan_jam}x (Grade {$active_grade})";
-        } else {
-            $honor = $total_pertemuan * $active_rate;
-            $honor_note = "{$total_pertemuan}x (Grade {$active_grade})";
-        }
-
-        // 2. Tunjangan (Disesuaikan dengan KPI Grade bulan ini)
-        $tunjangan = 0;
-        if (!empty($row['role'])) {
-            $role_list = explode(',', $row['role']);
-            foreach ($role_list as $r) {
-                if ($r === 'kepala_sekolah') {
-                    if ($active_grade === 'A') $tunjangan += $tunj_kepsek_a;
-                    elseif ($active_grade === 'B') $tunjangan += $tunj_kepsek_b;
-                    else $tunjangan += $tunj_kepsek_c;
-                }
-                elseif ($r === 'kepala_mahad') {
-                    if ($active_grade === 'A') $tunjangan += $tunj_mahad_a;
-                    elseif ($active_grade === 'B') $tunjangan += $tunj_mahad_b;
-                    else $tunjangan += $tunj_mahad_c;
-                }
-                elseif ($r === 'kepala_asrama' || $r === 'kepala_asrama_rijal' || $r === 'kepala_asrama_nisa') {
-                    if ($active_grade === 'A') $tunjangan += $tunj_asrama_a;
-                    elseif ($active_grade === 'B') $tunjangan += $tunj_asrama_b;
-                    else $tunjangan += $tunj_asrama_c;
-                }
-                elseif ($r === 'admin_sekolah') {
-                    if ($active_grade === 'A') $tunjangan += $tunj_admin_a;
-                    elseif ($active_grade === 'B') $tunjangan += $tunj_admin_b;
-                    else $tunjangan += $tunj_admin_c;
-                }
-            }
-        }
-
-        $total_thp = $gaji_pokok + $tunjangan + $honor;
-
-        $payroll_list[] = [
-            'nama' => $row['nama'],
-            'status' => $status_display,
-            'role' => $row['role'],
-            'gaji_pokok' => $gaji_pokok,
-            'tunjangan' => $tunjangan,
-            'honor' => $honor,
-            'honor_note' => $honor_note,
-            'total_thp' => $total_thp,
-            'kpi_score' => $kpi_score,
-            'active_grade' => $active_grade
-        ];
     }
 }
 
@@ -230,201 +39,658 @@ $total_employees = count($payroll_list);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekap Gaji (Payroll) | Ruang Yayasan</title>
+    <title>Rekap Gaji & Transparansi KPI Pegawai | Ruang Yayasan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         @media print {
-            aside, header, .no-print {
+            aside, header, #sidebar-yayasan2, #sidebar-overlay-yayasan2, .no-print {
                 display: none !important;
+            }
+            body {
+                background: white !important;
             }
             main {
                 padding: 0 !important;
                 background: white !important;
+                overflow: visible !important;
             }
             .print-card {
-                border: none !important;
+                border: 1px solid #ddd !important;
                 box-shadow: none !important;
+            }
+            /* Hide modal on normal table print */
+            #slipModal {
+                display: none !important;
+            }
+        }
+        /* Printable single slip styling when triggered from modal */
+        @media print {
+            body.printing-slip > *:not(#slipPrintContainer) {
+                display: none !important;
+            }
+            #slipPrintContainer {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                background: white !important;
+                padding: 20px !important;
             }
         }
     </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
+    
+    <!-- SIDEBAR YAYASAN -->
     <?php include 'sidebar.php'; ?>
+
+    <!-- CONTENT WRAPPER -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <!-- HEADER -->
+
+        <!-- HEADER TOPBAR -->
         <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0 no-print">
             <div class="flex items-center">
                 <button id="open-sidebar-yayasan2" class="text-gray-500 hover:text-gray-700 md:hidden mr-4">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                <h2 class="font-bold text-gray-800">Panel Eksekutif Yayasan</h2>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500 text-amber-950 flex items-center justify-center font-bold">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-gray-900 leading-tight">Panel Eksekutif Yayasan</h2>
+                        <p class="text-[10px] text-gray-400">Payroll & Transparansi Tunjangan KPI Pegawai</p>
+                    </div>
+                </div>
             </div>
-            <div class="flex items-center gap-3">
-                <a href="gaji-asatidz.php" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-lg text-xs shadow-sm flex items-center gap-2 border border-slate-200 transition">
-                    <i class="fas fa-cog text-slate-500"></i> Pengaturan Gaji & Tunjangan
+            <div class="flex items-center gap-2.5">
+                <a href="gaji-asatidz.php" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs shadow-xs flex items-center gap-2 border border-slate-200 transition">
+                    <i class="fas fa-cog text-slate-500"></i>
+                    <span class="hidden sm:inline">Pengaturan Gaji & Tunjangan</span>
                 </a>
-                <button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold px-4 py-2 rounded-lg text-xs shadow-sm flex items-center gap-2 transition">
-                    <i class="fas fa-print"></i> Cetak Payroll
+                <button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold px-4 py-2 rounded-xl text-xs shadow-sm flex items-center gap-2 transition">
+                    <i class="fas fa-print"></i>
+                    <span>Cetak Rekap</span>
                 </button>
             </div>
         </header>
 
         <!-- MAIN CONTAINER -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
-            <!-- PAGE TITLE / PERIOD FILTER -->
-            <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 no-print">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                        <i class="fas fa-coins text-amber-600"></i> Rekap Gaji Bulanan (Payroll)
-                    </h1>
-                    <p class="text-xs text-gray-500 mt-1">Laporan total pengeluaran Take Home Pay (THP) pegawai berdasarkan status, peran, dan penilaian KPI.</p>
-                </div>
-                <!-- Filter Form -->
-                <form method="GET" class="flex items-center gap-2">
-                    <select name="bulan" onchange="this.form.submit()" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold text-gray-750 shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-500">
-                        <?php foreach ($months as $num => $name): ?>
-                            <option value="<?= $num ?>" <?= $selected_month == $num ? 'selected' : '' ?>><?= $name ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <select name="tahun" onchange="this.form.submit()" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-xs font-bold text-gray-750 shadow-sm focus:outline-none focus:ring-1 focus:ring-amber-500">
-                        <?php 
-                        $curr_yr = (int)date('Y');
-                        for ($y = $curr_yr - 2; $y <= $curr_yr + 1; $y++):
-                        ?>
-                            <option value="<?= $y ?>" <?= $selected_year == $y ? 'selected' : '' ?>><?= $y ?></option>
-                        <?php endfor; ?>
-                    </select>
-                </form>
-            </div>
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 lg:p-8">
+            <div class="max-w-7xl mx-auto space-y-6">
 
-            <!-- PRINT-ONLY HEADER -->
-            <div class="hidden print:block text-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-900">REKAPITULASI DAFTAR GAJI PEGAWAI (PAYROLL)</h1>
-                <p class="text-sm text-gray-600 font-bold mt-1">Siklus Kerja: <?= date('d/m/Y', strtotime($start_date)) ?> s/d <?= date('d/m/Y', strtotime($end_date)) ?> (Periode <?= $months[$selected_month] ?> <?= $selected_year ?>)</p>
-                <hr class="border-gray-300 mt-4">
-            </div>
-
-            <!-- STATISTICS CARDS -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <!-- Card 1 -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex items-center justify-between print-card">
+                <!-- PAGE TITLE & PERIOD FILTER -->
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 no-print">
                     <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Pengeluaran Gaji</span>
-                        <span class="text-2xl font-black text-amber-600 block">Rp <?= number_format($total_payroll, 0, ',', '.') ?></span>
-                        <span class="text-[10px] text-gray-400 block mt-1">Akumulasi seluruh pegawai aktif</span>
+                        <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2.5 tracking-tight">
+                            <i class="fas fa-money-check-dollar text-amber-600"></i> Rekap Payroll & Penilaian Prestasi Kerja
+                        </h1>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Rincian transparan perhitungan Gaji Pokok, Tunjangan Jabatan (berbasis Presensi & KPI), Potongan Alfa, dan Honor KBM.
+                        </p>
                     </div>
-                    <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold border border-amber-100 no-print">
-                        <i class="fas fa-wallet"></i>
-                    </div>
-                </div>
-                <!-- Card 2 -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex items-center justify-between print-card">
-                    <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Rata-rata Gaji Pegawai</span>
-                        <span class="text-2xl font-black text-indigo-600 block">Rp <?= number_format($avg_payroll, 0, ',', '.') ?></span>
-                        <span class="text-[10px] text-gray-400 block mt-1">Rata-rata THP per orang</span>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-650 flex items-center justify-center text-xl font-bold border border-indigo-100 no-print">
-                        <i class="fas fa-hand-holding-dollar"></i>
-                    </div>
-                </div>
-                <!-- Card 3 -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex items-center justify-between print-card">
-                    <div>
-                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Pegawai Terima Gaji</span>
-                        <span class="text-2xl font-black text-emerald-600 block"><?= $total_employees ?> Orang</span>
-                        <span class="text-[10px] text-gray-400 block mt-1">Jumlah pegawai aktif bulan ini</span>
-                    </div>
-                    <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-650 flex items-center justify-center text-xl font-bold border border-emerald-100 no-print">
-                        <i class="fas fa-users"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- PAYROLL TABLE CARD -->
-            <div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden print-card">
-                <div class="px-6 py-4 bg-gray-55/70 border-b border-gray-200 flex justify-between items-center no-print">
-                    <h3 class="font-extrabold text-sm text-gray-800 flex items-center gap-2">
-                        <i class="fas fa-list-check text-slate-500"></i> Rincian Payroll Pegawai
-                    </h3>
-                    <span class="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-3 py-1 rounded-full font-bold">
-                        Siklus: <?= date('d M Y', strtotime($start_date)) ?> - <?= date('d M Y', strtotime($end_date)) ?>
-                    </span>
+                    <!-- Filter Form -->
+                    <form method="GET" class="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-gray-200 shadow-xs">
+                        <select name="bulan" onchange="this.form.submit()" class="bg-gray-50 border-0 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 focus:bg-white focus:ring-2 focus:ring-amber-500">
+                            <?php foreach ($months as $num => $name): ?>
+                                <option value="<?= $num ?>" <?= $selected_month == $num ? 'selected' : '' ?>><?= $name ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <select name="tahun" onchange="this.form.submit()" class="bg-gray-50 border-0 rounded-xl px-3 py-2 text-xs font-bold text-gray-700 focus:bg-white focus:ring-2 focus:ring-amber-500">
+                            <?php 
+                            $curr_yr = (int)date('Y');
+                            for ($y = $curr_yr - 2; $y <= $curr_yr + 1; $y++):
+                            ?>
+                                <option value="<?= $y ?>" <?= $selected_year == $y ? 'selected' : '' ?>><?= $y ?></option>
+                            <?php endfor; ?>
+                        </select>
+                        <button type="submit" class="p-2 bg-gray-800 text-white rounded-xl text-xs hover:bg-gray-900 transition">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                    </form>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-150">
-                        <thead class="bg-gray-50/50 text-[10px] uppercase font-bold text-gray-500 tracking-wider">
-                            <tr>
-                                <th class="px-4 py-3.5 text-center w-10">No</th>
-                                <th class="px-4 py-3.5 text-left">Nama Pegawai</th>
-                                <th class="px-4 py-3.5 text-left">Status</th>
-                                <th class="px-4 py-3.5 text-left">Jabatan / Peran</th>
-                                <th class="px-4 py-3.5 text-right">Gaji Pokok</th>
-                                <th class="px-4 py-3.5 text-right">Tunjangan</th>
-                                <th class="px-4 py-3.5 text-right">Honor Mengajar</th>
-                                <th class="px-4 py-3.5 text-right bg-amber-50/50 text-amber-950 font-black">Total THP</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-150 text-xs">
-                            <?php if (empty($payroll_list)): ?>
-                            <tr>
-                                <td colspan="8" class="px-4 py-12 text-center text-gray-400 italic">Tidak ada data pegawai aktif.</td>
-                            </tr>
-                            <?php else: $no=1; foreach ($payroll_list as $p): ?>
-                                <?php 
-                                $status_color = 'bg-gray-100 text-gray-800 border-gray-200';
-                                if ($p['status'] === 'Pengurus Yayasan') $status_color = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-                                if ($p['status'] === 'Staff LDU') $status_color = 'bg-cyan-50 text-cyan-700 border-cyan-200';
-                                if ($p['status'] === 'Pengabdian') $status_color = 'bg-blue-50 text-blue-700 border-blue-200';
-                                if ($p['status'] === 'Honorer') $status_color = 'bg-amber-50 text-amber-700 border-amber-200';
-                                if ($p['status'] === 'Pegawai Muda') $status_color = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-                                if ($p['status'] === 'Pegawai Utama') $status_color = 'bg-purple-50 text-purple-700 border-purple-200';
+                <!-- PRINT-ONLY HEADER -->
+                <div class="hidden print:block text-center mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900 uppercase">YAYASAN VILLA QUR'AN BARON MALANG</h1>
+                    <h2 class="text-lg font-bold text-gray-800 mt-0.5">REKAPITULASI DAFTAR GAJI PEGAWAI (PAYROLL)</h2>
+                    <p class="text-xs text-gray-600 font-bold mt-1">
+                        Siklus Kerja: <?= date('d/m/Y', strtotime($start_date)) ?> s/d <?= date('d/m/Y', strtotime($end_date)) ?> (Periode <?= $months[$selected_month] ?> <?= $selected_year ?>)
+                    </p>
+                    <hr class="border-gray-400 mt-3">
+                </div>
 
-                                $roles_display_html = '';
-                                if (!empty($p['role'])) {
-                                    $role_list = explode(',', $p['role']);
-                                    foreach ($role_list as $r) {
-                                        $label = ucwords(str_replace('_', ' ', $r));
-                                        $roles_display_html .= "<span class='inline-block bg-amber-50 text-amber-800 border border-amber-200/50 rounded px-1.5 py-0.5 text-[9px] font-semibold mr-1 mb-1'>$label</span>";
-                                    }
-                                } else {
-                                    $roles_display_html = "<span class='text-gray-400 italic'>-</span>";
-                                }
-                                ?>
-                                <tr class="hover:bg-gray-50/50 transition">
-                                    <td class="px-4 py-3.5 text-center font-bold text-gray-500"><?= $no++ ?></td>
-                                    <td class="px-4 py-3.5 font-bold text-gray-900"><?= htmlspecialchars($p['nama']) ?></td>
-                                    <td class="px-4 py-3.5">
-                                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold border <?= $status_color ?>"><?= $p['status'] ?></span>
-                                    </td>
-                                    <td class="px-4 py-3.5"><?= $roles_display_html ?></td>
-                                    <td class="px-4 py-3.5 text-right font-semibold text-slate-700">Rp <?= number_format($p['gaji_pokok'], 0, ',', '.') ?></td>
-                                    <td class="px-4 py-3.5 text-right font-semibold text-slate-700">Rp <?= number_format($p['tunjangan'], 0, ',', '.') ?></td>
-                                    <td class="px-4 py-3.5 text-right">
-                                        <span class="font-semibold text-slate-700">Rp <?= number_format($p['honor'], 0, ',', '.') ?></span>
-                                        <span class="text-[9px] text-gray-400 block font-normal mt-0.5"><?= $p['honor_note'] ?></span>
-                                        <span class="text-[9px] text-emerald-600 block font-bold mt-0.5">KPI: <?= number_format($p['kpi_score'], 1) ?> Poin</span>
-                                    </td>
-                                    <td class="px-4 py-3.5 text-right font-extrabold text-amber-600 bg-amber-50/10">Rp <?= number_format($p['total_thp'], 0, ',', '.') ?></td>
+                <!-- STATISTICS CARDS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 no-print">
+                    <!-- Card 1 -->
+                    <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 p-5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Pengeluaran Payroll</span>
+                            <span class="text-2xl font-black text-amber-600 block">Rp <?= number_format($total_payroll, 0, ',', '.') ?></span>
+                            <span class="text-[10px] text-gray-400 block mt-1">Akumulasi seluruh THP pegawai</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold border border-amber-100">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                    </div>
+                    <!-- Card 2 -->
+                    <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 p-5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Rata-rata THP Pegawai</span>
+                            <span class="text-2xl font-black text-indigo-600 block">Rp <?= number_format($avg_payroll, 0, ',', '.') ?></span>
+                            <span class="text-[10px] text-gray-400 block mt-1">Rata-rata pendapatan per staf</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold border border-indigo-100">
+                            <i class="fas fa-hand-holding-dollar"></i>
+                        </div>
+                    </div>
+                    <!-- Card 3 -->
+                    <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 p-5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Penerima Gaji Aktif</span>
+                            <span class="text-2xl font-black text-emerald-600 block"><?= $total_employees ?> Orang</span>
+                            <span class="text-[10px] text-gray-400 block mt-1">Pegawai aktif periode ini</span>
+                        </div>
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold border border-emerald-100">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PAYROLL TABLE CARD -->
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden print-card">
+                    <div class="px-6 py-4 bg-gray-50/70 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 no-print">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-table-list text-slate-500"></i>
+                            <h3 class="font-extrabold text-sm text-gray-900">Rincian Transparansi Payroll Pegawai</h3>
+                        </div>
+                        <span class="text-[11px] bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full font-bold">
+                            Siklus: <?= date('d M Y', strtotime($start_date)) ?> - <?= date('d M Y', strtotime($end_date)) ?>
+                        </span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 text-xs">
+                            <thead class="bg-gray-50/80 text-[10px] uppercase font-extrabold text-gray-500 tracking-wider">
+                                <tr>
+                                    <th class="px-3 py-3.5 text-center w-8">No</th>
+                                    <th class="px-3 py-3.5 text-left">Nama Pegawai</th>
+                                    <th class="px-3 py-3.5 text-left">Jabatan & Status</th>
+                                    <th class="px-3 py-3.5 text-center bg-blue-50/40 text-blue-900">Presensi Kerja</th>
+                                    <th class="px-3 py-3.5 text-center bg-purple-50/40 text-purple-900">Prestasi KPI & Grade</th>
+                                    <th class="px-3 py-3.5 text-right">Gaji Pokok</th>
+                                    <th class="px-3 py-3.5 text-right bg-amber-50/40 text-amber-900">Rincian Tunjangan</th>
+                                    <th class="px-3 py-3.5 text-right">Honor KBM</th>
+                                    <th class="px-3 py-3.5 text-right bg-amber-100/50 text-amber-950 font-black">Total THP</th>
+                                    <th class="px-3 py-3.5 text-center no-print">Slip Gaji</th>
                                 </tr>
-                            <?php endforeach; endif; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-100">
+                                <?php if (empty($payroll_list)): ?>
+                                <tr>
+                                    <td colspan="10" class="px-4 py-12 text-center text-gray-400 italic">Tidak ada data pegawai aktif pada periode ini.</td>
+                                </tr>
+                                <?php else: $no=1; foreach ($payroll_list as $idx => $p): ?>
+                                    <?php 
+                                    $status_color = 'bg-gray-100 text-gray-800 border-gray-200';
+                                    if ($p['status_pegawai'] === 'Pengurus Yayasan') $status_color = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                                    if ($p['status_pegawai'] === 'Staff LDU') $status_color = 'bg-cyan-50 text-cyan-700 border-cyan-200';
+                                    if ($p['status_pegawai'] === 'Pengabdian') $status_color = 'bg-blue-50 text-blue-700 border-blue-200';
+                                    if ($p['status_pegawai'] === 'Honorer') $status_color = 'bg-amber-50 text-amber-700 border-amber-200';
+                                    if ($p['status_pegawai'] === 'Pegawai Muda') $status_color = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                                    if ($p['status_pegawai'] === 'Pegawai Utama') $status_color = 'bg-purple-50 text-purple-700 border-purple-200';
+
+                                    $roles_display_html = '';
+                                    if (!empty($p['role_str'])) {
+                                        $role_list = explode(',', $p['role_str']);
+                                        foreach ($role_list as $r) {
+                                            $label = ucwords(str_replace('_', ' ', trim($r)));
+                                            $roles_display_html .= "<span class='inline-block bg-amber-50 text-amber-800 border border-amber-200/50 rounded px-1.5 py-0.5 text-[9px] font-semibold mr-1 mb-0.5'>$label</span>";
+                                        }
+                                    } else {
+                                        $roles_display_html = "<span class='text-gray-400 italic'>-</span>";
+                                    }
+                                    ?>
+                                    <tr class="hover:bg-gray-50/60 transition">
+                                        <!-- No -->
+                                        <td class="px-3 py-3 text-center font-bold text-gray-400"><?= $no++ ?></td>
+                                        
+                                        <!-- Nama -->
+                                        <td class="px-3 py-3">
+                                            <span class="font-black text-gray-900 block"><?= htmlspecialchars($p['nama']) ?></span>
+                                            <span class="text-[10px] text-gray-400 block">ID: UST-<?= str_pad($p['ustadz_id'], 3, '0', STR_PAD_LEFT) ?></span>
+                                        </td>
+                                        
+                                        <!-- Jabatan & Status -->
+                                        <td class="px-3 py-3">
+                                            <div class="mb-1"><?= $roles_display_html ?></div>
+                                            <span class="inline-block px-2 py-0.5 rounded text-[9px] font-bold border <?= $status_color ?>"><?= $p['status_pegawai'] ?></span>
+                                        </td>
+
+                                        <!-- Presensi Kerja (Hadir / Izin / Alfa) -->
+                                        <td class="px-3 py-3 text-center bg-blue-50/20">
+                                            <div class="flex flex-col items-center gap-1">
+                                                <div class="flex items-center gap-1">
+                                                    <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[10px] font-bold" title="Hadir Tepat: <?= $p['hadir_tepat'] ?>, Telat: <?= $p['hadir_terlambat'] ?>">
+                                                        <?= $p['hadir_count'] ?> Hadir
+                                                    </span>
+                                                    <span class="bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-semibold">
+                                                        <?= $p['izin_count'] + $p['sakit_count'] ?> Izin/Skt
+                                                    </span>
+                                                </div>
+                                                <?php if ($p['alpa_count'] > 0): ?>
+                                                <span class="bg-rose-100 text-rose-800 border border-rose-300 px-2 py-0.5 rounded text-[10px] font-extrabold" title="Alpa: <?= implode(', ', $p['alpa_dates']) ?>">
+                                                    ⚠️ <?= $p['alpa_count'] ?> Hari Alfa
+                                                </span>
+                                                <?php else: ?>
+                                                <span class="text-emerald-600 text-[10px] font-semibold">
+                                                    <i class="fas fa-check-circle text-[9px]"></i> 0 Alfa
+                                                </span>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+
+                                        <!-- Prestasi KPI & Grade -->
+                                        <td class="px-3 py-3 text-center bg-purple-50/20">
+                                            <span class="text-xs font-black text-gray-900 block"><?= number_format($p['total_skor_kpi'], 1) ?> Poin</span>
+                                            <span class="inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border <?= $p['grade_badge'] ?> mt-0.5">
+                                                Grade <?= $p['grade'] ?>
+                                            </span>
+                                        </td>
+
+                                        <!-- Gaji Pokok -->
+                                        <td class="px-3 py-3 text-right font-semibold text-slate-700">
+                                            Rp <?= number_format($p['gaji_pokok'], 0, ',', '.') ?>
+                                        </td>
+
+                                        <!-- Rincian Tunjangan -->
+                                        <td class="px-3 py-3 text-right bg-amber-50/20">
+                                            <span class="font-bold text-gray-900 block">Rp <?= number_format($p['tunjangan_total'], 0, ',', '.') ?></span>
+                                            <?php if (!empty($p['rincian_tunjangan'])): ?>
+                                                <div class="mt-0.5 flex flex-col items-end gap-0.5">
+                                                    <?php foreach ($p['rincian_tunjangan'] as $rt): ?>
+                                                        <span class="text-[9px] text-gray-500 block">
+                                                            <?= htmlspecialchars($rt['nama']) ?> (Grade <?= $rt['grade'] ?>)
+                                                        </span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-[9px] text-gray-400 italic block">-</span>
+                                            <?php endif; ?>
+
+                                            <?php if ($p['total_potongan'] > 0): ?>
+                                                <span class="text-[9px] font-bold text-rose-600 block mt-0.5">
+                                                    Potongan Alfa: -Rp <?= number_format($p['total_potongan'], 0, ',', '.') ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </td>
+
+                                        <!-- Honor Mengajar -->
+                                        <td class="px-3 py-3 text-right">
+                                            <span class="font-semibold text-slate-700 block">Rp <?= number_format($p['honor'], 0, ',', '.') ?></span>
+                                            <span class="text-[9px] text-gray-400 block mt-0.5"><?= htmlspecialchars($p['honor_note']) ?></span>
+                                        </td>
+
+                                        <!-- Total THP -->
+                                        <td class="px-3 py-3 text-right font-black text-amber-700 bg-amber-50/40 text-sm">
+                                            Rp <?= number_format($p['total_thp'], 0, ',', '.') ?>
+                                        </td>
+
+                                        <!-- Aksi / Slip Gaji -->
+                                        <td class="px-3 py-3 text-center no-print">
+                                            <div class="flex items-center justify-center gap-1.5">
+                                                <button onclick="openSlipModal(<?= $idx ?>)" class="bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold px-2.5 py-1.5 rounded-lg text-xs shadow-xs transition flex items-center gap-1" title="Lihat Slip Gaji & Detail Penilaian">
+                                                    <i class="fas fa-file-invoice-dollar"></i>
+                                                    <span>Slip</span>
+                                                </button>
+                                                <a href="../slip-gaji.php?pegawai_id=<?= $p['ustadz_id'] ?>&bulan=<?= $selected_month ?>&tahun=<?= $selected_year ?>" target="_blank" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs transition" title="Buka di Tab Baru">
+                                                    <i class="fas fa-arrow-up-right-from-square"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; endif; ?>
+                            </tbody>
+                            <tfoot class="bg-gray-50/90 font-black text-xs border-t-2 border-gray-300">
+                                <tr>
+                                    <td colspan="5" class="px-3 py-3.5 text-right uppercase text-gray-700">Akumulasi Total Payroll:</td>
+                                    <td class="px-3 py-3.5 text-right text-gray-800">Rp <?= number_format(array_sum(array_column($payroll_list, 'gaji_pokok')), 0, ',', '.') ?></td>
+                                    <td class="px-3 py-3.5 text-right text-gray-800">Rp <?= number_format(array_sum(array_column($payroll_list, 'tunjangan_total')), 0, ',', '.') ?></td>
+                                    <td class="px-3 py-3.5 text-right text-gray-800">Rp <?= number_format(array_sum(array_column($payroll_list, 'honor')), 0, ',', '.') ?></td>
+                                    <td class="px-3 py-3.5 text-right text-amber-700 text-base">Rp <?= number_format($total_payroll, 0, ',', '.') ?></td>
+                                    <td class="no-print"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
+
             </div>
         </main>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- MODAL SLIP GAJI INTERAKTIF -->
+    <!-- ============================================================ -->
+    <div id="slipModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-3xl max-h-[92vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between no-print">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500 text-amber-950 flex items-center justify-center font-bold">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-sm text-slate-800">Preview Slip Gaji & Evaluasi Transparan</h3>
+                        <p class="text-[10px] text-slate-400">Yayasan Villa Qur'an Baron Malang</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="printSingleSlip()" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold text-xs rounded-xl shadow-xs transition flex items-center gap-1.5">
+                        <i class="fas fa-print"></i>
+                        <span>Cetak Slip Ini</span>
+                    </button>
+                    <button onclick="closeSlipModal()" class="w-8 h-8 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-600 flex items-center justify-center transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body (Printable Area) -->
+            <div id="modalSlipContent" class="flex-1 overflow-y-auto p-6 sm:p-8 space-y-5 text-slate-800">
+                <!-- Diisi via JavaScript berdasarkan baris data pegawai terpilih -->
+            </div>
+        </div>
+    </div>
+
+    <!-- PRINT CONTAINER KHUSUS SATU SLIP -->
+    <div id="slipPrintContainer" class="hidden"></div>
+
+    <!-- DATA JSON UNTUK JAVASCRIPT MODAL -->
     <script>
-        document.getElementById('open-sidebar-yayasan2').addEventListener('click', () => {
-            document.getElementById('sidebar-yayasan2').classList.toggle('hidden');
-            document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden');
+        const payrollData = <?= json_encode($payroll_list, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+        const namaBulan = "<?= $months[$selected_month] ?>";
+        const tahunPilih = "<?= $selected_year ?>";
+
+        function openSlipModal(index) {
+            const p = payrollData[index];
+            if (!p) return;
+
+            const formatRupiah = (num) => 'Rp ' + Number(num).toLocaleString('id-ID');
+
+            let kpiRowsHtml = '';
+            if (p.kpi_items && p.kpi_items.length > 0) {
+                p.kpi_items.forEach(item => {
+                    kpiRowsHtml += `
+                        <tr>
+                            <td class="px-3 py-2 font-bold text-slate-800">${item.kategori}</td>
+                            <td class="px-3 py-2 text-slate-600">${item.detail}</td>
+                            <td class="px-3 py-2 text-center text-slate-500 font-semibold">${item.bobot}</td>
+                            <td class="px-3 py-2 text-right font-black text-slate-900">${item.skor}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            let tunjanganRowsHtml = '';
+            if (p.rincian_tunjangan && p.rincian_tunjangan.length > 0) {
+                p.rincian_tunjangan.forEach(t => {
+                    tunjanganRowsHtml += `
+                        <tr>
+                            <td class="px-3 py-2">
+                                <span class="font-bold text-slate-800 block">${t.nama}</span>
+                                <span class="text-[10px] text-emerald-600 font-semibold block">${t.keterangan}</span>
+                            </td>
+                            <td class="px-3 py-2 text-right font-black text-slate-800">${formatRupiah(t.nominal)}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                tunjanganRowsHtml = `
+                    <tr>
+                        <td class="px-3 py-2 text-slate-400 italic">Tunjangan Jabatan / Kinerja</td>
+                        <td class="px-3 py-2 text-right font-semibold text-slate-400">Rp 0</td>
+                    </tr>
+                `;
+            }
+
+            let potonganRowsHtml = '';
+            if (p.rincian_potongan && p.rincian_potongan.length > 0) {
+                p.rincian_potongan.forEach(pt => {
+                    potonganRowsHtml += `
+                        <tr>
+                            <td class="px-3 py-2">
+                                <span class="font-bold text-rose-700 block">${pt.nama}</span>
+                                <span class="text-[10px] text-slate-500 block">${pt.keterangan}</span>
+                            </td>
+                            <td class="px-3 py-2 text-right font-black text-rose-600">- ${formatRupiah(pt.nominal)}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                potonganRowsHtml = `
+                    <tr>
+                        <td class="px-3 py-3 text-center text-slate-400 italic" colspan="2">
+                            <i class="fas fa-check-circle text-emerald-500 mr-1"></i> Tidak ada potongan denda bulan ini.
+                        </td>
+                    </tr>
+                `;
+            }
+
+            const slipHtml = `
+                <!-- KOP SLIP RESMI -->
+                <div class="border-b-2 border-slate-900 pb-4 text-center">
+                    <div class="flex items-center justify-center gap-3 mb-1">
+                        <div class="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center text-xl font-black">
+                            <i class="fas fa-quran"></i>
+                        </div>
+                        <div class="text-left">
+                            <h2 class="text-lg font-black text-slate-900 uppercase tracking-tight">YAYASAN VILLA QUR'AN BARON MALANG</h2>
+                            <p class="text-[10px] text-slate-500 font-medium">Islamic Boarding School & Entrepreneur Institute • Malang, Jawa Timur</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-2 border-t border-slate-200 flex items-center justify-between text-xs font-bold">
+                        <span class="text-amber-900 uppercase tracking-wider">SLIP GAJI & EVALUASI PRESTASI KERJA (PAYROLL SLIP)</span>
+                        <span class="text-slate-500">Periode: ${namaBulan} ${tahunPilih}</span>
+                    </div>
+                </div>
+
+                <!-- IDENTITAS PEGAWAI -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs">
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Nama Pegawai</span>
+                        <span class="font-black text-slate-900 block">${p.nama}</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Status Pegawai</span>
+                        <span class="font-bold text-slate-800 block">${p.status_pegawai}</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Jabatan / Peran</span>
+                        <span class="font-bold text-slate-800 block">${p.role_str || 'Pegawai'}</span>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Siklus Kerja</span>
+                        <span class="font-bold text-slate-800 block">${p.start_date} s/d ${p.end_date}</span>
+                    </div>
+                </div>
+
+                <!-- PRESENSI & KPI METRICS -->
+                <div class="space-y-2.5">
+                    <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                        <h4 class="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fas fa-clipboard-check text-amber-600"></i>
+                            A. Presensi & Evaluasi Prestasi Kerja (KPI)
+                        </h4>
+                        <span class="text-[11px] font-extrabold px-2.5 py-0.5 rounded-full border ${p.grade_badge}">
+                            Total Skor: ${Number(p.total_skor_kpi).toFixed(1)} (Grade ${p.grade})
+                        </span>
+                    </div>
+
+                    <!-- Presensi Counter -->
+                    <div class="grid grid-cols-4 gap-2 text-center text-xs">
+                        <div class="p-2 rounded-xl bg-emerald-50 border border-emerald-200">
+                            <span class="text-[9px] font-bold text-emerald-800 block">Total Hadir</span>
+                            <span class="text-sm font-black text-emerald-700">${p.hadir_count} Hari</span>
+                        </div>
+                        <div class="p-2 rounded-xl bg-blue-50 border border-blue-200">
+                            <span class="text-[9px] font-bold text-blue-800 block">Izin Resmi</span>
+                            <span class="text-sm font-black text-blue-700">${p.izin_count} Hari</span>
+                        </div>
+                        <div class="p-2 rounded-xl bg-purple-50 border border-purple-200">
+                            <span class="text-[9px] font-bold text-purple-800 block">Sakit (SKD)</span>
+                            <span class="text-sm font-black text-purple-700">${p.sakit_count} Hari</span>
+                        </div>
+                        <div class="p-2 rounded-xl ${p.alpa_count > 0 ? 'bg-rose-50 border border-rose-300' : 'bg-slate-50 border border-slate-200'}">
+                            <span class="text-[9px] font-bold ${p.alpa_count > 0 ? 'text-rose-800' : 'text-slate-500'} block">Alfa / Tanpa Izin</span>
+                            <span class="text-sm font-black ${p.alpa_count > 0 ? 'text-rose-600' : 'text-slate-400'}">${p.alpa_count} Hari</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI Breakdown Table -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-200">
+                        <table class="min-w-full divide-y divide-slate-200 text-xs">
+                            <thead class="bg-slate-100 text-[10px] uppercase font-bold text-slate-600 tracking-wider">
+                                <tr>
+                                    <th class="px-3 py-1.5 text-left">Indikator Tugas</th>
+                                    <th class="px-3 py-1.5 text-left">Realisasi</th>
+                                    <th class="px-3 py-1.5 text-center w-20">Bobot</th>
+                                    <th class="px-3 py-1.5 text-right w-20">Skor</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white">
+                                ${kpiRowsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- RINCIAN PENERIMAAN & POTONGAN -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <!-- Penerimaan -->
+                    <div class="space-y-2">
+                        <h4 class="font-black text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-1 flex items-center gap-1.5">
+                            <i class="fas fa-plus-circle text-emerald-600"></i> B. Penerimaan (Earnings)
+                        </h4>
+                        <table class="min-w-full border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                            <tbody class="bg-white">
+                                <tr>
+                                    <td class="px-3 py-2">
+                                        <span class="font-bold text-slate-800 block">Gaji Pokok</span>
+                                        <span class="text-[10px] text-slate-400">${p.status_pegawai}</span>
+                                    </td>
+                                    <td class="px-3 py-2 text-right font-black text-slate-800">${formatRupiah(p.gaji_pokok)}</td>
+                                </tr>
+                                ${tunjanganRowsHtml}
+                                <tr>
+                                    <td class="px-3 py-2">
+                                        <span class="font-bold text-slate-800 block">Honor KBM</span>
+                                        <span class="text-[10px] text-slate-400">${p.honor_note}</span>
+                                    </td>
+                                    <td class="px-3 py-2 text-right font-black text-slate-800">${formatRupiah(p.honor)}</td>
+                                </tr>
+                            </tbody>
+                            <tfoot class="bg-emerald-50 font-black">
+                                <tr>
+                                    <td class="px-3 py-2 text-slate-700">Subtotal Penerimaan:</td>
+                                    <td class="px-3 py-2 text-right text-emerald-700">${formatRupiah(p.total_penerimaan)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <!-- Potongan -->
+                    <div class="space-y-2">
+                        <h4 class="font-black text-slate-900 uppercase tracking-wider border-b border-slate-200 pb-1 flex items-center gap-1.5">
+                            <i class="fas fa-minus-circle text-rose-600"></i> C. Potongan (Deduction)
+                        </h4>
+                        <table class="min-w-full border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                            <tbody class="bg-white">
+                                ${potonganRowsHtml}
+                            </tbody>
+                            <tfoot class="bg-rose-50 font-black">
+                                <tr>
+                                    <td class="px-3 py-2 text-slate-700">Total Potongan:</td>
+                                    <td class="px-3 py-2 text-right text-rose-700">- ${formatRupiah(p.total_potongan)}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TOTAL TAKE HOME PAY -->
+                <div class="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 flex items-center justify-between">
+                    <div>
+                        <span class="text-[11px] font-black text-amber-900 uppercase tracking-wider block">TOTAL GAJI BERSIH (TAKE HOME PAY)</span>
+                        <span class="text-[11px] font-bold text-slate-600 block italic">"${p.terbilang}"</span>
+                    </div>
+                    <span class="text-xl sm:text-2xl font-black text-amber-900">${formatRupiah(p.total_thp)}</span>
+                </div>
+
+                <!-- TANDA TANGAN -->
+                <div class="pt-4 border-t border-slate-300 grid grid-cols-2 text-center text-xs text-slate-700">
+                    <div>
+                        <p class="font-medium">Mengetahui,</p>
+                        <p class="font-bold text-slate-900 mt-0.5">Bendahara Yayasan</p>
+                        <div class="h-16 flex items-end justify-center">
+                            <p class="border-b border-slate-400 pb-0.5 px-6 font-bold">( ........................................ )</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-medium">Malang, <?= date('d M Y') ?></p>
+                        <p class="font-bold text-slate-900 mt-0.5">Penerima (Pegawai)</p>
+                        <div class="h-16 flex items-end justify-center">
+                            <p class="border-b border-slate-400 pb-0.5 px-6 font-bold">( ${p.nama} )</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('modalSlipContent').innerHTML = slipHtml;
+            document.getElementById('slipPrintContainer').innerHTML = slipHtml;
+            document.getElementById('slipModal').classList.remove('hidden');
+        }
+
+        function closeSlipModal() {
+            document.getElementById('slipModal').classList.add('hidden');
+        }
+
+        function printSingleSlip() {
+            document.body.classList.add('printing-slip');
+            window.print();
+            setTimeout(() => {
+                document.body.classList.remove('printing-slip');
+            }, 500);
+        }
+
+        // Handle ESC key to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeSlipModal();
         });
-        document.getElementById('sidebar-overlay-yayasan2').addEventListener('click', () => {
-            document.getElementById('sidebar-yayasan2').classList.toggle('hidden');
-            document.getElementById('sidebar-overlay-yayasan2').classList.toggle('hidden');
-        });
+
+        // Sidebar responsive handlers
+        const openBtn = document.getElementById('open-sidebar-yayasan2');
+        if (openBtn) {
+            openBtn.addEventListener('click', () => {
+                const sb = document.getElementById('sidebar-yayasan2');
+                const ov = document.getElementById('sidebar-overlay-yayasan2');
+                if (sb) sb.classList.toggle('hidden');
+                if (ov) ov.classList.toggle('hidden');
+            });
+        }
+        const ovBtn = document.getElementById('sidebar-overlay-yayasan2');
+        if (ovBtn) {
+            ovBtn.addEventListener('click', () => {
+                const sb = document.getElementById('sidebar-yayasan2');
+                const ov = document.getElementById('sidebar-overlay-yayasan2');
+                if (sb) sb.classList.add('hidden');
+                if (ov) ov.classList.add('hidden');
+            });
+        }
     </script>
 </body>
 </html>
