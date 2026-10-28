@@ -11,13 +11,27 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once 'koneksi.php';
 require_once 'helper-payroll.php';
 
-// Deteksi Login Pegawai
+// Deteksi Login Pegawai atau Pengurus Yayasan
+$is_yayasan_admin = (!empty($_SESSION['yayasan2_logged_in']) && $_SESSION['yayasan2_logged_in'] === true)
+    || (!empty($_SESSION['role']) && in_array(strtolower($_SESSION['role']), ['yayasan', 'super_admin', 'pimpinan', 'bendahara']))
+    || (!empty($_SESSION['app_user_role']) && in_array(strtolower($_SESSION['app_user_role']), ['super_admin', 'yayasan']));
+
 $user_id = $_SESSION['ustadz_id'] ?? null;
 if (!$user_id && !empty($_SESSION['app_user_id'])) {
     $uid = (int)$_SESSION['app_user_id'];
     $q_ref = $conn->query("SELECT ref_id FROM app_users WHERE id = $uid LIMIT 1");
     if ($q_ref && $row_ref = $q_ref->fetch_assoc()) {
         $user_id = $row_ref['ref_id'];
+    }
+}
+
+// Jika Yayasan mengakses langsung dengan parameter pegawai_id
+if (!$user_id && $is_yayasan_admin) {
+    if (isset($_GET['pegawai_id'])) {
+        $user_id = (int)$_GET['pegawai_id'];
+    } else {
+        $q_first = $conn->query("SELECT id FROM akun_ustadz WHERE status_pegawai != 'Nonaktif' ORDER BY nama ASC LIMIT 1");
+        $user_id = $q_first ? (int)$q_first->fetch_assoc()['id'] : 1;
     }
 }
 
@@ -35,7 +49,7 @@ $roles_arr = [];
 if ($current_user && !empty($current_user['role'])) {
     $roles_arr = array_map('trim', array_map('strtolower', explode(',', $current_user['role'])));
 }
-$is_pimpinan_or_admin = ($user_id === 9999) || in_array('super_admin', $roles_arr) || in_array('ketua_yayasan', $roles_arr) || in_array('bendahara_yayasan', $roles_arr) || in_array('admin_sekolah', $roles_arr);
+$is_pimpinan_or_admin = $is_yayasan_admin || ($user_id === 9999) || in_array('super_admin', $roles_arr) || in_array('ketua_yayasan', $roles_arr) || in_array('bendahara_yayasan', $roles_arr) || in_array('admin_sekolah', $roles_arr);
 
 // Target Pegawai yang Dilihat
 $target_ustadz_id = $user_id;
@@ -160,9 +174,19 @@ $active_menu = 'slip_gaji';
                     </div>
 
                     <!-- Filter Form -->
-                    <form method="GET" class="flex items-center gap-2">
-                        <?php if ($is_pimpinan_or_admin && isset($_GET['pegawai_id'])): ?>
-                            <input type="hidden" name="pegawai_id" value="<?= $target_ustadz_id ?>">
+                    <form method="GET" class="flex flex-wrap items-center gap-2">
+                        <?php if ($is_pimpinan_or_admin): ?>
+                            <select name="pegawai_id" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-amber-500">
+                                <?php
+                                $res_all_p = $conn->query("SELECT id, nama FROM akun_ustadz WHERE status_pegawai != 'Nonaktif' ORDER BY nama ASC");
+                                if ($res_all_p) {
+                                    while ($ap = $res_all_p->fetch_assoc()) {
+                                        $sel = ($target_ustadz_id == $ap['id']) ? 'selected' : '';
+                                        echo "<option value='{$ap['id']}' $sel>" . htmlspecialchars($ap['nama']) . "</option>";
+                                    }
+                                }
+                                ?>
+                            </select>
                         <?php endif; ?>
                         <select name="bulan" onchange="this.form.submit()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:bg-white focus:ring-2 focus:ring-amber-500">
                             <?php foreach ($months as $num => $name): ?>
@@ -174,7 +198,7 @@ $active_menu = 'slip_gaji';
                                 <option value="<?= $y ?>" <?= $selected_year == $y ? 'selected' : '' ?>><?= $y ?></option>
                             <?php endfor; ?>
                         </select>
-                        <button type="submit" class="p-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition">
+                        <button type="submit" class="p-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition" title="Terapkan Filter">
                             <i class="fas fa-filter"></i>
                         </button>
                     </form>
@@ -508,3 +532,4 @@ $active_menu = 'slip_gaji';
     </script>
 </body>
 </html>
+
