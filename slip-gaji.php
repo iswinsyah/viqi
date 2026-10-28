@@ -53,8 +53,16 @@ $is_pimpinan_or_admin = $is_yayasan_admin || ($user_id === 9999) || in_array('su
 
 // Target Pegawai yang Dilihat
 $target_ustadz_id = $user_id;
-if ($is_pimpinan_or_admin && isset($_GET['pegawai_id'])) {
-    $target_ustadz_id = (int)$_GET['pegawai_id'];
+if ($is_pimpinan_or_admin) {
+    if (isset($_GET['pegawai_id'])) {
+        $target_ustadz_id = (int)$_GET['pegawai_id'];
+    } elseif ($user_id === 9999 || !$current_user) {
+        // Jika login sebagai Super Admin / Akun Master (9999), otomatis pilih pegawai aktif pertama
+        $q_f = $conn->query("SELECT id FROM akun_ustadz WHERE status_pegawai != 'Nonaktif' ORDER BY nama ASC LIMIT 1");
+        if ($q_f && $rf = $q_f->fetch_assoc()) {
+            $target_ustadz_id = (int)$rf['id'];
+        }
+    }
 }
 
 // Filter Periode
@@ -68,8 +76,41 @@ $selected_year  = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 // Hitung Payroll Lengkap Pegawai
 $payroll = hitung_payroll_pegawai($conn, $target_ustadz_id, $selected_month, $selected_year);
 
+// Auto-Fallback tangguh jika akun target belum memiliki record pegawai
 if (!$payroll) {
-    die("Data pegawai tidak ditemukan.");
+    $q_fallback = $conn->query("SELECT id FROM akun_ustadz WHERE status_pegawai != 'Nonaktif' ORDER BY nama ASC LIMIT 1");
+    if ($q_fallback && $row_fb = $q_fallback->fetch_assoc()) {
+        $target_ustadz_id = (int)$row_fb['id'];
+        $payroll = hitung_payroll_pegawai($conn, $target_ustadz_id, $selected_month, $selected_year);
+    }
+}
+
+if (!$payroll) {
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <title>Slip Gaji Pegawai</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+    </head>
+    <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-xl text-center border border-slate-200">
+            <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 class="text-lg font-black text-slate-800 mb-2">Data Pegawai Belum Tersedia</h2>
+            <p class="text-xs text-slate-500 mb-6 leading-relaxed">
+                Belum ada data pegawai aktif yang terdaftar untuk periode ini, atau akun yang digunakan adalah Super Admin simulasi.
+            </p>
+            <a href="yayasan2/gaji-pegawai.php" class="inline-flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-md transition">
+                Kembali ke Rekap Payroll Yayasan
+            </a>
+        </div>
+    </body>
+    </html>
+    <?php
+    exit;
 }
 
 $active_menu = 'slip_gaji';
