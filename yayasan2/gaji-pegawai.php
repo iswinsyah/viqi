@@ -182,8 +182,6 @@ $total_employees  = count($payroll_list);
                         <span class="bg-white px-3 py-1.5 rounded-xl border border-amber-300 text-amber-900 shadow-xs font-black">Tunjangan (KPI & Grade)</span>
                         <span class="text-amber-600 font-black text-sm">+</span>
                         <span class="bg-white px-3 py-1.5 rounded-xl border border-indigo-200 text-indigo-900 shadow-xs font-black">Honor Mengajar</span>
-                        <span class="text-amber-600 font-black text-sm">-</span>
-                        <span class="bg-white px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 shadow-xs font-black">Denda Alfa</span>
                         <span class="text-amber-600 font-black text-sm">=</span>
                         <span class="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-3.5 py-1.5 rounded-xl font-black shadow-sm">Take Home Pay</span>
                     </div>

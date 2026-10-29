@@ -58,7 +58,8 @@ if (!function_exists('hitung_payroll_pegawai')) {
         @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_musyrif_a INT DEFAULT 600000");
         @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_musyrif_b INT DEFAULT 400000");
         @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN tunj_musyrif_c INT DEFAULT 200000");
-        @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN denda_alpa INT DEFAULT 50000");
+        @$conn->query("ALTER TABLE pengaturan_gaji ADD COLUMN denda_alpa INT DEFAULT 0");
+        @$conn->query("UPDATE pengaturan_gaji SET denda_alpa = 0 WHERE denda_alpa = 50000");
 
         $res_cfg = $conn->query("SELECT * FROM pengaturan_gaji WHERE id=1 LIMIT 1");
         $cfg = $res_cfg ? $res_cfg->fetch_assoc() : [];
@@ -89,7 +90,7 @@ if (!function_exists('hitung_payroll_pegawai')) {
         $tunj_musyrif_b = (int)($cfg['tunj_musyrif_b'] ?? 400000);
         $tunj_musyrif_c = (int)($cfg['tunj_musyrif_c'] ?? 200000);
 
-        $denda_alpa = (int)($cfg['denda_alpa'] ?? 50000);
+        $denda_alpa = (int)($cfg['denda_alpa'] ?? 0);
 
         // 2. Fetch Pegawai
         $ust_id = (int)$ustadz_id;
