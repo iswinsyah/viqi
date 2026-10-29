@@ -5,14 +5,23 @@ require_once '../helper-payroll.php';
 
 $active_menu = 'gaji_pegawai';
 
-// --- PERIOD SELECTION ---
+// --- PERIOD SELECTION (SYNC WITH SIKLUS PENGGAJIAN 27-26) ---
 $months = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
     7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
 ];
 
-$selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
-$selected_year  = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
+$current_day = (int)date('d');
+if ($current_day >= 27) {
+    $default_month = (int)date('m', strtotime('+1 month'));
+    $default_year  = (int)date('Y', strtotime('+1 month'));
+} else {
+    $default_month = (int)date('m');
+    $default_year  = (int)date('Y');
+}
+
+$selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : $default_month;
+$selected_year  = isset($_GET['tahun']) ? (int)$_GET['tahun'] : $default_year;
 
 $start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
 $end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
@@ -30,9 +39,12 @@ if ($res_pegawai && $res_pegawai->num_rows > 0) {
 }
 
 // Summary Statistics
-$total_payroll = array_sum(array_column($payroll_list, 'total_thp'));
-$avg_payroll = count($payroll_list) > 0 ? $total_payroll / count($payroll_list) : 0;
-$total_employees = count($payroll_list);
+$total_gaji_pokok = array_sum(array_column($payroll_list, 'gaji_pokok'));
+$total_tunjangan  = array_sum(array_column($payroll_list, 'tunjangan_total'));
+$total_honor      = array_sum(array_column($payroll_list, 'honor'));
+$total_payroll    = array_sum(array_column($payroll_list, 'total_thp'));
+$avg_payroll      = count($payroll_list) > 0 ? $total_payroll / count($payroll_list) : 0;
+$total_employees  = count($payroll_list);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -61,12 +73,10 @@ $total_employees = count($payroll_list);
                 border: 1px solid #ddd !important;
                 box-shadow: none !important;
             }
-            /* Hide modal on normal table print */
             #slipModal {
                 display: none !important;
             }
         }
-        /* Printable single slip styling when triggered from modal */
         @media print {
             body.printing-slip > *:not(#slipPrintContainer) {
                 display: none !important;
@@ -103,16 +113,20 @@ $total_employees = count($payroll_list);
                     </div>
                     <div>
                         <h2 class="font-bold text-gray-900 leading-tight">Panel Eksekutif Yayasan</h2>
-                        <p class="text-[10px] text-gray-400">Payroll & Transparansi Tunjangan KPI Pegawai</p>
+                        <p class="text-[10px] text-gray-400">Payroll, Gaji Pokok, Tunjangan & Honor KBM Pegawai</p>
                     </div>
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
-                <a href="gaji-asatidz.php" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs shadow-xs flex items-center gap-2 border border-slate-200 transition">
+                <a href="asatidz.php" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs shadow-xs flex items-center gap-1.5 border border-slate-200 transition">
+                    <i class="fas fa-users-cog text-slate-500"></i>
+                    <span class="hidden sm:inline">Data Akun Asatidz</span>
+                </a>
+                <a href="gaji-asatidz.php" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3 py-2 rounded-xl text-xs shadow-xs flex items-center gap-1.5 border border-slate-200 transition">
                     <i class="fas fa-cog text-slate-500"></i>
                     <span class="hidden sm:inline">Pengaturan Gaji & Tunjangan</span>
                 </a>
-                <button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold px-4 py-2 rounded-xl text-xs shadow-sm flex items-center gap-2 transition">
+                <button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-amber-950 font-bold px-4 py-2 rounded-xl text-xs shadow-sm flex items-center gap-1.5 transition">
                     <i class="fas fa-print"></i>
                     <span>Cetak Rekap</span>
                 </button>
@@ -127,10 +141,10 @@ $total_employees = count($payroll_list);
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 no-print">
                     <div>
                         <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2.5 tracking-tight">
-                            <i class="fas fa-money-check-dollar text-amber-600"></i> Rekap Payroll & Penilaian Prestasi Kerja
+                            <i class="fas fa-money-check-dollar text-amber-600"></i> Rekap Gaji & Payroll Pegawai
                         </h1>
                         <p class="text-xs text-gray-500 mt-1">
-                            Rincian transparan perhitungan Gaji Pokok, Tunjangan Jabatan (berbasis Presensi & KPI), Potongan Alfa, dan Honor KBM.
+                            Perhitungan transparan: <strong>Gaji Pokok</strong> + <strong>Tunjangan (KPI & Presensi)</strong> + <strong>Honor KBM</strong> = <strong>Take Home Pay (THP)</strong>.
                         </p>
                     </div>
                     <!-- Filter Form -->
@@ -154,6 +168,27 @@ $total_employees = count($payroll_list);
                     </form>
                 </div>
 
+                <!-- FORMULA PERHITUNGAN THP BANNER (NO-PRINT) -->
+                <div class="p-4 bg-gradient-to-r from-amber-50 via-white to-amber-50/70 border border-amber-200/90 rounded-2xl flex flex-wrap items-center justify-between text-xs text-amber-950 font-bold gap-3 shadow-xs no-print">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-amber-500 text-amber-950 flex items-center justify-center font-black">
+                            <i class="fas fa-calculator"></i>
+                        </div>
+                        <span class="text-slate-800">Rumus Kalkulasi Take Home Pay (THP):</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-slate-800 shadow-xs font-black">Gaji Pokok</span>
+                        <span class="text-amber-600 font-black text-sm">+</span>
+                        <span class="bg-white px-3 py-1.5 rounded-xl border border-amber-300 text-amber-900 shadow-xs font-black">Tunjangan (KPI & Grade)</span>
+                        <span class="text-amber-600 font-black text-sm">+</span>
+                        <span class="bg-white px-3 py-1.5 rounded-xl border border-indigo-200 text-indigo-900 shadow-xs font-black">Honor Mengajar</span>
+                        <span class="text-amber-600 font-black text-sm">-</span>
+                        <span class="bg-white px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 shadow-xs font-black">Denda Alfa</span>
+                        <span class="text-amber-600 font-black text-sm">=</span>
+                        <span class="bg-gradient-to-r from-amber-600 to-amber-700 text-white px-3.5 py-1.5 rounded-xl font-black shadow-sm">Take Home Pay</span>
+                    </div>
+                </div>
+
                 <!-- PRINT-ONLY HEADER -->
                 <div class="hidden print:block text-center mb-6">
                     <h1 class="text-2xl font-bold text-gray-900 uppercase">YAYASAN VILLA QUR'AN BARON MALANG</h1>
@@ -165,37 +200,51 @@ $total_employees = count($payroll_list);
                 </div>
 
                 <!-- STATISTICS CARDS -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 no-print">
-                    <!-- Card 1 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 no-print">
+                    <!-- Total THP -->
                     <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 p-5 flex items-center justify-between">
                         <div>
-                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Pengeluaran Payroll</span>
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Pengeluaran THP</span>
                             <span class="text-2xl font-black text-amber-600 block">Rp <?= number_format($total_payroll, 0, ',', '.') ?></span>
-                            <span class="text-[10px] text-gray-400 block mt-1">Akumulasi seluruh THP pegawai</span>
+                            <span class="text-[10px] text-gray-400 block mt-1">Akumulasi seluruh THP bersih</span>
                         </div>
-                        <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl font-bold border border-amber-100">
+                        <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg font-bold border border-amber-100">
                             <i class="fas fa-wallet"></i>
                         </div>
                     </div>
-                    <!-- Card 2 -->
+
+                    <!-- Gaji Pokok Total -->
                     <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 p-5 flex items-center justify-between">
                         <div>
-                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Rata-rata THP Pegawai</span>
-                            <span class="text-2xl font-black text-indigo-600 block">Rp <?= number_format($avg_payroll, 0, ',', '.') ?></span>
-                            <span class="text-[10px] text-gray-400 block mt-1">Rata-rata pendapatan per staf</span>
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Total Gaji Pokok</span>
+                            <span class="text-xl font-black text-slate-800 block">Rp <?= number_format($total_gaji_pokok, 0, ',', '.') ?></span>
+                            <span class="text-[10px] text-gray-400 block mt-1">Komponen tetap pegawai</span>
                         </div>
-                        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold border border-indigo-100">
+                        <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-lg font-bold border border-slate-200">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                    </div>
+
+                    <!-- Tunjangan & Honor Total -->
+                    <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 p-5 flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Tunjangan & Honor</span>
+                            <span class="text-xl font-black text-indigo-600 block">Rp <?= number_format($total_tunjangan + $total_honor, 0, ',', '.') ?></span>
+                            <span class="text-[10px] text-gray-400 block mt-1">Tunj: Rp <?= number_format($total_tunjangan, 0, ',', '.') ?> | Hnr: Rp <?= number_format($total_honor, 0, ',', '.') ?></span>
+                        </div>
+                        <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-bold border border-indigo-100">
                             <i class="fas fa-hand-holding-dollar"></i>
                         </div>
                     </div>
-                    <!-- Card 3 -->
+
+                    <!-- Penerima Gaji -->
                     <div class="bg-white rounded-2xl shadow-xs border border-gray-200/80 p-5 flex items-center justify-between">
                         <div>
                             <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Penerima Gaji Aktif</span>
                             <span class="text-2xl font-black text-emerald-600 block"><?= $total_employees ?> Orang</span>
-                            <span class="text-[10px] text-gray-400 block mt-1">Pegawai aktif periode ini</span>
+                            <span class="text-[10px] text-gray-400 block mt-1">Rata-rata: Rp <?= number_format($avg_payroll, 0, ',', '.') ?>/staf</span>
                         </div>
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl font-bold border border-emerald-100">
+                        <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg font-bold border border-emerald-100">
                             <i class="fas fa-users"></i>
                         </div>
                     </div>
@@ -206,7 +255,7 @@ $total_employees = count($payroll_list);
                     <div class="px-6 py-4 bg-gray-50/70 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 no-print">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-table-list text-slate-500"></i>
-                            <h3 class="font-extrabold text-sm text-gray-900">Rincian Transparansi Payroll Pegawai</h3>
+                            <h3 class="font-extrabold text-sm text-gray-900">Daftar Payroll, Gaji Pokok, Tunjangan & Honor Pegawai</h3>
                         </div>
                         <span class="text-[11px] bg-slate-100 text-slate-700 border border-slate-200 px-3 py-1 rounded-full font-bold">
                             Siklus: <?= date('d M Y', strtotime($start_date)) ?> - <?= date('d M Y', strtotime($end_date)) ?>
@@ -215,17 +264,17 @@ $total_employees = count($payroll_list);
 
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 text-xs">
-                            <thead class="bg-gray-50/80 text-[10px] uppercase font-extrabold text-gray-500 tracking-wider">
+                            <thead class="bg-gray-50/90 text-[10px] uppercase font-extrabold text-gray-600 tracking-wider">
                                 <tr>
                                     <th class="px-3 py-3.5 text-center w-8">No</th>
                                     <th class="px-3 py-3.5 text-left">Nama Pegawai</th>
                                     <th class="px-3 py-3.5 text-left">Jabatan & Status</th>
-                                    <th class="px-3 py-3.5 text-center bg-blue-50/40 text-blue-900">Presensi Kerja</th>
+                                    <th class="px-3 py-3.5 text-center bg-blue-50/40 text-blue-900">Presensi (Hadir/Alfa)</th>
                                     <th class="px-3 py-3.5 text-center bg-purple-50/40 text-purple-900">Prestasi KPI & Grade</th>
-                                    <th class="px-3 py-3.5 text-right">Gaji Pokok</th>
-                                    <th class="px-3 py-3.5 text-right bg-amber-50/40 text-amber-900">Rincian Tunjangan</th>
-                                    <th class="px-3 py-3.5 text-right">Honor KBM</th>
-                                    <th class="px-3 py-3.5 text-right bg-amber-100/50 text-amber-950 font-black">Total THP</th>
+                                    <th class="px-3 py-3.5 text-right bg-slate-100/60 text-slate-800 font-extrabold">Gaji Pokok</th>
+                                    <th class="px-3 py-3.5 text-right bg-amber-50/50 text-amber-900 font-extrabold">Tunjangan (KPI)</th>
+                                    <th class="px-3 py-3.5 text-right bg-indigo-50/40 text-indigo-900 font-extrabold">Honor KBM</th>
+                                    <th class="px-3 py-3.5 text-right bg-amber-100/70 text-amber-950 font-black">Take Home Pay</th>
                                     <th class="px-3 py-3.5 text-center no-print">Slip Gaji</th>
                                 </tr>
                             </thead>
@@ -255,7 +304,7 @@ $total_employees = count($payroll_list);
                                         $roles_display_html = "<span class='text-gray-400 italic'>-</span>";
                                     }
                                     ?>
-                                    <tr class="hover:bg-gray-50/60 transition">
+                                    <tr class="hover:bg-gray-50/70 transition">
                                         <!-- No -->
                                         <td class="px-3 py-3 text-center font-bold text-gray-400"><?= $no++ ?></td>
                                         
@@ -272,14 +321,14 @@ $total_employees = count($payroll_list);
                                         </td>
 
                                         <!-- Presensi Kerja (Hadir / Izin / Alfa) -->
-                                        <td class="px-3 py-3 text-center bg-blue-50/20">
+                                        <td class="px-3 py-3 text-center bg-blue-50/15">
                                             <div class="flex flex-col items-center gap-1">
                                                 <div class="flex items-center gap-1">
                                                     <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded text-[10px] font-bold" title="Hadir Tepat: <?= $p['hadir_tepat'] ?>, Telat: <?= $p['hadir_terlambat'] ?>">
                                                         <?= $p['hadir_count'] ?> Hadir
                                                     </span>
                                                     <span class="bg-slate-100 text-slate-600 border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-semibold">
-                                                        <?= $p['izin_count'] + $p['sakit_count'] ?> Izin/Skt
+                                                        <?= $p['izin_count'] + $p['sakit_count'] ?> Izin
                                                     </span>
                                                 </div>
                                                 <?php if ($p['alpa_count'] > 0): ?>
@@ -295,7 +344,7 @@ $total_employees = count($payroll_list);
                                         </td>
 
                                         <!-- Prestasi KPI & Grade -->
-                                        <td class="px-3 py-3 text-center bg-purple-50/20">
+                                        <td class="px-3 py-3 text-center bg-purple-50/15">
                                             <span class="text-xs font-black text-gray-900 block"><?= number_format($p['total_skor_kpi'], 1) ?> Poin</span>
                                             <span class="inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full border <?= $p['grade_badge'] ?> mt-0.5">
                                                 Grade <?= $p['grade'] ?>
@@ -303,13 +352,14 @@ $total_employees = count($payroll_list);
                                         </td>
 
                                         <!-- Gaji Pokok -->
-                                        <td class="px-3 py-3 text-right font-semibold text-slate-700">
+                                        <td class="px-3 py-3 text-right font-black text-slate-800 bg-slate-50/40">
                                             Rp <?= number_format($p['gaji_pokok'], 0, ',', '.') ?>
+                                            <span class="text-[9px] text-gray-400 block font-normal mt-0.5"><?= $p['status_pegawai'] ?></span>
                                         </td>
 
                                         <!-- Rincian Tunjangan -->
                                         <td class="px-3 py-3 text-right bg-amber-50/20">
-                                            <span class="font-bold text-gray-900 block">Rp <?= number_format($p['tunjangan_total'], 0, ',', '.') ?></span>
+                                            <span class="font-black text-amber-900 block">Rp <?= number_format($p['tunjangan_total'], 0, ',', '.') ?></span>
                                             <?php if (!empty($p['rincian_tunjangan'])): ?>
                                                 <div class="mt-0.5 flex flex-col items-end gap-0.5">
                                                     <?php foreach ($p['rincian_tunjangan'] as $rt): ?>
@@ -324,20 +374,21 @@ $total_employees = count($payroll_list);
 
                                             <?php if ($p['total_potongan'] > 0): ?>
                                                 <span class="text-[9px] font-bold text-rose-600 block mt-0.5">
-                                                    Potongan Alfa: -Rp <?= number_format($p['total_potongan'], 0, ',', '.') ?>
+                                                    Denda Alfa: -Rp <?= number_format($p['total_potongan'], 0, ',', '.') ?>
                                                 </span>
                                             <?php endif; ?>
                                         </td>
 
                                         <!-- Honor Mengajar -->
-                                        <td class="px-3 py-3 text-right">
-                                            <span class="font-semibold text-slate-700 block">Rp <?= number_format($p['honor'], 0, ',', '.') ?></span>
-                                            <span class="text-[9px] text-gray-400 block mt-0.5"><?= htmlspecialchars($p['honor_note']) ?></span>
+                                        <td class="px-3 py-3 text-right bg-indigo-50/15">
+                                            <span class="font-black text-indigo-900 block">Rp <?= number_format($p['honor'], 0, ',', '.') ?></span>
+                                            <span class="text-[9px] text-gray-500 block mt-0.5"><?= htmlspecialchars($p['honor_note']) ?></span>
                                         </td>
 
-                                        <!-- Total THP -->
-                                        <td class="px-3 py-3 text-right font-black text-amber-700 bg-amber-50/40 text-sm">
+                                        <!-- Total Take Home Pay -->
+                                        <td class="px-3 py-3 text-right font-black text-amber-900 bg-amber-100/50 text-sm">
                                             Rp <?= number_format($p['total_thp'], 0, ',', '.') ?>
+                                            <span class="text-[9px] text-amber-700/80 block font-normal mt-0.5">Pokok + Tunj + Hnr</span>
                                         </td>
 
                                         <!-- Aksi / Slip Gaji -->
@@ -347,7 +398,7 @@ $total_employees = count($payroll_list);
                                                     <i class="fas fa-file-invoice-dollar"></i>
                                                     <span>Slip</span>
                                                 </button>
-                                                <a href="../slip-gaji.php?pegawai_id=<?= $p['ustadz_id'] ?>&bulan=<?= $selected_month ?>&tahun=<?= $selected_year ?>" target="_blank" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs transition" title="Buka di Tab Baru">
+                                                <a href="../slip-gaji.php?pegawai_id=<?= $p['ustadz_id'] ?>&bulan=<?= $selected_month ?>&tahun=<?= $selected_year ?>" target="_blank" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs transition" title="Buka Slip di Tab Baru">
                                                     <i class="fas fa-arrow-up-right-from-square"></i>
                                                 </a>
                                             </div>
@@ -357,11 +408,11 @@ $total_employees = count($payroll_list);
                             </tbody>
                             <tfoot class="bg-gray-50/90 font-black text-xs border-t-2 border-gray-300">
                                 <tr>
-                                    <td colspan="5" class="px-3 py-3.5 text-right uppercase text-gray-700">Akumulasi Total Payroll:</td>
-                                    <td class="px-3 py-3.5 text-right text-gray-800">Rp <?= number_format(array_sum(array_column($payroll_list, 'gaji_pokok')), 0, ',', '.') ?></td>
-                                    <td class="px-3 py-3.5 text-right text-gray-800">Rp <?= number_format(array_sum(array_column($payroll_list, 'tunjangan_total')), 0, ',', '.') ?></td>
-                                    <td class="px-3 py-3.5 text-right text-gray-800">Rp <?= number_format(array_sum(array_column($payroll_list, 'honor')), 0, ',', '.') ?></td>
-                                    <td class="px-3 py-3.5 text-right text-amber-700 text-base">Rp <?= number_format($total_payroll, 0, ',', '.') ?></td>
+                                    <td colspan="5" class="px-3 py-3.5 text-right uppercase text-gray-700">Akumulasi Total:</td>
+                                    <td class="px-3 py-3.5 text-right text-slate-900">Rp <?= number_format($total_gaji_pokok, 0, ',', '.') ?></td>
+                                    <td class="px-3 py-3.5 text-right text-amber-900">Rp <?= number_format($total_tunjangan, 0, ',', '.') ?></td>
+                                    <td class="px-3 py-3.5 text-right text-indigo-900">Rp <?= number_format($total_honor, 0, ',', '.') ?></td>
+                                    <td class="px-3 py-3.5 text-right text-amber-950 text-base bg-amber-100">Rp <?= number_format($total_payroll, 0, ',', '.') ?></td>
                                     <td class="no-print"></td>
                                 </tr>
                             </tfoot>
@@ -667,12 +718,10 @@ $total_employees = count($payroll_list);
             }, 500);
         }
 
-        // Handle ESC key to close modal
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeSlipModal();
         });
 
-        // Sidebar responsive handlers
         const openBtn = document.getElementById('open-sidebar-yayasan2');
         if (openBtn) {
             openBtn.addEventListener('click', () => {

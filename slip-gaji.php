@@ -70,8 +70,17 @@ $months = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
     7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
 ];
-$selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
-$selected_year  = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
+$current_day = (int)date('d');
+if ($current_day >= 27) {
+    $default_month = (int)date('m', strtotime('+1 month'));
+    $default_year  = (int)date('Y', strtotime('+1 month'));
+} else {
+    $default_month = (int)date('m');
+    $default_year  = (int)date('Y');
+}
+
+$selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : $default_month;
+$selected_year  = isset($_GET['tahun']) ? (int)$_GET['tahun'] : $default_year;
 
 // Hitung Payroll Lengkap Pegawai
 $payroll = hitung_payroll_pegawai($conn, $target_ustadz_id, $selected_month, $selected_year);
