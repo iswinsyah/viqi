@@ -10,18 +10,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS kurikulum (
     deskripsi TEXT
 )");
 
-// 2. Insert data dummy jika tabel kosong
-$cek = $conn->query("SELECT COUNT(*) as tot FROM kurikulum");
-if ($cek && $cek->fetch_assoc()['tot'] == 0) {
-    $conn->query("INSERT INTO kurikulum (ikon, judul, deskripsi) VALUES 
-    ('fas fa-quran', 'Tahfidz & Tahsin', 'Fokus pada hafalan kuat (mutqin) dan perbaikan bacaan dengan standar tajwid bersanad.'),
-    ('fas fa-book-reader', 'Adab & Tsaqofah Islam', 'Pendidikan karakter, fiqih dasar, dan aqidah sebelum menguasai ilmu lainnya.'),
-    ('fas fa-school', 'Pengetahuan Umum (Dinas)', 'Kurikulum nasional (Matematika, IPA, dll) untuk bekal masa depan dan ujian negara.'),
-    ('fas fa-bullseye', 'Olahraga Sunnah', 'Kegiatan memanah, berenang, dan bela diri untuk melatih ketangkasan dan fokus santri.'),
-    ('fas fa-laptop-code', 'Digitalpreneur', 'Membekali santri dengan keterampilan bisnis dan teknologi di era digital.'),
-    ('fas fa-robot', 'AI Terapan', 'Pemanfaatan kecerdasan buatan untuk meningkatkan produktivitas harian santri.'),
-    ('fas fa-users-cog', 'Leadership', 'Latihan kepemimpinan, public speaking, dan kemandirian mengurus diri di asrama.')");
-}
 
 // 3. Proses Hapus Data
 if (isset($_GET['hapus_id'])) {

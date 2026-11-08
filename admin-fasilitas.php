@@ -11,15 +11,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS fasilitas (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 
-// 2. Insert data dummy jika tabel kosong
-$cek = $conn->query("SELECT COUNT(*) as tot FROM fasilitas");
-if ($cek && $cek->fetch_assoc()['tot'] == 0) {
-    $conn->query("INSERT INTO fasilitas (judul, deskripsi, gambar_url) VALUES 
-    ('Masjid Jami\' Pesantren', 'Masjid luas dan nyaman sebagai pusat ibadah dan halaqah tahfidz santri.', 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
-    ('Kamar Asrama Full AC', 'Kamar santri yang bersih, nyaman, dan berpendingin ruangan maksimal 4 santri/kamar.', 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
-    ('Ruang Kelas Interaktif', 'Dilengkapi smart TV dan bangku ergonomis untuk menjaga fokus belajar santri.', 'https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
-    ('Laboratorium Komputer', 'Fasilitas PC mumpuni untuk menunjang program keahlian Digitalpreneur & AI.', 'https://images.unsplash.com/photo-1531482615713-2afd69097998?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')");
-}
 
 // 3. Proses Hapus Data
 if (isset($_GET['hapus_id'])) {

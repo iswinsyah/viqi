@@ -466,7 +466,7 @@ $active_menu = 'siaran_wa';
                             <span class="text-[10px] text-emerald-100 font-bold hidden sm:inline">Tes Agen:</span>
                             <select id="simulasi_agen_select" onchange="renderLivePreview()" class="bg-[#054c44] text-white border border-emerald-600/60 rounded-xl px-2.5 py-1 text-[11px] font-bold focus:outline-none">
                                 <?php if (empty($active_agen_list)): ?>
-                                    <option value="default" data-nama="Ustadz Mitra (Contoh)" data-wa="081234567890" data-ref="081234567890">Ustadz Mitra (Contoh)</option>
+                                    <option value="" data-nama="[Nama Mitra]" data-wa="[No WhatsApp]" data-ref="[Kode Ref]">Belum ada mitra terdaftar</option>
                                 <?php else: ?>
                                     <?php foreach ($active_agen_list as $ag_opt): ?>
                                         <option value="<?= $ag_opt['id'] ?>" data-nama="<?= htmlspecialchars($ag_opt['nama']) ?>" data-wa="<?= htmlspecialchars($ag_opt['whatsapp']) ?>" data-ref="<?= htmlspecialchars($ag_opt['kode_ref'] ?: $ag_opt['whatsapp']) ?>">
@@ -661,9 +661,9 @@ $active_menu = 'siaran_wa';
             if (!textarea || !previewDisplay) return;
 
             const selectedOpt = selectAgen ? selectAgen.options[selectAgen.selectedIndex] : null;
-            const namaAgen = selectedOpt ? selectedOpt.getAttribute('data-nama') : 'Ustadz Mitra';
-            const waAgen = selectedOpt ? selectedOpt.getAttribute('data-wa') : '081234567890';
-            const refAgen = selectedOpt ? selectedOpt.getAttribute('data-ref') : '081234567890';
+            const namaAgen = selectedOpt ? (selectedOpt.getAttribute('data-nama') || '') : '';
+            const waAgen = selectedOpt ? (selectedOpt.getAttribute('data-wa') || '') : '';
+            const refAgen = selectedOpt ? (selectedOpt.getAttribute('data-ref') || '') : '';
 
             let text = textarea.value;
             text = text.replace(/\{nama\}/g, namaAgen);

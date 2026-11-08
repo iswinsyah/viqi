@@ -10,20 +10,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS biaya (
     nominal INT
 )");
 
-// 2. Insert data dummy jika tabel kosong
-$cek = $conn->query("SELECT COUNT(*) as tot FROM biaya");
-if ($cek && $cek->fetch_assoc()['tot'] == 0) {
-    $conn->query("INSERT INTO biaya (kategori, nama_komponen, nominal) VALUES 
-    ('pendaftaran', 'Formulir & Administrasi SPMB', 350000),
-    ('pangkal', 'Uang Pembangunan (Gedung & Fasilitas)', 8000000),
-    ('pangkal', 'Ranjang, Kasur, Lemari, dll (Hak Pakai)', 2500000),
-    ('pangkal', 'Seragam (4 Stel) & Modul Tahun Pertama', 3000000),
-    ('tahunan', 'Biaya Sewa Asrama Tahunan', 2000000),
-    ('tahunan', 'Biaya Kegiatan Tahunan', 1500000),
-    ('spp', 'Makan 3x Sehari (Termasuk Suplemen/Brain Food)', 800000),
-    ('spp', 'Pendidikan, Asrama, & Ekstrakurikuler', 600000),
-    ('spp', 'Laundry Pakaian (Standar)', 100000)");
-}
 
 // Fungsi Sinkronisasi Otomatis ke Pengaturan Brosur Digital
 function syncBiayaKeBrosur($conn) {

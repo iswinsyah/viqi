@@ -11,12 +11,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS testimoni (
     gambar_url VARCHAR(255)
 )");
 
-// 2. Insert data dummy jika tabel kosong
-$cek = $conn->query("SELECT COUNT(*) as tot FROM testimoni");
-if ($cek && $cek->fetch_assoc()['tot'] == 0) {
-    $conn->query("INSERT INTO testimoni (nama, jabatan, isi_testimoni, gambar_url) VALUES 
-    ('Bpk. Ahmad Fauzi', 'Orang tua santri Tahun Ke-2', 'Awalnya kami khawatir anak akan stres dipaksa menghafal. Ternyata di Villa Quran, anak saya sangat bahagia. Suasana asramanya bersih, makanannya bergizi penuh suplemen madu, dan alhamdulillah hafalannya sekarang sudah mutqin 10 Juz.', '')");
-}
 
 // 3. Proses Hapus Data
 if (isset($_GET['hapus_id'])) {

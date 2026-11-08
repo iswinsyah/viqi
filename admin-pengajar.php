@@ -16,15 +16,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS pengajar (
     prestasi TEXT
 )");
 
-// 2. Insert data dummy jika tabel masih kosong (untuk menjaga tampilan awal)
-$cek = $conn->query("SELECT COUNT(*) as tot FROM pengajar");
-if ($cek && $cek->fetch_assoc()['tot'] == 0) {
-    $conn->query("INSERT INTO pengajar (nama, jabatan, gambar_url, ikon_badge, teks_badge, almamater, spesialisasi, bidang_mengajar, prestasi) VALUES 
-    ('Ust. Abdullah, Lc.', 'Kepala Tahfidz', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', 'fas fa-certificate', 'Hafidz 30 Juz Bersanad', 'Universitas Al-Azhar Kairo, Mesir (Lulus Tahun 2018)', 'Tahsin, Ilmu Tajwid, dan Qiro\\'at Sab\\'ah', 'Ziyadah & Muraja\\'ah Hafalan Al-Quran Utama', 'Pemegang Sanad Muttashil Hafalan 30 Juz ke-32, Juara 1 MHQ Nasional 2019.'),
-    ('Ust. Abdurrahman, M.Pd.', 'Musyrif Asrama', 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', 'fas fa-book-reader', 'Pakar Adab & Karakter', 'Universitas Islam Madinah & S2 UPI (Lulus Tahun 2020)', 'Pendidikan Karakter (Character Building) & Psikologi Anak', 'Adab Harian Santri, Bahasa Arab, dan Tsaqofah Islam.', 'Penulis buku best-seller \"Mendidik Anak Generasi Alpha dengan Sunnah\".'),
-    ('Bpk. Fulan Pratama, S.Kom.', 'Guru Digitalpreneur', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', 'fas fa-laptop-code', 'AI & Programming', 'Fasilkom Universitas Indonesia (Lulus Tahun 2019)', 'Pemrograman Web, Desain UI/UX, dan Praktik AI', 'Kelas Digitalpreneur dan Life Skills Abad 21.', 'Mantan Tech Lead di Startup Nasional, mendedikasikan diri untuk mencetak santri melek teknologi.'),
-    ('Dr. Zaid, Sp.GK.', 'Konsultan Gizi', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80', 'fas fa-apple-alt', 'Brain Food Expert', 'Fakultas Kedokteran Universitas Indonesia', 'Gizi Klinik Anak dan Remaja', 'Edukasi Pola Makan Sehat Santri', 'Merancang menu khusus untuk meningkatkan daya ingat santri dan menghindari kantuk berlebih.')");
-}
 
 // 3. Proses Hapus Data
 if (isset($_GET['hapus_id'])) {

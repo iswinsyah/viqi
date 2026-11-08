@@ -11,17 +11,6 @@ $conn->query("CREATE TABLE IF NOT EXISTS galeri (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )");
 
-// 2. Insert data dummy jika tabel kosong (agar web tidak kosong)
-$cek = $conn->query("SELECT COUNT(*) as tot FROM galeri");
-if ($cek && $cek->fetch_assoc()['tot'] == 0) {
-    $conn->query("INSERT INTO galeri (judul, caption, gambar_url) VALUES 
-    ('Halaqah Tahfidz', 'Santri rutin menyetorkan hafalan bakda subuh.', 'https://images.unsplash.com/photo-1609802422036-7c152a5a5460?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
-    ('KBM di Kelas', 'Suasana belajar akademik yang interaktif dan nyaman.', 'https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
-    ('Ibadah Bersama', 'Shalat berjamaah 5 waktu di Masjid Jami Villa Quran.', 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
-    ('Olahraga Sunnah', 'Kegiatan fisik sore hari untuk menjaga kebugaran santri.', 'https://images.unsplash.com/photo-1511649475669-e288648b2339?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
-    ('Kenyamanan Asrama', 'Fasilitas asrama yang asri layaknya sedang berlibur.', 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
-    ('Makan Bergizi', 'Asupan menu seimbang yang dirancang ahli gizi profesional.', 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80')");
-}
 
 // 3. Proses Hapus Data
 if (isset($_GET['hapus_id'])) {

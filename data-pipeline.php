@@ -37,12 +37,6 @@ foreach ($leads as $lead) {
     }
 }
 
-// Tambahkan dummy data hanya untuk pratinjau jika tabel masih kosong
-if (empty($leads)) {
-    $board['Level 1'][] = ['id'=>1, 'nama' => 'Bpk. Fulan (Dummy)', 'whatsapp' => '081234567890', 'jenis_lead' => 'acara_dan_ebook', 'kode_ref' => '081299998888', 'nama_agen' => 'Ustadz Budi', 'created_at' => '2026-04-19 10:00:00'];
-    $board['Level 2'][] = ['id'=>2, 'nama' => 'Ibu Aisyah (Dummy)', 'whatsapp' => '085678901234', 'jenis_lead' => 'hanya_ebook', 'kode_ref' => 'organik', 'nama_agen' => null, 'created_at' => '2026-04-18 14:30:00'];
-    $board['Level 3'][] = ['id'=>3, 'nama' => 'Bpk. Budi (Dummy)', 'whatsapp' => '082133334444', 'jenis_lead' => 'acara_dan_ebook', 'kode_ref' => 'organik', 'nama_agen' => null, 'created_at' => '2026-04-15 09:15:00'];
-}
 
 // Konfigurasi Tampilan Kolom Kanban
 $columns = [
