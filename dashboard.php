@@ -350,6 +350,36 @@ try {
     $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
         VALUES ('yayasan_psb', 'Database PSB Online', 'Database PSB') 
         ON DUPLICATE KEY UPDATE custom_label='Database PSB Online', short_label='Database PSB'");
+
+    // Menu Data Center
+    $chk_dc = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'data_center'");
+    if (!$chk_dc || $chk_dc->num_rows === 0) {
+        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+            VALUES ('Ruang Yayasan', 'data_center', 28, 'fas fa-database', 'admin-data-center.php')");
+    } else {
+        $conn->query("UPDATE menu_structure SET menu_group = 'Ruang Yayasan', href = 'admin-data-center.php', icon = 'fas fa-database' WHERE menu_key = 'data_center'");
+    }
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+        VALUES ('data_center', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah')
+        ON DUPLICATE KEY UPDATE allowed_roles = VALUES(allowed_roles)");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('data_center', 'Menu Data Center', 'Data Center') 
+        ON DUPLICATE KEY UPDATE custom_label='Menu Data Center', short_label='Data Center'");
+
+    // Menu Dompet Nusuk
+    $chk_dn = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'dompet_nusuk'");
+    if (!$chk_dn || $chk_dn->num_rows === 0) {
+        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) 
+            VALUES ('Ruang Yayasan', 'dompet_nusuk', 29, 'fas fa-wallet', 'admin-dompet-nusuk.php')");
+    } else {
+        $conn->query("UPDATE menu_structure SET menu_group = 'Ruang Yayasan', href = 'admin-dompet-nusuk.php', icon = 'fas fa-wallet' WHERE menu_key = 'dompet_nusuk'");
+    }
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) 
+        VALUES ('dompet_nusuk', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah')
+        ON DUPLICATE KEY UPDATE allowed_roles = VALUES(allowed_roles)");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) 
+        VALUES ('dompet_nusuk', 'Menu Dompet Nusuk', 'Dompet Nusuk') 
+        ON DUPLICATE KEY UPDATE custom_label='Menu Dompet Nusuk', short_label='Dompet Nusuk'");
 } catch (Throwable $e) {
     // Graceful error handling - log jika diperlukan
 }
@@ -435,7 +465,9 @@ $default_1word_labels = [
     'pengaturan_brosur'  => 'Brosur',
     'brosur_settings'    => 'Brosur',
     'ruang_web'          => 'Web Admin',
-    'ruang_marketing'    => 'Marketing' 
+    'ruang_marketing'    => 'Marketing',
+    'data_center'        => 'Data Center',
+    'dompet_nusuk'       => 'Dompet Nusuk'
 ];
 
 $all_grid_items = [];
@@ -786,6 +818,8 @@ $ruang_marketing_cards = [
     ['label' => 'Artikel SEO AI', 'icon' => 'fas fa-pen-nib', 'href' => 'admin-seo.php'],
     ['label' => 'Publisher AI', 'icon' => 'fas fa-paper-plane', 'href' => 'admin-publisher.php'],
     ['label' => 'Sosmed Workflow', 'icon' => 'fas fa-route', 'href' => 'admin-sosmed-workflow.php'],
+    ['label' => 'Data Center', 'icon' => 'fas fa-database', 'href' => 'admin-data-center.php'],
+    ['label' => 'Dompet Nusuk', 'icon' => 'fas fa-wallet', 'href' => 'admin-dompet-nusuk.php'],
 ];
 
 // Data Menu Grid Card Ruang Santri (20 Menu: 5 Layanan Aktivitas + 15 Mapel E-Modul & AI)
