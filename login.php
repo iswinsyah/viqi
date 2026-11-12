@@ -10,17 +10,9 @@ function getRedirectDestinationByRole($user_data) {
     $roles_str = strtolower(trim($user_data['roles'] ?? ''));
     $roles = array_map('trim', explode(',', $roles_str));
 
-    // 1. Prioritas Ruang Santri
-    if ($user_type === 'santri' || in_array('santri', $roles) || in_array('santri_rijal', $roles) || in_array('santri_nisa', $roles)) {
-        return 'ruang-santri.php';
-    }
-
-    // 2. Prioritas Ruang Orang Tua / Wali Santri
-    if ($user_type === 'walisantri' || in_array('walisantri', $roles) || in_array('orangtua', $roles) || in_array('wali', $roles)) {
-        return 'dashboard-orangtua.php';
-    }
-
-    // 3. Super Admin & Pengurus Yayasan (Ketua / Bendahara / Sekretaris)
+    // 1. PRIORITAS TERTINGGI: Super Admin & Pengurus Yayasan (Ketua / Bendahara / Sekretaris)
+    // Akun Super Admin (seperti 'winsyah' atau 'viqi') punya multi-role ke semua ruang,
+    // jadi WAJIB diprioritaskan nomor 1 agar masuk ke Ruang Yayasan!
     $is_yayasan = in_array($uname, ['winsyah', 'viqi']) 
         || in_array('super_admin', $roles) 
         || in_array('ketua_yayasan', $roles) 
@@ -29,6 +21,16 @@ function getRedirectDestinationByRole($user_data) {
 
     if ($is_yayasan) {
         return 'yayasan2/index.php';
+    }
+
+    // 2. Ruang Santri (Murni Santri)
+    if ($user_type === 'santri' || in_array('santri', $roles) || in_array('santri_rijal', $roles) || in_array('santri_nisa', $roles)) {
+        return 'ruang-santri.php';
+    }
+
+    // 3. Ruang Orang Tua / Wali Santri (Murni Walisantri)
+    if ($user_type === 'walisantri' || in_array('walisantri', $roles) || in_array('orangtua', $roles) || in_array('wali', $roles)) {
+        return 'dashboard-orangtua.php';
     }
 
     // 4. Marketing / Web
@@ -209,8 +211,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if ($login_success && $user_data) {
-            $is_santri = ($user_data['user_type'] === 'santri') || strpos($user_data['roles'] ?? '', 'santri') !== false;
-            $is_orangtua = ($user_data['user_type'] === 'walisantri') || strpos($user_data['roles'] ?? '', 'orangtua') !== false || strpos($user_data['roles'] ?? '', 'walisantri') !== false;
+            $uname_chk = strtolower(trim($user_data['username'] ?? ''));
+            $roles_chk = array_map('trim', explode(',', strtolower(trim($user_data['roles'] ?? ''))));
+            $is_super_or_yayasan = in_array($uname_chk, ['winsyah', 'viqi']) 
+                || in_array('super_admin', $roles_chk) 
+                || in_array('ketua_yayasan', $roles_chk);
+
+            $is_santri = !$is_super_or_yayasan && (($user_data['user_type'] === 'santri') || in_array('santri', $roles_chk));
+            $is_orangtua = !$is_super_or_yayasan && (($user_data['user_type'] === 'walisantri') || in_array('orangtua', $roles_chk) || in_array('walisantri', $roles_chk));
 
             if ($is_santri) {
                 $_SESSION['active_role_views'] = ['santri'];
