@@ -36,9 +36,9 @@ function getRedirectDestinationByRole($user_data) {
         return 'dashboard-marketing.php';
     }
 
-    // 5. Pegawai / Asatidz / Guru / Musyrif / Staf
+    // 5. Pegawai / Asatidz / Guru / Musyrif / Staf (Langsung ke Presensi Harian)
     if ($user_type === 'pegawai' || in_array('ustadz', $roles) || in_array('ustadzah', $roles) || in_array('musyrif', $roles) || in_array('musyrifah', $roles) || in_array('kepala_sekolah', $roles) || in_array('tutor', $roles) || in_array('guru', $roles)) {
-        return 'admin-ustadz.php';
+        return 'admin-absensi-pegawai.php';
     }
 
     // Default Fallback

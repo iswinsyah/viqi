@@ -430,13 +430,13 @@ $curr_file = basename($_SERVER['PHP_SELF']);
     
     <!-- SIDEBAR HEADER: BRAND LOGO SADIGS -->
     <div class="p-6 border-b border-teal-700/60 flex items-center justify-between bg-teal-900/40 flex-shrink-0">
-        <a href="dashboard.php" class="flex items-center space-x-3.5 group">
+        <a href="admin-absensi-pegawai.php" class="flex items-center space-x-3.5 group">
             <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
                 <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-9 h-9 object-contain">
             </div>
             <div>
                 <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
-                <p class="text-[11px] text-teal-100 font-light italic tracking-tight mt-0.5">Sistem Administrasi Digital</p>
+                <p class="text-[11px] text-teal-100 font-light italic tracking-tight mt-0.5">PWA Ruang Pegawai</p>
             </div>
         </a>
         <button id="close-sidebar-hr" class="md:hidden text-teal-200 hover:text-white p-1 rounded-lg focus:outline-none">
@@ -466,17 +466,29 @@ $curr_file = basename($_SERVER['PHP_SELF']);
 
     <!-- SIDEBAR NAVIGATION LINKS -->
     <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
-        <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'dashboard.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
-            <i class="fas fa-house w-4 text-center"></i>
-            <span>Beranda</span>
+        <a href="admin-absensi-pegawai.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-qrcode w-4 text-center"></i>
+            <span>Presensi & Absensi</span>
+        </a>
+        <a href="admin-pegawai-rpp.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'admin-pegawai-rpp.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-book-open w-4 text-center"></i>
+            <span>RPP / Modul Ajar</span>
+        </a>
+        <a href="admin-pegawai-kpi.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'admin-pegawai-kpi.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-chart-line w-4 text-center"></i>
+            <span>Target & KPI Pegawai</span>
+        </a>
+        <a href="slip-gaji.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'slip-gaji.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-file-invoice-dollar w-4 text-center"></i>
+            <span>Slip Gaji Saya</span>
         </a>
         <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'kalender-akademik.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
             <i class="fas fa-calendar-alt w-4 text-center"></i>
-            <span>Kalender</span>
+            <span>Kalender Akademik</span>
         </a>
         <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
             <i class="fas fa-clock w-4 text-center"></i>
-            <span>Jadwal</span>
+            <span>Jadwal Pelajaran</span>
         </a>
         <a href="pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= ($curr_file === 'pengumuman.php') ? 'bg-white text-[#0b8478] font-black shadow-sm' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
             <i class="fas fa-bullhorn w-4 text-center"></i>
@@ -497,29 +509,29 @@ $curr_file = basename($_SERVER['PHP_SELF']);
 <!-- ========================================================= -->
 <nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
     <div class="w-full max-w-md mx-auto flex items-center justify-around">
-        <a href="dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'dashboard.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
-            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'dashboard.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-house text-base <?= ($curr_file === 'dashboard.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+        <a href="admin-absensi-pegawai.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-qrcode text-base <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-white">Beranda</span>
+            <span class="text-white">Absen</span>
         </a>
-        <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'kalender-akademik.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
-            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'kalender-akademik.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-calendar-alt text-base <?= ($curr_file === 'kalender-akademik.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+        <a href="admin-pegawai-rpp.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-pegawai-rpp.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-pegawai-rpp.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-book-open text-base <?= ($curr_file === 'admin-pegawai-rpp.php') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-white">Kalender</span>
+            <span class="text-white">RPP/KBM</span>
         </a>
-        <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
-            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-clock text-base <?= ($curr_file === 'admin-jadwal-pelajaran.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+        <a href="admin-pegawai-kpi.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-pegawai-kpi.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-pegawai-kpi.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-chart-line text-base <?= ($curr_file === 'admin-pegawai-kpi.php') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-white">Jadwal</span>
+            <span class="text-white">KPI</span>
         </a>
-        <a href="pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'pengumuman.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
-            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'pengumuman.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-bullhorn text-base <?= ($curr_file === 'pengumuman.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+        <a href="slip-gaji.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'slip-gaji.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'slip-gaji.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-file-invoice-dollar text-base <?= ($curr_file === 'slip-gaji.php') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-white">Info</span>
+            <span class="text-white">Slip Gaji</span>
         </a>
         <a href="logout-ustadz.php" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-[10px] transition">
             <div class="w-9 h-7 rounded-full flex items-center justify-center mb-0.5">
