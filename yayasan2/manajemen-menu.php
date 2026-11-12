@@ -176,16 +176,10 @@ if (!$chk_dc || $chk_dc->num_rows === 0) {
 $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('data_center', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah') ON DUPLICATE KEY UPDATE allowed_roles = VALUES(allowed_roles)");
 $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('data_center', 'Menu Data Center', 'Data Center') ON DUPLICATE KEY UPDATE custom_label='Menu Data Center', short_label='Data Center'");
 
-$chk_dn = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'dompet_nusuk'");
-if (!$chk_dn || $chk_dn->num_rows === 0) {
-    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-    $new_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] + 1 : 29;
-    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'dompet_nusuk', $new_ord, 'fa-wallet', 'admin-dompet-nusuk.php')");
-} else {
-    $conn->query("UPDATE menu_structure SET href = 'admin-dompet-nusuk.php', icon = 'fa-wallet' WHERE menu_key = 'dompet_nusuk'");
-}
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('dompet_nusuk', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah') ON DUPLICATE KEY UPDATE allowed_roles = VALUES(allowed_roles)");
-$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('dompet_nusuk', 'Menu Dompet Nusuk', 'Dompet Nusuk') ON DUPLICATE KEY UPDATE custom_label='Menu Dompet Nusuk', short_label='Dompet Nusuk'");
+// Pastikan menu 'dompet_nusuk' dibersihkan permanen dari database
+$conn->query("DELETE FROM menu_structure WHERE menu_key = 'dompet_nusuk'");
+$conn->query("DELETE FROM menu_permissions WHERE menu_key = 'dompet_nusuk'");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key = 'dompet_nusuk'");
 
 // Pastikan menu 'kpi_kepsek' terdaftar di Frame Utama (Administrasi)
 $res_chk_kpi_ks = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kpi_kepsek'");
