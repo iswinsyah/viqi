@@ -1,10 +1,58 @@
 <?php
 require_once 'auth-unified.php';
 
-// Jika sudah login, langsung ke dashboard utama
-if (isset($_SESSION['app_user_id'])) {
-    header("Location: dashboard.php");
-    exit;
+// Fungsi Helper Menentukan Halaman Tujuan Berdasarkan Role / Tipe User
+function getRedirectDestinationByRole($user_data) {
+    if (!$user_data) return 'dashboard.php';
+
+    $uname = strtolower(trim($user_data['username'] ?? ''));
+    $user_type = strtolower(trim($user_data['user_type'] ?? ''));
+    $roles_str = strtolower(trim($user_data['roles'] ?? ''));
+    $roles = array_map('trim', explode(',', $roles_str));
+
+    // 1. Prioritas Ruang Santri
+    if ($user_type === 'santri' || in_array('santri', $roles) || in_array('santri_rijal', $roles) || in_array('santri_nisa', $roles)) {
+        return 'ruang-santri.php';
+    }
+
+    // 2. Prioritas Ruang Orang Tua / Wali Santri
+    if ($user_type === 'walisantri' || in_array('walisantri', $roles) || in_array('orangtua', $roles) || in_array('wali', $roles)) {
+        return 'dashboard-orangtua.php';
+    }
+
+    // 3. Super Admin & Pengurus Yayasan (Ketua / Bendahara / Sekretaris)
+    $is_yayasan = in_array($uname, ['winsyah', 'viqi']) 
+        || in_array('super_admin', $roles) 
+        || in_array('ketua_yayasan', $roles) 
+        || in_array('sekretaris_yayasan', $roles) 
+        || in_array('bendahara_yayasan', $roles);
+
+    if ($is_yayasan) {
+        return 'yayasan2/index.php';
+    }
+
+    // 4. Marketing / Web
+    if ($user_type === 'marketing' || in_array('marketing', $roles) || in_array('tim_marketing', $roles) || in_array('web', $roles)) {
+        return 'dashboard-marketing.php';
+    }
+
+    // 5. Pegawai / Asatidz / Guru / Musyrif / Staf
+    if ($user_type === 'pegawai' || in_array('ustadz', $roles) || in_array('ustadzah', $roles) || in_array('musyrif', $roles) || in_array('musyrifah', $roles) || in_array('kepala_sekolah', $roles) || in_array('tutor', $roles) || in_array('guru', $roles)) {
+        return 'admin-ustadz.php';
+    }
+
+    // Default Fallback
+    return 'dashboard.php';
+}
+
+// Jika sudah login, langsung arahkan ke ruang yang sesuai
+if (isset($_SESSION['app_user_id']) || isset($_SESSION['app_username'])) {
+    $current_user = getCurrentUser();
+    if ($current_user) {
+        $dest = getRedirectDestinationByRole($current_user);
+        header("Location: $dest");
+        exit;
+    }
 }
 
 // Auto-Recovery: Pulihkan seluruh akun pegawai/ustadz yang dinonaktifkan akibat false-positive deteksi Fake GPS
@@ -66,18 +114,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
         }
 
-        // 3. Fallback cerdas: Cari di buku_induk_santri (Username / NISN / NIS / Nama Lengkap)
+        // 3. Fallback cerdas: Cari di buku_induk_santri (Hanya Username santri)
         if (!$login_success) {
             if (function_exists('ensureSantriDatabaseSchema')) {
                 ensureSantriDatabaseSchema();
             }
-            $res_s = $conn->query("SELECT * FROM buku_induk_santri WHERE 
-                username = '$username_esc' 
-                OR nisn = '$username_esc' 
-                OR nis = '$username_esc' 
-                OR nama_lengkap = '$username_esc' 
-                OR nama_lengkap LIKE '%$username_esc%' 
-                LIMIT 1");
+            // Sesuai arahan: Santri login menggunakan USERNAME masing-masing (bukan NIS/NISN)
+            $res_s = $conn->query("SELECT * FROM buku_induk_santri WHERE username = '$username_esc' LIMIT 1");
 
             if ($res_s && $res_s->num_rows > 0) {
                 $s = $res_s->fetch_assoc();
@@ -177,7 +220,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $_SESSION['active_role_views'] = ['all'];
             }
             syncLegacySessions($user_data);
-            header("Location: dashboard.php");
+
+            // Arahkan otomatis ke ruang aplikasi yang sesuai dengan role pengguna
+            $destination = getRedirectDestinationByRole($user_data);
+            header("Location: $destination");
             exit;
         } else {
             $error = 'Username atau Password salah. Silakan periksa kembali!';
@@ -230,14 +276,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         <form action="" method="POST" class="space-y-4">
             <div>
-                <label class="block text-xs font-black uppercase text-slate-600 mb-1.5 tracking-wider">Username / NISN / No. HP</label>
+                <label class="block text-xs font-black uppercase text-slate-600 mb-1.5 tracking-wider">Username Pengguna</label>
                 <div class="relative">
                     <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                         <i class="fas fa-user text-xs"></i>
                     </div>
                     <input type="text" name="username" required autofocus 
                            class="w-full pl-10 pr-4 py-3 border border-slate-200 rounded-2xl text-xs sm:text-sm bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#0d8276] focus:border-transparent font-medium text-slate-800 transition shadow-2xs" 
-                           placeholder="Masukkan username atau NISN">
+                           placeholder="Masukkan Username Anda">
                 </div>
             </div>
 
