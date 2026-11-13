@@ -4,6 +4,7 @@ $y_nama = $_SESSION['nama_lengkap'] ?? ($_SESSION['yayasan_user'] ?? 'Pengurus Y
 $y_user = $_SESSION['username'] ?? 'yayasan';
 $y_role = $_SESSION['yayasan_role'] ?? ($_SESSION['role'] ?? 'Pengurus Yayasan');
 $y_foto = $_SESSION['foto_profil'] ?? '';
+$curr_file = basename($_SERVER['PHP_SELF']);
 ?>
 <!-- ========================================================= -->
 <!-- SIDEBAR OVERLAY UNTUK MOBILE                              -->
@@ -17,13 +18,13 @@ $y_foto = $_SESSION['foto_profil'] ?? '';
     
     <!-- SIDEBAR HEADER: BRAND LOGO SADIGS -->
     <div class="p-6 border-b border-teal-700/60 flex items-center justify-between bg-teal-900/40 flex-shrink-0">
-        <a href="../dashboard.php" class="flex items-center space-x-3.5 group">
+        <a href="index.php" class="flex items-center space-x-3.5 group">
             <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
                 <img src="../upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-9 h-9 object-contain">
             </div>
             <div>
                 <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
-                <p class="text-[11px] text-teal-100 font-light italic tracking-tight mt-0.5">Sistem Administrasi Digital</p>
+                <p class="text-[11px] text-teal-100 font-light italic tracking-tight mt-0.5">Aplikasi Ruang Yayasan</p>
             </div>
         </a>
         <button id="close-sidebar-yayasan2" class="md:hidden text-teal-200 hover:text-white p-1 rounded-lg focus:outline-none">
@@ -51,34 +52,30 @@ $y_foto = $_SESSION['foto_profil'] ?? '';
         </div>
     </div>
 
-    <!-- SIDEBAR NAVIGATION LINKS (NAVIGASI UTAMA STANDAR) -->
-    <nav class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
-        <a href="../dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-            <i class="fas fa-house w-4 text-center"></i>
-            <span>Beranda</span>
+    <!-- SIDEBAR NAVIGATION LINKS: RUANG-RUANG APLIKASI -->
+    <nav class="flex-1 overflow-y-auto p-4 space-y-1.5 text-xs no-scrollbar">
+        <a href="index.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'index.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-home w-4 text-center text-sm"></i>
+            <span>1. Home (Yayasan)</span>
         </a>
-        <a href="../admin-data-center.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-            <i class="fas fa-database w-4 text-center"></i>
-            <span>Data Center</span>
+        <a href="../admin-absensi-pegawai.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-user-tie w-4 text-center text-sm"></i>
+            <span>2. Ruang Pegawai</span>
         </a>
-        <a href="../kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-            <i class="fas fa-calendar-alt w-4 text-center"></i>
-            <span>Kalender</span>
+        <a href="../ruang-santri.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'ruang-santri.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-book-quran w-4 text-center text-sm"></i>
+            <span>3. Ruang Santri</span>
         </a>
-        <a href="../admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-            <i class="fas fa-clock w-4 text-center"></i>
-            <span>Jadwal</span>
-        </a>
-        <a href="../pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-            <i class="fas fa-bullhorn w-4 text-center"></i>
-            <span>Info</span>
+        <a href="../dashboard-orangtua.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'dashboard-orangtua.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-users w-4 text-center text-sm"></i>
+            <span>4. Ruang Orangtua</span>
         </a>
     </nav>
 
     <!-- SIDEBAR FOOTER: KELUAR -->
     <div class="p-4 border-t border-teal-700/60 flex-shrink-0">
-        <a href="../dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex items-center justify-center gap-2 w-full py-2.5 px-3 rounded-xl bg-rose-600/80 hover:bg-rose-600 text-white font-bold text-xs transition">
-            <i class="fas fa-arrow-right-from-bracket"></i> Keluar
+        <a href="../logout-ustadz.php" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white font-black text-xs shadow transition">
+            <i class="fas fa-arrow-right-from-bracket"></i> 5. Keluar
         </a>
     </div>
 </aside>
@@ -88,24 +85,34 @@ $y_foto = $_SESSION['foto_profil'] ?? '';
 <!-- ========================================================= -->
 <nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
     <div class="w-full max-w-md mx-auto flex items-center justify-around">
-        <a href="../dashboard.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
-            <i class="fas fa-house text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
-            <span class="text-white">Beranda</span>
+        <a href="index.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'index.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'index.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-home text-base <?= ($curr_file === 'index.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white">Home</span>
         </a>
-        <a href="../kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
-            <i class="fas fa-calendar-alt text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
-            <span class="text-white">Kalender</span>
+        <a href="../admin-absensi-pegawai.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-user-tie text-base <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white">Pegawai</span>
         </a>
-        <a href="../admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
-            <i class="fas fa-clock text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
-            <span class="text-white">Jadwal</span>
+        <a href="../ruang-santri.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'ruang-santri.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'ruang-santri.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-book-quran text-base <?= ($curr_file === 'ruang-santri.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white">Santri</span>
         </a>
-        <a href="../pengumuman.php" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
-            <i class="fas fa-bullhorn text-lg mb-0.5 text-teal-100 group-hover:text-white"></i>
-            <span class="text-white">Info</span>
+        <a href="../dashboard-orangtua.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'dashboard-orangtua.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'dashboard-orangtua.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-users text-base <?= ($curr_file === 'dashboard-orangtua.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white">Orangtua</span>
         </a>
-        <a href="../dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-[10px] transition">
-            <i class="fas fa-arrow-right-from-bracket text-lg mb-0.5 text-teal-100 hover:text-rose-200"></i>
+        <a href="../logout-ustadz.php" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-[10px] transition">
+            <div class="w-9 h-7 rounded-full flex items-center justify-center mb-0.5">
+                <i class="fas fa-arrow-right-from-bracket text-base text-teal-100 hover:text-rose-200"></i>
+            </div>
             <span class="text-white">Keluar</span>
         </a>
     </div>
