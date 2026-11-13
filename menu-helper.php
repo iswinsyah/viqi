@@ -10,7 +10,19 @@ if (!function_exists('get_all_menu_labels')) {
         }
 
         global $conn;
-        $db = $conn;
+        $db = ($conn && $conn instanceof mysqli) ? $conn : ($GLOBALS['conn'] ?? null);
+        if (!$db || !($db instanceof mysqli)) {
+            if (isset($GLOBALS['koneksi']) && $GLOBALS['koneksi'] instanceof mysqli) {
+                $db = $GLOBALS['koneksi'];
+            }
+        }
+        if (!$db || !($db instanceof mysqli)) {
+            $koneksi_path = __DIR__ . '/koneksi.php';
+            if (file_exists($koneksi_path)) {
+                @include_once $koneksi_path;
+                $db = ($conn && $conn instanceof mysqli) ? $conn : ($GLOBALS['conn'] ?? null);
+            }
+        }
 
         // Default Titles persis sesuai yang terdaftar di yayasan2/manajemen-menu.php
         $titles = [

@@ -46,13 +46,13 @@ $app_sections = [
         'icon' => 'fas fa-wallet',
         'color' => 'text-emerald-700',
         'items' => [
-            ['title' => get_menu_label('pembukuan_yayasan', 'Buku Kas'), 'href' => 'pembukuan.php', 'icon' => 'fas fa-calculator', 'bg' => 'from-emerald-500 to-teal-700'],
-            ['title' => get_menu_label('cashflow_yayasan', 'Cashflow'), 'href' => 'pembukuan.php?tab=proyeksi', 'icon' => 'fas fa-funnel-dollar', 'bg' => 'from-teal-500 to-emerald-700'],
-            ['title' => get_menu_label('payroll_yayasan', 'Payroll'), 'href' => 'gaji-pegawai.php', 'icon' => 'fas fa-coins', 'bg' => 'from-amber-500 to-amber-700'],
-            ['title' => get_menu_label('tarif_gaji_yayasan', 'Tarif Gaji'), 'href' => 'gaji-asatidz.php', 'icon' => 'fas fa-sliders', 'bg' => 'from-orange-500 to-amber-600'],
-            ['title' => get_menu_label('tunjangan_yayasan', 'Tunjangan'), 'href' => 'tunjangan.php', 'icon' => 'fas fa-award', 'bg' => 'from-yellow-500 to-amber-600'],
-            ['title' => get_menu_label('rekap_keuangan', 'SPP'), 'href' => 'rekap-spp.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-green-600 to-emerald-700'],
-            ['title' => get_menu_label('rekap_uang_saku', 'Uang Saku'), 'href' => 'rekap-uang-saku.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-cyan-600 to-teal-700']
+            ['title' => get_menu_label('pembukuan_yayasan', 'Buku Kas Lembaga'), 'href' => 'pembukuan.php', 'icon' => 'fas fa-calculator', 'bg' => 'from-emerald-500 to-teal-700'],
+            ['title' => get_menu_label('cashflow_yayasan', 'Cashflow & Proyeksi'), 'href' => 'pembukuan.php?tab=proyeksi', 'icon' => 'fas fa-funnel-dollar', 'bg' => 'from-teal-500 to-emerald-700'],
+            ['title' => get_menu_label('payroll_yayasan', 'Payroll Pegawai'), 'href' => 'gaji-pegawai.php', 'icon' => 'fas fa-coins', 'bg' => 'from-amber-500 to-amber-700'],
+            ['title' => get_menu_label('tarif_gaji_yayasan', 'Tarif Gaji Asatidz'), 'href' => 'gaji-asatidz.php', 'icon' => 'fas fa-sliders', 'bg' => 'from-orange-500 to-amber-600'],
+            ['title' => get_menu_label('tunjangan_yayasan', 'Tunjangan Pegawai'), 'href' => 'tunjangan.php', 'icon' => 'fas fa-award', 'bg' => 'from-yellow-500 to-amber-600'],
+            ['title' => get_menu_label('rekap_keuangan', 'Rekap Pembayaran Keuangan'), 'href' => 'rekap-spp.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-green-600 to-emerald-700'],
+            ['title' => get_menu_label('rekap_uang_saku', 'Validasi Uang Saku'), 'href' => 'rekap-uang-saku.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-cyan-600 to-teal-700']
         ]
     ],
     [
@@ -60,13 +60,13 @@ $app_sections = [
         'icon' => 'fas fa-users-gear',
         'color' => 'text-blue-700',
         'items' => [
-            ['title' => get_menu_label('data_guru_yayasan', 'Data Guru'), 'href' => 'asatidz.php', 'icon' => 'fas fa-users-gear', 'bg' => 'from-blue-600 to-indigo-700'],
-            ['title' => get_menu_label('ai_hrd_yayasan', 'AI HRD'), 'href' => 'ai-agent-hrd.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-indigo-700'],
-            ['title' => get_menu_label('kpi_ustadz', 'KPI Staf'), 'href' => 'kpi.php', 'icon' => 'fas fa-chart-bar', 'bg' => 'from-indigo-600 to-blue-700'],
-            ['title' => get_menu_label('kpi_kepsek', 'KPI Kepsek'), 'href' => 'kpi-kepala-sekolah.php', 'icon' => 'fas fa-chart-pie', 'bg' => 'from-violet-600 to-purple-700'],
+            ['title' => get_menu_label('data_guru_yayasan', 'Data Guru & Asatidz'), 'href' => 'asatidz.php', 'icon' => 'fas fa-users-gear', 'bg' => 'from-blue-600 to-indigo-700'],
+            ['title' => get_menu_label('ai_hrd_yayasan', 'AI Agent HRD'), 'href' => 'ai-agent-hrd.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-indigo-700'],
+            ['title' => get_menu_label('kpi_ustadz', 'KPI Pegawai'), 'href' => 'kpi.php', 'icon' => 'fas fa-chart-bar', 'bg' => 'from-indigo-600 to-blue-700'],
+            ['title' => get_menu_label('kpi_kepsek', 'KPI Kepala Sekolah'), 'href' => 'kpi-kepala-sekolah.php', 'icon' => 'fas fa-chart-pie', 'bg' => 'from-violet-600 to-purple-700'],
             ['title' => get_menu_label('kpi_musyrif', 'KPI Musyrif'), 'href' => 'kpi-musyrif.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-sky-500 to-blue-600'],
-            ['title' => get_menu_label('supervisi_mengajar', 'Supervisi'), 'href' => '../admin-supervisi-mengajar.php', 'icon' => 'fas fa-clipboard-check', 'bg' => 'from-emerald-600 to-teal-700'],
-            ['title' => get_menu_label('kontrol_jam_kosong', 'Rekap KBM'), 'href' => 'rekap-kbm-yayasan.php', 'icon' => 'fas fa-calendar-check', 'bg' => 'from-rose-500 to-red-600']
+            ['title' => get_menu_label('supervisi_mengajar', 'Supervisi Mengajar'), 'href' => '../admin-supervisi-mengajar.php', 'icon' => 'fas fa-clipboard-check', 'bg' => 'from-emerald-600 to-teal-700'],
+            ['title' => get_menu_label('kontrol_jam_kosong', 'Rekap Ajar'), 'href' => 'rekap-kbm-yayasan.php', 'icon' => 'fas fa-calendar-check', 'bg' => 'from-rose-500 to-red-600']
         ]
     ],
     [
@@ -74,14 +74,14 @@ $app_sections = [
         'icon' => 'fas fa-brain',
         'color' => 'text-purple-700',
         'items' => [
-            ['title' => get_menu_label('master_kelas', 'Kelas'), 'href' => 'master-kelas.php', 'icon' => 'fas fa-school', 'bg' => 'from-blue-500 to-indigo-600'],
-            ['title' => get_menu_label('master_mapel', 'Mapel'), 'href' => 'master-mapel.php', 'icon' => 'fas fa-book', 'bg' => 'from-indigo-500 to-purple-600'],
-            ['title' => get_menu_label('kitab_rujukan', 'Kitab'), 'href' => 'kitab-rujukan.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-amber-600 to-amber-800'],
-            ['title' => get_menu_label('master_silabus', 'Silabus'), 'href' => 'master-silabus.php', 'icon' => 'fas fa-list-check', 'bg' => 'from-teal-600 to-emerald-700'],
-            ['title' => get_menu_label('kalender_akademik', 'Kalender'), 'href' => 'master-kalender.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-blue-700'],
-            ['title' => get_menu_label('manajemen_elearning', 'E-Learning'), 'href' => 'elearning-yayasan.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-fuchsia-700'],
-            ['title' => get_menu_label('yayasan_cp', 'Capaian CP'), 'href' => 'kurikulum-cp.php', 'icon' => 'fas fa-brain', 'bg' => 'from-fuchsia-600 to-purple-700'],
-            ['title' => get_menu_label('kurikulum_solopreneur_trainer', 'Solopreneur'), 'href' => 'kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-rose-500 to-amber-600']
+            ['title' => get_menu_label('master_kelas', 'Master Kelas'), 'href' => 'master-kelas.php', 'icon' => 'fas fa-school', 'bg' => 'from-blue-500 to-indigo-600'],
+            ['title' => get_menu_label('master_mapel', 'Master Mapel'), 'href' => 'master-mapel.php', 'icon' => 'fas fa-book', 'bg' => 'from-indigo-500 to-purple-600'],
+            ['title' => get_menu_label('kitab_rujukan', 'Master Kitab Rujukan'), 'href' => 'kitab-rujukan.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-amber-600 to-amber-800'],
+            ['title' => get_menu_label('master_silabus', 'Master Silabus & CP'), 'href' => 'master-silabus.php', 'icon' => 'fas fa-list-check', 'bg' => 'from-teal-600 to-emerald-700'],
+            ['title' => get_menu_label('kalender_akademik', 'Kalender Akademik'), 'href' => 'master-kalender.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-blue-700'],
+            ['title' => get_menu_label('manajemen_elearning', 'E-Modul & Flipbook Belajar'), 'href' => 'elearning-yayasan.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-fuchsia-700'],
+            ['title' => get_menu_label('yayasan_cp', 'Capaian Pembelajaran (CP) AI'), 'href' => 'kurikulum-cp.php', 'icon' => 'fas fa-brain', 'bg' => 'from-fuchsia-600 to-purple-700'],
+            ['title' => get_menu_label('kurikulum_solopreneur_trainer', 'Inkubator Solopreneur (AI)'), 'href' => 'kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-rose-500 to-amber-600']
         ]
     ],
     [
@@ -89,10 +89,10 @@ $app_sections = [
         'icon' => 'fas fa-mosque',
         'color' => 'text-teal-700',
         'items' => [
-            ['title' => get_menu_label('database_psb', 'PSB Online'), 'href' => '../admin-spmb.php', 'icon' => 'fas fa-user-graduate', 'bg' => 'from-emerald-600 to-teal-800'],
-            ['title' => get_menu_label('rekap_setoran_santri', 'Tahfidz'), 'href' => 'laporan-setoran-hafalan.php', 'icon' => 'fas fa-book-quran', 'bg' => 'from-teal-600 to-emerald-700'],
-            ['title' => get_menu_label('rekap_ibadah_santri', 'Ibadah'), 'href' => 'ibadah-harian-santri.php', 'icon' => 'fas fa-mosque', 'bg' => 'from-green-600 to-emerald-700'],
-            ['title' => get_menu_label('rapot_pkbm', 'Raport'), 'href' => 'rapot-pkbm.php', 'icon' => 'fas fa-file-invoice', 'bg' => 'from-blue-600 to-cyan-700']
+            ['title' => get_menu_label('database_psb', 'Database PSB Online'), 'href' => '../admin-spmb.php', 'icon' => 'fas fa-user-graduate', 'bg' => 'from-emerald-600 to-teal-800'],
+            ['title' => get_menu_label('rekap_setoran_santri', 'Rekap Setoran Santri'), 'href' => 'laporan-setoran-hafalan.php', 'icon' => 'fas fa-book-quran', 'bg' => 'from-teal-600 to-emerald-700'],
+            ['title' => get_menu_label('rekap_ibadah_santri', 'Rekap Ibadah Asrama'), 'href' => 'ibadah-harian-santri.php', 'icon' => 'fas fa-mosque', 'bg' => 'from-green-600 to-emerald-700'],
+            ['title' => get_menu_label('rapot_pkbm', 'Raport Diknas PKBM (B & C)'), 'href' => 'rapot-pkbm.php', 'icon' => 'fas fa-file-invoice', 'bg' => 'from-blue-600 to-cyan-700']
         ]
     ],
     [
@@ -100,12 +100,12 @@ $app_sections = [
         'icon' => 'fas fa-bullhorn',
         'color' => 'text-indigo-700',
         'items' => [
-            ['title' => get_menu_label('crew_ai', 'Crew AI'), 'href' => '../admin-ai-hub.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-indigo-700'],
-            ['title' => get_menu_label('ruang_marketing', 'Marketing'), 'href' => '../dashboard-marketing.php', 'icon' => 'fas fa-bullhorn', 'bg' => 'from-teal-600 to-emerald-700'],
+            ['title' => get_menu_label('crew_ai', 'Crew AI Hub'), 'href' => '../admin-ai-hub.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-indigo-700'],
+            ['title' => get_menu_label('ruang_marketing', 'Ruang Marketing & AI'), 'href' => '../dashboard-marketing.php', 'icon' => 'fas fa-bullhorn', 'bg' => 'from-teal-600 to-emerald-700'],
             ['title' => get_menu_label('artikel_ai', 'Artikel AI'), 'href' => '../admin-artikel.php', 'icon' => 'fas fa-newspaper', 'bg' => 'from-rose-500 to-pink-600'],
-            ['title' => get_menu_label('database_psb', 'Leads PSB'), 'href' => '../admin-spmb.php', 'icon' => 'fas fa-user-graduate', 'bg' => 'from-blue-600 to-cyan-700'],
-            ['title' => get_menu_label('pengaturan_brosur', 'Brosur'), 'href' => '../admin-brosur-settings.php', 'icon' => 'fas fa-envelope-open-text', 'bg' => 'from-amber-500 to-orange-600'],
-            ['title' => get_menu_label('siaran_wa', 'Siaran WA'), 'href' => '../admin-siaran-wa.php', 'icon' => 'fas fa-broadcast-tower', 'bg' => 'from-emerald-600 to-teal-700']
+            ['title' => get_menu_label('database_psb', 'Database PSB Online'), 'href' => '../admin-spmb.php', 'icon' => 'fas fa-user-graduate', 'bg' => 'from-blue-600 to-cyan-700'],
+            ['title' => get_menu_label('pengaturan_brosur', 'Pengaturan Brosur Digital'), 'href' => '../admin-brosur-settings.php', 'icon' => 'fas fa-envelope-open-text', 'bg' => 'from-amber-500 to-orange-600'],
+            ['title' => get_menu_label('siaran_wa', 'Siaran WA Marketing'), 'href' => '../admin-siaran-wa.php', 'icon' => 'fas fa-broadcast-tower', 'bg' => 'from-emerald-600 to-teal-700']
         ]
     ],
     [
@@ -113,12 +113,12 @@ $app_sections = [
         'icon' => 'fas fa-landmark',
         'color' => 'text-slate-700',
         'items' => [
-            ['title' => get_menu_label('manajemen_menu', 'Menu Akses'), 'href' => 'manajemen-menu.php', 'icon' => 'fas fa-sliders', 'bg' => 'from-slate-600 to-slate-800'],
-            ['title' => get_menu_label('struktur_jobdesc', 'Struktur'), 'href' => 'struktur-jobdesc.php', 'icon' => 'fas fa-sitemap', 'bg' => 'from-indigo-600 to-slate-700'],
-            ['title' => get_menu_label('jobdesc_yayasan', 'Jobdesc'), 'href' => 'jobdesc.php', 'icon' => 'fas fa-id-card', 'bg' => 'from-sky-600 to-slate-700'],
-            ['title' => get_menu_label('sop_peraturan', 'SOP'), 'href' => 'admin-peraturan.php', 'icon' => 'fas fa-gavel', 'bg' => 'from-amber-600 to-orange-700'],
-            ['title' => get_menu_label('analisis_swot', 'SWOT'), 'href' => 'analisis-swot.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-violet-600 to-purple-800'],
-            ['title' => get_menu_label('data_center', 'Data Center'), 'href' => 'data-center.php', 'icon' => 'fas fa-database', 'bg' => 'from-slate-700 to-zinc-900']
+            ['title' => get_menu_label('manajemen_menu', 'Manajemen Menu Akses'), 'href' => 'manajemen-menu.php', 'icon' => 'fas fa-sliders', 'bg' => 'from-slate-600 to-slate-800'],
+            ['title' => get_menu_label('struktur_jobdesc', 'Struktur & Jobdesc'), 'href' => 'struktur-jobdesc.php', 'icon' => 'fas fa-sitemap', 'bg' => 'from-indigo-600 to-slate-700'],
+            ['title' => get_menu_label('jobdesc_yayasan', 'Jobdesc Pegawai'), 'href' => 'jobdesc.php', 'icon' => 'fas fa-id-card', 'bg' => 'from-sky-600 to-slate-700'],
+            ['title' => get_menu_label('sop_peraturan', 'SOP & Peraturan'), 'href' => 'admin-peraturan.php', 'icon' => 'fas fa-gavel', 'bg' => 'from-amber-600 to-orange-700'],
+            ['title' => get_menu_label('analisis_swot', 'Analisis SWOT'), 'href' => 'analisis-swot.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-violet-600 to-purple-800'],
+            ['title' => get_menu_label('data_center', 'Menu Data Center'), 'href' => 'data-center.php', 'icon' => 'fas fa-database', 'bg' => 'from-slate-700 to-zinc-900']
         ]
     ]
 ];
