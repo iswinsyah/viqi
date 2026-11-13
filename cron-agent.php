@@ -271,8 +271,80 @@ if ($autopilot !== 'ON' && empty($force)) {
     die("Agent sedang dinonaktifkan (OFF) dari Pusat Kendali. Menunggu izin Bos...");
 }
 
-// Fungsi Komunikasi ke Otak AI Utama (Gemini)
-function mikirKeGemini($payload) {
+// Fungsi Helper Ekstraksi & Pembersihan JSON yang Sangat Kuat (Anti Eror Decode Gemini)
+function bersihkanDanDecodeJson($raw) {
+    if (empty($raw)) return null;
+    $str = trim($raw);
+    
+    // 1. Bersihkan blok kode markdown jika ada
+    if (preg_match('/```(?:json)?\s*([\s\S]*?)\s*```/i', $str, $m)) {
+        $str = trim($m[1]);
+    }
+    
+    // 2. Ambil dari kurung kurawal pertama sampai kurung kurawal terakhir
+    $firstBrace = strpos($str, '{');
+    $lastBrace = strrpos($str, '}');
+    if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
+        $str = substr($str, $firstBrace, $lastBrace - $firstBrace + 1);
+    }
+    
+    // 3. Coba decode langsung
+    $res = json_decode($str, true);
+    if ($res !== null) return $res;
+    
+    // 4. Perbaiki unescaped newlines/tabs di dalam string JSON
+    $strFixed = preg_replace_callback('/"((?:[^"\\\\]|\\\\.)*)"/s', function($match) {
+        return '"' . str_replace(["\r\n", "\r", "\n", "\t"], ["\\n", "\\n", "\\n", " "], $match[1]) . '"';
+    }, $str);
+    $res = json_decode($strFixed, true);
+    if ($res !== null) return $res;
+
+    // 5. Fallback manual regex extractor jika json_decode masih gagal karena unescaped quotes di HTML
+    $extracted = [];
+    if (preg_match('/"judul"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mj)) {
+        $extracted['judul'] = stripcslashes($mj[1]);
+    }
+    if (preg_match('/"konten"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mk)) {
+        $extracted['konten'] = stripcslashes($mk[1]);
+    } elseif (preg_match('/"konten"\s*:\s*"(.*)/s', $str, $mk2)) {
+        $rawK = rtrim($mk2[1], " \t\n\r\"}");
+        $extracted['konten'] = stripcslashes($rawK);
+    }
+    if (preg_match('/"meta_title"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mmt)) {
+        $extracted['meta_title'] = stripcslashes($mmt[1]);
+    }
+    if (preg_match('/"meta_description"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mmd)) {
+        $extracted['meta_description'] = stripcslashes($mmd[1]);
+    }
+    if (preg_match('/"meta_keywords"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mmk)) {
+        $extracted['meta_keywords'] = stripcslashes($mmk[1]);
+    }
+    if (preg_match('/"copywriting_promo"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mcp)) {
+        $extracted['copywriting_promo'] = stripcslashes($mcp[1]);
+    }
+    // Field untuk Hook & Keyword Explorer
+    if (preg_match('/"selected_title"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mst)) {
+        $extracted['selected_title'] = stripcslashes($mst[1]);
+    }
+    if (preg_match('/"selected_topic"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mso)) {
+        $extracted['selected_topic'] = stripcslashes($mso[1]);
+    }
+    if (preg_match('/"selected_keyword"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $msk)) {
+        $extracted['selected_keyword'] = stripcslashes($msk[1]);
+    }
+    if (preg_match('/"pixabay_search_query"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mps)) {
+        $extracted['pixabay_search_query'] = stripcslashes($mps[1]);
+    }
+    
+    if (!empty($extracted['konten']) || !empty($extracted['selected_title'])) {
+        return $extracted;
+    }
+    
+    return null;
+}
+
+// Fungsi Komunikasi ke Otak AI Utama (Gemini) dengan Auto Retry & Failover
+function mikirKeGemini($payload, $maxRetries = 3) {
     global $conn;
     
     // Tutup koneksi database sebelum long-running cURL request
@@ -309,71 +381,91 @@ function mikirKeGemini($payload) {
     $prompt = trim($prompt);
     
     $resultText = '';
-    
-    // 2. COBA KONEKSI LANGSUNG TERLEBIH DAHULU (Lebih Cepat & Handal)
-    if (!empty($apiKey)) {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
-        $gemini_payload = [
-            "contents" => [
-                [
-                    "parts" => [
-                        ["text" => $prompt]
+    $lastErrorMsg = '';
+
+    for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+        // 2. COBA KONEKSI LANGSUNG TERLEBIH DAHULU (Lebih Cepat & Handal)
+        if (!empty($apiKey)) {
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+            $gemini_payload = [
+                "contents" => [
+                    [
+                        "parts" => [
+                            ["text" => $prompt]
+                        ]
                     ]
                 ]
-            ]
-        ];
-        
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($gemini_payload));
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 60);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Content-Type: application/json"
-        ]);
-        
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
-        
-        if (!$curlError && $httpCode === 200) {
-            $res_arr = json_decode($response, true);
-            $resultText = $res_arr['candidates'][0]['content']['parts'][0]['text'] ?? '';
-        }
-    }
-    
-    // 3. FALLBACK: JIKA GAGAL/BLOKIR, COBA TUNNELING VIA GAS (JIKA DIKONFIGURASI)
-    if (empty($resultText) && !empty($gasUrl)) {
-        $ch = curl_init($gasUrl);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        
-        // Kirim payload asli + injeksi apiKey
-        $payload_gas = $payload;
-        $payload_gas['apiKey'] = $apiKey;
-        $payload_gas['prompt'] = $prompt;
-        
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload_gas));
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 120);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            "Content-Type: application/json"
-        ]);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
-
-        if (!$curlError && $httpCode === 200) {
-            $res_arr = json_decode($response, true);
-            $resultText = $res_arr['result'] ?? '';
-            if (empty($resultText)) {
-                $resultText = $response;
+            ];
+            
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($gemini_payload));
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 15);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 90);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Content-Type: application/json"
+            ]);
+            
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+            
+            if (!$curlError && $httpCode === 200) {
+                $res_arr = json_decode($response, true);
+                $candidateText = $res_arr['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                if (!empty($candidateText)) {
+                    $resultText = $candidateText;
+                    break;
+                }
+            } else {
+                $lastErrorMsg = "Gemini Direct HTTP $httpCode: " . ($curlError ? $curlError : substr($response, 0, 150));
             }
+        }
+        
+        // 3. FALLBACK: JIKA GAGAL/BLOKIR, COBA TUNNELING VIA GAS (JIKA DIKONFIGURASI)
+        if (empty($resultText) && !empty($gasUrl)) {
+            $ch = curl_init($gasUrl);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            
+            // Kirim payload asli + injeksi apiKey
+            $payload_gas = $payload;
+            $payload_gas['apiKey'] = $apiKey;
+            $payload_gas['prompt'] = $prompt;
+            
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload_gas));
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 20);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 120);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                "Content-Type: application/json"
+            ]);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $curlError = curl_error($ch);
+            curl_close($ch);
+
+            if (!$curlError && $httpCode === 200) {
+                $res_arr = json_decode($response, true);
+                // Hanya terima jika bukan JSON error
+                if ($res_arr && isset($res_arr['status']) && $res_arr['status'] === 'success') {
+                    $resultText = $res_arr['result'] ?? '';
+                    if (!empty($resultText)) break;
+                } elseif ($res_arr && isset($res_arr['candidates'][0]['content']['parts'][0]['text'])) {
+                    $resultText = $res_arr['candidates'][0]['content']['parts'][0]['text'];
+                    if (!empty($resultText)) break;
+                } else {
+                    $lastErrorMsg = "GAS Error Response: " . substr($response, 0, 150);
+                }
+            }
+        }
+
+        // Jeda backoff sebelum mencoba kembali
+        if (empty($resultText) && $attempt < $maxRetries) {
+            sleep(3 * $attempt);
         }
     }
     
@@ -383,7 +475,7 @@ function mikirKeGemini($payload) {
     if (!empty($resultText)) {
         return ['status' => 'success', 'result' => $resultText];
     } else {
-        return ['status' => 'error', 'message' => 'Gagal mendapatkan respon dari Gemini'];
+        return ['status' => 'error', 'message' => 'Gagal mendapatkan respon dari Gemini. ' . $lastErrorMsg];
     }
 }
 
@@ -767,13 +859,8 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
     $dataExplorer = mikirKeGemini(['leads' => $payloadExplorer, 'type' => 'hook_explorer']);
     if (isset($dataExplorer['status']) && $dataExplorer['status'] === 'success') {
         $rawResult = trim($dataExplorer['result'] ?? '');
-        if (preg_match('/^```(?:json)?\s*([\s\S]*?)\s*```$/i', $rawResult, $matches)) {
-            $cleanJson = trim($matches[1]);
-        } else {
-            $cleanJson = $rawResult;
-        }
-        $obj = json_decode($cleanJson, true);
-        if ($obj && isset($obj['selected_title'])) {
+        $obj = bersihkanDanDecodeJson($rawResult);
+        if ($obj && !empty($obj['selected_title'])) {
             $selected_keyword = $obj['selected_keyword'] ?? '';
             $pixabay_query = $obj['pixabay_search_query'] ?? $selected_keyword;
             $selected_image = '';
@@ -788,7 +875,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
                 'selected_image' => $selected_image
             ], JSON_PRETTY_PRINT));
             file_put_contents(__DIR__ . '/saved_kalender.txt', $obj['report'] ?? $dataExplorer['result']);
-            logAgent("✅ Riset Hook & Keyword harian berhasil disimpan.");
+            logAgent("✅ Riset Hook & Keyword harian berhasil disimpan. Judul baru: '{$obj['selected_title']}'");
         } else {
             logAgent("⚠️ Format JSON Hook Explorer tidak sesuai. Menyimpan hasil mentah ke saved_kalender.txt.");
             file_put_contents(__DIR__ . '/saved_kalender.txt', $dataExplorer['result']);
@@ -810,6 +897,14 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
             $topic = $seoTaskData['selected_topic'] ?? $topic;
             $judul = $seoTaskData['selected_title'] ?? $judul;
             $keyword = $seoTaskData['selected_keyword'] ?? $keyword;
+            
+            // Cek apakah judul ini sudah pernah terbit di database artikel
+            pastikanKoneksiDb();
+            $chkJudul = $conn->query("SELECT id FROM artikel WHERE judul = '" . $conn->real_escape_string($judul) . "' LIMIT 1");
+            if ($chkJudul && $chkJudul->num_rows > 0) {
+                logAgent("Agent Penulis: Judul '$judul' sudah pernah terbit sebelumnya. Menambahkan penanda edisi baru agar tidak duplikat.");
+                $judul .= " - Insight " . date('d M Y');
+            }
             logAgent("Agent Penulis: Menemukan data SEO hari ini dari today_seo_task.json -> Judul: '$judul', Keyword: '$keyword'");
         }
     } else {
@@ -859,12 +954,7 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
 
     if (isset($dataSEO['status']) && $dataSEO['status'] === 'success') {
         $rawResult = trim($dataSEO['result'] ?? '');
-        if (preg_match('/^```(?:json)?\s*([\s\S]*?)\s*```$/i', $rawResult, $matches)) {
-            $cleanJson = trim($matches[1]);
-        } else {
-            $cleanJson = $rawResult;
-        }
-        $obj = json_decode($cleanJson, true);
+        $obj = bersihkanDanDecodeJson($rawResult);
 
         $konten = $obj['konten'] ?? $obj['content'] ?? $obj['isi'] ?? '';
         $judul_art = $obj['judul'] ?? $obj['title'] ?? $judul;
@@ -873,6 +963,16 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
             pastikanKoneksiDb();
             $j = $conn->real_escape_string($judul_art);
             $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $j)));
+            if (empty($slug)) {
+                $slug = 'artikel-' . date('Ymd-His');
+            }
+            
+            // Cek duplikasi slug di database agar INSERT tidak gagal
+            $chkSlug = $conn->query("SELECT id FROM artikel WHERE slug = '$slug' LIMIT 1");
+            if ($chkSlug && $chkSlug->num_rows > 0) {
+                $slug .= '-' . date('dmy-His');
+            }
+            
             $k = $conn->real_escape_string($konten);
             
             // Auto Cover Gambar
@@ -1113,9 +1213,15 @@ if (($current_hour >= '07' || $force_seo) && (!$daily_done || $force_seo)) {
         logAgent("Tidak ada artikel baru untuk disebar. Semua sudah terkirim.");
     }
 
-    // TANDAI SELESAI
-    file_put_contents($daily_log_file, "SUCCESS_$today\n", FILE_APPEND);
-    logAgent("🎉 Tugas Harian ($today) Tuntas!\n");
+    // TANDAI SELESAI HANYA JIKA ARTIKEL BERHASIL DITERBITKAN ATAU SUDAH ADA ARTIKEL HARI INI
+    pastikanKoneksiDb();
+    $cekArtikelHariIni = $conn->query("SELECT id FROM artikel WHERE DATE(created_at) = '$today' LIMIT 1");
+    if (!empty($newArticleId) || ($cekArtikelHariIni && $cekArtikelHariIni->num_rows > 0)) {
+        file_put_contents($daily_log_file, "SUCCESS_$today\n", FILE_APPEND);
+        logAgent("🎉 Tugas Harian ($today) Tuntas! (Artikel ID: " . (!empty($newArticleId) ? $newArticleId : 'Sudah terbit') . ")\n");
+    } else {
+        logAgent("⚠️ Tugas Harian ($today) belum tuntas (artikel belum berhasil dibuat). Tidak menandai SUCCESS agar jadwal cron berikutnya otomatis mencoba kembali.\n");
+    }
 }
 
 // =========================================================================================
