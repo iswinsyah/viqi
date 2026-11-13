@@ -58,7 +58,7 @@ $curr_file = basename($_SERVER['PHP_SELF']);
             <i class="fas fa-home w-4 text-center text-sm"></i>
             <span>1. Home (Yayasan)</span>
         </a>
-        <a href="../admin-absensi-pegawai.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+        <a href="../admin-ustadz.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-ustadz.php' || $curr_file === 'admin-absensi-pegawai.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
             <i class="fas fa-user-tie w-4 text-center text-sm"></i>
             <span>2. Ruang Pegawai</span>
         </a>
@@ -95,9 +95,9 @@ $curr_file = basename($_SERVER['PHP_SELF']);
             </div>
             <span class="text-white">Home</span>
         </a>
-        <a href="../admin-absensi-pegawai.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
-            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-user-tie text-base <?= ($curr_file === 'admin-absensi-pegawai.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+        <a href="../admin-ustadz.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-ustadz.php' || $curr_file === 'admin-absensi-pegawai.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'admin-ustadz.php' || $curr_file === 'admin-absensi-pegawai.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-user-tie text-base <?= ($curr_file === 'admin-ustadz.php' || $curr_file === 'admin-absensi-pegawai.php') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
             <span class="text-white">Pegawai</span>
         </a>

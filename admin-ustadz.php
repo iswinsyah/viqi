@@ -488,6 +488,22 @@ if ($view === 'dashboard_asrama') {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Android Icon Style Interaction */
+        .android-icon {
+            transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .android-icon:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.15);
+        }
+        .android-icon:active {
+            transform: scale(0.92);
+        }
+    </style>
     <?php if ($view === 'dashboard_asrama'): ?>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <?php endif; ?>
@@ -1114,83 +1130,189 @@ if ($view === 'dashboard_asrama') {
 
             <?php else: ?>
             <!-- ================================================== -->
-            <!-- TAMPILAN DEFAULT (DASHBOARD PEGAWAI)              -->
+            <!-- TAMPILAN DEFAULT (HOME RUANG PEGAWAI - ANDROID CARD MENU) -->
             <!-- ================================================== -->
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-chalkboard-teacher text-cyan-600 mr-2"></i>Ahlan Wa Sahlan, <?= htmlspecialchars($ustadz_nama) ?>!</h1>
-                <p class="text-gray-500 mt-1">Selamat datang di Ruang Asatidz. Gunakan menu-menu di bawah ini untuk mengelola kegiatan akademik.</p>
+            <?php
+            $pegawai_sections = [
+                [
+                    'category' => 'Kehadiran & Tugas',
+                    'icon' => 'fas fa-calendar-check',
+                    'color' => 'text-emerald-700',
+                    'items' => [
+                        ['title' => 'Absen', 'href' => 'admin-absensi-pegawai.php', 'icon' => 'fas fa-qrcode', 'bg' => 'from-emerald-500 to-teal-700'],
+                        ['title' => 'Izin Cuti', 'href' => 'admin-pegawai-perizinan.php', 'icon' => 'fas fa-calendar-check', 'bg' => 'from-teal-500 to-emerald-700'],
+                        ['title' => 'Slip Gaji', 'href' => 'slip-gaji.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-amber-500 to-amber-700'],
+                        ['title' => 'KPI Staf', 'href' => 'admin-pegawai-kpi.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-indigo-600 to-blue-700'],
+                        ['title' => 'Supervisi', 'href' => 'admin-supervisi-mengajar.php', 'icon' => 'fas fa-clipboard-check', 'bg' => 'from-blue-600 to-indigo-700'],
+                        ['title' => 'Rapat', 'href' => 'admin-jadwal-rapat.php', 'icon' => 'fas fa-handshake', 'bg' => 'from-violet-600 to-purple-700'],
+                        ['title' => 'Peraturan', 'href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fas fa-file-contract', 'bg' => 'from-slate-600 to-slate-800'],
+                        ['title' => 'Akunku', 'href' => 'akunku.php', 'icon' => 'fas fa-user-cog', 'bg' => 'from-zinc-600 to-slate-800']
+                    ]
+                ],
+                [
+                    'category' => 'KBM & Kurikulum',
+                    'icon' => 'fas fa-graduation-cap',
+                    'color' => 'text-blue-700',
+                    'items' => [
+                        ['title' => 'Jurnal KBM', 'href' => 'admin-pegawai-jurnal.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-blue-600 to-indigo-700'],
+                        ['title' => 'Jadwal Ajar', 'href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fas fa-clock', 'bg' => 'from-sky-500 to-blue-600'],
+                        ['title' => 'Kalender', 'href' => 'kalender-akademik.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-teal-700'],
+                        ['title' => 'Kesediaan', 'href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fas fa-user-check', 'bg' => 'from-teal-600 to-emerald-700'],
+                        ['title' => 'Silabus', 'href' => 'admin-pegawai-silabus.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-indigo-500 to-purple-600'],
+                        ['title' => 'AI RPP', 'href' => 'admin-pegawai-rpp.php', 'icon' => 'fas fa-wand-magic-sparkles', 'bg' => 'from-purple-600 to-fuchsia-700'],
+                        ['title' => 'Bank Nilai', 'href' => 'admin-pegawai-nilai.php', 'icon' => 'fas fa-star-half-alt', 'bg' => 'from-amber-500 to-orange-600'],
+                        ['title' => 'E-Modul', 'href' => 'admin-elearning.php', 'icon' => 'fas fa-laptop-code', 'bg' => 'from-violet-600 to-indigo-700'],
+                        ['title' => 'Prota Promes', 'href' => 'admin-kurikulum-prota-promes.php', 'icon' => 'fas fa-calendar-alt', 'bg' => 'from-rose-500 to-pink-600'],
+                        ['title' => 'Kelas', 'href' => 'admin-master-kelas.php', 'icon' => 'fas fa-school', 'bg' => 'from-blue-500 to-indigo-600'],
+                        ['title' => 'Mapel', 'href' => 'admin-master-mapel.php', 'icon' => 'fas fa-book', 'bg' => 'from-indigo-500 to-purple-600'],
+                        ['title' => 'Kitab', 'href' => 'admin-kitab-rujukan.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-amber-600 to-amber-800']
+                    ]
+                ],
+                [
+                    'category' => 'Asrama & Musyrif',
+                    'icon' => 'fas fa-mosque',
+                    'color' => 'text-amber-700',
+                    'items' => [
+                        ['title' => 'Dashboard', 'href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fas fa-house-user', 'bg' => 'from-cyan-600 to-blue-700'],
+                        ['title' => 'Halaqoh', 'href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fas fa-layer-group', 'bg' => 'from-teal-600 to-emerald-700'],
+                        ['title' => 'Ibadah', 'href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fas fa-tasks', 'bg' => 'from-green-600 to-emerald-700'],
+                        ['title' => 'Setoran', 'href' => 'admin-setoran-hafalan-santri.php', 'icon' => 'fas fa-quran', 'bg' => 'from-emerald-600 to-teal-800'],
+                        ['title' => 'Rekap Quran', 'href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fas fa-file-alt', 'bg' => 'from-teal-500 to-cyan-700'],
+                        ['title' => 'Mutabaah', 'href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fas fa-clipboard-list', 'bg' => 'from-amber-500 to-orange-600'],
+                        ['title' => 'Adab', 'href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fas fa-balance-scale', 'bg' => 'from-rose-500 to-red-600'],
+                        ['title' => 'Belajar', 'href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-blue-600 to-indigo-700'],
+                        ['title' => 'Kesehatan', 'href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fas fa-notes-medical', 'bg' => 'from-red-500 to-rose-600'],
+                        ['title' => 'Walisantri', 'href' => 'admin-kontak-orangtua.php', 'icon' => 'fas fa-comments', 'bg' => 'from-emerald-500 to-teal-700'],
+                        ['title' => 'Uang Saku', 'href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-amber-600 to-yellow-600'],
+                        ['title' => 'KPI Musyrif', 'href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fas fa-chart-pie', 'bg' => 'from-purple-600 to-indigo-700']
+                    ]
+                ],
+                [
+                    'category' => 'Administrasi & Nilai',
+                    'icon' => 'fas fa-folder-open',
+                    'color' => 'text-slate-700',
+                    'items' => [
+                        ['title' => 'Buku Induk', 'href' => 'admin-buku-induk.php', 'icon' => 'fas fa-address-book', 'bg' => 'from-slate-600 to-slate-800'],
+                        ['title' => 'Akun Ortu', 'href' => 'admin-akun-orangtua.php', 'icon' => 'fas fa-users', 'bg' => 'from-indigo-600 to-slate-700'],
+                        ['title' => 'Leger Nilai', 'href' => 'admin-leger.php', 'icon' => 'fas fa-table-list', 'bg' => 'from-blue-600 to-indigo-700'],
+                        ['title' => 'Raport PKBM', 'href' => 'admin-rapot-pkbm.php', 'icon' => 'fas fa-file-invoice', 'bg' => 'from-cyan-600 to-blue-700'],
+                        ['title' => 'Konseling', 'href' => 'admin-counseling-karir.php', 'icon' => 'fas fa-graduation-cap', 'bg' => 'from-purple-600 to-violet-700'],
+                        ['title' => 'Rekap Ajar', 'href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fas fa-chalkboard-user', 'bg' => 'from-amber-600 to-orange-700'],
+                        ['title' => 'Rekap SPP', 'href' => 'admin-rekap-spp.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-emerald-600 to-teal-700'],
+                        ['title' => 'Tagihan SPP', 'href' => 'admin-penagihan-spp.php', 'icon' => 'fas fa-comment-dollar', 'bg' => 'from-teal-600 to-emerald-700'],
+                        ['title' => 'Validasi Saku', 'href' => 'admin-rekap-uang-saku.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-cyan-600 to-teal-700'],
+                        ['title' => 'Kas Sekolah', 'href' => 'sekolah-pembukuan.php', 'icon' => 'fas fa-cash-register', 'bg' => 'from-slate-700 to-zinc-900']
+                    ]
+                ],
+                [
+                    'category' => 'Solopreneur AI',
+                    'icon' => 'fas fa-rocket',
+                    'color' => 'text-purple-700',
+                    'items' => [
+                        ['title' => 'Wirausaha AI', 'href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-purple-600 to-fuchsia-700']
+                    ]
+                ]
+            ];
+            ?>
+            <div class="max-w-6xl mx-auto space-y-4 md:space-y-6">
+                <!-- SEARCH BAR MINIMALIS (ALA ANDROID SEARCH) -->
+                <div class="relative w-full">
+                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" id="androidSearch" placeholder="Cari menu pegawai..." 
+                           class="w-full pl-11 pr-4 py-2.5 md:py-3 rounded-2xl border border-slate-200/90 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-[#0b8478] bg-white shadow-xs transition">
+                </div>
+
+                <!-- CARD SECTIONS (ANDROID APP LAUNCHER STYLE) -->
+                <div id="androidLauncher" class="space-y-4 md:space-y-6">
+                    <?php foreach ($pegawai_sections as $sec): ?>
+                    <div class="app-section bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/70 shadow-xs">
+                        
+                        <!-- SECTION HEADER (1-2 WORDS ONLY) -->
+                        <div class="flex items-center gap-2 mb-4 px-1">
+                            <i class="<?= $sec['icon'] ?> text-sm <?= $sec['color'] ?>"></i>
+                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-700 uppercase tracking-wider">
+                                <?= htmlspecialchars($sec['category']) ?>
+                            </h3>
+                        </div>
+
+                        <!-- ANDROID SQUIRCLE ICON GRID (4 KOLOM DI HP, 6-7 KOLOM DI PC) -->
+                        <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-5 sm:gap-y-6 gap-x-2 sm:gap-x-4 items-start justify-items-center">
+                            <?php foreach ($sec['items'] as $item): ?>
+                            <div class="app-item flex flex-col items-center w-full text-center select-none" data-title="<?= strtolower(htmlspecialchars($item['title'])) ?>">
+                                <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center w-full focus:outline-none group">
+                                    
+                                    <!-- SQUIRCLE ICON ANDROID -->
+                                    <div class="android-icon relative w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] sm:rounded-[24px] bg-gradient-to-br <?= $item['bg'] ?> text-white shadow-sm flex items-center justify-center text-xl sm:text-2xl border border-white/25">
+                                        <i class="<?= $item['icon'] ?>"></i>
+                                    </div>
+
+                                    <!-- CAPTION 1-2 KATA SAJA -->
+                                    <span class="text-[11px] sm:text-xs font-semibold text-slate-700 group-hover:text-[#0b8478] mt-2 tracking-tight text-center leading-tight line-clamp-1 max-w-[76px] sm:max-w-[85px] transition-colors">
+                                        <?= htmlspecialchars($item['title']) ?>
+                                    </span>
+                                </a>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <!-- EMPTY STATE PENCARIAN -->
+                <div id="noAppFound" class="hidden text-center py-12 bg-white rounded-3xl border border-slate-200">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xl mx-auto mb-2">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <p class="font-bold text-slate-600 text-xs">Menu tidak ditemukan</p>
+                </div>
             </div>
 
-            <!-- WIDGET SHORTCUT -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <a href="admin-pegawai-jurnal.php" class="bg-white hover:bg-cyan-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-book-open text-cyan-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Isi Jurnal</span>
-                </a>
-                <a href="admin-pegawai-mutabaah.php" class="bg-white hover:bg-emerald-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-clipboard-list text-emerald-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Buku Mutaba'ah</span>
-                </a>
-                <a href="admin-pegawai-rpp.php" class="bg-white hover:bg-blue-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-magic text-blue-500 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">AI RPP</span>
-                </a>
-                <?php if ($has_peraturan_menu): ?>
-                <a href="admin-ustadz.php?view=peraturan_role" class="bg-white hover:bg-slate-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-file-contract text-slate-700 text-3xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Peraturan Pegawai</span>
-                </a>
-                <?php endif; ?>
-            </div>
+            <!-- SCRIPT PENCARIAN INSTAN -->
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('androidSearch');
+                const sections = document.querySelectorAll('.app-section');
+                const emptyState = document.getElementById('noAppFound');
 
-            <!-- WIDGET STATISTIK -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
-                    <div class="p-4 rounded-full bg-cyan-100 text-cyan-600 mr-4"><i class="fas fa-book-open text-2xl"></i></div>
-                    <div><p class="text-sm font-medium text-gray-500">Total Jurnal Anda</p><p class="text-2xl font-bold text-gray-900"><?= $total_jurnal ?></p></div>
-                </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
-                    <div class="p-4 rounded-full bg-amber-100 text-amber-600 mr-4"><i class="fas fa-star-half-alt text-2xl"></i></div>
-                    <div><p class="text-sm font-medium text-gray-500">Total Nilai Diinput</p><p class="text-2xl font-bold text-gray-900"><?= $total_nilai ?></p></div>
-                </div>
-            </div>
+                if (searchInput) {
+                    searchInput.addEventListener('input', function() {
+                        const query = this.value.toLowerCase().trim();
+                        let totalVisible = 0;
 
-            <!-- TABEL JURNAL TERBARU -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                    <h2 class="font-bold text-gray-800">Jurnal Mengajar Terakhir</h2>
-                    <a href="admin-pegawai-jurnal.php" class="text-sm text-cyan-600 hover:text-cyan-800 font-medium">Lihat Semua</a>
-                </div>
-                <div class="overflow-x-auto p-4">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-white">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Tanggal</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Kelas & Mapel</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Materi Pokok</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <?php if (count($jurnal_terbaru) > 0): ?>
-                                <?php foreach($jurnal_terbaru as $row): ?>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 text-sm text-gray-700 font-medium whitespace-nowrap"><?= date('d M Y', strtotime($row['tanggal'])) ?></td>
-                                    <td class="px-4 py-3">
-                                        <div class="font-bold text-cyan-700"><?= htmlspecialchars($row['kelas']) ?></div>
-                                        <div class="text-sm text-gray-600"><?= htmlspecialchars($row['mata_pelajaran']) ?></div>
-                                    </td>
-                                    <td class="px-4 py-3 text-sm text-gray-600">
-                                        <div class="font-medium"><?= htmlspecialchars($row['materi']) ?></div>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan='3' class='text-center py-6 text-gray-500 italic'>Belum ada catatan jurnal mengajar.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                        sections.forEach(sec => {
+                            let secVisible = 0;
+                            const items = sec.querySelectorAll('.app-item');
+
+                            items.forEach(item => {
+                                const title = item.getAttribute('data-title') || '';
+                                if (!query || title.includes(query)) {
+                                    item.classList.remove('hidden');
+                                    secVisible++;
+                                    totalVisible++;
+                                } else {
+                                    item.classList.add('hidden');
+                                }
+                            });
+
+                            if (secVisible === 0 && query !== '') {
+                                sec.classList.add('hidden');
+                            } else {
+                                sec.classList.remove('hidden');
+                            }
+                        });
+
+                        if (emptyState) {
+                            if (totalVisible === 0 && query !== '') {
+                                emptyState.classList.remove('hidden');
+                            } else {
+                                emptyState.classList.add('hidden');
+                            }
+                        }
+                    });
+                }
+            });
+            </script>
             <?php endif; ?>
         </main>
     </div>
