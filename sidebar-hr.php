@@ -93,7 +93,7 @@ if (empty($user_roles) && isset($_SESSION['ustadz_role'])) {
 $is_super_admin = false;
 foreach ($user_roles as $role) {
     $norm_r = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
-    if ($norm_r === 'super_admin') {
+    if ($norm_r === 'super_admin' || $norm_r === 'ketua_yayasan') {
         $is_super_admin = true;
         break;
     }
@@ -109,28 +109,60 @@ if ($conn) {
         allowed_roles TEXT
     )");
     
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('amanah_asatidz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('peraturan_role', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('counseling_karir', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kalender_akademik', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('jadwal_pelajaran', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kurikulum_solopreneur_trainer', 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_ustadz', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('validasi_ibadah_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_ibadah_santri', 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rekap_setoran_santri', 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif,musyrifah')");
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontrol_jam_kosong', 'ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,yayasan,yayasan2,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,admin_sekolah,sekretaris_sekolah,bendahara_sekolah,super_admin,musyrif,musyrifah,ustadz,ustadzah,tutor,trainer') ON DUPLICATE KEY UPDATE allowed_roles = VALUES(allowed_roles)");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_musyrif', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('sekolah_pembukuan', 'kepala_sekolah,admin_sekolah')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rapot_pkbm', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('rapot_pkbm_musyrif', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_asrama,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('cek_belajar_mandiri', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('cek_kesehatan_santri', 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('santri_tidak_masuk', 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('santri_tidak_masuk_asatidz', 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontak_orangtua', 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('manajemen_elearning', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('prota_promes', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin')");
+    $default_perms = [
+        'absensi_pegawai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
+        'perizinan_pegawai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
+        'slip_gaji' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
+        'amanah_asatidz' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+        'peraturan_role' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+        'counseling_karir' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+        'kalender_akademik' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+        'jadwal_pelajaran' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+        'kurikulum_solopreneur_trainer' => 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin',
+        'kpi_ustadz' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+        'validasi_ibadah_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin',
+        'rekap_ibadah_santri' => 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah',
+        'rekap_setoran_santri' => 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif,musyrifah',
+        'kpi_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
+        'sekolah_pembukuan' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
+        'rapot_pkbm' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin',
+        'rapot_pkbm_musyrif' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_asrama,super_admin',
+        'cek_belajar_mandiri' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+        'cek_kesehatan_santri' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
+        'santri_tidak_masuk' => 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin',
+        'santri_tidak_masuk_asatidz' => 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin',
+        'kontak_orangtua' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
+        'manajemen_elearning' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+        'prota_promes' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+        'jadwal_rapat' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz,super_admin',
+        'buku_induk' => 'kepala_sekolah,admin_sekolah,kepala_mahad,sekretaris_sekolah,super_admin',
+        'akun_orangtua' => 'kepala_sekolah,admin_sekolah,musyrif,musyrifah,super_admin',
+        'leger_nilai' => 'kepala_sekolah,admin_sekolah,ustadz,ustadzah,super_admin',
+        'rekap_keuangan' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
+        'penagihan_spp' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
+        'rekap_uang_saku' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
+        'kesediaan_mengajar' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+        'master_silabus' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+        'ai_rpp' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+        'bank_nilai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+        'dashboard_asrama' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+        'manajemen_halaqoh' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+        'setoran_hafalan_santri' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+        'mutabaah' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+        'laporan_adab' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+        'rekap_uang_saku_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin',
+        'kpi_kepsek' => 'kepala_sekolah,super_admin',
+        'supervisi_mengajar' => 'kepala_sekolah,kepala_mahad,super_admin',
+        'kpi_admin_sekolah' => 'admin_sekolah,super_admin',
+        'salary_admin' => 'admin_sekolah,super_admin'
+    ];
+
+    foreach ($default_perms as $d_key => $d_roles) {
+        $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('$d_key', '$d_roles')");
+    }
+
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin') ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin'");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah') ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah'");
 
     $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
     if ($res_perms) {
@@ -138,13 +170,6 @@ if ($conn) {
             $menu_permissions[$row['menu_key']] = !empty($row['allowed_roles']) ? explode(',', $row['allowed_roles']) : [];
         }
     }
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_kepsek', 'kepala_sekolah,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('supervisi_mengajar', 'kepala_sekolah,kepala_mahad,super_admin')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kpi_admin_sekolah', 'admin_sekolah')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('salary_admin', 'admin_sekolah')");
-    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('slip_gaji', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,admin_sekolah,super_admin')");
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin') ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin'");
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah') ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah'");
 }
 
 // Load custom menu labels from database
@@ -158,26 +183,84 @@ if ($conn) {
     }
 }
 
-// Fungsi helper untuk mengecek hak akses
+// Fungsi helper untuk mengecek hak akses (dinamis & mendukung alias peran)
 function has_access($menu_key, $user_roles, $menu_permissions, $is_super_admin) {
     if ($is_super_admin) return true;
-    // Menu dasar yang wajib tampil untuk seluruh pegawai terdaftar (bahkan jika belum diset role-nya)
-    if (in_array($menu_key, ['absensi_pegawai', 'perizinan_pegawai', 'slip_gaji', 'ganti_password'])) return true;
+    // Menu dasar wajib bagi seluruh staf/pegawai terdaftar
+    if (in_array($menu_key, ['absensi_pegawai', 'perizinan_pegawai', 'slip_gaji', 'akunku', 'ganti_password'])) return true;
     if (!isset($menu_permissions[$menu_key])) return false; // Default: sembunyikan jika belum diatur
 
-    // Normalisasi allowed roles dari database
-    $allowed_roles = array_map(function($r) {
-        return str_replace([" ", "'"], ["_", ""], strtolower(trim($r)));
-    }, $menu_permissions[$menu_key]);
-
+    // Normalisasi dan ekspansi user roles
+    $expanded_user_roles = [];
+    if (!is_array($user_roles)) {
+        $user_roles = !empty($user_roles) ? explode(',', (string)$user_roles) : [];
+    }
     foreach ($user_roles as $role) {
-        $norm_role = str_replace([" ", "'"], ["_", ""], strtolower(trim($role)));
-        if ($norm_role === 'kepala_asrama') $norm_role = 'kepala_asrama_rijal';
-        if (in_array($norm_role, $allowed_roles)) {
-            return true;
+        $r = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($role)));
+        if ($r === '') continue;
+        $expanded_user_roles[] = $r;
+        if (in_array($r, ['musyrif', 'musyrifah', 'musyirfah', 'musyifah'])) {
+            $expanded_user_roles[] = 'musyrif';
+            $expanded_user_roles[] = 'musyrifah';
+        }
+        if (in_array($r, ['ustadz', 'ustadzah', 'guru', 'pengajar', 'asatidz', 'tutor', 'trainer'])) {
+            $expanded_user_roles[] = 'ustadz';
+            $expanded_user_roles[] = 'ustadzah';
+            $expanded_user_roles[] = 'guru';
+        }
+        if (in_array($r, ['kepala_asrama', 'kepala_asrama_rijal', 'kepala_asrama_nisa'])) {
+            $expanded_user_roles[] = 'kepala_asrama';
+            $expanded_user_roles[] = 'kepala_asrama_rijal';
+            $expanded_user_roles[] = 'kepala_asrama_nisa';
+            $expanded_user_roles[] = 'musyrif';
+            $expanded_user_roles[] = 'musyrifah';
+        }
+        if (in_array($r, ['kepala_sekolah', 'kepsek'])) {
+            $expanded_user_roles[] = 'kepala_sekolah';
+            $expanded_user_roles[] = 'kepsek';
+        }
+        if (in_array($r, ['admin_sekolah', 'admin'])) {
+            $expanded_user_roles[] = 'admin_sekolah';
+            $expanded_user_roles[] = 'admin';
         }
     }
-    return false;
+    $expanded_user_roles = array_unique($expanded_user_roles);
+
+    // Normalisasi dan ekspansi allowed roles dari tabel menu_permissions
+    $raw_allowed = $menu_permissions[$menu_key] ?? [];
+    if (!is_array($raw_allowed)) {
+        $raw_allowed = !empty($raw_allowed) ? explode(',', (string)$raw_allowed) : [];
+    }
+    $expanded_allowed = [];
+    foreach ($raw_allowed as $ar) {
+        $ar_clean = str_replace([" ", "'", "/", "-"], ["_", "", "_", "_"], strtolower(trim($ar)));
+        if ($ar_clean === '') continue;
+        $expanded_allowed[] = $ar_clean;
+        if ($ar_clean === 'musyrif' || $ar_clean === 'musyrifah') {
+            $expanded_allowed[] = 'musyrif';
+            $expanded_allowed[] = 'musyrifah';
+        }
+        if ($ar_clean === 'ustadz' || $ar_clean === 'ustadzah') {
+            $expanded_allowed[] = 'ustadz';
+            $expanded_allowed[] = 'ustadzah';
+            $expanded_allowed[] = 'guru';
+        }
+        if ($ar_clean === 'kepala_asrama') {
+            $expanded_allowed[] = 'kepala_asrama_rijal';
+            $expanded_allowed[] = 'kepala_asrama_nisa';
+            $expanded_allowed[] = 'musyrif';
+            $expanded_allowed[] = 'musyrifah';
+        }
+        if ($ar_clean === 'kepala_sekolah') {
+            $expanded_allowed[] = 'kepsek';
+        }
+        if ($ar_clean === 'admin_sekolah') {
+            $expanded_allowed[] = 'admin';
+        }
+    }
+    $expanded_allowed = array_unique($expanded_allowed);
+
+    return !empty(array_intersect($expanded_user_roles, $expanded_allowed));
 }
 
 // Definisikan urutan grup default agar urutannya konsisten
