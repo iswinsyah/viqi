@@ -299,6 +299,8 @@ $target_location_name = '';
 
 // A. Tentukan Status Kehadiran (Masuk atau Pulang) berdasarkan absen hari ini / rapat_id
 $today = date('Y-m-d');
+$last_row = null;
+
 if ($qr_jenis_absen === 'Rapat') {
     $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND jenis_absen = 'Rapat' AND rapat_id = $rapat_id AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
     $status_kehadiran = 'Masuk';
@@ -313,45 +315,202 @@ if ($qr_jenis_absen === 'Rapat') {
                 json_response('error', 'Absen terlalu cepat dari absen sebelumnya. Harap tunggu minimal 3 menit untuk absen Pulang rapat.');
             }
             $status_kehadiran = 'Pulang';
+            $last_row = $row;
         }
     }
 } else {
-    // Untuk Pegawai (Harian) & Mengajar: Mendukung Fleksibilitas Shift Kerja & Giliran Piket 24 Jam
+    // Untuk Pegawai (Harian) & Mengajar: Mendukung Fleksibilitas Shift 1 & Shift 2 (Tanpa Kunci Jam Absen)
     $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = '$qr_jenis_absen' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
     $status_kehadiran = 'Masuk';
     if ($res_check && $res_check->num_rows > 0) {
         $last_row = $res_check->fetch_assoc();
         $waktu_terakhir = strtotime($last_row['waktu_absen']);
         if ($last_row['status_kehadiran'] === 'Masuk') {
-            // Posisi saat ini sedang Masuk, maka klik berikutnya adalah Pulang (Selesai shift/piket)
+            // Posisi saat ini sedang Masuk, maka klik berikutnya adalah Pulang (Selesai shift/piket/mengajar)
             if (time() - $waktu_terakhir < 180) { // 3 menit jeda agar tidak tertekan ganda tidak sengaja
                 json_response('error', 'Anda baru saja absen Masuk. Harap tunggu minimal 3 menit sebelum absen Pulang.');
             }
             $status_kehadiran = 'Pulang';
         } else {
-            // Posisi terakhir adalah Pulang, maka dapat absen Masuk kembali untuk shift/piket berikutnya
+            // Posisi terakhir adalah Pulang, maka dapat absen Masuk kembali untuk shift/piket/sesi baru
             if (time() - $waktu_terakhir < 180) {
-                json_response('error', 'Anda baru saja absen Pulang. Harap tunggu minimal 3 menit jika ingin absen Masuk shift berikutnya.');
+                json_response('error', 'Anda baru saja absen Pulang. Harap tunggu minimal 3 menit jika ingin absen Masuk kembali.');
             }
             $status_kehadiran = 'Masuk';
         }
     }
 }
 
-// B. Pembatasan Jam Absensi Dihilangkan: Mendukung Giliran Piket & Shift Kerja Kapan Saja
-// Pembatasan MURNI HANYA PADA RADIUS LOKASI FISIK RESMI YANG SUDAH DITETAPKAN
-$keterangan = NULL;
-$warning_msg = null;
+// B. Pengecekan Izin Resmi dari Ketua Yayasan
+// Pegawai yang terlambat, pulang awal, atau di luar jam ketentuan dicatat sebagai Pelanggaran KECUALI ada izin Ketua Yayasan
+$is_izin_yayasan = false;
+$keterangan_izin = '';
 
-if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
-    $keterangan = ($status_kehadiran === 'Masuk') ? 'Hadir (Shift/Piket)' : 'Pulang (Selesai Shift/Piket)';
-} elseif ($qr_jenis_absen === 'Mengajar') {
-    $keterangan = ($status_kehadiran === 'Masuk') ? 'Mulai Mengajar' : 'Selesai Mengajar';
+// 1. Cek dari absensi_pegawai (status Izin hari ini)
+$res_izin_absen = $conn->query("SELECT id, keterangan FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND status_kehadiran = 'Izin' LIMIT 1");
+if ($res_izin_absen && $res_izin_absen->num_rows > 0) {
+    $is_izin_yayasan = true;
+    $keterangan_izin = $res_izin_absen->fetch_assoc()['keterangan'] ?? 'Izin Disetujui';
 }
 
-// C. Cek apakah pegawai memiliki status perizinan aktif untuk hari ini (Bypass GPS)
-$res_izin = $conn->query("SELECT id FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND status_kehadiran = 'Izin'");
-$is_izin_approved = ($res_izin && $res_izin->num_rows > 0);
+// 2. Cek dari tabel kepegawaian_perizinan (approval resmi Ketua Yayasan / Admin)
+if (!$is_izin_yayasan) {
+    $now_datetime = date('Y-m-d H:i:s');
+    $res_izin_kep = $conn->query("SELECT id, kategori, keterangan, catatan_admin FROM kepegawaian_perizinan 
+        WHERE ustadz_id = $ustadz_id 
+        AND status IN ('Disetujui', 'Disetujui Sebagian') 
+        AND (
+            ('$now_datetime' BETWEEN tanggal_mulai AND tanggal_selesai) OR
+            (tanggal_disetujui_mulai IS NOT NULL AND '$now_datetime' BETWEEN tanggal_disetujui_mulai AND tanggal_disetujui_selesai) OR
+            (DATE(tanggal_mulai) = '$today' OR DATE(tanggal_selesai) = '$today')
+        ) LIMIT 1");
+    if ($res_izin_kep && $res_izin_kep->num_rows > 0) {
+        $row_ik = $res_izin_kep->fetch_assoc();
+        $is_izin_yayasan = true;
+        $keterangan_izin = $row_ik['kategori'] . (!empty($row_ik['catatan_admin']) ? ' (' . $row_ik['catatan_admin'] . ')' : '');
+    }
+}
+
+// C. Pencatatan Jam Kerja, Keterlambatan, Pulang Awal, & Durasi Mengajar
+// KUNCI ABSENSI BERDASARKAN JAM DIHILANGKAN (Pegawai selalu BISA absen selama di lokasi).
+// Namun jika tidak sesuai ketentuan tanpa izin ketua yayasan, tetap dicatat sebagai PELANGGARAN.
+$keterangan = NULL;
+$warning_msg = null;
+$is_pelanggaran = false;
+
+if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
+    $current_time = date('H:i');
+    $current_h = (int)date('H');
+    $current_m = (int)date('i');
+    $current_min = ($current_h * 60) + $current_m;
+
+    // Shift 1: Jam Masuk 07:00 WIB, Jam Pulang 13:00 WIB
+    // Shift 2: Jam Masuk 15:00 WIB, Jam Pulang 21:00 WIB
+    if ($status_kehadiran === 'Masuk') {
+        // Penentuan Shift saat Masuk (Batas transisi jam 14:00 WIB = menit ke-840)
+        if ($current_min < 840) {
+            // === SHIFT 1 (Pagi: Masuk 07:00, Pulang 13:00) ===
+            $target_masuk = '07:00';
+            if ($current_time > $target_masuk) {
+                // Terlambat Shift 1
+                $diff_sec = time() - strtotime(date('Y-m-d') . " $target_masuk:00");
+                $diff_min = max(1, floor($diff_sec / 60));
+                $hrs = floor($diff_min / 60);
+                $mins = $diff_min % 60;
+                $durasi_str = ($hrs > 0) ? "$hrs jam $mins menit" : "$mins menit";
+
+                if ($is_izin_yayasan) {
+                    $keterangan = "Terlambat Shift 1 ($durasi_str) [Disetujui Izin Yayasan: $keterangan_izin]";
+                    $warning_msg = "Anda terdeteksi Terlambat $durasi_str masuk kerja Shift 1 (dengan izin resmi Ketua Yayasan).";
+                } else {
+                    $is_pelanggaran = true;
+                    $keterangan = "Pelanggaran: Terlambat Shift 1 ($durasi_str - Tanpa Izin Yayasan)";
+                    $warning_msg = "⚠️ PELANGGARAN KEDISIPLINAN: Anda terdeteksi Terlambat $durasi_str masuk kerja Shift 1 (Absen pukul $current_time WIB) tanpa izin resmi Ketua Yayasan.";
+                }
+            } else {
+                $keterangan = "Tepat Waktu (Shift 1)";
+            }
+        } else {
+            // === SHIFT 2 (Sore/Malam: Masuk 15:00, Pulang 21:00) ===
+            $target_masuk = '15:00';
+            if ($current_time > $target_masuk) {
+                // Terlambat Shift 2
+                $diff_sec = time() - strtotime(date('Y-m-d') . " $target_masuk:00");
+                $diff_min = max(1, floor($diff_sec / 60));
+                $hrs = floor($diff_min / 60);
+                $mins = $diff_min % 60;
+                $durasi_str = ($hrs > 0) ? "$hrs jam $mins menit" : "$mins menit";
+
+                if ($is_izin_yayasan) {
+                    $keterangan = "Terlambat Shift 2 ($durasi_str) [Disetujui Izin Yayasan: $keterangan_izin]";
+                    $warning_msg = "Anda terdeteksi Terlambat $durasi_str masuk kerja Shift 2 (dengan izin resmi Ketua Yayasan).";
+                } else {
+                    $is_pelanggaran = true;
+                    $keterangan = "Pelanggaran: Terlambat Shift 2 ($durasi_str - Tanpa Izin Yayasan)";
+                    $warning_msg = "⚠️ PELANGGARAN KEDISIPLINAN: Anda terdeteksi Terlambat $durasi_str masuk kerja Shift 2 (Absen pukul $current_time WIB) tanpa izin resmi Ketua Yayasan.";
+                }
+            } else {
+                $keterangan = "Tepat Waktu (Shift 2)";
+            }
+        }
+    } elseif ($status_kehadiran === 'Pulang') {
+        // Tentukan apakah pulang dari Shift 1 atau Shift 2 berdasarkan jam absen Masuk sebelumnya
+        $jam_masuk_prev = ($last_row && !empty($last_row['waktu_absen'])) ? date('H:i', strtotime($last_row['waktu_absen'])) : '07:00';
+        $prev_min = (int)date('H', strtotime($last_row['waktu_absen'] ?? '')) * 60 + (int)date('i', strtotime($last_row['waktu_absen'] ?? ''));
+
+        if ($prev_min < 840) {
+            // === PULANG SHIFT 1 (Target Pulang: 13:00 WIB) ===
+            $target_pulang = '13:00';
+            if ($current_time < $target_pulang) {
+                // Pulang Lebih Awal Shift 1
+                $diff_sec = strtotime(date('Y-m-d') . " $target_pulang:00") - time();
+                $diff_min = max(1, floor($diff_sec / 60));
+                $hrs = floor($diff_min / 60);
+                $mins = $diff_min % 60;
+                $durasi_str = ($hrs > 0) ? "$hrs jam $mins menit" : "$mins menit";
+
+                if ($is_izin_yayasan) {
+                    $keterangan = "Pulang Awal Shift 1 ($durasi_str) [Disetujui Izin Yayasan: $keterangan_izin]";
+                    $warning_msg = "Anda pulang lebih awal $durasi_str sebelum jam kerja Shift 1 selesai (dengan izin resmi Ketua Yayasan).";
+                } else {
+                    $is_pelanggaran = true;
+                    $keterangan = "Pelanggaran: Pulang Lebih Awal Shift 1 ($durasi_str - Tanpa Izin Yayasan)";
+                    $warning_msg = "⚠️ PELANGGARAN KEDISIPLINAN: Anda Pulang Lebih Awal $durasi_str sebelum jam 13:00 WIB tanpa izin resmi Ketua Yayasan.";
+                }
+            } else {
+                $keterangan = "Tepat Waktu (Selesai Shift 1)";
+            }
+        } else {
+            // === PULANG SHIFT 2 (Target Pulang: 21:00 WIB) ===
+            $target_pulang = '21:00';
+            if ($current_time < $target_pulang) {
+                // Pulang Lebih Awal Shift 2
+                $diff_sec = strtotime(date('Y-m-d') . " $target_pulang:00") - time();
+                $diff_min = max(1, floor($diff_sec / 60));
+                $hrs = floor($diff_min / 60);
+                $mins = $diff_min % 60;
+                $durasi_str = ($hrs > 0) ? "$hrs jam $mins menit" : "$mins menit";
+
+                if ($is_izin_yayasan) {
+                    $keterangan = "Pulang Awal Shift 2 ($durasi_str) [Disetujui Izin Yayasan: $keterangan_izin]";
+                    $warning_msg = "Anda pulang lebih awal $durasi_str sebelum jam kerja Shift 2 selesai (dengan izin resmi Ketua Yayasan).";
+                } else {
+                    $is_pelanggaran = true;
+                    $keterangan = "Pelanggaran: Pulang Lebih Awal Shift 2 ($durasi_str - Tanpa Izin Yayasan)";
+                    $warning_msg = "⚠️ PELANGGARAN KEDISIPLINAN: Anda Pulang Lebih Awal $durasi_str sebelum jam 21:00 WIB tanpa izin resmi Ketua Yayasan.";
+                }
+            } else {
+                $keterangan = "Tepat Waktu (Selesai Shift 2)";
+            }
+        }
+    }
+} elseif ($qr_jenis_absen === 'Mengajar') {
+    if ($status_kehadiran === 'Masuk') {
+        $keterangan = "Mulai Mengajar";
+    } elseif ($status_kehadiran === 'Pulang') {
+        // Hitung durasi mengajar riil
+        $waktu_masuk_ajar = ($last_row && !empty($last_row['waktu_absen'])) ? strtotime($last_row['waktu_absen']) : (time() - 2700);
+        $durasi_sec = time() - $waktu_masuk_ajar;
+        $durasi_menit = max(1, round($durasi_sec / 60));
+
+        // Ketentuan standar minimal mengajar adalah 35 menit per jam pelajaran (JP)
+        if ($durasi_menit < 35) {
+            if ($is_izin_yayasan) {
+                $keterangan = "Selesai Mengajar ($durasi_menit menit) [Disetujui Izin Yayasan: $keterangan_izin]";
+                $warning_msg = "Durasi mengajar Anda tercatat $durasi_menit menit (di bawah standar) dengan izin resmi Ketua Yayasan.";
+            } else {
+                $is_pelanggaran = true;
+                $keterangan = "Pelanggaran: Durasi Mengajar Tidak Sesuai Ketentuan ($durasi_menit menit, Kurang Dari 35 Menit Tanpa Izin Yayasan)";
+                $warning_msg = "⚠️ PELANGGARAN KEDISIPLINAN: Durasi mengajar Anda hanya $durasi_menit menit (di bawah ketentuan standar minimal 35 menit per sesi) tanpa izin resmi Ketua Yayasan.";
+            }
+        } else {
+            $keterangan = "Selesai Mengajar ($durasi_menit menit - Sesuai Ketentuan)";
+        }
+    }
+}
+
+// D. Cek apakah pegawai memiliki status perizinan aktif untuk hari ini (Bypass GPS)
+$is_izin_approved = $is_izin_yayasan;
 
 // D. Cari koordinat dan jarak lokasi
 $max_distance_allowed = MAX_DISTANCE_METERS;
@@ -504,15 +663,17 @@ if ($stmt->execute()) {
         $res_data['warning_msg'] = $warning_msg;
     }
 
-    // Kirim notifikasi WA
+    // Kirim notifikasi WA ke Ketua Yayasan / Admin
     $nama_pegawai = $_SESSION['ustadz_nama'] ?? 'Pegawai';
-    $pesan_wa = "✅ *LAPORAN ABSENSI PEGAWAI*\n\n"
+    $wa_header = !empty($is_pelanggaran) ? "⚠️ *PERINGATAN: PELANGGARAN KEDISIPLINAN (TANPA IZIN YAYASAN)*" : "✅ *LAPORAN ABSENSI PEGAWAI*";
+    $pesan_wa = "$wa_header\n\n"
               . "Pegawai: *$nama_pegawai*\n"
               . "Waktu: " . date('H:i:s') . " WIB\n"
               . "Jenis Absen: *$qr_jenis_absen* ($status_kehadiran)\n"
-              . "Status: *BERHASIL*\n"
+              . "Keterangan: *$keterangan*\n"
+              . "Status: *" . (!empty($is_pelanggaran) ? 'PELANGGARAN TERCATAT' : 'BERHASIL') . "*\n"
               . "Lokasi: $target_location_name (Jarak: " . round($distance) . "m)\n"
-              . ($warning_msg ? "Catatan: _" . strip_tags($warning_msg) . "_\n" : "")
+              . ($warning_msg ? "Peringatan: _" . strip_tags($warning_msg) . "_\n" : "")
               . "Koordinat: `$user_lat, $user_lon`\n\n"
               . "-- SADIGS 4.0 Villa Quran --";
     kirim_notifikasi_wa_yayasan($pesan_wa);

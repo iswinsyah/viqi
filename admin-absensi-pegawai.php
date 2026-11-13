@@ -480,9 +480,13 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                 <i class="fas fa-user-tie"></i>
                             </div>
                             <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Pegawai & Piket</h2>
-                            <p class="text-xs text-gray-500 mb-6 font-medium leading-relaxed">
+                            <p class="text-xs text-gray-500 mb-3 font-medium leading-relaxed">
                                 <?= htmlspecialchars($pegawai_keterangan_status) ?>
                             </p>
+                            <div class="mb-4 flex items-center justify-center gap-1.5 flex-wrap">
+                                <span class="px-2.5 py-0.5 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-800 text-[10px] font-bold">Shift 1: 07.00 - 13.00</span>
+                                <span class="px-2.5 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-[10px] font-bold">Shift 2: 15.00 - 21.00</span>
+                            </div>
                         </div>
                         
                         <button id="btn-absen-pegawai" 
@@ -503,9 +507,12 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                 <i class="fas fa-chalkboard-user"></i>
                             </div>
                             <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Mengajar</h2>
-                            <p class="text-xs text-gray-500 mb-6 font-medium leading-relaxed">
+                            <p class="text-xs text-gray-500 mb-3 font-medium leading-relaxed">
                                 <?= htmlspecialchars($mengajar_keterangan_status) ?>
                             </p>
+                            <div class="mb-4 flex items-center justify-center">
+                                <span class="px-2.5 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold">Standar KBM: Min. 35 Menit / Sesi</span>
+                            </div>
                         </div>
                         
                         <button id="btn-absen-mengajar" 
