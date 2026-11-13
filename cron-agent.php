@@ -381,6 +381,47 @@ function mikirKeGemini($payload, $maxRetries = 3) {
     }
     $prompt = trim($prompt);
     
+    // 0. COBA OTAK UTAMA: AI LOKAL (Ollama Qwen di PC Server)
+    $localAiUrl = defined('LOCAL_AI_URL') ? trim(LOCAL_AI_URL) : '';
+    $localAiModel = defined('LOCAL_AI_MODEL') ? trim(LOCAL_AI_MODEL) : 'qwen2.5-coder:7b';
+
+    if (!empty($localAiUrl)) {
+        logAgent("🧠 Menggunakan Otak AI Lokal ($localAiModel) di PC Server ($localAiUrl)...");
+        $ollamaPayload = [
+            "model" => $localAiModel,
+            "prompt" => $prompt,
+            "stream" => false
+        ];
+        
+        $ch = curl_init(rtrim($localAiUrl, '/') . '/api/generate');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($ollamaPayload));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 300); // Beri waktu hingga 5 menit untuk penulisan artikel komprehensif
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        
+        $localResp = curl_exec($ch);
+        $localHttp = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $localErr = curl_error($ch);
+        curl_close($ch);
+
+        if (!$localErr && $localHttp === 200) {
+            $localData = json_decode($localResp, true);
+            if (!empty($localData['response'])) {
+                logAgent("✅ Berhasil diproses oleh Otak AI Lokal ($localAiModel) di PC Server!");
+                pastikanKoneksiDb();
+                return [
+                    "status" => "success",
+                    "result" => trim($localData['response'])
+                ];
+            }
+        }
+        logAgent("⚠️ AI Lokal di PC Server sedang tidak merespon ($localErr / HTTP $localHttp). Otomatis beralih ke Otak Cadangan (Gemini API)...");
+    }
+
     $resultText = '';
     $lastErrorMsg = '';
 
