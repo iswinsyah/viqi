@@ -38,345 +38,99 @@ if ($q_kas) {
     $saldo_kas = (float)($row_kas['saldo'] ?? 0);
 }
 
-// Definisi Semua Card Menu Ruang Yayasan (Dikelompokkan secara rapi)
-$categories = [
-    'all' => 'Semua Modul',
-    'keuangan' => 'Keuangan & Payroll',
-    'sdm' => 'SDM & Pegawai',
-    'akademik' => 'Akademik & Kurikulum AI',
-    'santri' => 'Santri & Asrama',
-    'kelembagaan' => 'Kelembagaan & Sistem'
-];
-
-$yayasan_cards = [
-    // --- KEUANGAN & PAYROLL ---
-    [
-        'category' => 'keuangan',
-        'title' => 'Pembukuan Kas',
-        'subtitle' => 'Pencatatan kas masuk, keluar, dan neraca keuangan lembaga.',
-        'url' => 'pembukuan.php',
-        'icon' => 'fas fa-calculator',
-        'bg_color' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        'icon_bg' => 'bg-emerald-600 text-white',
-        'badge' => 'Kas & Buku'
-    ],
-    [
-        'category' => 'keuangan',
-        'title' => 'Cashflow & Proyeksi',
-        'subtitle' => 'Perencanaan arus kas, target penerimaan dan proyeksi anggaran.',
-        'url' => 'pembukuan.php?tab=proyeksi',
-        'icon' => 'fas fa-funnel-dollar',
-        'bg_color' => 'bg-teal-50 text-teal-700 border-teal-200',
-        'icon_bg' => 'bg-teal-600 text-white',
-        'badge' => 'Arus Kas'
-    ],
-    [
-        'category' => 'keuangan',
-        'title' => 'Rekap Gaji (Payroll)',
-        'subtitle' => 'Slip gaji bulanan, transfer honor, dan rekap penggajian asatidz/pegawai.',
-        'url' => 'gaji-pegawai.php',
-        'icon' => 'fas fa-coins',
-        'bg_color' => 'bg-amber-50 text-amber-700 border-amber-200',
-        'icon_bg' => 'bg-amber-500 text-white',
-        'badge' => 'Payroll'
-    ],
-    [
-        'category' => 'keuangan',
-        'title' => 'Pengaturan Tarif Gaji',
-        'subtitle' => 'Standarisasi tarif honor per jam mengajar, transport, dan lembur.',
-        'url' => 'gaji-asatidz.php',
-        'icon' => 'fas fa-sliders',
-        'bg_color' => 'bg-orange-50 text-orange-700 border-orange-200',
-        'icon_bg' => 'bg-orange-500 text-white',
-        'badge' => 'Tarif Honor'
-    ],
-    [
-        'category' => 'keuangan',
-        'title' => 'Pengaturan Tunjangan',
-        'subtitle' => 'Manajemen tunjangan jabatan struktural, pengabdian, dan lembur.',
-        'url' => 'tunjangan.php',
-        'icon' => 'fas fa-award',
-        'bg_color' => 'bg-yellow-50 text-yellow-800 border-yellow-200',
-        'icon_bg' => 'bg-yellow-500 text-white',
-        'badge' => 'Tunjangan'
-    ],
-    [
-        'category' => 'keuangan',
-        'title' => 'Rekap Pembayaran SPP',
-        'subtitle' => 'Monitoring pembayaran SPP, status lunas, dan tagihan wali santri.',
-        'url' => 'rekap-spp.php',
-        'icon' => 'fas fa-file-invoice-dollar',
-        'bg_color' => 'bg-green-50 text-green-700 border-green-200',
-        'icon_bg' => 'bg-green-600 text-white',
-        'badge' => 'SPP Santri'
-    ],
-    [
-        'category' => 'keuangan',
-        'title' => 'Rekap Uang Saku',
-        'subtitle' => 'Mutasi transaksi uang saku santri, top-up saldo, dan pencairan kasir.',
-        'url' => 'rekap-uang-saku.php',
+// 5 PILAR / KLASTER CARD MENU YAYASAN (Menyederhanakan Alur Berpikir)
+$pilar_clusters = [
+    'keuangan' => [
+        'id' => 'pilar-keuangan',
+        'title' => 'Sentra Keuangan & Kas',
+        'subtitle' => 'Pengelolaan pembukuan kas, arus dana, rekap gaji, SPP santri, dan tunjangan.',
         'icon' => 'fas fa-wallet',
-        'bg_color' => 'bg-cyan-50 text-cyan-700 border-cyan-200',
-        'icon_bg' => 'bg-cyan-600 text-white',
-        'badge' => 'Tabungan'
+        'theme_color' => 'from-emerald-600 to-teal-700',
+        'accent_border' => 'border-emerald-200',
+        'badge' => 'Keuangan Lembaga',
+        'badge_color' => 'bg-emerald-100 text-emerald-800',
+        'items' => [
+            ['title' => 'Pembukuan Kas', 'href' => 'pembukuan.php', 'icon' => 'fas fa-calculator', 'gradient' => 'from-emerald-600 to-teal-700', 'text_accent' => 'text-emerald-100'],
+            ['title' => 'Cashflow Kas', 'href' => 'pembukuan.php?tab=proyeksi', 'icon' => 'fas fa-funnel-dollar', 'gradient' => 'from-teal-600 to-emerald-700', 'text_accent' => 'text-teal-100'],
+            ['title' => 'Payroll Gaji', 'href' => 'gaji-pegawai.php', 'icon' => 'fas fa-coins', 'gradient' => 'from-amber-500 to-amber-700', 'text_accent' => 'text-amber-100'],
+            ['title' => 'Tarif Gaji', 'href' => 'gaji-asatidz.php', 'icon' => 'fas fa-sliders', 'gradient' => 'from-orange-500 to-amber-600', 'text_accent' => 'text-orange-100'],
+            ['title' => 'Tunjangan', 'href' => 'tunjangan.php', 'icon' => 'fas fa-award', 'gradient' => 'from-yellow-500 to-amber-600', 'text_accent' => 'text-yellow-100'],
+            ['title' => 'Rekap SPP', 'href' => 'rekap-spp.php', 'icon' => 'fas fa-file-invoice-dollar', 'gradient' => 'from-green-600 to-emerald-700', 'text_accent' => 'text-green-100'],
+            ['title' => 'Uang Saku', 'href' => 'rekap-uang-saku.php', 'icon' => 'fas fa-wallet', 'gradient' => 'from-cyan-600 to-teal-700', 'text_accent' => 'text-cyan-100']
+        ]
     ],
-
-    // --- SDM & PEGAWAI ---
-    [
-        'category' => 'sdm',
-        'title' => 'Pegawai & Asatidz',
-        'subtitle' => 'Data personil guru, riwayat kepegawaian, dan otoritas akun login.',
-        'url' => 'asatidz.php',
+    'sdm' => [
+        'id' => 'pilar-sdm',
+        'title' => 'Sentra SDM & Pegawai',
+        'subtitle' => 'Data personil guru, monitoring KPI, supervisi kelas, dan asisten digital AI-HRD.',
         'icon' => 'fas fa-users-gear',
-        'bg_color' => 'bg-blue-50 text-blue-700 border-blue-200',
-        'icon_bg' => 'bg-blue-600 text-white',
-        'badge' => 'Data Asatidz'
+        'theme_color' => 'from-blue-600 to-indigo-700',
+        'accent_border' => 'border-blue-200',
+        'badge' => 'Personalia & Guru',
+        'badge_color' => 'bg-blue-100 text-blue-800',
+        'items' => [
+            ['title' => 'Data Asatidz', 'href' => 'asatidz.php', 'icon' => 'fas fa-users-gear', 'gradient' => 'from-blue-600 to-indigo-700', 'text_accent' => 'text-blue-100'],
+            ['title' => 'AI Agent HRD', 'href' => 'ai-agent-hrd.php', 'icon' => 'fas fa-robot', 'gradient' => 'from-purple-600 to-indigo-700', 'text_accent' => 'text-purple-100'],
+            ['title' => 'KPI Pegawai', 'href' => 'kpi.php', 'icon' => 'fas fa-chart-bar', 'gradient' => 'from-indigo-600 to-blue-700', 'text_accent' => 'text-indigo-100'],
+            ['title' => 'KPI Kepsek', 'href' => 'kpi-kepala-sekolah.php', 'icon' => 'fas fa-chart-pie', 'gradient' => 'from-violet-600 to-purple-700', 'text_accent' => 'text-violet-100'],
+            ['title' => 'KPI Musyrif', 'href' => 'kpi-musyrif.php', 'icon' => 'fas fa-chart-line', 'gradient' => 'from-sky-500 to-blue-600', 'text_accent' => 'text-sky-100'],
+            ['title' => 'Supervisi KBM', 'href' => '../admin-supervisi-mengajar.php', 'icon' => 'fas fa-clipboard-check', 'gradient' => 'from-emerald-600 to-teal-700', 'text_accent' => 'text-emerald-100'],
+            ['title' => 'Rekap KBM', 'href' => 'rekap-kbm-yayasan.php', 'icon' => 'fas fa-calendar-check', 'gradient' => 'from-rose-500 to-red-600', 'text_accent' => 'text-rose-100']
+        ]
     ],
-    [
-        'category' => 'sdm',
-        'title' => 'AI Agent HRD',
-        'subtitle' => 'Analisis kompetensi personil & asisten digital HRD bertenaga AI.',
-        'url' => 'ai-agent-hrd.php',
-        'icon' => 'fas fa-robot',
-        'bg_color' => 'bg-purple-50 text-purple-700 border-purple-200',
-        'icon_bg' => 'bg-purple-600 text-white',
-        'badge' => 'AI HRD'
-    ],
-    [
-        'category' => 'sdm',
-        'title' => 'Monitoring KPI Pegawai',
-        'subtitle' => 'Evaluasi capaian Key Performance Indicators staf & guru bulanan.',
-        'url' => 'kpi.php',
-        'icon' => 'fas fa-chart-bar',
-        'bg_color' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
-        'icon_bg' => 'bg-indigo-600 text-white',
-        'badge' => 'KPI Pegawai'
-    ],
-    [
-        'category' => 'sdm',
-        'title' => 'KPI Kepala Sekolah',
-        'subtitle' => 'Monitoring program kerja dan indikator capaian pimpinan unit.',
-        'url' => 'kpi-kepala-sekolah.php',
-        'icon' => 'fas fa-chart-pie',
-        'bg_color' => 'bg-violet-50 text-violet-700 border-violet-200',
-        'icon_bg' => 'bg-violet-600 text-white',
-        'badge' => 'KPI Kepsek'
-    ],
-    [
-        'category' => 'sdm',
-        'title' => 'KPI Musyrif Asrama',
-        'subtitle' => 'Penilaian pembinaan ketertiban, adab, dan kedisiplinan santri.',
-        'url' => 'kpi-musyrif.php',
-        'icon' => 'fas fa-chart-line',
-        'bg_color' => 'bg-sky-50 text-sky-700 border-sky-200',
-        'icon_bg' => 'bg-sky-600 text-white',
-        'badge' => 'KPI Musyrif'
-    ],
-    [
-        'category' => 'sdm',
-        'title' => 'Supervisi Mengajar',
-        'subtitle' => 'Instrumen penilaian kualitas KBM dan pedagogik guru di kelas.',
-        'url' => '../admin-supervisi-mengajar.php',
-        'icon' => 'fas fa-clipboard-check',
-        'bg_color' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        'icon_bg' => 'bg-emerald-700 text-white',
-        'badge' => 'Supervisi'
-    ],
-    [
-        'category' => 'sdm',
-        'title' => 'Rekap KBM Bulanan',
-        'subtitle' => 'Verifikasi kehadiran tatap muka guru dan rekapitulasi KBM bulanan.',
-        'url' => 'rekap-kbm-yayasan.php',
-        'icon' => 'fas fa-calendar-check',
-        'bg_color' => 'bg-rose-50 text-rose-700 border-rose-200',
-        'icon_bg' => 'bg-rose-600 text-white',
-        'badge' => 'KBM Bulanan'
-    ],
-
-    // --- AKADEMIK & KURIKULUM AI ---
-    [
-        'category' => 'akademik',
-        'title' => 'Kurikulum & AI E-Learning',
-        'subtitle' => 'Generator modul ajar, materi, dan e-learning berbasis AI terintegrasi.',
-        'url' => 'elearning-yayasan.php',
+    'akademik' => [
+        'id' => 'pilar-akademik',
+        'title' => 'Sentra Kurikulum & Inovasi AI',
+        'subtitle' => 'E-learning AI, capaian pembelajaran (CP-AI), solopreneur, dan master data KBM.',
         'icon' => 'fas fa-brain',
-        'bg_color' => 'bg-purple-50 text-purple-700 border-purple-200',
-        'icon_bg' => 'bg-purple-600 text-white',
-        'badge' => 'E-Learning AI'
+        'theme_color' => 'from-purple-600 to-fuchsia-700',
+        'accent_border' => 'border-purple-200',
+        'badge' => 'Akademik & Kurikulum',
+        'badge_color' => 'bg-purple-100 text-purple-800',
+        'items' => [
+            ['title' => 'E-Learning AI', 'href' => 'elearning-yayasan.php', 'icon' => 'fas fa-robot', 'gradient' => 'from-purple-600 to-fuchsia-700', 'text_accent' => 'text-purple-100'],
+            ['title' => 'Capaian (CP-AI)', 'href' => 'kurikulum-cp.php', 'icon' => 'fas fa-brain', 'gradient' => 'from-fuchsia-600 to-purple-700', 'text_accent' => 'text-fuchsia-100'],
+            ['title' => 'Solopreneur', 'href' => 'kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'gradient' => 'from-rose-500 to-amber-600', 'text_accent' => 'text-rose-100'],
+            ['title' => 'Kitab Rujukan', 'href' => 'kitab-rujukan.php', 'icon' => 'fas fa-book-open', 'gradient' => 'from-amber-600 to-amber-800', 'text_accent' => 'text-amber-100'],
+            ['title' => 'Master Kelas', 'href' => 'master-kelas.php', 'icon' => 'fas fa-school', 'gradient' => 'from-blue-500 to-indigo-600', 'text_accent' => 'text-blue-100'],
+            ['title' => 'Master Mapel', 'href' => 'master-mapel.php', 'icon' => 'fas fa-book', 'gradient' => 'from-indigo-500 to-purple-600', 'text_accent' => 'text-indigo-100'],
+            ['title' => 'Master Silabus', 'href' => 'master-silabus.php', 'icon' => 'fas fa-list-check', 'gradient' => 'from-teal-600 to-emerald-700', 'text_accent' => 'text-teal-100'],
+            ['title' => 'Kalender Agenda', 'href' => 'master-kalender.php', 'icon' => 'fas fa-calendar-days', 'gradient' => 'from-cyan-600 to-blue-700', 'text_accent' => 'text-cyan-100']
+        ]
     ],
-    [
-        'category' => 'akademik',
-        'title' => 'Capaian Pembelajaran (CP AI)',
-        'subtitle' => 'Pemetaan target capaian kompetensi dan asesmen materi via AI.',
-        'url' => 'kurikulum-cp.php',
-        'icon' => 'fas fa-dna',
-        'bg_color' => 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200',
-        'icon_bg' => 'bg-fuchsia-600 text-white',
-        'badge' => 'CP Kurikulum'
-    ],
-    [
-        'category' => 'akademik',
-        'title' => 'Inkubator Solopreneur',
-        'subtitle' => 'Kurikulum kemandirian wirausaha dan bisnis digital santri.',
-        'url' => 'kurikulum-solopreneur.php',
-        'icon' => 'fas fa-rocket',
-        'bg_color' => 'bg-rose-50 text-rose-700 border-rose-200',
-        'icon_bg' => 'bg-rose-500 text-white',
-        'badge' => 'Solopreneur'
-    ],
-    [
-        'category' => 'akademik',
-        'title' => 'Master Kitab Rujukan',
-        'subtitle' => 'Database kitab rujukan dan silabus kepesantrenan.',
-        'url' => 'kitab-rujukan.php',
-        'icon' => 'fas fa-book-open',
-        'bg_color' => 'bg-amber-50 text-amber-700 border-amber-200',
-        'icon_bg' => 'bg-amber-600 text-white',
-        'badge' => 'Kitab Rujukan'
-    ],
-    [
-        'category' => 'akademik',
-        'title' => 'Master Data Kelas',
-        'subtitle' => 'Pengaturan rombel, tingkatan jenjang kelas, dan wali kelas.',
-        'url' => 'master-kelas.php',
-        'icon' => 'fas fa-school',
-        'bg_color' => 'bg-blue-50 text-blue-700 border-blue-200',
-        'icon_bg' => 'bg-blue-600 text-white',
-        'badge' => 'Rombel Kelas'
-    ],
-    [
-        'category' => 'akademik',
-        'title' => 'Master Mata Pelajaran',
-        'subtitle' => 'Katalog mapel dinas, keagamaan, dan muatan lokal pesantren.',
-        'url' => 'master-mapel.php',
-        'icon' => 'fas fa-book',
-        'bg_color' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
-        'icon_bg' => 'bg-indigo-600 text-white',
-        'badge' => 'Mata Pelajaran'
-    ],
-    [
-        'category' => 'akademik',
-        'title' => 'Master Silabus',
-        'subtitle' => 'Rencana pembelajaran terstruktur dan panduan pengajaran guru.',
-        'url' => 'master-silabus.php',
-        'icon' => 'fas fa-list-check',
-        'bg_color' => 'bg-teal-50 text-teal-700 border-teal-200',
-        'icon_bg' => 'bg-teal-600 text-white',
-        'badge' => 'Silabus KBM'
-    ],
-    [
-        'category' => 'akademik',
-        'title' => 'Master Kalender Akademik',
-        'subtitle' => 'Jadwal agenda pendidikan, kalender libur, dan ujian yayasan.',
-        'url' => 'master-kalender.php',
-        'icon' => 'fas fa-calendar-days',
-        'bg_color' => 'bg-cyan-50 text-cyan-700 border-cyan-200',
-        'icon_bg' => 'bg-cyan-600 text-white',
-        'badge' => 'Kalender'
-    ],
-
-    // --- SANTRI & ASRAMA ---
-    [
-        'category' => 'santri',
-        'title' => 'Database PSB Online',
-        'subtitle' => 'Monitoring data pendaftar santri baru, verifikasi dan ujian seleksi.',
-        'url' => '../admin-spmb.php',
-        'icon' => 'fas fa-user-graduate',
-        'bg_color' => 'bg-emerald-50 text-emerald-800 border-emerald-300',
-        'icon_bg' => 'bg-emerald-600 text-white',
-        'badge' => 'PSB / SPMB'
-    ],
-    [
-        'category' => 'santri',
-        'title' => 'Laporan Setoran Hafalan',
-        'subtitle' => 'Progres hafalan Al-Qur\'an santri, target ziyadah, dan mutqin.',
-        'url' => 'laporan-setoran-hafalan.php',
-        'icon' => 'fas fa-book-quran',
-        'bg_color' => 'bg-teal-50 text-teal-700 border-teal-200',
-        'icon_bg' => 'bg-teal-700 text-white',
-        'badge' => 'Tahfidz Qur\'an'
-    ],
-    [
-        'category' => 'santri',
-        'title' => 'Rekap Ibadah Harian',
-        'subtitle' => 'Mutaba\'ah ibadah sholat 5 waktu, tahajud, shaum, dan wirid santri.',
-        'url' => 'ibadah-harian-santri.php',
+    'santri' => [
+        'id' => 'pilar-santri',
+        'title' => 'Sentra Santri, Asrama & PSB',
+        'subtitle' => 'Pendaftaran santri baru online, mutaba\'ah ibadah, setoran Al-Qur\'an, dan raport.',
         'icon' => 'fas fa-mosque',
-        'bg_color' => 'bg-green-50 text-green-700 border-green-200',
-        'icon_bg' => 'bg-green-600 text-white',
-        'badge' => 'Mutaba\'ah'
+        'theme_color' => 'from-teal-600 to-emerald-800',
+        'accent_border' => 'border-teal-200',
+        'badge' => 'Kesantrian & Asrama',
+        'badge_color' => 'bg-teal-100 text-teal-800',
+        'items' => [
+            ['title' => 'Database PSB', 'href' => '../admin-spmb.php', 'icon' => 'fas fa-user-graduate', 'gradient' => 'from-emerald-600 to-teal-800', 'text_accent' => 'text-emerald-100'],
+            ['title' => 'Setoran Tahfidz', 'href' => 'laporan-setoran-hafalan.php', 'icon' => 'fas fa-book-quran', 'gradient' => 'from-teal-600 to-emerald-700', 'text_accent' => 'text-teal-100'],
+            ['title' => 'Ibadah Harian', 'href' => 'ibadah-harian-santri.php', 'icon' => 'fas fa-mosque', 'gradient' => 'from-green-600 to-emerald-700', 'text_accent' => 'text-green-100'],
+            ['title' => 'Raport PKBM', 'href' => 'rapot-pkbm.php', 'icon' => 'fas fa-file-invoice', 'gradient' => 'from-blue-600 to-cyan-700', 'text_accent' => 'text-blue-100']
+        ]
     ],
-    [
-        'category' => 'santri',
-        'title' => 'Monitoring Raport PKBM',
-        'subtitle' => 'Leger nilai kumulatif, evaluasi pembelajaran, dan cetak raport digital.',
-        'url' => 'rapot-pkbm.php',
-        'icon' => 'fas fa-file-invoice',
-        'bg_color' => 'bg-blue-50 text-blue-700 border-blue-200',
-        'icon_bg' => 'bg-blue-600 text-white',
-        'badge' => 'Raport Santri'
-    ],
-
-    // --- KELEMBAGAAN & SISTEM ---
-    [
-        'category' => 'kelembagaan',
-        'title' => 'Manajemen Menu & Akses',
-        'subtitle' => 'Pengaturan struktur menu, visibilitas modul & hak akses per level akun.',
-        'url' => 'manajemen-menu.php',
-        'icon' => 'fas fa-sliders',
-        'bg_color' => 'bg-slate-50 text-slate-700 border-slate-200',
-        'icon_bg' => 'bg-slate-700 text-white',
-        'badge' => 'Hak Akses'
-    ],
-    [
-        'category' => 'kelembagaan',
-        'title' => 'Struktur Organisasi',
-        'subtitle' => 'Bagan organisasi kepengurusan yayasan dan rantai komando.',
-        'url' => 'struktur-jobdesc.php',
-        'icon' => 'fas fa-sitemap',
-        'bg_color' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
-        'icon_bg' => 'bg-indigo-600 text-white',
-        'badge' => 'Bagan Yayasan'
-    ],
-    [
-        'category' => 'kelembagaan',
-        'title' => 'Job Description Pegawai',
-        'subtitle' => 'Uraian tugas pokok dan wewenang tiap posisi struktural.',
-        'url' => 'jobdesc.php',
-        'icon' => 'fas fa-id-card',
-        'bg_color' => 'bg-sky-50 text-sky-700 border-sky-200',
-        'icon_bg' => 'bg-sky-600 text-white',
-        'badge' => 'Tupoksi Kerja'
-    ],
-    [
-        'category' => 'kelembagaan',
-        'title' => 'SOP & Peraturan Yayasan',
-        'subtitle' => 'Regulasi resmi lembaga, tata tertib, dan SOP kedinasan.',
-        'url' => 'admin-peraturan.php',
-        'icon' => 'fas fa-gavel',
-        'bg_color' => 'bg-amber-50 text-amber-700 border-amber-200',
-        'icon_bg' => 'bg-amber-600 text-white',
-        'badge' => 'SOP & Tata Tertib'
-    ],
-    [
-        'category' => 'kelembagaan',
-        'title' => 'Analisis SWOT & Strategi',
-        'subtitle' => 'Analisis kekuatan, peluang, strategi pertumbuhan, dan evaluasi ancaman.',
-        'url' => 'analisis-swot.php',
-        'icon' => 'fas fa-chart-line',
-        'bg_color' => 'bg-violet-50 text-violet-700 border-violet-200',
-        'icon_bg' => 'bg-violet-600 text-white',
-        'badge' => 'Analisis SWOT'
-    ],
-    [
-        'category' => 'kelembagaan',
-        'title' => 'Data Center & Cadangan',
-        'subtitle' => 'Pusat cadangan data terpadu, status backup, dan kesehatan sistem.',
-        'url' => 'data-center.php',
-        'icon' => 'fas fa-database',
-        'bg_color' => 'bg-slate-50 text-slate-700 border-slate-200',
-        'icon_bg' => 'bg-slate-800 text-white',
-        'badge' => 'Data Center'
+    'kelembagaan' => [
+        'id' => 'pilar-kelembagaan',
+        'title' => 'Sentra Tata Kelola & Sistem',
+        'subtitle' => 'Struktur organisasi, uraian jobdesc, SOP peraturan yayasan, SWOT, dan data center.',
+        'icon' => 'fas fa-landmark',
+        'theme_color' => 'from-slate-700 to-slate-900',
+        'accent_border' => 'border-slate-300',
+        'badge' => 'Legalitas & Tata Kelola',
+        'badge_color' => 'bg-slate-200 text-slate-800',
+        'items' => [
+            ['title' => 'Hak Akses Menu', 'href' => 'manajemen-menu.php', 'icon' => 'fas fa-sliders', 'gradient' => 'from-slate-600 to-slate-800', 'text_accent' => 'text-slate-100'],
+            ['title' => 'Bagan Struktur', 'href' => 'struktur-jobdesc.php', 'icon' => 'fas fa-sitemap', 'gradient' => 'from-indigo-600 to-slate-700', 'text_accent' => 'text-indigo-100'],
+            ['title' => 'Job Description', 'href' => 'jobdesc.php', 'icon' => 'fas fa-id-card', 'gradient' => 'from-sky-600 to-slate-700', 'text_accent' => 'text-sky-100'],
+            ['title' => 'SOP & Regulasi', 'href' => 'admin-peraturan.php', 'icon' => 'fas fa-gavel', 'gradient' => 'from-amber-600 to-orange-700', 'text_accent' => 'text-amber-100'],
+            ['title' => 'Analisis SWOT', 'href' => 'analisis-swot.php', 'icon' => 'fas fa-chart-line', 'gradient' => 'from-violet-600 to-purple-800', 'text_accent' => 'text-violet-100'],
+            ['title' => 'Data Center', 'href' => 'data-center.php', 'icon' => 'fas fa-database', 'gradient' => 'from-slate-700 to-zinc-900', 'text_accent' => 'text-slate-100']
+        ]
     ]
 ];
 ?>
@@ -391,15 +145,20 @@ $yayasan_cards = [
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .card-menu {
-            transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        .squircle-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .card-menu:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px -3px rgba(11, 132, 120, 0.15), 0 4px 6px -2px rgba(11, 132, 120, 0.05);
+        .squircle-card:hover {
+            transform: translateY(-4px) scale(1.03);
         }
-        .card-menu:active {
-            transform: scale(0.98);
+        .squircle-card:active {
+            transform: scale(0.95);
+        }
+        .pilar-card {
+            transition: all 0.25s ease;
+        }
+        .pilar-card:hover {
+            box-shadow: 0 12px 28px -6px rgba(11, 132, 120, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
         }
     </style>
 </head>
@@ -408,7 +167,7 @@ $yayasan_cards = [
     <!-- DESKTOP SIDEBAR (TAMPILAN PC) & MOBILE DRAWER -->
     <?php include 'sidebar.php'; ?>
 
-    <!-- MAIN APP CONTENT WRAPPER -->
+    <!-- MAIN APP WRAPPER -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         
         <!-- HEADER TOP BAR -->
@@ -438,12 +197,12 @@ $yayasan_cards = [
             </div>
         </header>
 
-        <!-- MAIN SCROLLABLE DASHBOARD (PB-24 FOR MOBILE BOTTOM BAR CLEARANCE) -->
+        <!-- MAIN SCROLLABLE DASHBOARD -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50/70 px-4 py-5 md:p-8 pb-24 md:pb-12">
             <div class="max-w-7xl mx-auto space-y-6">
 
-                <!-- WELCOME BANNER -->
-                <div class="bg-gradient-to-r from-[#0b8478] via-teal-700 to-emerald-700 rounded-2xl p-6 md:p-8 text-white shadow-lg relative overflow-hidden">
+                <!-- WELCOME BANNER EKSEKUTIF -->
+                <div class="bg-gradient-to-r from-[#0b8478] via-teal-700 to-emerald-700 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
                     <div class="absolute -right-8 -bottom-10 opacity-10 pointer-events-none">
                         <i class="fas fa-mosque text-9xl"></i>
                     </div>
@@ -456,7 +215,7 @@ $yayasan_cards = [
                                 Selamat Datang, <?= htmlspecialchars($y_nama) ?>
                             </h1>
                             <p class="text-teal-100 text-xs md:text-sm mt-1 max-w-2xl leading-relaxed">
-                                Seluruh modul manajemen keuangan, operasional kepegawaian, kurikulum AI, dan kesantrian tersedia lengkap di menu Home ini.
+                                Sistem Administrasi Digital (SADIGS) disederhanakan ke dalam 5 Sentra Utama untuk alur operasional yang lebih cepat, rapi, dan terarah.
                             </p>
                         </div>
                         <div class="flex items-center gap-2 flex-shrink-0">
@@ -467,9 +226,8 @@ $yayasan_cards = [
                     </div>
                 </div>
 
-                <!-- STATISTIK RINGKAS LEMBAGA -->
+                <!-- METRIK STATISTIK CEPAT -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
-                    <!-- Total Pegawai / Asatidz -->
                     <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
                         <div class="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center text-xl flex-shrink-0">
                             <i class="fas fa-user-tie"></i>
@@ -480,7 +238,6 @@ $yayasan_cards = [
                         </div>
                     </div>
 
-                    <!-- Total Santri Aktif -->
                     <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
                         <div class="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center text-xl flex-shrink-0">
                             <i class="fas fa-user-graduate"></i>
@@ -491,7 +248,6 @@ $yayasan_cards = [
                         </div>
                     </div>
 
-                    <!-- Pendaftar SPMB Baru -->
                     <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
                         <div class="w-12 h-12 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center text-xl flex-shrink-0">
                             <i class="fas fa-file-signature"></i>
@@ -502,7 +258,6 @@ $yayasan_cards = [
                         </div>
                     </div>
 
-                    <!-- Saldo Kas Lembaga -->
                     <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/80 shadow-xs flex items-center gap-3.5">
                         <div class="w-12 h-12 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center text-xl flex-shrink-0">
                             <i class="fas fa-wallet"></i>
@@ -514,140 +269,202 @@ $yayasan_cards = [
                     </div>
                 </div>
 
-                <!-- FILTER & PENCARIAN CEPAT CARD MENU -->
-                <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/80 shadow-xs space-y-4">
-                    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                        <div class="relative flex-1">
-                            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                            <input type="text" id="menuSearchInput" placeholder="Cari card menu... (contoh: kas, spp, gaji, kpi, santri, raport)" 
-                                   class="w-full pl-11 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-[#0b8478] focus:border-transparent transition bg-slate-50/50">
+                <!-- ALUR BERPIKIR CEPAT: 5 KARTU SENTRA UTAMA (QUICK JUMP / FILTER) -->
+                <div class="bg-white rounded-3xl p-5 md:p-6 border border-slate-200/80 shadow-xs">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <h3 class="font-extrabold text-base md:text-lg text-slate-900 tracking-tight flex items-center gap-2">
+                                <i class="fas fa-compass text-[#0b8478]"></i>
+                                Alur Berpikir 5 Sentra Yayasan
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Pilih sentra bidang kerja di bawah untuk navigasi cepat:</p>
                         </div>
-                        <div class="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 justify-end">
-                            <span id="menuCount"><?= count($yayasan_cards) ?></span> Modul Tersedia
+                        <!-- SEARCH BAR CEPAT -->
+                        <div class="relative w-full md:w-72">
+                            <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                            <input type="text" id="pilarSearchInput" placeholder="Cari menu instan..." 
+                                   class="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-[#0b8478] bg-slate-50/50">
                         </div>
                     </div>
 
-                    <!-- CATEGORY PILL TABS -->
-                    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 text-xs font-bold">
-                        <?php foreach ($categories as $catKey => $catLabel): ?>
-                            <button type="button" 
-                                    class="category-tab px-3.5 py-1.5 rounded-xl transition-all whitespace-nowrap border flex-shrink-0 <?= ($catKey === 'all') ? 'bg-[#0b8478] text-white border-[#0b8478] shadow-xs' : 'bg-slate-100/80 text-slate-600 border-slate-200/60 hover:bg-slate-200/70' ?>" 
-                                    data-category="<?= $catKey ?>">
-                                <?= $catLabel ?>
-                            </button>
-                        <?php endforeach; ?>
+                    <!-- 5 SHORTCUT CARD ALUR BERPIKIR -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                        <a href="#pilar-keuangan" class="pilar-shortcut flex flex-col p-3 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-200/70 transition group">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xs shadow-xs">
+                                    <i class="fas fa-wallet"></i>
+                                </div>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-200 text-emerald-800">7 Menu</span>
+                            </div>
+                            <span class="font-extrabold text-xs text-slate-800 group-hover:text-emerald-800">1. Keuangan</span>
+                            <span class="text-[10px] text-slate-500 truncate">Kas, Gaji & SPP</span>
+                        </a>
+
+                        <a href="#pilar-sdm" class="pilar-shortcut flex flex-col p-3 rounded-2xl bg-blue-50/70 hover:bg-blue-100/70 border border-blue-200/70 transition group">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <div class="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xs shadow-xs">
+                                    <i class="fas fa-users-gear"></i>
+                                </div>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-blue-200 text-blue-800">7 Menu</span>
+                            </div>
+                            <span class="font-extrabold text-xs text-slate-800 group-hover:text-blue-800">2. SDM Pegawai</span>
+                            <span class="text-[10px] text-slate-500 truncate">Guru, KPI & HRD</span>
+                        </a>
+
+                        <a href="#pilar-akademik" class="pilar-shortcut flex flex-col p-3 rounded-2xl bg-purple-50/70 hover:bg-purple-100/70 border border-purple-200/70 transition group">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <div class="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center text-xs shadow-xs">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-purple-200 text-purple-800">8 Menu</span>
+                            </div>
+                            <span class="font-extrabold text-xs text-slate-800 group-hover:text-purple-800">3. Kurikulum AI</span>
+                            <span class="text-[10px] text-slate-500 truncate">E-Learning & KBM</span>
+                        </a>
+
+                        <a href="#pilar-santri" class="pilar-shortcut flex flex-col p-3 rounded-2xl bg-teal-50/70 hover:bg-teal-100/70 border border-teal-200/70 transition group">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <div class="w-8 h-8 rounded-xl bg-[#0b8478] text-white flex items-center justify-center text-xs shadow-xs">
+                                    <i class="fas fa-mosque"></i>
+                                </div>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-200 text-teal-800">4 Menu</span>
+                            </div>
+                            <span class="font-extrabold text-xs text-slate-800 group-hover:text-teal-800">4. Santri & Asrama</span>
+                            <span class="text-[10px] text-slate-500 truncate">PSB, Tahfidz & Raport</span>
+                        </a>
+
+                        <a href="#pilar-kelembagaan" class="pilar-shortcut flex flex-col p-3 rounded-2xl bg-slate-100/80 hover:bg-slate-200/80 border border-slate-300/70 transition group col-span-2 sm:col-span-1">
+                            <div class="flex items-center justify-between mb-1.5">
+                                <div class="w-8 h-8 rounded-xl bg-slate-800 text-white flex items-center justify-center text-xs shadow-xs">
+                                    <i class="fas fa-landmark"></i>
+                                </div>
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-slate-200 text-slate-800">6 Menu</span>
+                            </div>
+                            <span class="font-extrabold text-xs text-slate-800 group-hover:text-slate-900">5. Tata Kelola</span>
+                            <span class="text-[10px] text-slate-500 truncate">SOP, Struktur & Data</span>
+                        </a>
                     </div>
                 </div>
 
-                <!-- GRID SEMUA CARD MENU YAYASAN -->
-                <div id="cardGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <?php foreach ($yayasan_cards as $card): ?>
-                        <a href="<?= htmlspecialchars($card['url']) ?>" 
-                           class="card-menu group bg-white rounded-2xl p-4 md:p-5 border border-slate-200/80 shadow-xs flex flex-col justify-between relative overflow-hidden"
-                           data-title="<?= strtolower(htmlspecialchars($card['title'])) ?>"
-                           data-subtitle="<?= strtolower(htmlspecialchars($card['subtitle'])) ?>"
-                           data-badge="<?= strtolower(htmlspecialchars($card['badge'])) ?>"
-                           data-category="<?= htmlspecialchars($card['category']) ?>">
-                            
-                            <div>
-                                <!-- HEADER CARD: ICON & BADGE -->
-                                <div class="flex items-start justify-between gap-3 mb-3.5">
-                                    <div class="w-12 h-12 rounded-xl <?= $card['icon_bg'] ?> flex items-center justify-center text-lg shadow-sm group-hover:scale-108 transition-transform">
-                                        <i class="<?= $card['icon'] ?>"></i>
-                                    </div>
-                                    <span class="inline-block px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase tracking-wide border <?= $card['bg_color'] ?>">
-                                        <?= htmlspecialchars($card['badge']) ?>
-                                    </span>
+                <!-- DAFTAR CARD MENU BESAR BERDASARKAN 5 SENTRA (KLASTER) -->
+                <div class="space-y-6">
+                    <?php foreach ($pilar_clusters as $c_key => $cluster): ?>
+                    <section id="<?= $cluster['id'] ?>" class="pilar-card bg-white rounded-3xl p-5 md:p-7 border <?= $cluster['accent_border'] ?> shadow-sm relative overflow-hidden">
+                        
+                        <!-- HEADER KARTU KLASTER -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-5 border-b border-slate-100">
+                            <div class="flex items-center gap-3.5">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br <?= $cluster['theme_color'] ?> text-white flex items-center justify-center text-xl shadow-md flex-shrink-0">
+                                    <i class="<?= $cluster['icon'] ?>"></i>
                                 </div>
-
-                                <!-- TITLE & SUBTITLE -->
-                                <h3 class="font-extrabold text-sm md:text-base text-slate-800 group-hover:text-[#0b8478] transition-colors leading-snug">
-                                    <?= htmlspecialchars($card['title']) ?>
-                                </h3>
-                                <p class="text-slate-500 text-xs mt-1.5 leading-relaxed line-clamp-2">
-                                    <?= htmlspecialchars($card['subtitle']) ?>
-                                </p>
+                                <div>
+                                    <h3 class="font-black text-slate-900 text-base md:text-lg tracking-tight">
+                                        <?= htmlspecialchars($cluster['title']) ?>
+                                    </h3>
+                                    <p class="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                                        <?= htmlspecialchars($cluster['subtitle']) ?>
+                                    </p>
+                                </div>
                             </div>
-
-                            <!-- CARD FOOTER ACTION LINK -->
-                            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-slate-400 group-hover:text-[#0b8478] transition-colors">
-                                <span>Buka Modul</span>
-                                <i class="fas fa-arrow-right text-[11px] transform group-hover:translate-x-1 transition-transform"></i>
+                            <div class="flex items-center gap-2 self-start sm:self-auto">
+                                <span class="text-[11px] font-extrabold px-3 py-1 rounded-full <?= $cluster['badge_color'] ?>">
+                                    <?= htmlspecialchars($cluster['badge']) ?>
+                                </span>
                             </div>
-                        </a>
+                        </div>
+
+                        <!-- GRID SQUIRCLE CARD MENU (RAPI DI PC MAUPUN MOBILE) -->
+                        <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-5 sm:gap-y-6 gap-x-2 sm:gap-x-4 items-start justify-items-center">
+                            <?php foreach ($cluster['items'] as $item): ?>
+                            <div class="squircle-item flex flex-col items-center w-full text-center group select-none" data-title="<?= strtolower(htmlspecialchars($item['title'])) ?>">
+                                <a href="<?= htmlspecialchars($item['href']) ?>" class="squircle-card flex flex-col items-center w-full focus:outline-none">
+                                    
+                                    <!-- Squircle Box Button (#0b8478 Gradient Theme) -->
+                                    <div class="relative w-14 h-14 sm:w-16 sm:h-16 rounded-[20px] sm:rounded-[22px] bg-gradient-to-br <?= $item['gradient'] ?> text-white shadow-md flex items-center justify-center text-xl sm:text-2xl border border-white/20">
+                                        <i class="<?= $item['icon'] ?>"></i>
+                                    </div>
+
+                                    <!-- Label Menu -->
+                                    <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0b8478] transition-colors leading-tight line-clamp-2 max-w-[85px]">
+                                        <?= htmlspecialchars($item['title']) ?>
+                                    </span>
+                                </a>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                    </section>
                     <?php endforeach; ?>
                 </div>
 
-                <!-- EMPTY STATE SEARCH -->
-                <div id="noResultsState" class="hidden text-center py-12 bg-white rounded-2xl border border-slate-200">
+                <!-- EMPTY STATE JIKA PENCARIAN TIDAK DITEMUKAN -->
+                <div id="searchNoMatch" class="hidden text-center py-12 bg-white rounded-3xl border border-slate-200">
                     <div class="w-14 h-14 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
                         <i class="fas fa-search"></i>
                     </div>
-                    <h4 class="font-bold text-slate-700 text-sm">Tidak ada menu yang sesuai</h4>
-                    <p class="text-xs text-slate-400 mt-1">Coba gunakan kata kunci pencarian yang lain.</p>
+                    <h4 class="font-bold text-slate-700 text-sm">Menu Tidak Ditemukan</h4>
+                    <p class="text-xs text-slate-400 mt-1">Coba ketik kata kunci lain pada kolom pencarian.</p>
                 </div>
 
             </div>
         </main>
     </div>
 
-    <!-- CLIENT INTERACTIVE SCRIPT -->
+    <!-- SCRIPT FILTER / PENCARIAN & SMOOTH SCROLL -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const searchInput = document.getElementById('menuSearchInput');
-        const cards = document.querySelectorAll('.card-menu');
-        const categoryTabs = document.querySelectorAll('.category-tab');
-        const noResults = document.getElementById('noResultsState');
-        const menuCountSpan = document.getElementById('menuCount');
-
-        let activeCategory = 'all';
-
-        function filterCards() {
-            const query = searchInput.value.toLowerCase().trim();
-            let visibleCount = 0;
-
-            cards.forEach(card => {
-                const title = card.getAttribute('data-title') || '';
-                const subtitle = card.getAttribute('data-subtitle') || '';
-                const badge = card.getAttribute('data-badge') || '';
-                const category = card.getAttribute('data-category') || '';
-
-                const matchesQuery = !query || title.includes(query) || subtitle.includes(query) || badge.includes(query);
-                const matchesCategory = (activeCategory === 'all') || (category === activeCategory);
-
-                if (matchesQuery && matchesCategory) {
-                    card.classList.remove('hidden');
-                    visibleCount++;
-                } else {
-                    card.classList.add('hidden');
-                }
-            });
-
-            if (menuCountSpan) menuCountSpan.textContent = visibleCount;
-            if (noResults) {
-                if (visibleCount === 0) {
-                    noResults.classList.remove('hidden');
-                } else {
-                    noResults.classList.add('hidden');
-                }
-            }
-        }
+        const searchInput = document.getElementById('pilarSearchInput');
+        const squircleItems = document.querySelectorAll('.squircle-item');
+        const pilarSections = document.querySelectorAll('.pilar-card');
+        const emptyState = document.getElementById('searchNoMatch');
 
         if (searchInput) {
-            searchInput.addEventListener('input', filterCards);
+            searchInput.addEventListener('input', function() {
+                const query = this.value.toLowerCase().trim();
+                let totalVisible = 0;
+
+                pilarSections.forEach(section => {
+                    let sectionVisibleCount = 0;
+                    const itemsInSection = section.querySelectorAll('.squircle-item');
+
+                    itemsInSection.forEach(item => {
+                        const title = item.getAttribute('data-title') || '';
+                        if (!query || title.includes(query)) {
+                            item.classList.remove('hidden');
+                            sectionVisibleCount++;
+                            totalVisible++;
+                        } else {
+                            item.classList.add('hidden');
+                        }
+                    });
+
+                    // Sembunyikan section jika tidak ada menu yang cocok di dalamnya
+                    if (sectionVisibleCount === 0 && query !== '') {
+                        section.classList.add('hidden');
+                    } else {
+                        section.classList.remove('hidden');
+                    }
+                });
+
+                if (emptyState) {
+                    if (totalVisible === 0) {
+                        emptyState.classList.remove('hidden');
+                    } else {
+                        emptyState.classList.add('hidden');
+                    }
+                }
+            });
         }
 
-        categoryTabs.forEach(tab => {
-            tab.addEventListener('click', function() {
-                categoryTabs.forEach(t => {
-                    t.classList.remove('bg-[#0b8478]', 'text-white', 'border-[#0b8478]', 'shadow-xs');
-                    t.classList.add('bg-slate-100/80', 'text-slate-600', 'border-slate-200/60');
-                });
-                this.classList.add('bg-[#0b8478]', 'text-white', 'border-[#0b8478]', 'shadow-xs');
-                this.classList.remove('bg-slate-100/80', 'text-slate-600', 'border-slate-200/60');
-
-                activeCategory = this.getAttribute('data-category') || 'all';
-                filterCards();
+        // Smooth scroll untuk shortcut alur berpikir
+        document.querySelectorAll('a[href^="#pilar-"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
             });
         });
     });
