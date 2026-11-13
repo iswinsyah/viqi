@@ -372,61 +372,60 @@ $has_schedule_today = !empty($jadwal_hari_ini);
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
     <?php include 'sidebar-hr.php'; ?>
     <?php
+    require_once 'menu-helper.php';
+
     $active_view = $_GET['view'] ?? 'beranda';
     if (!in_array($active_view, ['beranda', 'kbm', 'asrama'])) {
         $active_view = 'beranda';
     }
 
-    // DEFINISI KARTU MENU SESUAI PERMINTAAN USER:
+    // DEFINISI KARTU MENU MENGIKUTI PENAMAAN DI MENU MANAJEMEN MENU RUANG YAYASAN
     // a. Menu Beranda (18 Card Menu):
-    // Absen, Izin, Slip Gaji, KPI Staf, Rapat, Jadwal Ajar, Kalender, KPI Musyrif, Buku Induk, Akun Ortu, Leger Nilai, Rapor PKBM, Konseling, Rekap Ajar, Rekap SPP, Tagihan SPP, Validasi Saku, Kas Sekolah
     $cards_beranda = [
-        ['title' => 'Absen', 'href' => '#section-absensi', 'icon' => 'fas fa-qrcode', 'bg' => 'from-emerald-500 to-teal-700'],
-        ['title' => 'Izin', 'href' => 'admin-pegawai-perizinan.php', 'icon' => 'fas fa-calendar-check', 'bg' => 'from-teal-500 to-emerald-700'],
-        ['title' => 'Slip Gaji', 'href' => 'slip-gaji.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-amber-500 to-amber-700'],
-        ['title' => 'KPI Staf', 'href' => 'admin-pegawai-kpi.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-indigo-600 to-blue-700'],
-        ['title' => 'Rapat', 'href' => 'admin-jadwal-rapat.php', 'icon' => 'fas fa-handshake', 'bg' => 'from-violet-600 to-purple-700'],
-        ['title' => 'Jadwal Ajar', 'href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fas fa-clock', 'bg' => 'from-sky-500 to-blue-600'],
-        ['title' => 'Kalender', 'href' => 'kalender-akademik.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-teal-700'],
-        ['title' => 'KPI Musyrif', 'href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fas fa-chart-pie', 'bg' => 'from-purple-600 to-indigo-700'],
-        ['title' => 'Buku Induk', 'href' => 'admin-buku-induk.php', 'icon' => 'fas fa-address-book', 'bg' => 'from-slate-600 to-slate-800'],
-        ['title' => 'Akun Ortu', 'href' => 'admin-akun-orangtua.php', 'icon' => 'fas fa-users', 'bg' => 'from-indigo-600 to-slate-700'],
-        ['title' => 'Leger Nilai', 'href' => 'admin-leger.php', 'icon' => 'fas fa-table-list', 'bg' => 'from-blue-600 to-indigo-700'],
-        ['title' => 'Rapor PKBM', 'href' => 'admin-rapot-pkbm.php', 'icon' => 'fas fa-file-invoice', 'bg' => 'from-cyan-600 to-blue-700'],
-        ['title' => 'Konseling', 'href' => 'admin-counseling-karir.php', 'icon' => 'fas fa-graduation-cap', 'bg' => 'from-purple-600 to-violet-700'],
-        ['title' => 'Rekap Ajar', 'href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fas fa-chalkboard-user', 'bg' => 'from-amber-600 to-orange-700'],
-        ['title' => 'Rekap SPP', 'href' => 'admin-rekap-spp.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-emerald-600 to-teal-700'],
-        ['title' => 'Tagihan SPP', 'href' => 'admin-penagihan-spp.php', 'icon' => 'fas fa-comment-dollar', 'bg' => 'from-teal-600 to-emerald-700'],
-        ['title' => 'Validasi Saku', 'href' => 'admin-rekap-uang-saku.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-cyan-600 to-teal-700'],
-        ['title' => 'Kas Sekolah', 'href' => 'sekolah-pembukuan.php', 'icon' => 'fas fa-cash-register', 'bg' => 'from-slate-700 to-zinc-900']
+        ['title' => get_menu_label('absensi_pegawai', 'Absensi & Jurnal KBM'), 'href' => '#section-absensi', 'icon' => 'fas fa-qrcode', 'bg' => 'from-emerald-500 to-teal-700'],
+        ['title' => get_menu_label('perizinan_pegawai', 'Pengajuan Izin / Cuti'), 'href' => 'admin-pegawai-perizinan.php', 'icon' => 'fas fa-calendar-check', 'bg' => 'from-teal-500 to-emerald-700'],
+        ['title' => get_menu_label('slip_gaji', 'Slip Gaji'), 'href' => 'slip-gaji.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-amber-500 to-amber-700'],
+        ['title' => get_menu_label('kpi_ustadz', 'KPI Pegawai'), 'href' => 'admin-pegawai-kpi.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-indigo-600 to-blue-700'],
+        ['title' => get_menu_label('jadwal_rapat', 'Jadwal Rapat'), 'href' => 'admin-jadwal-rapat.php', 'icon' => 'fas fa-handshake', 'bg' => 'from-violet-600 to-purple-700'],
+        ['title' => get_menu_label('jadwal_pelajaran', 'Jadwal Pelajaran'), 'href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fas fa-clock', 'bg' => 'from-sky-500 to-blue-600'],
+        ['title' => get_menu_label('kalender_akademik', 'Kalender Akademik'), 'href' => 'kalender-akademik.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-teal-700'],
+        ['title' => get_menu_label('kpi_musyrif', 'KPI Musyrif'), 'href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fas fa-chart-pie', 'bg' => 'from-purple-600 to-indigo-700'],
+        ['title' => get_menu_label('buku_induk', 'Buku Induk Santri'), 'href' => 'admin-buku-induk.php', 'icon' => 'fas fa-address-book', 'bg' => 'from-slate-600 to-slate-800'],
+        ['title' => get_menu_label('akun_orangtua', 'Akun Orang Tua'), 'href' => 'admin-akun-orangtua.php', 'icon' => 'fas fa-users', 'bg' => 'from-indigo-600 to-slate-700'],
+        ['title' => get_menu_label('leger_nilai', 'Leger Nilai Digital'), 'href' => 'admin-leger.php', 'icon' => 'fas fa-table-list', 'bg' => 'from-blue-600 to-indigo-700'],
+        ['title' => get_menu_label('rapot_pkbm', 'Raport Diknas PKBM (B & C)'), 'href' => 'admin-rapot-pkbm.php', 'icon' => 'fas fa-file-invoice', 'bg' => 'from-cyan-600 to-blue-700'],
+        ['title' => get_menu_label('counseling_karir', 'Pemetaan Karir & PTN (AI)'), 'href' => 'admin-counseling-karir.php', 'icon' => 'fas fa-graduation-cap', 'bg' => 'from-purple-600 to-violet-700'],
+        ['title' => get_menu_label('kontrol_jam_kosong', 'Rekap Ajar'), 'href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fas fa-chalkboard-user', 'bg' => 'from-amber-600 to-orange-700'],
+        ['title' => get_menu_label('rekap_keuangan', 'Rekap Pembayaran Keuangan'), 'href' => 'admin-rekap-spp.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-emerald-600 to-teal-700'],
+        ['title' => get_menu_label('penagihan_spp', 'Penagihan SPP'), 'href' => 'admin-penagihan-spp.php', 'icon' => 'fas fa-comment-dollar', 'bg' => 'from-teal-600 to-emerald-700'],
+        ['title' => get_menu_label('rekap_uang_saku', 'Validasi Uang Saku'), 'href' => 'admin-rekap-uang-saku.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-cyan-600 to-teal-700'],
+        ['title' => get_menu_label('sekolah_pembukuan', 'Buku Kas Sekolah'), 'href' => 'sekolah-pembukuan.php', 'icon' => 'fas fa-cash-register', 'bg' => 'from-slate-700 to-zinc-900']
     ];
 
     // b. Menu KBM (7 Card Menu):
-    // Kesediaan, Silabus, AI RPP, Buku Nilai, E-Modul, Prota Promes, Wirausaha AI
     $cards_kbm = [
-        ['title' => 'Kesediaan', 'href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fas fa-user-check', 'bg' => 'from-teal-600 to-emerald-700'],
-        ['title' => 'Silabus', 'href' => 'admin-pegawai-silabus.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-indigo-500 to-purple-600'],
-        ['title' => 'AI RPP', 'href' => 'admin-pegawai-rpp.php', 'icon' => 'fas fa-wand-magic-sparkles', 'bg' => 'from-purple-600 to-fuchsia-700'],
-        ['title' => 'Buku Nilai', 'href' => 'admin-pegawai-nilai.php', 'icon' => 'fas fa-star-half-alt', 'bg' => 'from-amber-500 to-orange-600'],
-        ['title' => 'E-Modul', 'href' => 'admin-elearning.php', 'icon' => 'fas fa-laptop-code', 'bg' => 'from-violet-600 to-indigo-700'],
-        ['title' => 'Prota Promes', 'href' => 'admin-kurikulum-prota-promes.php', 'icon' => 'fas fa-calendar-alt', 'bg' => 'from-rose-500 to-pink-600'],
-        ['title' => 'Wirausaha AI', 'href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-purple-600 to-fuchsia-700']
+        ['title' => get_menu_label('kesediaan_mengajar', 'Kesediaan Mengajar'), 'href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fas fa-user-check', 'bg' => 'from-teal-600 to-emerald-700'],
+        ['title' => get_menu_label('master_silabus', 'Master Silabus & CP'), 'href' => 'admin-pegawai-silabus.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-indigo-500 to-purple-600'],
+        ['title' => get_menu_label('ai_rpp', 'AI Generator RPP'), 'href' => 'admin-pegawai-rpp.php', 'icon' => 'fas fa-wand-magic-sparkles', 'bg' => 'from-purple-600 to-fuchsia-700'],
+        ['title' => get_menu_label('bank_nilai', 'Bank Nilai (Input)'), 'href' => 'admin-pegawai-nilai.php', 'icon' => 'fas fa-star-half-alt', 'bg' => 'from-amber-500 to-orange-600'],
+        ['title' => get_menu_label('manajemen_elearning', 'E-Modul & Flipbook Belajar'), 'href' => 'admin-elearning.php', 'icon' => 'fas fa-laptop-code', 'bg' => 'from-violet-600 to-indigo-700'],
+        ['title' => get_menu_label('prota_promes', 'Pekan Efektif, Prota & Promes'), 'href' => 'admin-kurikulum-prota-promes.php', 'icon' => 'fas fa-calendar-alt', 'bg' => 'from-rose-500 to-pink-600'],
+        ['title' => get_menu_label('kurikulum_solopreneur_trainer', 'Inkubator Solopreneur (AI)'), 'href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-purple-600 to-fuchsia-700']
     ];
 
     // c. Menu Asrama (11 Card Menu):
-    // Dashboard, Halaqoh, Ibadah, Setoran, Rekap Quran, Mutabaah, Adab, Belajar, Kesehatan, Walisantri, Uang Saku
     $cards_asrama = [
-        ['title' => 'Dashboard', 'href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fas fa-house-user', 'bg' => 'from-cyan-600 to-blue-700'],
-        ['title' => 'Halaqoh', 'href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fas fa-layer-group', 'bg' => 'from-teal-600 to-emerald-700'],
-        ['title' => 'Ibadah', 'href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fas fa-tasks', 'bg' => 'from-green-600 to-emerald-700'],
-        ['title' => 'Setoran', 'href' => 'admin-setoran-hafalan-santri.php', 'icon' => 'fas fa-quran', 'bg' => 'from-emerald-600 to-teal-800'],
-        ['title' => 'Rekap Quran', 'href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fas fa-file-alt', 'bg' => 'from-teal-500 to-cyan-700'],
-        ['title' => 'Mutabaah', 'href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fas fa-clipboard-list', 'bg' => 'from-amber-500 to-orange-600'],
-        ['title' => 'Adab', 'href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fas fa-balance-scale', 'bg' => 'from-rose-500 to-red-600'],
-        ['title' => 'Belajar', 'href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-blue-600 to-indigo-700'],
-        ['title' => 'Kesehatan', 'href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fas fa-notes-medical', 'bg' => 'from-red-500 to-rose-600'],
-        ['title' => 'Walisantri', 'href' => 'admin-kontak-orangtua.php', 'icon' => 'fas fa-comments', 'bg' => 'from-emerald-500 to-teal-700'],
-        ['title' => 'Uang Saku', 'href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-amber-600 to-yellow-600']
+        ['title' => get_menu_label('dashboard_asrama', 'Dashboard Asrama'), 'href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fas fa-house-user', 'bg' => 'from-cyan-600 to-blue-700'],
+        ['title' => get_menu_label('manajemen_halaqoh', 'Manajemen Halaqoh'), 'href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fas fa-layer-group', 'bg' => 'from-teal-600 to-emerald-700'],
+        ['title' => get_menu_label('validasi_ibadah_musyrif', 'Validasi Ibadah'), 'href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fas fa-tasks', 'bg' => 'from-green-600 to-emerald-700'],
+        ['title' => get_menu_label('setoran_hafalan_santri', 'Setoran Hafalan Santri'), 'href' => 'admin-setoran-hafalan-santri.php', 'icon' => 'fas fa-quran', 'bg' => 'from-emerald-600 to-teal-800'],
+        ['title' => get_menu_label('rekap_setoran_santri', 'Rekap Setoran Santri'), 'href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fas fa-file-alt', 'bg' => 'from-teal-500 to-cyan-700'],
+        ['title' => get_menu_label('mutabaah', 'Buku Mutaba\'ah Santri'), 'href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fas fa-clipboard-list', 'bg' => 'from-amber-500 to-orange-600'],
+        ['title' => get_menu_label('laporan_adab', 'Laporan Kedisiplinan'), 'href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fas fa-balance-scale', 'bg' => 'from-rose-500 to-red-600'],
+        ['title' => get_menu_label('cek_belajar_mandiri', 'Chek Belajar Mandiri'), 'href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-blue-600 to-indigo-700'],
+        ['title' => get_menu_label('cek_kesehatan_santri', 'Chek Kesehatan'), 'href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fas fa-notes-medical', 'bg' => 'from-red-500 to-rose-600'],
+        ['title' => get_menu_label('kontak_orangtua', 'Kontak Walisantri'), 'href' => 'admin-kontak-orangtua.php', 'icon' => 'fas fa-comments', 'bg' => 'from-emerald-500 to-teal-700'],
+        ['title' => get_menu_label('rekap_uang_saku_musyrif', 'Rekap Uang Saku Santri'), 'href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-amber-600 to-yellow-600']
     ];
 
     // Tentukan info view aktif
@@ -514,8 +513,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                     <i class="<?= $item['icon'] ?>"></i>
                                 </div>
 
-                                <!-- CAPTION 1-2 KATA SAJA -->
-                                <span class="text-[11px] sm:text-xs font-semibold text-slate-700 group-hover:text-[#0b8478] mt-2 tracking-tight text-center leading-tight line-clamp-1 max-w-[76px] sm:max-w-[85px] transition-colors">
+                                <!-- CAPTION MENU -->
+                                <span class="text-[11px] sm:text-xs font-semibold text-slate-700 group-hover:text-[#0b8478] mt-2 tracking-tight text-center leading-tight line-clamp-2 max-w-[88px] sm:max-w-[105px] min-h-[28px] transition-colors">
                                     <?= htmlspecialchars($item['title']) ?>
                                 </span>
                             </a>
