@@ -466,7 +466,7 @@ $curr_file = basename($_SERVER['PHP_SELF']);
 
     <!-- SIDEBAR NAVIGATION LINKS -->
     <nav class="flex-1 overflow-y-auto p-4 space-y-1.5 text-xs no-scrollbar">
-        <a href="admin-ustadz.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-ustadz.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+        <a href="admin-absensi-pegawai.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
             <i class="fas fa-home w-4 text-center text-sm"></i>
             <span>Home (Pegawai)</span>
         </a>
@@ -485,9 +485,9 @@ $curr_file = basename($_SERVER['PHP_SELF']);
 <!-- ========================================================= -->
 <nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-6 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
     <div class="w-full max-w-sm mx-auto flex items-center justify-around">
-        <a href="admin-ustadz.php" class="flex flex-col items-center justify-center py-1 <?= ($curr_file === 'admin-ustadz.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
-            <div class="w-10 h-8 rounded-full <?= ($curr_file === 'admin-ustadz.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-home text-lg <?= ($curr_file === 'admin-ustadz.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+        <a href="admin-absensi-pegawai.php" class="flex flex-col items-center justify-center py-1 <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-home text-lg <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
             <span class="text-white font-bold">Home</span>
         </a>
