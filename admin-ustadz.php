@@ -4,9 +4,9 @@ require_once 'koneksi.php';
 
 $view = $_GET['view'] ?? 'default';
 $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Ustadz';
-$ustadz_id = isset($_SESSION['ustadz_id']) ? (int)$_SESSION['ustadz_id'] : 0;
+$ustadz_id = isset($_SESSION['ustadz_id']) ? (int) $_SESSION['ustadz_id'] : 0;
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
-$allowed_peraturan_roles = ['super_admin','kepala_sekolah','sekretaris_sekolah','bendahara_sekolah','admin_sekolah','kepala_mahad','kepala_asrama','musyrif','ustadz'];
+$allowed_peraturan_roles = ['super_admin', 'kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif', 'ustadz'];
 $has_peraturan_menu = false;
 foreach ($user_roles as $role) {
     if (in_array(trim($role), $allowed_peraturan_roles, true)) {
@@ -23,7 +23,8 @@ if ($view === 'dashboard_asrama') {
     $total_musyrif = $conn->query("SELECT COUNT(id) as total FROM akun_ustadz WHERE role LIKE '%musyrif%'")->fetch_assoc()['total'] ?? 0;
     $total_laporan_minggu_ini = $conn->query("SELECT COUNT(id) as total FROM laporan_adab WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)")->fetch_assoc()['total'] ?? 0;
 
-    $laporan_adab_data = []; $days = [];
+    $laporan_adab_data = [];
+    $days = [];
     for ($i = 6; $i >= 0; $i--) {
         $date = date('Y-m-d', strtotime("-$i days"));
         $days[] = date('d M', strtotime($date));
@@ -32,11 +33,26 @@ if ($view === 'dashboard_asrama') {
         $laporan_adab_data['apresiasi'][] = 0;
     }
     $res_adab = $conn->query("SELECT DATE(tanggal) as tgl, SUM(CASE WHEN jenis_laporan = 'Pelanggaran' THEN 1 ELSE 0 END) as total_pelanggaran, SUM(CASE WHEN jenis_laporan = 'Apresiasi' THEN 1 ELSE 0 END) as total_apresiasi FROM laporan_adab WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) GROUP BY tgl ORDER BY tgl ASC");
-    if ($res_adab) { while ($row = $res_adab->fetch_assoc()) { $index = array_search(date('d M', strtotime($row['tgl'])), $laporan_adab_data['labels']); if ($index !== false) { $laporan_adab_data['pelanggaran'][$index] = (int)$row['total_pelanggaran']; $laporan_adab_data['apresiasi'][$index] = (int)$row['total_apresiasi']; } } }
+    if ($res_adab) {
+        while ($row = $res_adab->fetch_assoc()) {
+            $index = array_search(date('d M', strtotime($row['tgl'])), $laporan_adab_data['labels']);
+            if ($index !== false) {
+                $laporan_adab_data['pelanggaran'][$index] = (int) $row['total_pelanggaran'];
+                $laporan_adab_data['apresiasi'][$index] = (int) $row['total_apresiasi'];
+            }
+        }
+    }
 
     $jurnal_musyrif_data = ['labels' => $days, 'data' => array_fill(0, 7, 0)];
     $res_jurnal = $conn->query("SELECT DATE(tanggal) as tgl, COUNT(id) as total FROM jurnal_kegiatan_musyrif WHERE tanggal >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) GROUP BY tgl ORDER BY tgl ASC");
-    if ($res_jurnal) { while ($row = $res_jurnal->fetch_assoc()) { $index = array_search(date('d M', strtotime($row['tgl'])), $jurnal_musyrif_data['labels']); if ($index !== false) { $jurnal_musyrif_data['data'][$index] = (int)$row['total']; } } }
+    if ($res_jurnal) {
+        while ($row = $res_jurnal->fetch_assoc()) {
+            $index = array_search(date('d M', strtotime($row['tgl'])), $jurnal_musyrif_data['labels']);
+            if ($index !== false) {
+                $jurnal_musyrif_data['data'][$index] = (int) $row['total'];
+            }
+        }
+    }
 
 } elseif ($view === 'halaqoh') {
     $active_menu = 'manajemen_halaqoh';
@@ -45,46 +61,88 @@ if ($view === 'dashboard_asrama') {
     $conn->query("CREATE TABLE IF NOT EXISTS halaqoh_anggota (id INT AUTO_INCREMENT PRIMARY KEY, grup_id INT NOT NULL, santri_id INT NOT NULL, UNIQUE KEY (grup_id, santri_id), FOREIGN KEY (grup_id) REFERENCES halaqoh_grup(id) ON DELETE CASCADE)");
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (isset($_POST['simpan_grup'])) {
-            $id = (int)($_POST['id'] ?? 0); $nama_grup = $conn->real_escape_string($_POST['nama_grup']); $musyrif_id = (int)$_POST['musyrif_id'];
-            if ($id > 0) { $conn->query("UPDATE halaqoh_grup SET nama_grup='$nama_grup', musyrif_id=$musyrif_id WHERE id=$id"); } else { $conn->query("INSERT INTO halaqoh_grup (nama_grup, musyrif_id) VALUES ('$nama_grup', $musyrif_id)"); }
-            header("Location: admin-ustadz.php?view=halaqoh"); exit;
+            $id = (int) ($_POST['id'] ?? 0);
+            $nama_grup = $conn->real_escape_string($_POST['nama_grup']);
+            $musyrif_id = (int) $_POST['musyrif_id'];
+            if ($id > 0) {
+                $conn->query("UPDATE halaqoh_grup SET nama_grup='$nama_grup', musyrif_id=$musyrif_id WHERE id=$id");
+            } else {
+                $conn->query("INSERT INTO halaqoh_grup (nama_grup, musyrif_id) VALUES ('$nama_grup', $musyrif_id)");
+            }
+            header("Location: admin-ustadz.php?view=halaqoh");
+            exit;
         }
         if (isset($_POST['simpan_anggota'])) {
-            $grup_id = (int)$_POST['grup_id']; $anggota_ids = $_POST['anggota'] ?? [];
+            $grup_id = (int) $_POST['grup_id'];
+            $anggota_ids = $_POST['anggota'] ?? [];
             $conn->query("DELETE FROM halaqoh_anggota WHERE grup_id = $grup_id");
             if (!empty($anggota_ids)) {
                 $stmt = $conn->prepare("INSERT INTO halaqoh_anggota (grup_id, santri_id) VALUES (?, ?)");
-                foreach ($anggota_ids as $santri_id) { $s_id = (int)$santri_id; $stmt->bind_param("ii", $grup_id, $s_id); $stmt->execute(); }
+                foreach ($anggota_ids as $santri_id) {
+                    $s_id = (int) $santri_id;
+                    $stmt->bind_param("ii", $grup_id, $s_id);
+                    $stmt->execute();
+                }
             }
-            header("Location: admin-ustadz.php?view=halaqoh&grup_id=$grup_id"); exit;
+            header("Location: admin-ustadz.php?view=halaqoh&grup_id=$grup_id");
+            exit;
         }
     }
-    if (isset($_GET['hapus_grup_id'])) { $id = (int)$_GET['hapus_grup_id']; $conn->query("DELETE FROM halaqoh_grup WHERE id = $id"); header("Location: admin-ustadz.php?view=halaqoh"); exit; }
-    $musyrif_list = []; $res_m = $conn->query("SELECT id, nama FROM akun_ustadz WHERE (is_active = 1 OR is_active IS NULL) AND (status_pegawai != 'Nonaktif' OR status_pegawai IS NULL) AND (FIND_IN_SET('musyrif', REPLACE(role, ' ', '')) OR FIND_IN_SET('musyrifah', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama_rijal', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama_nisa', REPLACE(role, ' ', '')) OR role = 'musyrif' OR role = 'musyrifah') ORDER BY nama ASC"); if($res_m) while($r = $res_m->fetch_assoc()) $musyrif_list[] = $r;
-    $grup_list = []; $res_g = $conn->query("SELECT g.*, u.nama as nama_musyrif, COUNT(a.id) as jumlah_anggota FROM halaqoh_grup g JOIN akun_ustadz u ON g.musyrif_id = u.id LEFT JOIN halaqoh_anggota a ON g.id = a.grup_id GROUP BY g.id ORDER BY g.nama_grup ASC"); if($res_g) while($r = $res_g->fetch_assoc()) $grup_list[] = $r;
+    if (isset($_GET['hapus_grup_id'])) {
+        $id = (int) $_GET['hapus_grup_id'];
+        $conn->query("DELETE FROM halaqoh_grup WHERE id = $id");
+        header("Location: admin-ustadz.php?view=halaqoh");
+        exit;
+    }
+    $musyrif_list = [];
+    $res_m = $conn->query("SELECT id, nama FROM akun_ustadz WHERE (is_active = 1 OR is_active IS NULL) AND (status_pegawai != 'Nonaktif' OR status_pegawai IS NULL) AND (FIND_IN_SET('musyrif', REPLACE(role, ' ', '')) OR FIND_IN_SET('musyrifah', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama_rijal', REPLACE(role, ' ', '')) OR FIND_IN_SET('kepala_asrama_nisa', REPLACE(role, ' ', '')) OR role = 'musyrif' OR role = 'musyrifah') ORDER BY nama ASC");
+    if ($res_m)
+        while ($r = $res_m->fetch_assoc())
+            $musyrif_list[] = $r;
+    $grup_list = [];
+    $res_g = $conn->query("SELECT g.*, u.nama as nama_musyrif, COUNT(a.id) as jumlah_anggota FROM halaqoh_grup g JOIN akun_ustadz u ON g.musyrif_id = u.id LEFT JOIN halaqoh_anggota a ON g.id = a.grup_id GROUP BY g.id ORDER BY g.nama_grup ASC");
+    if ($res_g)
+        while ($r = $res_g->fetch_assoc())
+            $grup_list[] = $r;
     $active_grup_id = $_GET['grup_id'] ?? ($grup_list[0]['id'] ?? 0);
-    $active_grup = null; if ($active_grup_id > 0) { foreach($grup_list as $g) { if ($g['id'] == $active_grup_id) $active_grup = $g; } }
-    $santri_tersedia = []; $anggota_sekarang_ids = [];
-    if ($active_grup_id > 0) { $res_a = $conn->query("SELECT santri_id FROM halaqoh_anggota WHERE grup_id = $active_grup_id"); if($res_a) while($r = $res_a->fetch_assoc()) $anggota_sekarang_ids[] = $r['santri_id']; }
-    $res_s = $conn->query("SELECT id, nama_lengkap, kelas_sekarang FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC"); if($res_s) while($r = $res_s->fetch_assoc()) $santri_tersedia[] = $r;
+    $active_grup = null;
+    if ($active_grup_id > 0) {
+        foreach ($grup_list as $g) {
+            if ($g['id'] == $active_grup_id)
+                $active_grup = $g;
+        }
+    }
+    $santri_tersedia = [];
+    $anggota_sekarang_ids = [];
+    if ($active_grup_id > 0) {
+        $res_a = $conn->query("SELECT santri_id FROM halaqoh_anggota WHERE grup_id = $active_grup_id");
+        if ($res_a)
+            while ($r = $res_a->fetch_assoc())
+                $anggota_sekarang_ids[] = $r['santri_id'];
+    }
+    $res_s = $conn->query("SELECT id, nama_lengkap, kelas_sekarang FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC");
+    if ($res_s)
+        while ($r = $res_s->fetch_assoc())
+            $santri_tersedia[] = $r;
 
 } elseif ($view === 'setor_hafalan') {
     $active_menu = 'setor_hafalan';
     $ustadz_id = $_SESSION['ustadz_id'];
     $conn->query("CREATE TABLE IF NOT EXISTS setoran_hafalan ( id INT AUTO_INCREMENT PRIMARY KEY, ustadz_id INT NOT NULL, nama_santri VARCHAR(150) NOT NULL, tanggal DATE NOT NULL, jenis_setoran ENUM('Ziyadah', 'Murajaah') NOT NULL, surat_id INT NOT NULL, ayat_dari INT NOT NULL, ayat_sampai INT NOT NULL, penilaian ENUM('Lancar', 'Kurang Lancar', 'Perlu Diulang') NOT NULL, catatan TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP )");
     if (isset($_GET['hapus_id'])) {
-        $id = (int)$_GET['hapus_id'];
+        $id = (int) $_GET['hapus_id'];
         $conn->query("DELETE FROM setoran_hafalan WHERE id = $id AND ustadz_id = $ustadz_id");
-        header("Location: admin-ustadz.php?view=setor_hafalan"); exit;
+        header("Location: admin-ustadz.php?view=setor_hafalan");
+        exit;
     }
     if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['simpan_setoran'])) {
-        $id = !empty($_POST['id']) ? (int)$_POST['id'] : 0;
+        $id = !empty($_POST['id']) ? (int) $_POST['id'] : 0;
         $nama_santri = $conn->real_escape_string($_POST['nama_santri']);
         $tanggal = $conn->real_escape_string($_POST['tanggal']);
         $jenis_setoran = $conn->real_escape_string($_POST['jenis_setoran']);
-        $surat_id = (int)$_POST['surat_id'];
-        $ayat_dari = (int)$_POST['ayat_dari'];
-        $ayat_sampai = (int)$_POST['ayat_sampai'];
+        $surat_id = (int) $_POST['surat_id'];
+        $ayat_dari = (int) $_POST['ayat_dari'];
+        $ayat_sampai = (int) $_POST['ayat_sampai'];
         $penilaian = $conn->real_escape_string($_POST['penilaian']);
         $catatan = $conn->real_escape_string($_POST['catatan']);
         if ($id > 0) {
@@ -100,19 +158,126 @@ if ($view === 'dashboard_asrama') {
     $data_edit_setoran = null;
     if (isset($_GET['edit_id'])) {
         $edit_mode_setoran = true;
-        $id = (int)$_GET['edit_id'];
+        $id = (int) $_GET['edit_id'];
         $res = $conn->query("SELECT * FROM setoran_hafalan WHERE id = $id AND ustadz_id = $ustadz_id");
-        if ($res) $data_edit_setoran = $res->fetch_assoc();
+        if ($res)
+            $data_edit_setoran = $res->fetch_assoc();
     }
     $surah_list = [
-        1 => "Al-Fatihah", 2 => "Al-Baqarah", 3 => "Ali 'Imran", 4 => "An-Nisa'", 5 => "Al-Ma'idah", 6 => "Al-An'am", 7 => "Al-A'raf", 8 => "Al-Anfal", 9 => "At-Taubah", 10 => "Yunus", 11 => "Hud", 12 => "Yusuf", 13 => "Ar-Ra'd", 14 => "Ibrahim", 15 => "Al-Hijr",
-        16 => "An-Nahl", 17 => "Al-Isra'", 18 => "Al-Kahf", 19 => "Maryam", 20 => "Taha", 21 => "Al-Anbiya'", 22 => "Al-Hajj", 23 => "Al-Mu'minun", 24 => "An-Nur", 25 => "Al-Furqan", 26 => "Asy-Syu'ara'", 27 => "An-Naml", 28 => "Al-Qasas", 29 => "Al-'Ankabut", 30 => "Ar-Rum",
-        31 => "Luqman", 32 => "As-Sajdah", 33 => "Al-Ahzab", 34 => "Saba'", 35 => "Fatir", 36 => "Ya-Sin", 37 => "As-Saffat", 38 => "Sad", 39 => "Az-Zumar", 40 => "Ghafir", 41 => "Fussilat", 42 => "Asy-Syura", 43 => "Az-Zukhruf", 44 => "Ad-Dukhan", 45 => "Al-Jathiyah",
-        46 => "Al-Ahqaf", 47 => "Muhammad", 48 => "Al-Fath", 49 => "Al-Hujurat", 50 => "Qaf", 51 => "Az-Zariyat", 52 => "At-Tur", 53 => "An-Najm", 54 => "Al-Qamar", 55 => "Ar-Rahman", 56 => "Al-Waqi'ah", 57 => "Al-Hadid", 58 => "Al-Mujadilah", 59 => "Al-Hasyr", 60 => "Al-Mumtahanah",
-        61 => "As-Saff", 62 => "Al-Jumu'ah", 63 => "Al-Munafiqun", 64 => "At-Taghabun", 65 => "At-Talaq", 66 => "At-Tahrim", 67 => "Al-Mulk", 68 => "Al-Qalam", 69 => "Al-Haqqah", 70 => "Al-Ma'arij", 71 => "Nuh", 72 => "Al-Jinn", 73 => "Al-Muzzammil", 74 => "Al-Muddaththir", 75 => "Al-Qiyamah",
-        76 => "Al-Insan", 77 => "Al-Mursalat", 78 => "An-Naba'", 79 => "An-Nazi'at", 80 => "'Abasa", 81 => "At-Takwir", 82 => "Al-Infitar", 83 => "Al-Mutaffifin", 84 => "Al-Insyiqaq", 85 => "Al-Buruj", 86 => "At-Tariq", 87 => "Al-A'la", 88 => "Al-Ghasyiyah", 89 => "Al-Fajr", 90 => "Al-Balad",
-        91 => "Asy-Syams", 92 => "Al-Layl", 93 => "Ad-Duha", 94 => "Al-Insyirah", 95 => "At-Tin", 96 => "Al-'Alaq", 97 => "Al-Qadr", 98 => "Al-Bayyinah", 99 => "Az-Zalzalah", 100 => "Al-'Adiyat", 101 => "Al-Qari'ah", 102 => "At-Takasur", 103 => "Al-'Asr", 104 => "Al-Humazah", 105 => "Al-Fil",
-        106 => "Quraisy", 107 => "Al-Ma'un", 108 => "Al-Kausar", 109 => "Al-Kafirun", 110 => "An-Nasr", 111 => "Al-Masad", 112 => "Al-Ikhlas", 113 => "Al-Falaq", 114 => "An-Nas"
+        1 => "Al-Fatihah",
+        2 => "Al-Baqarah",
+        3 => "Ali 'Imran",
+        4 => "An-Nisa'",
+        5 => "Al-Ma'idah",
+        6 => "Al-An'am",
+        7 => "Al-A'raf",
+        8 => "Al-Anfal",
+        9 => "At-Taubah",
+        10 => "Yunus",
+        11 => "Hud",
+        12 => "Yusuf",
+        13 => "Ar-Ra'd",
+        14 => "Ibrahim",
+        15 => "Al-Hijr",
+        16 => "An-Nahl",
+        17 => "Al-Isra'",
+        18 => "Al-Kahf",
+        19 => "Maryam",
+        20 => "Taha",
+        21 => "Al-Anbiya'",
+        22 => "Al-Hajj",
+        23 => "Al-Mu'minun",
+        24 => "An-Nur",
+        25 => "Al-Furqan",
+        26 => "Asy-Syu'ara'",
+        27 => "An-Naml",
+        28 => "Al-Qasas",
+        29 => "Al-'Ankabut",
+        30 => "Ar-Rum",
+        31 => "Luqman",
+        32 => "As-Sajdah",
+        33 => "Al-Ahzab",
+        34 => "Saba'",
+        35 => "Fatir",
+        36 => "Ya-Sin",
+        37 => "As-Saffat",
+        38 => "Sad",
+        39 => "Az-Zumar",
+        40 => "Ghafir",
+        41 => "Fussilat",
+        42 => "Asy-Syura",
+        43 => "Az-Zukhruf",
+        44 => "Ad-Dukhan",
+        45 => "Al-Jathiyah",
+        46 => "Al-Ahqaf",
+        47 => "Muhammad",
+        48 => "Al-Fath",
+        49 => "Al-Hujurat",
+        50 => "Qaf",
+        51 => "Az-Zariyat",
+        52 => "At-Tur",
+        53 => "An-Najm",
+        54 => "Al-Qamar",
+        55 => "Ar-Rahman",
+        56 => "Al-Waqi'ah",
+        57 => "Al-Hadid",
+        58 => "Al-Mujadilah",
+        59 => "Al-Hasyr",
+        60 => "Al-Mumtahanah",
+        61 => "As-Saff",
+        62 => "Al-Jumu'ah",
+        63 => "Al-Munafiqun",
+        64 => "At-Taghabun",
+        65 => "At-Talaq",
+        66 => "At-Tahrim",
+        67 => "Al-Mulk",
+        68 => "Al-Qalam",
+        69 => "Al-Haqqah",
+        70 => "Al-Ma'arij",
+        71 => "Nuh",
+        72 => "Al-Jinn",
+        73 => "Al-Muzzammil",
+        74 => "Al-Muddaththir",
+        75 => "Al-Qiyamah",
+        76 => "Al-Insan",
+        77 => "Al-Mursalat",
+        78 => "An-Naba'",
+        79 => "An-Nazi'at",
+        80 => "'Abasa",
+        81 => "At-Takwir",
+        82 => "Al-Infitar",
+        83 => "Al-Mutaffifin",
+        84 => "Al-Insyiqaq",
+        85 => "Al-Buruj",
+        86 => "At-Tariq",
+        87 => "Al-A'la",
+        88 => "Al-Ghasyiyah",
+        89 => "Al-Fajr",
+        90 => "Al-Balad",
+        91 => "Asy-Syams",
+        92 => "Al-Layl",
+        93 => "Ad-Duha",
+        94 => "Al-Insyirah",
+        95 => "At-Tin",
+        96 => "Al-'Alaq",
+        97 => "Al-Qadr",
+        98 => "Al-Bayyinah",
+        99 => "Az-Zalzalah",
+        100 => "Al-'Adiyat",
+        101 => "Al-Qari'ah",
+        102 => "At-Takasur",
+        103 => "Al-'Asr",
+        104 => "Al-Humazah",
+        105 => "Al-Fil",
+        106 => "Quraisy",
+        107 => "Al-Ma'un",
+        108 => "Al-Kausar",
+        109 => "Al-Kafirun",
+        110 => "An-Nasr",
+        111 => "Al-Masad",
+        112 => "Al-Ikhlas",
+        113 => "Al-Falaq",
+        114 => "An-Nas"
     ];
 
 } elseif ($view === 'peraturan_role') {
@@ -157,7 +322,8 @@ if ($view === 'dashboard_asrama') {
         } else {
             foreach ($user_roles as $role) {
                 $role = trim($role);
-                if ($role === '') continue;
+                if ($role === '')
+                    continue;
                 $keywords = $role_keywords[$role] ?? [$role];
                 foreach ($keywords as $keyword) {
                     if ($keyword !== '' && str_contains($jabatan_lower, strtolower($keyword))) {
@@ -174,7 +340,8 @@ if ($view === 'dashboard_asrama') {
 
     $user_roles_label = [];
     foreach ($user_roles as $role) {
-        if (!$role) continue;
+        if (!$role)
+            continue;
         $user_roles_label[] = ucwords(str_replace(['_', 'mahad'], [' ', 'mahad'], $role));
     }
     $user_roles_label = array_unique($user_roles_label);
@@ -230,31 +397,45 @@ if ($view === 'dashboard_asrama') {
     $active_tab = array_key_first($defined_roles);
     foreach ($user_roles as $ur) {
         $ur = trim($ur);
-        if (isset($defined_roles[$ur])) { $active_tab = $ur; break; }
+        if (isset($defined_roles[$ur])) {
+            $active_tab = $ur;
+            break;
+        }
     }
 
 } elseif ($view === 'kpi_musyrif') {
     $active_menu = 'kpi_musyrif';
-    
+
     $months = [
-        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
-        7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        1 => 'Januari',
+        2 => 'Februari',
+        3 => 'Maret',
+        4 => 'April',
+        5 => 'Mei',
+        6 => 'Juni',
+        7 => 'Juli',
+        8 => 'Agustus',
+        9 => 'September',
+        10 => 'Oktober',
+        11 => 'November',
+        12 => 'Desember'
     ];
-    
+
     // Tentukan bulan dan tahun
-    $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
-    $selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
-    
+    $selected_month = isset($_GET['bulan']) ? (int) $_GET['bulan'] : (int) date('m');
+    $selected_year = isset($_GET['tahun']) ? (int) $_GET['tahun'] : (int) date('Y');
+
     // Ambil detail ustadz yang sedang login
     $selected_musyrif_id = $ustadz_id;
     $staf = null;
     $res_det = $conn->query("SELECT * FROM akun_ustadz WHERE id = $selected_musyrif_id LIMIT 1");
-    if ($res_det) $staf = $res_det->fetch_assoc();
-    
+    if ($res_det)
+        $staf = $res_det->fetch_assoc();
+
     $predikat = "Belum Ternilai";
     $predikat_class = "bg-slate-100 text-slate-700";
     $total_kpi = 0;
-    
+
     $skor_validasi_ibadah = 100;
     $skor_kontak_walisantri = 100;
     $skor_belajar_mandiri = 100;
@@ -263,9 +444,9 @@ if ($view === 'dashboard_asrama') {
     $skor_mutabaah = 100;
     $skor_absensi_kerja = 100;
     $skor_absensi_rapat = 100;
-    
+
     $details = [];
-    
+
     if ($staf) {
 
         // Get Santri Binaan IDs in halaqoh group dari Manajemen Halaqoh
@@ -278,13 +459,14 @@ if ($view === 'dashboard_asrama') {
         ");
         if ($res_sb) {
             while ($r = $res_sb->fetch_assoc()) {
-                $s_val = (int)$r['id'];
-                if ($s_val > 0) $santri_ids[] = $s_val;
+                $s_val = (int) $r['id'];
+                if ($s_val > 0)
+                    $santri_ids[] = $s_val;
             }
         }
         $total_santri_binaan = count($santri_ids);
         $santri_list_str = !empty($santri_ids) ? implode(',', $santri_ids) : '0';
-    
+
         // 1. Validasi Ibadah (Bobot: 15%)
         if ($total_santri_binaan > 0) {
             $res_ib = $conn->query("
@@ -295,11 +477,11 @@ if ($view === 'dashboard_asrama') {
                   AND (MONTH(tanggal) = $selected_month AND YEAR(tanggal) = $selected_year OR MONTH(created_at) = $selected_month AND YEAR(created_at) = $selected_year)
             ");
             $row_ib = $res_ib ? $res_ib->fetch_assoc() : ['total' => 0, 'divalidasi' => 0];
-            $total_ib = (int)($row_ib['total'] ?? 0);
-            $dival_ib = (int)($row_ib['divalidasi'] ?? 0);
-            
+            $total_ib = (int) ($row_ib['total'] ?? 0);
+            $dival_ib = (int) ($row_ib['divalidasi'] ?? 0);
+
             $kepatuhan_klik = $total_ib > 0 ? ($dival_ib / $total_ib) * 100 : 100;
-            
+
             // Hitung bimbingan aktif (santri malas ibadah / munfarid & non-haid)
             $res_bim = $conn->query("
                 SELECT COUNT(*) as total_perlu,
@@ -311,19 +493,19 @@ if ($view === 'dashboard_asrama') {
                   AND (LOWER(sholat_subuh) LIKE '%munfarid%' OR LOWER(sholat_dhuhur) LIKE '%munfarid%' OR LOWER(sholat_ashar) LIKE '%munfarid%' OR LOWER(sholat_maghrib) LIKE '%munfarid%' OR LOWER(sholat_isya) LIKE '%munfarid%')
             ");
             $row_bim = $res_bim ? $res_bim->fetch_assoc() : ['total_perlu' => 0, 'dibimbing' => 0];
-            $total_perlu_bim = (int)($row_bim['total_perlu'] ?? 0);
-            $total_dibimbing = (int)($row_bim['dibimbing'] ?? 0);
-            
+            $total_perlu_bim = (int) ($row_bim['total_perlu'] ?? 0);
+            $total_dibimbing = (int) ($row_bim['dibimbing'] ?? 0);
+
             $kepatuhan_bimbingan = $total_perlu_bim > 0 ? ($total_dibimbing / $total_perlu_bim) * 100 : 100;
-            
+
             // Gabungan: 80% Kepatuhan Klik Validasi + 20% Kepatuhan Bimbingan Aktif
             $skor_validasi_ibadah = (0.8 * $kepatuhan_klik) + (0.2 * $kepatuhan_bimbingan);
-            
+
             $details['validasi_ibadah'] = "$dival_ib dari $total_ib divalidasi (" . number_format($kepatuhan_klik, 0) . "%), bimbingan: $total_dibimbing dari $total_perlu_bim diisi";
         } else {
             $details['validasi_ibadah'] = "Tidak ada santri binaan";
         }
-    
+
         // 2. Kontak Walisantri (Bobot: 15%)
         if ($total_santri_binaan > 0) {
             $res_kon = $conn->query("
@@ -334,13 +516,13 @@ if ($view === 'dashboard_asrama') {
                   AND MONTH(tanggal) = $selected_month 
                   AND YEAR(tanggal) = $selected_year
             ");
-            $kontak_cnt = $res_kon ? (int)($res_kon->fetch_assoc()['total_kontak'] ?? 0) : 0;
+            $kontak_cnt = $res_kon ? (int) ($res_kon->fetch_assoc()['total_kontak'] ?? 0) : 0;
             $skor_kontak_walisantri = min(100, ($kontak_cnt / $total_santri_binaan) * 100);
             $details['kontak_walisantri'] = "$kontak_cnt dari $total_santri_binaan walisantri dihubungi";
         } else {
             $details['kontak_walisantri'] = "Tidak ada santri binaan";
         }
-    
+
         // 3. Chek Belajar Mandiri (Bobot: 10%)
         $res_bel = $conn->query("
             SELECT COUNT(*) as total 
@@ -349,10 +531,10 @@ if ($view === 'dashboard_asrama') {
               AND MONTH(tanggal) = $selected_month 
               AND YEAR(tanggal) = $selected_year
         ");
-        $total_bel = $res_bel ? (int)($res_bel->fetch_assoc()['total'] ?? 0) : 0;
+        $total_bel = $res_bel ? (int) ($res_bel->fetch_assoc()['total'] ?? 0) : 0;
         $skor_belajar_mandiri = min(100, ($total_bel / 20) * 100);
         $details['belajar_mandiri'] = "$total_bel kali pengisian jurnal belajar";
-    
+
         // 4. Chek Kesehatan (Bobot: 10%)
         if ($total_santri_binaan > 0) {
             $res_kes = $conn->query("
@@ -364,14 +546,14 @@ if ($view === 'dashboard_asrama') {
                   AND YEAR(tanggal) = $selected_year
             ");
             $row_kes = $res_kes ? $res_kes->fetch_assoc() : ['total' => 0, 'sembuh' => 0];
-            $total_kes = (int)($row_kes['total'] ?? 0);
-            $sembuh_kes = (int)($row_kes['sembuh'] ?? 0);
+            $total_kes = (int) ($row_kes['total'] ?? 0);
+            $sembuh_kes = (int) ($row_kes['sembuh'] ?? 0);
             $skor_kesehatan = $total_kes > 0 ? ($sembuh_kes / $total_kes) * 100 : 100;
             $details['kesehatan'] = "$sembuh_kes dari $total_kes kasus sakit diselesaikan";
         } else {
             $details['kesehatan'] = "Tidak ada santri binaan";
         }
-    
+
         // 5. Setoran Hafalan (Bobot: 15%)
         if ($total_santri_binaan > 0) {
             $res_haf = $conn->query("
@@ -381,14 +563,14 @@ if ($view === 'dashboard_asrama') {
                   AND MONTH(created_at) = $selected_month 
                   AND YEAR(created_at) = $selected_year
             ");
-            $total_haf = $res_haf ? (int)($res_haf->fetch_assoc()['total'] ?? 0) : 0;
+            $total_haf = $res_haf ? (int) ($res_haf->fetch_assoc()['total'] ?? 0) : 0;
             $target_haf = $total_santri_binaan * 4;
             $skor_setoran_hafalan = $target_haf > 0 ? min(100, ($total_haf / $target_haf) * 100) : 100;
             $details['setoran_hafalan'] = "$total_haf kali setoran diinput (Target: $target_haf)";
         } else {
             $details['setoran_hafalan'] = "Tidak ada santri binaan";
         }
-    
+
         // 6. Buku Mutabaah Santri (Bobot: 15%)
         if ($total_santri_binaan > 0) {
             $res_mut = $conn->query("
@@ -398,14 +580,14 @@ if ($view === 'dashboard_asrama') {
                   AND MONTH(tanggal) = $selected_month 
                   AND YEAR(tanggal) = $selected_year
             ");
-            $total_mut = $res_mut ? (int)($res_mut->fetch_assoc()['total'] ?? 0) : 0;
+            $total_mut = $res_mut ? (int) ($res_mut->fetch_assoc()['total'] ?? 0) : 0;
             $target_mut = $total_santri_binaan * 2;
             $skor_mutabaah = $target_mut > 0 ? min(100, ($total_mut / $target_mut) * 100) : 100;
             $details['mutabaah'] = "$total_mut laporan mental diinput (Target: $target_mut)";
         } else {
             $details['mutabaah'] = "Tidak ada santri binaan";
         }
-    
+
         // 7. Absensi Jam Kerja (Bobot: 10%)
         $res_abs = $conn->query("
             SELECT COUNT(DISTINCT DATE(waktu_absen)) as total_absen
@@ -416,10 +598,10 @@ if ($view === 'dashboard_asrama') {
               AND YEAR(waktu_absen) = $selected_year
               AND status_kehadiran = 'Masuk'
         ");
-        $total_absen = $res_abs ? (int)($res_abs->fetch_assoc()['total_absen'] ?? 0) : 0;
+        $total_absen = $res_abs ? (int) ($res_abs->fetch_assoc()['total_absen'] ?? 0) : 0;
         $skor_absensi_kerja = min(100, ($total_absen / 26) * 100);
         $details['absensi_kerja'] = "$total_absen hari hadir kerja (Target: 26)";
-    
+
         // 8. Absensi Kehadiran Rapat (Bobot: 10%)
         $res_rpt_hadir = $conn->query("
             SELECT COUNT(DISTINCT rapat_id) as total_hadir
@@ -430,28 +612,28 @@ if ($view === 'dashboard_asrama') {
               AND YEAR(waktu_absen) = $selected_year
               AND status_kehadiran = 'Masuk'
         ");
-        $hadir_rapat = $res_rpt_hadir ? (int)$res_rpt_hadir->fetch_assoc()['total_hadir'] : 0;
-    
+        $hadir_rapat = $res_rpt_hadir ? (int) $res_rpt_hadir->fetch_assoc()['total_hadir'] : 0;
+
         $res_tot_rapat = $conn->query("
             SELECT COUNT(*) as total 
             FROM jadwal_rapat 
             WHERE MONTH(waktu_mulai) = $selected_month 
               AND YEAR(waktu_mulai) = $selected_year
         ");
-        $total_rapat_bln = $res_tot_rapat ? (int)$res_tot_rapat->fetch_assoc()['total'] : 0;
+        $total_rapat_bln = $res_tot_rapat ? (int) $res_tot_rapat->fetch_assoc()['total'] : 0;
         $skor_absensi_rapat = $total_rapat_bln > 0 ? min(100, ($hadir_rapat / $total_rapat_bln) * 100) : 100;
         $details['absensi_rapat'] = "$hadir_rapat dari $total_rapat_bln rapat dihadiri";
-    
+
         // Total KPI Score
-        $total_kpi = ($skor_validasi_ibadah * 0.15) + 
-                     ($skor_kontak_walisantri * 0.15) + 
-                     ($skor_belajar_mandiri * 0.10) + 
-                     ($skor_kesehatan * 0.10) + 
-                     ($skor_setoran_hafalan * 0.15) + 
-                     ($skor_mutabaah * 0.15) + 
-                     ($skor_absensi_kerja * 0.10) + 
-                     ($skor_absensi_rapat * 0.10);
-    
+        $total_kpi = ($skor_validasi_ibadah * 0.15) +
+            ($skor_kontak_walisantri * 0.15) +
+            ($skor_belajar_mandiri * 0.10) +
+            ($skor_kesehatan * 0.10) +
+            ($skor_setoran_hafalan * 0.15) +
+            ($skor_mutabaah * 0.15) +
+            ($skor_absensi_kerja * 0.10) +
+            ($skor_absensi_rapat * 0.10);
+
         // Hitung Predikat
         if ($total_kpi >= 90) {
             $predikat = "Mumtaz (Grade A)";
@@ -481,139 +663,171 @@ if ($view === 'dashboard_asrama') {
 ?>
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ruang Asatidz | Admin Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
         /* Android Icon Style Interaction */
         .android-icon {
             transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s ease;
             -webkit-tap-highlight-color: transparent;
         }
+
         .android-icon:hover {
             transform: translateY(-3px) scale(1.05);
             box-shadow: 0 10px 20px -3px rgba(0, 0, 0, 0.15);
         }
+
         .android-icon:active {
             transform: scale(0.92);
         }
     </style>
     <?php if ($view === 'dashboard_asrama'): ?>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <?php endif; ?>
     <?php if ($view === 'amanah' || $view === 'peraturan_role' || $view === 'kpi_musyrif'): ?>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-        .font-outfit {
-            font-family: 'Outfit', sans-serif;
-        }
-        /* Premium markdown body styling */
-        .markdown-body h1 { 
-            font-size: 1.5rem; 
-            font-weight: 800; 
-            color: #1e293b; 
-            margin-top: 1.75rem; 
-            margin-bottom: 0.75rem; 
-            border-bottom: 2px solid #f1f5f9; 
-            padding-bottom: 0.35rem; 
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .markdown-body h1::before {
-            content: "\f2c2";
-            font-family: "Font Awesome 6 Free";
-            font-weight: 900;
-            color: #0891b2; /* Cyan theme for Asatidz */
-            font-size: 1.25rem;
-        }
-        .markdown-body h2 { 
-            font-size: 1.2rem; 
-            font-weight: 700; 
-            color: #0891b2; 
-            margin-top: 1.25rem; 
-            margin-bottom: 0.5rem; 
-        }
-        .markdown-body h3 { 
-            font-size: 1.05rem; 
-            font-weight: 600; 
-            color: #475569; 
-            margin-top: 1rem; 
-            margin-bottom: 0.25rem; 
-        }
-        .markdown-body p { 
-            margin-bottom: 0.75rem; 
-            line-height: 1.625; 
-            color: #475569; 
-            text-align: justify;
-        }
-        .markdown-body ul, .markdown-body ol { 
-            margin-left: 1.5rem; 
-            margin-bottom: 0.75rem; 
-        }
-        .markdown-body ul { 
-            list-style-type: disc; 
-        }
-        .markdown-body ol { 
-            list-style-type: decimal; 
-        }
-        .markdown-body li { 
-            margin-bottom: 0.35rem; 
-            color: #475569; 
-        }
-        .markdown-body strong { 
-            color: #0f172a; 
-            font-weight: 700; 
-        }
-        .markdown-body blockquote { 
-            border-left: 4px solid #06b6d4; 
-            padding-left: 1rem; 
-            color: #64748b; 
-            font-style: italic; 
-            margin: 1rem 0; 
-            background: #ecfeff; 
-            padding-top: 0.5rem; 
-            padding-bottom: 0.5rem; 
-        }
-        .markdown-body hr {
-            border: 0;
-            border-top: 2px dashed #e2e8f0;
-            margin: 2rem 0;
-        }
-        
-        /* Print layout optimizations */
-        @media print {
-            body {
-                background: white !important;
-                color: black !important;
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+        <style>
+            .font-outfit {
+                font-family: 'Outfit', sans-serif;
             }
-            #sidebar-hr, header, .no-print {
-                display: none !important;
-            }
-            main {
-                padding: 0 !important;
-                margin: 0 !important;
-                overflow: visible !important;
-                height: auto !important;
-            }
-            .print-card {
-                border: none !important;
-                box-shadow: none !important;
-                padding: 0 !important;
-            }
+
+            /* Premium markdown body styling */
             .markdown-body h1 {
-                border-bottom: 2px solid #000;
+                font-size: 1.5rem;
+                font-weight: 800;
+                color: #1e293b;
+                margin-top: 1.75rem;
+                margin-bottom: 0.75rem;
+                border-bottom: 2px solid #f1f5f9;
+                padding-bottom: 0.35rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
             }
-        }
-    </style>
+
+            .markdown-body h1::before {
+                content: "\f2c2";
+                font-family: "Font Awesome 6 Free";
+                font-weight: 900;
+                color: #0891b2;
+                /* Cyan theme for Asatidz */
+                font-size: 1.25rem;
+            }
+
+            .markdown-body h2 {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: #0891b2;
+                margin-top: 1.25rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .markdown-body h3 {
+                font-size: 1.05rem;
+                font-weight: 600;
+                color: #475569;
+                margin-top: 1rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .markdown-body p {
+                margin-bottom: 0.75rem;
+                line-height: 1.625;
+                color: #475569;
+                text-align: justify;
+            }
+
+            .markdown-body ul,
+            .markdown-body ol {
+                margin-left: 1.5rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .markdown-body ul {
+                list-style-type: disc;
+            }
+
+            .markdown-body ol {
+                list-style-type: decimal;
+            }
+
+            .markdown-body li {
+                margin-bottom: 0.35rem;
+                color: #475569;
+            }
+
+            .markdown-body strong {
+                color: #0f172a;
+                font-weight: 700;
+            }
+
+            .markdown-body blockquote {
+                border-left: 4px solid #06b6d4;
+                padding-left: 1rem;
+                color: #64748b;
+                font-style: italic;
+                margin: 1rem 0;
+                background: #ecfeff;
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+
+            .markdown-body hr {
+                border: 0;
+                border-top: 2px dashed #e2e8f0;
+                margin: 2rem 0;
+            }
+
+            /* Print layout optimizations */
+            @media print {
+                body {
+                    background: white !important;
+                    color: black !important;
+                }
+
+                #sidebar-hr,
+                header,
+                .no-print {
+                    display: none !important;
+                }
+
+                main {
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    overflow: visible !important;
+                    height: auto !important;
+                }
+
+                .print-card {
+                    border: none !important;
+                    box-shadow: none !important;
+                    padding: 0 !important;
+                }
+
+                .markdown-body h1 {
+                    border-bottom: 2px solid #000;
+                }
+            }
+        </style>
     <?php endif; ?>
 </head>
+
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
     <!-- INCLUDE SIDEBAR KEPEGAWAIAN -->
@@ -621,30 +835,29 @@ if ($view === 'dashboard_asrama') {
 
     <!-- AREA KONTEN UTAMA -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        
+
         <!-- TOP HEADER -->
-        <header class="h-16 bg-[#0b8478] text-white shadow-md flex items-center justify-between px-4 sm:px-6 z-20 flex-shrink-0 border-b border-teal-700/60">
-            <div class="flex items-center space-x-3">
-                <!-- Tombol Hamburger untuk Mobile -->
-                <button id="open-sidebar-hr" class="text-white/90 hover:text-white focus:outline-none md:hidden p-1.5 rounded-lg hover:bg-white/10 transition">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-                <div class="flex items-center space-x-2">
-                    <h2 class="font-extrabold text-white text-base sm:text-lg tracking-tight flex items-center gap-2">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse"></span>
-                        Ruang Pegawai
-                    </h2>
-                    <span class="hidden md:inline-block text-[11px] font-medium bg-teal-800/80 text-teal-200 px-2 py-0.5 rounded-full border border-teal-600/40">SADIGS 4.0</span>
-                </div>
+        <header
+            class="h-16 bg-[#0b8478] text-white shadow-md flex items-center justify-between px-4 sm:px-6 z-20 flex-shrink-0 border-b border-teal-700/60">
+            <div class="flex items-center space-x-2">
+                <h2 class="font-extrabold text-white text-base sm:text-lg tracking-tight flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                    Ruang Pegawai
+                </h2>
+                <span
+                    class="hidden md:inline-block text-[11px] font-medium bg-teal-800/80 text-teal-200 px-2 py-0.5 rounded-full border border-teal-600/40">SADIGS
+                    4.0</span>
             </div>
-            
+
             <div class="flex items-center space-x-3">
-                <a href="yayasan2/index.php" class="text-xs text-white hover:text-teal-100 font-bold bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-xs">
+                <a href="yayasan2/index.php"
+                    class="text-xs text-white hover:text-teal-100 font-bold bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-xs">
                     <i class="fas fa-landmark text-teal-200"></i>
                     <span class="hidden sm:inline">Ruang Yayasan</span>
                 </a>
                 <a href="akunku.php" title="Halaman Akun" class="flex items-center group focus:outline-none">
-                    <div class="w-10 h-10 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-sm shadow-md border-2 border-white/90 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+                    <div
+                        class="w-10 h-10 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-sm shadow-md border-2 border-white/90 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
                         <?php if (!empty($u_foto)): ?>
                             <img src="<?= htmlspecialchars($u_foto) ?>" alt="Profil" class="w-full h-full object-cover">
                         <?php else: ?>
@@ -658,725 +871,916 @@ if ($view === 'dashboard_asrama') {
         <!-- MAIN DASHBOARD CONTENT -->
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
             <?php if ($view === 'dashboard_asrama'): ?>
-            <!-- ================================================== -->
-            <!-- TAMPILAN DASHBOARD KEPALA ASRAMA                   -->
-            <!-- ================================================== -->
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-home-user text-cyan-600 mr-2"></i>Dashboard Kepala Asrama</h1>
-                <p class="text-gray-500 mt-1">Grafik pemantauan aktivitas musyrif dan santri secara visual.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center"><div class="p-4 rounded-full bg-emerald-100 text-emerald-600 mr-4"><i class="fas fa-users text-2xl"></i></div><div><p class="text-sm font-medium text-gray-500">Total Santri Aktif</p><p class="text-3xl font-bold text-gray-900"><?= $total_santri_aktif ?></p></div></div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center"><div class="p-4 rounded-full bg-cyan-100 text-cyan-600 mr-4"><i class="fas fa-user-shield text-2xl"></i></div><div><p class="text-sm font-medium text-gray-500">Total Musyrif</p><p class="text-3xl font-bold text-gray-900"><?= $total_musyrif ?></p></div></div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center"><div class="p-4 rounded-full bg-amber-100 text-amber-600 mr-4"><i class="fas fa-balance-scale text-2xl"></i></div><div><p class="text-sm font-medium text-gray-500">Laporan Adab (7 Hari)</p><p class="text-3xl font-bold text-gray-900"><?= $total_laporan_minggu_ini ?></p></div></div>
-            </div>
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="font-bold text-gray-800 mb-4">Grafik Laporan Kedisiplinan (7 Hari)</h3>
-                    <canvas id="grafikLaporanAdab"></canvas>
+                <!-- ================================================== -->
+                <!-- TAMPILAN DASHBOARD KEPALA ASRAMA                   -->
+                <!-- ================================================== -->
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900"><i
+                            class="fas fa-home-user text-cyan-600 mr-2"></i>Dashboard Kepala Asrama</h1>
+                    <p class="text-gray-500 mt-1">Grafik pemantauan aktivitas musyrif dan santri secara visual.</p>
                 </div>
-                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                    <h3 class="font-bold text-gray-800 mb-4">Grafik Aktivitas Jurnal Musyrif (7 Hari)</h3>
-                    <canvas id="grafikJurnalMusyrif"></canvas>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                        <div class="p-4 rounded-full bg-emerald-100 text-emerald-600 mr-4"><i
+                                class="fas fa-users text-2xl"></i></div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Santri Aktif</p>
+                            <p class="text-3xl font-bold text-gray-900"><?= $total_santri_aktif ?></p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                        <div class="p-4 rounded-full bg-cyan-100 text-cyan-600 mr-4"><i
+                                class="fas fa-user-shield text-2xl"></i></div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Total Musyrif</p>
+                            <p class="text-3xl font-bold text-gray-900"><?= $total_musyrif ?></p>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
+                        <div class="p-4 rounded-full bg-amber-100 text-amber-600 mr-4"><i
+                                class="fas fa-balance-scale text-2xl"></i></div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Laporan Adab (7 Hari)</p>
+                            <p class="text-3xl font-bold text-gray-900"><?= $total_laporan_minggu_ini ?></p>
+                        </div>
+                    </div>
                 </div>
-            </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h3 class="font-bold text-gray-800 mb-4">Grafik Laporan Kedisiplinan (7 Hari)</h3>
+                        <canvas id="grafikLaporanAdab"></canvas>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h3 class="font-bold text-gray-800 mb-4">Grafik Aktivitas Jurnal Musyrif (7 Hari)</h3>
+                        <canvas id="grafikJurnalMusyrif"></canvas>
+                    </div>
+                </div>
 
             <?php elseif ($view === 'halaqoh'): ?>
-            <!-- ================================================== -->
-            <!-- TAMPILAN MANAJEMEN HALAQOH                        -->
-            <!-- ================================================== -->
-            <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-layer-group text-cyan-600 mr-2"></i>Manajemen Halaqoh Santri</h1></div>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-1 space-y-6">
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-                        <div class="p-4 border-b bg-slate-50"><h3 class="font-bold text-slate-800">Daftar Grup Halaqoh</h3></div>
-                        <div class="p-2 space-y-1">
-                            <?php foreach($grup_list as $g): ?>
-                            <a href="?view=halaqoh&grup_id=<?= $g['id'] ?>" class="<?= $g['id'] == $active_grup_id ? 'bg-cyan-100 text-cyan-800' : 'hover:bg-gray-100' ?> block p-3 rounded-lg transition">
-                                <div class="flex justify-between items-center">
-                                    <span class="font-bold"><?= htmlspecialchars($g['nama_grup']) ?></span>
-                                    <span class="text-xs font-bold bg-white px-2 py-1 rounded-full border"><?= $g['jumlah_anggota'] ?> Santri</span>
-                                </div>
-                                <div class="text-xs mt-1 opacity-70"><i class="fas fa-user-shield mr-1"></i> Musyrif: <?= htmlspecialchars($g['nama_musyrif']) ?></div>
-                            </a>
-                            <?php endforeach; ?>
-                            <?php if(empty($grup_list)): ?><p class="p-4 text-center text-sm text-gray-500 italic">Belum ada grup.</p><?php endif; ?>
-                        </div>
-                    </div>
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100">
-                        <div class="p-4 border-b bg-slate-50"><h3 class="font-bold text-slate-800"><i class="fas fa-plus-circle mr-2 text-cyan-600"></i>Buat Grup Baru</h3></div>
-                        <form action="admin-ustadz.php?view=halaqoh" method="POST" class="p-4 space-y-3">
-                            <input type="hidden" name="simpan_grup" value="1">
-                            <div><label class="text-sm font-medium">Nama Grup</label><input type="text" name="nama_grup" required class="w-full mt-1 px-3 py-2 border rounded-lg" placeholder="Cth: Halaqoh Abu Bakar"></div>
-                            <div><label class="text-sm font-medium">Pilih Musyrif</label><select name="musyrif_id" required class="w-full mt-1 px-3 py-2 border rounded-lg bg-white"><option value="">-- Pilih --</option><?php foreach($musyrif_list as $m) echo "<option value='{$m['id']}'>".htmlspecialchars($m['nama'])."</option>"; ?></select></div>
-                            <div class="text-right"><button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-5 rounded-lg shadow-md transition">Simpan Grup</button></div>
-                        </form>
-                    </div>
+                <!-- ================================================== -->
+                <!-- TAMPILAN MANAJEMEN HALAQOH                        -->
+                <!-- ================================================== -->
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900"><i
+                            class="fas fa-layer-group text-cyan-600 mr-2"></i>Manajemen Halaqoh Santri</h1>
                 </div>
-                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
-                    <?php if($active_grup): ?>
-                    <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
-                        <div>
-                            <h3 class="font-bold text-slate-800">Kelola Anggota: <span class="text-cyan-600"><?= htmlspecialchars($active_grup['nama_grup']) ?></span></h3>
-                            <p class="text-xs text-gray-500 mt-1">Pilih santri dari daftar di bawah untuk dimasukkan ke dalam grup ini.</p>
-                        </div>
-                        <a href="?view=halaqoh&hapus_grup_id=<?= $active_grup['id'] ?>" onclick="return confirm('Yakin ingin menghapus grup ini?')" class="text-red-500 hover:text-red-700 text-xs font-bold"><i class="fas fa-trash mr-1"></i> Hapus Grup</a>
-                    </div>
-                    <form action="admin-ustadz.php?view=halaqoh" method="POST">
-                        <input type="hidden" name="simpan_anggota" value="1">
-                        <input type="hidden" name="grup_id" value="<?= $active_grup_id ?>">
-                        <div class="p-4 h-[60vh] overflow-y-auto">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <?php foreach($santri_tersedia as $s): 
-                                    $checked = in_array($s['id'], $anggota_sekarang_ids) ? 'checked' : '';
-                                ?>
-                                <label class="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer <?= $checked ? 'bg-cyan-50 border-cyan-200' : '' ?>">
-                                    <input type="checkbox" name="anggota[]" value="<?= $s['id'] ?>" <?= $checked ?> class="w-5 h-5 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500">
-                                    <div>
-                                        <span class="font-medium text-gray-800"><?= htmlspecialchars($s['nama_lengkap']) ?></span>
-                                        <span class="text-xs text-gray-500 block">Kelas: <?= htmlspecialchars($s['kelas_sekarang']) ?></span>
-                                    </div>
-                                </label>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                            <div class="p-4 border-b bg-slate-50">
+                                <h3 class="font-bold text-slate-800">Daftar Grup Halaqoh</h3>
+                            </div>
+                            <div class="p-2 space-y-1">
+                                <?php foreach ($grup_list as $g): ?>
+                                    <a href="?view=halaqoh&grup_id=<?= $g['id'] ?>"
+                                        class="<?= $g['id'] == $active_grup_id ? 'bg-cyan-100 text-cyan-800' : 'hover:bg-gray-100' ?> block p-3 rounded-lg transition">
+                                        <div class="flex justify-between items-center">
+                                            <span class="font-bold"><?= htmlspecialchars($g['nama_grup']) ?></span>
+                                            <span
+                                                class="text-xs font-bold bg-white px-2 py-1 rounded-full border"><?= $g['jumlah_anggota'] ?>
+                                                Santri</span>
+                                        </div>
+                                        <div class="text-xs mt-1 opacity-70"><i class="fas fa-user-shield mr-1"></i> Musyrif:
+                                            <?= htmlspecialchars($g['nama_musyrif']) ?></div>
+                                    </a>
                                 <?php endforeach; ?>
+                                <?php if (empty($grup_list)): ?>
+                                    <p class="p-4 text-center text-sm text-gray-500 italic">Belum ada grup.</p><?php endif; ?>
                             </div>
                         </div>
-                        <div class="p-4 border-t bg-slate-50 text-right">
-                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition"><i class="fas fa-save mr-2"></i> Simpan Perubahan Anggota</button>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100">
+                            <div class="p-4 border-b bg-slate-50">
+                                <h3 class="font-bold text-slate-800"><i
+                                        class="fas fa-plus-circle mr-2 text-cyan-600"></i>Buat Grup Baru</h3>
+                            </div>
+                            <form action="admin-ustadz.php?view=halaqoh" method="POST" class="p-4 space-y-3">
+                                <input type="hidden" name="simpan_grup" value="1">
+                                <div><label class="text-sm font-medium">Nama Grup</label><input type="text" name="nama_grup"
+                                        required class="w-full mt-1 px-3 py-2 border rounded-lg"
+                                        placeholder="Cth: Halaqoh Abu Bakar"></div>
+                                <div><label class="text-sm font-medium">Pilih Musyrif</label><select name="musyrif_id"
+                                        required class="w-full mt-1 px-3 py-2 border rounded-lg bg-white">
+                                        <option value="">-- Pilih --</option>
+                                        <?php foreach ($musyrif_list as $m)
+                                            echo "<option value='{$m['id']}'>" . htmlspecialchars($m['nama']) . "</option>"; ?>
+                                    </select></div>
+                                <div class="text-right"><button type="submit"
+                                        class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-5 rounded-lg shadow-md transition">Simpan
+                                        Grup</button></div>
+                            </form>
                         </div>
-                    </form>
-                    <?php else: ?>
-                    <div class="p-4 h-full flex flex-col items-center justify-center text-center text-gray-500">
-                        <i class="fas fa-mouse-pointer text-5xl mb-4 text-gray-300"></i>
-                        <h3 class="font-bold text-lg">Pilih Grup Halaqoh</h3>
-                        <p>Silakan pilih grup di sebelah kiri untuk mulai mengelola anggotanya, atau buat grup baru.</p>
                     </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <?php elseif ($view === 'peraturan_role'): ?>
-            <!-- ================================================== -->
-            <!-- TAMPILAN PERATURAN ROLE                           -->
-            <!-- ================================================== -->
-            <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-file-contract text-cyan-600 mr-2"></i>Peraturan Pegawai</h1>
-                    <p class="text-gray-500 mt-1">Lihat peraturan dan SOP yang relevan dengan peran Anda.</p>
-                    <?php if (!empty($user_roles_label)): ?>
-                        <p class="text-sm text-gray-500 mt-2">Peran Anda: <?= htmlspecialchars(implode(', ', $user_roles_label)) ?></p>
-                    <?php endif; ?>
-                </div>
-            </div>
-            <?php if (count($matched_peraturan) > 0): ?>
-                <div class="grid grid-cols-1 gap-6">
-                    <?php foreach ($matched_peraturan as $rule): ?>
-                        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
-                            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                    <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100">
+                        <?php if ($active_grup): ?>
+                            <div class="p-4 border-b bg-slate-50 flex justify-between items-center">
                                 <div>
-                                    <h2 class="text-xl font-bold text-gray-900"><?= htmlspecialchars($rule['jabatan']) ?></h2>
-                                    <p class="text-xs text-gray-500 mt-1">Terakhir diperbarui <?= date('d M Y H:i', strtotime($rule['updated_at'])) ?></p>
+                                    <h3 class="font-bold text-slate-800">Kelola Anggota: <span
+                                            class="text-cyan-600"><?= htmlspecialchars($active_grup['nama_grup']) ?></span></h3>
+                                    <p class="text-xs text-gray-500 mt-1">Pilih santri dari daftar di bawah untuk dimasukkan ke
+                                        dalam grup ini.</p>
                                 </div>
-                                <span class="inline-flex items-center rounded-full bg-cyan-100 text-cyan-800 px-3 py-1 text-xs font-semibold">Read-only</span>
+                                <a href="?view=halaqoh&hapus_grup_id=<?= $active_grup['id'] ?>"
+                                    onclick="return confirm('Yakin ingin menghapus grup ini?')"
+                                    class="text-red-500 hover:text-red-700 text-xs font-bold"><i class="fas fa-trash mr-1"></i>
+                                    Hapus Grup</a>
                             </div>
-                            <div class="markdown-body peraturan-view">
-                                <div class="hidden peraturan-md"><?= htmlspecialchars($rule['konten']) ?></div>
+                            <form action="admin-ustadz.php?view=halaqoh" method="POST">
+                                <input type="hidden" name="simpan_anggota" value="1">
+                                <input type="hidden" name="grup_id" value="<?= $active_grup_id ?>">
+                                <div class="p-4 h-[60vh] overflow-y-auto">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <?php foreach ($santri_tersedia as $s):
+                                            $checked = in_array($s['id'], $anggota_sekarang_ids) ? 'checked' : '';
+                                            ?>
+                                            <label
+                                                class="flex items-center space-x-3 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer <?= $checked ? 'bg-cyan-50 border-cyan-200' : '' ?>">
+                                                <input type="checkbox" name="anggota[]" value="<?= $s['id'] ?>" <?= $checked ?>
+                                                    class="w-5 h-5 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500">
+                                                <div>
+                                                    <span
+                                                        class="font-medium text-gray-800"><?= htmlspecialchars($s['nama_lengkap']) ?></span>
+                                                    <span class="text-xs text-gray-500 block">Kelas:
+                                                        <?= htmlspecialchars($s['kelas_sekarang']) ?></span>
+                                                </div>
+                                            </label>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <div class="p-4 border-t bg-slate-50 text-right">
+                                    <button type="submit"
+                                        class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 px-8 rounded-lg shadow-md transition"><i
+                                            class="fas fa-save mr-2"></i> Simpan Perubahan Anggota</button>
+                                </div>
+                            </form>
+                        <?php else: ?>
+                            <div class="p-4 h-full flex flex-col items-center justify-center text-center text-gray-500">
+                                <i class="fas fa-mouse-pointer text-5xl mb-4 text-gray-300"></i>
+                                <h3 class="font-bold text-lg">Pilih Grup Halaqoh</h3>
+                                <p>Silakan pilih grup di sebelah kiri untuk mulai mengelola anggotanya, atau buat grup baru.</p>
                             </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            <?php else: ?>
-                <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center text-gray-600">
-                    <i class="fas fa-exclamation-circle text-4xl mb-4 text-amber-500"></i>
-                    <h3 class="text-lg font-bold text-gray-900 mb-2">Belum ada peraturan untuk peran Anda.</h3>
-                    <p class="text-sm">Silakan minta admin Yayasan untuk menambahkan SOP & Peraturan pada menu <strong>SOP & Peraturan</strong>.</p>
-                </div>
-            <?php endif; ?>
-
-            <?php elseif ($view === 'setor_hafalan'): ?>
-            <!-- ================================================== -->
-            <!-- TAMPILAN SETORAN HAFALAN                          -->
-            <!-- ================================================== -->
-            <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-quran text-emerald-600 mr-2"></i>Pencatatan Setoran Hafalan</h1></div>
-            <?php if(isset($pesan_sukses_setoran)) echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses_setoran</div>"; ?>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
-                <div class="px-6 py-4 bg-slate-50 border-b border-gray-100"><h2 class="font-bold text-slate-800"><i class="fas <?= $edit_mode_setoran ? 'fa-edit' : 'fa-plus' ?> mr-2"></i><?= $edit_mode_setoran ? 'Edit Catatan Setoran' : 'Input Setoran Baru' ?></h2></div>
-                <form action="admin-ustadz.php?view=setor_hafalan" method="POST" class="p-6">
-                    <input type="hidden" name="id" value="<?= $edit_mode_setoran ? $data_edit_setoran['id'] : '' ?>">
-                    <input type="hidden" name="simpan_setoran" value="1">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Nama Santri</label><input type="text" name="nama_santri" value="<?= $edit_mode_setoran ? htmlspecialchars($data_edit_setoran['nama_santri']) : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500" placeholder="Nama lengkap santri"></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Setoran</label><input type="date" name="tanggal" value="<?= $edit_mode_setoran ? $data_edit_setoran['tanggal'] : date('Y-m-d') ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Jenis Setoran</label><select name="jenis_setoran" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"><option value="Ziyadah" <?= ($edit_mode_setoran && $data_edit_setoran['jenis_setoran'] == 'Ziyadah') ? 'selected' : '' ?>>Ziyadah (Hafalan Baru)</option><option value="Murajaah" <?= ($edit_mode_setoran && $data_edit_setoran['jenis_setoran'] == 'Murajaah') ? 'selected' : '' ?>>Muraja'ah (Mengulang)</option></select></div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Surat</label><select name="surat_id" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"><?php foreach($surah_list as $id => $name) { $sel = ($edit_mode_setoran && $data_edit_setoran['surat_id'] == $id) ? 'selected' : ''; echo "<option value='$id' $sel>$id. $name</option>"; } ?></select></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Dari Ayat</label><input type="number" name="ayat_dari" value="<?= $edit_mode_setoran ? $data_edit_setoran['ayat_dari'] : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Sampai Ayat</label><input type="number" name="ayat_sampai" value="<?= $edit_mode_setoran ? $data_edit_setoran['ayat_sampai'] : '' ?>" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Penilaian</label><select name="penilaian" required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"><?php $penilaian_opsi = ['Lancar', 'Kurang Lancar', 'Perlu Diulang']; foreach($penilaian_opsi as $p) { $sel = ($edit_mode_setoran && $data_edit_setoran['penilaian'] == $p) ? 'selected' : ''; echo "<option value='$p' $sel>$p</option>"; } ?></select></div>
-                        <div><label class="block text-sm font-medium text-gray-700 mb-1">Catatan (Opsional)</label><input type="text" name="catatan" value="<?= $edit_mode_setoran ? htmlspecialchars($data_edit_setoran['catatan']) : '' ?>" class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500" placeholder="Contoh: Makhraj huruf 'ain perlu dilatih"></div>
-                    </div>
-                    <div class="text-right">
-                        <?php if($edit_mode_setoran) echo '<a href="admin-ustadz.php?view=setor_hafalan" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold mr-2">Batal</a>'; ?>
-                        <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition"><i class="fas fa-save mr-2"></i> <?= $edit_mode_setoran ? 'Update Catatan' : 'Simpan Setoran' ?></button>
-                    </div>
-                </form>
-            </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Riwayat Setoran Hafalan (Milik Anda)</h2></div>
-                <div class="overflow-x-auto p-4">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-white">
-                            <tr>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Santri & Tanggal</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Setoran</th>
-                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Penilaian & Catatan</th>
-                                <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100">
-                            <?php
-                            $res_setoran = $conn->query("SELECT * FROM setoran_hafalan WHERE ustadz_id = $ustadz_id ORDER BY tanggal DESC, id DESC");
-                            if ($res_setoran && $res_setoran->num_rows > 0) {
-                                while($row = $res_setoran->fetch_assoc()) { 
-                                    $badge_color = 'bg-gray-100 text-gray-700';
-                                    if ($row['penilaian'] == 'Lancar') $badge_color = 'bg-emerald-100 text-emerald-800';
-                                    if ($row['penilaian'] == 'Perlu Diulang') $badge_color = 'bg-red-100 text-red-800';
-                                ?>
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 align-top"><div class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_santri']) ?></div><div class="text-xs text-gray-500 mt-1"><?= date('d M Y', strtotime($row['tanggal'])) ?></div></td>
-                                    <td class="px-4 py-3 align-top"><div class="font-semibold text-gray-800"><?= htmlspecialchars($row['jenis_setoran']) ?>: <span class="text-emerald-700">QS. <?= $surah_list[$row['surat_id']] ?> [<?= $row['surat_id'] ?>]: <?= $row['ayat_dari'] ?>-<?= $row['ayat_sampai'] ?></span></div></td>
-                                    <td class="px-4 py-3 align-top"><span class="px-2 py-1 text-xs font-bold rounded-full <?= $badge_color ?>"><?= htmlspecialchars($row['penilaian']) ?></span><?php if(!empty($row['catatan'])): ?><p class="text-xs text-gray-500 mt-2 italic">"<?= htmlspecialchars($row['catatan']) ?>"</p><?php endif; ?></td>
-                                    <td class="px-4 py-3 text-center align-top"><a href="?view=setor_hafalan&edit_id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700 mr-2" title="Edit"><i class="fas fa-edit"></i></a><a href="?view=setor_hafalan&hapus_id=<?= $row['id'] ?>" onclick="return confirm('Hapus catatan setoran ini?')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></a></td>
-                                </tr>
-                            <?php } } else { echo "<tr><td colspan='4' class='text-center py-6 text-gray-500 italic'>Belum ada catatan setoran hafalan.</td></tr>"; } ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <?php elseif ($view === 'amanah'): ?>
-            <!-- ================================================== -->
-            <!-- TAMPILAN MENU AMANAH                              -->
-            <!-- ================================================== -->
-            <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-id-card text-cyan-600 mr-2"></i>Menu Amanah</h1>
-                    <p class="text-gray-500 mt-1">Daftar wewenang, rincian tugas berkala, dan Key Performance Indicators (KPI) Anda.</p>
-                </div>
-                <?php $has_any_amanah = false; foreach($amanah_roles as $r) { if (!empty(trim($r['konten']))) { $has_any_amanah = true; break; } } ?>
-                <?php if ($has_any_amanah): ?>
-                <div class="flex items-center gap-2">
-                    <button id="btn-print-amanah" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
-                        <i class="fas fa-print"></i>
-                        <span>Cetak PDF</span>
-                    </button>
-                    <button id="btn-copy-amanah" class="bg-white hover:bg-gray-100 border border-gray-200 text-gray-750 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
-                        <i class="fas fa-copy"></i>
-                        <span id="copy-text-btn">Salin Teks</span>
-                    </button>
-                </div>
-                <?php endif; ?>
-            </div>
-
-            <!-- CARD UTAMA AMANAH: TAB PER ROLE -->
-            <div class="bg-white rounded-2xl border border-gray-200/60 shadow-md p-6 md:p-8 print-card font-outfit">
-                <div class="mb-4">
-                    <div id="amanah-tabs" class="flex space-x-2 overflow-x-auto">
-                        <?php foreach ($amanah_roles as $rk => $r): ?>
-                            <button data-role="<?= $rk ?>" class="px-3 py-2 rounded-lg border text-sm <?= ($rk === $active_tab) ? 'bg-cyan-600 text-white' : 'bg-white' ?>"><?= htmlspecialchars($r['label']) ?></button>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-
-                <div id="amanah-panels" class="space-y-6">
-                    <?php foreach ($amanah_roles as $rk => $r): ?>
-                        <div class="amanah-panel <?= ($rk === $active_tab) ? '' : 'hidden' ?>" data-role="<?= $rk ?>">
-                            <div id="amanah-render-<?= $rk ?>" class="markdown-body text-sm leading-relaxed font-outfit"></div>
-                            <textarea id="amanah-raw-<?= $rk ?>" class="hidden"><?= htmlspecialchars($r['konten']) ?></textarea>
-                            <?php if (!empty($r['updated_at'])): ?><p class="text-xs text-gray-500 mt-2">Terakhir diperbarui <?= date('d M Y H:i', strtotime($r['updated_at'])) ?></p><?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-
-                <script>
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const tabs = document.querySelectorAll('#amanah-tabs button');
-                        let activeRole = '<?= $active_tab ?>';
-
-                        function renderAll() {
-                            document.querySelectorAll('[id^="amanah-raw-"]').forEach(el => {
-                                const id = el.id.replace('amanah-raw-', '');
-                                const htmlTarget = document.getElementById('amanah-render-' + id);
-                                if (htmlTarget) htmlTarget.innerHTML = marked.parse(el.value || '');
-                            });
-                        }
-
-                        function showRole(role) {
-                            activeRole = role;
-                            document.querySelectorAll('.amanah-panel').forEach(p => p.classList.toggle('hidden', p.dataset.role !== role));
-                            tabs.forEach(b => b.classList.toggle('bg-cyan-600', b.dataset.role === role));
-                            tabs.forEach(b => b.classList.toggle('text-white', b.dataset.role === role));
-                        }
-
-                        tabs.forEach(btn => btn.addEventListener('click', function(){ showRole(this.dataset.role); }));
-                        renderAll();
-                        showRole(activeRole);
-
-                        const copyBtn = document.getElementById('btn-copy-amanah');
-                        if (copyBtn) copyBtn.addEventListener('click', function(){
-                            const raw = document.getElementById('amanah-raw-' + activeRole).value || '';
-                            navigator.clipboard.writeText(raw).then(() => {
-                                const original = copyBtn.innerHTML;
-                                copyBtn.innerHTML = '<i class="fas fa-check text-emerald-500"></i> <span class="text-emerald-600 font-bold">Tersalin!</span>';
-                                setTimeout(()=> copyBtn.innerHTML = original, 1800);
-                            }).catch(err => console.error(err));
-                        });
-
-                        const printBtn = document.getElementById('btn-print-amanah');
-                        if (printBtn) printBtn.addEventListener('click', function(){
-                            const panel = document.querySelector('.amanah-panel[data-role="' + activeRole + '"]');
-                            if (!panel) return window.print();
-                            const w = window.open('', '_blank');
-                            w.document.write('<html><head><title>Amanah - ' + activeRole + '</title>');
-                            w.document.write('<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">');
-                            w.document.write('<style>body{font-family:Arial, Helvetica, sans-serif;padding:20px;color:#111}</style></head><body>');
-                            w.document.write('<h2>' + panel.querySelector('h2')?.textContent || '' + '</h2>');
-                            w.document.write(panel.innerHTML);
-                            w.document.write('</body></html>');
-                            w.document.close();
-                            w.print();
-                        });
-                    });
-                </script>
-            </div>
-
-            <?php elseif ($view === 'kpi_musyrif'): ?>
-            <!-- ================================================== -->
-            <!-- TAMPILAN MONITORING KPI BULANAN MUSYRIF            -->
-            <!-- ================================================== -->
-            <div class="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-chart-line text-cyan-600"></i>Capaian Raport KPI Anda</h1>
-                    <p class="text-gray-500 text-xs mt-1">Hasil evaluasi kepatuhan pengisian data santri binaan dan kehadiran Anda.</p>
-                </div>
-                <!-- Filter Bulan & Tahun -->
-                <form action="admin-ustadz.php" method="GET" class="flex gap-2">
-                    <input type="hidden" name="view" value="kpi_musyrif">
-                    <select name="bulan" class="px-3 py-1.5 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-cyan-500">
-                        <?php
-                        foreach ($months as $num => $name) {
-                            $sel = ($selected_month == $num) ? 'selected' : '';
-                            echo "<option value=\"$num\" $sel>$name</option>";
-                        }
-                        ?>
-                    </select>
-                    <select name="tahun" class="px-3 py-1.5 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-cyan-500">
-                        <?php
-                        $curr_yr = (int)date('Y');
-                        for ($y = $curr_yr - 2; $y <= $curr_yr + 1; $y++) {
-                            $sel = ($selected_year == $y) ? 'selected' : '';
-                            echo "<option value=\"$y\" $sel>$y</option>";
-                        }
-                        ?>
-                    </select>
-                    <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-4 py-1.5 rounded-xl text-xs transition">Filter</button>
-                </form>
-            </div>
-
-            <?php if ($staf): ?>
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 font-outfit">
-                    <!-- Skor Akhir Card -->
-                    <div class="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6 flex flex-col items-center justify-center text-center">
-                        <div class="w-20 h-20 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600 mb-4 border shadow-inner">
-                            <i class="fas fa-award text-3xl"></i>
-                        </div>
-                        <h2 class="font-bold text-slate-800 text-base"><?= htmlspecialchars($staf['nama']) ?></h2>
-                        <span class="text-[9px] bg-slate-100 text-slate-500 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-4 border">
-                            <?= htmlspecialchars(str_replace('_', ' ', $staf['role'])) ?>
-                        </span>
-
-                        <div class="w-full py-4 border-t border-b border-slate-100 mb-4">
-                            <span class="text-4xl font-extrabold text-slate-900"><?= number_format($total_kpi, 1) ?></span>
-                            <span class="text-[10px] text-slate-400 block mt-0.5">Skor Akhir KPI Anda</span>
-                        </div>
-
-                        <span class="px-4 py-1.5 rounded-xl text-xs font-bold <?= $predikat_class ?>">
-                            <?= $predikat ?>
-                        </span>
-                    </div>
-
-                    <!-- Progress Bars -->
-                    <div class="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6 lg:col-span-2 space-y-4">
-                        <h3 class="font-bold text-slate-800 text-xs pb-2 border-b uppercase tracking-wider"><i class="fas fa-tasks mr-2 text-cyan-600"></i>Capaian 8 Indikator Kepatuhan Anda</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                                    <span>1. Validasi Ibadah (15%)</span>
-                                    <span class="text-cyan-600"><?= number_format($skor_validasi_ibadah, 0) ?>%</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-cyan-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_validasi_ibadah ?>%"></div>
-                                </div>
-                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['validasi_ibadah'] ?></span>
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                                    <span>2. Kontak Walisantri (15%)</span>
-                                    <span class="text-emerald-600"><?= number_format($skor_kontak_walisantri, 0) ?>%</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-emerald-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_kontak_walisantri ?>%"></div>
-                                </div>
-                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['kontak_walisantri'] ?></span>
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                                    <span>3. Chek Belajar Mandiri (10%)</span>
-                                    <span class="text-cyan-600"><?= number_format($skor_belajar_mandiri, 0) ?>%</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-cyan-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_belajar_mandiri ?>%"></div>
-                                </div>
-                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['belajar_mandiri'] ?></span>
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                                    <span>4. Chek Kesehatan (10%)</span>
-                                    <span class="text-rose-600"><?= number_format($skor_kesehatan, 0) ?>%</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-rose-500 h-full rounded-full transition-all duration-500" style="width: <?= $skor_kesehatan ?>%"></div>
-                                </div>
-                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['kesehatan'] ?></span>
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                                    <span>5. Setoran Hafalan (15%)</span>
-                                    <span class="text-amber-600"><?= number_format($skor_setoran_hafalan, 0) ?>%</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: <?= $skor_setoran_hafalan ?>%"></div>
-                                </div>
-                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['setoran_hafalan'] ?></span>
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                                    <span>6. Buku Mutabaah Santri (15%)</span>
-                                    <span class="text-teal-600"><?= number_format($skor_mutabaah, 0) ?>%</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-teal-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_mutabaah ?>%"></div>
-                                </div>
-                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['mutabaah'] ?></span>
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                                    <span>7. Absensi Kerja (10%)</span>
-                                    <span class="text-pink-600"><?= number_format($skor_absensi_kerja, 0) ?>%</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-pink-500 h-full rounded-full transition-all duration-500" style="width: <?= $skor_absensi_kerja ?>%"></div>
-                                </div>
-                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['absensi_kerja'] ?></span>
-                            </div>
-
-                            <div>
-                                <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
-                                    <span>8. Kehadiran Rapat (10%)</span>
-                                    <span class="text-violet-600"><?= number_format($skor_absensi_rapat, 0) ?>%</span>
-                                </div>
-                                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                                    <div class="bg-violet-600 h-full rounded-full transition-all duration-500" style="width: <?= $skor_absensi_rapat ?>%"></div>
-                                </div>
-                                <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['absensi_rapat'] ?></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- LAPORAN EVALUASI & REKOMENDASI KINERJA DARI PIMPINAN -->
-                <div class="bg-white rounded-2xl shadow-sm border border-cyan-200/80 p-6 mb-8 font-outfit">
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-2">
-                        <div>
-                            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
-                                <i class="fas fa-clipboard-check text-cyan-600"></i> Laporan Evaluasi Kinerja & Rekomendasi Pimpinan
-                            </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Catatan evaluasi bulanan, arahan pembinaan HRD, dan nasihat Syariah dari Pimpinan / Yayasan untuk Anda.</p>
-                        </div>
-                        <?php if ($eval_mus && !empty($eval_mus['updated_at'])): ?>
-                            <span class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-xs whitespace-nowrap self-start sm:self-auto">
-                                <i class="fas fa-check-circle"></i> Diterbitkan: <?= date('d/m/Y', strtotime($eval_mus['updated_at'])) ?> (<?= htmlspecialchars($eval_mus['saved_by'] ?? 'Pimpinan') ?>)
-                            </span>
                         <?php endif; ?>
                     </div>
+                </div>
 
-                    <?php if ($eval_mus && !empty($eval_mus['evaluasi_ai'])): ?>
-                        <div id="evaluasi-musyrif-content" class="text-xs text-slate-700 markdown-body bg-slate-50/60 p-5 rounded-xl border border-slate-100">
-                            <!-- Rendered via marked.js -->
+            <?php elseif ($view === 'peraturan_role'): ?>
+                <!-- ================================================== -->
+                <!-- TAMPILAN PERATURAN ROLE                           -->
+                <!-- ================================================== -->
+                <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900"><i
+                                class="fas fa-file-contract text-cyan-600 mr-2"></i>Peraturan Pegawai</h1>
+                        <p class="text-gray-500 mt-1">Lihat peraturan dan SOP yang relevan dengan peran Anda.</p>
+                        <?php if (!empty($user_roles_label)): ?>
+                            <p class="text-sm text-gray-500 mt-2">Peran Anda:
+                                <?= htmlspecialchars(implode(', ', $user_roles_label)) ?></p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php if (count($matched_peraturan) > 0): ?>
+                    <div class="grid grid-cols-1 gap-6">
+                        <?php foreach ($matched_peraturan as $rule): ?>
+                            <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+                                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+                                    <div>
+                                        <h2 class="text-xl font-bold text-gray-900"><?= htmlspecialchars($rule['jabatan']) ?></h2>
+                                        <p class="text-xs text-gray-500 mt-1">Terakhir diperbarui
+                                            <?= date('d M Y H:i', strtotime($rule['updated_at'])) ?></p>
+                                    </div>
+                                    <span
+                                        class="inline-flex items-center rounded-full bg-cyan-100 text-cyan-800 px-3 py-1 text-xs font-semibold">Read-only</span>
+                                </div>
+                                <div class="markdown-body peraturan-view">
+                                    <div class="hidden peraturan-md"><?= htmlspecialchars($rule['konten']) ?></div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php else: ?>
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center text-gray-600">
+                        <i class="fas fa-exclamation-circle text-4xl mb-4 text-amber-500"></i>
+                        <h3 class="text-lg font-bold text-gray-900 mb-2">Belum ada peraturan untuk peran Anda.</h3>
+                        <p class="text-sm">Silakan minta admin Yayasan untuk menambahkan SOP & Peraturan pada menu <strong>SOP &
+                                Peraturan</strong>.</p>
+                    </div>
+                <?php endif; ?>
+
+            <?php elseif ($view === 'setor_hafalan'): ?>
+                <!-- ================================================== -->
+                <!-- TAMPILAN SETORAN HAFALAN                          -->
+                <!-- ================================================== -->
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-900"><i
+                            class="fas fa-quran text-emerald-600 mr-2"></i>Pencatatan Setoran Hafalan</h1>
+                </div>
+                <?php if (isset($pesan_sukses_setoran))
+                    echo "<div class='bg-emerald-100 text-emerald-700 px-4 py-3 rounded-lg mb-6 shadow-sm flex items-center'><i class='fas fa-check-circle mr-2'></i> $pesan_sukses_setoran</div>"; ?>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 mb-8 overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-50 border-b border-gray-100">
+                        <h2 class="font-bold text-slate-800"><i
+                                class="fas <?= $edit_mode_setoran ? 'fa-edit' : 'fa-plus' ?> mr-2"></i><?= $edit_mode_setoran ? 'Edit Catatan Setoran' : 'Input Setoran Baru' ?>
+                        </h2>
+                    </div>
+                    <form action="admin-ustadz.php?view=setor_hafalan" method="POST" class="p-6">
+                        <input type="hidden" name="id" value="<?= $edit_mode_setoran ? $data_edit_setoran['id'] : '' ?>">
+                        <input type="hidden" name="simpan_setoran" value="1">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Nama Santri</label><input
+                                    type="text" name="nama_santri"
+                                    value="<?= $edit_mode_setoran ? htmlspecialchars($data_edit_setoran['nama_santri']) : '' ?>"
+                                    required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"
+                                    placeholder="Nama lengkap santri"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Tanggal Setoran</label><input
+                                    type="date" name="tanggal"
+                                    value="<?= $edit_mode_setoran ? $data_edit_setoran['tanggal'] : date('Y-m-d') ?>"
+                                    required class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Jenis Setoran</label><select
+                                    name="jenis_setoran" required
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500">
+                                    <option value="Ziyadah" <?= ($edit_mode_setoran && $data_edit_setoran['jenis_setoran'] == 'Ziyadah') ? 'selected' : '' ?>>Ziyadah
+                                        (Hafalan Baru)</option>
+                                    <option value="Murajaah" <?= ($edit_mode_setoran && $data_edit_setoran['jenis_setoran'] == 'Murajaah') ? 'selected' : '' ?>>Muraja'ah
+                                        (Mengulang)</option>
+                                </select></div>
                         </div>
-                        <script>
-                            document.addEventListener('DOMContentLoaded', () => {
-                                const rawMd = <?= json_encode($eval_mus['evaluasi_ai']) ?>;
-                                const el = document.getElementById('evaluasi-musyrif-content');
-                                if (el && typeof marked !== 'undefined') {
-                                    el.innerHTML = marked.parse(rawMd);
-                                }
-                            });
-                        </script>
-                    <?php else: ?>
-                        <div class="text-slate-400 italic py-6 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                            <i class="fas fa-comment-dots text-3xl mb-2 text-slate-200 block"></i>
-                            Belum ada catatan evaluasi khusus yang diterbitkan oleh Pimpinan / Yayasan untuk periode bulan ini. Tetap pertahankan dan tingkatkan kualitas pendampingan santri binaan Anda!
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Surat</label><select
+                                    name="surat_id" required
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"><?php foreach ($surah_list as $id => $name) {
+                                        $sel = ($edit_mode_setoran && $data_edit_setoran['surat_id'] == $id) ? 'selected' : '';
+                                        echo "<option value='$id' $sel>$id. $name</option>";
+                                    } ?></select>
+                            </div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Dari Ayat</label><input
+                                    type="number" name="ayat_dari"
+                                    value="<?= $edit_mode_setoran ? $data_edit_setoran['ayat_dari'] : '' ?>" required
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Sampai Ayat</label><input
+                                    type="number" name="ayat_sampai"
+                                    value="<?= $edit_mode_setoran ? $data_edit_setoran['ayat_sampai'] : '' ?>" required
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"></div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Penilaian</label><select
+                                    name="penilaian" required
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"><?php $penilaian_opsi = ['Lancar', 'Kurang Lancar', 'Perlu Diulang'];
+                                    foreach ($penilaian_opsi as $p) {
+                                        $sel = ($edit_mode_setoran && $data_edit_setoran['penilaian'] == $p) ? 'selected' : '';
+                                        echo "<option value='$p' $sel>$p</option>";
+                                    } ?></select>
+                            </div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">Catatan
+                                    (Opsional)</label><input type="text" name="catatan"
+                                    value="<?= $edit_mode_setoran ? htmlspecialchars($data_edit_setoran['catatan']) : '' ?>"
+                                    class="w-full px-4 py-2 border rounded-lg focus:ring-emerald-500"
+                                    placeholder="Contoh: Makhraj huruf 'ain perlu dilatih"></div>
+                        </div>
+                        <div class="text-right">
+                            <?php if ($edit_mode_setoran)
+                                echo '<a href="admin-ustadz.php?view=setor_hafalan" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-bold mr-2">Batal</a>'; ?>
+                            <button type="submit"
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition"><i
+                                    class="fas fa-save mr-2"></i>
+                                <?= $edit_mode_setoran ? 'Update Catatan' : 'Simpan Setoran' ?></button>
+                        </div>
+                    </form>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+                        <h2 class="font-bold text-gray-800">Riwayat Setoran Hafalan (Milik Anda)</h2>
+                    </div>
+                    <div class="overflow-x-auto p-4">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-white">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Santri &
+                                        Tanggal</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Setoran</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Penilaian &
+                                        Catatan</th>
+                                    <th class="px-4 py-3 text-center text-xs font-bold text-gray-500 uppercase">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <?php
+                                $res_setoran = $conn->query("SELECT * FROM setoran_hafalan WHERE ustadz_id = $ustadz_id ORDER BY tanggal DESC, id DESC");
+                                if ($res_setoran && $res_setoran->num_rows > 0) {
+                                    while ($row = $res_setoran->fetch_assoc()) {
+                                        $badge_color = 'bg-gray-100 text-gray-700';
+                                        if ($row['penilaian'] == 'Lancar')
+                                            $badge_color = 'bg-emerald-100 text-emerald-800';
+                                        if ($row['penilaian'] == 'Perlu Diulang')
+                                            $badge_color = 'bg-red-100 text-red-800';
+                                        ?>
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-4 py-3 align-top">
+                                                <div class="font-bold text-gray-900"><?= htmlspecialchars($row['nama_santri']) ?>
+                                                </div>
+                                                <div class="text-xs text-gray-500 mt-1">
+                                                    <?= date('d M Y', strtotime($row['tanggal'])) ?></div>
+                                            </td>
+                                            <td class="px-4 py-3 align-top">
+                                                <div class="font-semibold text-gray-800">
+                                                    <?= htmlspecialchars($row['jenis_setoran']) ?>: <span
+                                                        class="text-emerald-700">QS. <?= $surah_list[$row['surat_id']] ?>
+                                                        [<?= $row['surat_id'] ?>]:
+                                                        <?= $row['ayat_dari'] ?>-<?= $row['ayat_sampai'] ?></span></div>
+                                            </td>
+                                            <td class="px-4 py-3 align-top"><span
+                                                    class="px-2 py-1 text-xs font-bold rounded-full <?= $badge_color ?>"><?= htmlspecialchars($row['penilaian']) ?></span><?php if (!empty($row['catatan'])): ?>
+                                                    <p class="text-xs text-gray-500 mt-2 italic">
+                                                        "<?= htmlspecialchars($row['catatan']) ?>"</p><?php endif; ?>
+                                            </td>
+                                            <td class="px-4 py-3 text-center align-top"><a
+                                                    href="?view=setor_hafalan&edit_id=<?= $row['id'] ?>"
+                                                    class="text-blue-500 hover:text-blue-700 mr-2" title="Edit"><i
+                                                        class="fas fa-edit"></i></a><a
+                                                    href="?view=setor_hafalan&hapus_id=<?= $row['id'] ?>"
+                                                    onclick="return confirm('Hapus catatan setoran ini?')"
+                                                    class="text-red-500 hover:text-red-700" title="Hapus"><i
+                                                        class="fas fa-trash"></i></a></td>
+                                        </tr>
+                                    <?php }
+                                } else {
+                                    echo "<tr><td colspan='4' class='text-center py-6 text-gray-500 italic'>Belum ada catatan setoran hafalan.</td></tr>";
+                                } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            <?php elseif ($view === 'amanah'): ?>
+                <!-- ================================================== -->
+                <!-- TAMPILAN MENU AMANAH                              -->
+                <!-- ================================================== -->
+                <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-id-card text-cyan-600 mr-2"></i>Menu
+                            Amanah</h1>
+                        <p class="text-gray-500 mt-1">Daftar wewenang, rincian tugas berkala, dan Key Performance Indicators
+                            (KPI) Anda.</p>
+                    </div>
+                    <?php $has_any_amanah = false;
+                    foreach ($amanah_roles as $r) {
+                        if (!empty(trim($r['konten']))) {
+                            $has_any_amanah = true;
+                            break;
+                        }
+                    } ?>
+                    <?php if ($has_any_amanah): ?>
+                        <div class="flex items-center gap-2">
+                            <button id="btn-print-amanah"
+                                class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                                <i class="fas fa-print"></i>
+                                <span>Cetak PDF</span>
+                            </button>
+                            <button id="btn-copy-amanah"
+                                class="bg-white hover:bg-gray-100 border border-gray-200 text-gray-750 px-4 py-2 rounded-lg text-sm font-bold transition flex items-center gap-2 shadow-sm">
+                                <i class="fas fa-copy"></i>
+                                <span id="copy-text-btn">Salin Teks</span>
+                            </button>
                         </div>
                     <?php endif; ?>
                 </div>
-            <?php endif; ?>
 
-            <?php else: ?>
-            <!-- ================================================== -->
-            <!-- TAMPILAN DEFAULT (HOME RUANG PEGAWAI - ANDROID CARD MENU) -->
-            <!-- ================================================== -->
-            <?php
-            $pegawai_sections = [
-                [
-                    'category' => 'Kehadiran & Tugas',
-                    'icon' => 'fas fa-calendar-check',
-                    'color' => 'text-emerald-700',
-                    'items' => [
-                        ['title' => 'Absen', 'href' => 'admin-absensi-pegawai.php', 'icon' => 'fas fa-qrcode', 'bg' => 'from-emerald-500 to-teal-700'],
-                        ['title' => 'Izin Cuti', 'href' => 'admin-pegawai-perizinan.php', 'icon' => 'fas fa-calendar-check', 'bg' => 'from-teal-500 to-emerald-700'],
-                        ['title' => 'Slip Gaji', 'href' => 'slip-gaji.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-amber-500 to-amber-700'],
-                        ['title' => 'KPI Staf', 'href' => 'admin-pegawai-kpi.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-indigo-600 to-blue-700'],
-                        ['title' => 'Supervisi', 'href' => 'admin-supervisi-mengajar.php', 'icon' => 'fas fa-clipboard-check', 'bg' => 'from-blue-600 to-indigo-700'],
-                        ['title' => 'Rapat', 'href' => 'admin-jadwal-rapat.php', 'icon' => 'fas fa-handshake', 'bg' => 'from-violet-600 to-purple-700'],
-                        ['title' => 'Peraturan', 'href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fas fa-file-contract', 'bg' => 'from-slate-600 to-slate-800'],
-                        ['title' => 'Akunku', 'href' => 'akunku.php', 'icon' => 'fas fa-user-cog', 'bg' => 'from-zinc-600 to-slate-800']
-                    ]
-                ],
-                [
-                    'category' => 'KBM & Kurikulum',
-                    'icon' => 'fas fa-graduation-cap',
-                    'color' => 'text-blue-700',
-                    'items' => [
-                        ['title' => 'Jurnal KBM', 'href' => 'admin-pegawai-jurnal.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-blue-600 to-indigo-700'],
-                        ['title' => 'Jadwal Ajar', 'href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fas fa-clock', 'bg' => 'from-sky-500 to-blue-600'],
-                        ['title' => 'Kalender', 'href' => 'kalender-akademik.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-teal-700'],
-                        ['title' => 'Kesediaan', 'href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fas fa-user-check', 'bg' => 'from-teal-600 to-emerald-700'],
-                        ['title' => 'Silabus', 'href' => 'admin-pegawai-silabus.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-indigo-500 to-purple-600'],
-                        ['title' => 'AI RPP', 'href' => 'admin-pegawai-rpp.php', 'icon' => 'fas fa-wand-magic-sparkles', 'bg' => 'from-purple-600 to-fuchsia-700'],
-                        ['title' => 'Bank Nilai', 'href' => 'admin-pegawai-nilai.php', 'icon' => 'fas fa-star-half-alt', 'bg' => 'from-amber-500 to-orange-600'],
-                        ['title' => 'E-Modul', 'href' => 'admin-elearning.php', 'icon' => 'fas fa-laptop-code', 'bg' => 'from-violet-600 to-indigo-700'],
-                        ['title' => 'Prota Promes', 'href' => 'admin-kurikulum-prota-promes.php', 'icon' => 'fas fa-calendar-alt', 'bg' => 'from-rose-500 to-pink-600'],
-                        ['title' => 'Kelas', 'href' => 'admin-master-kelas.php', 'icon' => 'fas fa-school', 'bg' => 'from-blue-500 to-indigo-600'],
-                        ['title' => 'Mapel', 'href' => 'admin-master-mapel.php', 'icon' => 'fas fa-book', 'bg' => 'from-indigo-500 to-purple-600'],
-                        ['title' => 'Kitab', 'href' => 'admin-kitab-rujukan.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-amber-600 to-amber-800']
-                    ]
-                ],
-                [
-                    'category' => 'Asrama & Musyrif',
-                    'icon' => 'fas fa-mosque',
-                    'color' => 'text-amber-700',
-                    'items' => [
-                        ['title' => 'Dashboard', 'href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fas fa-house-user', 'bg' => 'from-cyan-600 to-blue-700'],
-                        ['title' => 'Halaqoh', 'href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fas fa-layer-group', 'bg' => 'from-teal-600 to-emerald-700'],
-                        ['title' => 'Ibadah', 'href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fas fa-tasks', 'bg' => 'from-green-600 to-emerald-700'],
-                        ['title' => 'Setoran', 'href' => 'admin-setoran-hafalan-santri.php', 'icon' => 'fas fa-quran', 'bg' => 'from-emerald-600 to-teal-800'],
-                        ['title' => 'Rekap Quran', 'href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fas fa-file-alt', 'bg' => 'from-teal-500 to-cyan-700'],
-                        ['title' => 'Mutabaah', 'href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fas fa-clipboard-list', 'bg' => 'from-amber-500 to-orange-600'],
-                        ['title' => 'Adab', 'href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fas fa-balance-scale', 'bg' => 'from-rose-500 to-red-600'],
-                        ['title' => 'Belajar', 'href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-blue-600 to-indigo-700'],
-                        ['title' => 'Kesehatan', 'href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fas fa-notes-medical', 'bg' => 'from-red-500 to-rose-600'],
-                        ['title' => 'Walisantri', 'href' => 'admin-kontak-orangtua.php', 'icon' => 'fas fa-comments', 'bg' => 'from-emerald-500 to-teal-700'],
-                        ['title' => 'Uang Saku', 'href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-amber-600 to-yellow-600'],
-                        ['title' => 'KPI Musyrif', 'href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fas fa-chart-pie', 'bg' => 'from-purple-600 to-indigo-700']
-                    ]
-                ],
-                [
-                    'category' => 'Administrasi & Nilai',
-                    'icon' => 'fas fa-folder-open',
-                    'color' => 'text-slate-700',
-                    'items' => [
-                        ['title' => 'Buku Induk', 'href' => 'admin-buku-induk.php', 'icon' => 'fas fa-address-book', 'bg' => 'from-slate-600 to-slate-800'],
-                        ['title' => 'Akun Ortu', 'href' => 'admin-akun-orangtua.php', 'icon' => 'fas fa-users', 'bg' => 'from-indigo-600 to-slate-700'],
-                        ['title' => 'Leger Nilai', 'href' => 'admin-leger.php', 'icon' => 'fas fa-table-list', 'bg' => 'from-blue-600 to-indigo-700'],
-                        ['title' => 'Raport PKBM', 'href' => 'admin-rapot-pkbm.php', 'icon' => 'fas fa-file-invoice', 'bg' => 'from-cyan-600 to-blue-700'],
-                        ['title' => 'Konseling', 'href' => 'admin-counseling-karir.php', 'icon' => 'fas fa-graduation-cap', 'bg' => 'from-purple-600 to-violet-700'],
-                        ['title' => 'Rekap Ajar', 'href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fas fa-chalkboard-user', 'bg' => 'from-amber-600 to-orange-700'],
-                        ['title' => 'Rekap SPP', 'href' => 'admin-rekap-spp.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-emerald-600 to-teal-700'],
-                        ['title' => 'Tagihan SPP', 'href' => 'admin-penagihan-spp.php', 'icon' => 'fas fa-comment-dollar', 'bg' => 'from-teal-600 to-emerald-700'],
-                        ['title' => 'Validasi Saku', 'href' => 'admin-rekap-uang-saku.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-cyan-600 to-teal-700'],
-                        ['title' => 'Kas Sekolah', 'href' => 'sekolah-pembukuan.php', 'icon' => 'fas fa-cash-register', 'bg' => 'from-slate-700 to-zinc-900']
-                    ]
-                ],
-                [
-                    'category' => 'Solopreneur AI',
-                    'icon' => 'fas fa-rocket',
-                    'color' => 'text-purple-700',
-                    'items' => [
-                        ['title' => 'Wirausaha AI', 'href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-purple-600 to-fuchsia-700']
-                    ]
-                ]
-            ];
-            ?>
-            <div class="max-w-6xl mx-auto space-y-4 md:space-y-6">
-                <!-- SEARCH BAR MINIMALIS (ALA ANDROID SEARCH) -->
-                <div class="relative w-full">
-                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                    <input type="text" id="androidSearch" placeholder="Cari menu pegawai..." 
-                           class="w-full pl-11 pr-4 py-2.5 md:py-3 rounded-2xl border border-slate-200/90 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-[#0b8478] bg-white shadow-xs transition">
-                </div>
-
-                <!-- CARD SECTIONS (ANDROID APP LAUNCHER STYLE) -->
-                <div id="androidLauncher" class="space-y-4 md:space-y-6">
-                    <?php foreach ($pegawai_sections as $sec): ?>
-                    <div class="app-section bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/70 shadow-xs">
-                        
-                        <!-- SECTION HEADER (1-2 WORDS ONLY) -->
-                        <div class="flex items-center gap-2 mb-4 px-1">
-                            <i class="<?= $sec['icon'] ?> text-sm <?= $sec['color'] ?>"></i>
-                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-700 uppercase tracking-wider">
-                                <?= htmlspecialchars($sec['category']) ?>
-                            </h3>
-                        </div>
-
-                        <!-- ANDROID SQUIRCLE ICON GRID (4 KOLOM DI HP, 6-7 KOLOM DI PC) -->
-                        <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-5 sm:gap-y-6 gap-x-2 sm:gap-x-4 items-start justify-items-center">
-                            <?php foreach ($sec['items'] as $item): ?>
-                            <div class="app-item flex flex-col items-center w-full text-center select-none" data-title="<?= strtolower(htmlspecialchars($item['title'])) ?>">
-                                <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center w-full focus:outline-none group">
-                                    
-                                    <!-- SQUIRCLE ICON ANDROID -->
-                                    <div class="android-icon relative w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] sm:rounded-[24px] bg-gradient-to-br <?= $item['bg'] ?> text-white shadow-sm flex items-center justify-center text-xl sm:text-2xl border border-white/25">
-                                        <i class="<?= $item['icon'] ?>"></i>
-                                    </div>
-
-                                    <!-- CAPTION 1-2 KATA SAJA -->
-                                    <span class="text-[11px] sm:text-xs font-semibold text-slate-700 group-hover:text-[#0b8478] mt-2 tracking-tight text-center leading-tight line-clamp-1 max-w-[76px] sm:max-w-[85px] transition-colors">
-                                        <?= htmlspecialchars($item['title']) ?>
-                                    </span>
-                                </a>
-                            </div>
+                <!-- CARD UTAMA AMANAH: TAB PER ROLE -->
+                <div class="bg-white rounded-2xl border border-gray-200/60 shadow-md p-6 md:p-8 print-card font-outfit">
+                    <div class="mb-4">
+                        <div id="amanah-tabs" class="flex space-x-2 overflow-x-auto">
+                            <?php foreach ($amanah_roles as $rk => $r): ?>
+                                <button data-role="<?= $rk ?>"
+                                    class="px-3 py-2 rounded-lg border text-sm <?= ($rk === $active_tab) ? 'bg-cyan-600 text-white' : 'bg-white' ?>"><?= htmlspecialchars($r['label']) ?></button>
                             <?php endforeach; ?>
                         </div>
-
                     </div>
-                    <?php endforeach; ?>
-                </div>
 
-                <!-- EMPTY STATE PENCARIAN -->
-                <div id="noAppFound" class="hidden text-center py-12 bg-white rounded-3xl border border-slate-200">
-                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xl mx-auto mb-2">
-                        <i class="fas fa-search"></i>
+                    <div id="amanah-panels" class="space-y-6">
+                        <?php foreach ($amanah_roles as $rk => $r): ?>
+                            <div class="amanah-panel <?= ($rk === $active_tab) ? '' : 'hidden' ?>" data-role="<?= $rk ?>">
+                                <div id="amanah-render-<?= $rk ?>" class="markdown-body text-sm leading-relaxed font-outfit">
+                                </div>
+                                <textarea id="amanah-raw-<?= $rk ?>"
+                                    class="hidden"><?= htmlspecialchars($r['konten']) ?></textarea>
+                                <?php if (!empty($r['updated_at'])): ?>
+                                    <p class="text-xs text-gray-500 mt-2">Terakhir diperbarui
+                                        <?= date('d M Y H:i', strtotime($r['updated_at'])) ?></p><?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
                     </div>
-                    <p class="font-bold text-slate-600 text-xs">Menu tidak ditemukan</p>
-                </div>
-            </div>
 
-            <!-- SCRIPT PENCARIAN INSTAN -->
-            <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const searchInput = document.getElementById('androidSearch');
-                const sections = document.querySelectorAll('.app-section');
-                const emptyState = document.getElementById('noAppFound');
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            const tabs = document.querySelectorAll('#amanah-tabs button');
+                            let activeRole = '<?= $active_tab ?>';
 
-                if (searchInput) {
-                    searchInput.addEventListener('input', function() {
-                        const query = this.value.toLowerCase().trim();
-                        let totalVisible = 0;
+                            function renderAll() {
+                                document.querySelectorAll('[id^="amanah-raw-"]').forEach(el => {
+                                    const id = el.id.replace('amanah-raw-', '');
+                                    const htmlTarget = document.getElementById('amanah-render-' + id);
+                                    if (htmlTarget) htmlTarget.innerHTML = marked.parse(el.value || '');
+                                });
+                            }
 
-                        sections.forEach(sec => {
-                            let secVisible = 0;
-                            const items = sec.querySelectorAll('.app-item');
+                            function showRole(role) {
+                                activeRole = role;
+                                document.querySelectorAll('.amanah-panel').forEach(p => p.classList.toggle('hidden', p.dataset.role !== role));
+                                tabs.forEach(b => b.classList.toggle('bg-cyan-600', b.dataset.role === role));
+                                tabs.forEach(b => b.classList.toggle('text-white', b.dataset.role === role));
+                            }
 
-                            items.forEach(item => {
-                                const title = item.getAttribute('data-title') || '';
-                                if (!query || title.includes(query)) {
-                                    item.classList.remove('hidden');
-                                    secVisible++;
-                                    totalVisible++;
-                                } else {
-                                    item.classList.add('hidden');
-                                }
+                            tabs.forEach(btn => btn.addEventListener('click', function () { showRole(this.dataset.role); }));
+                            renderAll();
+                            showRole(activeRole);
+
+                            const copyBtn = document.getElementById('btn-copy-amanah');
+                            if (copyBtn) copyBtn.addEventListener('click', function () {
+                                const raw = document.getElementById('amanah-raw-' + activeRole).value || '';
+                                navigator.clipboard.writeText(raw).then(() => {
+                                    const original = copyBtn.innerHTML;
+                                    copyBtn.innerHTML = '<i class="fas fa-check text-emerald-500"></i> <span class="text-emerald-600 font-bold">Tersalin!</span>';
+                                    setTimeout(() => copyBtn.innerHTML = original, 1800);
+                                }).catch(err => console.error(err));
                             });
 
-                            if (secVisible === 0 && query !== '') {
-                                sec.classList.add('hidden');
-                            } else {
-                                sec.classList.remove('hidden');
-                            }
+                            const printBtn = document.getElementById('btn-print-amanah');
+                            if (printBtn) printBtn.addEventListener('click', function () {
+                                const panel = document.querySelector('.amanah-panel[data-role="' + activeRole + '"]');
+                                if (!panel) return window.print();
+                                const w = window.open('', '_blank');
+                                w.document.write('<html><head><title>Amanah - ' + activeRole + '</title>');
+                                w.document.write('<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">');
+                                w.document.write('<style>body{font-family:Arial, Helvetica, sans-serif;padding:20px;color:#111}</style></head><body>');
+                                w.document.write('<h2>' + panel.querySelector('h2')?.textContent || '' + '</h2>');
+                                w.document.write(panel.innerHTML);
+                                w.document.write('</body></html>');
+                                w.document.close();
+                                w.print();
+                            });
                         });
+                    </script>
+                </div>
 
-                        if (emptyState) {
-                            if (totalVisible === 0 && query !== '') {
-                                emptyState.classList.remove('hidden');
-                            } else {
-                                emptyState.classList.add('hidden');
+            <?php elseif ($view === 'kpi_musyrif'): ?>
+                <!-- ================================================== -->
+                <!-- TAMPILAN MONITORING KPI BULANAN MUSYRIF            -->
+                <!-- ================================================== -->
+                <div class="mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2"><i
+                                class="fas fa-chart-line text-cyan-600"></i>Capaian Raport KPI Anda</h1>
+                        <p class="text-gray-500 text-xs mt-1">Hasil evaluasi kepatuhan pengisian data santri binaan dan
+                            kehadiran Anda.</p>
+                    </div>
+                    <!-- Filter Bulan & Tahun -->
+                    <form action="admin-ustadz.php" method="GET" class="flex gap-2">
+                        <input type="hidden" name="view" value="kpi_musyrif">
+                        <select name="bulan"
+                            class="px-3 py-1.5 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-cyan-500">
+                            <?php
+                            foreach ($months as $num => $name) {
+                                $sel = ($selected_month == $num) ? 'selected' : '';
+                                echo "<option value=\"$num\" $sel>$name</option>";
                             }
+                            ?>
+                        </select>
+                        <select name="tahun"
+                            class="px-3 py-1.5 border rounded-xl text-xs bg-white focus:ring-2 focus:ring-cyan-500">
+                            <?php
+                            $curr_yr = (int) date('Y');
+                            for ($y = $curr_yr - 2; $y <= $curr_yr + 1; $y++) {
+                                $sel = ($selected_year == $y) ? 'selected' : '';
+                                echo "<option value=\"$y\" $sel>$y</option>";
+                            }
+                            ?>
+                        </select>
+                        <button type="submit"
+                            class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold px-4 py-1.5 rounded-xl text-xs transition">Filter</button>
+                    </form>
+                </div>
+
+                <?php if ($staf): ?>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 font-outfit">
+                        <!-- Skor Akhir Card -->
+                        <div
+                            class="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6 flex flex-col items-center justify-center text-center">
+                            <div
+                                class="w-20 h-20 rounded-full bg-cyan-50 flex items-center justify-center text-cyan-600 mb-4 border shadow-inner">
+                                <i class="fas fa-award text-3xl"></i>
+                            </div>
+                            <h2 class="font-bold text-slate-800 text-base"><?= htmlspecialchars($staf['nama']) ?></h2>
+                            <span
+                                class="text-[9px] bg-slate-100 text-slate-500 font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider mb-4 border">
+                                <?= htmlspecialchars(str_replace('_', ' ', $staf['role'])) ?>
+                            </span>
+
+                            <div class="w-full py-4 border-t border-b border-slate-100 mb-4">
+                                <span class="text-4xl font-extrabold text-slate-900"><?= number_format($total_kpi, 1) ?></span>
+                                <span class="text-[10px] text-slate-400 block mt-0.5">Skor Akhir KPI Anda</span>
+                            </div>
+
+                            <span class="px-4 py-1.5 rounded-xl text-xs font-bold <?= $predikat_class ?>">
+                                <?= $predikat ?>
+                            </span>
+                        </div>
+
+                        <!-- Progress Bars -->
+                        <div class="bg-white rounded-2xl border border-gray-200/60 shadow-sm p-6 lg:col-span-2 space-y-4">
+                            <h3 class="font-bold text-slate-800 text-xs pb-2 border-b uppercase tracking-wider"><i
+                                    class="fas fa-tasks mr-2 text-cyan-600"></i>Capaian 8 Indikator Kepatuhan Anda</h3>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>1. Validasi Ibadah (15%)</span>
+                                        <span class="text-cyan-600"><?= number_format($skor_validasi_ibadah, 0) ?>%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-cyan-600 h-full rounded-full transition-all duration-500"
+                                            style="width: <?= $skor_validasi_ibadah ?>%"></div>
+                                    </div>
+                                    <span
+                                        class="text-[9px] text-slate-400 block mt-0.5"><?= $details['validasi_ibadah'] ?></span>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>2. Kontak Walisantri (15%)</span>
+                                        <span class="text-emerald-600"><?= number_format($skor_kontak_walisantri, 0) ?>%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-emerald-600 h-full rounded-full transition-all duration-500"
+                                            style="width: <?= $skor_kontak_walisantri ?>%"></div>
+                                    </div>
+                                    <span
+                                        class="text-[9px] text-slate-400 block mt-0.5"><?= $details['kontak_walisantri'] ?></span>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>3. Chek Belajar Mandiri (10%)</span>
+                                        <span class="text-cyan-600"><?= number_format($skor_belajar_mandiri, 0) ?>%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-cyan-600 h-full rounded-full transition-all duration-500"
+                                            style="width: <?= $skor_belajar_mandiri ?>%"></div>
+                                    </div>
+                                    <span
+                                        class="text-[9px] text-slate-400 block mt-0.5"><?= $details['belajar_mandiri'] ?></span>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>4. Chek Kesehatan (10%)</span>
+                                        <span class="text-rose-600"><?= number_format($skor_kesehatan, 0) ?>%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-rose-500 h-full rounded-full transition-all duration-500"
+                                            style="width: <?= $skor_kesehatan ?>%"></div>
+                                    </div>
+                                    <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['kesehatan'] ?></span>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>5. Setoran Hafalan (15%)</span>
+                                        <span class="text-amber-600"><?= number_format($skor_setoran_hafalan, 0) ?>%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-amber-500 h-full rounded-full transition-all duration-500"
+                                            style="width: <?= $skor_setoran_hafalan ?>%"></div>
+                                    </div>
+                                    <span
+                                        class="text-[9px] text-slate-400 block mt-0.5"><?= $details['setoran_hafalan'] ?></span>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>6. Buku Mutabaah Santri (15%)</span>
+                                        <span class="text-teal-600"><?= number_format($skor_mutabaah, 0) ?>%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-teal-600 h-full rounded-full transition-all duration-500"
+                                            style="width: <?= $skor_mutabaah ?>%"></div>
+                                    </div>
+                                    <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['mutabaah'] ?></span>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>7. Absensi Kerja (10%)</span>
+                                        <span class="text-pink-600"><?= number_format($skor_absensi_kerja, 0) ?>%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-pink-500 h-full rounded-full transition-all duration-500"
+                                            style="width: <?= $skor_absensi_kerja ?>%"></div>
+                                    </div>
+                                    <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['absensi_kerja'] ?></span>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                                        <span>8. Kehadiran Rapat (10%)</span>
+                                        <span class="text-violet-600"><?= number_format($skor_absensi_rapat, 0) ?>%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                                        <div class="bg-violet-600 h-full rounded-full transition-all duration-500"
+                                            style="width: <?= $skor_absensi_rapat ?>%"></div>
+                                    </div>
+                                    <span class="text-[9px] text-slate-400 block mt-0.5"><?= $details['absensi_rapat'] ?></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LAPORAN EVALUASI & REKOMENDASI KINERJA DARI PIMPINAN -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-cyan-200/80 p-6 mb-8 font-outfit">
+                        <div
+                            class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-2">
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                                    <i class="fas fa-clipboard-check text-cyan-600"></i> Laporan Evaluasi Kinerja & Rekomendasi
+                                    Pimpinan
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-0.5">Catatan evaluasi bulanan, arahan pembinaan HRD, dan
+                                    nasihat Syariah dari Pimpinan / Yayasan untuk Anda.</p>
+                            </div>
+                            <?php if ($eval_mus && !empty($eval_mus['updated_at'])): ?>
+                                <span
+                                    class="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[10px] font-bold flex items-center gap-1.5 shadow-xs whitespace-nowrap self-start sm:self-auto">
+                                    <i class="fas fa-check-circle"></i> Diterbitkan:
+                                    <?= date('d/m/Y', strtotime($eval_mus['updated_at'])) ?>
+                                    (<?= htmlspecialchars($eval_mus['saved_by'] ?? 'Pimpinan') ?>)
+                                </span>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if ($eval_mus && !empty($eval_mus['evaluasi_ai'])): ?>
+                            <div id="evaluasi-musyrif-content"
+                                class="text-xs text-slate-700 markdown-body bg-slate-50/60 p-5 rounded-xl border border-slate-100">
+                                <!-- Rendered via marked.js -->
+                            </div>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const rawMd = <?= json_encode($eval_mus['evaluasi_ai']) ?>;
+                                    const el = document.getElementById('evaluasi-musyrif-content');
+                                    if (el && typeof marked !== 'undefined') {
+                                        el.innerHTML = marked.parse(rawMd);
+                                    }
+                                });
+                            </script>
+                        <?php else: ?>
+                            <div
+                                class="text-slate-400 italic py-6 text-center bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                                <i class="fas fa-comment-dots text-3xl mb-2 text-slate-200 block"></i>
+                                Belum ada catatan evaluasi khusus yang diterbitkan oleh Pimpinan / Yayasan untuk periode bulan ini.
+                                Tetap pertahankan dan tingkatkan kualitas pendampingan santri binaan Anda!
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+            <?php else: ?>
+                <!-- ================================================== -->
+                <!-- TAMPILAN DEFAULT (HOME RUANG PEGAWAI - ANDROID CARD MENU) -->
+                <!-- ================================================== -->
+                <?php
+                $pegawai_sections = [
+                    [
+                        'category' => 'Kehadiran & Tugas',
+                        'icon' => 'fas fa-calendar-check',
+                        'color' => 'text-emerald-700',
+                        'items' => [
+                            ['title' => 'Absen', 'href' => 'admin-absensi-pegawai.php', 'icon' => 'fas fa-qrcode', 'bg' => 'from-emerald-500 to-teal-700'],
+                            ['title' => 'Izin Cuti', 'href' => 'admin-pegawai-perizinan.php', 'icon' => 'fas fa-calendar-check', 'bg' => 'from-teal-500 to-emerald-700'],
+                            ['title' => 'Slip Gaji', 'href' => 'slip-gaji.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-amber-500 to-amber-700'],
+                            ['title' => 'KPI Staf', 'href' => 'admin-pegawai-kpi.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-indigo-600 to-blue-700'],
+                            ['title' => 'Supervisi', 'href' => 'admin-supervisi-mengajar.php', 'icon' => 'fas fa-clipboard-check', 'bg' => 'from-blue-600 to-indigo-700'],
+                            ['title' => 'Rapat', 'href' => 'admin-jadwal-rapat.php', 'icon' => 'fas fa-handshake', 'bg' => 'from-violet-600 to-purple-700'],
+                            ['title' => 'Peraturan', 'href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fas fa-file-contract', 'bg' => 'from-slate-600 to-slate-800'],
+                            ['title' => 'Akunku', 'href' => 'akunku.php', 'icon' => 'fas fa-user-cog', 'bg' => 'from-zinc-600 to-slate-800']
+                        ]
+                    ],
+                    [
+                        'category' => 'KBM & Kurikulum',
+                        'icon' => 'fas fa-graduation-cap',
+                        'color' => 'text-blue-700',
+                        'items' => [
+                            ['title' => 'Jurnal KBM', 'href' => 'admin-pegawai-jurnal.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-blue-600 to-indigo-700'],
+                            ['title' => 'Jadwal Ajar', 'href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fas fa-clock', 'bg' => 'from-sky-500 to-blue-600'],
+                            ['title' => 'Kalender', 'href' => 'kalender-akademik.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-teal-700'],
+                            ['title' => 'Kesediaan', 'href' => 'admin-pegawai-kesediaan.php', 'icon' => 'fas fa-user-check', 'bg' => 'from-teal-600 to-emerald-700'],
+                            ['title' => 'Silabus', 'href' => 'admin-pegawai-silabus.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-indigo-500 to-purple-600'],
+                            ['title' => 'AI RPP', 'href' => 'admin-pegawai-rpp.php', 'icon' => 'fas fa-wand-magic-sparkles', 'bg' => 'from-purple-600 to-fuchsia-700'],
+                            ['title' => 'Bank Nilai', 'href' => 'admin-pegawai-nilai.php', 'icon' => 'fas fa-star-half-alt', 'bg' => 'from-amber-500 to-orange-600'],
+                            ['title' => 'E-Modul', 'href' => 'admin-elearning.php', 'icon' => 'fas fa-laptop-code', 'bg' => 'from-violet-600 to-indigo-700'],
+                            ['title' => 'Prota Promes', 'href' => 'admin-kurikulum-prota-promes.php', 'icon' => 'fas fa-calendar-alt', 'bg' => 'from-rose-500 to-pink-600'],
+                            ['title' => 'Kelas', 'href' => 'admin-master-kelas.php', 'icon' => 'fas fa-school', 'bg' => 'from-blue-500 to-indigo-600'],
+                            ['title' => 'Mapel', 'href' => 'admin-master-mapel.php', 'icon' => 'fas fa-book', 'bg' => 'from-indigo-500 to-purple-600'],
+                            ['title' => 'Kitab', 'href' => 'admin-kitab-rujukan.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-amber-600 to-amber-800']
+                        ]
+                    ],
+                    [
+                        'category' => 'Asrama & Musyrif',
+                        'icon' => 'fas fa-mosque',
+                        'color' => 'text-amber-700',
+                        'items' => [
+                            ['title' => 'Dashboard', 'href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fas fa-house-user', 'bg' => 'from-cyan-600 to-blue-700'],
+                            ['title' => 'Halaqoh', 'href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fas fa-layer-group', 'bg' => 'from-teal-600 to-emerald-700'],
+                            ['title' => 'Ibadah', 'href' => 'admin-validasi-ibadah-musyrif.php', 'icon' => 'fas fa-tasks', 'bg' => 'from-green-600 to-emerald-700'],
+                            ['title' => 'Setoran', 'href' => 'admin-setoran-hafalan-santri.php', 'icon' => 'fas fa-quran', 'bg' => 'from-emerald-600 to-teal-800'],
+                            ['title' => 'Rekap Quran', 'href' => 'admin-laporan-setoran-hafalan.php', 'icon' => 'fas fa-file-alt', 'bg' => 'from-teal-500 to-cyan-700'],
+                            ['title' => 'Mutabaah', 'href' => 'admin-pegawai-mutabaah.php', 'icon' => 'fas fa-clipboard-list', 'bg' => 'from-amber-500 to-orange-600'],
+                            ['title' => 'Adab', 'href' => 'admin-pegawai-laporan-adab.php', 'icon' => 'fas fa-balance-scale', 'bg' => 'from-rose-500 to-red-600'],
+                            ['title' => 'Belajar', 'href' => 'admin-cek-belajar-mandiri.php', 'icon' => 'fas fa-book-reader', 'bg' => 'from-blue-600 to-indigo-700'],
+                            ['title' => 'Kesehatan', 'href' => 'admin-cek-kesehatan-santri.php', 'icon' => 'fas fa-notes-medical', 'bg' => 'from-red-500 to-rose-600'],
+                            ['title' => 'Walisantri', 'href' => 'admin-kontak-orangtua.php', 'icon' => 'fas fa-comments', 'bg' => 'from-emerald-500 to-teal-700'],
+                            ['title' => 'Uang Saku', 'href' => 'admin-rekap-uang-saku-musyrif.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-amber-600 to-yellow-600'],
+                            ['title' => 'KPI Musyrif', 'href' => 'admin-ustadz.php?view=kpi_musyrif', 'icon' => 'fas fa-chart-pie', 'bg' => 'from-purple-600 to-indigo-700']
+                        ]
+                    ],
+                    [
+                        'category' => 'Administrasi & Nilai',
+                        'icon' => 'fas fa-folder-open',
+                        'color' => 'text-slate-700',
+                        'items' => [
+                            ['title' => 'Buku Induk', 'href' => 'admin-buku-induk.php', 'icon' => 'fas fa-address-book', 'bg' => 'from-slate-600 to-slate-800'],
+                            ['title' => 'Akun Ortu', 'href' => 'admin-akun-orangtua.php', 'icon' => 'fas fa-users', 'bg' => 'from-indigo-600 to-slate-700'],
+                            ['title' => 'Leger Nilai', 'href' => 'admin-leger.php', 'icon' => 'fas fa-table-list', 'bg' => 'from-blue-600 to-indigo-700'],
+                            ['title' => 'Raport PKBM', 'href' => 'admin-rapot-pkbm.php', 'icon' => 'fas fa-file-invoice', 'bg' => 'from-cyan-600 to-blue-700'],
+                            ['title' => 'Konseling', 'href' => 'admin-counseling-karir.php', 'icon' => 'fas fa-graduation-cap', 'bg' => 'from-purple-600 to-violet-700'],
+                            ['title' => 'Rekap Ajar', 'href' => 'admin-kontrol-jam-kosong.php', 'icon' => 'fas fa-chalkboard-user', 'bg' => 'from-amber-600 to-orange-700'],
+                            ['title' => 'Rekap SPP', 'href' => 'admin-rekap-spp.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-emerald-600 to-teal-700'],
+                            ['title' => 'Tagihan SPP', 'href' => 'admin-penagihan-spp.php', 'icon' => 'fas fa-comment-dollar', 'bg' => 'from-teal-600 to-emerald-700'],
+                            ['title' => 'Validasi Saku', 'href' => 'admin-rekap-uang-saku.php', 'icon' => 'fas fa-wallet', 'bg' => 'from-cyan-600 to-teal-700'],
+                            ['title' => 'Kas Sekolah', 'href' => 'sekolah-pembukuan.php', 'icon' => 'fas fa-cash-register', 'bg' => 'from-slate-700 to-zinc-900']
+                        ]
+                    ],
+                    [
+                        'category' => 'Solopreneur AI',
+                        'icon' => 'fas fa-rocket',
+                        'color' => 'text-purple-700',
+                        'items' => [
+                            ['title' => 'Wirausaha AI', 'href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-purple-600 to-fuchsia-700']
+                        ]
+                    ]
+                ];
+                ?>
+                <div class="max-w-6xl mx-auto space-y-4 md:space-y-6">
+                    <!-- SEARCH BAR MINIMALIS (ALA ANDROID SEARCH) -->
+                    <div class="relative w-full">
+                        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                        <input type="text" id="androidSearch" placeholder="Cari menu pegawai..."
+                            class="w-full pl-11 pr-4 py-2.5 md:py-3 rounded-2xl border border-slate-200/90 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-[#0b8478] bg-white shadow-xs transition">
+                    </div>
+
+                    <!-- CARD SECTIONS (ANDROID APP LAUNCHER STYLE) -->
+                    <div id="androidLauncher" class="space-y-4 md:space-y-6">
+                        <?php foreach ($pegawai_sections as $sec): ?>
+                            <div class="app-section bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/70 shadow-xs">
+
+                                <!-- SECTION HEADER (1-2 WORDS ONLY) -->
+                                <div class="flex items-center gap-2 mb-4 px-1">
+                                    <i class="<?= $sec['icon'] ?> text-sm <?= $sec['color'] ?>"></i>
+                                    <h3 class="font-extrabold text-xs sm:text-sm text-slate-700 uppercase tracking-wider">
+                                        <?= htmlspecialchars($sec['category']) ?>
+                                    </h3>
+                                </div>
+
+                                <!-- ANDROID SQUIRCLE ICON GRID (4 KOLOM DI HP, 6-7 KOLOM DI PC) -->
+                                <div
+                                    class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-5 sm:gap-y-6 gap-x-2 sm:gap-x-4 items-start justify-items-center">
+                                    <?php foreach ($sec['items'] as $item): ?>
+                                        <div class="app-item flex flex-col items-center w-full text-center select-none"
+                                            data-title="<?= strtolower(htmlspecialchars($item['title'])) ?>">
+                                            <a href="<?= htmlspecialchars($item['href']) ?>"
+                                                class="flex flex-col items-center w-full focus:outline-none group">
+
+                                                <!-- SQUIRCLE ICON ANDROID -->
+                                                <div
+                                                    class="android-icon relative w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] sm:rounded-[24px] bg-gradient-to-br <?= $item['bg'] ?> text-white shadow-sm flex items-center justify-center text-xl sm:text-2xl border border-white/25">
+                                                    <i class="<?= $item['icon'] ?>"></i>
+                                                </div>
+
+                                                <!-- CAPTION 1-2 KATA SAJA -->
+                                                <span
+                                                    class="text-[11px] sm:text-xs font-semibold text-slate-700 group-hover:text-[#0b8478] mt-2 tracking-tight text-center leading-tight line-clamp-1 max-w-[76px] sm:max-w-[85px] transition-colors">
+                                                    <?= htmlspecialchars($item['title']) ?>
+                                                </span>
+                                            </a>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <!-- EMPTY STATE PENCARIAN -->
+                    <div id="noAppFound" class="hidden text-center py-12 bg-white rounded-3xl border border-slate-200">
+                        <div
+                            class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xl mx-auto mb-2">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <p class="font-bold text-slate-600 text-xs">Menu tidak ditemukan</p>
+                    </div>
+                </div>
+
+                <!-- SCRIPT PENCARIAN INSTAN -->
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const searchInput = document.getElementById('androidSearch');
+                        const sections = document.querySelectorAll('.app-section');
+                        const emptyState = document.getElementById('noAppFound');
+
+                        if (searchInput) {
+                            searchInput.addEventListener('input', function () {
+                                const query = this.value.toLowerCase().trim();
+                                let totalVisible = 0;
+
+                                sections.forEach(sec => {
+                                    let secVisible = 0;
+                                    const items = sec.querySelectorAll('.app-item');
+
+                                    items.forEach(item => {
+                                        const title = item.getAttribute('data-title') || '';
+                                        if (!query || title.includes(query)) {
+                                            item.classList.remove('hidden');
+                                            secVisible++;
+                                            totalVisible++;
+                                        } else {
+                                            item.classList.add('hidden');
+                                        }
+                                    });
+
+                                    if (secVisible === 0 && query !== '') {
+                                        sec.classList.add('hidden');
+                                    } else {
+                                        sec.classList.remove('hidden');
+                                    }
+                                });
+
+                                if (emptyState) {
+                                    if (totalVisible === 0 && query !== '') {
+                                        emptyState.classList.remove('hidden');
+                                    } else {
+                                        emptyState.classList.add('hidden');
+                                    }
+                                }
+                            });
                         }
                     });
-                }
-            });
-            </script>
+                </script>
             <?php endif; ?>
         </main>
     </div>
 
     <!-- SCRIPT UNTUK TOGGLE SIDEBAR DI MOBILE -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const sidebar = document.getElementById('sidebar-hr');
             const openBtn = document.getElementById('open-sidebar-hr');
             const overlay = document.getElementById('sidebar-overlay-hr');
             const closeBtn = document.getElementById('close-sidebar-hr');
 
             function toggleSidebar() {
-                if(sidebar && overlay) { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); }
+                if (sidebar && overlay) { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); }
             }
-            if(openBtn) openBtn.addEventListener('click', toggleSidebar);
-            if(overlay) overlay.addEventListener('click', toggleSidebar);
-            if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
+            if (openBtn) openBtn.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', toggleSidebar);
 
             <?php if ($view === 'dashboard_asrama'): ?>
-            // Grafik Laporan Adab
-            const ctxAdab = document.getElementById('grafikLaporanAdab').getContext('2d');
-            new Chart(ctxAdab, {
-                type: 'bar',
-                data: {
-                    labels: <?= json_encode($laporan_adab_data['labels']) ?>,
-                    datasets: [{
-                        label: 'Pelanggaran', data: <?= json_encode($laporan_adab_data['pelanggaran']) ?>,
-                        backgroundColor: 'rgba(239, 68, 68, 0.6)', borderColor: 'rgba(239, 68, 68, 1)', borderWidth: 1
-                    }, {
-                        label: 'Apresiasi', data: <?= json_encode($laporan_adab_data['apresiasi']) ?>,
-                        backgroundColor: 'rgba(16, 185, 129, 0.6)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 1
-                    }]
-                },
-                options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-            });
+                // Grafik Laporan Adab
+                const ctxAdab = document.getElementById('grafikLaporanAdab').getContext('2d');
+                new Chart(ctxAdab, {
+                    type: 'bar',
+                    data: {
+                        labels: <?= json_encode($laporan_adab_data['labels']) ?>,
+                        datasets: [{
+                            label: 'Pelanggaran', data: <?= json_encode($laporan_adab_data['pelanggaran']) ?>,
+                            backgroundColor: 'rgba(239, 68, 68, 0.6)', borderColor: 'rgba(239, 68, 68, 1)', borderWidth: 1
+                        }, {
+                            label: 'Apresiasi', data: <?= json_encode($laporan_adab_data['apresiasi']) ?>,
+                            backgroundColor: 'rgba(16, 185, 129, 0.6)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 1
+                        }]
+                    },
+                    options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                });
 
-            // Grafik Jurnal Musyrif
-            const ctxJurnal = document.getElementById('grafikJurnalMusyrif').getContext('2d');
-            new Chart(ctxJurnal, {
-                type: 'line',
-                data: {
-                    labels: <?= json_encode($jurnal_musyrif_data['labels']) ?>,
-                    datasets: [{
-                        label: 'Jumlah Jurnal Masuk', data: <?= json_encode($jurnal_musyrif_data['data']) ?>,
-                        fill: true, backgroundColor: 'rgba(6, 182, 212, 0.2)',
-                        borderColor: 'rgba(6, 182, 212, 1)', tension: 0.3
-                    }]
-                },
-                options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-            });
+                // Grafik Jurnal Musyrif
+                const ctxJurnal = document.getElementById('grafikJurnalMusyrif').getContext('2d');
+                new Chart(ctxJurnal, {
+                    type: 'line',
+                    data: {
+                        labels: <?= json_encode($jurnal_musyrif_data['labels']) ?>,
+                        datasets: [{
+                            label: 'Jumlah Jurnal Masuk', data: <?= json_encode($jurnal_musyrif_data['data']) ?>,
+                            fill: true, backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                            borderColor: 'rgba(6, 182, 212, 1)', tension: 0.3
+                        }]
+                    },
+                    options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                });
             <?php endif; ?>
             <?php if ($view === 'peraturan_role'): ?>
                 document.querySelectorAll('.peraturan-view').forEach(card => {
@@ -1392,4 +1796,5 @@ if ($view === 'dashboard_asrama') {
         });
     </script>
 </body>
+
 </html>
