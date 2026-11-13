@@ -33,6 +33,19 @@ $locations = [
     ],
 ];
 
+// Ambil lokasi aktif tambahan dari database master_lokasi jika tersedia
+$q_dyn_loc = $conn->query("SELECT * FROM master_lokasi WHERE status_aktif = 1");
+if ($q_dyn_loc && $q_dyn_loc->num_rows > 0) {
+    while ($dl = $q_dyn_loc->fetch_assoc()) {
+        $lcode = !empty($dl['kode_lokasi']) ? $dl['kode_lokasi'] : 'loc_' . $dl['id'];
+        $locations[$lcode] = [
+            'nama' => $dl['nama_lokasi'],
+            'coords' => ['latitude' => (float)$dl['latitude'], 'longitude' => (float)$dl['longitude']],
+            'radius' => (int)($dl['radius_meter'] ?? MAX_DISTANCE_METERS)
+        ];
+    }
+}
+
 // --- BUAT TABEL OTOMATIS ---
 $conn->query("CREATE TABLE IF NOT EXISTS absensi_pegawai (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -288,92 +301,52 @@ $target_location_name = '';
 $today = date('Y-m-d');
 if ($qr_jenis_absen === 'Rapat') {
     $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND jenis_absen = 'Rapat' AND rapat_id = $rapat_id AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
-} else {
-    $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = '$qr_jenis_absen' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
-}
-
-$status_kehadiran = 'Masuk';
-if ($res_check) {
-    $num_absen = $res_check->num_rows;
-    if ($num_absen >= 2) {
-        json_response('error', "Anda sudah menyelesaikan absensi Masuk dan Pulang untuk " . ($qr_jenis_absen === 'Rapat' ? 'rapat ini' : $qr_jenis_absen) . ".");
-    } elseif ($num_absen == 1) {
-        $row = $res_check->fetch_assoc();
-        // Cek jeda waktu untuk menghindari scan ganda tanpa sengaja (misal jeda < 30 menit ditolak)
-        $waktu_terakhir = strtotime($row['waktu_absen']);
-        if (time() - $waktu_terakhir < 1800) { // 1800 detik = 30 menit
-            json_response('error', 'Absen terlalu cepat dari absen sebelumnya. Harap tunggu minimal 30 menit untuk absen Pulang.');
+    $status_kehadiran = 'Masuk';
+    if ($res_check) {
+        $num_absen = $res_check->num_rows;
+        if ($num_absen >= 2) {
+            json_response('error', "Anda sudah menyelesaikan absensi Masuk dan Pulang untuk rapat ini.");
+        } elseif ($num_absen == 1) {
+            $row = $res_check->fetch_assoc();
+            $waktu_terakhir = strtotime($row['waktu_absen']);
+            if (time() - $waktu_terakhir < 180) { // 3 menit jeda
+                json_response('error', 'Absen terlalu cepat dari absen sebelumnya. Harap tunggu minimal 3 menit untuk absen Pulang rapat.');
+            }
+            $status_kehadiran = 'Pulang';
         }
-        $status_kehadiran = 'Pulang';
+    }
+} else {
+    // Untuk Pegawai (Harian) & Mengajar: Mendukung Fleksibilitas Shift Kerja & Giliran Piket 24 Jam
+    $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = '$qr_jenis_absen' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
+    $status_kehadiran = 'Masuk';
+    if ($res_check && $res_check->num_rows > 0) {
+        $last_row = $res_check->fetch_assoc();
+        $waktu_terakhir = strtotime($last_row['waktu_absen']);
+        if ($last_row['status_kehadiran'] === 'Masuk') {
+            // Posisi saat ini sedang Masuk, maka klik berikutnya adalah Pulang (Selesai shift/piket)
+            if (time() - $waktu_terakhir < 180) { // 3 menit jeda agar tidak tertekan ganda tidak sengaja
+                json_response('error', 'Anda baru saja absen Masuk. Harap tunggu minimal 3 menit sebelum absen Pulang.');
+            }
+            $status_kehadiran = 'Pulang';
+        } else {
+            // Posisi terakhir adalah Pulang, maka dapat absen Masuk kembali untuk shift/piket berikutnya
+            if (time() - $waktu_terakhir < 180) {
+                json_response('error', 'Anda baru saja absen Pulang. Harap tunggu minimal 3 menit jika ingin absen Masuk shift berikutnya.');
+            }
+            $status_kehadiran = 'Masuk';
+        }
     }
 }
 
-// B. Validasi Waktu Khusus Absensi Harian/Pegawai & Kalkulasi Kedisiplinan Kerja
+// B. Pembatasan Jam Absensi Dihilangkan: Mendukung Giliran Piket & Shift Kerja Kapan Saja
+// Pembatasan MURNI HANYA PADA RADIUS LOKASI FISIK RESMI YANG SUDAH DITETAPKAN
 $keterangan = NULL;
 $warning_msg = null;
 
 if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
-    $current_time = date('H:i');
-    if ($status_kehadiran === 'Masuk') {
-        if ($current_time < '06:30' || $current_time > '13:00') {
-            json_response('error', 'Absen Kedatangan harian hanya dibuka antara pukul 06:30 s/d 13:00 WIB.');
-        }
-        
-        // Pengecekan Keterlambatan (> 07:00 WIB)
-        if ($current_time > '07:00') {
-            $work_start = strtotime(date('Y-m-d') . ' 07:00:00');
-            $absen_time = time();
-            $diff_seconds = $absen_time - $work_start;
-            $diff_minutes = max(1, floor($diff_seconds / 60));
-            
-            if ($diff_minutes >= 60) {
-                $hours = floor($diff_minutes / 60);
-                $mins = $diff_minutes % 60;
-                $time_str = $mins > 0 ? "$hours jam $mins menit" : "$hours jam";
-            } else {
-                $time_str = "$diff_minutes menit";
-            }
-            
-            $keterangan = "Terlambat: $time_str";
-            $warning_msg = "Anda terdeteksi Terlambat masuk kerja selama $time_str (Absen dilakukan pukul " . date('H:i') . "). Catatan ini telah disimpan di database.";
-        } else {
-            $keterangan = 'Tepat Waktu';
-        }
-    } elseif ($status_kehadiran === 'Pulang') {
-        // Batas akhir absen pulang adalah 14:00 WIB (60 menit setelah jam pulang kerja 13:00 WIB)
-        if ($current_time > '14:00') {
-            json_response('error', 'Absen Pulang harian hanya dibuka hingga pukul 14:00 WIB (60 menit setelah jam pulang kerja).');
-        }
-        
-        // Pengecekan Pulang Lebih Awal (Absen Pulang diperbolehkan sebelum 13:00, tetapi dicatat sebagai pelanggaran)
-        if ($current_time < '13:00') {
-            $work_end = strtotime(date('Y-m-d') . ' 13:00:00');
-            $absen_time = time();
-            $diff_seconds = $work_end - $absen_time;
-            $diff_minutes = max(1, floor($diff_seconds / 60));
-            
-            if ($diff_minutes >= 60) {
-                $hours = floor($diff_minutes / 60);
-                $mins = $diff_minutes % 60;
-                $time_str = "$hours jam $mins menit";
-            } else {
-                $time_str = "$diff_minutes menit";
-            }
-            
-            $keterangan = "Pulang Lebih Awal: $time_str";
-            $warning_msg = "Anda terdeteksi Pulang Awal selama $time_str sebelum jam pulang (Absen dilakukan pukul " . date('H:i') . "). Catatan ini telah disimpan di database.";
-        } else {
-            $keterangan = 'Tepat Waktu';
-        }
-    }
-}
-
-if ($qr_jenis_absen === 'Mengajar') {
-    $current_time = date('H:i');
-    if ($current_time < '04:30' || $current_time > '20:00') {
-        json_response('error', 'Absen Mengajar hanya dibuka antara pukul 04:30 s/d 20:00 WIB.');
-    }
-    $keterangan = 'Mengajar';
+    $keterangan = ($status_kehadiran === 'Masuk') ? 'Hadir (Shift/Piket)' : 'Pulang (Selesai Shift/Piket)';
+} elseif ($qr_jenis_absen === 'Mengajar') {
+    $keterangan = ($status_kehadiran === 'Masuk') ? 'Mulai Mengajar' : 'Selesai Mengajar';
 }
 
 // C. Cek apakah pegawai memiliki status perizinan aktif untuk hari ini (Bypass GPS)
@@ -457,6 +430,7 @@ if ($qr_jenis_absen === 'Rapat') {
     // --- METODE GEOLOCATION-ONLY (TANPA QR) ---
     $closest_location_key = null;
     $closest_distance = null;
+    $closest_radius = MAX_DISTANCE_METERS;
 
     foreach ($locations as $key => $loc) {
         $loc_lat = $loc['coords']['latitude'];
@@ -466,6 +440,7 @@ if ($qr_jenis_absen === 'Rapat') {
         if ($closest_distance === null || $dist < $closest_distance) {
             $closest_distance = $dist;
             $closest_location_key = $key;
+            $closest_radius = isset($loc['radius']) ? (int)$loc['radius'] : MAX_DISTANCE_METERS;
         }
     }
 
@@ -473,10 +448,10 @@ if ($qr_jenis_absen === 'Rapat') {
         $qr_location_key = $closest_location_key;
         $distance = $closest_distance;
         $target_location_name = $locations[$closest_location_key]['nama'];
+        $max_distance_allowed = $closest_radius;
     } else {
         json_response('error', 'Tidak ada koordinat gedung resmi yang terdaftar.');
     }
-    $max_distance_allowed = MAX_DISTANCE_METERS;
 }
 
 // E. Validasi Jarak & Eksekusi Penyimpanan

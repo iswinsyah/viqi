@@ -875,25 +875,27 @@ if ($user) {
 $today_str = date('Y-m-d');
 $current_ustadz_id = $_SESSION['ustadz_id'] ?? ((!empty($user['ref_id'])) ? (int)$user['ref_id'] : (int)($user['id'] ?? 1));
 
-$res_peg_status = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $current_ustadz_id AND DATE(waktu_absen) = '$today_str' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+// Cek status absensi pegawai (Mendukung Shift Kerja & Piket Fleksibel)
+$res_peg_status = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $current_ustadz_id AND DATE(waktu_absen) = '$today_str' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
 $dash_pegawai_status = 'belum_absen';
-if ($res_peg_status) {
-    $num_p = $res_peg_status->num_rows;
-    if ($num_p >= 2) {
-        $dash_pegawai_status = 'selesai';
-    } elseif ($num_p == 1) {
+if ($res_peg_status && $res_peg_status->num_rows > 0) {
+    $row_p = $res_peg_status->fetch_assoc();
+    if ($row_p['status_kehadiran'] === 'Masuk') {
         $dash_pegawai_status = 'datang';
+    } else {
+        $dash_pegawai_status = 'pulang_bisa_masuk_lagi';
     }
 }
 
-$res_meng_status = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $current_ustadz_id AND DATE(waktu_absen) = '$today_str' AND jenis_absen = 'Mengajar' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+// Cek status absensi mengajar (Mendukung Sesi Mengajar Berulang)
+$res_meng_status = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $current_ustadz_id AND DATE(waktu_absen) = '$today_str' AND jenis_absen = 'Mengajar' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
 $dash_mengajar_status = 'belum_absen';
-if ($res_meng_status) {
-    $num_m = $res_meng_status->num_rows;
-    if ($num_m >= 2) {
-        $dash_mengajar_status = 'selesai';
-    } elseif ($num_m == 1) {
+if ($res_meng_status && $res_meng_status->num_rows > 0) {
+    $row_m = $res_meng_status->fetch_assoc();
+    if ($row_m['status_kehadiran'] === 'Masuk') {
         $dash_mengajar_status = 'datang';
+    } else {
+        $dash_mengajar_status = 'pulang_bisa_masuk_lagi';
     }
 }
 
@@ -1638,25 +1640,25 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                             </div>
                             <div class="text-left">
                                 <div class="text-[10px] font-bold text-teal-200 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>Presensi Harian</span>
-                                    <span class="w-2 h-2 rounded-full <?= $dash_pegawai_status === 'selesai' ? 'bg-emerald-300' : ($dash_pegawai_status === 'datang' ? 'bg-amber-300 animate-ping' : 'bg-white/60') ?>"></span>
+                                    <span>Presensi Harian & Piket</span>
+                                    <span class="w-2 h-2 rounded-full <?= $dash_pegawai_status === 'datang' ? 'bg-amber-300 animate-ping' : 'bg-emerald-300' ?>"></span>
                                 </div>
                                 <h3 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-snug">
                                     <?php if ($dash_pegawai_status === 'belum_absen'): ?>
                                         Absensi Kedatangan (Masuk)
                                     <?php elseif ($dash_pegawai_status === 'datang'): ?>
-                                        Absensi Kepulangan (Pulang)
+                                        Absensi Kepulangan (Selesai)
                                     <?php else: ?>
-                                        Absensi Pegawai Selesai ✓
+                                        Absensi Masuk (Shift/Piket)
                                     <?php endif; ?>
                                 </h3>
                                 <p class="text-[11px] text-teal-100/80 font-medium hidden sm:block mt-0.5">
                                     <?php if ($dash_pegawai_status === 'belum_absen'): ?>
-                                        Langsung catat waktu check-in hadir via GPS
+                                        Catat check-in hadir via GPS lokasi resmi
                                     <?php elseif ($dash_pegawai_status === 'datang'): ?>
-                                        Sudah Masuk. Klik untuk catat waktu pulang
+                                        Sedang bertugas. Klik untuk catat waktu selesai/pulang
                                     <?php else: ?>
-                                        Kehadiran & kepulangan hari ini telah tuntas
+                                        Shift sebelumnya selesai. Klik untuk mulai shift/piket baru
                                     <?php endif; ?>
                                 </p>
                             </div>
@@ -1668,15 +1670,14 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 
                     <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
                         <span class="text-[11px] text-teal-200/90 font-medium">
-                            Status: <strong class="text-white"><?= $dash_pegawai_status === 'selesai' ? 'Lengkap (Pulang)' : ($dash_pegawai_status === 'datang' ? 'Sudah Masuk' : 'Belum Absen') ?></strong>
+                            Status: <strong class="text-white"><?= $dash_pegawai_status === 'datang' ? 'Sedang Bertugas' : ($dash_pegawai_status === 'pulang_bisa_masuk_lagi' ? 'Siap Masuk Shift' : 'Belum Absen') ?></strong>
                         </span>
                         <button type="button" 
                                 id="btn-dash-absen-pegawai" 
                                 onclick="doDirectAbsensi('Pegawai', this)" 
-                                <?= $dash_pegawai_status === 'selesai' ? 'disabled' : '' ?>
-                                class="py-2 px-4 rounded-xl font-black text-xs transition-all duration-200 flex items-center gap-2 <?= $dash_pegawai_status === 'selesai' ? 'bg-white/20 text-white/70 cursor-not-allowed' : ($dash_pegawai_status === 'datang' ? 'bg-amber-400 hover:bg-amber-300 text-teal-950 shadow-md active:scale-95' : 'bg-white hover:bg-teal-50 text-[#086a60] shadow-md active:scale-95') ?>">
-                            <i class="fas <?= $dash_pegawai_status === 'selesai' ? 'fa-check' : ($dash_pegawai_status === 'datang' ? 'fa-sign-out-alt' : 'fa-location-dot') ?>"></i>
-                            <span><?= $dash_pegawai_status === 'selesai' ? 'Tuntas' : ($dash_pegawai_status === 'datang' ? 'Klik Absen Pulang' : 'Klik Absen Masuk') ?></span>
+                                class="py-2 px-4 rounded-xl font-black text-xs transition-all duration-200 flex items-center gap-2 <?= ($dash_pegawai_status === 'datang') ? 'bg-amber-400 hover:bg-amber-300 text-teal-950 shadow-md active:scale-95' : 'bg-white hover:bg-teal-50 text-[#086a60] shadow-md active:scale-95' ?>">
+                            <i class="fas <?= ($dash_pegawai_status === 'datang') ? 'fa-sign-out-alt' : 'fa-location-dot' ?>"></i>
+                            <span><?= ($dash_pegawai_status === 'datang') ? 'Klik Absen Pulang' : ($dash_pegawai_status === 'pulang_bisa_masuk_lagi' ? 'Absen Masuk Shift' : 'Klik Absen Masuk') ?></span>
                         </button>
                     </div>
                 </div>
@@ -1692,8 +1693,8 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                             </div>
                             <div class="text-left">
                                 <div class="text-[10px] font-bold text-cyan-200 uppercase tracking-wider flex items-center gap-1.5">
-                                    <span>KBM & Jurnal</span>
-                                    <span class="w-2 h-2 rounded-full <?= $dash_mengajar_status === 'selesai' ? 'bg-emerald-300' : ($dash_mengajar_status === 'datang' ? 'bg-cyan-300 animate-ping' : 'bg-white/60') ?>"></span>
+                                    <span>KBM & Sesi Mengajar</span>
+                                    <span class="w-2 h-2 rounded-full <?= $dash_mengajar_status === 'datang' ? 'bg-cyan-300 animate-ping' : 'bg-emerald-300' ?>"></span>
                                 </div>
                                 <h3 class="font-extrabold text-sm sm:text-base text-white tracking-tight leading-snug">
                                     <?php if ($dash_mengajar_status === 'belum_absen'): ?>
@@ -1701,16 +1702,16 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
                                     <?php elseif ($dash_mengajar_status === 'datang'): ?>
                                         Selesai Mengajar (Akhiri KBM)
                                     <?php else: ?>
-                                        Absensi Mengajar Selesai ✓
+                                        Mulai Mengajar (Sesi Baru)
                                     <?php endif; ?>
                                 </h3>
                                 <p class="text-[11px] text-cyan-100/80 font-medium hidden sm:block mt-0.5">
                                     <?php if ($dash_mengajar_status === 'belum_absen'): ?>
-                                        Langsung catat waktu mulai pelajaran via GPS
+                                        Catat waktu mulai pelajaran via GPS
                                     <?php elseif ($dash_mengajar_status === 'datang'): ?>
-                                        Sedang KBM. Klik untuk akhiri jam mengajar
+                                        Sedang KBM. Klik untuk akhiri sesi mengajar
                                     <?php else: ?>
-                                        Selesai seluruh jam mengajar hari ini
+                                        Sesi kelas sebelumnya selesai. Klik untuk mulai sesi baru
                                     <?php endif; ?>
                                 </p>
                             </div>
@@ -1722,15 +1723,14 @@ $visible_items = $operational_items; // Untuk kompatibilitas referensi lama
 
                     <div class="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
                         <span class="text-[11px] text-cyan-200/90 font-medium">
-                            Status: <strong class="text-white"><?= $dash_mengajar_status === 'selesai' ? 'Selesai Mengajar' : ($dash_mengajar_status === 'datang' ? 'Sedang KBM' : 'Belum Mulai') ?></strong>
+                            Status: <strong class="text-white"><?= $dash_mengajar_status === 'datang' ? 'Sedang KBM' : ($dash_mengajar_status === 'pulang_bisa_masuk_lagi' ? 'Siap Sesi Baru' : 'Belum Mulai') ?></strong>
                         </span>
                         <button type="button" 
                                 id="btn-dash-absen-mengajar" 
                                 onclick="doDirectAbsensi('Mengajar', this)" 
-                                <?= $dash_mengajar_status === 'selesai' ? 'disabled' : '' ?>
-                                class="py-2 px-4 rounded-xl font-black text-xs transition-all duration-200 flex items-center gap-2 <?= $dash_mengajar_status === 'selesai' ? 'bg-white/20 text-white/70 cursor-not-allowed' : ($dash_mengajar_status === 'datang' ? 'bg-cyan-300 hover:bg-cyan-200 text-cyan-950 shadow-md active:scale-95' : 'bg-white hover:bg-cyan-50 text-[#0e4457] shadow-md active:scale-95') ?>">
-                            <i class="fas <?= $dash_mengajar_status === 'selesai' ? 'fa-check' : ($dash_mengajar_status === 'datang' ? 'fa-door-closed' : 'fa-location-dot') ?>"></i>
-                            <span><?= $dash_mengajar_status === 'selesai' ? 'Tuntas' : ($dash_mengajar_status === 'datang' ? 'Selesai Mengajar' : 'Mulai Mengajar') ?></span>
+                                class="py-2 px-4 rounded-xl font-black text-xs transition-all duration-200 flex items-center gap-2 <?= ($dash_mengajar_status === 'datang') ? 'bg-cyan-300 hover:bg-cyan-200 text-cyan-950 shadow-md active:scale-95' : 'bg-white hover:bg-cyan-50 text-[#0e4457] shadow-md active:scale-95' ?>">
+                            <i class="fas <?= ($dash_mengajar_status === 'datang') ? 'fa-door-closed' : 'fa-location-dot' ?>"></i>
+                            <span><?= ($dash_mengajar_status === 'datang') ? 'Selesai Mengajar' : ($dash_mengajar_status === 'pulang_bisa_masuk_lagi' ? 'Mulai Sesi Baru' : 'Mulai Mengajar') ?></span>
                         </button>
                     </div>
                 </div>

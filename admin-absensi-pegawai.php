@@ -136,15 +136,16 @@ if ($res_santri_absen) {
 $res_latest_update = $conn->query("SELECT * FROM app_updates ORDER BY created_at DESC LIMIT 1");
 $latest_update = $res_latest_update ? $res_latest_update->fetch_assoc() : null;
 
-// D. Cek absensi pegawai (harian kerja) hari ini
-$res_pegawai = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen ASC");
+// D. Cek absensi pegawai (harian kerja) hari ini - Mendukung Fleksibilitas Shift Kerja & Giliran Piket
+$res_pegawai = $conn->query("SELECT status_kehadiran, waktu_absen FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
 $pegawai_status = 'belum_absen';
-if ($res_pegawai) {
-    $num = $res_pegawai->num_rows;
-    if ($num >= 2) {
-        $pegawai_status = 'selesai';
-    } elseif ($num == 1) {
+$last_pegawai_record = null;
+if ($res_pegawai && $res_pegawai->num_rows > 0) {
+    $last_pegawai_record = $res_pegawai->fetch_assoc();
+    if ($last_pegawai_record['status_kehadiran'] === 'Masuk') {
         $pegawai_status = 'datang';
+    } else {
+        $pegawai_status = 'pulang_bisa_masuk_lagi';
     }
 }
 
@@ -152,18 +153,25 @@ if ($res_pegawai) {
 // Semua ustadz / pegawai / staf yang terdaftar dan login berhak melakukan Absensi Pegawai
 $is_eligible_pegawai = true;
 
-// F. Persiapan Teks, Icon, & Class Tombol Pegawai
+// F. Persiapan Teks, Icon, & Keterangan Tombol Pegawai (Mendukung Shift/Piket, Bebas Jam Kerja)
 $pegawai_btn_text = '';
 $pegawai_btn_icon = '';
+$pegawai_keterangan_status = '';
+
 if ($pegawai_status === 'belum_absen') {
-    $pegawai_btn_text = 'Absensi Kedatangan';
+    $pegawai_btn_text = 'Absensi Masuk / Piket';
     $pegawai_btn_icon = 'fa-sign-in-alt';
+    $pegawai_keterangan_status = 'Belum absen masuk hari ini. Pastikan berada di dalam lokasi resmi yang telah ditetapkan.';
 } elseif ($pegawai_status === 'datang') {
-    $pegawai_btn_text = 'Absensi Kepulangan';
+    $jam_masuk_str = date('H:i', strtotime($last_pegawai_record['waktu_absen']));
+    $pegawai_btn_text = 'Absensi Kepulangan / Selesai';
     $pegawai_btn_icon = 'fa-sign-out-alt';
+    $pegawai_keterangan_status = "Sedang bertugas (Absen Masuk: $jam_masuk_str WIB). Klik tombol ini bila jam piket/shift telah selesai.";
 } else {
-    $pegawai_btn_text = 'Absensi Pegawai Selesai';
-    $pegawai_btn_icon = 'fa-check-double';
+    $jam_pulang_str = date('H:i', strtotime($last_pegawai_record['waktu_absen']));
+    $pegawai_btn_text = 'Absensi Masuk (Shift/Piket Baru)';
+    $pegawai_btn_icon = 'fa-sign-in-alt';
+    $pegawai_keterangan_status = "Shift sebelumnya selesai pukul $jam_pulang_str WIB. Klik untuk absen masuk giliran shift/piket berikutnya.";
 }
 
 // G. Pengecekan Rapat Aktif & Pengecekan Hak Undang/Peserta Wajib
@@ -274,15 +282,16 @@ if ($rapat_aktif) {
     }
 }
 
-// H. Pengecekan Absensi Mengajar & Otoritas Role
-$res_mengajar = $conn->query("SELECT status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Mengajar' ORDER BY waktu_absen ASC");
+// H. Pengecekan Absensi Mengajar & Otoritas Role (Mendukung Sesi Mengajar Berulang)
+$res_mengajar = $conn->query("SELECT status_kehadiran, waktu_absen FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Mengajar' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
 $mengajar_status = 'belum_absen';
-if ($res_mengajar) {
-    $num = $res_mengajar->num_rows;
-    if ($num >= 2) {
-        $mengajar_status = 'selesai';
-    } elseif ($num == 1) {
+$last_mengajar_record = null;
+if ($res_mengajar && $res_mengajar->num_rows > 0) {
+    $last_mengajar_record = $res_mengajar->fetch_assoc();
+    if ($last_mengajar_record['status_kehadiran'] === 'Masuk') {
         $mengajar_status = 'datang';
+    } else {
+        $mengajar_status = 'pulang_bisa_masuk_lagi';
     }
 }
 
@@ -290,15 +299,22 @@ $is_eligible_mengajar = in_array('ustadz', $user_roles) || in_array('super_admin
 
 $mengajar_btn_text = '';
 $mengajar_btn_icon = '';
+$mengajar_keterangan_status = '';
+
 if ($mengajar_status === 'belum_absen') {
     $mengajar_btn_text = 'Mulai Mengajar (Masuk)';
     $mengajar_btn_icon = 'fa-door-open';
+    $mengajar_keterangan_status = 'Belum absen mengajar hari ini.';
 } elseif ($mengajar_status === 'datang') {
-    $mengajar_btn_text = 'Selesai Mengajar (Pulang)';
+    $jam_ajar_masuk = date('H:i', strtotime($last_mengajar_record['waktu_absen']));
+    $mengajar_btn_text = 'Selesai Mengajar (Selesai)';
     $mengajar_btn_icon = 'fa-door-closed';
+    $mengajar_keterangan_status = "Sedang sesi mengajar (Mulai: $jam_ajar_masuk WIB). Klik saat sesi kelas selesai.";
 } else {
-    $mengajar_btn_text = 'Absensi Mengajar Selesai';
-    $mengajar_btn_icon = 'fa-check-double';
+    $jam_ajar_selesai = date('H:i', strtotime($last_mengajar_record['waktu_absen']));
+    $mengajar_btn_text = 'Mulai Mengajar (Sesi Baru)';
+    $mengajar_btn_icon = 'fa-door-open';
+    $mengajar_keterangan_status = "Sesi sebelumnya selesai pukul $jam_ajar_selesai WIB. Klik untuk mulai sesi kelas berikutnya.";
 }
 
 // I. Jadwal Mengajar Hari Ini
@@ -457,29 +473,22 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             <div class="<?= $grid_cols_class ?> gap-6 max-w-4xl mx-auto mb-8">
                 
                 <?php if ($is_eligible_pegawai): ?>
-                    <!-- KARTU 1: ABSENSI PEGAWAI -->
+                    <!-- KARTU 1: ABSENSI PEGAWAI (MENDUKUNG SHIFT/PIKET TANPA BATASAN JAM) -->
                     <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
                         <div>
                             <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
                                 <i class="fas fa-user-tie"></i>
                             </div>
-                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Pegawai</h2>
-                            <p class="text-sm text-gray-500 mb-6 font-medium">
-                                <?php if ($pegawai_status === 'belum_absen'): ?>
-                                    Belum absen masuk hari ini.
-                                <?php elseif ($pegawai_status === 'datang'): ?>
-                                    Sudah absen masuk. Klik untuk absen pulang.
-                                <?php else: ?>
-                                    Selesai absen masuk dan pulang hari ini.
-                                <?php endif; ?>
+                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Pegawai & Piket</h2>
+                            <p class="text-xs text-gray-500 mb-6 font-medium leading-relaxed">
+                                <?= htmlspecialchars($pegawai_keterangan_status) ?>
                             </p>
                         </div>
                         
                         <button id="btn-absen-pegawai" 
                                 data-status="<?= $pegawai_status ?>" 
                                 data-jenis="Pegawai"
-                                <?= ($pegawai_status === 'selesai') ? 'disabled' : '' ?>
-                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($pegawai_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($pegawai_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95') ?>">
+                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($pegawai_status === 'datang') ? 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95' : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' ?>">
                             <i class="fas <?= $pegawai_btn_icon ?> text-xl"></i>
                             <span><?= $pegawai_btn_text ?></span>
                         </button>
@@ -487,29 +496,22 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                 <?php endif; ?>
 
                 <?php if ($is_eligible_mengajar): ?>
-                    <!-- KARTU 2: ABSENSI MENGAJAR -->
+                    <!-- KARTU 2: ABSENSI MENGAJAR (FLEKSIBEL PER SESI KELAS) -->
                     <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
                         <div>
                             <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
                                 <i class="fas fa-chalkboard-user"></i>
                             </div>
                             <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Mengajar</h2>
-                            <p class="text-sm text-gray-500 mb-6 font-medium">
-                                <?php if ($mengajar_status === 'belum_absen'): ?>
-                                    Belum absen masuk mengajar.
-                                <?php elseif ($mengajar_status === 'datang'): ?>
-                                    Sudah absen masuk. Klik untuk absen selesai.
-                                <?php else: ?>
-                                    Selesai absensi mengajar hari ini.
-                                <?php endif; ?>
+                            <p class="text-xs text-gray-500 mb-6 font-medium leading-relaxed">
+                                <?= htmlspecialchars($mengajar_keterangan_status) ?>
                             </p>
                         </div>
                         
                         <button id="btn-absen-mengajar" 
                                 data-status="<?= $mengajar_status ?>" 
                                 data-jenis="Mengajar"
-                                <?= ($mengajar_status === 'selesai') ? 'disabled' : '' ?>
-                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($mengajar_status === 'selesai') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : (($mengajar_status === 'belum_absen') ? 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' : 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95') ?>">
+                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($mengajar_status === 'datang') ? 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95' : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' ?>">
                             <i class="fas <?= $mengajar_btn_icon ?> text-xl"></i>
                             <span><?= $mengajar_btn_text ?></span>
                         </button>
