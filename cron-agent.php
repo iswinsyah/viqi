@@ -786,7 +786,17 @@ if ($current_day == '01' && $current_hour >= '05' && !$monthly_done) {
 // =========================================================================================
 $daily_done = false;
 if (file_exists($daily_log_file)) {
-    if (strpos(file_get_contents($daily_log_file), "SUCCESS_$today") !== false) $daily_done = true;
+    if (strpos(file_get_contents($daily_log_file), "SUCCESS_$today") !== false) {
+        pastikanKoneksiDb();
+        $cekAda = $conn->query("SELECT id FROM artikel WHERE DATE(created_at) = '$today' LIMIT 1");
+        if ($cekAda && $cekAda->num_rows > 0) {
+            $daily_done = true;
+        } else {
+            // Jika ada tanda SUCCESS di log tapi artikel di database belum ada (akibat kegagalan sebelumnya),
+            // batalkan status selesai agar cron otomatis mencoba kembali memproduksi artikel.
+            $daily_done = false;
+        }
+    }
 }
 
 $force_seo = ($force === 'seo');
