@@ -73,14 +73,14 @@ $app_sections = [
         'icon' => 'fas fa-brain',
         'color' => 'text-purple-700',
         'items' => [
-            ['title' => 'E-Learning', 'href' => 'elearning-yayasan.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-fuchsia-700'],
-            ['title' => 'Capaian CP', 'href' => 'kurikulum-cp.php', 'icon' => 'fas fa-brain', 'bg' => 'from-fuchsia-600 to-purple-700'],
-            ['title' => 'Solopreneur', 'href' => 'kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-rose-500 to-amber-600'],
-            ['title' => 'Kitab', 'href' => 'kitab-rujukan.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-amber-600 to-amber-800'],
             ['title' => 'Kelas', 'href' => 'master-kelas.php', 'icon' => 'fas fa-school', 'bg' => 'from-blue-500 to-indigo-600'],
             ['title' => 'Mapel', 'href' => 'master-mapel.php', 'icon' => 'fas fa-book', 'bg' => 'from-indigo-500 to-purple-600'],
+            ['title' => 'Kitab', 'href' => 'kitab-rujukan.php', 'icon' => 'fas fa-book-open', 'bg' => 'from-amber-600 to-amber-800'],
             ['title' => 'Silabus', 'href' => 'master-silabus.php', 'icon' => 'fas fa-list-check', 'bg' => 'from-teal-600 to-emerald-700'],
-            ['title' => 'Kalender', 'href' => 'master-kalender.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-blue-700']
+            ['title' => 'Kalender', 'href' => 'master-kalender.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-blue-700'],
+            ['title' => 'E-Learning', 'href' => 'elearning-yayasan.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-fuchsia-700'],
+            ['title' => 'Capaian CP', 'href' => 'kurikulum-cp.php', 'icon' => 'fas fa-brain', 'bg' => 'from-fuchsia-600 to-purple-700'],
+            ['title' => 'Solopreneur', 'href' => 'kurikulum-solopreneur.php', 'icon' => 'fas fa-rocket', 'bg' => 'from-rose-500 to-amber-600']
         ]
     ],
     [

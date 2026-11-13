@@ -623,22 +623,35 @@ if ($view === 'dashboard_asrama') {
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         
         <!-- TOP HEADER -->
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10 flex-shrink-0">
-            <div class="flex items-center">
+        <header class="h-16 bg-[#0b8478] text-white shadow-md flex items-center justify-between px-4 sm:px-6 z-20 flex-shrink-0 border-b border-teal-700/60">
+            <div class="flex items-center space-x-3">
                 <!-- Tombol Hamburger untuk Mobile -->
-                <button id="open-sidebar-hr" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4">
+                <button id="open-sidebar-hr" class="text-white/90 hover:text-white focus:outline-none md:hidden p-1.5 rounded-lg hover:bg-white/10 transition">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
+                <div class="flex items-center space-x-2">
+                    <h2 class="font-extrabold text-white text-base sm:text-lg tracking-tight flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                        Ruang Pegawai
+                    </h2>
+                    <span class="hidden md:inline-block text-[11px] font-medium bg-teal-800/80 text-teal-200 px-2 py-0.5 rounded-full border border-teal-600/40">SADIGS 4.0</span>
+                </div>
             </div>
             
-            <div class="flex items-center space-x-4">
-                <a href="index.html" target="_blank" class="text-sm text-cyan-600 hover:text-cyan-800 font-medium hidden sm:flex items-center">
-                    <i class="fas fa-external-link-alt mr-2"></i> Lihat Website
+            <div class="flex items-center space-x-3">
+                <a href="yayasan2/index.php" class="text-xs text-white hover:text-teal-100 font-bold bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-xs">
+                    <i class="fas fa-landmark text-teal-200"></i>
+                    <span class="hidden sm:inline">Ruang Yayasan</span>
                 </a>
-                <div class="h-8 w-8 rounded-full bg-cyan-500 flex items-center justify-center text-white font-bold shadow-sm">
-                    <?= strtoupper(substr($ustadz_nama, 0, 1)) ?>
-                </div>
+                <a href="akunku.php" title="Halaman Akun" class="flex items-center group focus:outline-none">
+                    <div class="w-10 h-10 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-sm shadow-md border-2 border-white/90 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+                        <?php if (!empty($u_foto)): ?>
+                            <img src="<?= htmlspecialchars($u_foto) ?>" alt="Profil" class="w-full h-full object-cover">
+                        <?php else: ?>
+                            <i class="fas fa-user text-base text-[#0b8478]"></i>
+                        <?php endif; ?>
+                    </div>
+                </a>
             </div>
         </header>
 

@@ -421,6 +421,10 @@ if (empty($u_foto) && isset($_SESSION['ustadz_id']) && isset($conn) && $conn) {
 }
 
 $curr_file = basename($_SERVER['PHP_SELF']);
+$active_view = $_GET['view'] ?? 'beranda';
+if (!in_array($active_view, ['beranda', 'kbm', 'asrama'])) {
+    $active_view = 'beranda';
+}
 ?>
 <!-- SIDEBAR OVERLAY UNTUK MOBILE -->
 <div id="sidebar-overlay-hr" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden md:hidden transition-opacity"></div>
@@ -464,11 +468,23 @@ $curr_file = basename($_SERVER['PHP_SELF']);
         </div>
     </div>
 
-    <!-- SIDEBAR NAVIGATION LINKS -->
+    <!-- SIDEBAR NAVIGATION LINKS (4 MENU: BERANDA, KBM, ASRAMA, KELUAR) -->
     <nav class="flex-1 overflow-y-auto p-4 space-y-1.5 text-xs no-scrollbar">
-        <a href="admin-absensi-pegawai.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
-            <i class="fas fa-home w-4 text-center text-sm"></i>
-            <span>Home (Pegawai)</span>
+        <a href="admin-absensi-pegawai.php?view=beranda" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'beranda') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-house w-4 text-center text-sm"></i>
+            <span>Beranda</span>
+        </a>
+        <a href="admin-absensi-pegawai.php?view=kbm" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'kbm') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-graduation-cap w-4 text-center text-sm"></i>
+            <span>KBM</span>
+        </a>
+        <a href="admin-absensi-pegawai.php?view=asrama" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'asrama') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-mosque w-4 text-center text-sm"></i>
+            <span>Asrama</span>
+        </a>
+        <a href="logout-ustadz.php" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex items-center gap-3 px-3.5 py-3 rounded-xl text-teal-100 hover:bg-rose-700/60 hover:text-white font-bold transition">
+            <i class="fas fa-arrow-right-from-bracket w-4 text-center text-sm"></i>
+            <span>Keluar</span>
         </a>
     </nav>
 
@@ -482,20 +498,33 @@ $curr_file = basename($_SERVER['PHP_SELF']);
 
 <!-- ========================================================= -->
 <!-- BOTTOM NAVIGATION BAR (HANYA MUNCUL DI MOBILE / md:hidden) -->
+<!-- 4 MENU: BERANDA, KBM, ASRAMA, KELUAR                       -->
 <!-- ========================================================= -->
-<nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-6 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
-    <div class="w-full max-w-sm mx-auto flex items-center justify-around">
-        <a href="admin-absensi-pegawai.php" class="flex flex-col items-center justify-center py-1 <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
-            <div class="w-10 h-8 rounded-full <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-home text-lg <?= ($curr_file === 'admin-absensi-pegawai.php' || $curr_file === 'admin-ustadz.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+<nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
+    <div class="w-full max-w-md mx-auto flex items-center justify-around">
+        <a href="admin-absensi-pegawai.php?view=beranda" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'beranda') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'beranda') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-house text-lg <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'beranda') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-white font-bold">Home</span>
+            <span class="text-white text-[11px] leading-tight">Beranda</span>
         </a>
-        <a href="logout-ustadz.php" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex flex-col items-center justify-center py-1 text-teal-100 hover:text-rose-200 font-bold text-xs transition">
+        <a href="admin-absensi-pegawai.php?view=kbm" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'kbm') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'kbm') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-graduation-cap text-lg <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'kbm') ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white text-[11px] leading-tight">KBM</span>
+        </a>
+        <a href="admin-absensi-pegawai.php?view=asrama" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'asrama') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'asrama') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-mosque text-lg <?= ($curr_file === 'admin-absensi-pegawai.php' && $active_view === 'asrama') ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white text-[11px] leading-tight">Asrama</span>
+        </a>
+        <a href="logout-ustadz.php" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-xs transition">
             <div class="w-10 h-8 rounded-full flex items-center justify-center mb-0.5">
                 <i class="fas fa-arrow-right-from-bracket text-lg text-teal-100 hover:text-rose-200"></i>
             </div>
-            <span class="text-white font-bold">Keluar</span>
+            <span class="text-white text-[11px] leading-tight">Keluar</span>
         </a>
     </div>
 </nav>
