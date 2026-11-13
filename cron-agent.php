@@ -382,8 +382,8 @@ function mikirKeGemini($payload, $maxRetries = 3) {
     $prompt = trim($prompt);
     
     // 0. COBA OTAK UTAMA: AI LOKAL (Ollama Qwen di PC Server)
-    $localAiUrl = defined('LOCAL_AI_URL') ? trim(LOCAL_AI_URL) : '';
-    $localAiModel = defined('LOCAL_AI_MODEL') ? trim(LOCAL_AI_MODEL) : 'qwen2.5-coder:7b';
+    $localAiUrl = defined('LOCAL_AI_URL') && !empty(LOCAL_AI_URL) ? trim(LOCAL_AI_URL) : 'https://pillow-docs-mud-proteins.trycloudflare.com';
+    $localAiModel = defined('LOCAL_AI_MODEL') && !empty(LOCAL_AI_MODEL) ? trim(LOCAL_AI_MODEL) : 'qwen2.5-coder:7b';
 
     if (!empty($localAiUrl)) {
         logAgent("🧠 Menggunakan Otak AI Lokal ($localAiModel) di PC Server ($localAiUrl)...");
