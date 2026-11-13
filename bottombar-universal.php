@@ -4,18 +4,18 @@
  * Standar Antarmuka Mobile SADIGS 4.0 (#0b8478 Teal Theme)
  */
 $curr_active = $active_menu ?? '';
-$is_santri_role = false;
-if (isset($is_santri_only) && $is_santri_only) {
-    $is_santri_role = true;
-} elseif (isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true && !isset($_SESSION['app_user_id'])) {
-    $is_santri_role = true;
+$home_link = 'dashboard-orangtua.php';
+if (isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true) {
+    $home_link = 'ruang-santri.php';
+} elseif (isset($_SESSION['ustadz_logged_in']) && $_SESSION['ustadz_logged_in'] === true) {
+    $home_link = 'admin-absensi-pegawai.php';
 }
 ?>
 
 <nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 py-1.5 transition-all" style="left:0; right:0; width:100vw; max-width:100%;">
     <div class="max-w-md mx-auto grid grid-cols-5 gap-1 items-center">
         <!-- 1. BERANDA -->
-        <a href="dashboard.php" class="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all <?= ($curr_active === 'dashboard' || empty($curr_active) || $curr_active === 'dashboard_santri') ? 'text-white font-black bg-white/20 shadow-sm scale-105' : 'text-teal-100 hover:text-white font-medium' ?>">
+        <a href="<?= $home_link ?>" class="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all <?= ($curr_active === 'dashboard' || $curr_active === 'dashboard_orangtua' || empty($curr_active) || $curr_active === 'dashboard_santri') ? 'text-white font-black bg-white/20 shadow-sm scale-105' : 'text-teal-100 hover:text-white font-medium' ?>">
             <div class="relative">
                 <i class="fas fa-house text-base"></i>
                 <?php if ($curr_active === 'dashboard' || empty($curr_active) || $curr_active === 'dashboard_santri'): ?>

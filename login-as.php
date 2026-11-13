@@ -126,7 +126,7 @@ if ($target_id > 0) {
         $_SESSION['username'] = $app_uname;
         $_SESSION['role'] = implode(',', $combined_roles);
 
-        header("Location: dashboard.php?sukses=" . urlencode("Berhasil Login Sebagai: " . $user['nama'] . " (" . implode(', ', $canonical_views) . ")"));
+        header("Location: admin-absensi-pegawai.php?sukses=" . urlencode("Berhasil Login Sebagai: " . $user['nama'] . " (" . implode(', ', $canonical_views) . ")"));
         exit;
     } else {
         die("User tidak ditemukan.");

@@ -211,23 +211,33 @@ if ($view === 'ibadah_harian') {
         'JANUARI' => 1, 'FEBRUARI' => 2, 'MARET' => 3, 'APRIL' => 4, 'MEI' => 5, 'JUNI' => 6
     ];
 
-    // 2. Daftar Mata Pelajaran / Modul Belajar (Sesuai Mockup Desain)
+    // 1. Layanan Utama Santri
+    $services_santri = [
+        ['title' => 'Ibadah Harian', 'href' => 'ruang-santri.php?view=ibadah_harian', 'icon' => 'fas fa-mosque', 'bg' => 'from-emerald-500 to-teal-700'],
+        ['title' => 'Rapor PKBM', 'href' => 'santri-rapot.php?tab=pkbm', 'icon' => 'fas fa-file-invoice', 'bg' => 'from-blue-600 to-indigo-700'],
+        ['title' => 'Rapor Diniyah', 'href' => 'santri-rapot.php?tab=diniyah', 'icon' => 'fas fa-book-quran', 'bg' => 'from-purple-600 to-indigo-700'],
+        ['title' => 'Kalender', 'href' => 'kalender-akademik.php', 'icon' => 'fas fa-calendar-days', 'bg' => 'from-cyan-600 to-blue-700'],
+        ['title' => 'Jadwal Ajar', 'href' => 'admin-jadwal-pelajaran.php', 'icon' => 'fas fa-clock', 'bg' => 'from-sky-500 to-blue-600'],
+        ['title' => 'Info Santri', 'href' => 'pengumuman.php', 'icon' => 'fas fa-bullhorn', 'bg' => 'from-amber-500 to-orange-600']
+    ];
+
+    // 2. Daftar Mata Pelajaran / Modul Belajar E-Learning
     $subjects = [
-        ['name' => 'B. Indonesia', 'param' => 'Bahasa Indonesia', 'icon' => 'fas fa-book-open', 'desc' => 'Bahasa Indonesia & Literasi'],
-        ['name' => 'Matematika', 'param' => 'Matematika', 'icon' => 'fas fa-square-root-variable', 'desc' => 'Matematika & Logika'],
-        ['name' => 'IPA', 'param' => 'IPA', 'icon' => 'fas fa-flask', 'desc' => 'Ilmu Pengetahuan Alam'],
-        ['name' => 'Fisika', 'param' => 'Fisika', 'icon' => 'fas fa-atom', 'desc' => 'Fisika Terapan'],
-        ['name' => 'Kimia', 'param' => 'Kimia', 'icon' => 'fas fa-vial', 'desc' => 'Kimia & Reaksi'],
-        ['name' => 'Biologi', 'param' => 'Biologi', 'icon' => 'fas fa-dna', 'desc' => 'Biologi Sains'],
-        ['name' => 'IPS', 'param' => 'IPS', 'icon' => 'fas fa-globe-asia', 'desc' => 'Ilmu Pengetahuan Sosial'],
-        ['name' => 'Ekonomi', 'param' => 'Ekonomi', 'icon' => 'fas fa-chart-line', 'desc' => 'Ekonomi & Manajemen'],
-        ['name' => 'Geografi', 'param' => 'Geografi', 'icon' => 'fas fa-map-marked-alt', 'desc' => 'Geografi & Kebumian'],
-        ['name' => 'Sejarah', 'param' => 'Sejarah', 'icon' => 'fas fa-landmark', 'desc' => 'Sejarah Kebangsaan'],
-        ['name' => 'Sosiologi', 'param' => 'Sosiologi', 'icon' => 'fas fa-users', 'desc' => 'Sosiologi & Masyarakat'],
-        ['name' => 'English', 'param' => 'Bahasa Inggris', 'icon' => 'fas fa-comments', 'desc' => 'Bahasa Inggris / English'],
-        ['name' => 'PPKn', 'param' => 'PPKn', 'icon' => 'fas fa-balance-scale', 'desc' => 'Pendidikan Pancasila & Kewarganegaraan'],
-        ['name' => 'Seni Budaya', 'param' => 'Seni Budaya', 'icon' => 'fas fa-palette', 'desc' => 'Seni Budaya & Apresiasi Karya'],
-        ['name' => 'Solopreneur', 'param' => 'Solopreneur', 'icon' => 'fas fa-lightbulb', 'desc' => 'Kewirausahaan Mandiri (AI)']
+        ['name' => 'B. Indonesia', 'param' => 'Bahasa Indonesia', 'icon' => 'fas fa-book-open', 'desc' => 'Bahasa Indonesia & Literasi', 'bg' => 'from-rose-500 to-red-700'],
+        ['name' => 'Matematika', 'param' => 'Matematika', 'icon' => 'fas fa-square-root-variable', 'desc' => 'Matematika & Logika', 'bg' => 'from-blue-500 to-indigo-700'],
+        ['name' => 'IPA', 'param' => 'IPA', 'icon' => 'fas fa-flask', 'desc' => 'Ilmu Pengetahuan Alam', 'bg' => 'from-emerald-500 to-teal-700'],
+        ['name' => 'Fisika', 'param' => 'Fisika', 'icon' => 'fas fa-atom', 'desc' => 'Fisika Terapan', 'bg' => 'from-indigo-500 to-purple-700'],
+        ['name' => 'Kimia', 'param' => 'Kimia', 'icon' => 'fas fa-vial', 'desc' => 'Kimia & Reaksi', 'bg' => 'from-violet-500 to-purple-700'],
+        ['name' => 'Biologi', 'param' => 'Biologi', 'icon' => 'fas fa-dna', 'desc' => 'Biologi Sains', 'bg' => 'from-teal-500 to-emerald-700'],
+        ['name' => 'IPS', 'param' => 'IPS', 'icon' => 'fas fa-globe-asia', 'desc' => 'Ilmu Pengetahuan Sosial', 'bg' => 'from-amber-500 to-orange-700'],
+        ['name' => 'Ekonomi', 'param' => 'Ekonomi', 'icon' => 'fas fa-chart-line', 'desc' => 'Ekonomi & Manajemen', 'bg' => 'from-cyan-600 to-blue-700'],
+        ['name' => 'Geografi', 'param' => 'Geografi', 'icon' => 'fas fa-map-marked-alt', 'desc' => 'Geografi & Kebumian', 'bg' => 'from-emerald-600 to-teal-800'],
+        ['name' => 'Sejarah', 'param' => 'Sejarah', 'icon' => 'fas fa-landmark', 'desc' => 'Sejarah Kebangsaan', 'bg' => 'from-amber-600 to-amber-800'],
+        ['name' => 'Sosiologi', 'param' => 'Sosiologi', 'icon' => 'fas fa-users', 'desc' => 'Sosiologi & Masyarakat', 'bg' => 'from-sky-500 to-blue-600'],
+        ['name' => 'English', 'param' => 'Bahasa Inggris', 'icon' => 'fas fa-comments', 'desc' => 'Bahasa Inggris / English', 'bg' => 'from-blue-600 to-indigo-800'],
+        ['name' => 'PPKn', 'param' => 'PPKn', 'icon' => 'fas fa-balance-scale', 'desc' => 'Pendidikan Pancasila & Kewarganegaraan', 'bg' => 'from-red-600 to-rose-700'],
+        ['name' => 'Seni Budaya', 'param' => 'Seni Budaya', 'icon' => 'fas fa-palette', 'desc' => 'Seni Budaya & Apresiasi Karya', 'bg' => 'from-fuchsia-500 to-purple-700'],
+        ['name' => 'Solopreneur', 'param' => 'Solopreneur', 'icon' => 'fas fa-lightbulb', 'desc' => 'Kewirausahaan Mandiri (AI)', 'bg' => 'from-rose-500 to-amber-600']
     ];
 }
 ?>
@@ -255,7 +265,7 @@ if ($view === 'ibadah_harian') {
         }
     </style>
 </head>
-<body class="bg-[#e1f5f2] font-sans antialiased text-slate-800 flex h-screen overflow-hidden">
+<body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
     <?php include 'sidebar-santri.php'; ?>
 
@@ -267,14 +277,9 @@ if ($view === 'ibadah_harian') {
         <!-- ================================================== -->
         <header class="h-16 bg-[#0b8478] text-white shadow-md flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
             <div class="flex items-center space-x-3">
-                <button id="open-sidebar-santri" class="text-white hover:text-teal-200 md:hidden p-2 rounded-xl focus:outline-none transition">
-                    <i class="fas fa-bars text-lg"></i>
-                </button>
-                <div class="flex items-center space-x-2">
-                    <a href="dashboard.php" class="text-white hover:text-teal-200 text-sm font-bold flex items-center gap-1.5">
-                        <i class="fas fa-arrow-left"></i> Beranda
-                    </a>
-                </div>
+                <a href="ruang-santri.php" class="text-white hover:text-teal-200 text-xs sm:text-sm font-bold flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-xl transition">
+                    <i class="fas fa-arrow-left"></i> Beranda Santri
+                </a>
             </div>
             <h1 class="text-sm font-bold tracking-wide">Laporan Ibadah Harian</h1>
             <div class="w-8"></div>
@@ -446,85 +451,135 @@ if ($view === 'ibadah_harian') {
 
         <?php else: ?>
         <!-- ================================================== -->
-        <!-- TAMPILAN UTAMA RUANG SANTRI (SESUAI DESAIN USER)   -->
+        <!-- TAMPILAN UTAMA RUANG SANTRI (SERAGAM DENGAN PEGAWAI)-->
         <!-- ================================================== -->
 
-        <!-- 1. TOP HEADER TEAL DENGAN LOGO SADIGS & PROFILE -->
-        <header class="bg-[#0d8276] text-white pt-5 pb-7 px-4 sm:px-6 shadow-sm z-10 flex-shrink-0">
-            <div class="max-w-md sm:max-w-xl mx-auto flex items-center justify-between">
-                
-                <!-- KIRI: LOGO SADIGS & SUBTITLE -->
-                <div class="flex items-center space-x-3">
-                    <button id="open-sidebar-santri" class="text-white hover:text-teal-200 md:hidden p-1 focus:outline-none transition">
-                        <i class="fas fa-bars text-xl"></i>
-                    </button>
-                    <!-- Brand Icon (Sun/Book/Leaf) -->
-                    <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0">
-                        <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-9 h-9 object-contain">
-                    </div>
-
-                    <div>
-                        <h1 class="font-black text-2xl tracking-wide text-white leading-none">SADIGS</h1>
-                        <p class="text-[11px] sm:text-xs text-teal-100 italic font-light tracking-tight mt-0.5">Sistem Administrasi<br class="sm:hidden"> Digital Sekolah</p>
-                    </div>
+        <!-- TOP HEADER RUANG SANTRI (HIJAU SAMPAI DI BAWAH SEARCH BAR) -->
+        <header class="bg-[#0b8478] text-white shadow-md z-20 flex-shrink-0 border-b border-teal-700/60">
+            <!-- BARIS ATAS: TITLE RUANG SANTRI & PROFIL (TANPA HUMBURGER) -->
+            <div class="h-16 flex items-center justify-between px-4 sm:px-6">
+                <div class="flex items-center space-x-2">
+                    <h2 class="font-extrabold text-white text-base sm:text-lg tracking-tight flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                        Ruang Santri
+                    </h2>
+                    <span class="hidden md:inline-block text-[11px] font-medium bg-teal-800/80 text-teal-200 px-2 py-0.5 rounded-full border border-teal-600/40">SADIGS 4.0</span>
                 </div>
+                <div class="flex items-center space-x-3">
+                    <?php if (isset($_SESSION['is_impersonating']) || isset($_SESSION['yayasan_logged_in']) || isset($_SESSION['yayasan2_logged_in'])): ?>
+                    <a href="yayasan2/index.php" class="text-xs text-white hover:text-teal-100 font-bold bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-xs">
+                        <i class="fas fa-landmark text-teal-200"></i>
+                        <span class="hidden sm:inline">Ruang Yayasan</span>
+                    </a>
+                    <?php endif; ?>
+                    <a href="santri-profil.php" title="Profil Ananda (<?= htmlspecialchars($santri_nama) ?>)" class="flex items-center group focus:outline-none">
+                        <div class="w-10 h-10 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-sm shadow-md border-2 border-white/90 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+                            <?php if (!empty($foto_santri)): ?>
+                                <img src="<?= htmlspecialchars($foto_santri) ?>" alt="Profil" class="w-full h-full object-cover">
+                            <?php else: ?>
+                                <i class="fas fa-user-graduate text-base text-[#0b8478]"></i>
+                            <?php endif; ?>
+                        </div>
+                    </a>
+                </div>
+            </div>
 
-                <!-- KANAN: PROFILE CIRLE + LABEL PROFILE -->
-                <a href="santri-profil.php" class="flex flex-col items-center group cursor-pointer">
-                    <div class="w-12 h-12 rounded-full bg-white text-[#0d8276] flex items-center justify-center font-black text-lg shadow-md group-hover:scale-105 transition-transform overflow-hidden border-2 border-teal-200">
-                        <?php if (!empty($foto_santri)): ?>
-                            <img src="<?= htmlspecialchars($foto_santri) ?>" alt="Profile" class="w-full h-full object-cover">
-                        <?php else: ?>
-                            <?= strtoupper(substr($santri_nama, 0, 1)) ?>
-                        <?php endif; ?>
+            <!-- BARIS BAWAH: SEARCH BAR LENGKAP -->
+            <div class="pb-4 px-4 sm:px-6">
+                <div class="relative w-full max-w-xl">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <i class="fas fa-search text-xs"></i>
                     </div>
-                    <span class="text-xs font-bold text-white mt-1 group-hover:text-teal-200 transition-colors">Profile</span>
-                </a>
-
+                    <input type="text" id="appSearchInput" placeholder="Cari mata pelajaran / modul santri..." class="w-full pl-10 pr-4 py-2 bg-white text-slate-800 placeholder-slate-400 text-xs font-semibold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-300 shadow-sm transition">
+                </div>
             </div>
         </header>
 
-        <!-- 2. SCROLLABLE MAIN CONTENT BODY (MINT BACKGROUND) -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-[#e1f5f2] px-3.5 sm:px-6 pt-0 pb-24 md:pb-8">
-            <div class="max-w-md sm:max-w-xl mx-auto -mt-3">
-                
-                <!-- A. KARTU MENU PUTIH (SQUIRCLE GRID 4 KOLOM) -->
-                <div class="bg-white rounded-t-[32px] rounded-b-[24px] p-4 sm:p-6 shadow-sm border border-teal-100/60 mb-6">
-                    <div class="grid grid-cols-4 gap-y-4 gap-x-2 sm:gap-4 items-start justify-items-center">
-                        
-                        <?php foreach ($subjects as $s): ?>
-                        <div class="flex flex-col items-center group cursor-pointer w-full text-center" onclick="showSubjectModal('<?= addslashes($s['name']) ?>', '<?= addslashes($s['desc']) ?>', '<?= $s['icon'] ?>', '<?= addslashes($s['param'] ?? $s['name']) ?>')">
-                            <!-- Squircle Box Button (#0d8276) -->
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-[18px] bg-[#0d8276] group-hover:bg-[#0b6f65] text-white flex items-center justify-center text-xl sm:text-2xl shadow-md shadow-teal-900/10 group-hover:scale-105 group-active:scale-95 transition-all duration-200">
-                                <i class="<?= $s['icon'] ?>"></i>
-                            </div>
-                            <!-- Subject Name -->
-                            <span class="text-[11px] sm:text-xs font-bold text-slate-800 mt-2 tracking-tight group-hover:text-[#0d8276] transition-colors leading-tight">
-                                <?= htmlspecialchars($s['name']) ?>
-                            </span>
+        <!-- MAIN SCROLLABLE BODY -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
+            <div class="max-w-6xl mx-auto space-y-6">
+
+                <!-- 1. KARTU MENU LAYANAN SANTRI (SQUIRCLE ANDROID) -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80">
+                    <div class="flex items-center gap-2 mb-4 px-1">
+                        <i class="fas fa-star text-sm text-teal-600"></i>
+                        <h3 class="font-extrabold text-xs sm:text-sm text-slate-700 uppercase tracking-wider">
+                            Layanan Utama Santri
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-5 sm:gap-y-6 gap-x-2 sm:gap-x-4 items-start justify-items-center">
+                        <?php foreach ($services_santri as $item): ?>
+                        <div class="app-item flex flex-col items-center w-full text-center select-none" data-title="<?= strtolower(htmlspecialchars($item['title'])) ?>">
+                            <a href="<?= htmlspecialchars($item['href']) ?>" class="flex flex-col items-center w-full focus:outline-none group">
+                                <div class="android-icon relative w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] sm:rounded-[24px] bg-gradient-to-br <?= $item['bg'] ?> text-white shadow-sm flex items-center justify-center text-xl sm:text-2xl border border-white/25">
+                                    <i class="<?= $item['icon'] ?>"></i>
+                                </div>
+                                <span class="text-[11px] sm:text-xs font-semibold text-slate-700 group-hover:text-[#0b8478] mt-2 tracking-tight text-center leading-tight line-clamp-2 max-w-[88px] sm:max-w-[105px] min-h-[28px] transition-colors">
+                                    <?= htmlspecialchars($item['title']) ?>
+                                </span>
+                            </a>
                         </div>
                         <?php endforeach; ?>
-
                     </div>
                 </div>
 
-                <!-- B. KALENDER AKADEMIK SECTION -->
-                <div class="mb-6" id="kalender-section">
-                    <h2 class="text-xs sm:text-sm font-extrabold text-slate-800 text-center tracking-wider uppercase mb-3">
-                        KALENDER AKADEMIK
-                    </h2>
+                <!-- 2. KARTU MATA PELAJARAN / MODUL E-LEARNING (SQUIRCLE ANDROID) -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80">
+                    <div class="flex items-center gap-2 mb-4 px-1">
+                        <i class="fas fa-graduation-cap text-sm text-blue-600"></i>
+                        <h3 class="font-extrabold text-xs sm:text-sm text-slate-700 uppercase tracking-wider">
+                            Mata Pelajaran & E-Learning (AI)
+                        </h3>
+                    </div>
 
-                    <div class="bg-white rounded-2xl p-3 sm:p-4 shadow-sm border border-teal-100/80 overflow-x-auto">
+                    <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-5 sm:gap-y-6 gap-x-2 sm:gap-x-4 items-start justify-items-center">
+                        <?php foreach ($subjects as $s): ?>
+                        <div class="app-item flex flex-col items-center w-full text-center select-none cursor-pointer" data-title="<?= strtolower(htmlspecialchars($s['name'] . ' ' . $s['desc'])) ?>" onclick="showSubjectModal('<?= addslashes($s['name']) ?>', '<?= addslashes($s['desc']) ?>', '<?= $s['icon'] ?>', '<?= addslashes($s['param'] ?? $s['name']) ?>')">
+                            <div class="flex flex-col items-center w-full focus:outline-none group">
+                                <div class="android-icon relative w-14 h-14 sm:w-16 sm:h-16 rounded-[22px] sm:rounded-[24px] bg-gradient-to-br <?= $s['bg'] ?> text-white shadow-sm flex items-center justify-center text-xl sm:text-2xl border border-white/25">
+                                    <i class="<?= $s['icon'] ?>"></i>
+                                </div>
+                                <span class="text-[11px] sm:text-xs font-semibold text-slate-700 group-hover:text-[#0b8478] mt-2 tracking-tight text-center leading-tight line-clamp-2 max-w-[88px] sm:max-w-[105px] min-h-[28px] transition-colors">
+                                    <?= htmlspecialchars($s['name']) ?>
+                                </span>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <!-- EMPTY STATE PENCARIAN -->
+                <div id="noAppFound" class="hidden text-center py-12 bg-white rounded-3xl border border-slate-200">
+                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xl mx-auto mb-2">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <p class="font-bold text-slate-600 text-xs">Mata pelajaran atau menu tidak ditemukan</p>
+                </div>
+
+                <!-- 3. KALENDER AKADEMIK EMBEDDED -->
+                <div class="bg-white rounded-3xl p-5 sm:p-7 shadow-sm border border-slate-200/80" id="kalender-section">
+                    <div class="flex items-center justify-between mb-4 px-1">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-calendar-alt text-sm text-cyan-600"></i>
+                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-700 uppercase tracking-wider">
+                                Kalender Akademik
+                            </h3>
+                        </div>
+                        <a href="kalender-akademik.php" class="text-xs font-bold text-[#0b8478] hover:underline flex items-center gap-1">
+                            Lihat Lengkap <i class="fas fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
+
+                    <div class="overflow-x-auto rounded-2xl border border-slate-200">
                         <div class="min-w-[700px]">
                             <table class="w-full border-collapse border border-gray-300">
                                 <thead>
-                                    <!-- BARIS 1 (Header Utama Coklat Tua) -->
                                     <tr class="bg-amber-900 text-white font-bold text-[10px]">
                                         <th class="border border-amber-950 px-1 py-1.5 text-center" rowspan="2" style="width: 25px;">No</th>
                                         <th class="border border-amber-950 px-2 py-1.5 text-left" rowspan="2" style="width: 110px;">BULAN</th>
                                         <th class="border border-amber-950 py-1.5 text-center" colspan="31">TANGGAL</th>
                                     </tr>
-                                    <!-- BARIS 2 (Angka 1 - 31) -->
                                     <tr class="bg-amber-800 text-white font-bold text-[9px]">
                                         <?php for ($d = 1; $d <= 31; $d++): ?>
                                             <th class="border border-amber-900 text-center py-1" style="width: 20px;"><?= $d ?></th>
@@ -587,17 +642,6 @@ if ($view === 'ibadah_harian') {
                                 </tbody>
                             </table>
                         </div>
-
-                        <!-- Mini Legenda Kalender -->
-                        <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500 font-semibold">
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-700 inline-block"></span> Ahad</div>
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-600 inline-block"></span> Libur Nasional</div>
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-green-600 inline-block"></span> Hari Besar Islam</div>
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-sky-400 inline-block"></span> Agenda Akademik</div>
-                            <a href="kalender-akademik.php" class="text-[#0d8276] font-bold hover:underline ml-auto flex items-center gap-1">
-                                Full Screen <i class="fas fa-external-link-alt text-[9px]"></i>
-                            </a>
-                        </div>
                     </div>
                 </div>
 
@@ -606,12 +650,12 @@ if ($view === 'ibadah_harian') {
 
         <!-- SUBJECT DETAIL MODAL -->
         <div id="subjectModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-opacity">
-            <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-teal-100 relative transform transition-all animate-in fade-in zoom-in duration-200">
+            <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 relative transform transition-all animate-in fade-in zoom-in duration-200">
                 <button onclick="closeSubjectModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
                     <i class="fas fa-times"></i>
                 </button>
                 <div class="flex items-center space-x-4 mb-4">
-                    <div id="modalIconBox" class="w-14 h-14 rounded-2xl bg-[#0d8276] text-white flex items-center justify-center text-2xl shadow-md">
+                    <div id="modalIconBox" class="w-14 h-14 rounded-2xl bg-[#0b8478] text-white flex items-center justify-center text-2xl shadow-md">
                         <i id="modalIcon" class="fas fa-book"></i>
                     </div>
                     <div>
@@ -619,12 +663,12 @@ if ($view === 'ibadah_harian') {
                         <p id="modalDesc" class="text-xs text-slate-500 mt-0.5">Deskripsi modul belajar</p>
                     </div>
                 </div>
-                <div class="bg-[#e1f5f2]/60 p-3.5 rounded-2xl border border-teal-100 text-xs text-slate-700 mb-4">
-                    <p class="font-semibold text-[#0d8276] mb-1"><i class="fas fa-graduation-cap mr-1"></i> E-Learning & Bimbingan AI</p>
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs text-slate-700 mb-4">
+                    <p class="font-semibold text-[#0b8478] mb-1"><i class="fas fa-graduation-cap mr-1"></i> E-Learning & Bimbingan AI</p>
                     <p class="text-[11px] text-slate-600 leading-relaxed">Pelajari modul rangkuman, tonton video materi, kerjakan LKS & latihan soal, serta konsultasi 24 jam dengan Ustadz AI.</p>
                 </div>
                 <div class="space-y-2">
-                    <a id="modalStudyBtn" href="santri-belajar.php?mapel=Sosiologi" class="w-full bg-[#0d8276] hover:bg-[#0b6f65] text-white text-xs font-black py-3 px-4 rounded-2xl text-center shadow-md shadow-teal-900/10 transition flex items-center justify-center gap-2">
+                    <a id="modalStudyBtn" href="santri-belajar.php?mapel=Sosiologi" class="w-full bg-[#0b8478] hover:bg-teal-700 text-white text-xs font-black py-3 px-4 rounded-2xl text-center shadow-md transition flex items-center justify-center gap-2">
                         <i class="fas fa-book-reader text-sm"></i> Buka Ruang Belajar & Ustadz AI
                     </a>
                     <div class="grid grid-cols-2 gap-2 pt-1">
@@ -651,22 +695,39 @@ if ($view === 'ibadah_harian') {
             function closeSubjectModal() {
                 document.getElementById('subjectModal').classList.add('hidden');
             }
+
+            // Live Search Filter
+            document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('appSearchInput');
+                if (searchInput) {
+                    searchInput.addEventListener('input', function() {
+                        const q = this.value.toLowerCase().trim();
+                        const appItems = document.querySelectorAll('.app-item');
+                        let visibleCount = 0;
+
+                        appItems.forEach(item => {
+                            const title = item.getAttribute('data-title') || '';
+                            if (title.includes(q)) {
+                                item.style.display = '';
+                                visibleCount++;
+                            } else {
+                                item.style.display = 'none';
+                            }
+                        });
+
+                        const noAppFound = document.getElementById('noAppFound');
+                        if (noAppFound) {
+                            noAppFound.classList.toggle('hidden', visibleCount > 0);
+                        }
+                    });
+                }
+            });
         </script>
         <?php endif; ?>
 
     </div>
 
-    <!-- MOBILE BOTTOM NAVIGATION BAR (BERANDA, IBADAH, HAFALAN, KEUANGAN) -->
+    <!-- MOBILE BOTTOM NAVIGATION BAR -->
     <?php include 'bottombar-santri.php'; ?>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebar = document.getElementById('sidebar-santri');
-            const openBtn = document.getElementById('open-sidebar-santri');
-            const overlay = document.getElementById('sidebar-overlay-santri');
-            if(openBtn && sidebar) openBtn.addEventListener('click', () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); });
-            if(overlay && sidebar) overlay.addEventListener('click', () => { sidebar.classList.toggle('hidden'); overlay.classList.toggle('hidden'); });
-        });
-    </script>
 </body>
 </html>

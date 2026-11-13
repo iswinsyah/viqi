@@ -1,61 +1,40 @@
 <?php
-// Navigasi Bar Bawah (Bottom Navigation Bar) Khusus Tampilan Mobile Santri
+// Navigasi Bar Bawah (Bottom Navigation Bar) Khusus Tampilan Mobile Santri (4 Menu Utama)
 $current_active = $active_menu ?? '';
-$is_rapot_active = in_array($current_active, ['rapot_santri', 'rapot_akademik', 'rapot_pkbm_santri', 'rapot_diniyah']);
 ?>
 <!-- BOTTOM NAVIGATION BAR FOR MOBILE (MD:HIDDEN) -->
-<nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 py-1.5 transition-all" style="left:0; right:0; width:100vw; max-width:100%;">
-    <div class="max-w-md mx-auto grid grid-cols-5 gap-1 items-center">
+<nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-2 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
+    <div class="w-full max-w-md mx-auto flex items-center justify-around">
         <!-- 1. BERANDA -->
-        <a href="dashboard.php" class="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all <?= ($current_active === 'dashboard_santri' || $current_active === 'dashboard' || empty($current_active)) ? 'text-white font-black bg-white/20 shadow-sm scale-105' : 'text-teal-100 hover:text-white font-medium' ?>">
-            <div class="relative">
-                <i class="fas fa-house text-base"></i>
-                <?php if ($current_active === 'dashboard_santri' || $current_active === 'dashboard' || empty($current_active)): ?>
-                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-amber-300 rounded-full"></span>
-                <?php endif; ?>
+        <a href="ruang-santri.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($current_active === 'dashboard_santri' || $current_active === 'dashboard' || empty($current_active)) ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($current_active === 'dashboard_santri' || $current_active === 'dashboard' || empty($current_active)) ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-house text-base <?= ($current_active === 'dashboard_santri' || $current_active === 'dashboard' || empty($current_active)) ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-[10px] mt-1 tracking-tight text-white">Beranda</span>
+            <span class="text-white">Beranda</span>
         </a>
 
-        <!-- 2. KALENDER -->
-        <a href="kalender-akademik.php" class="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all <?= ($current_active === 'kalender_akademik') ? 'text-white font-black bg-white/20 shadow-sm scale-105' : 'text-teal-100 hover:text-white font-medium' ?>">
-            <div class="relative">
-                <i class="fas fa-calendar-alt text-base"></i>
-                <?php if ($current_active === 'kalender_akademik'): ?>
-                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-amber-300 rounded-full"></span>
-                <?php endif; ?>
+        <!-- 2. IBADAH HARIAN -->
+        <a href="ruang-santri.php?view=ibadah_harian" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($current_active === 'ibadah_harian') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($current_active === 'ibadah_harian') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-mosque text-base <?= ($current_active === 'ibadah_harian') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-[10px] mt-1 tracking-tight text-white">Kalender</span>
+            <span class="text-white">Ibadah</span>
         </a>
 
-        <!-- 3. JADWAL -->
-        <a href="admin-jadwal-pelajaran.php" class="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all <?= ($current_active === 'jadwal_pelajaran') ? 'text-white font-black bg-white/20 shadow-sm scale-105' : 'text-teal-100 hover:text-white font-medium' ?>">
-            <div class="relative">
-                <i class="fas fa-clock text-base"></i>
-                <?php if ($current_active === 'jadwal_pelajaran'): ?>
-                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-amber-300 rounded-full"></span>
-                <?php endif; ?>
+        <!-- 3. KALENDER AKADEMIK -->
+        <a href="kalender-akademik.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($current_active === 'kalender_akademik') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($current_active === 'kalender_akademik') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-calendar-alt text-base <?= ($current_active === 'kalender_akademik') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-[10px] mt-1 tracking-tight text-white">Jadwal</span>
+            <span class="text-white">Kalender</span>
         </a>
 
-        <!-- 4. PENGUMUMAN / INFO -->
-        <a href="pengumuman.php" class="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all <?= ($current_active === 'pengumuman') ? 'text-white font-black bg-white/20 shadow-sm scale-105' : 'text-teal-100 hover:text-white font-medium' ?>">
-            <div class="relative">
-                <i class="fas fa-bullhorn text-base"></i>
-                <?php if ($current_active === 'pengumuman'): ?>
-                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-amber-300 rounded-full"></span>
-                <?php endif; ?>
+        <!-- 4. KELUAR -->
+        <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-white font-bold text-[10px] transition">
+            <div class="w-9 h-7 rounded-full flex items-center justify-center mb-0.5">
+                <i class="fas fa-arrow-right-from-bracket text-base text-rose-300"></i>
             </div>
-            <span class="text-[10px] mt-1 tracking-tight text-white">Info</span>
-        </a>
-
-        <!-- 5. AKUN / KELUAR -->
-        <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar?');" class="flex flex-col items-center justify-center py-1.5 px-0.5 rounded-2xl transition-all text-teal-100 hover:text-rose-200 hover:bg-rose-500/20 font-medium">
-            <div class="relative">
-                <i class="fas fa-arrow-right-from-bracket text-base"></i>
-            </div>
-            <span class="text-[10px] mt-1 tracking-tight text-white">Keluar</span>
+            <span class="text-white">Keluar</span>
         </a>
     </div>
 </nav>

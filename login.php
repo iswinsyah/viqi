@@ -3,7 +3,7 @@ require_once 'auth-unified.php';
 
 // Fungsi Helper Menentukan Halaman Tujuan Berdasarkan Role / Tipe User
 function getRedirectDestinationByRole($user_data) {
-    if (!$user_data) return 'dashboard.php';
+    if (!$user_data) return 'admin-absensi-pegawai.php';
 
     $uname = strtolower(trim($user_data['username'] ?? ''));
     $user_type = strtolower(trim($user_data['user_type'] ?? ''));
@@ -44,7 +44,7 @@ function getRedirectDestinationByRole($user_data) {
     }
 
     // Default Fallback
-    return 'dashboard.php';
+    return 'admin-absensi-pegawai.php';
 }
 
 // Jika sudah login, langsung arahkan ke ruang yang sesuai

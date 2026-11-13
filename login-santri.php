@@ -8,7 +8,7 @@ ensureSantriDatabaseSchema();
 
 // Jika sudah login, langsung arahkan ke dashboard santri
 if (isset($_SESSION['santri_logged_in']) && $_SESSION['santri_logged_in'] === true) {
-    header("Location: dashboard.php");
+    header("Location: ruang-santri.php");
     exit;
 }
 
@@ -28,7 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION['app_user_nama'] = 'Super Admin (Santri View)';
         $_SESSION['app_user_roles'] = 'santri_rijal,santri,super_admin';
         $_SESSION['active_role_views'] = ['santri'];
-        header("Location: dashboard.php");
+        header("Location: ruang-santri.php");
         exit;
     }
 
@@ -73,7 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         VALUES ('" . $conn->real_escape_string($s_username) . "', '" . $conn->real_escape_string($pass_store) . "', '" . $conn->real_escape_string($s_nama) . "', '$s_role', 'santri', $ref_s_id, 1) 
                         ON DUPLICATE KEY UPDATE password = VALUES(password), roles = VALUES(roles), ref_id = VALUES(ref_id), status_aktif = 1, nama_lengkap = VALUES(nama_lengkap)");
 
-                    header("Location: dashboard.php");
+                    header("Location: ruang-santri.php");
                     exit;
                 } else {
                     $error = 'Password salah!';
