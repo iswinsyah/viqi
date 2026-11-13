@@ -8,6 +8,7 @@
  */
 
 set_time_limit(600); // Beri waktu 10 menit karena tugas bulanan lumayan panjang
+ignore_user_abort(true); // Pastikan proses tetap berjalan tuntas di server meski browser terputus
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
