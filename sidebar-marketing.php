@@ -23,13 +23,17 @@
     <!-- SIDEBAR NAVIGATION LINKS -->
     <div class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
         <nav class="space-y-1">
-            <a href="dashboard.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-house w-4 text-center"></i>
-                <span>Beranda</span>
+            <a href="yayasan2/index.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-landmark w-4 text-center"></i>
+                <span>Ruang Yayasan</span>
             </a>
             <a href="dashboard-marketing.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-tachometer-alt w-4 text-center"></i>
                 <span>Dashboard Mkt</span>
+            </a>
+            <a href="admin-ai-hub.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-amber-300 bg-teal-900/40 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                <i class="fas fa-robot w-4 text-center text-amber-300"></i>
+                <span>Pegawai / Crew AI</span>
             </a>
             <a href="admin-spmb.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-user-graduate w-4 text-center"></i>
@@ -38,10 +42,6 @@
             <a href="admin-data-center.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-database w-4 text-center"></i>
                 <span>Data Center</span>
-            </a>
-            <a href="admin-dompet-nusuk.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-amber-300 bg-teal-900/40 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-wallet w-4 text-center text-amber-300"></i>
-                <span>Dompet Nusuk</span>
             </a>
             <a href="admin-brosur-settings.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-envelope-open-text w-4 text-center"></i>

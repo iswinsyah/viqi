@@ -95,6 +95,19 @@ $app_sections = [
         ]
     ],
     [
+        'category' => 'Marketing & Crew AI',
+        'icon' => 'fas fa-bullhorn',
+        'color' => 'text-indigo-700',
+        'items' => [
+            ['title' => 'Crew AI', 'href' => '../admin-ai-hub.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-indigo-700'],
+            ['title' => 'Marketing', 'href' => '../dashboard-marketing.php', 'icon' => 'fas fa-bullhorn', 'bg' => 'from-teal-600 to-emerald-700'],
+            ['title' => 'Artikel AI', 'href' => '../admin-artikel.php', 'icon' => 'fas fa-newspaper', 'bg' => 'from-rose-500 to-pink-600'],
+            ['title' => 'Leads PSB', 'href' => '../admin-spmb.php', 'icon' => 'fas fa-user-graduate', 'bg' => 'from-blue-600 to-cyan-700'],
+            ['title' => 'Brosur', 'href' => '../admin-brosur-settings.php', 'icon' => 'fas fa-envelope-open-text', 'bg' => 'from-amber-500 to-orange-600'],
+            ['title' => 'Siaran WA', 'href' => '../admin-siaran-wa.php', 'icon' => 'fas fa-broadcast-tower', 'bg' => 'from-emerald-600 to-teal-700']
+        ]
+    ],
+    [
         'category' => 'Tata Kelola',
         'icon' => 'fas fa-landmark',
         'color' => 'text-slate-700',
