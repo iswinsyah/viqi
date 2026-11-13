@@ -490,7 +490,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                 <div class="max-w-6xl mx-auto">
                     <div class="relative w-full">
                         <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                        <input type="text" id="androidSearch" placeholder="Cari di <?= htmlspecialchars($active_meta['title']) ?>..." 
+                        <input type="text" id="androidSearch" placeholder="Cari menu pegawai..." 
                                class="w-full pl-11 pr-4 py-2.5 md:py-3 rounded-2xl border border-teal-600/40 text-xs md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 bg-white shadow-md transition placeholder:text-slate-400">
                     </div>
                 </div>
@@ -503,19 +503,6 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             <div id="androidLauncher" class="max-w-6xl mx-auto mb-10 pt-1">
                 <div class="app-section bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/70 shadow-xs">
                     
-                    <!-- SECTION HEADER -->
-                    <div class="flex items-center justify-between mb-5 px-1">
-                        <div class="flex items-center gap-2">
-                            <i class="<?= $active_meta['icon'] ?> text-sm text-[#0b8478]"></i>
-                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-800 uppercase tracking-wider">
-                                <?= htmlspecialchars($active_meta['title']) ?>
-                            </h3>
-                        </div>
-                        <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-teal-50 text-[#0b8478] border border-teal-200/60">
-                            <?= $active_meta['badge'] ?>
-                        </span>
-                    </div>
-
                     <!-- ANDROID SQUIRCLE ICON GRID (4 KOLOM DI HP, 6-7 KOLOM DI PC) -->
                     <div class="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-7 gap-y-5 sm:gap-y-6 gap-x-2 sm:gap-x-4 items-start justify-items-center">
                         <?php foreach ($active_meta['cards'] as $item): ?>
