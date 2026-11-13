@@ -286,10 +286,16 @@ $conn->query("CREATE TABLE IF NOT EXISTS menu_structure (
     href VARCHAR(255) NOT NULL
 )");
 
-// Pembersihan paksa untuk penggabungan menu KPI, Akunku, Jurnal Mengajar, Santri Tidak Masuk, Duplikat E-Modul/Hafalan & Rekap KBM Lama
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'kpi_kepsek', 'kpi_musyrif', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz', 'rekap_kbm')");
+// Pembersihan menu legacy lama
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz', 'rekap_kbm')");
 $conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'hafalan', 'rekap_kbm')");
-$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'rekap_kbm', 'kontrol_jam_kosong')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'rekap_kbm')");
+
+// Pastikan menu 'absensi_pegawai' terdaftar jika belum ada (Self-Healing)
+$res_chk_abs = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'absensi_pegawai'");
+if (!$res_chk_abs || $res_chk_abs->num_rows === 0) {
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'absensi_pegawai', 1, 'fa-qrcode', 'admin-absensi-pegawai.php')");
+}
 
 // Pastikan menu 'akunku' terdaftar jika belum ada (Self-Healing)
 $res_chk_akunku = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'akunku'");
@@ -325,6 +331,24 @@ if ($res_chk_slip && $res_chk_slip->num_rows === 0) {
     $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
     $new_ord = $max_ord + 1;
     $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'slip_gaji', $new_ord, 'fa-file-invoice-dollar', 'slip-gaji.php')");
+}
+
+// Pastikan menu 'manajemen_elearning' terdaftar jika belum ada (Self-Healing)
+$res_chk_elm = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'manajemen_elearning'");
+if (!$res_chk_elm || $res_chk_elm->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure WHERE menu_group = 'Asatidz'");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'manajemen_elearning', $new_ord, 'fa-laptop-code', 'admin-elearning.php')");
+}
+
+// Pastikan menu 'prota_promes' terdaftar jika belum ada (Self-Healing)
+$res_chk_pro = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'prota_promes'");
+if (!$res_chk_pro || $res_chk_pro->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure WHERE menu_group = 'Asatidz'");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'prota_promes', $new_ord, 'fa-calendar-alt', 'admin-kurikulum-prota-promes.php')");
 }
 
 // Cek apakah data sudah ada

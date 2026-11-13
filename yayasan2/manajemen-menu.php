@@ -28,12 +28,58 @@ $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_labe
     VALUES ('database_psb', 'Database PSB Online', 'Database PSB') 
     ON DUPLICATE KEY UPDATE custom_label='Database PSB Online', short_label='Database PSB'");
 
-// Cek dan seed jika kosong
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'yayasan_kpi_musyrif', 'yayasan_kpi_kepsek', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'absensi_pegawai', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz')");
-$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'hafalan', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
-$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'akunku', 'kalender', 'yayasan_kalender', 'master_kalender', 'kalender_akademik', 'prota_promes', 'jurnal', 'absensi', 'absensi_pegawai')");
+// Bersihkan menu legacy usang
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'yayasan_kpi_musyrif', 'yayasan_kpi_kepsek', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz', 'dompet_nusuk')");
+$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'jurnal', 'absensi', 'dompet_nusuk')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'jurnal', 'absensi', 'dompet_nusuk')");
 $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('rekap_ibadah_rijal', 'rekap_ibadah_nisa', 'rekap_ibadah_mahad', 'laporan_setoran_rijal', 'laporan_setoran_nisa', 'laporan_setoran_hafalan')");
 $conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
+
+// Pastikan menu 'absensi_pegawai' terdaftar (Self-Healing)
+$chk_absen = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'absensi_pegawai'");
+if (!$chk_absen || $chk_absen->num_rows === 0) {
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'absensi_pegawai', 1, 'fa-qrcode', 'admin-absensi-pegawai.php')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('absensi_pegawai', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('absensi_pegawai', 'Absensi & Jurnal KBM', 'Absensi')");
+}
+
+// Pastikan menu 'slip_gaji' terdaftar (Self-Healing)
+$chk_slip = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'slip_gaji'");
+if (!$chk_slip || $chk_slip->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure WHERE menu_group = 'Menu Utama'");
+    $new_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] + 1 : 10;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Menu Utama', 'slip_gaji', $new_ord, 'fa-file-invoice-dollar', 'slip-gaji.php')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('slip_gaji', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('slip_gaji', 'Slip Gaji', 'Slip Gaji')");
+}
+
+// Pastikan menu 'kalender_akademik' terdaftar (Self-Healing)
+$chk_kal = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kalender_akademik'");
+if (!$chk_kal || $chk_kal->num_rows === 0) {
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'kalender_akademik', 3, 'fa-calendar-alt', 'kalender-akademik.php')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('kalender_akademik', 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('kalender_akademik', 'Kalender Akademik', 'Kalender')");
+}
+
+// Pastikan menu 'manajemen_elearning' terdaftar (Self-Healing)
+$chk_elm = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'manajemen_elearning'");
+if (!$chk_elm || $chk_elm->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure WHERE menu_group = 'Asatidz'");
+    $new_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] + 1 : 15;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'manajemen_elearning', $new_ord, 'fa-laptop-code', 'admin-elearning.php')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('manajemen_elearning', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('manajemen_elearning', 'E-Modul & Flipbook Belajar', 'E-Modul')");
+}
+
+// Pastikan menu 'prota_promes' terdaftar (Self-Healing)
+$chk_pro = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'prota_promes'");
+if (!$chk_pro || $chk_pro->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure WHERE menu_group = 'Asatidz'");
+    $new_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] + 1 : 16;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'prota_promes', $new_ord, 'fa-calendar-alt', 'admin-kurikulum-prota-promes.php')");
+    $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('prota_promes', 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin')");
+    $conn->query("INSERT IGNORE INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('prota_promes', 'Pekan Efektif, Prota & Promes', 'Prota Promes')");
+}
 
 $res_chk_ib = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'rekap_ibadah_santri'");
 if ($res_chk_ib && $res_chk_ib->num_rows === 0) {
@@ -210,6 +256,7 @@ if ($count_struct === 0) {
         'Menu Utama' => [
             'absensi_pegawai' => ['href' => 'admin-absensi-pegawai.php', 'icon' => 'fa-qrcode'],
             'perizinan_pegawai' => ['href' => 'admin-pegawai-perizinan.php', 'icon' => 'fa-calendar-check'],
+            'slip_gaji' => ['href' => 'slip-gaji.php', 'icon' => 'fa-file-invoice-dollar'],
             'peraturan_role' => ['href' => 'admin-ustadz.php?view=peraturan_role', 'icon' => 'fa-file-contract'],
             'kpi_ustadz' => ['href' => 'admin-pegawai-kpi.php', 'icon' => 'fa-chalkboard-teacher'],
             'supervisi_mengajar' => ['href' => 'admin-supervisi-mengajar.php', 'icon' => 'fa-clipboard-check'],
@@ -235,6 +282,8 @@ if ($count_struct === 0) {
             'master_silabus' => ['href' => 'admin-pegawai-silabus.php', 'icon' => 'fa-book-reader'],
             'ai_rpp' => ['href' => 'admin-pegawai-rpp.php', 'icon' => 'fa-magic'],
             'bank_nilai' => ['href' => 'admin-pegawai-nilai.php', 'icon' => 'fa-star-half-alt'],
+            'manajemen_elearning' => ['href' => 'admin-elearning.php', 'icon' => 'fa-laptop-code'],
+            'prota_promes' => ['href' => 'admin-kurikulum-prota-promes.php', 'icon' => 'fa-calendar-alt'],
             'master_kelas' => ['href' => 'admin-master-kelas.php', 'icon' => 'fa-school'],
             'master_mapel' => ['href' => 'admin-master-mapel.php', 'icon' => 'fa-book'],
             'kitab_rujukan' => ['href' => 'admin-kitab-rujukan.php', 'icon' => 'fa-book-open'],
@@ -291,6 +340,7 @@ if ($res_db_menus) {
         $default_titles = [
             'absensi_pegawai' => 'Absensi & Jurnal KBM',
             'perizinan_pegawai' => 'Pengajuan Izin / Cuti',
+            'slip_gaji' => 'Slip Gaji',
             'peraturan_role' => 'Peraturan Pegawai',
             'kpi_ustadz' => 'KPI Pegawai',
             'kpi_kepsek' => 'KPI Kepala Sekolah',
@@ -315,6 +365,8 @@ if ($res_db_menus) {
             'master_silabus' => 'Master Silabus & CP',
             'ai_rpp' => 'AI Generator RPP',
             'bank_nilai' => 'Bank Nilai (Input)',
+            'manajemen_elearning' => 'E-Modul & Flipbook Belajar',
+            'prota_promes' => 'Pekan Efektif, Prota & Promes',
             'master_kelas' => 'Master Kelas',
             'master_mapel' => 'Master Mapel',
             'kitab_rujukan' => 'Master Kitab Rujukan',
