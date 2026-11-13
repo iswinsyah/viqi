@@ -479,10 +479,6 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                     <span class="hidden md:inline-block text-[11px] font-medium bg-teal-800/80 text-teal-200 px-2 py-0.5 rounded-full border border-teal-600/40">SADIGS 4.0</span>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <a href="yayasan2/index.php" class="text-xs text-white hover:text-teal-100 font-bold bg-white/15 hover:bg-white/25 border border-white/20 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-xs">
-                        <i class="fas fa-landmark text-teal-200"></i>
-                        <span class="hidden sm:inline">Ruang Yayasan</span>
-                    </a>
                     <a href="akunku.php" title="Halaman Akun (<?= htmlspecialchars($u_nama) ?>)" class="flex items-center group focus:outline-none">
                         <div class="w-10 h-10 rounded-full bg-white text-[#0b8478] flex items-center justify-center font-black text-sm shadow-md border-2 border-white/90 overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
                             <?php if (!empty($u_foto)): ?>
