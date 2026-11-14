@@ -94,7 +94,6 @@ if (!function_exists('get_all_menu_labels')) {
             'pengaturan_brosur'             => 'Pengaturan Brosur Digital',
             'database_psb'                  => 'Database PSB Online',
             'yayasan_psb'                   => 'Database PSB Online',
-            'data_center'                   => 'Menu Data Center',
             'artikel_ai'                    => 'Artikel AI',
             'siaran_wa'                     => 'Siaran WA Marketing',
 

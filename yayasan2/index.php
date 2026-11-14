@@ -117,8 +117,7 @@ $app_sections = [
             ['title' => get_menu_label('struktur_jobdesc', 'Struktur & Jobdesc'), 'href' => 'struktur-jobdesc.php', 'icon' => 'fas fa-sitemap', 'bg' => 'from-indigo-600 to-slate-700'],
             ['title' => get_menu_label('jobdesc_yayasan', 'Jobdesc Pegawai'), 'href' => 'jobdesc.php', 'icon' => 'fas fa-id-card', 'bg' => 'from-sky-600 to-slate-700'],
             ['title' => get_menu_label('sop_peraturan', 'SOP & Peraturan'), 'href' => 'admin-peraturan.php', 'icon' => 'fas fa-gavel', 'bg' => 'from-amber-600 to-orange-700'],
-            ['title' => get_menu_label('analisis_swot', 'Analisis SWOT'), 'href' => 'analisis-swot.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-violet-600 to-purple-800'],
-            ['title' => get_menu_label('data_center', 'Menu Data Center'), 'href' => 'data-center.php', 'icon' => 'fas fa-database', 'bg' => 'from-slate-700 to-zinc-900']
+            ['title' => get_menu_label('analisis_swot', 'Analisis SWOT'), 'href' => 'analisis-swot.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-violet-600 to-purple-800']
         ]
     ]
 ];

@@ -29,9 +29,9 @@ $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_labe
     ON DUPLICATE KEY UPDATE custom_label='Database PSB Online', short_label='Database PSB'");
 
 // Bersihkan menu legacy usang
-$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'yayasan_kpi_musyrif', 'yayasan_kpi_kepsek', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz', 'dompet_nusuk')");
-$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'jurnal', 'absensi', 'dompet_nusuk')");
-$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'jurnal', 'absensi', 'dompet_nusuk')");
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'yayasan_kpi_musyrif', 'yayasan_kpi_kepsek', 'ganti_password', 'jurnal', 'jurnal_mengajar', 'absensi', 'santri_tidak_masuk', 'santri_tidak_masuk_asatidz', 'dompet_nusuk', 'data_center')");
+$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'jurnal', 'absensi', 'dompet_nusuk', 'data_center')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('emodul', 'hafalan', 'kalender', 'yayasan_kalender', 'master_kalender', 'jurnal', 'absensi', 'dompet_nusuk', 'data_center')");
 $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('rekap_ibadah_rijal', 'rekap_ibadah_nisa', 'rekap_ibadah_mahad', 'laporan_setoran_rijal', 'laporan_setoran_nisa', 'laporan_setoran_hafalan')");
 $conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
 
@@ -210,22 +210,10 @@ if ($res_chk_mkt && $res_chk_mkt->num_rows === 0) {
     $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_marketing', 'Ruang Marketing & AI', 'Marketing')");
 }
 
-// Pastikan menu 'data_center' & 'dompet_nusuk' terdaftar (Self-Healing)
-$chk_dc = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'data_center'");
-if (!$chk_dc || $chk_dc->num_rows === 0) {
-    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-    $new_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] + 1 : 28;
-    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'data_center', $new_ord, 'fa-database', 'admin-data-center.php')");
-} else {
-    $conn->query("UPDATE menu_structure SET href = 'admin-data-center.php', icon = 'fa-database' WHERE menu_key = 'data_center'");
-}
-$conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('data_center', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,web,admin,kepala_sekolah,admin_sekolah') ON DUPLICATE KEY UPDATE allowed_roles = VALUES(allowed_roles)");
-$conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('data_center', 'Menu Data Center', 'Data Center') ON DUPLICATE KEY UPDATE custom_label='Menu Data Center', short_label='Data Center'");
-
-// Pastikan menu 'dompet_nusuk' dibersihkan permanen dari database
-$conn->query("DELETE FROM menu_structure WHERE menu_key = 'dompet_nusuk'");
-$conn->query("DELETE FROM menu_permissions WHERE menu_key = 'dompet_nusuk'");
-$conn->query("DELETE FROM menu_custom_labels WHERE menu_key = 'dompet_nusuk'");
+// Pastikan menu 'data_center' & 'dompet_nusuk' dibersihkan permanen dari database
+$conn->query("DELETE FROM menu_structure WHERE menu_key IN ('data_center', 'dompet_nusuk')");
+$conn->query("DELETE FROM menu_permissions WHERE menu_key IN ('data_center', 'dompet_nusuk')");
+$conn->query("DELETE FROM menu_custom_labels WHERE menu_key IN ('data_center', 'dompet_nusuk')");
 
 // Pastikan menu 'kpi_kepsek' terdaftar di Frame Utama (Administrasi)
 $res_chk_kpi_ks = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kpi_kepsek'");

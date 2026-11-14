@@ -23,17 +23,19 @@
     <!-- SIDEBAR NAVIGATION LINKS -->
     <div class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
         <nav class="space-y-1">
+            <?php if (isset($_SESSION['yayasan2_logged_in']) || isset($_SESSION['yayasan_logged_in']) || (isset($_SESSION['app_user_role']) && in_array($_SESSION['app_user_role'], ['super_admin', 'ketua_yayasan']))): ?>
             <a href="yayasan2/index.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-landmark w-4 text-center"></i>
                 <span>Ruang Yayasan</span>
             </a>
+            <?php endif; ?>
             <a href="dashboard-marketing.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-tachometer-alt w-4 text-center"></i>
                 <span>Dashboard Mkt</span>
             </a>
             <a href="admin-ai-hub.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-amber-300 bg-teal-900/40 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-robot w-4 text-center text-amber-300"></i>
-                <span>Pegawai / Crew AI</span>
+                <span>Crew AI</span>
             </a>
             <a href="admin-spmb.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-user-graduate w-4 text-center"></i>
@@ -46,22 +48,6 @@
             <a href="admin-siaran-wa.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-broadcast-tower w-4 text-center"></i>
                 <span>Siaran WA Mitra</span>
-            </a>
-            <a href="admin-ai-hub.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-robot w-4 text-center"></i>
-                <span>AI Control Hub</span>
-            </a>
-            <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-calendar-alt w-4 text-center"></i>
-                <span>Kalender</span>
-            </a>
-            <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-clock w-4 text-center"></i>
-                <span>Jadwal</span>
-            </a>
-            <a href="pengumuman.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-bullhorn w-4 text-center"></i>
-                <span>Info</span>
             </a>
         </nav>
     </div>

@@ -27,14 +27,6 @@
                 <i class="fas fa-house w-4 text-center"></i>
                 <span>Beranda</span>
             </a>
-            <a href="admin-data-center.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-database w-4 text-center"></i>
-                <span>Data Center</span>
-            </a>
-            <a href="admin-dompet-nusuk.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-amber-300 bg-teal-900/40 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-wallet w-4 text-center text-amber-300"></i>
-                <span>Dompet Nusuk</span>
-            </a>
             <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-calendar-alt w-4 text-center"></i>
                 <span>Kalender</span>
