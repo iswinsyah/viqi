@@ -18,6 +18,13 @@ $is_community = ($curr_file === 'admin-community-scout.php');
 $is_publisher = ($curr_file === 'admin-publisher.php');
 $is_trend = ($curr_file === 'admin-trend-scout.php');
 $is_workflow = ($curr_file === 'admin-sosmed-workflow.php' || $curr_file === 'admin-sosmed.php');
+$is_hero = ($curr_file === 'admin-hero.php');
+$is_testimoni = ($curr_file === 'admin-testimoni.php');
+$is_fasilitas = ($curr_file === 'admin-fasilitas.php');
+$is_galeri = ($curr_file === 'admin-galeri.php');
+$is_tentang = ($curr_file === 'admin-tentang.php');
+$is_pengaturan = ($curr_file === 'admin-pengaturan.php');
+$is_popup = ($curr_file === 'admin-popup.php');
 
 $act_cls = 'bg-white text-[#0b8478] font-black shadow-md';
 $inact_cls = 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold';
@@ -98,6 +105,45 @@ $inact_cls = 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold';
             <a href="admin-sosmed-workflow.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_workflow ? $act_cls : $inact_cls ?> transition">
                 <i class="fas fa-diagram-project w-4 text-center"></i>
                 <span>Workflow Multi-Agent</span>
+            </a>
+
+            <div class="pt-3 pb-1 border-t border-teal-700/50 mt-2">
+                <span class="text-[10px] uppercase tracking-wider text-teal-200/80 font-bold px-3.5">Konten Website (CMS)</span>
+            </div>
+
+            <a href="admin-hero.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_hero ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-heading w-4 text-center"></i>
+                <span>Head & Hero Web</span>
+            </a>
+
+            <a href="admin-testimoni.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_testimoni ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-comments w-4 text-center"></i>
+                <span>Pengaturan Testimoni</span>
+            </a>
+
+            <a href="admin-fasilitas.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_fasilitas ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-building w-4 text-center"></i>
+                <span>Fasilitas Pesantren</span>
+            </a>
+
+            <a href="admin-galeri.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_galeri ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-images w-4 text-center"></i>
+                <span>Galeri Foto</span>
+            </a>
+
+            <a href="admin-tentang.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_tentang ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-info-circle w-4 text-center"></i>
+                <span>Profil & Tentang</span>
+            </a>
+
+            <a href="admin-popup.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_popup ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-bullhorn w-4 text-center"></i>
+                <span>Popup Pengumuman</span>
+            </a>
+
+            <a href="admin-pengaturan.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_pengaturan ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-cog w-4 text-center"></i>
+                <span>Pengaturan Umum Web</span>
             </a>
 
             <div class="pt-3 pb-1 border-t border-teal-700/50 mt-2">
