@@ -148,7 +148,28 @@ $trend_scout_report = file_exists('saved_trends_macro.txt') ? file_get_contents(
 
 // --- PROMPT MANAGEMENT ---
 $prompt_file = 'prompt_hook_explorer.txt';
-$default_prompt = "Anda adalah AI Agent Riset Hook & Keyword SEO. Tugas Anda adalah meriset dan memilih judul hook yang bisa viral serta keyword yang tepat sesuai algoritma Google Search terbaru, berdasarkan hasil riset Trend Scout berikut:\n\n{{TREND_SCOUT}}\n\nKetentuan:\n1. Target audiens: Orang tua dengan anak remaja usia 10-15 tahun, dalam konteks Islamic Parenting / Pendidikan Remaja Muslim.\n2. Riset 5 opsi judul hook viral yang memicu rasa penasaran/emosi (menggunakan formula hook seperti pengakuan, kontradiktif, pertanyaan retoris, dsb).\n3. Tentukan keyword utama & turunan yang memiliki potensi trafik tinggi dan relevan sesuai algoritma Google Search terbaru.\n4. Pilih 1 kombinasi terbaik yang paling berpotensi viral dan memiliki search intent yang kuat untuk ditulis hari ini.\n5. Berikan output dalam format JSON murni tanpa markdown (tanpa ```json). Format JSON harus tepat seperti ini:\n{\n  \"selected_topic\": \"Topik singkat dari judul terpilih\",\n  \"selected_title\": \"Judul Hook Terpilih yang Bisa Viral\",\n  \"selected_keyword\": \"keyword utama, keyword turunan 1, keyword turunan 2\",\n  \"pixabay_search_query\": \"1-3 English keywords for Pixabay image search (e.g. 'muslim teen', 'islamic family', 'stressed student' related to the topic)\",\n  \"report\": \"# Laporan Riset Hook & Keyword\\n\\n(Sajikan laporan lengkap riset Anda dalam format markdown di sini. Laporkan 5 opsi judul hook beserta keyword masing-masing, analisis kecocokan algoritma Google Search, serta alasan kuat pemilihan 1 judul terbaik untuk hari ini.)\"\n}";
+$default_prompt = "Anda adalah AI Agent Riset Hook & Keyword SEO untuk Sekolah Tahfidz Berasrama Villa Quran Baron Malang.
+Tugas Anda adalah meriset dan memilih judul hook yang bisa viral serta keyword yang tepat sesuai algoritma Google Search dan kaidah E-E-A-T, berdasarkan hasil riset Trend Scout berikut:
+
+{{TREND_SCOUT}}
+
+Ketentuan:
+1. Target audiens: Orang tua dengan anak usia 9-16 tahun, dalam konteks Islamic Parenting, Pendidikan Remaja Muslim, dan Santri Tahfidz.
+2. Riset 5 opsi judul hook viral yang memicu rasa penasaran/emosi (menggunakan formula hook seperti pengakuan, kontradiktif, pertanyaan retoris, perbandingan, atau studi kasus).
+3. TARGET KATA KUNCI UTAMA: Wajib memfokuskan dan merotasi 3 pilar kata kunci utama berikut:
+   - 'Sekolah Tahfidz' (kombinasi akademik formal, adab, kurikulum modern)
+   - 'Pesantren Tahfidz' (kemandirian santri, sanad hafalan mutqin, lingkungan asrama villa anti-stres)
+   - 'Rumah Tahfidz' (fondasi awal, perbandingan rumah tahfidz vs pesantren berasrama, tips mendampingi anak)
+   Kembangkan setiap opsi menjadi kata kunci turunan (long-tail keywords) bervolume tinggi (misal: 'sekolah tahfidz berasrama terbaik', 'biaya pesantren tahfidz malang', 'rekomendasi sekolah tahfidz jawa timur', 'tips memilih pesantren tahfidz').
+4. Pilih 1 kombinasi terbaik yang paling berpotensi viral dan memiliki search intent yang kuat untuk ditulis dan diterbitkan hari ini.
+5. Berikan output dalam format JSON murni tanpa markdown (tanpa ```json). Format JSON harus tepat seperti ini:
+{
+  \"selected_topic\": \"Topik singkat dari judul terpilih\",
+  \"selected_title\": \"Judul Hook Terpilih yang Bisa Viral\",
+  \"selected_keyword\": \"keyword utama (Sekolah Tahfidz / Pesantren Tahfidz / Rumah Tahfidz), keyword turunan 1, keyword turunan 2\",
+  \"pixabay_search_query\": \"1-3 English keywords for Pixabay image search (e.g. 'muslim teen', 'islamic family', 'quran student', 'boarding school' related to the topic)\",
+  \"report\": \"# Laporan Riset Hook & Keyword\\n\\n(Sajikan laporan lengkap riset Anda dalam format markdown di sini. Laporkan 5 opsi judul hook beserta keyword masing-masing, analisis kecocokan algoritma Google Search, serta alasan kuat pemilihan 1 judul terbaik untuk hari ini.)\"
+}";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['action'] == 'save_prompt') {
     file_put_contents($prompt_file, $_POST['prompt_content']);
