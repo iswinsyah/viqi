@@ -30,7 +30,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS jurnal_mengajar (
 if (isset($_GET['hapus_jurnal_id'])) {
     $id = (int)$_GET['hapus_jurnal_id'];
     $conn->query("DELETE FROM jurnal_mengajar WHERE id = $id AND ustadz_id = $ustadz_id");
-    header("Location: admin-absensi-pegawai.php?sukses_jurnal=deleted");
+    header("Location: admin-absensi-pegawai.php?view=absensi&sukses_jurnal=deleted");
     exit;
 }
 
@@ -47,12 +47,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['action']) && $_POST['a
     if ($id > 0) {
         $sql = "UPDATE jurnal_mengajar SET tanggal='$tanggal', kelas='$kelas', mata_pelajaran='$mata_pelajaran', materi='$materi', absensi='$absensi_notes' WHERE id=$id AND ustadz_id=$ustadz_id";
         $conn->query($sql);
-        header("Location: admin-absensi-pegawai.php?sukses_jurnal=updated");
+        header("Location: admin-absensi-pegawai.php?view=absensi&sukses_jurnal=updated");
         exit;
     } else {
         $sql = "INSERT INTO jurnal_mengajar (ustadz_id, tanggal, kelas, mata_pelajaran, materi, absensi) VALUES ($ustadz_id, '$tanggal', '$kelas', '$mata_pelajaran', '$materi', '$absensi_notes')";
         $conn->query($sql);
-        header("Location: admin-absensi-pegawai.php?sukses_jurnal=created");
+        header("Location: admin-absensi-pegawai.php?view=absensi&sukses_jurnal=created");
         exit;
     }
 }
@@ -375,14 +375,17 @@ $has_schedule_today = !empty($jadwal_hari_ini);
     require_once 'menu-helper.php';
 
     $active_view = $_GET['view'] ?? 'beranda';
-    if (!in_array($active_view, ['beranda', 'kbm', 'asrama'])) {
+    if (isset($_GET['sukses_jurnal']) || isset($_GET['edit_jurnal_id']) || isset($_GET['hapus_jurnal_id'])) {
+        $active_view = 'absensi';
+    }
+    if (!in_array($active_view, ['beranda', 'kbm', 'asrama', 'absensi'])) {
         $active_view = 'beranda';
     }
 
     // DEFINISI KARTU MENU MENGIKUTI PENAMAAN DI MENU MANAJEMEN MENU RUANG YAYASAN
     // a. Menu Beranda (18 Card Menu):
     $cards_beranda = [
-        ['key' => 'absensi_pegawai', 'title' => get_menu_label('absensi_pegawai', 'Absensi & Jurnal KBM'), 'href' => '#section-absensi', 'icon' => 'fas fa-qrcode', 'bg' => 'from-emerald-500 to-teal-700'],
+        ['key' => 'absensi_pegawai', 'title' => get_menu_label('absensi_pegawai', 'Absensi & Jurnal KBM'), 'href' => 'admin-absensi-pegawai.php?view=absensi', 'icon' => 'fas fa-qrcode', 'bg' => 'from-emerald-500 to-teal-700'],
         ['key' => 'perizinan_pegawai', 'title' => get_menu_label('perizinan_pegawai', 'Pengajuan Izin / Cuti'), 'href' => 'admin-pegawai-perizinan.php', 'icon' => 'fas fa-calendar-check', 'bg' => 'from-teal-500 to-emerald-700'],
         ['key' => 'slip_gaji', 'title' => get_menu_label('slip_gaji', 'Slip Gaji'), 'href' => 'slip-gaji.php', 'icon' => 'fas fa-file-invoice-dollar', 'bg' => 'from-amber-500 to-amber-700'],
         ['key' => 'kpi_ustadz', 'title' => get_menu_label('kpi_ustadz', 'KPI Pegawai'), 'href' => 'admin-pegawai-kpi.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-indigo-600 to-blue-700'],
@@ -461,6 +464,13 @@ $has_schedule_today = !empty($jadwal_hari_ini);
             'icon' => 'fas fa-mosque',
             'badge' => count($cards_asrama) . ' Menu',
             'cards' => $cards_asrama
+        ],
+        'absensi' => [
+            'title' => 'Absensi & Jurnal KBM',
+            'desc' => 'Presensi harian kehadiran pegawai, piket, dan formulir jurnal KBM',
+            'icon' => 'fas fa-qrcode',
+            'badge' => 'Presensi Harian',
+            'cards' => []
         ]
     ];
 
@@ -491,6 +501,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                 </div>
             </div>
 
+            <?php if ($active_view !== 'absensi'): ?>
             <!-- BARIS BAWAH: SEARCH BAR DALAM AREA HEADER HIJAU -->
             <div class="px-4 sm:px-6 pb-4 pt-1">
                 <div class="max-w-6xl mx-auto">
@@ -501,10 +512,12 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
         </header>
 
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6 pb-24 md:pb-12">
             
+            <?php if ($active_view !== 'absensi'): ?>
             <!-- CARD SECTIONS LAUNCHER (ANDROID SQUIRCLE ICON STYLE) -->
             <div id="androidLauncher" class="max-w-6xl mx-auto mb-10 pt-1">
                 <div class="app-section bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/70 shadow-xs">
@@ -595,12 +608,23 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                 }
             });
             </script>
+            <?php else: ?>
+            <!-- NAVIGATION BAR KEMBALI KE BERANDA KHUSUS VIEW ABSENSI -->
+            <div class="max-w-4xl mx-auto mb-6 flex items-center justify-between">
+                <a href="admin-absensi-pegawai.php?view=beranda" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-100 text-[#0b8478] text-xs font-bold rounded-2xl border border-slate-200 shadow-sm transition">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+                </a>
+                <span class="text-xs font-bold text-teal-800 bg-teal-50 px-3.5 py-1.5 rounded-full border border-teal-200">
+                    <i class="fas fa-qrcode text-[#0b8478] mr-1.5"></i> Presensi & Jurnal KBM
+                </span>
+            </div>
+            <?php endif; ?>
 
-            <?php if ($active_view === 'beranda'): ?>
+            <?php if ($active_view === 'absensi'): ?>
             <!-- ================================================== -->
             <!-- SECTION FORM ABSENSI & JURNAL KBM                  -->
             <!-- ================================================== -->
-            <div id="section-absensi" class="border-t-2 border-dashed border-slate-300 pt-8 max-w-6xl mx-auto">
+            <div id="section-absensi" class="max-w-6xl mx-auto">
                 <div class="mb-6">
                     <h2 class="text-xl font-bold text-gray-900"><i class="fas fa-calendar-check text-[#0b8478] mr-2"></i>Formulir Absensi & Jurnal KBM Harian</h2>
                     <p class="text-gray-500 text-xs mt-1">Verifikasi lokasi GPS Anda untuk melakukan absensi harian (Shift 1 & 2) serta lengkapi jurnal mengajar Anda.</p>
@@ -791,7 +815,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                         <?= $edit_jurnal_mode ? 'Edit Jurnal Mengajar' : 'Isi Jurnal Mengajar Baru' ?>
                     </h3>
                     
-                    <form action="admin-absensi-pegawai.php" method="POST" class="space-y-4">
+                    <form action="admin-absensi-pegawai.php?view=absensi" method="POST" class="space-y-4">
                         <input type="hidden" name="action" value="simpan_jurnal">
                         <input type="hidden" name="jurnal_id" value="<?= $edit_jurnal_mode ? $jurnal_edit_data['id'] : '' ?>">
                         
@@ -864,7 +888,7 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                         
                         <div class="flex justify-end gap-2 pt-2">
                             <?php if ($edit_jurnal_mode): ?>
-                                <a href="admin-absensi-pegawai.php" class="bg-gray-100 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition hover:bg-gray-200">
+                                <a href="admin-absensi-pegawai.php?view=absensi" class="bg-gray-100 text-gray-700 font-bold px-4 py-2 rounded-xl text-xs transition hover:bg-gray-200">
                                     Batal
                                 </a>
                             <?php endif; ?>
@@ -930,8 +954,8 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                                                 <?= empty($row['absensi']) ? '<span class="text-gray-400 italic">Nihil</span>' : htmlspecialchars($row['absensi']) ?>
                                             </td>
                                             <td class="px-3 py-3 text-center whitespace-nowrap">
-                                                <a href="admin-absensi-pegawai.php?edit_jurnal_id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700 mr-2.5" title="Edit"><i class="fas fa-edit"></i></a>
-                                                <a href="admin-absensi-pegawai.php?hapus_jurnal_id=<?= $row['id'] ?>" onclick="return confirm('Hapus jurnal ini?')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></a>
+                                                <a href="admin-absensi-pegawai.php?view=absensi&edit_jurnal_id=<?= $row['id'] ?>" class="text-blue-500 hover:text-blue-700 mr-2.5" title="Edit"><i class="fas fa-edit"></i></a>
+                                                <a href="admin-absensi-pegawai.php?view=absensi&hapus_jurnal_id=<?= $row['id'] ?>" onclick="return confirm('Hapus jurnal ini?')" class="text-red-500 hover:text-red-700" title="Hapus"><i class="fas fa-trash"></i></a>
                                             </td>
                                         </tr>
                                 <?php
