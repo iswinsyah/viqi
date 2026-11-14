@@ -3,7 +3,7 @@ session_start();
 
 // Cek jika sudah login
 if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-    header("Location: dashboard-marketing.php");
+    header("Location: dashboard-psb.php");
     exit;
 }
 
@@ -14,9 +14,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = $_POST['password'] ?? '';
 
     if ($username === 'viqi' && $password === 'Bismillah99!') {
-        // Gunakan session yang sama agar bisa mengakses dashboard marketing
+        // Gunakan session yang sama agar bisa mengakses dashboard psb
         $_SESSION['admin_logged_in'] = true;
-        header("Location: dashboard-marketing.php");
+        header("Location: dashboard-psb.php");
         exit;
     } else {
         $error = 'Username atau Password salah!';
@@ -28,7 +28,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Ruang Marketing | Villa Quran</title>
+    <title>Login Ruang PSB (Penerimaan Santri Baru) | Villa Quran</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -44,8 +44,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran Baron Malang" class="w-16 h-16 object-contain">
                 </div>
             </a>
-            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Ruang Marketing</h1>
-            <p class="text-xs text-slate-500 mt-1">Sistem Manajemen Leads & Afiliasi • Villa Quran</p>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Ruang PSB</h1>
+            <p class="text-xs text-slate-500 mt-1">Penerimaan Santri Baru & Manajemen Prospek • Villa Quran</p>
         </div>
 
         <?php if($error): ?>

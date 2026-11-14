@@ -111,12 +111,15 @@ if (empty($status_labels)) {
                 </div>
             </div>
             
-            <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-3">
+                <a href="dashboard-psb.php" class="px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200 text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fas fa-user-graduate"></i> <span class="hidden sm:inline">Ruang PSB</span>
+                </a>
                 <a href="https://villaquranindonesia.com" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium hidden sm:flex items-center">
                     <i class="fas fa-external-link-alt mr-2"></i> Lihat Website
                 </a>
-                <div class="h-8 w-8 rounded-full bg-[#0b8478] flex items-center justify-center text-white font-bold shadow-sm">
-                    M
+                <div class="h-8 w-8 rounded-full bg-[#0b8478] flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                    WEB
                 </div>
             </div>
         </header>

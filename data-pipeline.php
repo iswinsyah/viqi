@@ -91,8 +91,8 @@ $active_menu = 'pipeline';
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-    <!-- INCLUDE SIDEBAR MARKETING -->
-    <?php include 'sidebar-marketing.php'; ?>
+    <!-- INCLUDE SIDEBAR PSB -->
+    <?php include 'sidebar-psb.php'; ?>
 
     <!-- MAIN CONTENT AREA -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
@@ -102,22 +102,31 @@ $active_menu = 'pipeline';
                 <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-sm">
+                        <i class="fas fa-columns"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-gray-800 text-sm sm:text-base leading-tight">Pipeline Prospek Santri Baru</h2>
+                        <p class="text-[10px] text-gray-500">Kanban Board Follow Up Calon Walisantri</p>
+                    </div>
+                </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <a href="https://villaquranindonesia.com" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium hidden sm:flex items-center">
-                    <i class="fas fa-external-link-alt mr-2"></i> Lihat Website
+            <div class="flex items-center space-x-3">
+                <a href="dashboard-psb.php" class="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fas fa-tachometer-alt text-[#0b8478]"></i> <span class="hidden sm:inline">Dashboard PSB</span>
                 </a>
-                <div class="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-sm">A</div>
             </div>
         </header>
 
         <!-- MAIN DASHBOARD CONTENT (KANBAN BOARD) -->
-        <main class="flex-1 overflow-x-hidden overflow-y-hidden bg-white p-4 sm:p-6 flex flex-col">
+        <main class="flex-1 overflow-x-hidden overflow-y-hidden bg-white p-4 sm:p-6 pb-20 md:pb-6 flex flex-col">
             <div class="flex justify-between items-center mb-4 flex-shrink-0">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Pipeline Marketing (Kanban)</h1>
-                    <p class="text-sm text-gray-500">Geser prospek ke kanan saat tahapan mereka meningkat.</p>
+                    <h1 class="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-columns text-[#0b8478]"></i> Pipeline Prospek Calon Santri
+                    </h1>
+                    <p class="text-xs text-gray-500 mt-0.5">Pantau dan geser tahapan follow up calon santri & wali santri dari prospek hingga daftar ulang.</p>
                 </div>
                 <div class="flex items-center space-x-4">
                     <!-- Tombol Navigasi Scroll -->

@@ -73,31 +73,43 @@ $active_menu = 'agen';
 </head>
 <body class="bg-gray-100 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-    <!-- INCLUDE SIDEBAR MARKETING -->
-    <?php include 'sidebar-marketing.php'; ?>
+    <!-- INCLUDE SIDEBAR PSB -->
+    <?php include 'sidebar-psb.php'; ?>
 
     <!-- MAIN CONTENT AREA -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
         <!-- TOP HEADER -->
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 sm:px-6 z-10">
-            <div class="flex items-center">
-                <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4">
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden p-1.5 rounded-lg hover:bg-gray-100">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
-                <h2 class="font-bold text-gray-800 hidden sm:block">Sistem Administrasi Digital Sekolah (SADIGS 4.0)</h2>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-gray-800 text-sm sm:text-base leading-tight">Data Agen & Mitra PSB</h2>
+                        <p class="text-[10px] text-gray-500">Manajemen Referral Calon Santri Baru</p>
+                    </div>
+                </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <a href="https://villaquranindonesia.com" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium hidden sm:flex items-center">
-                    <i class="fas fa-external-link-alt mr-2"></i> Lihat Website
+            <div class="flex items-center space-x-3">
+                <a href="dashboard-psb.php" class="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fas fa-tachometer-alt text-[#0b8478]"></i> <span class="hidden sm:inline">Dashboard PSB</span>
                 </a>
-                <div class="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-sm">A</div>
             </div>
         </header>
 
         <!-- MAIN DASHBOARD CONTENT -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 pb-20 md:pb-6">
             <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-900">Manajemen Agen Referral</h1>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-black text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-users text-[#0b8478]"></i> Data Agen & Mitra Referral
+                    </h1>
+                    <p class="text-xs text-gray-500 mt-0.5">Kelola data mitra dan kode referral unik yang membagikan info pendaftaran santri baru.</p>
+                </div>
             </div>
 
             <!-- Notifikasi Sukses / Error -->

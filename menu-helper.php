@@ -88,14 +88,25 @@ if (!function_exists('get_all_menu_labels')) {
             'kurikulum_solopreneur_trainer' => 'Inkubator Solopreneur (AI)',
             'yayasan_cp'                    => 'Capaian Pembelajaran (CP) AI',
 
-            // Web & Marketing
-            'ruang_web'                     => 'Ruang Web (CMS & Website)',
-            'ruang_marketing'               => 'Ruang Marketing & AI',
-            'pengaturan_brosur'             => 'Pengaturan Brosur Digital',
+            // Ruang PSB (Penerimaan Santri Baru)
+            'ruang_psb'                     => 'Ruang PSB (Penerimaan Santri Baru)',
             'database_psb'                  => 'Database PSB Online',
             'yayasan_psb'                   => 'Database PSB Online',
-            'artikel_ai'                    => 'Artikel AI',
-            'siaran_wa'                     => 'Siaran WA Marketing',
+            'pipeline_prospek'              => 'Pipeline Prospek Calon Santri',
+            'pengaturan_brosur'             => 'Pengaturan Brosur Digital',
+            'siaran_wa'                     => 'Siaran WA Mitra & PSB',
+            'data_agen'                     => 'Data Agen & Mitra Referral',
+            'tes_kesiapan'                  => 'Tes Kesiapan Masuk Santri',
+
+            // Ruang Web & Crew AI
+            'ruang_web'                     => 'Ruang Web (CMS & Crew AI)',
+            'ruang_marketing'               => 'Ruang PSB (Penerimaan Santri Baru)',
+            'crew_ai'                       => 'Crew AI Hub',
+            'artikel_ai'                    => 'Penulis Artikel SEO AI',
+            'kalender_konten'               => 'Kalender Konten AI',
+            'trend_scout'                   => 'Trend & Hook Scout AI',
+            'publisher_ai'                  => 'Publisher AI',
+            'community_scout'               => 'Community Scout AI',
 
             // Yayasan Tata Kelola
             'pembukuan_yayasan'             => 'Buku Kas Lembaga',

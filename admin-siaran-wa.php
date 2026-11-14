@@ -238,8 +238,8 @@ $active_menu = 'siaran_wa';
 </head>
 <body class="bg-slate-50 font-sans antialiased text-slate-800 flex h-screen overflow-hidden">
 
-    <!-- SIDEBAR MARKETING -->
-    <?php include 'sidebar-marketing.php'; ?>
+    <!-- SIDEBAR RUANG PSB -->
+    <?php include 'sidebar-psb.php'; ?>
 
     <!-- MAIN CONTENT AREA -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
@@ -261,8 +261,8 @@ $active_menu = 'siaran_wa';
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
-                <a href="dashboard-marketing.php" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
-                    <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Ruang Marketing</span>
+                <a href="dashboard-psb.php" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Ruang PSB</span>
                 </a>
                 <a href="data-agen.php" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition flex items-center gap-1.5">
                     <i class="fas fa-users"></i> <span class="hidden sm:inline">Kelola Data Agen</span>

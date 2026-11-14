@@ -189,25 +189,30 @@ if ($res_chk_sal_adm && $res_chk_sal_adm->num_rows === 0) {
     $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('salary_admin', 'Salary Admin Sekolah', 'Salary Admin')");
 }
 
-// Pastikan menu 'ruang_web' & 'ruang_marketing' terdaftar (Self-Healing)
+// Pastikan menu 'ruang_web' & 'ruang_psb' terdaftar (Self-Healing)
+$conn->query("UPDATE menu_structure SET href = 'dashboard-psb.php', icon = 'fa-user-graduate' WHERE menu_key = 'ruang_marketing'");
+$conn->query("UPDATE menu_custom_labels SET custom_label = 'Ruang PSB (Penerimaan Santri Baru)', short_label = 'Ruang PSB' WHERE menu_key = 'ruang_marketing'");
+$conn->query("UPDATE menu_structure SET href = 'dashboard-marketing.php', icon = 'fa-globe' WHERE menu_key = 'ruang_web'");
+$conn->query("UPDATE menu_custom_labels SET custom_label = 'Ruang Web (CMS & Crew AI)', short_label = 'Ruang Web' WHERE menu_key = 'ruang_web'");
+
 $res_chk_web = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'ruang_web'");
 if ($res_chk_web && $res_chk_web->num_rows === 0) {
     $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
     $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
     $new_ord = $max_ord + 1;
-    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Web & Marketing', 'ruang_web', $new_ord, 'fa-globe', 'admin.php')");
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Web & AI', 'ruang_web', $new_ord, 'fa-globe', 'dashboard-marketing.php')");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('ruang_web', 'ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,web,super_admin')");
-    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_web', 'Ruang Web (CMS & Website)', 'Ruang Web')");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_web', 'Ruang Web (CMS & Crew AI)', 'Ruang Web')");
 }
 
-$res_chk_mkt = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'ruang_marketing'");
+$res_chk_mkt = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'ruang_marketing' OR menu_key = 'ruang_psb'");
 if ($res_chk_mkt && $res_chk_mkt->num_rows === 0) {
     $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
     $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
     $new_ord = $max_ord + 1;
-    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Web & Marketing', 'ruang_marketing', $new_ord, 'fa-bullseye', 'dashboard-marketing.php')");
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('PSB & Pendaftaran', 'ruang_marketing', $new_ord, 'fa-user-graduate', 'dashboard-psb.php')");
     $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('ruang_marketing', 'ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,super_admin')");
-    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_marketing', 'Ruang Marketing & AI', 'Marketing')");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_marketing', 'Ruang PSB (Penerimaan Santri Baru)', 'Ruang PSB')");
 }
 
 // Pastikan menu 'data_center' & 'dompet_nusuk' dibersihkan permanen dari database
@@ -298,11 +303,13 @@ if ($count_struct === 0) {
         'Solopreneur & AI' => [
             'kurikulum_solopreneur_trainer' => ['href' => 'trainer-kurikulum-solopreneur.php', 'icon' => 'fa-rocket']
         ],
-        'Web & Marketing' => [
-            'ruang_web' => ['href' => 'admin.php', 'icon' => 'fa-globe'],
-            'ruang_marketing' => ['href' => 'dashboard-marketing.php', 'icon' => 'fa-bullseye'],
+        'PSB & Pendaftaran' => [
+            'ruang_marketing' => ['href' => 'dashboard-psb.php', 'icon' => 'fa-user-graduate'],
+            'database_psb' => ['href' => 'admin-spmb.php', 'icon' => 'fa-address-card'],
             'pengaturan_brosur' => ['href' => 'admin-brosur-settings.php', 'icon' => 'fa-envelope-open-text'],
-            'database_psb' => ['href' => 'admin-spmb.php', 'icon' => 'fa-user-graduate']
+        ],
+        'Web & AI' => [
+            'ruang_web' => ['href' => 'dashboard-marketing.php', 'icon' => 'fa-globe'],
         ]
     ];
     
@@ -378,9 +385,16 @@ if ($res_db_menus) {
             'yayasan_cp' => 'Capaian Pembelajaran (CP) AI',
             'yayasan_psb' => 'Database PSB Online',
             'database_psb' => 'Database PSB Online',
+            'pipeline_prospek' => 'Pipeline Prospek Calon Santri',
             'pengaturan_brosur' => 'Pengaturan Brosur Digital',
-            'ruang_web' => 'Ruang Web (CMS & Website)',
-            'ruang_marketing' => 'Ruang Marketing & AI'
+            'siaran_wa' => 'Siaran WA Mitra & PSB',
+            'data_agen' => 'Data Agen & Mitra Referral',
+            'tes_kesiapan' => 'Tes Kesiapan Masuk Santri',
+            'ruang_web' => 'Ruang Web (CMS & Crew AI)',
+            'ruang_marketing' => 'Ruang PSB (Penerimaan Santri Baru)',
+            'ruang_psb' => 'Ruang PSB (Penerimaan Santri Baru)',
+            'crew_ai' => 'Crew AI Hub',
+            'artikel_ai' => 'Penulis Artikel SEO AI'
         ];
         
         $title = $default_titles[$key] ?? ucwords(str_replace('_', ' ', $key));
@@ -388,18 +402,18 @@ if ($res_db_menus) {
     }
 }
 
-// Jaminan menu Web & Marketing selalu terdaftar di tabel Manajemen Menu
-if (!isset($defined_menus['Web & Marketing']['ruang_web'])) {
-    $defined_menus['Web & Marketing']['ruang_web'] = 'Ruang Web (CMS & Website)';
+// Jaminan menu PSB & Ruang Web selalu terdaftar di tabel Manajemen Menu
+if (!isset($defined_menus['PSB & Pendaftaran']['ruang_marketing']) && !isset($defined_menus['PSB & Pendaftaran']['ruang_psb'])) {
+    $defined_menus['PSB & Pendaftaran']['ruang_marketing'] = 'Ruang PSB (Penerimaan Santri Baru)';
 }
-if (!isset($defined_menus['Web & Marketing']['ruang_marketing'])) {
-    $defined_menus['Web & Marketing']['ruang_marketing'] = 'Ruang Marketing & AI';
+if (!isset($defined_menus['Web & AI']['ruang_web'])) {
+    $defined_menus['Web & AI']['ruang_web'] = 'Ruang Web (CMS & Crew AI)';
 }
-if (!isset($defined_menus['Web & Marketing']['pengaturan_brosur'])) {
-    $defined_menus['Web & Marketing']['pengaturan_brosur'] = 'Pengaturan Brosur Digital';
+if (!isset($defined_menus['PSB & Pendaftaran']['database_psb'])) {
+    $defined_menus['PSB & Pendaftaran']['database_psb'] = 'Database PSB Online';
 }
-if (!isset($defined_menus['Web & Marketing']['database_psb'])) {
-    $defined_menus['Web & Marketing']['database_psb'] = 'Database PSB Online';
+if (!isset($defined_menus['PSB & Pendaftaran']['pengaturan_brosur'])) {
+    $defined_menus['PSB & Pendaftaran']['pengaturan_brosur'] = 'Pengaturan Brosur Digital';
 }
 
 $group_order = [

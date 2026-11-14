@@ -96,16 +96,25 @@ $app_sections = [
         ]
     ],
     [
-        'category' => 'Marketing & Crew AI',
-        'icon' => 'fas fa-bullhorn',
+        'category' => 'PSB (Penerimaan Santri Baru)',
+        'icon' => 'fas fa-user-graduate',
+        'color' => 'text-teal-700',
+        'items' => [
+            ['title' => get_menu_label('ruang_psb', 'Ruang PSB (Penerimaan Santri Baru)'), 'href' => '../dashboard-psb.php', 'icon' => 'fas fa-user-graduate', 'bg' => 'from-teal-600 to-emerald-700'],
+            ['title' => get_menu_label('database_psb', 'Database PSB Online'), 'href' => '../admin-spmb.php', 'icon' => 'fas fa-address-card', 'bg' => 'from-blue-600 to-cyan-700'],
+            ['title' => get_menu_label('pipeline_prospek', 'Pipeline Prospek Calon Santri'), 'href' => '../data-pipeline.php', 'icon' => 'fas fa-columns', 'bg' => 'from-amber-500 to-orange-600'],
+            ['title' => get_menu_label('pengaturan_brosur', 'Pengaturan Brosur Digital'), 'href' => '../admin-brosur-settings.php', 'icon' => 'fas fa-envelope-open-text', 'bg' => 'from-emerald-600 to-teal-800'],
+            ['title' => get_menu_label('siaran_wa', 'Siaran WA Mitra & PSB'), 'href' => '../admin-siaran-wa.php', 'icon' => 'fas fa-broadcast-tower', 'bg' => 'from-indigo-600 to-purple-700']
+        ]
+    ],
+    [
+        'category' => 'Ruang Web & Crew AI',
+        'icon' => 'fas fa-globe',
         'color' => 'text-indigo-700',
         'items' => [
+            ['title' => get_menu_label('ruang_web', 'Ruang Web (CMS & Crew AI)'), 'href' => '../dashboard-marketing.php', 'icon' => 'fas fa-chart-line', 'bg' => 'from-teal-600 to-emerald-700'],
             ['title' => get_menu_label('crew_ai', 'Crew AI Hub'), 'href' => '../admin-ai-hub.php', 'icon' => 'fas fa-robot', 'bg' => 'from-purple-600 to-indigo-700'],
-            ['title' => get_menu_label('ruang_marketing', 'Ruang Marketing & AI'), 'href' => '../dashboard-marketing.php', 'icon' => 'fas fa-bullhorn', 'bg' => 'from-teal-600 to-emerald-700'],
-            ['title' => get_menu_label('artikel_ai', 'Artikel AI'), 'href' => '../admin-artikel.php', 'icon' => 'fas fa-newspaper', 'bg' => 'from-rose-500 to-pink-600'],
-            ['title' => get_menu_label('database_psb', 'Database PSB Online'), 'href' => '../admin-spmb.php', 'icon' => 'fas fa-user-graduate', 'bg' => 'from-blue-600 to-cyan-700'],
-            ['title' => get_menu_label('pengaturan_brosur', 'Pengaturan Brosur Digital'), 'href' => '../admin-brosur-settings.php', 'icon' => 'fas fa-envelope-open-text', 'bg' => 'from-amber-500 to-orange-600'],
-            ['title' => get_menu_label('siaran_wa', 'Siaran WA Marketing'), 'href' => '../admin-siaran-wa.php', 'icon' => 'fas fa-broadcast-tower', 'bg' => 'from-emerald-600 to-teal-700']
+            ['title' => get_menu_label('artikel_ai', 'Penulis Artikel SEO AI'), 'href' => '../admin-seo.php', 'icon' => 'fas fa-pen-nib', 'bg' => 'from-rose-500 to-pink-600']
         ]
     ],
     [

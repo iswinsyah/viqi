@@ -74,6 +74,9 @@ $last_log = $log_lines[count($log_lines)-1];
                 </div>
             </div>
             <div class="flex items-center gap-2.5">
+                <a href="dashboard-psb.php" class="px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-[#0b8478] border border-teal-200 text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fas fa-user-graduate"></i> <span class="hidden sm:inline">Ruang PSB</span>
+                </a>
                 <a href="dashboard-marketing.php" class="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition flex items-center gap-1.5">
                     <i class="fas fa-chart-line text-[#0b8478]"></i> <span class="hidden sm:inline">Statistik Pengunjung</span>
                 </a>

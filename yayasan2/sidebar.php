@@ -70,16 +70,20 @@ $curr_file = basename($_SERVER['PHP_SELF']);
             <i class="fas fa-users w-4 text-center text-sm"></i>
             <span>4. Ruang Orangtua</span>
         </a>
+        <a href="../dashboard-psb.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'dashboard-psb.php' || $curr_file === 'admin-spmb.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-user-graduate w-4 text-center text-sm"></i>
+            <span>5. Ruang PSB</span>
+        </a>
         <a href="../dashboard-marketing.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_file === 'dashboard-marketing.php' || $curr_file === 'admin-ai-hub.php') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
-            <i class="fas fa-bullhorn w-4 text-center text-sm"></i>
-            <span>5. Ruang Marketing</span>
+            <i class="fas fa-globe w-4 text-center text-sm"></i>
+            <span>6. Ruang Web & AI</span>
         </a>
     </nav>
 
     <!-- SIDEBAR FOOTER: KELUAR -->
     <div class="p-4 border-t border-teal-700/60 flex-shrink-0">
         <a href="../logout-ustadz.php" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white font-black text-xs shadow transition">
-            <i class="fas fa-arrow-right-from-bracket"></i> 6. Keluar
+            <i class="fas fa-arrow-right-from-bracket"></i> 7. Keluar
         </a>
     </div>
 </aside>
@@ -113,11 +117,11 @@ $curr_file = basename($_SERVER['PHP_SELF']);
             </div>
             <span class="text-white">Orangtua</span>
         </a>
-        <a href="../dashboard-marketing.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'dashboard-marketing.php' || $curr_file === 'admin-ai-hub.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
-            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'dashboard-marketing.php' || $curr_file === 'admin-ai-hub.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-bullhorn text-base <?= ($curr_file === 'dashboard-marketing.php' || $curr_file === 'admin-ai-hub.php') ? 'text-white' : 'text-teal-100' ?>"></i>
+        <a href="../dashboard-psb.php" class="flex flex-col items-center justify-center flex-1 py-1 <?= ($curr_file === 'dashboard-psb.php' || $curr_file === 'admin-spmb.php') ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-[10px] transition">
+            <div class="w-9 h-7 rounded-full <?= ($curr_file === 'dashboard-psb.php' || $curr_file === 'admin-spmb.php') ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-user-graduate text-base <?= ($curr_file === 'dashboard-psb.php' || $curr_file === 'admin-spmb.php') ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-white">Marketing</span>
+            <span class="text-white">PSB</span>
         </a>
         <a href="../logout-ustadz.php" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex flex-col items-center justify-center flex-1 py-1 text-teal-100 hover:text-rose-200 font-bold text-[10px] transition">
             <div class="w-9 h-7 rounded-full flex items-center justify-center mb-0.5">

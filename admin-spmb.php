@@ -121,12 +121,8 @@ $nama_user = $user['nama_lengkap'] ?? ($_SESSION['nama_lengkap'] ?? ($_SESSION['
 </head>
 <body class="bg-slate-50 text-slate-800 flex h-screen overflow-hidden antialiased">
 
-    <!-- SIDEBAR -->
-    <?php 
-    if (file_exists('sidebar-marketing.php')) {
-        include 'sidebar-marketing.php';
-    }
-    ?>
+    <!-- SIDEBAR RUANG PSB -->
+    <?php include 'sidebar-psb.php'; ?>
 
     <!-- MAIN CONTENT WRAPPER -->
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
@@ -147,8 +143,8 @@ $nama_user = $user['nama_lengkap'] ?? ($_SESSION['nama_lengkap'] ?? ($_SESSION['
                 <a href="daftar-spmb.html" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 transition">
                     <i class="fas fa-external-link-alt text-[10px]"></i> Buka Form Pendaftaran
                 </a>
-                <a href="dashboard.php" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
-                    <i class="fas fa-arrow-left text-[10px]"></i> Ke Dashboard
+                <a href="dashboard-psb.php" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition">
+                    <i class="fas fa-arrow-left text-[10px]"></i> Ke Dashboard PSB
                 </a>
             </div>
         </header>

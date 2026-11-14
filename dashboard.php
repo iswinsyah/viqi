@@ -67,8 +67,14 @@ if ($is_yayasan_pengurus) {
     exit;
 }
 
-// 5. Ruang Marketing
-if (in_array('marketing', $roles) || in_array('tim_marketing', $roles) || in_array('web', $roles)) {
+// 5. Ruang PSB (Penerimaan Santri Baru)
+if (in_array('psb', $roles) || in_array('panitia_psb', $roles) || in_array('marketing', $roles) || in_array('tim_marketing', $roles)) {
+    header("Location: dashboard-psb.php" . $query_string);
+    exit;
+}
+
+// 6. Ruang Web & Crew AI (CMS & Media)
+if (in_array('web', $roles) || in_array('webmaster', $roles) || in_array('humas', $roles)) {
     header("Location: dashboard-marketing.php" . $query_string);
     exit;
 }
