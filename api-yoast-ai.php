@@ -283,41 +283,83 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
   \"perubahan_dilakukan\": \"(Ringkasan 3-5 poin apa saja yang diperbaiki oleh Agent Yoast SEO)\"
 }";
 
-    // Tembak ke Gemini
-    $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
-    if (empty($apiKey)) {
-        echo json_encode(['status' => 'error', 'message' => 'API Key Gemini belum disetel di config-key.php']);
-        exit;
-    }
-
-    $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
-    $payload = [
-        "contents" => [
-            ["parts" => [["text" => $prompt_editor]]]
-        ]
-    ];
-
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-        CURLOPT_CONNECTTIMEOUT => 15,
-        CURLOPT_TIMEOUT => 75
-    ]);
-
-    $resp = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-
     $rawText = '';
-    if ($resp && $httpCode === 200) {
-        $respJson = json_decode($resp, true);
-        $rawText = $respJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+    $usedBrain = 'Gemini 2.5 Flash';
+
+    // =====================================================================
+    // TIER 1: COBA AI LOKAL (Ollama di PC Server via Cloudflare / Localhost)
+    // =====================================================================
+    $localAiUrl = defined('LOCAL_AI_URL') ? LOCAL_AI_URL : '';
+    $localAiModel = defined('LOCAL_AI_MODEL') ? LOCAL_AI_MODEL : 'qwen2.5-coder:7b';
+    
+    if (!empty($localAiUrl)) {
+        $chLocal = curl_init(rtrim($localAiUrl, '/') . '/api/generate');
+        curl_setopt_array($chLocal, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode([
+                "model" => $localAiModel,
+                "prompt" => $prompt_editor,
+                "stream" => false,
+                "format" => "json"
+            ]),
+            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_TIMEOUT => 180,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false
+        ]);
+        $localResp = curl_exec($chLocal);
+        $localHttp = curl_getinfo($chLocal, CURLINFO_HTTP_CODE);
+        curl_close($chLocal);
+
+        if ($localResp && $localHttp === 200) {
+            $localData = json_decode($localResp, true);
+            if (!empty($localData['response'])) {
+                $rawText = trim($localData['response']);
+                $usedBrain = 'AI Lokal (' . $localAiModel . ')';
+            }
+        }
     }
 
-    // Fallback: Jika direct Gemini gagal / timeout di Hostinger, coba via GAS Proxy
+    // =====================================================================
+    // TIER 2: GEMINI API LANGSUNG (Jika AI Lokal Offline / Tidak Tersedia)
+    // =====================================================================
+    $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+    if (empty($rawText) && !empty($apiKey)) {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+        $payload = [
+            "contents" => [
+                ["parts" => [["text" => $prompt_editor]]]
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_TIMEOUT => 75
+        ]);
+
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($resp && $httpCode === 200) {
+            $respJson = json_decode($resp, true);
+            $rawText = $respJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            if (!empty($rawText)) {
+                $usedBrain = 'Google Gemini 2.5 Flash';
+            }
+        }
+    }
+
+    // =====================================================================
+    // TIER 3: GAS PROXY (Fallback jika Server Hostinger Membatasi Port Google)
+    // =====================================================================
     if (empty($rawText) && defined('GEMINI_GAS_URL') && !empty(GEMINI_GAS_URL)) {
         $chGas = curl_init(GEMINI_GAS_URL);
         curl_setopt_array($chGas, [
@@ -344,14 +386,16 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
             $gasJson = json_decode($respGas, true);
             if (isset($gasJson['result']) && !empty($gasJson['result'])) {
                 $rawText = $gasJson['result'];
+                $usedBrain = 'Google Apps Script Proxy';
             } elseif (isset($gasJson['candidates'][0]['content']['parts'][0]['text'])) {
                 $rawText = $gasJson['candidates'][0]['content']['parts'][0]['text'];
+                $usedBrain = 'Google Apps Script Proxy';
             }
         }
     }
 
     if (empty($rawText)) {
-        echo json_encode(['status' => 'error', 'message' => "Gagal mendapatkan respon AI (HTTP $httpCode)"]);
+        echo json_encode(['status' => 'error', 'message' => "Gagal mendapatkan respon dari AI Lokal maupun Gemini"]);
         exit;
     }
     
@@ -405,6 +449,7 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
     echo json_encode([
         'status' => 'success',
         'message' => 'Artikel berhasil dipoles dan berstatus All Green 🟢🟢!',
+        'used_brain' => $usedBrain,
         'article_id' => $article_id,
         'konten_dipoles' => $konten_baru,
         'meta_title' => $meta_title_baru,
