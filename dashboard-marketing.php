@@ -81,18 +81,13 @@ if (empty($status_labels)) {
     $status_labels = ['Belum ada data'];
     $status_data = [0];
 }
-
-// --- AMBIL DATA TABEL AGEN (TOP 5) ---
-$agen_top = [];
-$q_agen = $conn->query("SELECT a.*, (SELECT COUNT(id) FROM leads l WHERE l.kode_ref = a.kode_ref OR l.kode_ref = a.whatsapp) AS total_leads FROM agen a ORDER BY total_leads DESC LIMIT 5");
-if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Ruang Marketing & AI | Villa Quran Baron Malang</title>
+    <title>Analisa Statistik Pengunjung | Ruang Marketing SADIGS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -120,18 +115,23 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                 <a href="https://villaquranindonesia.com" target="_blank" class="text-sm text-emerald-600 hover:text-emerald-800 font-medium hidden sm:flex items-center">
                     <i class="fas fa-external-link-alt mr-2"></i> Lihat Website
                 </a>
-                <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold shadow-sm">
+                <div class="h-8 w-8 rounded-full bg-[#0b8478] flex items-center justify-center text-white font-bold shadow-sm">
                     M
                 </div>
             </div>
         </header>
 
         <!-- MAIN DASHBOARD CONTENT -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 pb-20 md:pb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                <h1 class="text-2xl font-bold text-gray-900">Dashboard Ruang Marketing & AI</h1>
+                <div>
+                    <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-chart-line text-[#0b8478]"></i> Analisa Statistik Pengunjung
+                    </h1>
+                    <p class="text-xs text-gray-500 mt-1">Monitoring tren pengunjung website, status prospek (leads), perangkat pengakses, dan sumber traffic.</p>
+                </div>
                 <div class="flex items-center space-x-3 w-full sm:w-auto">
-                    <select onchange="window.location.href='?range='+this.value" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium text-sm w-full sm:w-auto cursor-pointer">
+                    <select onchange="window.location.href='?range='+this.value" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-xl shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0b8478] font-bold text-xs w-full sm:w-auto cursor-pointer">
                         <option value="7days" <?= $range == '7days' ? 'selected' : '' ?>>7 Hari Terakhir</option>
                         <option value="1month" <?= $range == '1month' ? 'selected' : '' ?>>1 Bulan Terakhir</option>
                         <option value="1year" <?= $range == '1year' ? 'selected' : '' ?>>1 Tahun Terakhir</option>
@@ -140,60 +140,6 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                 </div>
             </div>
             
-            <!-- SHORTCUTS AI AGENTS -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <a href="admin-spmb.php" class="bg-white hover:bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group relative overflow-hidden">
-                    <span class="absolute top-2 right-2 bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">PSB</span>
-                    <i class="fas fa-user-graduate text-emerald-600 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-emerald-900 mt-1 text-center">Database PSB</span>
-                </a>
-                <a href="admin-brosur-settings.php" class="bg-white hover:bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-envelope-open-text text-amber-600 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-amber-900 mt-1 text-center">Brosur Digital</span>
-                </a>
-                <a href="admin-ai-hub.php" class="bg-white hover:bg-indigo-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-robot text-indigo-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Pusat Kendali AI</span>
-                </a>
-                <a href="data-pipeline.php" class="bg-white hover:bg-blue-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-columns text-blue-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Pipeline Prospek</span>
-                </a>
-                <a href="data-agen.php" class="bg-white hover:bg-emerald-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-handshake text-emerald-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Data Agen</span>
-                </a>
-                <a href="admin-siaran-wa.php" class="bg-white hover:bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group relative overflow-hidden">
-                    <span class="absolute top-2 right-2 bg-emerald-100 text-emerald-700 text-[10px] font-bold px-1.5 py-0.5 rounded-full">BARU</span>
-                    <i class="fab fa-whatsapp text-emerald-600 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-emerald-800 mt-1 text-center">Siaran WA Mitra</span>
-                </a>
-                <a href="admin-analisa.php" class="bg-white hover:bg-purple-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-brain text-purple-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Analisa Persona</span>
-                </a>
-                <a href="admin-kalender.php" class="bg-white hover:bg-sky-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-calendar-alt text-sky-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Kalender Konten AI</span>
-                </a>
-                <a href="admin-seo.php" class="bg-white hover:bg-teal-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-pen-nib text-teal-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Penulis Artikel SEO</span>
-                </a>
-                <a href="admin-publisher.php" class="bg-white hover:bg-emerald-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-paper-plane text-emerald-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Publisher</span>
-                </a>
-                <a href="admin-trend-scout.php" class="bg-white hover:bg-violet-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-chart-line text-violet-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Trend Scout</span>
-                </a>
-                <a href="admin-community-scout.php" class="bg-white hover:bg-rose-50 border border-gray-100 rounded-xl p-4 flex flex-col items-center justify-center shadow-sm transition group">
-                    <i class="fas fa-search-location text-rose-500 text-2xl mb-2 group-hover:scale-110 transition-transform"></i>
-                    <span class="text-sm font-bold text-gray-700 mt-1 text-center">Community Scout</span>
-                </a>
-            </div>
-
             <!-- WIDGET STATISTIK (Grid) -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center">
@@ -245,42 +191,6 @@ if($q_agen) { while($r = $q_agen->fetch_assoc()) { $agen_top[] = $r; } }
                 <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                     <h2 class="font-bold text-gray-800 mb-4"><i class="fas fa-bullhorn text-emerald-500 mr-2"></i>Sumber Traffic Teratas (Mata AI)</h2>
                     <canvas id="sourceChart" height="100"></canvas>
-                </div>
-            </div>
-
-            <!-- TABEL DATA AGEN (REFERRAL) -->
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-                <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h2 class="font-bold text-gray-800">Top 5 Performa Agen</h2>
-                    <a href="data-agen.php" class="bg-blue-100 text-blue-700 hover:bg-blue-200 px-3 py-1.5 rounded text-sm font-medium transition shadow-sm">
-                        <i class="fas fa-arrow-right mr-1"></i> Ke Data Agen
-                    </a>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-white">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Nama Agen</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Kode Referral</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Leads (Brosur)</th>
-                                <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Konversi Daftar</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <?php if (count($agen_top) > 0): ?>
-                                <?php foreach($agen_top as $a): ?>
-                                <tr class="hover:bg-gray-50 transition">
-                                    <td class="px-6 py-4 whitespace-nowrap"><div class="font-medium text-gray-900"><?= htmlspecialchars($a['nama']) ?></div><div class="text-sm text-gray-500"><?= htmlspecialchars($a['whatsapp']) ?></div></td>
-                                    <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 bg-gray-100 text-gray-700 rounded font-mono text-sm border border-gray-200"><?= htmlspecialchars($a['kode_ref']) ?></span></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-bold"><?= $a['total_leads'] ?> Orang</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-blue-600 font-bold"> <a href="data-agen.php" class="text-blue-500 hover:underline">Lihat Detail</a> </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500 text-sm">Belum ada data agen.</td></tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 

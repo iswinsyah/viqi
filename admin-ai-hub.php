@@ -58,15 +58,109 @@ $last_log = $log_lines[count($log_lines)-1];
     <?php include 'sidebar-marketing.php'; ?>
 
     <div class="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-6 z-10">
-            <h2 class="font-bold text-gray-800">Pusat Kendali AI Agent</h2>
-            <div class="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold shadow-sm">A</div>
+        <header class="h-16 bg-white shadow-sm flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <button id="open-sidebar" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden p-1.5 rounded-lg hover:bg-gray-100">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-teal-100 text-[#0b8478] flex items-center justify-center font-bold text-sm">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-gray-800 text-sm sm:text-base leading-tight">Crew AI (Pusat Kendali AI)</h2>
+                        <p class="text-[10px] text-gray-500 font-medium">Autonomous Digital Marketing Workforce</p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2.5">
+                <a href="dashboard-marketing.php" class="px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition flex items-center gap-1.5">
+                    <i class="fas fa-chart-line text-[#0b8478]"></i> <span class="hidden sm:inline">Statistik Pengunjung</span>
+                </a>
+            </div>
         </header>
 
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 sm:p-6 pb-20 md:pb-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900"><i class="fas fa-robot text-indigo-600 mr-2"></i>Pusat Kendali AI Agent</h1>
-                <p class="text-gray-500 mt-1">Aktifkan atau nonaktifkan seluruh AI Agent dari sini.</p>
+                <h1 class="text-2xl font-black text-gray-900 flex items-center gap-2">
+                    <i class="fas fa-robot text-[#0b8478]"></i> Pusat Kendali Crew AI
+                </h1>
+                <p class="text-xs text-gray-500 mt-1">Pusat komando dan daftar tim AI Agent otonom untuk konten, riset, dan pemasaran digital.</p>
+            </div>
+
+            <!-- CREW AI AGENT TOOLS GRID -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-xs font-black text-gray-700 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fas fa-users-gear text-[#0b8478]"></i> Modul & Pasukan Agent AI
+                    </h2>
+                    <span class="text-[11px] text-gray-400">Pilih modul agent di bawah ini</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <a href="admin-seo.php" class="bg-white hover:bg-emerald-50/50 border border-gray-200 hover:border-emerald-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-pen-nib"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-emerald-700">Penulis Artikel SEO</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Generator Artikel Otomatis</span>
+                    </a>
+
+                    <a href="admin-kalender.php" class="bg-white hover:bg-sky-50/50 border border-gray-200 hover:border-sky-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-sky-700">Kalender Konten AI</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Penjadwalan 30 Hari</span>
+                    </a>
+
+                    <a href="admin-analisa.php" class="bg-white hover:bg-purple-50/50 border border-gray-200 hover:border-purple-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-purple-700">Analisa Persona</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Segmentasi Audiens</span>
+                    </a>
+
+                    <a href="admin-community-scout.php" class="bg-white hover:bg-rose-50/50 border border-gray-200 hover:border-rose-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-search-location"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-rose-700">Community Scout</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Riset Komunitas & Grup</span>
+                    </a>
+
+                    <a href="admin-publisher.php" class="bg-white hover:bg-teal-50/50 border border-gray-200 hover:border-teal-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-teal-100 text-[#0b8478] flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-[#0b8478]">Publisher</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Distribusi ke Mitra & Web</span>
+                    </a>
+
+                    <a href="admin-trend-scout.php" class="bg-white hover:bg-violet-50/50 border border-gray-200 hover:border-violet-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-violet-100 text-violet-600 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-violet-700">Trend Scout</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Riset Tren & Hook Viral</span>
+                    </a>
+
+                    <a href="data-pipeline.php" class="bg-white hover:bg-amber-50/50 border border-gray-200 hover:border-amber-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-columns"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-amber-700">Pipeline Prospek</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Kanban Board Leads</span>
+                    </a>
+
+                    <a href="admin-sosmed-workflow.php" class="bg-white hover:bg-indigo-50/50 border border-gray-200 hover:border-indigo-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-diagram-project"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-indigo-700">Multi-Agent Flow</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">Alur Kerja Otonom</span>
+                    </a>
+                </div>
             </div>
 
             <?php if($pesan_notif): ?>

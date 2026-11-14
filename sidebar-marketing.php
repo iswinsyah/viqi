@@ -46,8 +46,8 @@ $inact_cls = 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold';
                 </a>
             <?php endif; ?>
             <a href="dashboard-marketing.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_mkt_dash ? $act_cls : $inact_cls ?> transition">
-                <i class="fas fa-tachometer-alt w-4 text-center"></i>
-                <span>Dashboard Mkt</span>
+                <i class="fas fa-chart-line w-4 text-center"></i>
+                <span>Statistik Pengunjung</span>
             </a>
             <a href="admin-ai-hub.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_crew_ai ? $act_cls : $inact_cls ?> transition">
                 <i class="fas fa-robot w-4 text-center"></i>
@@ -82,12 +82,12 @@ $inact_cls = 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold';
 <!-- ========================================================= -->
 <nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-1 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
     <div class="w-full max-w-md mx-auto grid grid-cols-5 items-center justify-around">
-        <!-- 1. DASHBOARD -->
+        <!-- 1. STATISTIK PENGUNJUNG -->
         <a href="dashboard-marketing.php" class="flex flex-col items-center justify-center py-1 <?= $is_mkt_dash ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
             <div class="w-10 h-8 rounded-full <?= $is_mkt_dash ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
-                <i class="fas fa-tachometer-alt text-base <?= $is_mkt_dash ? 'text-white' : 'text-teal-100' ?>"></i>
+                <i class="fas fa-chart-line text-base <?= $is_mkt_dash ? 'text-white' : 'text-teal-100' ?>"></i>
             </div>
-            <span class="text-white text-[10px] leading-tight truncate">Dashboard</span>
+            <span class="text-white text-[10px] leading-tight truncate">Statistik</span>
         </a>
 
         <!-- 2. CREW AI -->

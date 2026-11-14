@@ -197,6 +197,15 @@ foreach ($active_agen_list as $ag) {
 $total_belum = $total_agen - $total_terkirim;
 $persen_kirim = $total_agen > 0 ? round(($total_terkirim / $total_agen) * 100) : 0;
 
+// --- AMBIL DATA TABEL AGEN (TOP 5 PERFORMA REFERRAL / LEADS) ---
+$agen_top = [];
+$q_agen = $conn->query("SELECT a.*, (SELECT COUNT(id) FROM leads l WHERE l.kode_ref = a.kode_ref OR l.kode_ref = a.whatsapp) AS total_leads FROM agen a ORDER BY total_leads DESC LIMIT 5");
+if ($q_agen) { 
+    while ($r = $q_agen->fetch_assoc()) { 
+        $agen_top[] = $r; 
+    } 
+}
+
 // Host URL dinamis untuk link referral
 $http_host = $_SERVER['HTTP_HOST'] ?? 'villaquranindonesia.com';
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
@@ -262,7 +271,7 @@ $active_menu = 'siaran_wa';
         </header>
 
         <!-- MAIN SCROLLABLE CONTENT -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 sm:p-6 custom-scrollbar space-y-6">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 sm:p-6 pb-20 md:pb-6 custom-scrollbar space-y-6">
             
             <!-- ALERT NOTIFIKASI -->
             <?php if (isset($pesan_sukses) || (isset($_GET['msg']) && $_GET['msg'] === 'deleted')): ?>
@@ -632,6 +641,74 @@ $active_menu = 'siaran_wa';
                                     </td>
                                 </tr>
                                 <?php endforeach; ?>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TABEL TOP 5 PERFORMA AGEN (REFERRAL & LEADS) -->
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-slate-50">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-sm">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div>
+                            <h2 class="font-black text-slate-800 text-sm sm:text-base">Top 5 Performa Agen Mitra</h2>
+                            <p class="text-[11px] text-slate-500">Peringkat mitra terbaik berdasarkan perolehan prospek / leads brosur digital.</p>
+                        </div>
+                    </div>
+                    <a href="data-agen.php" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition self-start sm:self-auto">
+                        <i class="fas fa-users"></i> Kelola Semua Agen <i class="fas fa-arrow-right text-[10px]"></i>
+                    </a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-100">
+                        <thead class="bg-slate-50/75">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Peringkat & Nama Agen</th>
+                                <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Kode Referral</th>
+                                <th class="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Total Leads (Brosur)</th>
+                                <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white">
+                            <?php if (count($agen_top) > 0): ?>
+                                <?php $rank = 1; foreach($agen_top as $a): ?>
+                                <tr class="hover:bg-slate-50/80 transition">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-black <?= $rank === 1 ? 'bg-amber-400 text-slate-900 shadow-xs' : ($rank === 2 ? 'bg-slate-300 text-slate-800' : ($rank === 3 ? 'bg-amber-600/30 text-amber-900' : 'bg-slate-100 text-slate-600')) ?>">
+                                                <?= $rank ?>
+                                            </div>
+                                            <div>
+                                                <div class="font-bold text-slate-900 text-sm"><?= htmlspecialchars($a['nama']) ?></div>
+                                                <div class="text-xs text-slate-500 font-mono"><i class="fab fa-whatsapp text-emerald-500 mr-1"></i><?= htmlspecialchars($a['whatsapp']) ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg font-mono text-xs font-semibold border border-slate-200">
+                                            <?= htmlspecialchars($a['kode_ref']) ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <i class="fas fa-user-plus text-[10px]"></i> <?= $a['total_leads'] ?> Leads
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-bold">
+                                        <a href="data-agen.php" class="text-teal-700 hover:text-teal-900 hover:underline">
+                                            Detail Mitra <i class="fas fa-chevron-right text-[10px] ml-0.5"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php $rank++; endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="4" class="px-6 py-8 text-center text-slate-400 text-xs font-medium">Belum ada data agen terdaftar.</td>
+                                </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
