@@ -39,10 +39,6 @@
                 <i class="fas fa-user-graduate w-4 text-center"></i>
                 <span>Database PSB</span>
             </a>
-            <a href="admin-data-center.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-database w-4 text-center"></i>
-                <span>Data Center</span>
-            </a>
             <a href="admin-brosur-settings.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
                 <i class="fas fa-envelope-open-text w-4 text-center"></i>
                 <span>Brosur Digital</span>

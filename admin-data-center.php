@@ -339,10 +339,10 @@ $user_display_name = $user['nama_lengkap'] ?? ($_SESSION['nama_lengkap'] ?? ($_S
 
     <!-- SIDEBAR -->
     <?php 
-    if (file_exists(__DIR__ . '/sidebar-marketing.php')) {
-        include __DIR__ . '/sidebar-marketing.php';
-    } elseif (file_exists(__DIR__ . '/sidebar.php')) {
+    if (file_exists(__DIR__ . '/sidebar.php')) {
         include __DIR__ . '/sidebar.php';
+    } elseif (file_exists(__DIR__ . '/sidebar-marketing.php')) {
+        include __DIR__ . '/sidebar-marketing.php';
     }
     ?>
 
