@@ -1,12 +1,28 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$curr_file = basename($_SERVER['PHP_SELF']);
+$is_mkt_dash = ($curr_file === 'dashboard-marketing.php');
+$is_crew_ai = in_array($curr_file, ['admin-ai-hub.php', 'admin-analisa.php', 'admin-kalender.php', 'admin-seo.php', 'admin-publisher.php', 'admin-trend-scout.php', 'admin-community-scout.php', 'admin-sosmed.php', 'admin-sosmed-workflow.php']);
+$is_psb = ($curr_file === 'admin-spmb.php');
+$is_brosur = ($curr_file === 'admin-brosur-settings.php');
+$is_wa = ($curr_file === 'admin-siaran-wa.php');
+
+$act_cls = 'bg-white text-[#0b8478] font-black shadow-md';
+$inact_cls = 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold';
+?>
+
 <!-- SIDEBAR OVERLAY -->
 <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden md:hidden transition-opacity"></div>
 
 <!-- SIDEBAR KHUSUS MARKETING & AI (#0b8478 TEAL THEME - SERAGAM DENGAN DASHBOARD) -->
 <aside id="sidebar" class="bg-[#0b8478] text-white w-64 lg:w-72 flex-shrink-0 hidden md:flex flex-col z-50 transition-all duration-300 fixed md:sticky top-0 h-screen shadow-2xl border-r border-teal-700/50 left-0">
-    
+
     <!-- SIDEBAR HEADER: BRAND LOGO VILLA QURAN -->
     <div class="p-5 border-b border-teal-700/60 flex items-center justify-between bg-teal-900/40 flex-shrink-0">
-        <a href="dashboard.php" class="flex items-center space-x-3 group">
+        <a href="dashboard-marketing.php" class="flex items-center space-x-3 group">
             <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center p-1.5 shadow-md flex-shrink-0 group-hover:scale-105 transition-transform">
                 <img src="upload/logo-villa-quran.png" alt="Logo Villa Quran" class="w-9 h-9 object-contain">
             </div>
@@ -24,28 +40,28 @@
     <div class="flex-1 overflow-y-auto p-4 space-y-1 text-xs no-scrollbar">
         <nav class="space-y-1">
             <?php if (isset($_SESSION['yayasan2_logged_in']) || isset($_SESSION['yayasan_logged_in']) || (isset($_SESSION['app_user_role']) && in_array($_SESSION['app_user_role'], ['super_admin', 'ketua_yayasan']))): ?>
-            <a href="yayasan2/index.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-landmark w-4 text-center"></i>
-                <span>Ruang Yayasan</span>
-            </a>
+                <a href="yayasan2/index.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+                    <i class="fas fa-landmark w-4 text-center"></i>
+                    <span>Ruang Yayasan</span>
+                </a>
             <?php endif; ?>
-            <a href="dashboard-marketing.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+            <a href="dashboard-marketing.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_mkt_dash ? $act_cls : $inact_cls ?> transition">
                 <i class="fas fa-tachometer-alt w-4 text-center"></i>
                 <span>Dashboard Mkt</span>
             </a>
-            <a href="admin-ai-hub.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-amber-300 bg-teal-900/40 hover:bg-teal-800/60 hover:text-white font-bold transition">
-                <i class="fas fa-robot w-4 text-center text-amber-300"></i>
+            <a href="admin-ai-hub.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_crew_ai ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-robot w-4 text-center"></i>
                 <span>Crew AI</span>
             </a>
-            <a href="admin-spmb.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+            <a href="admin-spmb.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_psb ? $act_cls : $inact_cls ?> transition">
                 <i class="fas fa-user-graduate w-4 text-center"></i>
                 <span>Database PSB</span>
             </a>
-            <a href="admin-brosur-settings.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+            <a href="admin-brosur-settings.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_brosur ? $act_cls : $inact_cls ?> transition">
                 <i class="fas fa-envelope-open-text w-4 text-center"></i>
                 <span>Brosur Digital</span>
             </a>
-            <a href="admin-siaran-wa.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold transition">
+            <a href="admin-siaran-wa.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_wa ? $act_cls : $inact_cls ?> transition">
                 <i class="fas fa-broadcast-tower w-4 text-center"></i>
                 <span>Siaran WA Mitra</span>
             </a>
@@ -59,3 +75,62 @@
         </a>
     </div>
 </aside>
+
+<!-- ========================================================= -->
+<!-- BOTTOM NAVIGATION BAR FOR MOBILE (MD:HIDDEN)              -->
+<!-- 5 MENU UTAMA: DASHBOARD, CREW AI, PSB, BROSUR, SIARAN WA   -->
+<!-- ========================================================= -->
+<nav class="md:hidden fixed bottom-0 inset-x-0 left-0 right-0 w-full m-0 h-16 bg-[#0b8478] border-t border-teal-700/60 shadow-[0_-4px_25px_rgba(0,0,0,0.25)] z-40 px-1 flex items-center justify-center" style="left:0; right:0; width:100vw; max-width:100%;">
+    <div class="w-full max-w-md mx-auto grid grid-cols-5 items-center justify-around">
+        <!-- 1. DASHBOARD -->
+        <a href="dashboard-marketing.php" class="flex flex-col items-center justify-center py-1 <?= $is_mkt_dash ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= $is_mkt_dash ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-tachometer-alt text-base <?= $is_mkt_dash ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white text-[10px] leading-tight truncate">Dashboard</span>
+        </a>
+
+        <!-- 2. CREW AI -->
+        <a href="admin-ai-hub.php" class="flex flex-col items-center justify-center py-1 <?= $is_crew_ai ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= $is_crew_ai ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-robot text-base <?= $is_crew_ai ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white text-[10px] leading-tight truncate">Crew AI</span>
+        </a>
+
+        <!-- 3. DATABASE PSB -->
+        <a href="admin-spmb.php" class="flex flex-col items-center justify-center py-1 <?= $is_psb ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= $is_psb ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-user-graduate text-base <?= $is_psb ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white text-[10px] leading-tight truncate">PSB</span>
+        </a>
+
+        <!-- 4. BROSUR DIGITAL -->
+        <a href="admin-brosur-settings.php" class="flex flex-col items-center justify-center py-1 <?= $is_brosur ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= $is_brosur ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-envelope-open-text text-base <?= $is_brosur ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white text-[10px] leading-tight truncate">Brosur</span>
+        </a>
+
+        <!-- 5. SIARAN WA MITRA -->
+        <a href="admin-siaran-wa.php" class="flex flex-col items-center justify-center py-1 <?= $is_wa ? 'text-white font-black' : 'text-teal-100 hover:text-white font-bold' ?> text-xs transition">
+            <div class="w-10 h-8 rounded-full <?= $is_wa ? 'bg-white/20' : '' ?> flex items-center justify-center mb-0.5">
+                <i class="fas fa-broadcast-tower text-base <?= $is_wa ? 'text-white' : 'text-teal-100' ?>"></i>
+            </div>
+            <span class="text-white text-[10px] leading-tight truncate">Siaran WA</span>
+        </a>
+    </div>
+</nav>
+
+<style>
+@media (max-width: 767px) {
+    #open-sidebar {
+        display: none !important;
+    }
+    main, .overflow-y-auto {
+        padding-bottom: 5.5rem !important;
+    }
+}
+</style>
