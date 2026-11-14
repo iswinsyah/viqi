@@ -337,7 +337,48 @@ if ($current_hour >= '07' && !$daily_done) {
     if($resL) while($r = $resL->fetch_assoc()) $leads[] = $r;
 
     $payloadSEO = $leads;
-    $prompt_seo_default = "ATURAN WAJIB: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (TANPA ```json). FORMAT: {\"judul\":\"{{JUDUL}}\", \"meta_title\":\"...\", \"meta_description\":\"...\", \"meta_keywords\":\"{{KEYWORD}}\", \"konten\":\"(isi html artikel lengkap)\"}. Bahas topik: {{TOPIK}}. PERTIMBANGKAN JUGA insight dari laporan tren terbaru berikut: \n\n{{TREND_MIKRO}}";
+    $prompt_seo_default = "ATURAN WAJIB SISTEM: KEMBALIKAN OUTPUT HANYA DALAM FORMAT JSON MURNI TANPA MARKDOWN (DILARANG MEMBUNGKUS DENGAN ```json ATAU ```).
+
+Anda adalah Senior SEO Specialist & Content Strategist kelas dunia untuk Sekolah Tahfidz Berasrama Villa Quran Baron Malang.
+Tugas Anda adalah menulis artikel SEO mendalam yang mematuhi standar Google E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness) dan algoritma Helpful Content Google.
+
+FORMAT OUTPUT WAJIB (JSON):
+{
+  \"judul\": \"{{JUDUL}}\",
+  \"meta_title\": \"(Maksimal 60 karakter, wajib memuat keyword utama)\",
+  \"meta_description\": \"(120-155 karakter, memikat rasa penasaran, relevan, dan memuat ajakan bertindak)\",
+  \"meta_keywords\": \"{{KEYWORD}}, sekolah tahfidz malang, pesantren villa quran, tahfidz bersanad\",
+  \"copywriting_promo\": \"(1 postingan promosi WhatsApp/Sosmed yang persuasif, viral hook, dan diakhiri dengan placeholder {{LINK_AFILIASI}})\",
+  \"konten\": \"(Seluruh isi artikel lengkap dalam format tag HTML <h2>, <h3>, <p>, <ul>, <li>, <strong>, <blockquote>, <a> tanpa <h1> dan tanpa pembungkus <html>/<body>)\"
+}
+
+PEDOMAN KHUSUS KONTEN ARTIKEL (HTML):
+1. KAIDAH GOOGLE E-E-A-T:
+   - Experience: Tampilkan pengalaman kontekstual kehidupan santri berasrama di lingkungan asri dan nyaman ala villa (anti-stres, gizi seimbang, dan pendampingan 24 jam).
+   - Expertise: Tunjukkan kepakaran dalam metode menghafal Al-Qur'an bersanad, muraja'ah mutqin, penguatan adab Islami, dan kurikulum formal terpadu.
+   - Authoritativeness: Cantumkan dalil Al-Qur'an/Hadits shahih yang relevan serta landasan pendidikan yang terpercaya.
+   - Trustworthiness: Sajikan informasi faktual, objektif, solutif bagi kegelisahan orang tua dalam mendidik anak di era digital.
+
+2. WAJIB DI PARAGRAF PERTAMA (2 LINK KELUAR / OUTBOUND LINKS):
+   - Pada paragraf pertama pembuka artikel, WAJIB menyematkan tepat 2 kata/frasa (anchor text) yang memiliki link keluar (<a href=\"...\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-teal-600 underline\">).
+   - Link keluar ini HARUS mengarah ke sumber otoritatif resmi, yaitu situs web pemerintah (misal: https://kemenag.go.id atau https://kemdikbud.go.id) atau ensiklopedia Wikipedia bahasa Indonesia (misal: https://id.wikipedia.org/wiki/Penghafal_Al-Qur%27an atau artikel Wikipedia relevan lainnya).
+
+3. WAJIB DI PARAGRAF TERAKHIR (2 LINK KE DALAM / INTERNAL LINKS):
+   - Pada paragraf penutup (terakhir), WAJIB menyematkan tepat 2 kata/frasa (anchor text) yang memiliki link ke dalam website internal Villa Quran:
+     a. Link ke formulir pendaftaran: <a href=\"daftar-spmb.html\" class=\"text-teal-700 font-bold underline\">pendaftaran santri baru</a> (atau frasa formulir pendaftaran SPMB).
+     b. Link ke brosur digital: <a href=\"brosur.php\" class=\"text-teal-700 font-bold underline\">brosur digital interaktif</a> (atau frasa unduh brosur sekolah).
+
+4. STRUKTUR TEKS:
+   - Gunakan sub-judul <h2> dan <h3> secara terstruktur.
+   - Gunakan paragraf pendek (2-3 kalimat) agar nyaman dibaca di smartphone.
+   - Gunakan poin daftar (<ul> dan <li>) untuk rincian atau tips praktis.
+   - Panjang isi artikel berkisar 600 hingga 1.000 kata berbobot tinggi.
+
+Topik yang dibahas: {{TOPIK}}
+Focus Keyword: {{KEYWORD}}
+Judul Target: {{JUDUL}}
+Pertimbangkan juga tren mikro berikut:
+{{TREND_MIKRO}}";
     $prompt_seo_raw = file_exists(__DIR__ . '/prompt_seo.txt') ? file_get_contents(__DIR__ . '/prompt_seo.txt') : $prompt_seo_default;
     $trend_mikro_report = file_exists(__DIR__ . '/saved_trends_micro.txt') ? file_get_contents(__DIR__ . '/saved_trends_micro.txt') : 'Tidak ada laporan tren mikro.';
     $replacements = ['{{JUDUL}}' => $judul, '{{KEYWORD}}' => $keyword, '{{TOPIK}}' => $topic, '{{TREND_MIKRO}}' => $trend_mikro_report];
