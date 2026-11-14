@@ -108,6 +108,14 @@ $last_log = $log_lines[count($log_lines)-1];
                         <span class="text-[10px] text-gray-500 mt-0.5">Generator Artikel Otomatis</span>
                     </a>
 
+                    <a href="admin-yoast-seo.php" class="bg-white hover:bg-purple-50/50 border border-gray-200 hover:border-purple-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-magnifying-glass-chart"></i>
+                        </div>
+                        <span class="text-xs font-black text-gray-900 group-hover:text-purple-700">Yoast SEO Auditor AI</span>
+                        <span class="text-[10px] text-gray-500 mt-0.5">QC & Poles Artikel 🟢🟢</span>
+                    </a>
+
                     <a href="admin-kalender.php" class="bg-white hover:bg-sky-50/50 border border-gray-200 hover:border-sky-400 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-xs hover:shadow-md transition group">
                         <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center text-xl mb-2.5 group-hover:scale-110 transition-transform">
                             <i class="fas fa-calendar-alt"></i>

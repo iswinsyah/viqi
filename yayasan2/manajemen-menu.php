@@ -205,6 +205,17 @@ if ($res_chk_web && $res_chk_web->num_rows === 0) {
     $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('ruang_web', 'Ruang Web (CMS & Crew AI)', 'Ruang Web')");
 }
 
+// Pastikan menu 'yoast_seo' terdaftar (Self-Healing)
+$res_chk_yoast = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'yoast_seo'");
+if (!$res_chk_yoast || $res_chk_yoast->num_rows === 0) {
+    $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+    $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+    $new_ord = $max_ord + 1;
+    $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Web & AI', 'yoast_seo', $new_ord, 'fa-check-double', 'admin-yoast-seo.php')");
+    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('yoast_seo', 'ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,web,super_admin,marketing')");
+    $conn->query("INSERT INTO menu_custom_labels (menu_key, custom_label, short_label) VALUES ('yoast_seo', 'Yoast SEO Auditor & QC AI', 'Yoast SEO')");
+}
+
 $res_chk_mkt = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'ruang_marketing' OR menu_key = 'ruang_psb'");
 if ($res_chk_mkt && $res_chk_mkt->num_rows === 0) {
     $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
@@ -394,7 +405,8 @@ if ($res_db_menus) {
             'ruang_marketing' => 'Ruang PSB (Penerimaan Santri Baru)',
             'ruang_psb' => 'Ruang PSB (Penerimaan Santri Baru)',
             'crew_ai' => 'Crew AI Hub',
-            'artikel_ai' => 'Penulis Artikel SEO AI'
+            'artikel_ai' => 'Penulis Artikel SEO AI',
+            'yoast_seo' => 'Yoast SEO Auditor & QC AI'
         ];
         
         $title = $default_titles[$key] ?? ucwords(str_replace('_', ' ', $key));

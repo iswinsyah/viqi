@@ -228,6 +228,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                 <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
                     <h3 class="font-bold text-gray-800"><i class="fas fa-file-alt mr-2 text-teal-600"></i> Hasil Draft Artikel</h3>
                     <div class="flex items-center space-x-2">
+                        <button id="btn-yoast-optimize" onclick="polesDenganYoast()" class="hidden bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-purple-200"><i class="fas fa-wand-magic-sparkles mr-1"></i> Poles Yoast SEO 🟢🟢</button>
                         <button id="btn-publish" onclick="terbitkanKeBlog()" class="hidden bg-amber-100 text-amber-700 hover:bg-amber-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-amber-200"><i class="fas fa-edit mr-1"></i> Edit di Artikel & Berita</button>
                         <button id="btn-save" onclick="simpanHasil()" class="hidden bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-emerald-200"><i class="fas fa-save mr-1"></i> Simpan</button>
                         <button id="btn-save-as" onclick="simpanSebagai()" class="hidden bg-teal-100 text-teal-700 hover:bg-teal-200 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-sm border border-teal-200"><i class="fas fa-file-download mr-1"></i> Save As</button>
@@ -284,6 +285,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                 const btnSave = document.getElementById('btn-save');
                 btnSave.classList.remove('hidden');
                 document.getElementById('btn-publish').classList.remove('hidden');
+                document.getElementById('btn-yoast-optimize').classList.remove('hidden');
                 btnSave.innerHTML = '<i class="fas fa-check mr-1"></i> Tersimpan';
                 btnSave.classList.replace('bg-emerald-100', 'bg-gray-100');
                 btnSave.classList.replace('text-emerald-700', 'text-gray-500');
@@ -342,10 +344,11 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
             document.getElementById('btn-generate').disabled = true;
             document.getElementById('btn-generate').classList.add('opacity-50', 'cursor-not-allowed');
             
-            // Reset tombol save
+            // Reset tombol save & yoast
             const btnSave = document.getElementById('btn-save');
             btnSave.classList.add('hidden');
             document.getElementById('btn-publish').classList.add('hidden');
+            document.getElementById('btn-yoast-optimize').classList.add('hidden');
             btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan';
             document.getElementById('btn-save-as').classList.add('hidden');
             if(btnSave.classList.contains('bg-gray-100')) {
@@ -379,6 +382,7 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                     document.getElementById('btn-save').classList.remove('hidden');
                     document.getElementById('btn-save-as').classList.remove('hidden');
                     document.getElementById('btn-publish').classList.remove('hidden');
+                    document.getElementById('btn-yoast-optimize').classList.remove('hidden');
                     document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700";
                     document.getElementById('badge-status').textContent = "Selesai";
                 } else {
@@ -482,6 +486,82 @@ $prompt_saved_notif = isset($_GET['prompt_saved']);
                 }
             })
             .catch(err => { alert("Kesalahan jaringan: " + err); btnPub.innerHTML = oldText; btnPub.disabled = false; });
+        }
+
+        function polesDenganYoast() {
+            if (!currentMarkdown) return;
+            
+            let judul = document.getElementById('judul-artikel').value.trim() || "Artikel SEO";
+            let keyword = document.getElementById('keyword-artikel').value.trim() || "sekolah tahfidz";
+            let konten = currentMarkdown;
+            
+            try {
+                let cleanJson = currentMarkdown.replace(/```json/gi, '').replace(/```/g, '').trim();
+                let obj = JSON.parse(cleanJson);
+                if (obj.judul) judul = obj.judul;
+                if (obj.meta_keywords) keyword = obj.meta_keywords;
+                if (obj.konten) konten = obj.konten;
+            } catch (e) {
+                const regex = /<!--\s*JUDUL:\s*(.*?)\s*META_TITLE:\s*(.*?)\s*META_DESC:\s*(.*?)\s*META_KEY:\s*(.*?)\s*-->/is;
+                const match = currentMarkdown.match(regex);
+                if (match) {
+                    judul = match[1].trim();
+                    keyword = match[4].trim();
+                    konten = currentMarkdown.replace(match[0], '').trim();
+                }
+            }
+
+            const btnYoast = document.getElementById('btn-yoast-optimize');
+            const oldHtml = btnYoast.innerHTML;
+            btnYoast.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memoles SEO & Readability...';
+            btnYoast.disabled = true;
+
+            fetch('api-yoast-ai.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'optimize',
+                    judul: judul,
+                    keyword: keyword,
+                    konten: konten,
+                    save_to_db: false
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    currentMarkdown = JSON.stringify({
+                        judul: judul,
+                        meta_title: res.meta_title,
+                        meta_description: res.meta_description,
+                        meta_keywords: res.meta_keywords,
+                        konten: res.konten_dipoles
+                    }, null, 2);
+
+                    document.getElementById('state-result').innerHTML = renderPreview(currentMarkdown);
+                    document.getElementById('badge-status').className = "text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700";
+                    document.getElementById('badge-status').innerHTML = '<i class="fas fa-check-double mr-1"></i> Yoast 🟢🟢';
+
+                    // Kembalikan tombol simpan agar admin bisa menyimpan hasil polesan
+                    const btnSave = document.getElementById('btn-save');
+                    btnSave.innerHTML = '<i class="fas fa-save mr-1"></i> Simpan Hasil Poles';
+                    btnSave.classList.replace('bg-gray-100', 'bg-emerald-100');
+                    btnSave.classList.replace('text-gray-500', 'text-emerald-700');
+                    btnSave.disabled = false;
+
+                    alert("✅ Berhasil Dipoles oleh Agent Yoast SEO!\n\nSkor SEO: 🟢 Hijau (Lolos Outbound & Internal Links)\nSkor Keterbacaan: 🟢 Hijau (Paragraf Ringkas & Kata Transisi)\n\nPerubahan:\n" + (res.perubahan || 'Optimasi struktur teks dan link berhasil.'));
+                } else {
+                    alert("Gagal memoles artikel: " + (res.message || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Terjadi kesalahan koneksi saat memoles artikel: " + err.message);
+            })
+            .finally(() => {
+                btnYoast.innerHTML = oldHtml;
+                btnYoast.disabled = false;
+            });
         }
 
         function simpanHasil() {

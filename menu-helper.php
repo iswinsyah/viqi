@@ -103,6 +103,7 @@ if (!function_exists('get_all_menu_labels')) {
             'ruang_marketing'               => 'Ruang PSB (Penerimaan Santri Baru)',
             'crew_ai'                       => 'Crew AI Hub',
             'artikel_ai'                    => 'Penulis Artikel SEO AI',
+            'yoast_seo'                     => 'Yoast SEO Auditor & QC AI',
             'kalender_konten'               => 'Kalender Konten AI',
             'trend_scout'                   => 'Trend & Hook Scout AI',
             'publisher_ai'                  => 'Publisher AI',

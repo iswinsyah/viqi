@@ -12,6 +12,7 @@ $curr_file = basename($_SERVER['PHP_SELF']);
 $is_stat_web = ($curr_file === 'dashboard-marketing.php' || $curr_file === 'dashboard-web.php');
 $is_ai_hub = ($curr_file === 'admin-ai-hub.php');
 $is_seo = ($curr_file === 'admin-seo.php');
+$is_yoast = ($curr_file === 'admin-yoast-seo.php');
 $is_kalender = ($curr_file === 'admin-kalender.php');
 $is_persona = ($curr_file === 'admin-analisa.php');
 $is_community = ($curr_file === 'admin-community-scout.php');
@@ -75,6 +76,11 @@ $inact_cls = 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold';
             <a href="admin-seo.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_seo ? $act_cls : $inact_cls ?> transition">
                 <i class="fas fa-pen-nib w-4 text-center"></i>
                 <span>Penulis Artikel SEO</span>
+            </a>
+
+            <a href="admin-yoast-seo.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_yoast ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-magnifying-glass-chart w-4 text-center"></i>
+                <span>Yoast SEO Auditor AI <span class="ml-auto text-[9px] bg-emerald-300 text-teal-950 font-black px-1.5 py-0.5 rounded-full">QC</span></span>
             </a>
 
             <a href="admin-kalender.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_kalender ? $act_cls : $inact_cls ?> transition">
