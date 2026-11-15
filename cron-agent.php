@@ -1373,13 +1373,13 @@ if (($current_hour >= '07' || $force_yoast_old) && (!$yoast_old_done || $force_y
     pastikanKoneksiDb();
     require_once __DIR__ . '/yoast-engine.php';
 
-    // Cari artikel yang belum berstatus hijau sempurna (maksimal 3 artikel per siklus agar hemat resource & aman rate limit)
+    // Cari artikel lama yang belum hijau (diproses santai 2-3 artikel per hari agar hemat resource AI lokal)
     $resOld = $conn->query("SELECT id, judul, meta_keywords, konten FROM artikel 
         WHERE yoast_seo_score != 'green' 
            OR yoast_readability_score != 'green' 
            OR yoast_seo_score IS NULL 
            OR yoast_seo_score = 'untested' 
-        ORDER BY id DESC 
+        ORDER BY id ASC 
         LIMIT 3");
 
     if ($resOld && $resOld->num_rows > 0) {
@@ -1404,7 +1404,7 @@ if (($current_hour >= '07' || $force_yoast_old) && (!$yoast_old_done || $force_y
             } else {
                 logAgent("-> ⚠️ Gagal memoles ID #$oldId: " . ($resPoles['message'] ?? 'Error'));
             }
-            sleep(2);
+            sleep(5); // Jeda santai 5 detik per artikel agar PC server lokal tidak panas
         }
         logAgent("🎉 Agent Yoast SEO: Berhasil memoles $repaired_count artikel lama hari ini.");
     } else {

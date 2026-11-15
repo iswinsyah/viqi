@@ -331,7 +331,43 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
     }
 
     // =====================================================================
-    // 1. GEMINI API LANGSUNG (Sangat Cepat & Handal)
+    // 1. TIER 1: COBA AI LOKAL (Ollama di PC Server) JIKA AKTIF
+    // =====================================================================
+    $localAiUrl = defined('LOCAL_AI_URL') ? LOCAL_AI_URL : '';
+    $localAiModel = defined('LOCAL_AI_MODEL') ? LOCAL_AI_MODEL : 'qwen2.5-coder:7b';
+    
+    if (empty($rawText) && !empty($localAiUrl)) {
+        $chLocal = curl_init(rtrim($localAiUrl, '/') . '/api/generate');
+        curl_setopt_array($chLocal, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode([
+                "model" => $localAiModel,
+                "prompt" => $prompt_editor,
+                "stream" => false,
+                "format" => "json"
+            ]),
+            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT => 90,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false
+        ]);
+        $localResp = curl_exec($chLocal);
+        $localHttp = curl_getinfo($chLocal, CURLINFO_HTTP_CODE);
+        curl_close($chLocal);
+
+        if ($localResp && $localHttp === 200) {
+            $localData = json_decode($localResp, true);
+            if (!empty($localData['response'])) {
+                $rawText = trim($localData['response']);
+                $usedBrain = 'AI Lokal (' . $localAiModel . ')';
+            }
+        }
+    }
+
+    // =====================================================================
+    // 2. TIER 2: GEMINI API (Cadangan jika PC Server Lokal Sedang Mati)
     // =====================================================================
     $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
     if (empty($apiKey) && file_exists(__DIR__ . '/config-key.php')) {
@@ -368,44 +404,6 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
             $rawText = $respJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
             if (!empty($rawText)) {
                 $usedBrain = 'Google Gemini 2.5 Flash';
-            }
-        }
-    }
-
-    // =====================================================================
-    // 2. TIER 2: COBA AI LOKAL (JIKA AKTIF DI PC SERVER)
-    // =====================================================================
-    if (empty($rawText)) {
-        $localAiUrl = defined('LOCAL_AI_URL') ? LOCAL_AI_URL : '';
-        $localAiModel = defined('LOCAL_AI_MODEL') ? LOCAL_AI_MODEL : 'qwen2.5-coder:7b';
-        
-        if (!empty($localAiUrl)) {
-            $chLocal = curl_init(rtrim($localAiUrl, '/') . '/api/generate');
-            curl_setopt_array($chLocal, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode([
-                    "model" => $localAiModel,
-                    "prompt" => $prompt_editor,
-                    "stream" => false,
-                    "format" => "json"
-                ]),
-                CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-                CURLOPT_CONNECTTIMEOUT => 2,
-                CURLOPT_TIMEOUT => 60,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false
-            ]);
-            $localResp = curl_exec($chLocal);
-            $localHttp = curl_getinfo($chLocal, CURLINFO_HTTP_CODE);
-            curl_close($chLocal);
-
-            if ($localResp && $localHttp === 200) {
-                $localData = json_decode($localResp, true);
-                if (!empty($localData['response'])) {
-                    $rawText = trim($localData['response']);
-                    $usedBrain = 'AI Lokal (' . $localAiModel . ')';
-                }
             }
         }
     }
