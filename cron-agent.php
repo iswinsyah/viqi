@@ -1357,6 +1357,68 @@ Pertimbangkan juga tren mikro berikut:
 }
 
 // =========================================================================================
+// AGENT YOAST SEO: BACKGROUND AUTO-REPAIR ARTIKEL LAMA (Tiap Hari, Jam 07:00)
+// =========================================================================================
+$yoast_old_done = false;
+$yoast_old_log_file = __DIR__ . '/agent_yoast_old_log.txt';
+if (file_exists($yoast_old_log_file)) {
+    if (strpos(file_get_contents($yoast_old_log_file), "SUCCESS_$today") !== false) $yoast_old_done = true;
+}
+
+$force_yoast_old = ($force === 'yoast_old');
+if (($current_hour >= '07' || $force_yoast_old) && (!$yoast_old_done || $force_yoast_old)) {
+    logAgent("======= MEMULAI AGENT YOAST SEO: AUTO-REPAIR ARTIKEL LAMA ($today) =======");
+    pastikanKoneksiDb();
+    require_once __DIR__ . '/yoast-engine.php';
+
+    // Cari artikel yang belum berstatus hijau sempurna (maksimal 3 artikel per siklus agar hemat resource & aman rate limit)
+    $resOld = $conn->query("SELECT id, judul, meta_keywords, konten FROM artikel 
+        WHERE yoast_seo_score != 'green' 
+           OR yoast_readability_score != 'green' 
+           OR yoast_seo_score IS NULL 
+           OR yoast_seo_score = 'untested' 
+        ORDER BY id DESC 
+        LIMIT 3");
+
+    if ($resOld && $resOld->num_rows > 0) {
+        $repaired_count = 0;
+        while ($oldArt = $resOld->fetch_assoc()) {
+            $oldId = (int)$oldArt['id'];
+            $oldJudul = $oldArt['judul'];
+            logAgent("Agent Yoast SEO: Memoles artikel lama ID #$oldId ('$oldJudul')...");
+            
+            $resPoles = eksekusiPolesArtikelYoast(
+                $conn, 
+                $oldId, 
+                $oldJudul, 
+                $oldArt['meta_keywords'] ?: 'sekolah tahfidz, pesantren tahfidz', 
+                $oldArt['konten'], 
+                true
+            );
+            
+            if (isset($resPoles['status']) && $resPoles['status'] === 'success') {
+                logAgent("-> ✅ Sukses memoles ID #$oldId! Status kini: 🟢 SEO Good & 🟢 Readability Good.");
+                $repaired_count++;
+            } else {
+                logAgent("-> ⚠️ Gagal memoles ID #$oldId: " . ($resPoles['message'] ?? 'Error'));
+            }
+            sleep(2);
+        }
+        logAgent("🎉 Agent Yoast SEO: Berhasil memoles $repaired_count artikel lama hari ini.");
+    } else {
+        logAgent("🎉 Seluruh artikel lama di database sudah berstatus Hijau Sempurna (🟢🟢). Tidak ada yang perlu diperbaiki.");
+    }
+
+    file_put_contents($yoast_old_log_file, "SUCCESS_$today\n", FILE_APPEND);
+    logAgent("🎉 Tugas Auto-Repair Yoast SEO ($today) Selesai.\n");
+    
+    if ($force_yoast_old) {
+        echo "<br><b>🎉 Selesai memoles artikel lama dengan Yoast AI.</b><br>";
+        exit;
+    }
+}
+
+// =========================================================================================
 // AGENT COMMUNITY SCOUT MANDIRI (Tiap Hari, Jam 07:00)
 // =========================================================================================
 $community_done = false;
