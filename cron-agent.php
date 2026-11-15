@@ -273,6 +273,7 @@ if ($autopilot !== 'ON' && empty($force)) {
 }
 
 // Fungsi Helper Ekstraksi & Pembersihan JSON yang Sangat Kuat (Anti Eror Decode Gemini)
+if (!function_exists('bersihkanDanDecodeJson')) {
 function bersihkanDanDecodeJson($raw) {
     if (empty($raw)) return null;
     $str = trim($raw);
@@ -342,6 +343,7 @@ function bersihkanDanDecodeJson($raw) {
     }
     
     return null;
+}
 }
 
 // Fungsi Komunikasi ke Otak AI Utama (Gemini) dengan Auto Retry & Failover

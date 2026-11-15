@@ -11,6 +11,69 @@ if (!defined('GEMINI_API_KEY') && file_exists(__DIR__ . '/config-key.php')) {
 }
 
 /**
+ * Helper Ekstraksi & Pembersihan JSON Anti Eror
+ */
+if (!function_exists('bersihkanDanDecodeJson')) {
+    function bersihkanDanDecodeJson($raw) {
+        if (empty($raw)) return null;
+        $str = trim($raw);
+        
+        // 1. Bersihkan blok kode markdown jika ada
+        if (preg_match('/```(?:json)?\s*([\s\S]*?)\s*```/i', $str, $m)) {
+            $str = trim($m[1]);
+        }
+        
+        // 2. Ambil dari kurung kurawal pertama sampai kurung kurawal terakhir
+        $firstBrace = strpos($str, '{');
+        $lastBrace = strrpos($str, '}');
+        if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
+            $str = substr($str, $firstBrace, $lastBrace - $firstBrace + 1);
+        }
+        
+        // 3. Coba decode langsung
+        $res = json_decode($str, true);
+        if ($res !== null) return $res;
+        
+        // 4. Perbaiki unescaped newlines/tabs di dalam string JSON
+        $strFixed = preg_replace_callback('/"((?:[^"\\\\]|\\\\.)*)"/s', function($match) {
+            return '"' . str_replace(["\r\n", "\r", "\n", "\t"], ["\\n", "\\n", "\\n", " "], $match[1]) . '"';
+        }, $str);
+        $res = json_decode($strFixed, true);
+        if ($res !== null) return $res;
+
+        // 5. Fallback manual regex extractor jika json_decode masih gagal karena unescaped quotes di HTML
+        $extracted = [];
+        if (preg_match('/"judul"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mj)) {
+            $extracted['judul'] = stripcslashes($mj[1]);
+        }
+        if (preg_match('/"konten(?:_dipoles)?"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mk)) {
+            $extracted['konten_dipoles'] = stripcslashes($mk[1]);
+        } elseif (preg_match('/"konten(?:_dipoles)?"\s*:\s*"(.*)/s', $str, $mk2)) {
+            $rawK = rtrim($mk2[1], " \t\n\r\"}");
+            $extracted['konten_dipoles'] = stripcslashes($rawK);
+        }
+        if (preg_match('/"meta_title"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mmt)) {
+            $extracted['meta_title'] = stripcslashes($mmt[1]);
+        }
+        if (preg_match('/"meta_description"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mmd)) {
+            $extracted['meta_description'] = stripcslashes($mmd[1]);
+        }
+        if (preg_match('/"meta_keywords"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mmk)) {
+            $extracted['meta_keywords'] = stripcslashes($mmk[1]);
+        }
+        if (preg_match('/"perubahan(?:_dilakukan)?"\s*:\s*"((?:[^"\\\\]|\\\\.)*?)"/s', $str, $mp)) {
+            $extracted['perubahan_dilakukan'] = stripcslashes($mp[1]);
+        }
+        
+        if (!empty($extracted['konten_dipoles']) || !empty($extracted['konten'])) {
+            return $extracted;
+        }
+        
+        return null;
+    }
+}
+
+/**
  * Audit Cepat Heuristik On-Page SEO & Keterbacaan
  */
 function analisaHeuristikYoast($konten, $judul, $keyword, $meta_desc) {
@@ -381,20 +444,21 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
         return ['status' => 'error', 'message' => "Gagal mendapatkan respon dari AI Lokal maupun Gemini API"];
     }
 
-    // Pembersihan JSON
-    $cleanJson = preg_replace('/```(?:json)?\s*([\s\S]*?)\s*```/i', '$1', trim($rawText));
-    $firstBrace = strpos($cleanJson, '{');
-    $lastBrace = strrpos($cleanJson, '}');
-    if ($firstBrace !== false && $lastBrace !== false) {
-        $cleanJson = substr($cleanJson, $firstBrace, $lastBrace - $firstBrace + 1);
-    }
-
-    $obj = json_decode($cleanJson, true);
-    if (!$obj && function_exists('bersihkanDanDecodeJson')) {
-        $obj = bersihkanDanDecodeJson($rawText);
-    }
+    // Pembersihan & Decode JSON yang sangat tangguh
+    $obj = bersihkanDanDecodeJson($rawText);
 
     $konten_baru = $obj['konten_dipoles'] ?? $obj['konten'] ?? $obj['content'] ?? '';
+    
+    // Fallback Darurat Cerdas: Jika AI mengembalikan teks HTML langsung tanpa wrapper JSON
+    if (empty($konten_baru)) {
+        if (stripos($rawText, '<p>') !== false || stripos($rawText, '<h2>') !== false || stripos($rawText, '<h3>') !== false) {
+            $cleanHtml = preg_replace('/```(?:html)?\s*([\s\S]*?)\s*```/i', '$1', trim($rawText));
+            $cleanHtml = preg_replace('/^\{\s*"konten[^:]*":\s*"/i', '', $cleanHtml);
+            $cleanHtml = preg_replace('/",?\s*"perubahan[^}]*\}\s*$/i', '', $cleanHtml);
+            $konten_baru = trim($cleanHtml);
+        }
+    }
+
     if (empty($konten_baru)) {
         return ['status' => 'error', 'message' => 'AI gagal memformat hasil JSON polesan', 'raw' => substr($rawText, 0, 300)];
     }
