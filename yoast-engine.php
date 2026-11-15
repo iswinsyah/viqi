@@ -248,43 +248,103 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
 }";
 
     $rawText = '';
-    $usedBrain = 'Gemini 2.5 Flash';
+    $usedBrain = 'Gemini';
 
-    // 1. TIER 1: COBA AI LOKAL (Ollama di PC Server)
-    $localAiUrl = defined('LOCAL_AI_URL') ? LOCAL_AI_URL : '';
-    $localAiModel = defined('LOCAL_AI_MODEL') ? LOCAL_AI_MODEL : 'qwen2.5-coder:7b';
-    
-    if (!empty($localAiUrl)) {
-        $chLocal = curl_init(rtrim($localAiUrl, '/') . '/api/generate');
-        curl_setopt_array($chLocal, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode([
-                "model" => $localAiModel,
-                "prompt" => $prompt_editor,
-                "stream" => false,
-                "format" => "json"
-            ]),
-            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_TIMEOUT => 180,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false
+    // =====================================================================
+    // 0. PRIORITAS UTAMA: JIKA DIJALANKAN DARI CRON (Gunakan mikirKeGemini)
+    // =====================================================================
+    if (function_exists('mikirKeGemini')) {
+        $resAI = mikirKeGemini([
+            'prompt' => $prompt_editor,
+            'leads' => [
+                ['jenis_lead' => 'SYSTEM_COMMAND', 'sumber_info' => $prompt_editor, 'status' => 'URGENT']
+            ],
+            'type' => 'seo'
         ]);
-        $localResp = curl_exec($chLocal);
-        $localHttp = curl_getinfo($chLocal, CURLINFO_HTTP_CODE);
-        curl_close($chLocal);
+        if (isset($resAI['status']) && $resAI['status'] === 'success' && !empty($resAI['result'])) {
+            $rawText = $resAI['result'];
+            $usedBrain = 'mikirKeGemini (Autopilot)';
+        }
+    }
 
-        if ($localResp && $localHttp === 200) {
-            $localData = json_decode($localResp, true);
-            if (!empty($localData['response'])) {
-                $rawText = trim($localData['response']);
-                $usedBrain = 'AI Lokal (' . $localAiModel . ')';
+    // =====================================================================
+    // 1. TIER 1: COBA AI LOKAL (Ollama di PC Server) JIKA AKTIF
+    // =====================================================================
+    if (empty($rawText)) {
+        $localAiUrl = defined('LOCAL_AI_URL') ? LOCAL_AI_URL : '';
+        $localAiModel = defined('LOCAL_AI_MODEL') ? LOCAL_AI_MODEL : 'qwen2.5-coder:7b';
+        
+        if (!empty($localAiUrl)) {
+            $chLocal = curl_init(rtrim($localAiUrl, '/') . '/api/generate');
+            curl_setopt_array($chLocal, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => json_encode([
+                    "model" => $localAiModel,
+                    "prompt" => $prompt_editor,
+                    "stream" => false,
+                    "format" => "json"
+                ]),
+                CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+                CURLOPT_CONNECTTIMEOUT => 3,
+                CURLOPT_TIMEOUT => 60,
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => false
+            ]);
+            $localResp = curl_exec($chLocal);
+            $localHttp = curl_getinfo($chLocal, CURLINFO_HTTP_CODE);
+            curl_close($chLocal);
+
+            if ($localResp && $localHttp === 200) {
+                $localData = json_decode($localResp, true);
+                if (!empty($localData['response'])) {
+                    $rawText = trim($localData['response']);
+                    $usedBrain = 'AI Lokal (' . $localAiModel . ')';
+                }
             }
         }
     }
 
-    // 2. TIER 2: GEMINI API LANGSUNG
+    // =====================================================================
+    // 2. TIER 2: PANGGIL PROXY INTERNAL api-gemini.php (Sangat Handal di Hostinger)
+    // =====================================================================
+    if (empty($rawText)) {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'villaquranindonesia.com';
+        $proxyUrl = $protocol . $host . '/api-gemini.php';
+        
+        $chProxy = curl_init($proxyUrl);
+        curl_setopt_array($chProxy, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode([
+                'prompt' => $prompt_editor,
+                'leads' => [
+                    ['jenis_lead' => 'SYSTEM_COMMAND', 'sumber_info' => $prompt_editor, 'status' => 'URGENT']
+                ]
+            ]),
+            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 120,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false
+        ]);
+        $respProxy = curl_exec($chProxy);
+        $httpProxy = curl_getinfo($chProxy, CURLINFO_HTTP_CODE);
+        curl_close($chProxy);
+
+        if ($respProxy && $httpProxy === 200) {
+            $jsonProxy = json_decode($respProxy, true);
+            if (isset($jsonProxy['result']) && !empty($jsonProxy['result'])) {
+                $rawText = $jsonProxy['result'];
+                $usedBrain = 'Gemini via api-gemini.php';
+            }
+        }
+    }
+
+    // =====================================================================
+    // 3. TIER 3: DIRECT GEMINI API SEBAGAI FALLBACK
+    // =====================================================================
     $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
     if (empty($rawText) && !empty($apiKey)) {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
@@ -312,48 +372,13 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
             $respJson = json_decode($resp, true);
             $rawText = $respJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
             if (!empty($rawText)) {
-                $usedBrain = 'Google Gemini 2.5 Flash';
-            }
-        }
-    }
-
-    // 3. TIER 3: GAS PROXY TUNNEL
-    if (empty($rawText) && defined('GEMINI_GAS_URL') && !empty(GEMINI_GAS_URL)) {
-        $chGas = curl_init(GEMINI_GAS_URL);
-        curl_setopt_array($chGas, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode([
-                'leads' => [
-                    ['jenis_lead' => 'SYSTEM_COMMAND', 'sumber_info' => $prompt_editor, 'status' => 'URGENT']
-                ],
-                'type' => 'seo_editor',
-                'apiKey' => $apiKey,
-                'prompt' => $prompt_editor
-            ]),
-            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-            CURLOPT_CONNECTTIMEOUT => 20,
-            CURLOPT_TIMEOUT => 90,
-            CURLOPT_FOLLOWLOCATION => true
-        ]);
-        $respGas = curl_exec($chGas);
-        $httpGas = curl_getinfo($chGas, CURLINFO_HTTP_CODE);
-        curl_close($chGas);
-
-        if ($respGas && $httpGas === 200) {
-            $gasJson = json_decode($respGas, true);
-            if (isset($gasJson['result']) && !empty($gasJson['result'])) {
-                $rawText = $gasJson['result'];
-                $usedBrain = 'Google Apps Script Proxy';
-            } elseif (isset($gasJson['candidates'][0]['content']['parts'][0]['text'])) {
-                $rawText = $gasJson['candidates'][0]['content']['parts'][0]['text'];
-                $usedBrain = 'Google Apps Script Proxy';
+                $usedBrain = 'Google Gemini 2.5 Flash Direct';
             }
         }
     }
 
     if (empty($rawText)) {
-        return ['status' => 'error', 'message' => "Gagal mendapatkan respon dari AI Lokal maupun Gemini"];
+        return ['status' => 'error', 'message' => "Gagal mendapatkan respon dari AI Lokal maupun Gemini API"];
     }
 
     // Pembersihan JSON
@@ -365,12 +390,16 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
     }
 
     $obj = json_decode($cleanJson, true);
-    if (!$obj || empty($obj['konten_dipoles'])) {
-        return ['status' => 'error', 'message' => 'AI gagal memformat hasil JSON polesan', 'raw' => $rawText];
+    if (!$obj && function_exists('bersihkanDanDecodeJson')) {
+        $obj = bersihkanDanDecodeJson($rawText);
     }
 
-    $konten_baru = $obj['konten_dipoles'];
-    $meta_title_baru = $obj['meta_title'] ?? '';
+    $konten_baru = $obj['konten_dipoles'] ?? $obj['konten'] ?? $obj['content'] ?? '';
+    if (empty($konten_baru)) {
+        return ['status' => 'error', 'message' => 'AI gagal memformat hasil JSON polesan', 'raw' => substr($rawText, 0, 300)];
+    }
+
+    $meta_title_baru = $obj['meta_title'] ?? $obj['judul'] ?? $judul;
     $meta_desc_baru = $obj['meta_description'] ?? '';
     $meta_key_baru = $obj['meta_keywords'] ?? $keyword;
     $perubahan = $obj['perubahan_dilakukan'] ?? 'Penyempurnaan link keluar, link internal, kata transisi, dan pemecahan paragraf.';
@@ -380,6 +409,10 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
 
     // Simpan ke DB jika diminta
     if ($save_to_db && $article_id > 0) {
+        if (function_exists('pastikanKoneksiDb')) {
+            pastikanKoneksiDb();
+        }
+        global $conn;
         $k_esc = $conn->real_escape_string($konten_baru);
         $mt_esc = $conn->real_escape_string($meta_title_baru);
         $md_esc = $conn->real_escape_string($meta_desc_baru);
