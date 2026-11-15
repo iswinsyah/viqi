@@ -13,6 +13,7 @@ $is_psb_dash = ($curr_file === 'dashboard-psb.php');
 $is_spmb = ($curr_file === 'admin-spmb.php');
 $is_pipeline = ($curr_file === 'data-pipeline.php');
 $is_brosur = ($curr_file === 'admin-brosur-settings.php');
+$is_cs_ai = ($curr_file === 'admin-cs-ai.php');
 $is_wa = ($curr_file === 'admin-siaran-wa.php');
 $is_agen = ($curr_file === 'data-agen.php');
 
@@ -70,6 +71,12 @@ $inact_cls = 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold';
             <a href="admin-brosur-settings.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_brosur ? $act_cls : $inact_cls ?> transition">
                 <i class="fas fa-envelope-open-text w-4 text-center"></i>
                 <span>Brosur Digital</span>
+            </a>
+
+            <a href="admin-cs-ai.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_cs_ai ? $act_cls : $inact_cls ?> transition">
+                <i class="fas fa-headset w-4 text-center text-amber-300"></i>
+                <span>CS AI Hasna (SPMB)</span>
+                <span class="ml-auto bg-amber-400 text-teal-950 text-[10px] px-1.5 py-0.5 rounded font-black">AI</span>
             </a>
 
             <a href="admin-siaran-wa.php" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl <?= $is_wa ? $act_cls : $inact_cls ?> transition">
