@@ -13,6 +13,8 @@
     let currentSession = localStorage.getItem('hasna_session_token') || null;
     let currentUserName = localStorage.getItem('hasna_user_name') || '';
     let isWidgetOpen = false;
+    let botName = 'Hasna';
+    let whatsappCs = '6285189918115';
 
     // 1. INJECT STYLE CSS ISOLATED
     const styleEl = document.createElement('style');
@@ -440,6 +442,31 @@
     bubbleBtn.addEventListener('click', toggleWidget);
     btnClose.addEventListener('click', toggleWidget);
 
+    function updateWidgetTexts() {
+        const badgeEl = document.getElementById('hasna-bubble-badge');
+        if (badgeEl) badgeEl.innerHTML = `<span></span> ${botName}`;
+        
+        const bubbleEl = document.getElementById('hasna-bubble-btn');
+        if (bubbleEl) bubbleEl.title = `Tanya ${botName} (CS Virtual Villa Quran)`;
+
+        const titleEl = document.querySelector('.hasna-title');
+        if (titleEl) titleEl.textContent = `${botName} • CS AI`;
+
+        if (msgInput) msgInput.placeholder = `Ketik pertanyaan untuk ${botName}...`;
+    }
+
+    // Ambil konfigurasi dinamis (Nama CS & No WA Petugas) dari Server
+    fetch(`${API_ENDPOINT}?action=get_widget_config`)
+        .then(res => res.json())
+        .then(cfg => {
+            if (cfg.status === 'success') {
+                if (cfg.bot_name) botName = cfg.bot_name;
+                if (cfg.whatsapp_cs) whatsappCs = cfg.whatsapp_cs;
+                updateWidgetTexts();
+            }
+        })
+        .catch(() => {});
+
     function toggleWidget() {
         isWidgetOpen = !isWidgetOpen;
         if (isWidgetOpen) {
@@ -466,12 +493,12 @@
             <div class="hasna-msg hasna-msg-bot">
                 Assalamu'alaikum Ayah/Bunda! Selamat datang di Layanan Informasi <b>Villa Quran Baron Malang</b>. 
                 <br><br>
-                Saya <b>Hasna</b>, asisten virtual siap membantu menjawab pertanyaan seputar program tahfidz, fasilitas asrama, dan pendaftaran santri baru (SPMB).
+                Saya <b>${escapeHtml(botName)}</b>, asisten virtual siap membantu menjawab pertanyaan seputar program tahfidz, fasilitas asrama, dan pendaftaran santri baru (SPMB).
             </div>
 
             <div class="hasna-form-box">
-                <h4>📋 Mulai Konsultasi dengan Hasna</h4>
-                <p>Silakan lengkapi kontak berikut agar Hasna dapat menyapa Ayah/Bunda secara langsung:</p>
+                <h4>📋 Mulai Konsultasi dengan ${escapeHtml(botName)}</h4>
+                <p>Silakan lengkapi kontak berikut agar ${escapeHtml(botName)} dapat menyapa Ayah/Bunda secara langsung:</p>
                 
                 <form id="hasna-lead-form">
                     <div class="hasna-input-group">
@@ -672,9 +699,10 @@
     function appendWhatsAppCta() {
         const cta = document.createElement('div');
         cta.className = 'hasna-wa-cta';
+        const cleanWa = whatsappCs.replace(/[^0-9]/g, '');
         cta.innerHTML = `
             <span>💬 Butuh bantuan lebih detail?</span>
-            <a href="https://wa.me/6285189918115?text=Assalamu%27alaikum%20Panitia%20SPMB%20Villa%20Quran,%20saya%20ingin%20konsultasi%20pendaftaran" target="_blank">Chat WA Panitia</a>
+            <a href="https://wa.me/${cleanWa}?text=Assalamu%27alaikum%20${encodeURIComponent(botName)}%20%2F%20Panitia%20SPMB%20Villa%20Quran,%20saya%20ingin%20konsultasi%20pendaftaran" target="_blank">Chat WA Petugas</a>
         `;
         chatBody.appendChild(cta);
         scrollToBottom();

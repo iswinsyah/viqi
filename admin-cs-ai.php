@@ -190,6 +190,37 @@ if ($resSess && $resSess->num_rows > 0) {
                 <form id="form-cs-config" class="space-y-6">
                     <input type="hidden" name="action" value="save_config">
 
+                    <!-- CARD 0: IDENTITAS PETUGAS & NOMOR WHATSAPP CS AI -->
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+                        <div class="border-b border-slate-100 pb-3">
+                            <h3 class="font-black text-slate-800 text-base flex items-center gap-2">
+                                <span class="text-xl">🧕</span>
+                                Identitas Petugas & Nomor WhatsApp CS AI
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">
+                                Bos dapat mengganti nama CS AI kapan saja sesuai nama petugas yang ditunjuk sekolah, serta mengubah nomor WhatsApp CS agar langsung tersambung ke nomor petugas yang aktif.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    <i class="fas fa-user-tag text-teal-600 mr-1"></i> Nama CS AI / Petugas yang Ditunjuk
+                                </label>
+                                <input type="text" name="bot_name" id="bot_name" value="<?= htmlspecialchars($cfg['bot_name'] ?? 'Hasna') ?>" placeholder="Contoh: Hasna / Ustadzah Aisyah / Kak Nisa" required class="w-full text-xs font-bold px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-600 bg-white shadow-2xs">
+                                <p class="text-[11px] text-slate-400 mt-1">Nama ini yang akan menyapa calon wali santri di website dan panel chat.</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    <i class="fab fa-whatsapp text-emerald-600 mr-1"></i> Nomor WhatsApp Petugas CS (Konsultasi Wali Santri)
+                                </label>
+                                <input type="text" name="whatsapp_cs" id="whatsapp_cs" value="<?= htmlspecialchars($cfg['whatsapp_cs'] ?? '6285189918115') ?>" placeholder="Contoh: 085189918115 / 6285189918115" required class="w-full text-xs font-mono font-bold px-3 py-2.5 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-600 bg-white shadow-2xs">
+                                <p class="text-[11px] text-slate-400 mt-1">Tombol "Chat WhatsApp Petugas" di widget web akan otomatis membuka chat ke nomor ini.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- CARD 1: ROTASI MULTI-API KEY FREE TIER (3 s/d 4 API) -->
                     <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
                         <div class="border-b border-slate-100 pb-3 flex flex-wrap items-center justify-between gap-2">
@@ -318,15 +349,9 @@ if ($resSess && $resSess->num_rows > 0) {
                             </button>
                         </div>
 
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Nama Asisten Virtual</label>
-                                <input type="text" name="bot_name" id="bot_name" value="<?= htmlspecialchars($cfg['bot_name'] ?? 'Hasna') ?>" class="w-full text-xs font-bold px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-600">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Teks Sapaan Awal</label>
-                                <input type="text" name="greeting_text" id="greeting_text" value="<?= htmlspecialchars($cfg['greeting_text'] ?? '') ?>" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-600">
-                            </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Teks Sapaan Awal (Greeting)</label>
+                            <input type="text" name="greeting_text" id="greeting_text" value="<?= htmlspecialchars($cfg['greeting_text'] ?? '') ?>" placeholder="Assalamu'alaikum Ayah/Bunda! Ada yang bisa kami bantu seputar program tahfidz atau SPMB?" class="w-full text-xs px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:border-teal-600 bg-white">
                         </div>
 
                         <div>

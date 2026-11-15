@@ -32,6 +32,7 @@ if (file_exists(__DIR__ . '/config-key.php')) {
 $conn->query("CREATE TABLE IF NOT EXISTS cs_ai_config (
     id INT PRIMARY KEY DEFAULT 1,
     bot_name VARCHAR(100) DEFAULT 'Hasna',
+    whatsapp_cs VARCHAR(50) DEFAULT '6285189918115',
     greeting_text TEXT,
     api_key_1 VARCHAR(255) NULL,
     api_key_2 VARCHAR(255) NULL,
@@ -45,6 +46,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS cs_ai_config (
     is_active TINYINT(1) DEFAULT 1,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 )");
+@$conn->query("ALTER TABLE cs_ai_config ADD COLUMN whatsapp_cs VARCHAR(50) DEFAULT '6285189918115' AFTER bot_name");
 
 $conn->query("CREATE TABLE IF NOT EXISTS cs_ai_learning (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -122,11 +124,19 @@ INFORMASI DASAR PESANTREN & SPMB:
 function getCsConfig($conn) {
     $res = $conn->query("SELECT * FROM cs_ai_config WHERE id = 1 LIMIT 1");
     if ($res && $res->num_rows > 0) {
-        return $res->fetch_assoc();
+        $row = $res->fetch_assoc();
+        if (empty($row['whatsapp_cs'])) {
+            $row['whatsapp_cs'] = '6285189918115';
+        }
+        if (empty($row['bot_name'])) {
+            $row['bot_name'] = 'Hasna';
+        }
+        return $row;
     }
     return [
         'bot_name' => 'Hasna',
-        'greeting_text' => 'Assalamu\'alaikum! Ada yang bisa Hasna bantu?',
+        'whatsapp_cs' => '6285189918115',
+        'greeting_text' => 'Assalamu\'alaikum! Ada yang bisa kami bantu?',
         'api_key_1' => '',
         'api_key_2' => '',
         'api_key_3' => '',
@@ -472,8 +482,10 @@ if ($action === 'send_message') {
         exit;
     } else {
         // Fallback sopan jika API limit
-        $fallbackPesan = "Afwan Ayah/Bunda $namaUser, saat ini sistem jaringan server Hasna sedang menerima antrean sangat ramai. " .
-            "Agar Ayah/Bunda segera mendapatkan informasi lengkap, silakan langsung hubungi Panitia SPMB kami via WhatsApp di nomor: *" . ($cfg['admin_wa'] ?? '0851-8991-8115') . "* 🙏";
+        $botDisplayName = !empty($cfg['bot_name']) ? $cfg['bot_name'] : 'Hasna';
+        $csWaNum = !empty($cfg['whatsapp_cs']) ? $cfg['whatsapp_cs'] : ($cfg['admin_wa'] ?? '6285189918115');
+        $fallbackPesan = "Afwan Ayah/Bunda $namaUser, saat ini sistem jaringan server $botDisplayName sedang menerima antrean sangat ramai. " .
+            "Agar Ayah/Bunda segera mendapatkan informasi lengkap, silakan langsung hubungi Petugas/Panitia SPMB kami via WhatsApp di nomor: *" . $csWaNum . "* 🙏";
 
         $errApi = 'Limit / Error';
         $stmtBotMsg = $conn->prepare("INSERT INTO cs_chat_messages (session_id, sender, pesan, api_key_used) VALUES (?, 'hasna', ?, ?)");
@@ -594,10 +606,33 @@ if ($action === 'test_api') {
 }
 
 // -----------------------------------------------------------------------------
+// ACTION: GET WIDGET CONFIGURATION (Untuk Web Widget)
+// -----------------------------------------------------------------------------
+if ($action === 'get_widget_config') {
+    echo json_encode([
+        'status' => 'success',
+        'bot_name' => $cfg['bot_name'] ?? 'Hasna',
+        'whatsapp_cs' => !empty($cfg['whatsapp_cs']) ? $cfg['whatsapp_cs'] : '6285189918115',
+        'greeting_text' => $cfg['greeting_text'] ?? "Assalamu'alaikum Ayah/Bunda! Ada yang bisa kami bantu?",
+        'admin_wa' => $cfg['admin_wa'] ?? '6285189918115'
+    ]);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
 // ACTION: SAVE CONFIGURATION (Dari Panel Admin PSB)
 // -----------------------------------------------------------------------------
 if ($action === 'save_config') {
     $botName = trim($_POST['bot_name'] ?? 'Hasna');
+    if (empty($botName)) $botName = 'Hasna';
+
+    $whatsappCs = trim($_POST['whatsapp_cs'] ?? '6285189918115');
+    $whatsappCs = preg_replace('/[^0-9]/', '', $whatsappCs);
+    if (substr($whatsappCs, 0, 1) === '0') {
+        $whatsappCs = '62' . substr($whatsappCs, 1);
+    }
+    if (empty($whatsappCs)) $whatsappCs = '6285189918115';
+
     $greeting = trim($_POST['greeting_text'] ?? '');
     $apiKey1 = trim($_POST['api_key_1'] ?? '');
     $apiKey2 = trim($_POST['api_key_2'] ?? '');
@@ -610,6 +645,7 @@ if ($action === 'save_config') {
 
     $stmtSave = $conn->prepare("UPDATE cs_ai_config SET 
         bot_name = ?, 
+        whatsapp_cs = ?, 
         greeting_text = ?, 
         api_key_1 = ?, 
         api_key_2 = ?, 
@@ -621,10 +657,10 @@ if ($action === 'save_config') {
         system_prompt_spmb = ? 
         WHERE id = 1");
 
-    $stmtSave->bind_param("ssssssssis", $botName, $greeting, $apiKey1, $apiKey2, $apiKey3, $apiKey4, $fonnteToken, $adminWa, $notifyAdmin, $systemPrompt);
+    $stmtSave->bind_param("sssssssssis", $botName, $whatsappCs, $greeting, $apiKey1, $apiKey2, $apiKey3, $apiKey4, $fonnteToken, $adminWa, $notifyAdmin, $systemPrompt);
 
     if ($stmtSave->execute()) {
-        echo json_encode(['status' => 'success', 'message' => 'Konfigurasi CS AI Hasna berhasil disimpan!']);
+        echo json_encode(['status' => 'success', 'message' => 'Konfigurasi CS AI berhasil disimpan!']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan konfigurasi: ' . $conn->error]);
     }
