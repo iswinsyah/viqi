@@ -331,7 +331,49 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
     }
 
     // =====================================================================
-    // 1. TIER 1: COBA AI LOKAL (Ollama di PC Server) JIKA AKTIF
+    // 1. GEMINI API LANGSUNG (Sangat Cepat & Handal)
+    // =====================================================================
+    $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+    if (empty($apiKey) && file_exists(__DIR__ . '/config-key.php')) {
+        require_once __DIR__ . '/config-key.php';
+        $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
+    }
+
+    if (empty($rawText) && !empty($apiKey)) {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
+        $payload = [
+            "contents" => [
+                ["parts" => [["text" => $prompt_editor]]]
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_TIMEOUT => 60,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false
+        ]);
+
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($resp && $httpCode === 200) {
+            $respJson = json_decode($resp, true);
+            $rawText = $respJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
+            if (!empty($rawText)) {
+                $usedBrain = 'Google Gemini 2.5 Flash';
+            }
+        }
+    }
+
+    // =====================================================================
+    // 2. TIER 2: COBA AI LOKAL (JIKA AKTIF DI PC SERVER)
     // =====================================================================
     if (empty($rawText)) {
         $localAiUrl = defined('LOCAL_AI_URL') ? LOCAL_AI_URL : '';
@@ -349,7 +391,7 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
                     "format" => "json"
                 ]),
                 CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-                CURLOPT_CONNECTTIMEOUT => 3,
+                CURLOPT_CONNECTTIMEOUT => 2,
                 CURLOPT_TIMEOUT => 60,
                 CURLOPT_SSL_VERIFYPEER => false,
                 CURLOPT_SSL_VERIFYHOST => false
@@ -369,73 +411,38 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
     }
 
     // =====================================================================
-    // 2. TIER 2: PANGGIL PROXY INTERNAL api-gemini.php (Sangat Handal di Hostinger)
+    // 3. TIER 3: GAS PROXY TUNNEL SEBAGAI CADANGAN DARURAT
     // =====================================================================
-    if (empty($rawText)) {
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-        $host = $_SERVER['HTTP_HOST'] ?? 'villaquranindonesia.com';
-        $proxyUrl = $protocol . $host . '/api-gemini.php';
-        
-        $chProxy = curl_init($proxyUrl);
-        curl_setopt_array($chProxy, [
+    if (empty($rawText) && defined('GEMINI_GAS_URL') && !empty(GEMINI_GAS_URL)) {
+        $chGas = curl_init(GEMINI_GAS_URL);
+        curl_setopt_array($chGas, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode([
-                'prompt' => $prompt_editor,
                 'leads' => [
                     ['jenis_lead' => 'SYSTEM_COMMAND', 'sumber_info' => $prompt_editor, 'status' => 'URGENT']
-                ]
+                ],
+                'type' => 'seo',
+                'apiKey' => $apiKey,
+                'prompt' => $prompt_editor
             ]),
             CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT => 120,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false
-        ]);
-        $respProxy = curl_exec($chProxy);
-        $httpProxy = curl_getinfo($chProxy, CURLINFO_HTTP_CODE);
-        curl_close($chProxy);
-
-        if ($respProxy && $httpProxy === 200) {
-            $jsonProxy = json_decode($respProxy, true);
-            if (isset($jsonProxy['result']) && !empty($jsonProxy['result'])) {
-                $rawText = $jsonProxy['result'];
-                $usedBrain = 'Gemini via api-gemini.php';
-            }
-        }
-    }
-
-    // =====================================================================
-    // 3. TIER 3: DIRECT GEMINI API SEBAGAI FALLBACK
-    // =====================================================================
-    $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
-    if (empty($rawText) && !empty($apiKey)) {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" . $apiKey;
-        $payload = [
-            "contents" => [
-                ["parts" => [["text" => $prompt_editor]]]
-            ]
-        ];
-
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
             CURLOPT_CONNECTTIMEOUT => 15,
-            CURLOPT_TIMEOUT => 75
+            CURLOPT_TIMEOUT => 60,
+            CURLOPT_FOLLOWLOCATION => true
         ]);
+        $respGas = curl_exec($chGas);
+        $httpGas = curl_getinfo($chGas, CURLINFO_HTTP_CODE);
+        curl_close($chGas);
 
-        $resp = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($resp && $httpCode === 200) {
-            $respJson = json_decode($resp, true);
-            $rawText = $respJson['candidates'][0]['content']['parts'][0]['text'] ?? '';
-            if (!empty($rawText)) {
-                $usedBrain = 'Google Gemini 2.5 Flash Direct';
+        if ($respGas && $httpGas === 200) {
+            $gasJson = json_decode($respGas, true);
+            if (isset($gasJson['result']) && !empty($gasJson['result'])) {
+                $rawText = $gasJson['result'];
+                $usedBrain = 'Google Apps Script Proxy';
+            } elseif (isset($gasJson['candidates'][0]['content']['parts'][0]['text'])) {
+                $rawText = $gasJson['candidates'][0]['content']['parts'][0]['text'];
+                $usedBrain = 'Google Apps Script Proxy';
             }
         }
     }
