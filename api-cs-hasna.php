@@ -13,13 +13,20 @@
 ini_set('display_errors', 0);
 error_reporting(0);
 
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
+$is_api_request = (isset($_SERVER['SCRIPT_FILENAME']) && basename($_SERVER['SCRIPT_FILENAME']) === 'api-cs-hasna.php')
+    || (isset($_SERVER['SCRIPT_NAME']) && basename($_SERVER['SCRIPT_NAME']) === 'api-cs-hasna.php')
+    || (isset($_SERVER['PHP_SELF']) && basename($_SERVER['PHP_SELF']) === 'api-cs-hasna.php')
+    || !empty($_GET['action']) || !empty($_POST['action']);
+
+if ($is_api_request) {
+    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Headers: Content-Type");
+    header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+    if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        exit(0);
+    }
+    header('Content-Type: application/json; charset=UTF-8');
 }
-header('Content-Type: application/json; charset=UTF-8');
 
 require_once __DIR__ . '/koneksi.php';
 if (file_exists(__DIR__ . '/config-key.php')) {
@@ -302,6 +309,16 @@ if (empty($action)) {
     $rawInput = json_decode(file_get_contents('php://input'), true);
     if ($rawInput && !empty($rawInput['action'])) {
         $action = $rawInput['action'];
+    }
+}
+
+// Jika file ini di-include oleh halaman lain (seperti admin-cs-ai.php) tanpa parameter action API,
+// cukup sediakan fungsi helper & tabel tanpa menjalankan router API
+if (empty($action)) {
+    $is_direct_script = (isset($_SERVER['SCRIPT_FILENAME']) && basename($_SERVER['SCRIPT_FILENAME']) === 'api-cs-hasna.php')
+        || (isset($_SERVER['PHP_SELF']) && basename($_SERVER['PHP_SELF']) === 'api-cs-hasna.php');
+    if (!$is_direct_script) {
+        return;
     }
 }
 
