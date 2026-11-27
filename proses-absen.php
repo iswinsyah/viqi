@@ -77,21 +77,10 @@ function haversine_distance($lat1, $lon1, $lat2, $lon2) {
 }
 
 function kirim_notifikasi_wa_yayasan($pesan, $target_custom = null) {
-    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
-    $no_wa = !empty($target_custom) ? $target_custom : (defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223');
-    
-    $waFd = ['target' => $no_wa, 'message' => $pesan];
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => "https://api.fonnte.com/send",
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => http_build_query($waFd),
-        CURLOPT_HTTPHEADER => ["Authorization: $FONNTE_TOKEN"],
-        CURLOPT_TIMEOUT => 15
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
+    global $conn;
+    require_once __DIR__ . '/includes/services/WaNotificationService.php';
+    $target = !empty($target_custom) ? $target_custom : WaNotificationService::getAdminNumber($conn);
+    return WaNotificationService::send($target, $pesan, $conn);
 }
 
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {

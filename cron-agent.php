@@ -98,8 +98,8 @@ function periksa_dan_terbitkan_sp1_pegawai($conn) {
         $end_date = "$current_year-06-30";
     }
 
-    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "Dtw72oRiQr8FympzpMHL";
-    $BOS_WA = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285196572223';
+    $FONNTE_TOKEN = defined('FONNTE_TOKEN') ? FONNTE_TOKEN : "XFVpt4dRboQJ6GgKhGqw";
+    $BOS_WA = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285189918115';
 
     $res_staf = $conn->query("SELECT id, nama, role, status_pegawai, whatsapp FROM akun_ustadz ORDER BY nama ASC");
     if (!$res_staf || $res_staf->num_rows == 0) return [];
@@ -2568,7 +2568,7 @@ if (($current_hour >= '21' || $force_hrd_laporan) && (!$hrd_laporan_done || $for
         $report_msg .= "• Mutaba'ah Diinput: $total_mutabaah Santri";
         
         // Kirim WhatsApp ke Bos
-        $bos_wa = '6285196572223';
+        $bos_wa = defined('YAYASAN_WA_RECIPIENT') ? YAYASAN_WA_RECIPIENT : '6285189918115';
         $waFd = ['target' => $bos_wa, 'message' => $report_msg];
         $ch = curl_init();
         curl_setopt_array($ch, [
