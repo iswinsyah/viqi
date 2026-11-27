@@ -333,8 +333,8 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
     // =====================================================================
     // 1. TIER 1: COBA AI LOKAL (Ollama di PC Server) JIKA AKTIF
     // =====================================================================
-    $localAiUrl = defined('LOCAL_AI_URL') ? LOCAL_AI_URL : '';
-    $localAiModel = defined('LOCAL_AI_MODEL') ? LOCAL_AI_MODEL : 'qwen2.5-coder:7b';
+    $localAiUrl = defined('LOCAL_AI_URL') ? trim(LOCAL_AI_URL) : '';
+    $localAiModel = defined('LOCAL_AI_MODEL') ? trim(LOCAL_AI_MODEL) : 'qwen2.5-coder:7b';
     
     if (empty($rawText) && !empty($localAiUrl)) {
         $chLocal = curl_init(rtrim($localAiUrl, '/') . '/api/generate');
@@ -348,8 +348,8 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
                 "format" => "json"
             ]),
             CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-            CURLOPT_CONNECTTIMEOUT => 3,
-            CURLOPT_TIMEOUT => 90,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_TIMEOUT => 20,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false
         ]);
@@ -367,7 +367,7 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
     }
 
     // =====================================================================
-    // 2. TIER 2: GEMINI API (Cadangan jika PC Server Lokal Sedang Mati)
+    // 2. TIER 2: GEMINI API (Cadangan Handal / Utama jika PC Server Lokal Mati)
     // =====================================================================
     $apiKey = defined('GEMINI_API_KEY') ? GEMINI_API_KEY : '';
     if (empty($apiKey) && file_exists(__DIR__ . '/config-key.php')) {
@@ -389,8 +389,8 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => json_encode($payload),
             CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-            CURLOPT_CONNECTTIMEOUT => 15,
-            CURLOPT_TIMEOUT => 60,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 30,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false
         ]);
@@ -409,7 +409,7 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
     }
 
     // =====================================================================
-    // 3. TIER 3: GAS PROXY TUNNEL SEBAGAI CADANGAN DARURAT
+    // 3. TIER 3: GAS PROXY TUNNEL SEBAGAI CADANGAN DARURAT HOSTINGER
     // =====================================================================
     if (empty($rawText) && defined('GEMINI_GAS_URL') && !empty(GEMINI_GAS_URL)) {
         $chGas = curl_init(GEMINI_GAS_URL);
@@ -425,8 +425,8 @@ FORMAT JSON OUTPUT YANG HARUS DIHASILKAN:
                 'prompt' => $prompt_editor
             ]),
             CURLOPT_HTTPHEADER => ["Content-Type: application/json"],
-            CURLOPT_CONNECTTIMEOUT => 15,
-            CURLOPT_TIMEOUT => 60,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 30,
             CURLOPT_FOLLOWLOCATION => true
         ]);
         $respGas = curl_exec($chGas);

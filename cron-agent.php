@@ -383,8 +383,8 @@ function mikirKeGemini($payload, $maxRetries = 3) {
     }
     $prompt = trim($prompt);
     
-    // 0. COBA OTAK UTAMA: AI LOKAL (Ollama Qwen di PC Server)
-    $localAiUrl = defined('LOCAL_AI_URL') && !empty(LOCAL_AI_URL) ? trim(LOCAL_AI_URL) : 'https://pillow-docs-mud-proteins.trycloudflare.com';
+    // 0. COBA OTAK UTAMA: AI LOKAL (Ollama Qwen di PC Server) JIKA AKTIF
+    $localAiUrl = defined('LOCAL_AI_URL') && !empty(LOCAL_AI_URL) ? trim(LOCAL_AI_URL) : '';
     $localAiModel = defined('LOCAL_AI_MODEL') && !empty(LOCAL_AI_MODEL) ? trim(LOCAL_AI_MODEL) : 'qwen2.5-coder:7b';
 
     if (!empty($localAiUrl)) {
@@ -400,8 +400,8 @@ function mikirKeGemini($payload, $maxRetries = 3) {
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($ollamaPayload));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 300); // Beri waktu hingga 5 menit untuk penulisan artikel komprehensif
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         
