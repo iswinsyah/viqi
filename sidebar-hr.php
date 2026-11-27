@@ -9,66 +9,71 @@ global $conn;
 // Ambil role user dari database secara realtime agar perubahan langsung berefek tanpa logout-login
 $user_roles = [];
 if (isset($conn) && $conn) {
-    // Self-healing icon for buku_induk
-    @$conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
-    
-    // Self-healing database cleanup and setup for consolidated menus
-    $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('rekap_ibadah_rijal', 'rekap_ibadah_nisa', 'rekap_ibadah_mahad', 'laporan_setoran_rijal', 'laporan_setoran_nisa', 'laporan_setoran_hafalan')");
-    
-    $res_chk_ib = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'rekap_ibadah_santri'");
-    if ($res_chk_ib && $res_chk_ib->num_rows === 0) {
-        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
-        $new_ord = $max_ord + 1;
-        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asrama', 'rekap_ibadah_santri', $new_ord, 'fa-mosque', 'admin-ibadah-santri.php')");
-    }
-    
-    $res_chk_set = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'rekap_setoran_santri'");
-    if ($res_chk_set && $res_chk_set->num_rows === 0) {
-        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
-        $new_ord = $max_ord + 1;
-        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'rekap_setoran_santri', $new_ord, 'fa-file-alt', 'admin-laporan-setoran-hafalan.php')");
-    }
+    // Jalankan migrasi self-healing struktur menu hanya 1x per sesi login
+    if (empty($_SESSION['menu_structure_initialized'])) {
+        // Self-healing icon for buku_induk
+        @$conn->query("UPDATE menu_structure SET icon = 'fa-address-book' WHERE menu_key = 'buku_induk' AND icon = 'fa-book-user'");
+        
+        // Self-healing database cleanup and setup for consolidated menus
+        $conn->query("DELETE FROM menu_structure WHERE menu_key IN ('rekap_ibadah_rijal', 'rekap_ibadah_nisa', 'rekap_ibadah_mahad', 'laporan_setoran_rijal', 'laporan_setoran_nisa', 'laporan_setoran_hafalan')");
+        
+        $res_chk_ib = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'rekap_ibadah_santri'");
+        if ($res_chk_ib && $res_chk_ib->num_rows === 0) {
+            $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+            $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+            $new_ord = $max_ord + 1;
+            $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asrama', 'rekap_ibadah_santri', $new_ord, 'fa-mosque', 'admin-ibadah-santri.php')");
+        }
+        
+        $res_chk_set = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'rekap_setoran_santri'");
+        if ($res_chk_set && $res_chk_set->num_rows === 0) {
+            $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+            $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+            $new_ord = $max_ord + 1;
+            $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'rekap_setoran_santri', $new_ord, 'fa-file-alt', 'admin-laporan-setoran-hafalan.php')");
+        }
 
-    $res_chk_setin = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'setoran_hafalan_santri'");
-    if ($res_chk_setin && $res_chk_setin->num_rows === 0) {
-        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
-        $new_ord = $max_ord + 1;
-        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'setoran_hafalan_santri', $new_ord, 'fa-quran', 'admin-setoran-hafalan-santri.php')");
-    }
+        $res_chk_setin = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'setoran_hafalan_santri'");
+        if ($res_chk_setin && $res_chk_setin->num_rows === 0) {
+            $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+            $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+            $new_ord = $max_ord + 1;
+            $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Musyrif', 'setoran_hafalan_santri', $new_ord, 'fa-quran', 'admin-setoran-hafalan-santri.php')");
+        }
 
-    $res_chk_jk = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kontrol_jam_kosong'");
-    if ($res_chk_jk && $res_chk_jk->num_rows === 0) {
-        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
-        $new_ord = $max_ord + 1;
-        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'kontrol_jam_kosong', $new_ord, 'fa-calendar-times', 'admin-kontrol-jam-kosong.php')");
-    }
+        $res_chk_jk = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'kontrol_jam_kosong'");
+        if ($res_chk_jk && $res_chk_jk->num_rows === 0) {
+            $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+            $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+            $new_ord = $max_ord + 1;
+            $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'kontrol_jam_kosong', $new_ord, 'fa-calendar-times', 'admin-kontrol-jam-kosong.php')");
+        }
 
-    $res_chk_pspp = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'penagihan_spp'");
-    if ($res_chk_pspp && $res_chk_pspp->num_rows === 0) {
-        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
-        $new_ord = $max_ord + 1;
-        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'penagihan_spp', $new_ord, 'fa-comment-dollar', 'admin-penagihan-spp.php')");
-    }
+        $res_chk_pspp = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'penagihan_spp'");
+        if ($res_chk_pspp && $res_chk_pspp->num_rows === 0) {
+            $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+            $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+            $new_ord = $max_ord + 1;
+            $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Administrasi', 'penagihan_spp', $new_ord, 'fa-comment-dollar', 'admin-penagihan-spp.php')");
+        }
 
-    $res_chk_el = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'manajemen_elearning'");
-    if ($res_chk_el && $res_chk_el->num_rows === 0) {
-        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
-        $new_ord = $max_ord + 1;
-        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'manajemen_elearning', $new_ord, 'fa-laptop-code', 'admin-elearning.php')");
-    }
+        $res_chk_el = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'manajemen_elearning'");
+        if ($res_chk_el && $res_chk_el->num_rows === 0) {
+            $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+            $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+            $new_ord = $max_ord + 1;
+            $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'manajemen_elearning', $new_ord, 'fa-laptop-code', 'admin-elearning.php')");
+        }
 
-    $res_chk_pp = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'prota_promes'");
-    if ($res_chk_pp && $res_chk_pp->num_rows === 0) {
-        $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
-        $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
-        $new_ord = $max_ord + 1;
-        $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'prota_promes', $new_ord, 'fa-calendar-alt', 'admin-kurikulum-prota-promes.php')");
+        $res_chk_pp = $conn->query("SELECT id FROM menu_structure WHERE menu_key = 'prota_promes'");
+        if ($res_chk_pp && $res_chk_pp->num_rows === 0) {
+            $res_ord = $conn->query("SELECT MAX(sort_order) as max_ord FROM menu_structure");
+            $max_ord = $res_ord ? (int)$res_ord->fetch_assoc()['max_ord'] : 0;
+            $new_ord = $max_ord + 1;
+            $conn->query("INSERT INTO menu_structure (menu_group, menu_key, sort_order, icon, href) VALUES ('Asatidz', 'prota_promes', $new_ord, 'fa-calendar-alt', 'admin-kurikulum-prota-promes.php')");
+        }
+
+        $_SESSION['menu_structure_initialized'] = true;
     }
 }
 
@@ -102,67 +107,76 @@ foreach ($user_roles as $role) {
 // Ambil semua hak akses menu dari database
 $menu_permissions = [];
 if ($conn) {
-    // Pastikan tabel menu_permissions ada (Self-Healing)
-    $conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        menu_key VARCHAR(100) UNIQUE NOT NULL,
-        allowed_roles TEXT
-    )");
-    
-    $default_perms = [
-        'absensi_pegawai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
-        'perizinan_pegawai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
-        'slip_gaji' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
-        'amanah_asatidz' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
-        'peraturan_role' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
-        'counseling_karir' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
-        'kalender_akademik' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
-        'jadwal_pelajaran' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
-        'kurikulum_solopreneur_trainer' => 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin',
-        'kpi_ustadz' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
-        'validasi_ibadah_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin',
-        'rekap_ibadah_santri' => 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah',
-        'rekap_setoran_santri' => 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif,musyrifah',
-        'kpi_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
-        'sekolah_pembukuan' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
-        'rapot_pkbm' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin',
-        'rapot_pkbm_musyrif' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_asrama,super_admin',
-        'cek_belajar_mandiri' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
-        'cek_kesehatan_santri' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
-        'santri_tidak_masuk' => 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin',
-        'santri_tidak_masuk_asatidz' => 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin',
-        'kontak_orangtua' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
-        'manajemen_elearning' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
-        'prota_promes' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
-        'jadwal_rapat' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz,super_admin',
-        'buku_induk' => 'kepala_sekolah,admin_sekolah,kepala_mahad,sekretaris_sekolah,super_admin',
-        'akun_orangtua' => 'kepala_sekolah,admin_sekolah,musyrif,musyrifah,super_admin',
-        'leger_nilai' => 'kepala_sekolah,admin_sekolah,ustadz,ustadzah,super_admin',
-        'rekap_keuangan' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
-        'penagihan_spp' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
-        'rekap_uang_saku' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
-        'kesediaan_mengajar' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
-        'master_silabus' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
-        'ai_rpp' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
-        'bank_nilai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
-        'dashboard_asrama' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
-        'manajemen_halaqoh' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
-        'setoran_hafalan_santri' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
-        'mutabaah' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
-        'laporan_adab' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
-        'rekap_uang_saku_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin',
-        'kpi_kepsek' => 'kepala_sekolah,super_admin',
-        'supervisi_mengajar' => 'kepala_sekolah,kepala_mahad,super_admin',
-        'kpi_admin_sekolah' => 'admin_sekolah,super_admin',
-        'salary_admin' => 'admin_sekolah,super_admin'
-    ];
+    // Inisialisasi awal permissions hanya jika belum pernah dilakukan pada sesi ini
+    if (empty($_SESSION['menu_permissions_seeded'])) {
+        $conn->query("CREATE TABLE IF NOT EXISTS menu_permissions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            menu_key VARCHAR(100) UNIQUE NOT NULL,
+            allowed_roles TEXT
+        )");
 
-    foreach ($default_perms as $d_key => $d_roles) {
-        $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('$d_key', '$d_roles')");
+        $res_chk_perm = $conn->query("SELECT COUNT(id) as c FROM menu_permissions");
+        $total_p = ($res_chk_perm && $rc = $res_chk_perm->fetch_assoc()) ? (int)$rc['c'] : 0;
+        
+        if ($total_p < 30) {
+            $default_perms = [
+                'absensi_pegawai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
+                'perizinan_pegawai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
+                'slip_gaji' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,kepala_mahad,kepala_asrama,musyrif,musyrifah,admin_sekolah,super_admin',
+                'amanah_asatidz' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+                'peraturan_role' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+                'counseling_karir' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+                'kalender_akademik' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+                'jadwal_pelajaran' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+                'kurikulum_solopreneur_trainer' => 'trainer,ustadz,kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,super_admin',
+                'kpi_ustadz' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz',
+                'validasi_ibadah_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin',
+                'rekap_ibadah_santri' => 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin,musyrif,musyrifah',
+                'rekap_setoran_santri' => 'kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin,musyrif,musyrifah',
+                'kpi_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
+                'sekolah_pembukuan' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
+                'rapot_pkbm' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,ustadz,ustadzah,super_admin',
+                'rapot_pkbm_musyrif' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_asrama,super_admin',
+                'cek_belajar_mandiri' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+                'cek_kesehatan_santri' => 'musyrif,musyrifah,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
+                'santri_tidak_masuk' => 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin',
+                'santri_tidak_masuk_asatidz' => 'ustadz,ustadzah,tutor,trainer,admin_sekolah,kepala_sekolah,kepala_mahad,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,musyrif,musyrifah,super_admin',
+                'kontak_orangtua' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
+                'manajemen_elearning' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+                'prota_promes' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+                'jadwal_rapat' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz,super_admin',
+                'buku_induk' => 'kepala_sekolah,admin_sekolah,kepala_mahad,sekretaris_sekolah,super_admin',
+                'akun_orangtua' => 'kepala_sekolah,admin_sekolah,musyrif,musyrifah,super_admin',
+                'leger_nilai' => 'kepala_sekolah,admin_sekolah,ustadz,ustadzah,super_admin',
+                'rekap_keuangan' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
+                'penagihan_spp' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
+                'rekap_uang_saku' => 'kepala_sekolah,admin_sekolah,bendahara_sekolah,super_admin',
+                'kesediaan_mengajar' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+                'master_silabus' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+                'ai_rpp' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+                'bank_nilai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
+                'dashboard_asrama' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+                'manajemen_halaqoh' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+                'setoran_hafalan_santri' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+                'mutabaah' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+                'laporan_adab' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+                'rekap_uang_saku_musyrif' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,super_admin',
+                'kpi_kepsek' => 'kepala_sekolah,super_admin',
+                'supervisi_mengajar' => 'kepala_sekolah,kepala_mahad,super_admin',
+                'kpi_admin_sekolah' => 'admin_sekolah,super_admin',
+                'salary_admin' => 'admin_sekolah,super_admin'
+            ];
+
+            foreach ($default_perms as $d_key => $d_roles) {
+                $conn->query("INSERT IGNORE INTO menu_permissions (menu_key, allowed_roles) VALUES ('$d_key', '$d_roles')");
+            }
+
+            $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin') ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin'");
+            $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah') ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah'");
+        }
+
+        $_SESSION['menu_permissions_seeded'] = true;
     }
-
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('kontrol_jam_kosong', 'kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin') ON DUPLICATE KEY UPDATE allowed_roles='kepala_sekolah,kepala_mahad,kepala_ldu,direktur_ldu,admin_sekolah,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,pengurus_yayasan,super_admin'");
-    $conn->query("INSERT INTO menu_permissions (menu_key, allowed_roles) VALUES ('pengaturan_brosur', 'super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah') ON DUPLICATE KEY UPDATE allowed_roles='super_admin,ketua_yayasan,sekretaris_yayasan,bendahara_yayasan,marketing,admin,kepala_sekolah'");
 
     $res_perms = $conn->query("SELECT menu_key, allowed_roles FROM menu_permissions");
     if ($res_perms) {
