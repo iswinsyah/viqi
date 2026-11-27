@@ -5,13 +5,11 @@
 
 require_once __DIR__ . '/koneksi.php';
 
-$is_api_request = (isset($_SERVER['SCRIPT_FILENAME']) && basename($_SERVER['SCRIPT_FILENAME']) === 'api-cp-ai.php')
-    || (isset($_SERVER['SCRIPT_NAME']) && basename($_SERVER['SCRIPT_NAME']) === 'api-cp-ai.php')
-    || (isset($_SERVER['PHP_SELF']) && basename($_SERVER['PHP_SELF']) === 'api-cp-ai.php')
-    || !empty($_GET['action']) || !empty($_POST['action']);
+$is_direct_script = (isset($_SERVER['SCRIPT_FILENAME']) && basename($_SERVER['SCRIPT_FILENAME']) === 'api-cp-ai.php')
+    || (isset($_SERVER['PHP_SELF']) && basename($_SERVER['PHP_SELF']) === 'api-cp-ai.php');
 
-if ($is_api_request) {
-    // Atur CORS & JSON header & Nonaktifkan cache server/browser
+if ($is_direct_script) {
+    // Atur CORS & JSON header hanya jika file ini diakses langsung sebagai API endpoint
     header("Access-Control-Allow-Origin: *");
     header("Access-Control-Allow-Headers: Content-Type");
     header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
@@ -666,8 +664,8 @@ function ensureOfficialCPPopulated($conn, $force = false) {
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-// Jika di-include oleh script lain tanpa action API, cukup return agar fungsi-fungsinya bisa dipakai
-if (!$is_api_request) {
+// Jika di-include oleh script lain (seperti yayasan2/kurikulum-cp.php), cukup return agar fungsi-fungsinya bisa dipakai
+if (!$is_direct_script) {
     return;
 }
 
