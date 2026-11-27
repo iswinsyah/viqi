@@ -11,4 +11,9 @@ autopilot_status.txt
 config-key.php
 scratch/
 agent_annual_cp_log.txt
+*.tmp
+*.log
+upload/*.mp3
+upload/backsound*
+
 

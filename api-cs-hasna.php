@@ -29,6 +29,7 @@ if ($is_api_request) {
 }
 
 require_once __DIR__ . '/koneksi.php';
+require_once __DIR__ . '/includes/services/CsAiService.php';
 if (file_exists(__DIR__ . '/config-key.php')) {
     require_once __DIR__ . '/config-key.php';
 }

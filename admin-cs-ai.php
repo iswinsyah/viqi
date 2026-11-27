@@ -21,8 +21,8 @@ if (!$user) {
     }
 }
 
-// Ambil Konfigurasi CS AI Hasna
-require_once __DIR__ . '/api-cs-hasna.php'; // Otomatis menginisialisasi tabel jika belum ada
+// Ambil Konfigurasi CS AI Hasna melalui CsAiService (bebas dari gangguan router API)
+require_once __DIR__ . '/includes/services/CsAiService.php';
 $cfg = getCsConfig($conn);
 
 // Hitung Statistik

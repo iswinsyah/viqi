@@ -13,6 +13,8 @@ if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
     }
 }
 
+require_once __DIR__ . '/includes/services/AttendanceService.php';
+
 // --- Jurnal Mengajar Table Initialization ---
 $conn->query("CREATE TABLE IF NOT EXISTS jurnal_mengajar (
     id INT AUTO_INCREMENT PRIMARY KEY,

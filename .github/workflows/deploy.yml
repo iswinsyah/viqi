@@ -7,91 +7,32 @@ on:
   workflow_dispatch:
 
 jobs:
-  web-deploy:
-    name: 🎉 Fast Deploy to Hostinger
+  deploy:
+    name: 🚀 Fast Deploy (${{ matrix.target_name }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target_name: 'villaquranbaronmalang.com'
+            remote_dir: 'domains/villaquranbaronmalang.com/public_html'
+          - target_name: 'villaquranindonesia.com'
+            remote_dir: 'domains/villaquranindonesia.com/public_html'
+          - target_name: 'Root public_html'
+            remote_dir: 'public_html'
     steps:
-    - name: 🚚 Get latest code
-      uses: actions/checkout@v4
-    
-    - name: 📂 Sync to villaquranbaronmalang.com (SFTP Port 65002)
-      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
-      continue-on-error: true
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        port: 65002
-        local_path: './'
-        remote_path: 'domains/villaquranbaronmalang.com/public_html'
-        sftpArgs: '-o ConnectTimeout=30'
-        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents --exclude=upload --exclude=uploads --exclude=assets --exclude=fonts'
+      - name: 🚚 Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: 📂 Sync to villaquranindonesia.com (SFTP Port 65002)
-      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
-      continue-on-error: true
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        port: 65002
-        local_path: './'
-        remote_path: 'domains/villaquranindonesia.com/public_html'
-        sftpArgs: '-o ConnectTimeout=30'
-        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents --exclude=upload --exclude=uploads --exclude=assets --exclude=fonts'
-
-    - name: 📂 Sync to Root public_html (SFTP Port 65002)
-      uses: wlixcc/SFTP-Deploy-Action@v1.2.6
-      continue-on-error: true
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        port: 65002
-        local_path: './'
-        remote_path: 'public_html'
-        sftpArgs: '-o ConnectTimeout=30'
-        rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents --exclude=upload --exclude=uploads --exclude=assets --exclude=fonts'
-
-    - name: ⚡ Fast Sync to villaquranbaronmalang.com (FTP Port 21 Fallback)
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      continue-on-error: true
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        protocol: ftp
-        port: 21
-        server-dir: domains/villaquranbaronmalang.com/public_html/
-        exclude: |
-          **/.git*
-          **/.git*/**
-          **/.github/**
-          **/.agents/**
-          **/node_modules/**
-          **/upload/**
-          **/uploads/**
-          **/assets/**
-          **/fonts/**
-
-    - name: ⚡ Fast Sync to Root public_html (FTP Port 21 Fallback)
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      continue-on-error: true
-      with:
-        server: ${{ secrets.FTP_SERVER }}
-        username: ${{ secrets.FTP_USERNAME }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        protocol: ftp
-        port: 21
-        server-dir: public_html/
-        exclude: |
-          **/.git*
-          **/.git*/**
-          **/.github/**
-          **/.agents/**
-          **/node_modules/**
-          **/upload/**
-          **/uploads/**
-          **/assets/**
-          **/fonts/**
+      - name: ⚡ Parallel SFTP Sync (Port 65002)
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.6
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 65002
+          local_path: './'
+          remote_path: ${{ matrix.remote_dir }}
+          sftpArgs: '-o ConnectTimeout=30'
+          rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents --exclude=upload --exclude=uploads --exclude=assets --exclude=fonts --exclude=*.mp3'
