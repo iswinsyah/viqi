@@ -82,10 +82,13 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_pelajaran (
     UNIQUE KEY unique_slot (hari, jam_ke, kelas_id)
 )");
 
-// Filter Periode
+// Filter Periode (Siklus Cut Off Resmi: 27 bulan sebelumnya s/d 26 bulan sekarang)
 $filter_bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $filter_tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 $periode_key = sprintf('%04d-%02d', $filter_tahun, $filter_bulan);
+
+$start_date = date('Y-m-d', mktime(0, 0, 0, $filter_bulan - 1, 27, $filter_tahun));
+$end_date   = date('Y-m-d', mktime(0, 0, 0, $filter_bulan, 26, $filter_tahun));
 
 $nama_bulan_indo = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
@@ -200,16 +203,17 @@ if ($res_v) {
     }
 }
 
-// Hitung hari dalam bulan untuk pengali jadwal pekanan
-$total_hari_bulan = cal_days_in_month(CAL_GREGORIAN, $filter_bulan, $filter_tahun);
+// Hitung hari dalam siklus cut off 27 s/d 26 untuk pengali jadwal pekanan
 $hari_count = ['Senin' => 0, 'Selasa' => 0, 'Rabu' => 0, 'Kamis' => 0, 'Jumat' => 0, 'Sabtu' => 0, 'Ahad' => 0];
 $map_day_en_id = ['Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu', 'Sunday' => 'Ahad'];
-for ($d = 1; $d <= $total_hari_bulan; $d++) {
-    $time = mktime(0, 0, 0, $filter_bulan, $d, $filter_tahun);
-    $day_en = date('l', $time);
+$curr_ts = strtotime($start_date);
+$end_ts  = strtotime($end_date);
+while ($curr_ts <= $end_ts) {
+    $day_en = date('l', $curr_ts);
     if (isset($map_day_en_id[$day_en])) {
         $hari_count[$map_day_en_id[$day_en]]++;
     }
+    $curr_ts = strtotime('+1 day', $curr_ts);
 }
 
 // Fetch all Guru / Ustadz
@@ -344,7 +348,7 @@ if ($res_j) {
 $sql_jurnal = "SELECT jm.*, u.nama as u_nama 
                FROM jurnal_mengajar jm
                LEFT JOIN akun_ustadz u ON jm.ustadz_id = u.id
-               WHERE MONTH(jm.tanggal) = $filter_bulan AND YEAR(jm.tanggal) = $filter_tahun
+               WHERE jm.tanggal BETWEEN '$start_date' AND '$end_date'
                ORDER BY jm.tanggal DESC, jm.id DESC";
 $res_jur = $conn->query($sql_jurnal);
 if ($res_jur) {
@@ -373,7 +377,7 @@ if ($res_jur) {
 // 3. Tarik Presensi Absensi Mengajar (absensi_pegawai)
 $sql_absen = "SELECT ustadz_id, DATE(waktu_absen) as tgl, COUNT(*) as jml
               FROM absensi_pegawai 
-              WHERE MONTH(waktu_absen) = $filter_bulan AND YEAR(waktu_absen) = $filter_tahun 
+              WHERE DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date' 
               AND jenis_absen = 'Mengajar' AND status_kehadiran IN ('Masuk', 'Hadir', 'Pulang')
               GROUP BY ustadz_id, DATE(waktu_absen)";
 $res_abs = $conn->query($sql_absen);
@@ -394,7 +398,7 @@ $sql_logs = "SELECT k.*, u1.nama as nama_guru_utama, u2.nama as nama_guru_pengga
              JOIN akun_ustadz u1 ON k.guru_utama_id = u1.id
              LEFT JOIN akun_ustadz u2 ON k.guru_pengganti_id = u2.id
              LEFT JOIN akun_ustadz uc ON k.created_by = uc.id
-             WHERE MONTH(k.tanggal) = $filter_bulan AND YEAR(k.tanggal) = $filter_tahun
+             WHERE k.tanggal BETWEEN '$start_date' AND '$end_date'
              ORDER BY k.tanggal DESC, k.created_at DESC";
 $res_logs = $conn->query($sql_logs);
 $logs_jam_kosong = ($res_logs) ? $res_logs->fetch_all(MYSQLI_ASSOC) : [];
@@ -514,6 +518,9 @@ foreach (['diknas', 'diniyah', 'solopreneur'] as $p) {
                     <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm">
                         Filter
                     </button>
+                    <span class="text-[10px] text-teal-700 bg-teal-50 px-2.5 py-1.5 rounded-xl border border-teal-200 font-semibold hidden lg:inline">
+                        <i class="fas fa-info-circle mr-1"></i>Cut Off: <?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?>
+                    </span>
                 </form>
             </div>
 
@@ -534,8 +541,9 @@ foreach (['diknas', 'diniyah', 'solopreneur'] as $p) {
             <!-- KARTU STATUS VALIDASI 3 PILAR (UNTUK YAYASAN & EXECUTIVE OVERVIEW) -->
             <div class="mb-8">
                 <div class="flex items-center justify-between mb-3">
-                    <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <h2 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 flex-wrap">
                         <i class="fas fa-shield-halved text-teal-600"></i> Status Validasi Rekap Ajar Periode <?= $nama_bulan_indo[$filter_bulan] ?> <?= $filter_tahun ?>
+                        <span class="text-[10px] lowercase font-normal text-slate-400">(cut off: <?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?>)</span>
                     </h2>
                     <?php if ($is_yayasan): ?>
                         <span class="bg-teal-100 text-teal-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-teal-200">

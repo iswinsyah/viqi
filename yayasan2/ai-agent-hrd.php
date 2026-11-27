@@ -348,8 +348,11 @@ $tot_sp1_aktif = count($sp1_list_all);
                 
                 <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                     <div>
-                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold mb-3 border border-amber-500/30 backdrop-blur-md">
-                            <i class="fas fa-microchip"></i> Sistem Pengawasan & Intelijen SDM (Semester: <?= $semester_str ?>)
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold mb-3 border border-amber-500/30 backdrop-blur-md flex-wrap">
+                            <span><i class="fas fa-microchip"></i> Sistem Pengawasan SDM (Semester: <?= $semester_str ?>)</span>
+                            <span class="bg-amber-400/20 text-amber-200 px-2.5 py-0.5 rounded-full border border-amber-400/30 font-mono text-[10px]">
+                                <i class="fas fa-calendar-check mr-1"></i>Cut Off: <?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?>
+                            </span>
                         </div>
                         <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
                             AI Agent HRD Pesantren

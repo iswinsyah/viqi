@@ -341,6 +341,103 @@ if ($q_jadwal) {
     }
 }
 $has_schedule_today = !empty($jadwal_hari_ini);
+
+// J. Perhitungan Akumulasi Alfa Pegawai (Bulanan Siklus Cut Off 27-26 & Semester Ini)
+$nama_bulan_arr = [
+    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+    7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+];
+
+$cur_d = (int)date('d');
+$cur_m = (int)date('m');
+$cur_y = (int)date('Y');
+
+// Formula Cut Off: 27 bulan sebelumnya s/d 26 bulan sekarang
+if ($cur_d >= 27) {
+    // Jika tgl >= 27, cut off periode berjalan adalah 27 bulan ini s/d 26 bulan depan
+    $cutoff_start = date('Y-m-d', mktime(0, 0, 0, $cur_m, 27, $cur_y));
+    $cutoff_end   = date('Y-m-d', mktime(0, 0, 0, $cur_m + 1, 26, $cur_y));
+    $target_m_idx = (int)date('n', mktime(0, 0, 0, $cur_m + 1, 1, $cur_y));
+    $target_y_val = date('Y', mktime(0, 0, 0, $cur_m + 1, 1, $cur_y));
+    $cutoff_periode_label = "Periode " . ($nama_bulan_arr[$target_m_idx] ?? '') . " " . $target_y_val;
+} else {
+    // Jika tgl < 27, cut off periode berjalan adalah 27 bulan lalu s/d 26 bulan ini
+    $cutoff_start = date('Y-m-d', mktime(0, 0, 0, $cur_m - 1, 27, $cur_y));
+    $cutoff_end   = date('Y-m-d', mktime(0, 0, 0, $cur_m, 26, $cur_y));
+    $cutoff_periode_label = "Periode " . ($nama_bulan_arr[$cur_m] ?? '') . " " . $cur_y;
+}
+$cutoff_range_label = date('d M Y', strtotime($cutoff_start)) . " s/d " . date('d M Y', strtotime($cutoff_end));
+
+// Semester Berjalan (Ganjil: Juli - Des, Genap: Jan - Juni)
+if ($cur_m >= 7) {
+    $sem_label = $cur_y . '/' . ($cur_y + 1) . ' Ganjil';
+    $sem_start = "$cur_y-07-01";
+    $sem_end   = "$cur_y-12-31";
+} else {
+    $sem_label = ($cur_y - 1) . '/' . $cur_y . ' Genap';
+    $sem_start = "$cur_y-01-01";
+    $sem_end   = "$cur_y-06-30";
+}
+$sem_range_label = date('d M Y', strtotime($sem_start)) . " s/d " . date('d M Y', strtotime($sem_end));
+
+// Query Alfa Bulan Ini (Cut Off 27 - 26)
+$daftar_alpa_bulan = [];
+$q_alpa_bln = $conn->query("
+    SELECT DATE(waktu_absen) as tgl, keterangan 
+    FROM absensi_pegawai 
+    WHERE ustadz_id = $ustadz_id 
+      AND DATE(waktu_absen) BETWEEN '$cutoff_start' AND '$cutoff_end' 
+      AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
+    GROUP BY DATE(waktu_absen)
+    ORDER BY waktu_absen ASC
+");
+if ($q_alpa_bln) {
+    while ($ra = $q_alpa_bln->fetch_assoc()) {
+        $daftar_alpa_bulan[] = $ra;
+    }
+}
+$total_alpa_bulan = count($daftar_alpa_bulan);
+
+// Query Alfa Semester Ini
+$daftar_alpa_sem = [];
+$q_alpa_sem = $conn->query("
+    SELECT DATE(waktu_absen) as tgl, keterangan 
+    FROM absensi_pegawai 
+    WHERE ustadz_id = $ustadz_id 
+      AND DATE(waktu_absen) BETWEEN '$sem_start' AND '$sem_end' 
+      AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
+    GROUP BY DATE(waktu_absen)
+    ORDER BY waktu_absen ASC
+");
+if ($q_alpa_sem) {
+    while ($rs = $q_alpa_sem->fetch_assoc()) {
+        $daftar_alpa_sem[] = $rs;
+    }
+}
+$total_alpa_sem = count($daftar_alpa_sem);
+
+// Status SP & Sanksi
+if ($total_alpa_sem >= 6) {
+    $status_disiplin_title = "Sanksi Berat: Akun Dibekukan";
+    $status_disiplin_badge = "bg-rose-100 text-rose-800 border-rose-300";
+    $status_disiplin_icon = "fa-ban text-rose-600";
+} elseif ($total_alpa_sem >= 5) {
+    $status_disiplin_title = "Peringatan Keras: Terbit SP-2";
+    $status_disiplin_badge = "bg-rose-100 text-rose-800 border-rose-300";
+    $status_disiplin_icon = "fa-triangle-exclamation text-rose-600";
+} elseif ($total_alpa_sem >= 3) {
+    $status_disiplin_title = "Peringatan: Terbit SP-1";
+    $status_disiplin_badge = "bg-amber-100 text-amber-800 border-amber-300";
+    $status_disiplin_icon = "fa-triangle-exclamation text-amber-600";
+} elseif ($total_alpa_sem > 0) {
+    $status_disiplin_title = "Perhatian: " . $total_alpa_sem . " Hari Alpa";
+    $status_disiplin_badge = "bg-amber-50 text-amber-800 border-amber-200";
+    $status_disiplin_icon = "fa-info-circle text-amber-500";
+} else {
+    $status_disiplin_title = "Disiplin Aman: 0 Alpa";
+    $status_disiplin_badge = "bg-emerald-50 text-emerald-800 border-emerald-200";
+    $status_disiplin_icon = "fa-shield-heart text-emerald-600";
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -518,6 +615,38 @@ $has_schedule_today = !empty($jadwal_hari_ini);
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-4 md:p-6 pb-24 md:pb-12">
             
             <?php if ($active_view !== 'absensi'): ?>
+            <!-- BANNER RINGKASAN CUT OFF & DISIPLIN PEGAWAI -->
+            <div class="max-w-6xl mx-auto mb-5 px-1">
+                <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 text-teal-700 flex items-center justify-center text-lg flex-shrink-0">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-xs font-bold text-slate-800">Siklus Kerja <?= $cutoff_periode_label ?>:</span>
+                                <span class="text-[11px] font-extrabold text-teal-800 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200 font-mono">
+                                    <?= $cutoff_range_label ?> (Cut Off 27 - 26)
+                                </span>
+                            </div>
+                            <p class="text-[11px] text-slate-500 mt-0.5">
+                                Alfa Bulan Ini: <strong class="<?= $total_alpa_bulan > 0 ? 'text-rose-600' : 'text-emerald-600' ?>"><?= $total_alpa_bulan ?> Hari</strong> • 
+                                Alfa Semester: <strong class="<?= $total_alpa_sem >= 3 ? 'text-rose-600' : ($total_alpa_sem > 0 ? 'text-amber-600' : 'text-blue-600') ?>"><?= $total_alpa_sem ?> / 3 Hari (SP-1)</strong>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold <?= $status_disiplin_badge ?> border">
+                            <i class="fas <?= $status_disiplin_icon ?>"></i>
+                            <?= $status_disiplin_title ?>
+                        </span>
+                        <a href="admin-absensi-pegawai.php?view=absensi" class="inline-flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition shadow-xs">
+                            <i class="fas fa-qrcode"></i> Presensi
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- CARD SECTIONS LAUNCHER (ANDROID SQUIRCLE ICON STYLE) -->
             <div id="androidLauncher" class="max-w-6xl mx-auto mb-10 pt-1">
                 <div class="app-section bg-white rounded-3xl p-4 sm:p-6 border border-slate-200/70 shadow-xs">
@@ -732,6 +861,124 @@ $has_schedule_today = !empty($jadwal_hari_ini);
                 $grid_cols_class = 'grid grid-cols-1 md:grid-cols-2';
             }
             ?>
+
+            <!-- PANEL MONITORING KEDISIPLINAN & REKAPITULASI ALFA (BULANAN CUT OFF 27-26 & SEMESTER) -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/90 p-5 md:p-6 mb-8 max-w-4xl mx-auto text-left">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-150 pb-4 mb-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <h3 class="font-bold text-slate-800 text-sm md:text-base flex items-center gap-2">
+                                <i class="fas fa-clipboard-user text-teal-600"></i> Rekapitulasi Alfa & Kedisiplinan Kehadiran
+                            </h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Akumulasi ketidakhadiran tanpa izin resmi (Alpa) per siklus cut off kerja bulanan dan per semester.
+                        </p>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold <?= $status_disiplin_badge ?> border">
+                        <i class="fas <?= $status_disiplin_icon ?>"></i>
+                        <?= $status_disiplin_title ?>
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- KARTU 1: ALFA BULAN INI (CUT OFF 27 - 26) -->
+                    <div class="rounded-xl border <?= $total_alpa_bulan > 0 ? 'border-rose-200 bg-rose-50/40' : 'border-emerald-200 bg-emerald-50/30' ?> p-4 relative overflow-hidden transition">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                                <i class="fas fa-calendar-week <?= $total_alpa_bulan > 0 ? 'text-rose-600' : 'text-emerald-600' ?>"></i>
+                                Alfa Bulan Ini (Cut Off 27 - 26)
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-500 bg-white/80 px-2 py-0.5 rounded-md border border-slate-200">
+                                <?= $cutoff_periode_label ?>
+                            </span>
+                        </div>
+                        <div class="flex items-baseline gap-2 mb-1.5">
+                            <span class="text-3xl font-black <?= $total_alpa_bulan > 0 ? 'text-rose-600' : 'text-emerald-700' ?>">
+                                <?= $total_alpa_bulan ?>
+                            </span>
+                            <span class="text-xs font-bold text-slate-600">Hari Alfa</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                            <i class="far fa-clock text-slate-400"></i>
+                            <span>Siklus Cut Off: <strong><?= $cutoff_range_label ?></strong></span>
+                        </div>
+
+                        <?php if ($total_alpa_bulan > 0): ?>
+                            <div class="mt-3 pt-2.5 border-t border-rose-200/70">
+                                <span class="text-[10px] font-bold text-rose-800 uppercase block mb-1">Rincian Tanggal Alpa:</span>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <?php foreach ($daftar_alpa_bulan as $ab): ?>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-100 text-rose-800 rounded-md text-[10px] font-bold border border-rose-200" title="<?= htmlspecialchars($ab['keterangan'] ?? 'Alpa') ?>">
+                                            <i class="fas fa-circle-exclamation text-[9px]"></i> <?= date('d/m/Y', strtotime($ab['tgl'])) ?>
+                                        </span>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <div class="mt-2 text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                                <i class="fas fa-check-circle"></i> Alhamdulillah, nihil alpa pada siklus kerja periode ini.
+                            </div>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- KARTU 2: AKUMULASI ALFA SEMESTER INI (BATAS SP-1: 3 HARI) -->
+                    <div class="rounded-xl border <?= $total_alpa_sem >= 3 ? 'border-rose-300 bg-rose-50/50' : ($total_alpa_sem > 0 ? 'border-amber-200 bg-amber-50/30' : 'border-blue-200 bg-blue-50/30') ?> p-4 relative overflow-hidden transition">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+                                <i class="fas fa-shield-halved <?= $total_alpa_sem >= 3 ? 'text-rose-600' : ($total_alpa_sem > 0 ? 'text-amber-600' : 'text-blue-600') ?>"></i>
+                                Akumulasi Alfa Semester Ini
+                            </span>
+                            <span class="text-[10px] font-bold text-slate-500 bg-white/80 px-2 py-0.5 rounded-md border border-slate-200">
+                                <?= $sem_label ?>
+                            </span>
+                        </div>
+                        <div class="flex items-baseline justify-between mb-1.5">
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-3xl font-black <?= $total_alpa_sem >= 3 ? 'text-rose-600' : ($total_alpa_sem > 0 ? 'text-amber-700' : 'text-blue-700') ?>">
+                                    <?= $total_alpa_sem ?>
+                                </span>
+                                <span class="text-xs font-bold text-slate-600">/ 3 Hari (Batas SP-1)</span>
+                            </div>
+                            <?php if ($total_alpa_sem >= 3): ?>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-600 text-white animate-pulse">SP-1 DITERBITKAN</span>
+                            <?php elseif ($total_alpa_sem > 0): ?>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">Sisa <?= (3 - $total_alpa_sem) ?> Hari</span>
+                            <?php else: ?>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Aman</span>
+                            <?php endif; ?>
+                        </div>
+
+                        <!-- Progress Bar SP-1 -->
+                        <?php 
+                        $pct_alpa = min(100, round(($total_alpa_sem / 3) * 100)); 
+                        $bar_color = ($total_alpa_sem >= 3) ? 'bg-rose-500' : (($total_alpa_sem > 0) ? 'bg-amber-500' : 'bg-emerald-500');
+                        ?>
+                        <div class="w-full bg-slate-200 rounded-full h-2 mb-2 overflow-hidden">
+                            <div class="<?= $bar_color ?> h-2 rounded-full transition-all duration-500" style="width: <?= max(5, $pct_alpa) ?>%"></div>
+                        </div>
+
+                        <div class="text-[11px] text-slate-500 font-medium flex items-center justify-between">
+                            <span>Rentang Semester: <strong><?= $sem_range_label ?></strong></span>
+                            <span class="text-[10px] text-slate-400">Aturan SP-1: ≥ 3 Alpa</span>
+                        </div>
+
+                        <?php if ($total_alpa_sem > 0): ?>
+                            <div class="mt-3 pt-2.5 border-t border-slate-200">
+                                <span class="text-[10px] font-bold text-slate-700 uppercase block mb-1">Riwayat Tanggal Alpa Semester:</span>
+                                <div class="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                                    <?php foreach ($daftar_alpa_sem as $as): ?>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md text-[10px] font-medium border border-slate-200" title="<?= htmlspecialchars($as['keterangan'] ?? 'Alpa') ?>">
+                                            <?= date('d/m/Y', strtotime($as['tgl'])) ?>
+                                        </span>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
 
             <!-- GRID KARTU ABSENSI -->
             <div class="<?= $grid_cols_class ?> gap-6 max-w-4xl mx-auto mb-8">

@@ -445,7 +445,7 @@
     function updateWidgetTexts() {
         const badgeEl = document.getElementById('hasna-bubble-badge');
         if (badgeEl) badgeEl.innerHTML = `<span></span> ${botName}`;
-        
+
         const bubbleEl = document.getElementById('hasna-bubble-btn');
         if (bubbleEl) bubbleEl.title = `Tanya ${botName} (CS Virtual Villa Quran)`;
 
@@ -465,7 +465,7 @@
                 updateWidgetTexts();
             }
         })
-        .catch(() => {});
+        .catch(() => { });
 
     function toggleWidget() {
         isWidgetOpen = !isWidgetOpen;
@@ -537,26 +537,26 @@
                     whatsapp: wa
                 })
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    currentSession = data.session_token;
-                    currentUserName = data.nama;
-                    localStorage.setItem('hasna_session_token', currentSession);
-                    localStorage.setItem('hasna_user_name', currentUserName);
-                    renderChatRoom();
-                } else {
-                    alert(data.message || 'Gagal memulai sesi.');
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        currentSession = data.session_token;
+                        currentUserName = data.nama;
+                        localStorage.setItem('hasna_session_token', currentSession);
+                        localStorage.setItem('hasna_user_name', currentUserName);
+                        renderChatRoom();
+                    } else {
+                        alert(data.message || 'Gagal memulai sesi.');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Mulai Tanya Jawab 💬';
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Terjadi kendala koneksi ke server.');
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Mulai Tanya Jawab 💬';
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Terjadi kendala koneksi ke server.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Mulai Tanya Jawab 💬';
-            });
+                });
         });
     }
 
@@ -616,7 +616,7 @@
     function appendMessage(sender, text, time) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `hasna-msg hasna-msg-${sender === 'hasna' ? 'bot' : 'user'}`;
-        
+
         // Format text sederhana (bold, list, newline)
         let formattedText = escapeHtml(text)
             .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
@@ -676,24 +676,24 @@
                 pesan: userText
             })
         })
-        .then(res => res.json())
-        .then(data => {
-            hideTypingIndicator();
-            if (data.status === 'success') {
-                appendMessage('hasna', data.jawaban, getCurrentTime());
-                
-                // Tambahkan CTA WhatsApp jika relevan
-                if (data.jawaban.toLowerCase().includes('biaya') || data.jawaban.toLowerCase().includes('daftar') || data.jawaban.toLowerCase().includes('whatsapp')) {
-                    appendWhatsAppCta();
+            .then(res => res.json())
+            .then(data => {
+                hideTypingIndicator();
+                if (data.status === 'success') {
+                    appendMessage('hasna', data.jawaban, getCurrentTime());
+
+                    // Tambahkan CTA WhatsApp jika relevan
+                    if (data.jawaban.toLowerCase().includes('biaya') || data.jawaban.toLowerCase().includes('daftar') || data.jawaban.toLowerCase().includes('whatsapp')) {
+                        appendWhatsAppCta();
+                    }
+                } else {
+                    appendMessage('hasna', 'Afwan Ayah/Bunda, terjadi kendala teknis sementara. Silakan tanyakan kembali.', getCurrentTime());
                 }
-            } else {
-                appendMessage('hasna', 'Afwan Ayah/Bunda, terjadi kendala teknis sementara. Silakan tanyakan kembali.', getCurrentTime());
-            }
-        })
-        .catch(err => {
-            hideTypingIndicator();
-            appendMessage('hasna', 'Afwan, koneksi terputus. Silakan periksa jaringan internet Anda.', getCurrentTime());
-        });
+            })
+            .catch(err => {
+                hideTypingIndicator();
+                appendMessage('hasna', 'Afwan, koneksi terputus. Silakan periksa jaringan internet Anda.', getCurrentTime());
+            });
     }
 
     function appendWhatsAppCta() {

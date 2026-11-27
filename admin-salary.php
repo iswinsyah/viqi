@@ -95,6 +95,11 @@ $filter_bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $filter_tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 $nama_bulan_terpilih = $bulan_list[$filter_bulan] ?? date('F');
 
+// Siklus Cut Off Resmi Sekolah: 27 bulan sebelumnya s/d 26 bulan sekarang
+$start_date = date('Y-m-d', mktime(0, 0, 0, $filter_bulan - 1, 27, $filter_tahun));
+$end_date   = date('Y-m-d', mktime(0, 0, 0, $filter_bulan, 26, $filter_tahun));
+$siklus_kerja_str = date('d M Y', strtotime($start_date)) . ' s/d ' . date('d M Y', strtotime($end_date));
+
 // Rumus Dasar: Gaji Pokok + Tunjangan (Perhitungan detail menyusul)
 $gaji_pokok = $gaji_pokok_default;
 $tunjangan_jabatan = $tunjangan_admin_default;
@@ -173,8 +178,12 @@ $status_pegawai = $user_db['status_pegawai'] ?? 'Pegawai Tetap';
                                 <h1 class="text-base sm:text-lg font-black text-slate-800 tracking-tight"><?= htmlspecialchars($nama_pegawai) ?></h1>
                                 <span class="bg-teal-50 text-teal-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-teal-200">Admin Sekolah</span>
                             </div>
-                            <p class="text-xs text-slate-500 font-medium mt-0.5">
-                                Status: <strong><?= htmlspecialchars($status_pegawai) ?></strong> • Periode: <span class="text-teal-700 font-bold"><?= $nama_bulan_terpilih ?> <?= $filter_tahun ?></span>
+                            <p class="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-2 flex-wrap">
+                                <span>Status: <strong><?= htmlspecialchars($status_pegawai) ?></strong></span>
+                                <span>• Periode: <strong class="text-teal-700"><?= $nama_bulan_terpilih ?> <?= $filter_tahun ?></strong></span>
+                                <span class="text-[10px] text-teal-800 font-extrabold bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                                    <i class="fas fa-calendar-check mr-1 text-teal-600"></i>Cut Off: <?= $siklus_kerja_str ?>
+                                </span>
                             </p>
                         </div>
                     </div>
