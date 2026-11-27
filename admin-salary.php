@@ -5,6 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once 'koneksi.php';
+require_once __DIR__ . '/includes/services/AttendanceService.php';
 
 // Cek Login (Unified atau Ustadz Session)
 $user_id = $_SESSION['app_user_id'] ?? $_SESSION['ustadz_id'] ?? null;
@@ -95,9 +96,10 @@ $filter_bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $filter_tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 $nama_bulan_terpilih = $bulan_list[$filter_bulan] ?? date('F');
 
-// Siklus Cut Off Resmi Sekolah: 27 bulan sebelumnya s/d 26 bulan sekarang
-$start_date = date('Y-m-d', mktime(0, 0, 0, $filter_bulan - 1, 27, $filter_tahun));
-$end_date   = date('Y-m-d', mktime(0, 0, 0, $filter_bulan, 26, $filter_tahun));
+// Siklus Cut Off Resmi Sekolah via AttendanceService: 27 bulan sebelumnya s/d 26 bulan sekarang
+$cutoffInfo = AttendanceService::getCutoffRange($filter_bulan, $filter_tahun);
+$start_date = $cutoffInfo['start_date'];
+$end_date   = $cutoffInfo['end_date'];
 $siklus_kerja_str = date('d M Y', strtotime($start_date)) . ' s/d ' . date('d M Y', strtotime($end_date));
 
 // Rumus Dasar: Gaji Pokok + Tunjangan (Perhitungan detail menyusul)

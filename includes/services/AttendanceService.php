@@ -9,13 +9,31 @@ class AttendanceService {
 
     /**
      * Dapatkan rentang tanggal cut off periode kerja (27 bulan lalu s/d 26 bulan ini).
+     * Jika $month dan $year tidak diisi (null), otomatis mendeteksi periode berjalan:
+     * - Jika hari ini >= tgl 27, masuk ke siklus periode bulan depan.
+     * - Jika hari ini < tgl 27, masuk ke siklus periode bulan ini.
+     * 
      * Contoh untuk bulan 11 (November) 2026:
      * - Start: 2026-10-27
      * - End  : 2026-11-26
      */
     public static function getCutoffRange($month = null, $year = null) {
-        $m = $month ? (int)$month : (int)date('n');
-        $y = $year ? (int)$year : (int)date('Y');
+        $curD = (int)date('d');
+        $curM = (int)date('n');
+        $curY = (int)date('Y');
+
+        if ($month === null && $year === null) {
+            if ($curD >= 27) {
+                $m = ($curM === 12) ? 1 : $curM + 1;
+                $y = ($curM === 12) ? $curY + 1 : $curY;
+            } else {
+                $m = $curM;
+                $y = $curY;
+            }
+        } else {
+            $m = (int)$month;
+            $y = $year ? (int)$year : $curY;
+        }
 
         $currentRef = sprintf('%04d-%02d-01', $y, $m);
         $prevMonthTs = strtotime('-1 month', strtotime($currentRef));
@@ -52,6 +70,8 @@ class AttendanceService {
             $y
         );
 
+        $periodeLabel = sprintf('Periode %s %s', $namaBulan[$m] ?? '', $y);
+
         return [
             'month' => $m,
             'year' => $y,
@@ -59,7 +79,8 @@ class AttendanceService {
             'start_date' => $startDate,
             'end_date' => $endDate,
             'label' => $label,
-            'label_lengkap' => $labelLengkap
+            'label_lengkap' => $labelLengkap,
+            'periode_label' => $periodeLabel
         ];
     }
 
@@ -76,47 +97,69 @@ class AttendanceService {
             return [
                 'name' => "Semester Ganjil $y/" . ($y + 1),
                 'short' => "Ganjil $y",
+                'label' => "$y/" . ($y + 1) . " Ganjil",
+                'semester_str' => $y . '/' . ($y + 1) . '-Ganjil',
                 'start_date' => "$y-07-01",
-                'end_date' => "$y-12-31"
+                'end_date' => "$y-12-31",
+                'range_label' => sprintf('01 Jul %s s/d 31 Des %s', $y, $y)
             ];
         } else {
             return [
                 'name' => "Semester Genap " . ($y - 1) . "/$y",
                 'short' => "Genap $y",
+                'label' => ($y - 1) . "/$y Genap",
+                'semester_str' => ($y - 1) . '/' . $y . '-Genap',
                 'start_date' => "$y-01-01",
-                'end_date' => "$y-06-30"
+                'end_date' => "$y-06-30",
+                'range_label' => sprintf('01 Jan %s s/d 30 Jun %s', $y, $y)
             ];
         }
     }
 
     /**
-     * Hitung total hari Alpa pada periode cut off bulanan (27 - 26).
+     * Ambil daftar detail tanggal Alpa pada periode bulanan (Cut Off 27 - 26).
      */
-    public static function getAlpaMonthly($conn, $ustadz_id, $startDate, $endDate) {
+    public static function getAlpaMonthlyList($conn, $ustadz_id, $startDate, $endDate) {
         $uid = (int)$ustadz_id;
-        $q = $conn->query("SELECT COUNT(id) as c FROM absensi_pegawai 
-                           WHERE ustadz_id = $uid 
-                           AND tanggal BETWEEN '$startDate' AND '$endDate' 
-                           AND (status = 'Alpa' OR status = 'A')");
-        if ($q && $r = $q->fetch_assoc()) {
-            return (int)$r['c'];
+        $list = [];
+        $q = $conn->query("
+            SELECT DATE(waktu_absen) as tgl, keterangan 
+            FROM absensi_pegawai 
+            WHERE ustadz_id = $uid 
+              AND DATE(waktu_absen) BETWEEN '$startDate' AND '$endDate' 
+              AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
+            GROUP BY DATE(waktu_absen)
+            ORDER BY waktu_absen ASC
+        ");
+        if ($q) {
+            while ($r = $q->fetch_assoc()) {
+                $list[] = $r;
+            }
         }
-        return 0;
+        return $list;
     }
 
     /**
-     * Hitung total hari Alpa pada satu semester penuh.
+     * Ambil daftar detail tanggal Alpa pada satu semester penuh.
      */
-    public static function getAlpaSemester($conn, $ustadz_id, $semStart, $semEnd) {
+    public static function getAlpaSemesterList($conn, $ustadz_id, $semStart, $semEnd) {
         $uid = (int)$ustadz_id;
-        $q = $conn->query("SELECT COUNT(id) as c FROM absensi_pegawai 
-                           WHERE ustadz_id = $uid 
-                           AND tanggal BETWEEN '$semStart' AND '$semEnd' 
-                           AND (status = 'Alpa' OR status = 'A')");
-        if ($q && $r = $q->fetch_assoc()) {
-            return (int)$r['c'];
+        $list = [];
+        $q = $conn->query("
+            SELECT DATE(waktu_absen) as tgl, keterangan 
+            FROM absensi_pegawai 
+            WHERE ustadz_id = $uid 
+              AND DATE(waktu_absen) BETWEEN '$semStart' AND '$semEnd' 
+              AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
+            GROUP BY DATE(waktu_absen)
+            ORDER BY waktu_absen ASC
+        ");
+        if ($q) {
+            while ($r = $q->fetch_assoc()) {
+                $list[] = $r;
+            }
         }
-        return 0;
+        return $list;
     }
 
     /**
@@ -125,24 +168,43 @@ class AttendanceService {
      */
     public static function getDisciplineStatus($alpaSemester) {
         $alpa = (int)$alpaSemester;
-        if ($alpa >= 3) {
+        if ($alpa >= 6) {
             return [
-                'status' => 'Peringatan SP-1',
-                'badge' => 'bg-rose-100 text-rose-700 border-rose-300 font-bold',
+                'status' => 'Sanksi Berat: Akun Dibekukan',
+                'badge' => 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
+                'icon' => 'fa-ban text-rose-600',
+                'is_sp' => true,
+                'sp_level' => 'Dibekukan'
+            ];
+        } elseif ($alpa >= 5) {
+            return [
+                'status' => 'Peringatan Keras: Terbit SP-2',
+                'badge' => 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
+                'icon' => 'fa-triangle-exclamation text-rose-600',
+                'is_sp' => true,
+                'sp_level' => 'SP-2'
+            ];
+        } elseif ($alpa >= 3) {
+            return [
+                'status' => 'Peringatan Disiplin: Terbit SP-1',
+                'badge' => 'bg-amber-100 text-amber-800 border-amber-300 font-bold',
+                'icon' => 'fa-triangle-exclamation text-amber-600',
                 'is_sp' => true,
                 'sp_level' => 'SP-1'
             ];
         } elseif ($alpa >= 1) {
             return [
                 'status' => 'Perhatian Khusus',
-                'badge' => 'bg-amber-100 text-amber-700 border-amber-300',
+                'badge' => 'bg-blue-50 text-blue-800 border-blue-200',
+                'icon' => 'fa-info-circle text-blue-600',
                 'is_sp' => false,
                 'sp_level' => null
             ];
         } else {
             return [
-                'status' => 'Disiplin Sangat Baik',
-                'badge' => 'bg-emerald-100 text-emerald-700 border-emerald-300',
+                'status' => 'Disiplin Sangat Baik (0 Alpa)',
+                'badge' => 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                'icon' => 'fa-circle-check text-emerald-600',
                 'is_sp' => false,
                 'sp_level' => null
             ];

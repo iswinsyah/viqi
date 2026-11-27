@@ -354,33 +354,18 @@ $cur_d = (int)date('d');
 $cur_m = (int)date('m');
 $cur_y = (int)date('Y');
 
-// Formula Cut Off: 27 bulan sebelumnya s/d 26 bulan sekarang
-if ($cur_d >= 27) {
-    // Jika tgl >= 27, cut off periode berjalan adalah 27 bulan ini s/d 26 bulan depan
-    $cutoff_start = date('Y-m-d', mktime(0, 0, 0, $cur_m, 27, $cur_y));
-    $cutoff_end   = date('Y-m-d', mktime(0, 0, 0, $cur_m + 1, 26, $cur_y));
-    $target_m_idx = (int)date('n', mktime(0, 0, 0, $cur_m + 1, 1, $cur_y));
-    $target_y_val = date('Y', mktime(0, 0, 0, $cur_m + 1, 1, $cur_y));
-    $cutoff_periode_label = "Periode " . ($nama_bulan_arr[$target_m_idx] ?? '') . " " . $target_y_val;
-} else {
-    // Jika tgl < 27, cut off periode berjalan adalah 27 bulan lalu s/d 26 bulan ini
-    $cutoff_start = date('Y-m-d', mktime(0, 0, 0, $cur_m - 1, 27, $cur_y));
-    $cutoff_end   = date('Y-m-d', mktime(0, 0, 0, $cur_m, 26, $cur_y));
-    $cutoff_periode_label = "Periode " . ($nama_bulan_arr[$cur_m] ?? '') . " " . $cur_y;
-}
+// Formula Cut Off & Semester via AttendanceService (Single Source of Truth)
+$cutoffInfo = AttendanceService::getCutoffRange();
+$cutoff_start = $cutoffInfo['start_date'];
+$cutoff_end   = $cutoffInfo['end_date'];
+$cutoff_periode_label = $cutoffInfo['periode_label'];
 $cutoff_range_label = date('d M Y', strtotime($cutoff_start)) . " s/d " . date('d M Y', strtotime($cutoff_end));
 
-// Semester Berjalan (Ganjil: Juli - Des, Genap: Jan - Juni)
-if ($cur_m >= 7) {
-    $sem_label = $cur_y . '/' . ($cur_y + 1) . ' Ganjil';
-    $sem_start = "$cur_y-07-01";
-    $sem_end   = "$cur_y-12-31";
-} else {
-    $sem_label = ($cur_y - 1) . '/' . $cur_y . ' Genap';
-    $sem_start = "$cur_y-01-01";
-    $sem_end   = "$cur_y-06-30";
-}
-$sem_range_label = date('d M Y', strtotime($sem_start)) . " s/d " . date('d M Y', strtotime($sem_end));
+$semInfo = AttendanceService::getCurrentSemester();
+$sem_label = $semInfo['label'];
+$sem_start = $semInfo['start_date'];
+$sem_end   = $semInfo['end_date'];
+$sem_range_label = $semInfo['range_label'];
 
 // Query Alfa Bulan Ini (Cut Off 27 - 26)
 $daftar_alpa_bulan = [];

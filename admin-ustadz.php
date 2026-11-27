@@ -1,6 +1,7 @@
 <?php
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
+require_once __DIR__ . '/includes/services/AttendanceService.php';
 
 $view = $_GET['view'] ?? 'default';
 $ustadz_nama = $_SESSION['ustadz_nama'] ?? 'Ustadz';
@@ -425,9 +426,10 @@ if ($view === 'dashboard_asrama') {
     $selected_month = isset($_GET['bulan']) ? (int) $_GET['bulan'] : (int) date('m');
     $selected_year = isset($_GET['tahun']) ? (int) $_GET['tahun'] : (int) date('Y');
 
-    // Siklus Cut Off Kerja Resmi: 27 bulan sebelumnya s/d 26 bulan sekarang
-    $start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
-    $end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
+    // Siklus Cut Off Kerja Resmi via AttendanceService: 27 bulan sebelumnya s/d 26 bulan sekarang
+    $cutoffInfo = AttendanceService::getCutoffRange($selected_month, $selected_year);
+    $start_date = $cutoffInfo['start_date'];
+    $end_date   = $cutoffInfo['end_date'];
 
     // Ambil detail ustadz yang sedang login
     $selected_musyrif_id = $ustadz_id;

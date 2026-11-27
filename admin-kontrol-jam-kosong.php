@@ -2,6 +2,7 @@
 date_default_timezone_set('Asia/Jakarta');
 require_once 'auth-ustadz.php';
 require_once 'koneksi.php';
+require_once __DIR__ . '/includes/services/AttendanceService.php';
 
 $active_menu = 'kontrol_jam_kosong';
 $ustadz_id = (int)($_SESSION['ustadz_id'] ?? 0);
@@ -82,13 +83,14 @@ $conn->query("CREATE TABLE IF NOT EXISTS jadwal_pelajaran (
     UNIQUE KEY unique_slot (hari, jam_ke, kelas_id)
 )");
 
-// Filter Periode (Siklus Cut Off Resmi: 27 bulan sebelumnya s/d 26 bulan sekarang)
+// Filter Periode (Siklus Cut Off Resmi via AttendanceService: 27 bulan sebelumnya s/d 26 bulan sekarang)
 $filter_bulan = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $filter_tahun = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 $periode_key = sprintf('%04d-%02d', $filter_tahun, $filter_bulan);
 
-$start_date = date('Y-m-d', mktime(0, 0, 0, $filter_bulan - 1, 27, $filter_tahun));
-$end_date   = date('Y-m-d', mktime(0, 0, 0, $filter_bulan, 26, $filter_tahun));
+$cutoffInfo = AttendanceService::getCutoffRange($filter_bulan, $filter_tahun);
+$start_date = $cutoffInfo['start_date'];
+$end_date   = $cutoffInfo['end_date'];
 
 $nama_bulan_indo = [
     1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',

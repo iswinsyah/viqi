@@ -1,5 +1,6 @@
 <?php
 require_once '../koneksi.php';
+require_once __DIR__ . '/../includes/services/AttendanceService.php';
 session_start();
 
 $active_menu = 'ai_agent_hrd';
@@ -62,19 +63,15 @@ $selected_month = isset($_GET['bulan']) ? (int)$_GET['bulan'] : (int)date('m');
 $selected_year = isset($_GET['tahun']) ? (int)$_GET['tahun'] : (int)date('Y');
 $selected_staf_id = isset($_GET['staf_id']) ? (int)$_GET['staf_id'] : 0; // 0 = Semua Pegawai
 
-$start_date = date('Y-m-d', mktime(0, 0, 0, $selected_month - 1, 27, $selected_year));
-$end_date   = date('Y-m-d', mktime(0, 0, 0, $selected_month, 26, $selected_year));
+// Formula Cut Off & Semester via AttendanceService (Single Source of Truth)
+$cutoffInfo = AttendanceService::getCutoffRange($selected_month, $selected_year);
+$start_date = $cutoffInfo['start_date'];
+$end_date   = $cutoffInfo['end_date'];
 
-// Hitung Semester Berjalan
-if ($selected_month >= 7) {
-    $semester_str = $selected_year . '/' . ($selected_year + 1) . '-Ganjil';
-    $start_sem_date = "$selected_year-07-01";
-    $end_sem_date = "$selected_year-12-31";
-} else {
-    $semester_str = ($selected_year - 1) . '/' . $selected_year . '-Genap';
-    $start_sem_date = "$selected_year-01-01";
-    $end_sem_date = "$selected_year-06-30";
-}
+$semInfo = AttendanceService::getCurrentSemester($selected_month, $selected_year);
+$semester_str   = $semInfo['semester_str'];
+$start_sem_date = $semInfo['start_date'];
+$end_sem_date   = $semInfo['end_date'];
 
 // Ambil list staf dari database
 $res_staf = $conn->query("SELECT id, nama, role, status_pegawai FROM akun_ustadz ORDER BY nama ASC");
