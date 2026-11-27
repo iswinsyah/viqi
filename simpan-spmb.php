@@ -1,5 +1,6 @@
 <?php
 require_once 'koneksi.php';
+require_once __DIR__ . '/includes/services/WaNotificationService.php';
 
 // Update otomatis struktur tabel jika ada kolom yang kurang 
 // (Tidak akan error berkat fitur MySQL jika dijalankan berkali-kali)
@@ -50,6 +51,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             VALUES ('$jenjang', '$nama', '$nik', '$nisn', '$wa', '$asal_sekolah', '$f_foto', '$f_akta', '$f_kk', '$f_ktp', '$f_transfer', 'Menunggu Tes')";
 
     if ($conn->query($sql) === TRUE) {
+        // Kirim Notifikasi WhatsApp Otomatis ke Wali Santri & Panitia SPMB
+        WaNotificationService::notifySpmbRegistration([
+            'nama_santri'  => $nama,
+            'whatsapp'     => $wa,
+            'jenjang'      => $jenjang,
+            'asal_sekolah' => $asal_sekolah,
+            'kode_ref'     => $kode_ref
+        ], $conn);
+
         echo json_encode(['status' => 'success', 'message' => 'Pendaftaran berhasil dikirim! Admin kami akan segera menghubungi Anda melalui WhatsApp.']);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'Gagal menyimpan database: ' . $conn->error]);

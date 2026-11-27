@@ -6,6 +6,8 @@
  * tidak terganggu oleh respons JSON API router.
  */
 
+require_once __DIR__ . '/WaNotificationService.php';
+
 if (!function_exists('initCsAiDatabase')) {
     function initCsAiDatabase($conn) {
         if (!$conn) return;
@@ -136,25 +138,7 @@ if (!function_exists('getCsConfig')) {
 
 if (!function_exists('kirimNotifWaFonnte')) {
     function kirimNotifWaFonnte($target, $pesan, $token) {
-        if (empty($token) || empty($target) || empty($pesan)) return false;
-        $target = preg_replace('/[^0-9]/', '', $target);
-        if (substr($target, 0, 1) === '0') {
-            $target = '62' . substr($target, 1);
-        }
-        $ch = curl_init('https://api.fonnte.com/send');
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => http_build_query([
-                'target' => $target,
-                'message' => $pesan
-            ]),
-            CURLOPT_HTTPHEADER => ["Authorization: $token"],
-            CURLOPT_TIMEOUT => 10,
-            CURLOPT_SSL_VERIFYPEER => false
-        ]);
-        $res = curl_exec($ch);
-        curl_close($ch);
-        return $res;
+        $res = WaNotificationService::send($target, $pesan, null, $token);
+        return $res['raw'] ?? false;
     }
 }

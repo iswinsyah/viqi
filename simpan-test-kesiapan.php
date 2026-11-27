@@ -3,6 +3,7 @@
 // Endpoint AJAX untuk menyimpan hasil tes kesiapan anak masuk pondok pesantren (Lead Magnet PSB)
 header('Content-Type: application/json; charset=utf-8');
 require_once 'koneksi.php';
+require_once __DIR__ . '/includes/services/WaNotificationService.php';
 
 if (file_exists(__DIR__ . '/config-key.php')) {
     require_once __DIR__ . '/config-key.php';
@@ -86,53 +87,24 @@ if ($cek_res && $cek_res->num_rows > 0) {
 }
 
 // -------------------------------------------------------------
-// KIRIM NOTIFIKASI WHATSAPP KE WALI SANTRI VIA FONNTE (Optional)
+// KIRIM NOTIFIKASI WHATSAPP KE WALI SANTRI & ADMIN VIA WaNotificationService
 // -------------------------------------------------------------
-$wa_sent = false;
-if (!empty($FONNTE_TOKEN) && $FONNTE_TOKEN !== 'YOUR_FONNTE_TOKEN_HERE') {
-    $base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . ($_SERVER['HTTP_HOST'] ?? 'villaquranbaronmalang.com');
-    $pdf_url = $base_url . "/RAHASIA%20MENYIAPKAN%20ANAK%20REMAJA%20MENJADI%20HAFIDZ%20QURAN.pdf";
+$base_url = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://" . ($_SERVER['HTTP_HOST'] ?? 'villaquranindonesia.com');
+$pdf_url = $base_url . "/RAHASIA%20MENYIAPKAN%20ANAK%20REMAJA%20MENJADI%20HAFIDZ%20QURAN.pdf";
 
-    $pesan_wali = "🌿 *Assalamu'alaikum Warahmatullahi Wabarakatuh*\n\n"
-                . "Yth. *Bapak/Ibu {$nama_wali}*,\n\n"
-                . "Alhamdulillah, terima kasih telah menyelesaikan *Tes Kesiapan Masuk Pondok Pesantren* untuk Ananda tercinta:\n\n"
-                . "📋 *HASIL ASESMEN KESIAPAN:*\n"
-                . "• *Nama Ananda:* {$nama_santri} ({$gender})\n"
-                . "• *Jenjang Target:* {$jenjang}\n"
-                . "• *Kota Domisili:* {$kota}\n"
-                . "• *Skor Kesiapan:* *{$skor_persen}%*\n"
-                . "• *Kategori:* *{$kategori}*\n\n"
-                . "🎁 *BONUS E-BOOK EKSKLUSIF ORANG TUA:*\n"
-                . "Silakan download E-Book Panduan: *'Rahasia Menyiapkan Anak Remaja Menjadi Hafidz Quran'*\n"
-                . "Link Download: {$pdf_url}\n\n"
-                . "💬 Jika Bapak/Ibu ingin berkonsultasi lebih lanjut mengenai program pembiasaan mandiri, asrama villa bernuansa alam, atau informasi pendaftaran SPMB Villa Quran Baron Malang, silakan balas pesan ini.\n\n"
-                . "Jazakumullahu Khairan Katsiran.\n"
-                . "_Panitia Penerimaan Santri Baru (PSB)_\n"
-                . "*Villa Quran Baron Malang*";
+$resWa = WaNotificationService::notifyTestKesiapan([
+    'nama_wali'   => $nama_wali,
+    'whatsapp'    => $wa_formatted,
+    'nama_santri' => $nama_santri,
+    'gender'      => $gender,
+    'jenjang'     => $jenjang,
+    'kota'        => $kota,
+    'skor'        => $skor_persen,
+    'kategori'    => $kategori,
+    'pdf_url'     => $pdf_url
+], $conn);
 
-    $curl = curl_init();
-    curl_setopt_array($curl, [
-        CURLOPT_URL => 'https://api.fonnte.com/send',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 8,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => [
-            'target' => $wa_formatted,
-            'message' => $pesan_wali,
-            'countryCode' => '62'
-        ],
-        CURLOPT_HTTPHEADER => [
-            "Authorization: $FONNTE_TOKEN"
-        ],
-    ]);
-    $res_fonnte = curl_exec($curl);
-    curl_close($curl);
-    $wa_sent = true;
-}
+$wa_sent = !empty($resWa['wali']['success']);
 
 echo json_encode([
     'status' => 'success',

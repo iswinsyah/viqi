@@ -3,6 +3,7 @@
 // Endpoint khusus penerimaan pendaftaran dari Brosur Digital Model Undangan
 header('Content-Type: application/json; charset=utf-8');
 require_once 'koneksi.php';
+require_once __DIR__ . '/includes/services/WaNotificationService.php';
 
 if (file_exists(__DIR__ . '/config-key.php')) {
     require_once __DIR__ . '/config-key.php';
@@ -76,70 +77,17 @@ if ($cek_res && $cek_res->num_rows > 0) {
 }
 
 // ==========================================
-// 1. KIRIM NOTIFIKASI WHATSAPP KE WALI SANTRI VIA FONNTE
+// 1 & 2. KIRIM NOTIFIKASI WHATSAPP KE WALI SANTRI & ADMIN VIA WaNotificationService
 // ==========================================
-$pesan_wali = "🌸 *Assalamu'alaikum Warahmatullahi Wabarakatuh*\n\n"
-            . "Yth. *Bapak/Ibu {$nama_wali}*,\n\n"
-            . "Alhamdulillah, terima kasih atas kepercayaan dan silaturahmi Bapak/Ibu. Formulir minat & reservasi kuota calon santri baru di *Villa Quran Baron Malang* telah berhasil kami terima dengan rincian:\n\n"
-            . "📋 *Data Calon Santri:*\n"
-            . "• *Nama Ananda:* {$nama_santri}\n"
-            . "• *Pilihan Jenjang:* {$jenjang}\n"
-            . "• *Domisili/Kota:* {$kota}\n"
-            . "• *Status Reservasi:* Terdata di Sistem SPMB\n\n"
-            . "🌟 *Keunggulan Utama Villa Quran:*\n"
-            . "1️⃣ Tahfidz Mutqin 15–30 Juz Bersanad\n"
-            . "2️⃣ Ijazah Resmi Negara Setara SMP & SMA\n"
-            . "3️⃣ Digital Marketing, AI Terapan & Solopreneur\n"
-            . "4️⃣ Lingkungan Nyaman, Sejuk & Asri ala Villa\n\n"
-            . "Tim Humas & Ustadz SPMB kami akan segera menghubungi Bapak/Ibu untuk jadwal silaturahmi/observasi kampus.\n\n"
-            . "🔗 *Akses Brosur & Profil Lengkap:*\n"
-            . "https://villaquranindonesia.com/brosur.php\n\n"
-            . "Semoga Allah SWT senantiasa meridhoi ikhtiar kita dalam mendidik generasi Qur'ani masa depan. Aamiin.\n\n"
-            . "_Wassalamu'alaikum Warahmatullahi Wabarakatuh_\n"
-            . "*Panitia SPMB — Villa Quran Baron Malang*";
-
-// Helper kirim Fonnte
-function kirimFonnte($target, $pesan, $token) {
-    if (empty($token) || $token === 'TOKEN_API_FONNTE_ANDA') return false;
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => "https://api.fonnte.com/send",
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => http_build_query([
-            'target' => $target,
-            'message' => $pesan
-        ]),
-        CURLOPT_HTTPHEADER => ["Authorization: $token"],
-        CURLOPT_TIMEOUT => 15
-    ]);
-    $res = curl_exec($ch);
-    curl_close($ch);
-    return $res;
-}
-
-// Kirim ke Calon Wali Santri
-kirimFonnte($wa_formatted, $pesan_wali, $FONNTE_TOKEN);
-
-// ==========================================
-// 2. KIRIM NOTIFIKASI WHATSAPP KE YAYASAN / ADMIN MARKETING
-// ==========================================
-$pesan_admin = "🚨 *LEAD BARU DARI BROSUR DIGITAL!* 🚨\n\n"
-             . "Terdapat calon wali santri yang baru saja mengisi formulir reservasi kuota di Brosur Digital:\n\n"
-             . "👤 *Wali Santri:* {$nama_wali}\n"
-             . "📱 *WhatsApp:* https://wa.me/{$wa_formatted}\n"
-             . "🧒 *Calon Santri:* {$nama_santri}\n"
-             . "🎓 *Jenjang:* {$jenjang}\n"
-             . "📍 *Asal Kota:* {$kota}\n"
-             . "🤝 *Kode Afiliasi/Ref:* {$kode_ref}\n"
-             . (!empty($catatan) ? "📝 *Catatan:* {$catatan}\n" : "")
-             . "⏰ *Waktu:* " . date('d-m-Y H:i') . " WIB\n\n"
-             . "👉 Segera tindaklanjuti untuk konfirmasi silaturahmi & follow up prospek.";
-
-// Kirim ke Admin Yayasan
-if (!empty($YAYASAN_WA)) {
-    kirimFonnte($YAYASAN_WA, $pesan_admin, $FONNTE_TOKEN);
-}
+WaNotificationService::notifyLeadBrosur([
+    'nama_wali'   => $nama_wali,
+    'whatsapp'    => $wa_formatted,
+    'nama_santri' => $nama_santri,
+    'jenjang'     => $jenjang,
+    'kota'        => $kota,
+    'kode_ref'    => $kode_ref,
+    'catatan'     => $catatan
+], $conn);
 
 // Respon sukses ke browser
 echo json_encode([
