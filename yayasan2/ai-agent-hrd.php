@@ -393,12 +393,22 @@ $tot_sp1_aktif = count($sp1_list_all);
                                 <?php endfor; ?>
                             </select>
                         </div>
-                        <div class="self-end">
+                        <div class="self-end flex items-center gap-2">
                             <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-xs transition shadow-md flex items-center gap-1.5">
                                 <i class="fas fa-filter"></i> Filter
                             </button>
                         </div>
                     </form>
+                </div>
+                <!-- BADGE SIKLUS CUT OFF DI HEADER -->
+                <div class="mt-4 pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-400">Rentang Periode Aktif:</span>
+                        <span class="bg-amber-400/20 text-amber-200 border border-amber-400/30 px-3 py-1 rounded-md font-mono font-bold text-xs inline-flex items-center gap-1.5">
+                            <i class="fas fa-calendar-alt text-amber-400"></i> Cut Off: <?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?>
+                        </span>
+                    </div>
+                    <span class="text-[11px] text-slate-400 italic">* Perhitungan bulanan berbasis tanggal 27 bulan sebelumnya hingga 26 bulan berjalan.</span>
                 </div>
             </div>
 
@@ -554,7 +564,7 @@ $tot_sp1_aktif = count($sp1_list_all);
                         </div>
                         <div>
                             <h3 class="font-bold text-sm text-white">Monitoring Jam Pelajaran (JP) Mengajar</h3>
-                            <p class="text-[11px] text-slate-300">Rincian jam mengajar Diniyah & Diknas per-pegawai bulan <?= $nama_bulan[$selected_month] ?> <?= $selected_year ?></p>
+                            <p class="text-[11px] text-slate-300">Rincian jam mengajar Diniyah & Diknas periode <strong><?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?> (Cut Off 27 - 26)</strong></p>
                         </div>
                     </div>
                     <span class="text-xs bg-amber-500/20 text-amber-300 font-semibold px-3 py-1 rounded-full border border-amber-500/30">
@@ -622,7 +632,7 @@ $tot_sp1_aktif = count($sp1_list_all);
                         </div>
                         <div>
                             <h3 class="font-bold text-sm text-white">Monitoring Absensi & Status SP-1 Semester</h3>
-                            <p class="text-[11px] text-slate-300">Rekap statistik kehadiran bulanan dan akumulasi Alpa Semester <?= $semester_str ?></p>
+                            <p class="text-[11px] text-slate-300">Rekapitulasi presensi periode <strong><?= date('d M Y', strtotime($start_date)) ?> s/d <?= date('d M Y', strtotime($end_date)) ?> (Cut Off 27 - 26)</strong> & akumulasi Alpa Semester <?= $semester_str ?></p>
                         </div>
                     </div>
                     <span class="text-xs bg-indigo-500/20 text-indigo-300 font-semibold px-3 py-1 rounded-full border border-indigo-500/30">
@@ -641,8 +651,8 @@ $tot_sp1_aktif = count($sp1_list_all);
                                 <th class="px-3 py-3 text-center text-amber-700">Hadir Terlambat</th>
                                 <th class="px-3 py-3 text-center">Rata-rata Terlambat</th>
                                 <th class="px-3 py-3 text-center text-blue-700">Izin</th>
-                                <th class="px-3 py-3 text-center text-rose-700">Alpa Bulan Ini</th>
-                                <th class="px-3 py-3 text-center bg-rose-50 text-rose-900">Alpa Semester</th>
+                                <th class="px-3 py-3 text-center text-rose-700 bg-rose-50/40">Alpa Bulan Ini<span class="block text-[9px] font-mono font-bold text-rose-600">Cut Off 27-26</span></th>
+                                <th class="px-3 py-3 text-center bg-rose-50 text-rose-900">Alpa Semester<span class="block text-[9px] font-mono font-bold text-rose-700">Batas SP-1: 3</span></th>
                                 <th class="px-3 py-3 text-center">Status SP-1</th>
                             </tr>
                         </thead>
