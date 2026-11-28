@@ -1173,7 +1173,7 @@ if ($total_alpa_sem >= 6) {
                             <div class="text-left mb-3">
                                 <label class="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
                                     <span>Pilih Sesi Mengajar Hari Ini:</span>
-                                    <span class="text-[10px] text-emerald-600 font-semibold"><i class="fas fa-clock mr-1"></i>Min. 35 Menit/JP</span>
+                                    <span class="text-[10px] text-emerald-600 font-semibold"><i class="fas fa-clock mr-1"></i>Standar KBM: 90 Menit</span>
                                 </label>
                                 <select id="select-sesi-mengajar" class="w-full text-xs font-semibold px-3 py-2.5 border border-emerald-300 rounded-xl bg-emerald-50/40 text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
                                     <?php if (!empty($jadwal_hari_ini)): ?>
