@@ -252,11 +252,42 @@ if (!function_exists('hitung_payroll_pegawai')) {
             $skor_kehadiran = $total_teaching_days > 0 ? min(100, ($jml_hadir_mengajar / $total_teaching_days) * 100) : 100;
         }
 
-        // C. RAPAT
-        $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Rapat' AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
+        // C. RAPAT (Perhitungan Adil Berdasarkan Undangan yang Relevan)
+        $res_rapat = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as jml FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Rapat' AND status_kehadiran IN ('Masuk', 'Pulang', 'Hadir') AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
         $jml_rapat = $res_rapat ? (int)($res_rapat->fetch_assoc()['jml'] ?? 0) : 0;
-        $res_total_rapat = $conn->query("SELECT COUNT(*) as total FROM jadwal_rapat WHERE DATE(waktu_mulai) BETWEEN '$start_date' AND '$end_date'");
-        $total_rapat = $res_total_rapat ? (int)($res_total_rapat->fetch_assoc()['total'] ?? 0) : 0;
+
+        // Hitung total agenda rapat yang benar-benar mengundang pegawai bersangkutan
+        $res_all_rapat = $conn->query("SELECT * FROM jadwal_rapat WHERE DATE(waktu_mulai) BETWEEN '$start_date' AND '$end_date'");
+        $total_rapat = 0;
+        if ($res_all_rapat && $res_all_rapat->num_rows > 0) {
+            while ($r_apt = $res_all_rapat->fetch_assoc()) {
+                $p_json = $r_apt['peserta_terundang'] ?? null;
+                $is_inv = false;
+                if ($is_super_admin) {
+                    $is_inv = true;
+                } elseif (!empty($p_json)) {
+                    $tg = json_decode($p_json, true);
+                    $t_r = $tg['roles'] ?? [];
+                    $t_i = array_map('intval', $tg['ids'] ?? []);
+                    if (in_array((int)$ust_id, $t_i) || in_array('semua_pegawai', $t_r)) {
+                        $is_inv = true;
+                    } else {
+                        foreach ($t_r as $tr) {
+                            if ($tr === 'musyrif' && ($is_musyrif || $is_asrama)) { $is_inv = true; break; }
+                            if ($tr === 'admin_sekolah' && $is_admin) { $is_inv = true; break; }
+                            if ($tr === 'kepala_sekolah' && $is_kepsek) { $is_inv = true; break; }
+                            if ($tr === 'kepala_mahad' && $is_mahad) { $is_inv = true; break; }
+                            if (($tr === 'ustadz' || $tr === 'guru' || $tr === 'tutor' || $tr === 'trainer' || $tr === 'ustadz_diknas' || $tr === 'ustadz_diniyah') && $is_teacher) { $is_inv = true; break; }
+                        }
+                    }
+                } else {
+                    $is_inv = true;
+                }
+                if ($is_inv) {
+                    $total_rapat++;
+                }
+            }
+        }
         $skor_kehadiran_rapat = $total_rapat > 0 ? min(100, ($jml_rapat / $total_rapat) * 100) : 100;
 
         // D. KUALITAS / AI / SUPERVISI
