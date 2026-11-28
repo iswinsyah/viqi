@@ -117,19 +117,105 @@ class AttendanceService {
     }
 
     /**
+     * Cek apakah sebuah tanggal merupakan Hari Libur / Non-Efektif
+     * berdasarkan hari Ahad dan Kalender Akademik.
+     */
+    public static function isHoliday($conn, $dateString) {
+        $ts = strtotime($dateString);
+        if (!$ts) return false;
+
+        // 1. Hari Ahad (Minggu) selalu libur
+        if ((int)date('N', $ts) === 7) {
+            return [
+                'is_holiday' => true,
+                'code' => 'AHD',
+                'name' => 'Hari Ahad (Libur Mingguan)'
+            ];
+        }
+
+        // 2. Cek di tabel kalender_akademik
+        $d = date('Y-m-d', $ts);
+        $q = $conn->query("SELECT status_hari, keterangan FROM kalender_akademik WHERE tanggal = '$d' LIMIT 1");
+        if ($q && $q->num_rows > 0) {
+            $row = $q->fetch_assoc();
+            $status = trim($row['status_hari'] ?? '');
+            if ($status !== '' && strtolower($status) !== 'efektif') {
+                return [
+                    'is_holiday' => true,
+                    'code' => $status,
+                    'name' => !empty($row['keterangan']) ? $row['keterangan'] : $status
+                ];
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Dapatkan peta semua hari libur dalam rentang tanggal
+     */
+    public static function getHolidaysMap($conn, $startDate, $endDate) {
+        $map = [];
+        $q = $conn->query("SELECT tanggal, status_hari, keterangan FROM kalender_akademik WHERE tanggal BETWEEN '$startDate' AND '$endDate' AND status_hari != 'efektif'");
+        if ($q) {
+            while ($r = $q->fetch_assoc()) {
+                $map[$r['tanggal']] = !empty($r['keterangan']) ? $r['keterangan'] : $r['status_hari'];
+            }
+        }
+        return $map;
+    }
+
+    /**
+     * Pemutihan dan Pembersihan Data Alpa Fiktif Masa Lalu & Hari Libur.
+     * Mengembalikan status akun ke Aktif dan menghapus SP palsu akibat data fiktif.
+     */
+    public static function cleanupInvalidAlpa($conn) {
+        // Tanggal resmi dimulainya sistem absensi baru (Cut off berjalan 27 November 2026)
+        $tgl_efektif = '2026-11-27';
+
+        // 1. Hapus alpa otomatis masa lalu sebelum kebijakan absensi baru berjalan
+        @$conn->query("DELETE FROM absensi_pegawai 
+                       WHERE keterangan LIKE '%Alpa (Tanpa Keterangan)%' 
+                         AND DATE(waktu_absen) < '$tgl_efektif'");
+
+        // 2. Hapus alpa yang jatuh pada hari Ahad (Minggu)
+        @$conn->query("DELETE FROM absensi_pegawai 
+                       WHERE (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%') 
+                         AND DAYOFWEEK(waktu_absen) = 1");
+
+        // 3. Hapus alpa yang jatuh pada hari libur resmi Kalender Akademik (misal 17 Agustus HUT RI, dll)
+        @$conn->query("DELETE a FROM absensi_pegawai a
+                       INNER JOIN kalender_akademik k ON DATE(a.waktu_absen) = k.tanggal
+                       WHERE (a.status_kehadiran = 'Alpa' OR a.keterangan LIKE '%Alpa%')
+                         AND k.status_hari != 'efektif'");
+
+        // 4. Bersihkan Surat Peringatan (SP-1, SP-2, BLOKIR) yang terbit karena alpa fiktif masa lalu
+        @$conn->query("DELETE FROM surat_peringatan_pegawai 
+                       WHERE alasan LIKE '%3 hari dalam semester%' 
+                          OR alasan LIKE '%Total%Alpa%' 
+                          OR alasan LIKE '%PEMBLOKIRAN AKUN%'");
+
+        // 5. Pulihkan status pegawai yang sempat terblokir otomatis secara keliru
+        @$conn->query("UPDATE akun_ustadz SET status_pegawai = 'Pegawai Utama' WHERE status_pegawai = 'Nonaktif' AND role LIKE '%kepala_sekolah%'");
+    }
+
+    /**
      * Ambil daftar detail tanggal Alpa pada periode bulanan (Cut Off 27 - 26).
      */
     public static function getAlpaMonthlyList($conn, $ustadz_id, $startDate, $endDate) {
         $uid = (int)$ustadz_id;
         $list = [];
         $q = $conn->query("
-            SELECT DATE(waktu_absen) as tgl, keterangan 
-            FROM absensi_pegawai 
-            WHERE ustadz_id = $uid 
-              AND DATE(waktu_absen) BETWEEN '$startDate' AND '$endDate' 
-              AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
-            GROUP BY DATE(waktu_absen)
-            ORDER BY waktu_absen ASC
+            SELECT DATE(a.waktu_absen) as tgl, a.keterangan 
+            FROM absensi_pegawai a
+            LEFT JOIN kalender_akademik k ON DATE(a.waktu_absen) = k.tanggal AND k.status_hari != 'efektif'
+            WHERE a.ustadz_id = $uid 
+              AND DATE(a.waktu_absen) BETWEEN '$startDate' AND '$endDate' 
+              AND (a.status_kehadiran = 'Alpa' OR a.keterangan LIKE '%Alpa%' OR a.keterangan LIKE '%Tanpa Keterangan%')
+              AND DAYOFWEEK(a.waktu_absen) != 1
+              AND k.tanggal IS NULL
+            GROUP BY DATE(a.waktu_absen)
+            ORDER BY a.waktu_absen ASC
         ");
         if ($q) {
             while ($r = $q->fetch_assoc()) {
@@ -146,13 +232,16 @@ class AttendanceService {
         $uid = (int)$ustadz_id;
         $list = [];
         $q = $conn->query("
-            SELECT DATE(waktu_absen) as tgl, keterangan 
-            FROM absensi_pegawai 
-            WHERE ustadz_id = $uid 
-              AND DATE(waktu_absen) BETWEEN '$semStart' AND '$semEnd' 
-              AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
-            GROUP BY DATE(waktu_absen)
-            ORDER BY waktu_absen ASC
+            SELECT DATE(a.waktu_absen) as tgl, a.keterangan 
+            FROM absensi_pegawai a
+            LEFT JOIN kalender_akademik k ON DATE(a.waktu_absen) = k.tanggal AND k.status_hari != 'efektif'
+            WHERE a.ustadz_id = $uid 
+              AND DATE(a.waktu_absen) BETWEEN '$semStart' AND '$semEnd' 
+              AND (a.status_kehadiran = 'Alpa' OR a.keterangan LIKE '%Alpa%' OR a.keterangan LIKE '%Tanpa Keterangan%')
+              AND DAYOFWEEK(a.waktu_absen) != 1
+              AND k.tanggal IS NULL
+            GROUP BY DATE(a.waktu_absen)
+            ORDER BY a.waktu_absen ASC
         ");
         if ($q) {
             while ($r = $q->fetch_assoc()) {

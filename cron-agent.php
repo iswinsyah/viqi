@@ -113,12 +113,15 @@ function periksa_dan_terbitkan_sp1_pegawai($conn) {
         $p_wa = $p['whatsapp'] ?? '';
         $p_status = $p['status_pegawai'] ?? 'Aktif';
 
-        // Hitung total Alpa dalam semester ini dari absensi_pegawai
-        $q_alpa = $conn->query("SELECT COUNT(DISTINCT DATE(waktu_absen)) as total_alpa 
-                                FROM absensi_pegawai 
-                                WHERE ustadz_id = $p_id 
-                                AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date' 
-                                AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')");
+        // Hitung total Alpa dalam semester ini dari absensi_pegawai (Sinkron Kalender Akademik & Bukan Hari Libur)
+        $q_alpa = $conn->query("SELECT COUNT(DISTINCT DATE(a.waktu_absen)) as total_alpa 
+                                FROM absensi_pegawai a
+                                LEFT JOIN kalender_akademik k ON DATE(a.waktu_absen) = k.tanggal AND k.status_hari != 'efektif'
+                                WHERE a.ustadz_id = $p_id 
+                                  AND DATE(a.waktu_absen) BETWEEN '$start_date' AND '$end_date' 
+                                  AND (a.status_kehadiran = 'Alpa' OR a.keterangan LIKE '%Alpa%' OR a.keterangan LIKE '%Tanpa Keterangan%')
+                                  AND DAYOFWEEK(a.waktu_absen) != 1
+                                  AND k.tanggal IS NULL");
         $total_alpa = $q_alpa ? (int)($q_alpa->fetch_assoc()['total_alpa'] ?? 0) : 0;
 
         // Parse role label
@@ -178,7 +181,9 @@ function periksa_dan_terbitkan_sp1_pegawai($conn) {
         }
 
         // --- LEVEL 3: PEMBLOKIRAN AKUN / NONAKTIF (Alpa >= 6 Hari - Tambah 1 Alpa setelah SP-2) ---
-        if ($total_alpa >= 6 && $p_status !== 'Nonaktif') {
+        // Catatan: Pimpinan (Kepsek / Kepala Ma'had / Super Admin) tidak diblokir otomatis oleh robot
+        $is_pimpinan = in_array('kepala_sekolah', $roles_arr) || in_array('kepala_mahad', $roles_arr) || in_array('super_admin', $roles_arr);
+        if ($total_alpa >= 6 && $p_status !== 'Nonaktif' && !$is_pimpinan) {
             // Ubah status pegawai menjadi Nonaktif (Diblokir)
             $conn->query("UPDATE akun_ustadz SET status_pegawai = 'Nonaktif' WHERE id = $p_id");
 

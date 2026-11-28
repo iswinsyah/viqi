@@ -20,6 +20,9 @@ $active_menu = 'ai_agent_hrd';
     KEY (semester)
 )");
 
+// Jalankan pemutihan alpa fiktif masa lalu & sinkronisasi hari libur Kalender Akademik
+AttendanceService::cleanupInvalidAlpa($conn);
+
 // Self-healing: Sinkronisasikan Alpa dari perizinan yang disetujui sebagian / ditolak ke absensi_pegawai
 $res_past_rejections = $conn->query("SELECT * FROM kepegawaian_perizinan WHERE status IN ('Disetujui Sebagian', 'Ditolak')");
 if ($res_past_rejections) {
@@ -126,28 +129,35 @@ if ($res_pegawai_data) {
         $jp_kosong = max(0, $jp_total_target - $jp_terlaksana);
 
         // Auto-detect missing check-in (Alpa Tanpa Keterangan) for daily workers
+        // Catatan: Pimpinan (Kepsek / Kepala Ma'had) tidak dimasukkan ke auto-alpa otomatis robot
         $u_roles = explode(',', $p['role'] ?? '');
         $u_roles_trimmed = array_map('trim', $u_roles);
-        $eligible_roles = ['kepala_sekolah', 'sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_mahad', 'kepala_asrama', 'musyrif'];
+        $eligible_roles = ['sekretaris_sekolah', 'bendahara_sekolah', 'admin_sekolah', 'kepala_asrama', 'musyrif'];
         $is_daily_worker = !empty(array_intersect($eligible_roles, $u_roles_trimmed));
         
         if ($is_daily_worker) {
-            $start_date_str = $start_date;
+            // Batasi hanya sejak tanggal resmi berlakunya sistem absensi baru (27 Nov 2026)
+            $policy_start = '2026-11-27';
+            $start_date_str = max($start_date, $policy_start);
             $end_date_str = $end_date;
             if (strtotime($end_date_str) > time()) {
                 $end_date_str = date('Y-m-d');
             }
             
-            $b_d = new DateTime($start_date_str);
-            $e_d = new DateTime($end_date_str);
-            $e_d->modify('+1 day');
-            $p_days = new DatePeriod($b_d, new DateInterval('P1D'), $e_d);
-            
-            foreach ($p_days as $date_obj) {
-                $tgl_check = $date_obj->format('Y-m-d');
-                $day_of_week = (int)$date_obj->format('N');
+            if (strtotime($start_date_str) <= strtotime($end_date_str)) {
+                $b_d = new DateTime($start_date_str);
+                $e_d = new DateTime($end_date_str);
+                $e_d->modify('+1 day');
+                $p_days = new DatePeriod($b_d, new DateInterval('P1D'), $e_d);
                 
-                if ($day_of_week !== 7) { // Skip Sundays
+                foreach ($p_days as $date_obj) {
+                    $tgl_check = $date_obj->format('Y-m-d');
+                    
+                    // Skip jika hari libur Kalender Akademik atau hari Ahad
+                    if (AttendanceService::isHoliday($conn, $tgl_check)) {
+                        continue;
+                    }
+                    
                     // Check if there is any attendance record (Pegawai, Harian, Mengajar, Rapat) on this day
                     $chk_exist = $conn->query("SELECT id FROM absensi_pegawai 
                                                WHERE ustadz_id = $p_id 

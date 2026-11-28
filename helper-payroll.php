@@ -3,6 +3,7 @@
  * Helper Perhitungan Payroll & Evaluasi Prestasi Kerja Pegawai
  * Yayasan Villa Qur'an Baron Malang
  */
+require_once __DIR__ . '/includes/services/AttendanceService.php';
 
 if (!function_exists('terbilang_rupiah')) {
     function terbilang_rupiah($angka) {
@@ -189,14 +190,19 @@ if (!function_exists('hitung_payroll_pegawai')) {
                 $ket = $primary['keterangan'] ?? '';
 
                 if ($st_kehadiran === 'Alpa' || strpos($st_kehadiran, 'Alpa') !== false || strpos($ket, 'Alpa') !== false || strpos($ket, 'Tanpa Keterangan') !== false) {
-                    $alpa_count++;
-                    $alpa_dates[] = date('d/m/Y', strtotime($tgl));
+                    // Pastikan bukan hari libur Kalender Akademik atau hari Ahad
+                    if (!AttendanceService::isHoliday($conn, $tgl)) {
+                        $alpa_count++;
+                        $alpa_dates[] = date('d/m/Y', strtotime($tgl));
+                    }
                 } elseif ($st_kehadiran === 'Izin' || strpos($st_kehadiran, 'Izin') !== false || strpos($ket, 'Izin') !== false) {
                     if (strpos($ket, 'Ditolak') === false && strpos($ket, 'Tidak Disetujui') === false) {
                         $izin_count++;
                     } else {
-                        $alpa_count++;
-                        $alpa_dates[] = date('d/m/Y', strtotime($tgl));
+                        if (!AttendanceService::isHoliday($conn, $tgl)) {
+                            $alpa_count++;
+                            $alpa_dates[] = date('d/m/Y', strtotime($tgl));
+                        }
                     }
                 } elseif ($st_kehadiran === 'Sakit' || strpos($st_kehadiran, 'Sakit') !== false || strpos($ket, 'Sakit') !== false) {
                     $sakit_count++;

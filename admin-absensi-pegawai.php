@@ -419,45 +419,20 @@ $sem_start = $semInfo['start_date'];
 $sem_end   = $semInfo['end_date'];
 $sem_range_label = $semInfo['range_label'];
 
-// Query Alfa Bulan Ini (Cut Off 27 - 26)
-$daftar_alpa_bulan = [];
-$q_alpa_bln = $conn->query("
-    SELECT DATE(waktu_absen) as tgl, keterangan 
-    FROM absensi_pegawai 
-    WHERE ustadz_id = $ustadz_id 
-      AND DATE(waktu_absen) BETWEEN '$cutoff_start' AND '$cutoff_end' 
-      AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
-    GROUP BY DATE(waktu_absen)
-    ORDER BY waktu_absen ASC
-");
-if ($q_alpa_bln) {
-    while ($ra = $q_alpa_bln->fetch_assoc()) {
-        $daftar_alpa_bulan[] = $ra;
-    }
-}
+// Jalankan self-healing pemutihan alpa fiktif masa lalu & sinkronisasi hari libur Kalender Akademik
+AttendanceService::cleanupInvalidAlpa($conn);
+
+// Query Alfa Bulan Ini (Cut Off 27 - 26) - Sinkron dengan Kalender Akademik
+$daftar_alpa_bulan = AttendanceService::getAlpaMonthlyList($conn, $ustadz_id, $cutoff_start, $cutoff_end);
 $total_alpa_bulan = count($daftar_alpa_bulan);
 
-// Query Alfa Semester Ini
-$daftar_alpa_sem = [];
-$q_alpa_sem = $conn->query("
-    SELECT DATE(waktu_absen) as tgl, keterangan 
-    FROM absensi_pegawai 
-    WHERE ustadz_id = $ustadz_id 
-      AND DATE(waktu_absen) BETWEEN '$sem_start' AND '$sem_end' 
-      AND (status_kehadiran = 'Alpa' OR keterangan LIKE '%Alpa%' OR keterangan LIKE '%Tanpa Keterangan%')
-    GROUP BY DATE(waktu_absen)
-    ORDER BY waktu_absen ASC
-");
-if ($q_alpa_sem) {
-    while ($rs = $q_alpa_sem->fetch_assoc()) {
-        $daftar_alpa_sem[] = $rs;
-    }
-}
+// Query Alfa Semester Ini - Sinkron dengan Kalender Akademik
+$daftar_alpa_sem = AttendanceService::getAlpaSemesterList($conn, $ustadz_id, $sem_start, $sem_end);
 $total_alpa_sem = count($daftar_alpa_sem);
 
 // Status SP & Sanksi
 if ($total_alpa_sem >= 6) {
-    $status_disiplin_title = "Sanksi Berat: Akun Dibekukan";
+    $status_disiplin_title = in_array('kepala_sekolah', $user_roles) ? "Evaluasi Disiplin Semester" : "Sanksi Berat: Akun Dibekukan";
     $status_disiplin_badge = "bg-rose-100 text-rose-800 border-rose-300";
     $status_disiplin_icon = "fa-ban text-rose-600";
 } elseif ($total_alpa_sem >= 5) {
