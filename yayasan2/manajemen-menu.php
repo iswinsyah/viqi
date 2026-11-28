@@ -268,6 +268,7 @@ if ($count_struct === 0) {
             'akunku' => ['href' => 'akunku.php', 'icon' => 'fa-user-cog'],
         ],
         'Administrasi' => [
+            'data_center' => ['href' => '../admin-data-center.php', 'icon' => 'fa-database'],
             'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-address-book'],
             'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users'],
             'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader'],
@@ -353,6 +354,7 @@ if ($res_db_menus) {
             'supervisi_mengajar' => 'Supervisi Mengajar',
             'jadwal_rapat' => 'Jadwal Rapat',
             'akunku' => 'Akunku',
+            'data_center' => 'Data Center (Pusat Data)',
             'buku_induk' => 'Buku Induk Santri',
             'akun_orangtua' => 'Akun Orang Tua',
             'leger_nilai' => 'Leger Nilai Digital',

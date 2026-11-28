@@ -145,6 +145,7 @@ if ($conn) {
                 'manajemen_elearning' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
                 'prota_promes' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
                 'jadwal_rapat' => 'kepala_sekolah,sekretaris_sekolah,bendahara_sekolah,admin_sekolah,kepala_mahad,kepala_asrama,musyrif,ustadz,super_admin',
+                'data_center' => 'kepala_sekolah,admin_sekolah,kepala_mahad,sekretaris_sekolah,super_admin',
                 'buku_induk' => 'kepala_sekolah,admin_sekolah,kepala_mahad,sekretaris_sekolah,super_admin',
                 'akun_orangtua' => 'kepala_sekolah,admin_sekolah,musyrif,musyrifah,super_admin',
                 'leger_nilai' => 'kepala_sekolah,admin_sekolah,ustadz,ustadzah,super_admin',
@@ -381,6 +382,7 @@ if ($count_struct === 0) {
             'akunku' => ['href' => 'akunku.php', 'icon' => 'fa-user-cog'],
         ],
         'Administrasi' => [
+            'data_center' => ['href' => 'admin-data-center.php', 'icon' => 'fa-database'],
             'buku_induk' => ['href' => 'admin-buku-induk.php', 'icon' => 'fa-book-user'],
             'akun_orangtua' => ['href' => 'admin-akun-orangtua.php', 'icon' => 'fa-users'],
             'leger_nilai' => ['href' => 'admin-leger.php', 'icon' => 'fa-book-reader'],
@@ -454,6 +456,7 @@ if ($res_db_struct) {
             'supervisi_mengajar' => 'Supervisi Mengajar',
             'jadwal_rapat' => 'Jadwal Rapat',
             'akunku' => 'Akunku',
+            'data_center' => 'Data Center (Pusat Data)',
             'buku_induk' => 'Buku Induk Santri',
             'akun_orangtua' => 'Akun Orang Tua',
             'leger_nilai' => 'Leger Nilai Digital',

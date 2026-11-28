@@ -40,6 +40,7 @@ if (!function_exists('get_all_menu_labels')) {
             'salary_admin'                  => 'Salary Admin Sekolah',
 
             // Administrasi & Nilai
+            'data_center'                   => 'Data Center (Pusat Data)',
             'buku_induk'                    => 'Buku Induk Santri',
             'akun_orangtua'                 => 'Akun Orang Tua',
             'leger_nilai'                   => 'Leger Nilai Digital',
