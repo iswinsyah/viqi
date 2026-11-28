@@ -147,10 +147,10 @@ $is_mock_client = (int) ($_POST['is_mock'] ?? 0);
 $req_jenis_absen = $_POST['jenis_absen'] ?? 'Harian';
 
 // Parameter Jadwal Pelajaran (Sinkronisasi KBM Ustadz, Tutor, Trainer)
-$req_jadwal_id = (int)($_POST['jadwal_id'] ?? 0);
-$req_jam_ke = (int)($_POST['jam_ke'] ?? 0);
-$req_mapel_id = (int)($_POST['mapel_id'] ?? 0);
-$req_kelas_id = (int)($_POST['kelas_id'] ?? 0);
+$req_jadwal_id = (int) ($_POST['jadwal_id'] ?? 0);
+$req_jam_ke = (int) ($_POST['jam_ke'] ?? 0);
+$req_mapel_id = (int) ($_POST['mapel_id'] ?? 0);
+$req_kelas_id = (int) ($_POST['kelas_id'] ?? 0);
 $req_nama_mapel = trim($_POST['nama_mapel'] ?? '');
 $req_nama_kelas = trim($_POST['nama_kelas'] ?? '');
 
@@ -411,10 +411,10 @@ if ($qr_jenis_absen === 'Rapat') {
         AND $where_kbm 
         AND status_kehadiran IN ('Masuk', 'Pulang') 
         ORDER BY waktu_absen ASC");
-    
+
     $status_kehadiran = 'Masuk';
     $num_logs_kbm = $res_check ? $res_check->num_rows : 0;
-    
+
     if ($num_logs_kbm == 0) {
         $status_kehadiran = 'Masuk';
     } elseif ($num_logs_kbm == 1) {
@@ -570,9 +570,9 @@ if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
             LEFT JOIN master_kelas k ON j.kelas_id = k.id 
             WHERE j.id = $req_jadwal_id LIMIT 1");
         if ($q_jdw && $r_jdw = $q_jdw->fetch_assoc()) {
-            $req_jam_ke = (int)$r_jdw['jam_ke'];
-            $req_mapel_id = (int)$r_jdw['mapel_id'];
-            $req_kelas_id = (int)$r_jdw['kelas_id'];
+            $req_jam_ke = (int) $r_jdw['jam_ke'];
+            $req_mapel_id = (int) $r_jdw['mapel_id'];
+            $req_kelas_id = (int) $r_jdw['kelas_id'];
             $req_nama_mapel = $r_jdw['nama_mapel'] ?? $req_nama_mapel;
             $req_nama_kelas = $r_jdw['nama_kelas'] ?? $req_nama_kelas;
         }
@@ -619,7 +619,7 @@ if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
                 $is_terlambat = true;
                 $keterangan = "Terlambat Mulai KBM ($selisih_menit menit): $label_mapel_kelas";
                 $pesan_evaluasi = "Catatan: Hari ini tanggal $tgl_indo, $panggilan_pegawai $nama_pegawai terlambat $selisih_menit menit memulai KBM ($label_mapel_kelas) dari jadwal masuk (" . $slot_info['mulai'] . " WIB).";
-                
+
                 if ($is_izin_yayasan) {
                     $keterangan .= " [Izin Yayasan: $keterangan_izin]";
                     $warning_msg = "Anda terdeteksi terlambat $selisih_menit menit memulai KBM (dengan izin resmi Ketua Yayasan: $keterangan_izin).";

@@ -477,6 +477,83 @@ if ($total_alpa_sem >= 6) {
     $status_disiplin_badge = "bg-emerald-50 text-emerald-800 border-emerald-200";
     $status_disiplin_icon = "fa-shield-heart text-emerald-600";
 }
+
+// K. Query Rekapitulasi Jam Mengajar (Ustadz, Tutor, Trainer) Periode Cut Off Berjalan
+$rekap_sesi_kbm = [];
+$total_menit_kbm = 0;
+$total_sesi_kbm = 0;
+$sesi_tepat_waktu_kbm = 0;
+$sesi_kurang_waktu_kbm = 0;
+
+if ($is_eligible_mengajar) {
+    $q_kbm_cutoff = $conn->query("
+        SELECT id, waktu_absen, status_kehadiran, keterangan, durasi_kerja, 
+               jadwal_id, jam_ke, nama_mapel, nama_kelas, koordinat_pegawai
+        FROM absensi_pegawai
+        WHERE ustadz_id = $ustadz_id
+          AND jenis_absen = 'Mengajar'
+          AND DATE(waktu_absen) BETWEEN '$cutoff_start' AND '$cutoff_end'
+        ORDER BY waktu_absen DESC
+    ");
+
+    $grouped_sessions = [];
+    if ($q_kbm_cutoff) {
+        while ($row_kbm = $q_kbm_cutoff->fetch_assoc()) {
+            $tgl_sesi = date('Y-m-d', strtotime($row_kbm['waktu_absen']));
+            $key_sesi = $tgl_sesi . '_' . ($row_kbm['jadwal_id'] > 0 ? 'j' . $row_kbm['jadwal_id'] : 'k' . $row_kbm['jam_ke'] . '_' . ($row_kbm['nama_mapel'] ?? ''));
+            
+            if (!isset($grouped_sessions[$key_sesi])) {
+                $grouped_sessions[$key_sesi] = [
+                    'tanggal' => $tgl_sesi,
+                    'nama_mapel' => $row_kbm['nama_mapel'] ?? 'KBM',
+                    'nama_kelas' => $row_kbm['nama_kelas'] ?? '-',
+                    'jam_ke' => $row_kbm['jam_ke'] ?? 0,
+                    'masuk' => null,
+                    'pulang' => null,
+                    'durasi_menit' => 0,
+                    'durasi_str' => '-',
+                    'status_label' => 'Belum Lengkap',
+                    'badge_class' => 'bg-slate-100 text-slate-600 border-slate-200',
+                    'keterangan' => $row_kbm['keterangan'] ?? ''
+                ];
+            }
+            if ($row_kbm['status_kehadiran'] === 'Masuk' && !$grouped_sessions[$key_sesi]['masuk']) {
+                $grouped_sessions[$key_sesi]['masuk'] = $row_kbm;
+            } elseif ($row_kbm['status_kehadiran'] === 'Pulang' && !$grouped_sessions[$key_sesi]['pulang']) {
+                $grouped_sessions[$key_sesi]['pulang'] = $row_kbm;
+                $durasi_raw = $row_kbm['durasi_kerja'] ?? '';
+                $menit_val = (int)preg_replace('/[^0-9]/', '', $durasi_raw);
+                $grouped_sessions[$key_sesi]['durasi_menit'] = $menit_val;
+                $grouped_sessions[$key_sesi]['durasi_str'] = !empty($durasi_raw) ? $durasi_raw : ($menit_val > 0 ? "$menit_val menit" : '-');
+                $grouped_sessions[$key_sesi]['keterangan'] = $row_kbm['keterangan'] ?? '';
+            }
+        }
+    }
+
+    foreach ($grouped_sessions as $k => $s) {
+        if ($s['pulang']) {
+            $total_sesi_kbm++;
+            $total_menit_kbm += $s['durasi_menit'];
+            if ($s['durasi_menit'] >= 90) {
+                $sesi_tepat_waktu_kbm++;
+                $s['status_label'] = 'Tepat Waktu (≥ 90 mnt)';
+                $s['badge_class'] = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+            } else {
+                $sesi_kurang_waktu_kbm++;
+                $s['status_label'] = 'Kurang dari 90 mnt';
+                $s['badge_class'] = 'bg-amber-50 text-amber-700 border-amber-200';
+            }
+        } elseif ($s['masuk']) {
+            $s['status_label'] = 'Sedang Berlangsung';
+            $s['badge_class'] = 'bg-blue-50 text-blue-700 border-blue-200';
+        }
+        $rekap_sesi_kbm[] = $s;
+    }
+}
+
+$total_jam_kbm = floor($total_menit_kbm / 60);
+$sisa_menit_kbm = $total_menit_kbm % 60;
+$persen_tepat_waktu_kbm = ($total_sesi_kbm > 0) ? round(($sesi_tepat_waktu_kbm / $total_sesi_kbm) * 100) : 100;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -1250,6 +1327,128 @@ if ($total_alpa_sem >= 6) {
                 <div class="bg-emerald-50 border border-emerald-200 text-emerald-850 px-4 py-3 rounded-xl mb-6 shadow-sm max-w-4xl mx-auto flex items-center text-xs">
                     <i class="fas fa-check-circle mr-2 text-sm text-emerald-600"></i>
                     <span><?= $pesan_jurnal_sukses ?></span>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($is_eligible_mengajar): ?>
+                <!-- PANEL REKAPITULASI JUMLAH JAM MENGAJAR (USTADZ / TUTOR / TRAINER) -->
+                <div class="max-w-4xl mx-auto mb-8 space-y-4">
+                    <!-- Stat Cards Header -->
+                    <div class="bg-gradient-to-r from-emerald-800 via-teal-800 to-cyan-900 rounded-2xl p-5 text-white shadow-lg relative overflow-hidden">
+                        <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/5 rounded-full pointer-events-none"></div>
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 pb-3 mb-4">
+                            <div>
+                                <span class="text-[10px] uppercase tracking-wider font-extrabold text-emerald-300 flex items-center gap-1.5">
+                                    <i class="fas fa-chart-pie"></i> Rekapitulasi Jam Mengajar Pengajar
+                                </span>
+                                <h3 class="text-base font-black text-white mt-0.5">
+                                    Akumulasi KBM Periode <?= htmlspecialchars($cutoff_periode_label) ?>
+                                </h3>
+                                <p class="text-[11px] text-emerald-100/80">
+                                    Siklus Cut-Off: <?= htmlspecialchars($cutoff_range_label) ?> • Standar: 90 Menit / Sesi
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="px-3 py-1.5 rounded-xl bg-white/15 backdrop-blur-xs text-white text-xs font-bold border border-white/20">
+                                    <i class="fas fa-user-tie text-emerald-300 mr-1.5"></i> <?= htmlspecialchars($_SESSION['ustadz_nama'] ?? 'Pengajar') ?>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 4 Stat Counters Grid -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                            <div class="bg-white/10 backdrop-blur-xs rounded-xl p-3 border border-white/10">
+                                <div class="text-[10px] text-emerald-200 font-semibold mb-0.5 uppercase tracking-wide">Total Durasi Riil</div>
+                                <div class="text-xl font-black text-white"><?= $total_jam_kbm ?> Jam <?= $sisa_menit_kbm ?> Mnt</div>
+                                <div class="text-[9px] text-emerald-200/70 mt-0.5"><?= number_format($total_menit_kbm) ?> Menit Terakumulasi</div>
+                            </div>
+                            <div class="bg-white/10 backdrop-blur-xs rounded-xl p-3 border border-white/10">
+                                <div class="text-[10px] text-emerald-200 font-semibold mb-0.5 uppercase tracking-wide">Sesi Terselesaikan</div>
+                                <div class="text-xl font-black text-emerald-300"><?= $total_sesi_kbm ?> Sesi</div>
+                                <div class="text-[9px] text-emerald-200/70 mt-0.5">Check-In & Check-Out Lengkap</div>
+                            </div>
+                            <div class="bg-white/10 backdrop-blur-xs rounded-xl p-3 border border-white/10">
+                                <div class="text-[10px] text-emerald-200 font-semibold mb-0.5 uppercase tracking-wide">Tepat Waktu (≥90m)</div>
+                                <div class="text-xl font-black text-emerald-200"><?= $sesi_tepat_waktu_kbm ?> Sesi</div>
+                                <div class="text-[9px] text-emerald-200/70 mt-0.5"><?= $persen_tepat_waktu_kbm ?>% Memenuhi Standar</div>
+                            </div>
+                            <div class="bg-white/10 backdrop-blur-xs rounded-xl p-3 border border-white/10">
+                                <div class="text-[10px] text-amber-200 font-semibold mb-0.5 uppercase tracking-wide">Kurang dari 90m</div>
+                                <div class="text-xl font-black text-amber-300"><?= $sesi_kurang_waktu_kbm ?> Sesi</div>
+                                <div class="text-[9px] text-amber-200/70 mt-0.5">Catatan Evaluasi / Izin</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Rincian Riwayat Jam Mengajar -->
+                    <div class="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-6 text-left">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 border-b pb-3">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fas fa-list-check text-emerald-600"></i> Rincian Riwayat Absensi Mengajar
+                                </h3>
+                                <p class="text-[11px] text-gray-500 font-medium mt-0.5">Data resmi yang tersinkronisasi dengan WhatsApp Pengajar dan Ketua Yayasan</p>
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg self-start md:self-auto">
+                                Menampilkan <?= count($rekap_sesi_kbm) ?> Sesi
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-150 text-xs">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600 text-[11px]">
+                                        <th class="px-3 py-2.5 text-left font-bold">Tanggal & Sesi</th>
+                                        <th class="px-3 py-2.5 text-left font-bold">Mata Pelajaran & Kelas</th>
+                                        <th class="px-3 py-2.5 text-center font-bold">Waktu Mulai - Selesai</th>
+                                        <th class="px-3 py-2.5 text-center font-bold">Durasi Riil</th>
+                                        <th class="px-3 py-2.5 text-left font-bold">Status & Bukti Konfirmasi</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <?php if (!empty($rekap_sesi_kbm)): ?>
+                                        <?php foreach ($rekap_sesi_kbm as $sesi): ?>
+                                            <?php
+                                                $jam_msk = ($sesi['masuk']) ? date('H:i', strtotime($sesi['masuk']['waktu_absen'])) . ' WIB' : '-';
+                                                $jam_plg = ($sesi['pulang']) ? date('H:i', strtotime($sesi['pulang']['waktu_absen'])) . ' WIB' : 'Belum Selesai';
+                                                $tgl_formatted = date('d M Y', strtotime($sesi['tanggal']));
+                                            ?>
+                                            <tr class="hover:bg-slate-50/70 transition">
+                                                <td class="px-3 py-3 whitespace-nowrap">
+                                                    <span class="font-bold text-slate-800 block"><?= $tgl_formatted ?></span>
+                                                    <span class="text-[10px] text-slate-500 font-semibold"><i class="far fa-clock mr-1 text-slate-400"></i><?= ($sesi['jam_ke'] > 0) ? "Jam ke-{$sesi['jam_ke']}" : "Sesi KBM" ?></span>
+                                                </td>
+                                                <td class="px-3 py-3">
+                                                    <span class="font-bold text-emerald-800 block"><?= htmlspecialchars($sesi['nama_mapel']) ?></span>
+                                                    <span class="text-slate-600 text-[10px] font-semibold bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">Kelas <?= htmlspecialchars($sesi['nama_kelas']) ?></span>
+                                                </td>
+                                                <td class="px-3 py-3 text-center whitespace-nowrap">
+                                                    <div class="font-bold text-slate-700 text-xs"><?= $jam_msk ?> s/d <?= $jam_plg ?></div>
+                                                </td>
+                                                <td class="px-3 py-3 text-center whitespace-nowrap">
+                                                    <span class="px-2.5 py-1 rounded-full text-[11px] font-black border <?= $sesi['badge_class'] ?? 'bg-slate-100 text-slate-700 border-slate-200' ?>">
+                                                        <?= htmlspecialchars($sesi['durasi_str']) ?>
+                                                    </span>
+                                                </td>
+                                                <td class="px-3 py-3 text-left">
+                                                    <div class="font-semibold text-slate-700 text-[11px]"><?= htmlspecialchars($sesi['status_label'] ?? '-') ?></div>
+                                                    <?php if (!empty($sesi['keterangan'])): ?>
+                                                        <div class="text-[10px] text-slate-500 italic truncate max-w-xs" title="<?= htmlspecialchars($sesi['keterangan']) ?>"><?= htmlspecialchars($sesi['keterangan']) ?></div>
+                                                    <?php endif; ?>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <tr>
+                                            <td colspan="5" class="px-3 py-6 text-center text-gray-400 italic">
+                                                Belum ada riwayat absensi jam mengajar pada periode cut-off ini (<?= htmlspecialchars($cutoff_range_label) ?>).
+                                            </td>
+                                        </tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             <?php endif; ?>
 
