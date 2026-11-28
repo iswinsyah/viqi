@@ -68,6 +68,7 @@ if (!function_exists('get_all_menu_labels')) {
             'kitab_rujukan'                 => 'Master Kitab Rujukan',
 
             // Asrama & Musyrif
+            'perizinan_santri'              => 'Perizinan Santri & Keluar',
             'dashboard_asrama'              => 'Dashboard Asrama',
             'manajemen_halaqoh'             => 'Manajemen Halaqoh',
             'yayasan_ibadah'                => 'Rekap Ibadah Yayasan',

@@ -198,6 +198,7 @@ $ortu_nama = $_SESSION['orangtua_nama'] ?? 'Orang Tua / Wali';
 
                                     <?php
                                     $menus_ananda = [
+                                        ['title' => 'Izin Ananda', 'href' => 'orangtua-perizinan.php?santri_id=' . $s['id'], 'icon' => 'fas fa-door-open', 'bg' => 'from-rose-500 to-pink-700'],
                                         ['title' => 'Hafalan', 'href' => 'orangtua-hafalan.php?santri_id=' . $s['id'], 'icon' => 'fas fa-book-quran', 'bg' => 'from-emerald-500 to-teal-700'],
                                         ['title' => 'Ibadah', 'href' => 'orangtua-ibadah-harian.php?santri_id=' . $s['id'], 'icon' => 'fas fa-mosque', 'bg' => 'from-green-600 to-emerald-800'],
                                         ['title' => 'Rapor Diniyah', 'href' => 'orangtua-rapot-diniyah.php?id=' . $s['id'], 'icon' => 'fas fa-book-open-reader', 'bg' => 'from-purple-600 to-indigo-700'],

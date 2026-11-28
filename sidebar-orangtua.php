@@ -40,7 +40,7 @@ $ortu_nama = $_SESSION['orangtua_nama'] ?? 'Orang Tua / Wali';
         </div>
     </div>
 
-    <!-- 4 MENU UTAMA SIDEBAR ORANG TUA -->
+    <!-- 5 MENU UTAMA SIDEBAR ORANG TUA -->
     <nav class="flex-1 overflow-y-auto p-4 space-y-1.5 text-xs no-scrollbar">
         <!-- 1. BERANDA -->
         <a href="dashboard-orangtua.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_active === 'dashboard_orangtua' || $curr_active === 'dashboard' || empty($curr_active)) ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
@@ -48,23 +48,29 @@ $ortu_nama = $_SESSION['orangtua_nama'] ?? 'Orang Tua / Wali';
             <span>1. Beranda</span>
         </a>
 
-        <!-- 2. KALENDER AKADEMIK -->
-        <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_active === 'kalender_akademik') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
-            <i class="fas fa-calendar-alt w-4 text-center text-sm"></i>
-            <span>2. Kalender Akademik</span>
+        <!-- 2. PERIZINAN ANANDA -->
+        <a href="orangtua-perizinan.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_active === 'perizinan_santri') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-door-open w-4 text-center text-sm"></i>
+            <span>2. Perizinan Ananda</span>
         </a>
 
-        <!-- 3. JADWAL PELAJARAN -->
+        <!-- 3. KALENDER AKADEMIK -->
+        <a href="kalender-akademik.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_active === 'kalender_akademik') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
+            <i class="fas fa-calendar-alt w-4 text-center text-sm"></i>
+            <span>3. Kalender Akademik</span>
+        </a>
+
+        <!-- 4. JADWAL PELAJARAN -->
         <a href="admin-jadwal-pelajaran.php" class="flex items-center gap-3 px-3.5 py-3 rounded-xl <?= ($curr_active === 'jadwal_pelajaran') ? 'bg-white text-[#0b8478] font-black shadow-md' : 'text-teal-100 hover:bg-teal-800/60 hover:text-white font-bold' ?> transition">
             <i class="fas fa-clock w-4 text-center text-sm"></i>
-            <span>3. Jadwal Pelajaran</span>
+            <span>4. Jadwal Pelajaran</span>
         </a>
     </nav>
 
     <!-- SIDEBAR FOOTER: KELUAR -->
     <div class="p-4 border-t border-teal-700/60 flex-shrink-0">
         <a href="dashboard.php?action=logout" onclick="return confirm('Yakin ingin keluar dari sistem?');" class="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl bg-rose-600/90 hover:bg-rose-600 text-white font-black text-xs shadow transition">
-            <i class="fas fa-arrow-right-from-bracket"></i> 4. Keluar
+            <i class="fas fa-arrow-right-from-bracket"></i> 5. Keluar
         </a>
     </div>
 </aside>

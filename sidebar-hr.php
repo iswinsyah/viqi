@@ -157,6 +157,7 @@ if ($conn) {
                 'ai_rpp' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
                 'bank_nilai' => 'ustadz,ustadzah,guru,tutor,trainer,kepala_sekolah,admin_sekolah,super_admin',
                 'dashboard_asrama' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
+                'perizinan_santri' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,admin_sekolah,kepala_sekolah,super_admin',
                 'manajemen_halaqoh' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
                 'setoran_hafalan_santri' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
                 'mutabaah' => 'musyrif,musyrifah,kepala_asrama,kepala_asrama_rijal,kepala_asrama_nisa,kepala_mahad,super_admin',
@@ -406,6 +407,7 @@ if ($count_struct === 0) {
             'kitab_rujukan' => ['href' => 'admin-kitab-rujukan.php', 'icon' => 'fa-book-open'],
         ],
         'Asrama' => [
+            'perizinan_santri' => ['href' => 'admin-perizinan-santri.php', 'icon' => 'fa-door-open'],
             'dashboard_asrama' => ['href' => 'admin-ustadz.php?view=dashboard_asrama', 'icon' => 'fa-home-user'],
             'manajemen_halaqoh' => ['href' => 'admin-ustadz.php?view=halaqoh', 'icon' => 'fa-layer-group'],
             'rekap_ibadah_santri' => ['href' => 'admin-ibadah-santri.php', 'icon' => 'fa-mosque'],
@@ -481,6 +483,7 @@ if ($res_db_struct) {
             'master_kelas' => 'Master Kelas',
             'master_mapel' => 'Master Mapel',
             'kitab_rujukan' => 'Master Kitab Rujukan',
+            'perizinan_santri' => 'Perizinan Santri & Keluar',
             'dashboard_asrama' => 'Dashboard Asrama',
             'manajemen_halaqoh' => 'Manajemen Halaqoh',
             'yayasan_ibadah' => 'Rekap Ibadah Yayasan',
