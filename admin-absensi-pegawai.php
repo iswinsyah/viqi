@@ -138,43 +138,48 @@ if ($res_santri_absen) {
 $res_latest_update = $conn->query("SELECT * FROM app_updates ORDER BY created_at DESC LIMIT 1");
 $latest_update = $res_latest_update ? $res_latest_update->fetch_assoc() : null;
 
-// D. Cek absensi pegawai (harian kerja) hari ini - Mendukung Fleksibilitas Shift Kerja & Giliran Piket
-$res_pegawai = $conn->query("SELECT status_kehadiran, waktu_absen FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Pegawai' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
-$pegawai_status = 'belum_absen';
-$last_pegawai_record = null;
-if ($res_pegawai && $res_pegawai->num_rows > 0) {
-    $last_pegawai_record = $res_pegawai->fetch_assoc();
-    if ($last_pegawai_record['status_kehadiran'] === 'Masuk') {
-        $pegawai_status = 'datang';
-    } else {
-        $pegawai_status = 'pulang_bisa_masuk_lagi';
+// D. Cek absensi pegawai (harian kerja) hari ini - 2 Shift (Shift 1: 07.00 - 13.00, Shift 2: 15.00 - 21.00)
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN shift VARCHAR(20) DEFAULT 'Shift 1' AFTER jenis_absen");
+
+$shift1_masuk = null;
+$shift1_pulang = null;
+$shift2_masuk = null;
+$shift2_pulang = null;
+
+$q_peg_today = $conn->query("SELECT id, status_kehadiran, waktu_absen, shift, keterangan FROM absensi_pegawai 
+    WHERE ustadz_id = $ustadz_id 
+    AND DATE(waktu_absen) = '$today' 
+    AND jenis_absen = 'Pegawai' 
+    AND status_kehadiran IN ('Masuk', 'Pulang') 
+    ORDER BY waktu_absen ASC");
+
+if ($q_peg_today) {
+    while ($row = $q_peg_today->fetch_assoc()) {
+        $s = $row['shift'] ?? '';
+        if (strpos($s, '2') !== false) {
+            if ($row['status_kehadiran'] === 'Masuk') $shift2_masuk = $row;
+            elseif ($row['status_kehadiran'] === 'Pulang') $shift2_pulang = $row;
+        } else {
+            if ($row['status_kehadiran'] === 'Masuk') $shift1_masuk = $row;
+            elseif ($row['status_kehadiran'] === 'Pulang') $shift1_pulang = $row;
+        }
     }
 }
 
-// E. Cek Otoritas Role untuk Absensi Pegawai (Harian)
-// Semua ustadz / pegawai / staf yang terdaftar dan login berhak melakukan Absensi Pegawai
-$is_eligible_pegawai = true;
-
-// F. Persiapan Teks, Icon, & Keterangan Tombol Pegawai (Mendukung Shift/Piket, Bebas Jam Kerja)
-$pegawai_btn_text = '';
-$pegawai_btn_icon = '';
-$pegawai_keterangan_status = '';
-
-if ($pegawai_status === 'belum_absen') {
-    $pegawai_btn_text = 'Absensi Masuk / Piket';
-    $pegawai_btn_icon = 'fa-sign-in-alt';
-    $pegawai_keterangan_status = 'Belum absen masuk hari ini. Pastikan berada di dalam lokasi resmi yang telah ditetapkan.';
-} elseif ($pegawai_status === 'datang') {
-    $jam_masuk_str = date('H:i', strtotime($last_pegawai_record['waktu_absen']));
-    $pegawai_btn_text = 'Absensi Kepulangan / Selesai';
-    $pegawai_btn_icon = 'fa-sign-out-alt';
-    $pegawai_keterangan_status = "Sedang bertugas (Absen Masuk: $jam_masuk_str WIB). Klik tombol ini bila jam piket/shift telah selesai.";
-} else {
-    $jam_pulang_str = date('H:i', strtotime($last_pegawai_record['waktu_absen']));
-    $pegawai_btn_text = 'Absensi Masuk (Shift/Piket Baru)';
-    $pegawai_btn_icon = 'fa-sign-in-alt';
-    $pegawai_keterangan_status = "Shift sebelumnya selesai pukul $jam_pulang_str WIB. Klik untuk absen masuk giliran shift/piket berikutnya.";
+// Penentuan Shift Default Cerdas Berdasarkan Waktu Sekarang & Status Aktif
+$current_h = (int)date('H');
+$current_m = (int)date('i');
+$current_min = ($current_h * 60) + $current_m;
+$default_active_shift = ($current_min >= 840) ? 'Shift 2' : 'Shift 1'; // Jam 14.00 WIB batas siang/sore
+if ($shift1_masuk && !$shift1_pulang) {
+    $default_active_shift = 'Shift 1'; // Sedang aktif bertugas di Shift 1
+} elseif ($shift2_masuk && !$shift2_pulang) {
+    $default_active_shift = 'Shift 2'; // Sedang aktif bertugas di Shift 2
 }
+
+// E. Cek Otoritas Role untuk Absensi Pegawai Tetap
+// Kepala sekolah, admin sekolah, musyrif, musyrifah, dan seluruh staf pegawai berhak absen
+$is_eligible_pegawai = true;
 
 // G. Pengecekan Rapat Aktif & Pengecekan Hak Undang/Peserta Wajib
 $res_rapat_aktif = $conn->query("SELECT * FROM jadwal_rapat WHERE status = 'aktif' ORDER BY waktu_mulai DESC LIMIT 1");
@@ -971,29 +976,137 @@ if ($total_alpa_sem >= 6) {
             <div class="<?= $grid_cols_class ?> gap-6 max-w-4xl mx-auto mb-8">
                 
                 <?php if ($is_eligible_pegawai): ?>
-                    <!-- KARTU 1: ABSENSI PEGAWAI (MENDUKUNG SHIFT/PIKET TANPA BATASAN JAM) -->
-                    <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
+                    <!-- KARTU 1: ABSENSI PEGAWAI TETAP (2 SHIFT KERJA, 6 JAM/HARI, 6 HARI KERJA) -->
+                    <div class="bg-white rounded-2xl shadow-md border border-slate-200/90 p-5 md:p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-xl w-full relative overflow-hidden">
+                        <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-600"></div>
+                        
                         <div>
-                            <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
-                                <i class="fas fa-user-tie"></i>
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                    <i class="fas fa-id-badge text-emerald-600"></i> Pegawai Tetap
+                                </span>
+                                <span class="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                                    <i class="far fa-clock text-slate-400"></i> 6 Jam / Hari (6 Hari Kerja)
+                                </span>
                             </div>
-                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Pegawai & Piket</h2>
-                            <p class="text-xs text-gray-500 mb-3 font-medium leading-relaxed">
-                                <?= htmlspecialchars($pegawai_keterangan_status) ?>
+
+                            <div class="w-14 h-14 bg-gradient-to-br from-emerald-50 to-teal-100 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto mb-3 text-2xl shadow-inner border border-emerald-200/60">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+
+                            <h2 class="text-lg md:text-xl font-black text-gray-800 mb-1">Absensi Pegawai & Piket</h2>
+                            <p class="text-[11px] text-gray-500 mb-4 font-medium leading-relaxed">
+                                Kepala Sekolah, Admin Sekolah, Musyrif, Musyrifah, Guru & Staf
                             </p>
-                            <div class="mb-4 flex items-center justify-center gap-1.5 flex-wrap">
-                                <span class="px-2.5 py-0.5 rounded-lg bg-cyan-50 border border-cyan-200 text-cyan-800 text-[10px] font-bold">Shift 1: 07.00 - 13.00</span>
-                                <span class="px-2.5 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-[10px] font-bold">Shift 2: 15.00 - 21.00</span>
+
+                            <!-- PILIHAN SHIFT ABSEN KERJA -->
+                            <div class="mb-4 text-left bg-slate-50 border border-slate-200/90 rounded-xl p-3.5 shadow-2xs">
+                                <label class="block text-xs font-black text-slate-700 mb-2.5 flex items-center justify-between">
+                                    <span class="flex items-center gap-1.5">
+                                        <i class="fas fa-business-time text-emerald-600"></i> Pilih Shift Kerja Hari Ini:
+                                    </span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-white text-slate-600 border border-slate-200" id="current-shift-indicator">
+                                        <?= $default_active_shift ?>
+                                    </span>
+                                </label>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                    <!-- SHIFT 1 -->
+                                    <label id="label-shift-1" class="shift-card-option relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none <?= ($default_active_shift === 'Shift 1' ? 'border-emerald-500 bg-emerald-50/40 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300') ?>">
+                                        <input type="radio" name="pilihan_shift" value="Shift 1" class="hidden shift-radio" <?= ($default_active_shift === 'Shift 1' ? 'checked' : '') ?>>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="w-2.5 h-2.5 rounded-full <?= ($default_active_shift === 'Shift 1' ? 'bg-emerald-600' : 'bg-slate-300') ?>" id="dot-shift-1"></span>
+                                                <span class="text-xs font-black text-slate-800">Shift 1 (Pagi)</span>
+                                            </div>
+                                            <span class="text-[10px] font-extrabold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded-md">07:00 - 13:00</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center justify-between" id="badge-shift-1">
+                                            <?php if ($shift1_masuk && $shift1_pulang): ?>
+                                                <span class="text-emerald-700 font-bold"><i class="fas fa-check-circle"></i> Selesai (<?= date('H:i', strtotime($shift1_masuk['waktu_absen'])) ?> - <?= date('H:i', strtotime($shift1_pulang['waktu_absen'])) ?>)</span>
+                                            <?php elseif ($shift1_masuk): ?>
+                                                <span class="text-amber-700 font-bold"><i class="fas fa-clock"></i> Sedang Bertugas (Masuk: <?= date('H:i', strtotime($shift1_masuk['waktu_absen'])) ?>)</span>
+                                            <?php else: ?>
+                                                <span class="text-slate-400 italic">Belum Absen Masuk</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </label>
+
+                                    <!-- SHIFT 2 -->
+                                    <label id="label-shift-2" class="shift-card-option relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none <?= ($default_active_shift === 'Shift 2' ? 'border-indigo-500 bg-indigo-50/40 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300') ?>">
+                                        <input type="radio" name="pilihan_shift" value="Shift 2" class="hidden shift-radio" <?= ($default_active_shift === 'Shift 2' ? 'checked' : '') ?>>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="w-2.5 h-2.5 rounded-full <?= ($default_active_shift === 'Shift 2' ? 'bg-indigo-600' : 'bg-slate-300') ?>" id="dot-shift-2"></span>
+                                                <span class="text-xs font-black text-slate-800">Shift 2 (Sore/Mlm)</span>
+                                            </div>
+                                            <span class="text-[10px] font-extrabold text-indigo-700 bg-indigo-100/70 px-2 py-0.5 rounded-md">15:00 - 21:00</span>
+                                        </div>
+                                        <div class="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center justify-between" id="badge-shift-2">
+                                            <?php if ($shift2_masuk && $shift2_pulang): ?>
+                                                <span class="text-indigo-700 font-bold"><i class="fas fa-check-circle"></i> Selesai (<?= date('H:i', strtotime($shift2_masuk['waktu_absen'])) ?> - <?= date('H:i', strtotime($shift2_pulang['waktu_absen'])) ?>)</span>
+                                            <?php elseif ($shift2_masuk): ?>
+                                                <span class="text-amber-700 font-bold"><i class="fas fa-clock"></i> Sedang Bertugas (Masuk: <?= date('H:i', strtotime($shift2_masuk['waktu_absen'])) ?>)</span>
+                                            <?php else: ?>
+                                                <span class="text-slate-400 italic">Belum Absen Masuk</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- KETERANGAN STATUS DINAMIS -->
+                            <p id="pegawai-keterangan-status" class="text-xs text-slate-600 mb-3 font-medium leading-relaxed bg-slate-50 py-2 px-3 rounded-lg border border-slate-200">
+                                Memuat status kehadiran...
+                            </p>
+
+                            <!-- INDIKATOR LOKASI SYARAT ABSENSI (GEDUNG A, B, C, MASJID) -->
+                            <div id="pegawai-location-badge" class="mb-4 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-amber-50 text-amber-800 border border-amber-200 transition-all">
+                                <i class="fas fa-circle-notch fa-spin text-amber-600"></i>
+                                <span>Memverifikasi koordinat lokasi Anda...</span>
                             </div>
                         </div>
                         
-                        <button id="btn-absen-pegawai" 
-                                data-status="<?= $pegawai_status ?>" 
-                                data-jenis="Pegawai"
-                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($pegawai_status === 'datang') ? 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95' : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' ?>">
-                            <i class="fas <?= $pegawai_btn_icon ?> text-xl"></i>
-                            <span><?= $pegawai_btn_text ?></span>
-                        </button>
+                        <!-- TOMBOL UTAMA ABSENSI (CHECK LOG AWAL / AKHIR) -->
+                        <div>
+                            <button id="btn-absen-pegawai" 
+                                    data-jenis="Pegawai"
+                                    class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95 cursor-pointer">
+                                <i class="fas fa-sign-in-alt text-xl" id="btn-pegawai-icon"></i>
+                                <span id="btn-pegawai-text">Absensi Masuk</span>
+                            </button>
+
+                            <p class="text-[10px] text-slate-400 mt-2 font-medium flex items-center justify-center gap-1">
+                                <i class="fab fa-whatsapp text-emerald-500"></i> Notifikasi otomatis terkirim ke WhatsApp Anda & Ketua Yayasan
+                            </p>
+                        </div>
+
+                        <!-- RINCIAN 2 CHECK LOG HARI INI -->
+                        <div class="mt-5 pt-4 border-t border-slate-150 text-left">
+                            <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-2 flex items-center gap-1.5">
+                                <i class="fas fa-clipboard-check text-emerald-600"></i> Log Kehadiran Hari Ini:
+                            </span>
+                            <div class="grid grid-cols-2 gap-2 text-[11px]">
+                                <div class="bg-slate-50 rounded-lg p-2.5 border border-slate-200">
+                                    <div class="font-bold text-slate-700 flex items-center justify-between mb-1">
+                                        <span>Check Log Awal (Masuk)</span>
+                                        <i class="fas fa-sign-in-alt text-emerald-600"></i>
+                                    </div>
+                                    <div id="log-awal-text" class="text-slate-500 text-[10px]">
+                                        Belum Absen
+                                    </div>
+                                </div>
+                                <div class="bg-slate-50 rounded-lg p-2.5 border border-slate-200">
+                                    <div class="font-bold text-slate-700 flex items-center justify-between mb-1">
+                                        <span>Check Log Akhir (Pulang)</span>
+                                        <i class="fas fa-sign-out-alt text-rose-600"></i>
+                                    </div>
+                                    <div id="log-akhir-text" class="text-slate-500 text-[10px]">
+                                        Belum Absen
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 <?php endif; ?>
 
@@ -1402,6 +1515,119 @@ if ($total_alpa_sem >= 6) {
             document.getElementById('alert-modal').classList.add('hidden');
         });
 
+        // Data Shift & Log Kehadiran Hari Ini
+        const shiftData = {
+            'Shift 1': {
+                masuk: <?= $shift1_masuk ? json_encode($shift1_masuk) : 'null' ?>,
+                pulang: <?= $shift1_pulang ? json_encode($shift1_pulang) : 'null' ?>,
+                jamMasuk: '07:00',
+                jamPulang: '13:00'
+            },
+            'Shift 2': {
+                masuk: <?= $shift2_masuk ? json_encode($shift2_masuk) : 'null' ?>,
+                pulang: <?= $shift2_pulang ? json_encode($shift2_pulang) : 'null' ?>,
+                jamMasuk: '15:00',
+                jamPulang: '21:00'
+            }
+        };
+
+        let currentShift = '<?= $default_active_shift ?>';
+
+        function formatJamWib(datetimeStr) {
+            if (!datetimeStr) return '';
+            const parts = datetimeStr.split(' ');
+            if (parts.length > 1) {
+                return parts[1].substring(0, 5) + ' WIB';
+            }
+            return datetimeStr;
+        }
+
+        function renderShiftUI(shiftName) {
+            currentShift = shiftName;
+            const data = shiftData[shiftName];
+            const indicator = document.getElementById('current-shift-indicator');
+            if (indicator) indicator.innerText = shiftName;
+
+            // Update Radio Card Styling
+            const label1 = document.getElementById('label-shift-1');
+            const label2 = document.getElementById('label-shift-2');
+            const dot1 = document.getElementById('dot-shift-1');
+            const dot2 = document.getElementById('dot-shift-2');
+
+            if (shiftName === 'Shift 1') {
+                if (label1) {
+                    label1.className = 'shift-card-option relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none border-emerald-500 bg-emerald-50/40 shadow-sm';
+                }
+                if (label2) {
+                    label2.className = 'shift-card-option relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none border-slate-200 bg-white hover:border-slate-300';
+                }
+                if (dot1) dot1.className = 'w-2.5 h-2.5 rounded-full bg-emerald-600';
+                if (dot2) dot2.className = 'w-2.5 h-2.5 rounded-full bg-slate-300';
+            } else {
+                if (label1) {
+                    label1.className = 'shift-card-option relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none border-slate-200 bg-white hover:border-slate-300';
+                }
+                if (label2) {
+                    label2.className = 'shift-card-option relative flex flex-col p-3 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none border-indigo-500 bg-indigo-50/40 shadow-sm';
+                }
+                if (dot1) dot1.className = 'w-2.5 h-2.5 rounded-full bg-slate-300';
+                if (dot2) dot2.className = 'w-2.5 h-2.5 rounded-full bg-indigo-600';
+            }
+
+            // Elemen Tombol & Status
+            const btn = document.getElementById('btn-absen-pegawai');
+            const btnText = document.getElementById('btn-pegawai-text');
+            const btnIcon = document.getElementById('btn-pegawai-icon');
+            const statusDesc = document.getElementById('pegawai-keterangan-status');
+            const logAwal = document.getElementById('log-awal-text');
+            const logAkhir = document.getElementById('log-akhir-text');
+
+            // Update Log Rincian
+            if (logAwal) {
+                if (data.masuk) {
+                    logAwal.innerHTML = `<span class="text-emerald-700 font-bold block">${formatJamWib(data.masuk.waktu_absen)}</span><span class="text-[9px] text-slate-500">${data.masuk.keterangan || 'Tercatat'}</span>`;
+                } else {
+                    logAwal.innerHTML = `<span class="text-slate-400 italic">Belum Absen Masuk</span>`;
+                }
+            }
+            if (logAkhir) {
+                if (data.pulang) {
+                    logAkhir.innerHTML = `<span class="text-rose-700 font-bold block">${formatJamWib(data.pulang.waktu_absen)}</span><span class="text-[9px] text-slate-500">${data.pulang.keterangan || 'Tercatat'}</span>`;
+                } else {
+                    logAkhir.innerHTML = `<span class="text-slate-400 italic">Belum Absen Pulang</span>`;
+                }
+            }
+
+            // Tentukan Aksi Tombol
+            if (!btn || !btnText || !btnIcon || !statusDesc) return;
+
+            if (!data.masuk) {
+                // Belum absen masuk (Check Log Awal)
+                btnText.innerText = `Absensi Masuk (${shiftName})`;
+                btnIcon.className = 'fas fa-sign-in-alt text-xl';
+                btn.className = 'w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95 cursor-pointer';
+                btn.disabled = false;
+                statusDesc.innerText = `Belum absen masuk ${shiftName} (Jam Kerja: ${data.jamMasuk} - ${data.jamPulang} WIB). Klik tombol saat jam masuk dimulai.`;
+            } else if (data.masuk && !data.pulang) {
+                // Sudah absen masuk, belum absen pulang (Check Log Akhir)
+                const jamMsk = formatJamWib(data.masuk.waktu_absen);
+                btnText.innerText = `Absensi Pulang (${shiftName})`;
+                btnIcon.className = 'fas fa-sign-out-alt text-xl';
+                btn.className = 'w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95 cursor-pointer';
+                btn.disabled = false;
+                statusDesc.innerText = `Sedang bertugas di ${shiftName} (Absen Masuk: ${jamMsk}). Klik tombol ini saat jam pulang kerja (${data.jamPulang} WIB).`;
+            } else {
+                // Sudah absen masuk dan pulang (2 Check Log Selesai)
+                const jamMsk = formatJamWib(data.masuk.waktu_absen);
+                const jamPlg = formatJamWib(data.pulang.waktu_absen);
+                btnText.innerText = `✅ ${shiftName} Selesai`;
+                btnIcon.className = 'fas fa-check-circle text-xl';
+                btn.className = 'w-full py-4 px-6 font-bold rounded-xl shadow-none transition-all duration-300 flex items-center justify-center gap-3 bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed';
+                btn.disabled = true;
+                statusDesc.innerText = `Alhamdulillah, 2 kali check log ${shiftName} hari ini telah lengkap (Masuk: ${jamMsk} | Pulang: ${jamPlg}).`;
+            }
+        }
+
         // Ambil data lokasi user untuk visualisasi status GPS
         function updateGPSStatus() {
             const title = document.getElementById('gps-status-title');
@@ -1451,15 +1677,28 @@ if ($total_alpa_sem >= 6) {
                         title.innerText = `Terdeteksi di dekat ${closestLocation.nama}`;
                         desc.innerText = `Akurasi baik. Jarak Anda: ${Math.round(minDistance)} meter.`;
                         isLocationValid = true;
+
+                        const locBadge = document.getElementById('pegawai-location-badge');
+                        if (locBadge) {
+                            locBadge.className = "mb-4 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-emerald-50 text-emerald-800 border border-emerald-200 transition-all";
+                            locBadge.innerHTML = `<i class="fas fa-check-circle text-emerald-600"></i> <span>Lokasi Valid: ${closestLocation.nama} (${Math.round(minDistance)}m) - Siap Absen</span>`;
+                        }
                     } else {
                         errorIcon.classList.remove('hidden');
                         title.innerText = "Di Luar Jangkauan Gedung";
+                        const distM = closestLocation ? Math.round(minDistance) : 0;
                         if (closestLocation) {
-                            desc.innerText = `Terdekat ke ${closestLocation.nama} (Jarak: ${Math.round(minDistance)}m). Toleransi: ${MAX_DISTANCE_METERS}m.`;
+                            desc.innerText = `Terdekat ke ${closestLocation.nama} (Jarak: ${distM}m). Toleransi: ${MAX_DISTANCE_METERS}m.`;
                         } else {
                             desc.innerText = "Jauh dari semua lokasi absensi.";
                         }
                         isLocationValid = false;
+
+                        const locBadge = document.getElementById('pegawai-location-badge');
+                        if (locBadge) {
+                            locBadge.className = "mb-4 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-rose-50 text-rose-800 border border-rose-200 transition-all";
+                            locBadge.innerHTML = `<i class="fas fa-ban text-rose-600"></i> <span>Di Luar Lokasi: Gedung A, B, C, atau Masjid (${distM}m)</span>`;
+                        }
                     }
                 },
                 (error) => {
@@ -1477,6 +1716,12 @@ if ($total_alpa_sem >= 6) {
                     }
                     desc.innerText = errMsg;
                     isLocationValid = false;
+
+                    const locBadge = document.getElementById('pegawai-location-badge');
+                    if (locBadge) {
+                        locBadge.className = "mb-4 px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-rose-50 text-rose-800 border border-rose-200 transition-all";
+                        locBadge.innerHTML = `<i class="fas fa-triangle-exclamation text-rose-600"></i> <span>GPS belum aktif. Aktifkan lokasi untuk absensi.</span>`;
+                    }
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
@@ -1486,6 +1731,23 @@ if ($total_alpa_sem >= 6) {
         function doAbsensi(jenisAbsen) {
             const btnId = 'btn-absen-' + jenisAbsen.toLowerCase();
             const btn = document.getElementById(btnId);
+
+            // Syarat Geolocation untuk Pegawai: Harus di Gedung A, B, C, atau Masjid
+            if (jenisAbsen === 'Pegawai') {
+                if (!isLocationValid) {
+                    showAlertModal(
+                        'Syarat Lokasi Belum Terpenuhi', 
+                        'Tombol absensi hanya dapat digunakan jika Anda berada di dalam lokasi resmi yang telah ditentukan: Gedung A, Gedung B, Gedung C, atau Masjid At Taqwa. Silakan aktifkan GPS dan mendekat ke lokasi gedung untuk melakukan absensi.', 
+                        'rejected'
+                    );
+                    return;
+                }
+
+                if (shiftData[currentShift] && shiftData[currentShift].masuk && shiftData[currentShift].pulang) {
+                    showAlertModal('Shift Selesai', 'Anda sudah menyelesaikan absensi Masuk dan Pulang untuk ' + currentShift + ' hari ini.', 'warning');
+                    return;
+                }
+            }
 
             if (userLatitude === null || userLongitude === null) {
                 // GPS belum terdeteksi, coba ambil paksa sekali lagi
@@ -1498,6 +1760,7 @@ if ($total_alpa_sem >= 6) {
                             window.userAccuracy = position.coords.accuracy || 0;
                             window.isMocked = (position.coords.isMock || position.mocked) ? 1 : 0;
                             document.getElementById('alert-modal').classList.add('hidden'); // Tutup modal
+                            updateGPSStatus();
                             sendAbsensiRequest(jenisAbsen, btn);
                         },
                         (error) => {
@@ -1526,6 +1789,9 @@ if ($total_alpa_sem >= 6) {
             formData.append('gps_accuracy', window.userAccuracy || 0);
             formData.append('is_mock', window.isMocked || 0);
             formData.append('jenis_absen', jenisAbsen);
+            if (jenisAbsen === 'Pegawai') {
+                formData.append('shift', currentShift);
+            }
 
             fetch('proses-absen.php', {
                 method: 'POST',
@@ -1564,6 +1830,16 @@ if ($total_alpa_sem >= 6) {
                 btnElement.innerHTML = originalHTML;
             });
         }
+
+        // Listener Pilihan Shift
+        document.querySelectorAll('input[name="pilihan_shift"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                renderShiftUI(this.value);
+            });
+        });
+
+        // Inisialisasi UI Shift saat halaman pertama kali dibuka
+        renderShiftUI(currentShift);
 
         // Event listener click tombol absensi (dengan check existence)
         const btnPegawai = document.getElementById('btn-absen-pegawai');
