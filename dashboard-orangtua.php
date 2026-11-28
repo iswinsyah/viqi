@@ -84,6 +84,41 @@ $ortu_nama = $_SESSION['orangtua_nama'] ?? 'Orang Tua / Wali';
         <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-100 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8">
             <div class="max-w-6xl mx-auto space-y-6">
 
+                <?php if ($is_super_admin): 
+                    $all_santri_opt = [];
+                    $res_opt = $conn->query("SELECT id, nama_lengkap, kelas_sekarang FROM buku_induk_santri WHERE status_santri = 'Aktif' ORDER BY nama_lengkap ASC");
+                    if ($res_opt) {
+                        while ($ro = $res_opt->fetch_assoc()) $all_santri_opt[] = $ro;
+                    }
+                    $curr_selected_id = !empty($santri_list) ? (int)$santri_list[0]['id'] : 0;
+                ?>
+                <!-- PANEL PRATINJAU SUPER ADMIN -->
+                <div class="bg-gradient-to-r from-amber-50 to-teal-50 border border-amber-200/90 rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-xs">
+                    <div class="flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-sm shadow-md shadow-amber-500/20 flex-shrink-0">
+                            <i class="fas fa-user-shield"></i>
+                        </span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-extrabold text-slate-800 text-sm">Pratinjau Ruang Orang Tua</h3>
+                                <span class="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded-full text-[10px] font-bold">Mode Super Admin</span>
+                            </div>
+                            <p class="text-[11px] text-slate-600 mt-0.5">Wali santri asli hanya melihat data putra/putrinya sendiri. Anda dapat mengganti ananda yang ditinjau di samping.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                        <label for="adminSantriSwitcher" class="text-xs font-bold text-slate-700 whitespace-nowrap">Tinjau Santri:</label>
+                        <select id="adminSantriSwitcher" onchange="if(this.value) window.location.href='dashboard-orangtua.php?santri_id=' + this.value;" class="bg-white border-2 border-teal-600/40 hover:border-[#0b8478] text-slate-800 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0b8478] shadow-xs cursor-pointer transition">
+                            <?php foreach ($all_santri_opt as $aso): ?>
+                                <option value="<?= $aso['id'] ?>" <?= ($aso['id'] == $curr_selected_id) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($aso['nama_lengkap']) ?> (<?= htmlspecialchars($aso['kelas_sekarang'] ?? 'Santri') ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <!-- STATUS KUNCI ANANDA & AKSI CEPAT -->
                 <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div class="flex items-center gap-2 flex-wrap">
@@ -92,7 +127,7 @@ $ortu_nama = $_SESSION['orangtua_nama'] ?? 'Orang Tua / Wali';
                         </span>
                         <div>
                             <h3 class="font-extrabold text-slate-800 text-sm">Data Ananda Tercinta</h3>
-                            <?php if(!empty($locked_ids) && !empty($santri_list)): ?>
+                            <?php if(!empty($santri_list)): ?>
                                 <p class="text-[11px] text-[#0b8478] font-bold mt-0.5 flex items-center gap-1.5 flex-wrap">
                                     <i class="fas fa-lock text-[10px]"></i> 
                                     <?php if (count($santri_list) > 1): ?>
@@ -127,13 +162,13 @@ $ortu_nama = $_SESSION['orangtua_nama'] ?? 'Orang Tua / Wali';
                             <i class="fas fa-user-graduate"></i>
                         </div>
                         <h3 class="text-lg font-bold text-gray-800 mb-1">Belum Ada Data Ananda Terhubung</h3>
-                        <p class="text-xs text-gray-500 leading-relaxed mb-5">Akun Anda belum terhubung dengan data santri di buku induk. Silakan klik tombol di bawah untuk memilih ananda.</p>
+                        <p class="text-xs text-gray-500 leading-relaxed mb-5">Akun Anda belum terhubung dengan data santri di buku induk. Silakan klik tombol di bawah untuk memilih ananda atau hubungi pihak pengasuhan pesantren.</p>
                         <button type="button" onclick="openPilihAnandaModal()" class="px-5 py-2.5 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm transition inline-flex items-center gap-2">
                             <i class="fas fa-child"></i> Pilih Ananda Sekarang
                         </button>
                     </div>
                 <?php else: ?>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="anandaGrid">
+                    <div class="grid grid-cols-1 <?= count($santri_list) > 1 ? 'lg:grid-cols-2' : 'max-w-2xl mx-auto' ?> gap-6" id="anandaGrid">
                         <?php foreach($santri_list as $s): ?>
                             <div class="ananda-card bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col justify-between" data-title="<?= strtolower(htmlspecialchars($s['nama_lengkap'])) ?>">
                                 <!-- PROFIL ANANDA HEADER -->
