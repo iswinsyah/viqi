@@ -135,10 +135,10 @@ $active_menu = 'orangtua_hafalan';
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <button type="button" onclick="openPilihAnandaModal()" class="text-[10px] text-teal-800 hover:text-teal-950 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-xl font-bold ml-1 flex items-center gap-1 transition" title="Kelola Ananda Bersaudara">
-                            <i class="fas fa-users text-[10px]"></i> Kelola Saudara
-                        </button>
                         <?php if ($is_super_admin): ?>
+                            <button type="button" onclick="openPilihAnandaModal()" class="text-[10px] text-teal-800 hover:text-teal-950 bg-teal-50 hover:bg-teal-100 border border-teal-200 px-2.5 py-1 rounded-xl font-bold ml-1 flex items-center gap-1 transition" title="Kelola Ananda Bersaudara (Super Admin)">
+                                <i class="fas fa-users text-[10px]"></i> Kelola Saudara
+                            </button>
                             <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-rose-600 hover:text-rose-800 underline font-semibold ml-1" title="Reset Kunci (Khusus Super Admin)">
                                 <i class="fas fa-key text-[9px]"></i> Reset
                             </a>
@@ -149,10 +149,10 @@ $active_menu = 'orangtua_hafalan';
                         <i class="fas fa-lock text-[#0b8478]"></i>
                         <span>Ananda: <strong class="text-[#0b8478]"><?= htmlspecialchars($selected_child['nama_lengkap']) ?></strong></span>
                         <span class="text-[10px] bg-teal-200/80 text-teal-900 px-2 py-0.5 rounded-full font-bold">Terkunci</span>
-                        <button type="button" onclick="openPilihAnandaModal()" class="text-[10px] text-teal-700 hover:text-teal-900 underline font-semibold ml-1.5 flex items-center gap-1" title="Tambah Saudara Kandung">
-                            <i class="fas fa-user-plus text-[9px]"></i> Tambah Saudara
-                        </button>
                         <?php if ($is_super_admin): ?>
+                            <button type="button" onclick="openPilihAnandaModal()" class="text-[10px] text-teal-700 hover:text-teal-900 underline font-semibold ml-1.5 flex items-center gap-1" title="Tambah Saudara Kandung (Super Admin)">
+                                <i class="fas fa-user-plus text-[9px]"></i> Tambah Saudara
+                            </button>
                             <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih ananda kembali (Khusus Super Admin).')" class="text-[10px] text-rose-600 hover:text-rose-800 underline font-semibold ml-1.5" title="Reset Kunci (Khusus Super Admin)">
                                 <i class="fas fa-key text-[9px]"></i> Reset
                             </a>

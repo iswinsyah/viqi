@@ -145,13 +145,29 @@ $ortu_nama = $_SESSION['orangtua_nama'] ?? 'Orang Tua / Wali';
                     </div>
 
                     <div class="flex items-center gap-2 flex-wrap">
-                        <button type="button" onclick="openPilihAnandaModal()" class="px-3.5 py-2 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition">
-                            <i class="fas fa-user-plus"></i> Kelola / Pilih Ananda
-                        </button>
-                        <?php if ($is_super_admin && !empty($locked_ids)): ?>
-                            <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih santri lain kembali (Khusus Super Admin).')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1">
-                                <i class="fas fa-key text-[10px]"></i> Reset Kunci
-                            </a>
+                        <?php if (empty($santri_list)): ?>
+                            <button type="button" onclick="openPilihAnandaModal()" class="px-3.5 py-2 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition">
+                                <i class="fas fa-user-plus"></i> Pilih Ananda Sekarang
+                            </button>
+                        <?php elseif ($is_super_admin): ?>
+                            <button type="button" onclick="openPilihAnandaModal()" class="px-3.5 py-2 bg-[#0b8478] hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1.5 transition">
+                                <i class="fas fa-user-plus"></i> Kelola / Pilih Ananda (Super Admin)
+                            </button>
+                            <?php if (!empty($locked_ids)): ?>
+                                <a href="?action=unlock_ananda" onclick="return confirm('Reset kunci ananda? Anda akan bisa memilih santri lain kembali (Khusus Super Admin).')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1">
+                                    <i class="fas fa-key text-[10px]"></i> Reset Kunci
+                                </a>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <!-- STATUS TERKUNCI RESMI UNTUK ORANG TUA BIASA (HANYA BISA DIUBAH LAPOR KE SUPER ADMIN) -->
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                                    <i class="fas fa-shield-halved text-emerald-600"></i> Terkunci Permanen
+                                </span>
+                                <a href="https://wa.me/6285189918115?text=Assalamu%27alaikum%20Admin%20Villa%20Quran,%20mohon%20bantuan%20untuk%20perubahan%20data%20keterhubungan%20ananda%20di%20Ruang%20Orang%20Tua" target="_blank" class="px-3 py-1.5 bg-slate-50 hover:bg-teal-50 text-slate-600 hover:text-teal-900 border border-slate-200 hover:border-teal-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5" title="Hubungi Super Admin / Pengasuhan jika ingin mengubah data ananda">
+                                    <i class="fab fa-whatsapp text-emerald-500"></i> Bantuan Ubah Data (Lapor Admin)
+                                </a>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>

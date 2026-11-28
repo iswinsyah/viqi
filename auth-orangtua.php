@@ -164,6 +164,18 @@ function unlockSantriForOrangtua($conn, $orangtua_id) {
 
 // 1. Handler Form Kunci Multi-Ananda (POST dari Modal / Checkbox)
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'lock_multiple_ananda') {
+    $existing_locked = getLockedSantriIds($conn, $_SESSION['orangtua_id'] ?? 0);
+    $is_admin = (
+        ((int)($_SESSION['orangtua_id'] ?? 0) === 9999) ||
+        (isset($_SESSION['app_username']) && in_array(strtolower($_SESSION['app_username']), ['winsyah', 'viqi']))
+    );
+    // Jika BUKAN Super Admin dan SUDAH pernah mengunci ananda: Tolak perubahan mandiri! (Harus lapor ke Super Admin)
+    if (!empty($existing_locked) && !$is_admin) {
+        $redirect = strtok($_SERVER["REQUEST_URI"], '?');
+        header("Location: " . $redirect);
+        exit;
+    }
+
     $p_ids = array_filter(array_map('intval', $_POST['santri_ids'] ?? []));
     if (!empty($p_ids)) {
         lockSantriForOrangtua($conn, $_SESSION['orangtua_id'] ?? 0, $p_ids);
