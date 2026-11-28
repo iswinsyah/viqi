@@ -8,24 +8,14 @@ on:
 
 jobs:
   deploy:
-    name: 🚀 Fast Deploy (${{ matrix.target_name }})
+    name: 🚀 Fast Deploy to Hostinger (villaquranindonesia.com)
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target_name: 'villaquranbaronmalang.com'
-            remote_dir: 'domains/villaquranbaronmalang.com/public_html'
-          - target_name: 'villaquranindonesia.com'
-            remote_dir: 'domains/villaquranindonesia.com/public_html'
-          - target_name: 'Root public_html'
-            remote_dir: 'public_html'
     steps:
       - name: 🚚 Checkout Repository
         uses: actions/checkout@v4
 
-      - name: ⚡ Parallel SFTP Sync (Port 65002)
+      - name: ⚡ SFTP Sync (Port 65002)
         uses: wlixcc/SFTP-Deploy-Action@v1.2.6
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -33,6 +23,6 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: 65002
           local_path: './'
-          remote_path: ${{ matrix.remote_dir }}
+          remote_path: 'domains/villaquranindonesia.com/public_html'
           sftpArgs: '-o ConnectTimeout=30'
           rsyncArgs: '--exclude=.git --exclude=.github --exclude=.agents --exclude=upload --exclude=uploads --exclude=assets --exclude=fonts --exclude=*.mp3'
