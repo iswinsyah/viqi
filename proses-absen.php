@@ -62,6 +62,12 @@ $conn->query("CREATE TABLE IF NOT EXISTS absensi_pegawai (
 @$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN shift VARCHAR(20) DEFAULT 'Shift 1' AFTER status_kehadiran");
 @$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN keterangan VARCHAR(255) DEFAULT NULL AFTER koordinat_pegawai");
 @$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN durasi_kerja VARCHAR(50) DEFAULT NULL AFTER keterangan");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN jadwal_id INT NULL AFTER shift");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN mapel_id INT NULL AFTER jadwal_id");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN kelas_id INT NULL AFTER mapel_id");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN jam_ke INT NULL AFTER kelas_id");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN nama_mapel VARCHAR(150) NULL AFTER jam_ke");
+@$conn->query("ALTER TABLE absensi_pegawai ADD COLUMN nama_kelas VARCHAR(100) NULL AFTER nama_mapel");
 
 function json_response($status, $message, $data = []) {
     die(json_encode(['status' => $status, 'message' => $message] + $data));
@@ -137,6 +143,14 @@ $gps_accuracy = isset($_POST['gps_accuracy']) ? (float)$_POST['gps_accuracy'] : 
 $is_mock_client = (int)($_POST['is_mock'] ?? 0);
 $req_jenis_absen = $_POST['jenis_absen'] ?? 'Harian';
 
+// Parameter Jadwal Pelajaran (Sinkronisasi KBM Ustadz, Tutor, Trainer)
+$req_jadwal_id = (int)($_POST['jadwal_id'] ?? 0);
+$req_jam_ke = (int)($_POST['jam_ke'] ?? 0);
+$req_mapel_id = (int)($_POST['mapel_id'] ?? 0);
+$req_kelas_id = (int)($_POST['kelas_id'] ?? 0);
+$req_nama_mapel = trim($_POST['nama_mapel'] ?? '');
+$req_nama_kelas = trim($_POST['nama_kelas'] ?? '');
+
 // Pengaturan Shift Kerja (Shift 1: 07.00 - 13.00, Shift 2: 15.00 - 21.00)
 $req_shift_raw = trim($_POST['shift'] ?? '');
 $current_h = (int)date('H');
@@ -150,7 +164,7 @@ if (strpos($req_shift_raw, '2') !== false) {
     $shift = ($current_min >= 840) ? 'Shift 2' : 'Shift 1'; // Jam 14.00 ke atas default Shift 2
 }
 
-// F. Validasi Hak Akses Role Khusus Harian/Pegawai
+// F. Validasi Hak Akses Role Khusus Harian/Pegawai & Mengajar
 $user_roles = isset($_SESSION['ustadz_role']) ? explode(',', $_SESSION['ustadz_role']) : [];
 if (isset($_SESSION['ustadz_id']) && $_SESSION['ustadz_id'] == 9999) {
     if (!in_array('super_admin', $user_roles)) {
@@ -163,7 +177,17 @@ if ($req_jenis_absen === 'Harian' || $req_jenis_absen === 'Pegawai') {
 }
 
 if ($req_jenis_absen === 'Mengajar') {
-    $is_eligible = in_array('ustadz', $user_roles) || in_array('super_admin', $user_roles);
+    // Hak Akses Mengajar: Wajib dan Terbuka untuk Ustadz, Tutor, Trainer, dan Super Admin
+    $is_eligible = in_array('ustadz', $user_roles) || in_array('tutor', $user_roles) || in_array('trainer', $user_roles) || in_array('super_admin', $user_roles);
+    if (!$is_eligible) {
+        foreach ($user_roles as $ur) {
+            $ur_clean = strtolower(trim($ur));
+            if (strpos($ur_clean, 'guru') !== false || strpos($ur_clean, 'tutor') !== false || strpos($ur_clean, 'trainer') !== false || strpos($ur_clean, 'ustadz') !== false) {
+                $is_eligible = true;
+                break;
+            }
+        }
+    }
     if (!$is_eligible) {
         json_response('error', 'Anda tidak memiliki hak akses untuk melakukan Absensi Mengajar.');
     }
@@ -353,23 +377,40 @@ if ($qr_jenis_absen === 'Rapat') {
         json_response('error', "Anda sudah menyelesaikan 2 kali check log (Masuk dan Pulang) untuk $shift hari ini.");
     }
 } else {
-    // Untuk Absensi Mengajar
-    $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = '$qr_jenis_absen' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
+    // Absensi Mengajar (Sinkronisasi Presisi dengan Jadwal Pelajaran / Slot Jam Ke)
+    $where_kbm = "1=1";
+    if ($req_jadwal_id > 0) {
+        $where_kbm = "jadwal_id = $req_jadwal_id";
+    } elseif ($req_jam_ke > 0) {
+        $where_kbm = "jam_ke = $req_jam_ke";
+    }
+
+    $res_check = $conn->query("SELECT id, waktu_absen, status_kehadiran FROM absensi_pegawai 
+        WHERE ustadz_id = $ustadz_id 
+        AND DATE(waktu_absen) = '$today' 
+        AND jenis_absen = 'Mengajar' 
+        AND $where_kbm 
+        AND status_kehadiran IN ('Masuk', 'Pulang') 
+        ORDER BY waktu_absen ASC");
+    
     $status_kehadiran = 'Masuk';
-    if ($res_check && $res_check->num_rows > 0) {
+    $num_logs_kbm = $res_check ? $res_check->num_rows : 0;
+    
+    if ($num_logs_kbm == 0) {
+        $status_kehadiran = 'Masuk';
+    } elseif ($num_logs_kbm == 1) {
         $last_row = $res_check->fetch_assoc();
-        $waktu_terakhir = strtotime($last_row['waktu_absen']);
         if ($last_row['status_kehadiran'] === 'Masuk') {
-            if (time() - $waktu_terakhir < 180) {
-                json_response('error', 'Anda baru saja absen Masuk. Harap tunggu minimal 3 menit sebelum absen Pulang.');
+            $waktu_terakhir = strtotime($last_row['waktu_absen']);
+            if (time() - $waktu_terakhir < 180) { // 3 menit jeda
+                json_response('error', 'Anda baru saja absen Masuk Mengajar. Harap tunggu minimal 3 menit sebelum menyelesaikan sesi mengajar.');
             }
             $status_kehadiran = 'Pulang';
         } else {
-            if (time() - $waktu_terakhir < 180) {
-                json_response('error', 'Anda baru saja absen Pulang. Harap tunggu minimal 3 menit jika ingin absen Masuk kembali.');
-            }
             $status_kehadiran = 'Masuk';
         }
+    } else {
+        json_response('error', "Anda sudah menyelesaikan 2 kali check log (Mulai dan Selesai) untuk sesi jadwal mengajar ini hari ini.");
     }
 }
 
@@ -502,26 +543,93 @@ if ($qr_jenis_absen === 'Harian' || $qr_jenis_absen === 'Pegawai') {
         }
     }
 } elseif ($qr_jenis_absen === 'Mengajar') {
+    // Lookup detail jadwal jika jadwal_id dikirimkan dan data nama_mapel/nama_kelas belum lengkap
+    if ($req_jadwal_id > 0 && (empty($req_nama_mapel) || empty($req_nama_kelas) || $req_jam_ke == 0)) {
+        $q_jdw = $conn->query("SELECT j.*, m.nama_mapel, k.nama_kelas 
+            FROM jadwal_pelajaran j 
+            LEFT JOIN master_mapel m ON j.mapel_id = m.id 
+            LEFT JOIN master_kelas k ON j.kelas_id = k.id 
+            WHERE j.id = $req_jadwal_id LIMIT 1");
+        if ($q_jdw && $r_jdw = $q_jdw->fetch_assoc()) {
+            $req_jam_ke = (int)$r_jdw['jam_ke'];
+            $req_mapel_id = (int)$r_jdw['mapel_id'];
+            $req_kelas_id = (int)$r_jdw['kelas_id'];
+            $req_nama_mapel = $r_jdw['nama_mapel'] ?? $req_nama_mapel;
+            $req_nama_kelas = $r_jdw['nama_kelas'] ?? $req_nama_kelas;
+        }
+    }
+
+    $jam_slot_lookup = [
+        1 => ['mulai' => '05:00', 'selesai' => '05:45'],
+        2 => ['mulai' => '05:45', 'selesai' => '06:30'],
+        3 => ['mulai' => '07:30', 'selesai' => '08:15'],
+        4 => ['mulai' => '08:15', 'selesai' => '09:00'],
+        5 => ['mulai' => '09:00', 'selesai' => '09:45'],
+        6 => ['mulai' => '09:45', 'selesai' => '10:30'],
+        7 => ['mulai' => '10:30', 'selesai' => '11:15'],
+        8 => ['mulai' => '11:15', 'selesai' => '12:00'],
+        9 => ['mulai' => '16:00', 'selesai' => '16:45'],
+        10 => ['mulai' => '16:45', 'selesai' => '17:30'],
+        12 => ['mulai' => '19:30', 'selesai' => '20:15'],
+        13 => ['mulai' => '20:15', 'selesai' => '21:00'],
+    ];
+
+    $label_mapel_kelas = (!empty($req_nama_mapel) ? $req_nama_mapel : 'KBM');
+    if (!empty($req_nama_kelas)) {
+        $label_mapel_kelas .= " ($req_nama_kelas)";
+    }
+
     if ($status_kehadiran === 'Masuk') {
-        $keterangan = "Mulai Mengajar";
+        // Cek ketepatan waktu mulai jam pelajaran jika slot jam_ke terdaftar
+        $slot_info = isset($jam_slot_lookup[$req_jam_ke]) ? $jam_slot_lookup[$req_jam_ke] : null;
+        if ($slot_info) {
+            $target_ts = strtotime(date('Y-m-d') . " " . $slot_info['mulai'] . ":00");
+            if (time() <= $target_ts) {
+                // Tepat waktu / hadir sebelum bel
+                $keterangan = "Tepat Waktu Mulai KBM: $label_mapel_kelas";
+                $pesan_evaluasi = "Terimakasih $panggilan_pegawai $nama_pegawai sudah memulai KBM ($label_mapel_kelas) tepat waktu, Barokallah.";
+            } else {
+                // Terlambat mulai jam mengajar
+                $diff_sec = time() - $target_ts;
+                $selisih_menit = max(1, floor($diff_sec / 60));
+                $is_terlambat = true;
+                $keterangan = "Terlambat Mulai KBM ($selisih_menit menit): $label_mapel_kelas";
+                $pesan_evaluasi = "Catatan: Hari ini $panggilan_pegawai $nama_pegawai terlambat $selisih_menit menit memulai KBM ($label_mapel_kelas) dari jadwal masuk (" . $slot_info['mulai'] . " WIB).";
+                
+                if ($is_izin_yayasan) {
+                    $keterangan .= " [Izin Yayasan: $keterangan_izin]";
+                    $warning_msg = "Anda terdeteksi terlambat $selisih_menit menit memulai KBM (dengan izin resmi Ketua Yayasan: $keterangan_izin).";
+                } else {
+                    $is_pelanggaran = true;
+                    $warning_msg = "⚠️ Catatan: Terlambat $selisih_menit menit memulai KBM ($label_mapel_kelas) dari jadwal (" . $slot_info['mulai'] . " WIB).";
+                }
+            }
+        } else {
+            $keterangan = "Mulai Mengajar: $label_mapel_kelas";
+            $pesan_evaluasi = "Terimakasih $panggilan_pegawai $nama_pegawai sudah melakukan absensi mulai mengajar $label_mapel_kelas, Barokallah.";
+        }
     } elseif ($status_kehadiran === 'Pulang') {
         // Hitung durasi mengajar riil
         $waktu_masuk_ajar = ($last_row && !empty($last_row['waktu_absen'])) ? strtotime($last_row['waktu_absen']) : (time() - 2700);
         $durasi_sec = time() - $waktu_masuk_ajar;
         $durasi_menit = max(1, round($durasi_sec / 60));
+        $durasi_str = "$durasi_menit menit";
 
         // Ketentuan standar minimal mengajar adalah 35 menit per jam pelajaran (JP)
         if ($durasi_menit < 35) {
             if ($is_izin_yayasan) {
-                $keterangan = "Selesai Mengajar ($durasi_menit menit) [Disetujui Izin Yayasan: $keterangan_izin]";
-                $warning_msg = "Durasi mengajar Anda tercatat $durasi_menit menit (di bawah standar) dengan izin resmi Ketua Yayasan.";
+                $keterangan = "Selesai KBM: $label_mapel_kelas ($durasi_str) [Disetujui Izin Yayasan: $keterangan_izin]";
+                $pesan_evaluasi = "Catatan: Selesai KBM $label_mapel_kelas dengan durasi $durasi_str (di bawah standar 35 menit) dengan izin resmi Ketua Yayasan.";
+                $warning_msg = "Durasi mengajar Anda tercatat $durasi_str (di bawah standar) dengan izin resmi Ketua Yayasan.";
             } else {
                 $is_pelanggaran = true;
-                $keterangan = "Pelanggaran: Durasi Mengajar Tidak Sesuai Ketentuan ($durasi_menit menit, Kurang Dari 35 Menit Tanpa Izin Yayasan)";
-                $warning_msg = "⚠️ PELANGGARAN KEDISIPLINAN: Durasi mengajar Anda hanya $durasi_menit menit (di bawah ketentuan standar minimal 35 menit per sesi) tanpa izin resmi Ketua Yayasan.";
+                $keterangan = "Pelanggaran: Durasi KBM Tidak Sesuai Ketentuan ($label_mapel_kelas, $durasi_str, Kurang Dari 35 Menit)";
+                $pesan_evaluasi = "Catatan: Durasi KBM $label_mapel_kelas hanya $durasi_str (di bawah standar minimal 35 menit per jam pelajaran).";
+                $warning_msg = "⚠️ PELANGGARAN KEDISIPLINAN: Durasi mengajar Anda hanya $durasi_str (di bawah ketentuan standar minimal 35 menit per sesi) tanpa izin resmi Ketua Yayasan.";
             }
         } else {
-            $keterangan = "Selesai Mengajar ($durasi_menit menit - Sesuai Ketentuan)";
+            $keterangan = "Selesai KBM: $label_mapel_kelas ($durasi_str - Sesuai Ketentuan)";
+            $pesan_evaluasi = "Terimakasih $panggilan_pegawai $nama_pegawai sudah menyelesaikan KBM $label_mapel_kelas selama $durasi_str dengan baik, Barokallah.";
         }
     }
 }
@@ -631,6 +739,9 @@ if ($qr_jenis_absen === 'Rapat') {
 }
 
 // E. Validasi Jarak & Eksekusi Penyimpanan
+$durasi_str_final = ($status_kehadiran === 'Pulang' && !empty($durasi_str)) ? $durasi_str : null;
+$durasi_null = null;
+
 if ($distance > $max_distance_allowed && !$is_izin_approved) {
     // --- DI LUAR JANGKAUAN DAN TIDAK ADA IZIN ---
     // Tetap catat ke database dengan status "Ditolak ([Status])"
@@ -639,8 +750,8 @@ if ($distance > $max_distance_allowed && !$is_izin_approved) {
     $koordinat_pegawai = "$user_lat, $user_lon";
     $keterangan_ditolak = 'Ditolak (Di luar radius ' . $target_location_name . ': ' . round($distance) . 'm)';
 
-    $stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, shift, status_kehadiran, koordinat_pegawai, keterangan, rapat_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("issssssi", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $shift, $status_ditolak, $koordinat_pegawai, $keterangan_ditolak, $rapat_id);
+    $stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, shift, status_kehadiran, koordinat_pegawai, keterangan, durasi_kerja, rapat_id, jadwal_id, mapel_id, kelas_id, jam_ke, nama_mapel, nama_kelas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $stmt->bind_param("isssssssiiiiiss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $shift, $status_ditolak, $koordinat_pegawai, $keterangan_ditolak, $durasi_null, $rapat_id, $req_jadwal_id, $req_mapel_id, $req_kelas_id, $req_jam_ke, $req_nama_mapel, $req_nama_kelas);
     $stmt->execute();
     $stmt->close();
 
@@ -676,14 +787,19 @@ if ($distance > $max_distance_allowed && !$is_izin_approved) {
 $waktu_sekarang = date('Y-m-d H:i:s');
 $koordinat_pegawai = "$user_lat, $user_lon";
 
-$stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, shift, status_kehadiran, koordinat_pegawai, keterangan, rapat_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-$stmt->bind_param("issssssi", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $shift, $status_kehadiran, $koordinat_pegawai, $keterangan, $rapat_id);
+$stmt = $conn->prepare("INSERT INTO absensi_pegawai (ustadz_id, waktu_absen, jenis_absen, shift, status_kehadiran, koordinat_pegawai, keterangan, durasi_kerja, rapat_id, jadwal_id, mapel_id, kelas_id, jam_ke, nama_mapel, nama_kelas) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+$stmt->bind_param("isssssssiiiiiss", $ustadz_id, $waktu_sekarang, $qr_jenis_absen, $shift, $status_kehadiran, $koordinat_pegawai, $keterangan, $durasi_str_final, $rapat_id, $req_jadwal_id, $req_mapel_id, $req_kelas_id, $req_jam_ke, $req_nama_mapel, $req_nama_kelas);
 
 if ($stmt->execute()) {
     $res_data = [
         'waktu' => date('H:i:s', strtotime($waktu_sekarang)),
         'shift' => $shift,
-        'status_kehadiran' => $status_kehadiran
+        'status_kehadiran' => $status_kehadiran,
+        'jenis_absen' => $qr_jenis_absen,
+        'nama_mapel' => $req_nama_mapel,
+        'nama_kelas' => $req_nama_kelas,
+        'jam_ke' => $req_jam_ke,
+        'durasi_kerja' => $durasi_str_final
     ];
     if ($warning_msg !== null) {
         $res_data['warning_msg'] = $warning_msg;
@@ -704,6 +820,29 @@ if ($stmt->execute()) {
                   . "$pesan_evaluasi\n\n"
                   . "━━━━━━━━━━━━━━━━━━━━\n"
                   . "Jadwal Kerja: $shift ($shift_jam_label) • 6 Jam Kerja\n"
+                  . "-- Sistem Absensi Otomatis SADIGS 4.0 --";
+    } elseif ($qr_jenis_absen === 'Mengajar') {
+        $info_slot = ($req_jam_ke > 0) ? "Jam Ke-$req_jam_ke" : "Sesi KBM";
+        if (isset($jam_slot_lookup[$req_jam_ke])) {
+            $info_slot .= " (" . $jam_slot_lookup[$req_jam_ke]['mulai'] . " - " . $jam_slot_lookup[$req_jam_ke]['selesai'] . " WIB)";
+        }
+        $log_action_title = ($status_kehadiran === 'Masuk') ? "Mulai Mengajar (Check-In)" : "Selesai Mengajar (Check-Out)";
+        
+        $pesan_wa = "📖 *SADIGS - ABSENSI KBM MENGAJAR*\n"
+                  . "🕌 *Villa Quran Baron Malang*\n"
+                  . "━━━━━━━━━━━━━━━━━━━━\n\n"
+                  . "👤 Pengajar: *$panggilan_pegawai $nama_pegawai*\n"
+                  . "📚 Mata Pelajaran: *" . (!empty($req_nama_mapel) ? $req_nama_mapel : 'Umum/Diniyyah') . "*\n"
+                  . "🏫 Kelas: *" . (!empty($req_nama_kelas) ? $req_nama_kelas : 'Reguler') . "*\n"
+                  . "🕒 Sesi Jam: *$info_slot*\n"
+                  . "📋 Log Absensi: *$log_action_title*\n"
+                  . "⏰ Waktu Log: *" . date('H:i') . " WIB*\n"
+                  . "📍 Lokasi: *$target_location_name*\n"
+                  . ($status_kehadiran === 'Pulang' && !empty($durasi_str_final) ? "⏱ Durasi Mengajar: *$durasi_str_final*\n" : "")
+                  . "\n💬 *Catatan / Apresiasi:*\n"
+                  . "$pesan_evaluasi\n\n"
+                  . "━━━━━━━━━━━━━━━━━━━━\n"
+                  . "Standar KBM: Minimal 35 Menit per JP\n"
                   . "-- Sistem Absensi Otomatis SADIGS 4.0 --";
     } else {
         $wa_header = !empty($is_pelanggaran) ? "⚠️ *PERINGATAN: PELANGGARAN KEDISIPLINAN (TANPA IZIN YAYASAN)*" : "✅ *LAPORAN ABSENSI $qr_jenis_absen*";
@@ -733,7 +872,9 @@ if ($stmt->execute()) {
         WaNotificationService::send($target_yayasan, $pesan_wa, $conn);
     }
 
-    $sukses_text = "Absensi $status_kehadiran ($shift) berhasil dicatat!";
+    $sukses_text = ($qr_jenis_absen === 'Mengajar')
+        ? ($status_kehadiran === 'Masuk' ? "Absensi Mulai Mengajar ($label_mapel_kelas) berhasil dicatat!" : "Absensi Selesai Mengajar ($label_mapel_kelas - $durasi_str_final) berhasil dicatat!")
+        : "Absensi $status_kehadiran ($shift) berhasil dicatat!";
     json_response('success', $sukses_text, $res_data);
 } else {
     json_response('error', 'Gagal menyimpan data ke database: ' . $conn->error);

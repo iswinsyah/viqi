@@ -289,42 +289,35 @@ if ($rapat_aktif) {
     }
 }
 
-// H. Pengecekan Absensi Mengajar & Otoritas Role (Mendukung Sesi Mengajar Berulang)
-$res_mengajar = $conn->query("SELECT status_kehadiran, waktu_absen FROM absensi_pegawai WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Mengajar' AND status_kehadiran IN ('Masuk', 'Pulang') ORDER BY waktu_absen DESC LIMIT 1");
-$mengajar_status = 'belum_absen';
-$last_mengajar_record = null;
-if ($res_mengajar && $res_mengajar->num_rows > 0) {
-    $last_mengajar_record = $res_mengajar->fetch_assoc();
-    if ($last_mengajar_record['status_kehadiran'] === 'Masuk') {
-        $mengajar_status = 'datang';
-    } else {
-        $mengajar_status = 'pulang_bisa_masuk_lagi';
+// H. Otoritas Role & Sinkronisasi Jadwal Absensi Mengajar (Ustadz, Tutor, Trainer, Super Admin)
+$is_eligible_mengajar = in_array('ustadz', $user_roles) || in_array('tutor', $user_roles) || in_array('trainer', $user_roles) || in_array('super_admin', $user_roles);
+if (!$is_eligible_mengajar) {
+    foreach ($user_roles as $ur) {
+        $ur_clean = strtolower(trim($ur));
+        if (strpos($ur_clean, 'guru') !== false || strpos($ur_clean, 'tutor') !== false || strpos($ur_clean, 'trainer') !== false || strpos($ur_clean, 'ustadz') !== false) {
+            $is_eligible_mengajar = true;
+            break;
+        }
     }
 }
 
-$is_eligible_mengajar = in_array('ustadz', $user_roles) || in_array('super_admin', $user_roles);
+// Slot Jam Pelajaran Standard
+$slot_times_def = [
+    1 => ['start' => '05:00', 'end' => '05:45', 'label' => '05:00 - 05:45'],
+    2 => ['start' => '05:45', 'end' => '06:30', 'label' => '05:45 - 06:30'],
+    3 => ['start' => '07:30', 'end' => '08:15', 'label' => '07:30 - 08:15'],
+    4 => ['start' => '08:15', 'end' => '09:00', 'label' => '08:15 - 09:00'],
+    5 => ['start' => '09:00', 'end' => '09:45', 'label' => '09:00 - 09:45'],
+    6 => ['start' => '09:45', 'end' => '10:30', 'label' => '09:45 - 10:30'],
+    7 => ['start' => '10:30', 'end' => '11:15', 'label' => '10:30 - 11:15'],
+    8 => ['start' => '11:15', 'end' => '12:00', 'label' => '11:15 - 12:00'],
+    9 => ['start' => '16:00', 'end' => '16:45', 'label' => '16:00 - 16:45'],
+    10 => ['start' => '16:45', 'end' => '17:30', 'label' => '16:45 - 17:30'],
+    12 => ['start' => '19:30', 'end' => '20:15', 'label' => '19:30 - 20:15'],
+    13 => ['start' => '20:15', 'end' => '21:00', 'label' => '20:15 - 21:00']
+];
 
-$mengajar_btn_text = '';
-$mengajar_btn_icon = '';
-$mengajar_keterangan_status = '';
-
-if ($mengajar_status === 'belum_absen') {
-    $mengajar_btn_text = 'Mulai Mengajar (Masuk)';
-    $mengajar_btn_icon = 'fa-door-open';
-    $mengajar_keterangan_status = 'Belum absen mengajar hari ini.';
-} elseif ($mengajar_status === 'datang') {
-    $jam_ajar_masuk = date('H:i', strtotime($last_mengajar_record['waktu_absen']));
-    $mengajar_btn_text = 'Selesai Mengajar (Selesai)';
-    $mengajar_btn_icon = 'fa-door-closed';
-    $mengajar_keterangan_status = "Sedang sesi mengajar (Mulai: $jam_ajar_masuk WIB). Klik saat sesi kelas selesai.";
-} else {
-    $jam_ajar_selesai = date('H:i', strtotime($last_mengajar_record['waktu_absen']));
-    $mengajar_btn_text = 'Mulai Mengajar (Sesi Baru)';
-    $mengajar_btn_icon = 'fa-door-open';
-    $mengajar_keterangan_status = "Sesi sebelumnya selesai pukul $jam_ajar_selesai WIB. Klik untuk mulai sesi kelas berikutnya.";
-}
-
-// I. Jadwal Mengajar Hari Ini
+// I. Jadwal Mengajar Hari Ini & Log Kehadiran KBM Terkini
 $days_id = [
     'Sunday' => 'Ahad',
     'Monday' => 'Senin',
@@ -335,15 +328,69 @@ $days_id = [
     'Saturday' => 'Sabtu'
 ];
 $hari_ini = $days_id[date('l')] ?? 'Senin';
-$q_jadwal = $conn->query("SELECT jp.id, jp.jam_ke, mk.nama_kelas, mm.nama_mapel 
+
+// Ambil semua log absensi mengajar hari ini untuk ustadz ini
+$logs_kbm_today = [];
+$res_logs_kbm = $conn->query("SELECT id, jadwal_id, jam_ke, status_kehadiran, waktu_absen, durasi_kerja 
+    FROM absensi_pegawai 
+    WHERE ustadz_id = $ustadz_id AND DATE(waktu_absen) = '$today' AND jenis_absen = 'Mengajar' 
+    ORDER BY waktu_absen ASC");
+if ($res_logs_kbm) {
+    while ($rlk = $res_logs_kbm->fetch_assoc()) {
+        $jid = (int)($rlk['jadwal_id'] ?? 0);
+        $jke = (int)($rlk['jam_ke'] ?? 0);
+        if ($jid > 0) {
+            $logs_kbm_today["jid_$jid"][] = $rlk;
+        }
+        if ($jke > 0) {
+            $logs_kbm_today["jam_$jke"][] = $rlk;
+        }
+    }
+}
+
+$q_jadwal = $conn->query("SELECT jp.id, jp.jam_ke, jp.kelas_id, jp.mapel_id, mk.nama_kelas, mm.nama_mapel 
                           FROM jadwal_pelajaran jp 
                           JOIN master_kelas mk ON jp.kelas_id = mk.id 
                           JOIN master_mapel mm ON jp.mapel_id = mm.id 
                           WHERE jp.ustadz_id = $ustadz_id AND jp.hari = '$hari_ini'
                           ORDER BY jp.jam_ke ASC");
 $jadwal_hari_ini = [];
+$first_active_index = 0;
+$found_active = false;
+
 if ($q_jadwal) {
     while ($r = $q_jadwal->fetch_assoc()) {
+        $jid = (int)$r['id'];
+        $jke = (int)$r['jam_ke'];
+        $slot_info = $slot_times_def[$jke] ?? ['start' => '-', 'end' => '-', 'label' => "Jam ke-$jke"];
+        $r['slot_start'] = $slot_info['start'];
+        $r['slot_end'] = $slot_info['end'];
+        $r['slot_label'] = $slot_info['label'];
+
+        // Cek log kehadiran untuk jadwal ini
+        $s_logs = $logs_kbm_today["jid_$jid"] ?? ($logs_kbm_today["jam_$jke"] ?? []);
+        $r['num_logs'] = count($s_logs);
+        
+        if (empty($s_logs)) {
+            $r['session_status'] = 'belum_absen';
+            $r['waktu_masuk'] = null;
+            $r['durasi_kerja'] = null;
+        } else {
+            $last_log = end($s_logs);
+            if ($last_log['status_kehadiran'] === 'Masuk' && count($s_logs) === 1) {
+                $r['session_status'] = 'sedang_mengajar';
+                $r['waktu_masuk'] = $last_log['waktu_absen'];
+                $r['durasi_kerja'] = null;
+                if (!$found_active) {
+                    $first_active_index = count($jadwal_hari_ini);
+                    $found_active = true;
+                }
+            } else {
+                $r['session_status'] = 'selesai';
+                $r['waktu_masuk'] = $s_logs[0]['waktu_absen'] ?? null;
+                $r['durasi_kerja'] = $last_log['durasi_kerja'] ?? null;
+            }
+        }
         $jadwal_hari_ini[] = $r;
     }
 }
@@ -1111,27 +1158,81 @@ if ($total_alpa_sem >= 6) {
                 <?php endif; ?>
 
                 <?php if ($is_eligible_mengajar): ?>
-                    <!-- KARTU 2: ABSENSI MENGAJAR (FLEKSIBEL PER SESI KELAS) -->
+                    <!-- KARTU 2: ABSENSI MENGAJAR (SINKRON JADWAL PELAJARAN KBM) -->
                     <div class="bg-white rounded-xl shadow-md border border-gray-100 p-6 flex flex-col justify-between text-center transition-all duration-300 hover:shadow-lg w-full">
                         <div>
-                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
                                 <i class="fas fa-chalkboard-user"></i>
                             </div>
-                            <h2 class="text-xl font-bold text-gray-800 mb-2">Absensi Mengajar</h2>
-                            <p class="text-xs text-gray-500 mb-3 font-medium leading-relaxed">
-                                <?= htmlspecialchars($mengajar_keterangan_status) ?>
+                            <h2 class="text-xl font-bold text-gray-800 mb-1">Absensi Mengajar</h2>
+                            <p class="text-xs text-gray-500 mb-3 font-medium">
+                                Sinkron dengan Jadwal Pelajaran (<?= $hari_ini ?>, <?= date('d M Y') ?>)
                             </p>
-                            <div class="mb-4 flex items-center justify-center">
-                                <span class="px-2.5 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold">Standar KBM: Min. 35 Menit / Sesi</span>
+
+                            <!-- Sesi Jadwal Selector -->
+                            <div class="text-left mb-3">
+                                <label class="block text-[11px] font-bold text-slate-700 mb-1 flex items-center justify-between">
+                                    <span>Pilih Sesi Mengajar Hari Ini:</span>
+                                    <span class="text-[10px] text-emerald-600 font-semibold"><i class="fas fa-clock mr-1"></i>Min. 35 Menit/JP</span>
+                                </label>
+                                <select id="select-sesi-mengajar" class="w-full text-xs font-semibold px-3 py-2.5 border border-emerald-300 rounded-xl bg-emerald-50/40 text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:bg-white transition">
+                                    <?php if (!empty($jadwal_hari_ini)): ?>
+                                        <?php foreach ($jadwal_hari_ini as $idx => $sch): ?>
+                                            <?php
+                                                $badge_status = '';
+                                                if ($sch['session_status'] === 'selesai') {
+                                                    $badge_status = '✅ [Selesai]';
+                                                } elseif ($sch['session_status'] === 'sedang_mengajar') {
+                                                    $badge_status = '🔵 [Sedang Berlangsung]';
+                                                } else {
+                                                    $badge_status = '🟡 [Belum Absen]';
+                                                }
+                                                $slot_lbl = $sch['slot_label'] ?? "Jam ke-{$sch['jam_ke']}";
+                                            ?>
+                                            <option value="<?= $sch['id'] ?>" data-index="<?= $idx ?>">
+                                                <?= $badge_status ?> Jam <?= $sch['jam_ke'] ?> (<?= $slot_lbl ?>) - <?= htmlspecialchars($sch['nama_mapel']) ?> (<?= htmlspecialchars($sch['nama_kelas']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                    <option value="inval" data-index="-1">
+                                        ➕ Sesi Khusus / Inval / Jadwal Pengganti
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Input Tambahan jika Inval / Jadwal Tambahan dipilih -->
+                            <div id="box-inval-kbm" class="hidden text-left mb-3 bg-amber-50/70 p-2.5 rounded-xl border border-amber-200">
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Mapel Pengganti</label>
+                                        <input type="text" id="inval-nama-mapel" placeholder="Contoh: Diniyyah / Al-Quran" class="w-full px-2 py-1.5 border rounded-lg text-xs bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Kelas</label>
+                                        <input type="text" id="inval-nama-kelas" placeholder="Contoh: E4 406" class="w-full px-2 py-1.5 border rounded-lg text-xs bg-white">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Detail Card Status Sesi Aktif -->
+                            <div id="sesi-kbm-detail" class="bg-slate-50 border border-slate-200 rounded-xl p-3 mb-4 text-left">
+                                <div class="flex items-center justify-between text-xs font-bold text-slate-700 mb-1">
+                                    <span id="sesi-detail-mapel" class="text-emerald-700">Mata Pelajaran</span>
+                                    <span id="sesi-detail-kelas" class="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600 text-[10px]">Kelas</span>
+                                </div>
+                                <div class="flex items-center justify-between text-[11px] text-slate-500">
+                                    <span id="sesi-detail-jam"><i class="far fa-clock mr-1 text-slate-400"></i> Jam Ke-</span>
+                                    <span id="sesi-detail-status" class="font-semibold text-slate-600">Status</span>
+                                </div>
                             </div>
                         </div>
                         
                         <button id="btn-absen-mengajar" 
-                                data-status="<?= $mengajar_status ?>" 
+                                data-status="belum_absen" 
                                 data-jenis="Mengajar"
-                                class="w-full py-4 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-3 <?= ($mengajar_status === 'datang') ? 'bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95' : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95' ?>">
-                            <i class="fas <?= $mengajar_btn_icon ?> text-xl"></i>
-                            <span><?= $mengajar_btn_text ?></span>
+                                class="w-full py-3.5 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95">
+                            <i id="btn-mengajar-icon" class="fas fa-door-open text-lg"></i>
+                            <span id="btn-mengajar-text">Mulai Mengajar (Check-In)</span>
                         </button>
                     </div>
                 <?php endif; ?>
@@ -1532,6 +1633,8 @@ if ($total_alpa_sem >= 6) {
         };
 
         let currentShift = '<?= $default_active_shift ?>';
+        const userSchedules = <?= json_encode($jadwal_hari_ini) ?>;
+        const initialActiveIndex = <?= (int)$first_active_index ?>;
 
         function formatJamWib(datetimeStr) {
             if (!datetimeStr) return '';
@@ -1625,6 +1728,73 @@ if ($total_alpa_sem >= 6) {
                 btn.className = 'w-full py-4 px-6 font-bold rounded-xl shadow-none transition-all duration-300 flex items-center justify-center gap-3 bg-slate-100 text-slate-500 border border-slate-200 cursor-not-allowed';
                 btn.disabled = true;
                 statusDesc.innerText = `Alhamdulillah, 2 kali check log ${shiftName} hari ini telah lengkap (Masuk: ${jamMsk} | Pulang: ${jamPlg}).`;
+            }
+        }
+
+        // Tampilan Dinamis Sesi Mengajar Berdasarkan Jadwal Pelajaran
+        function updateSesiMengajarUI() {
+            const select = document.getElementById('select-sesi-mengajar');
+            if (!select) return;
+            const val = select.value;
+            const btn = document.getElementById('btn-absen-mengajar');
+            const btnIcon = document.getElementById('btn-mengajar-icon');
+            const btnText = document.getElementById('btn-mengajar-text');
+            const detailMapel = document.getElementById('sesi-detail-mapel');
+            const detailKelas = document.getElementById('sesi-detail-kelas');
+            const detailJam = document.getElementById('sesi-detail-jam');
+            const detailStatus = document.getElementById('sesi-detail-status');
+            const boxInval = document.getElementById('box-inval-kbm');
+
+            if (!btn || !btnText || !btnIcon) return;
+
+            if (val === 'inval') {
+                if (boxInval) boxInval.classList.remove('hidden');
+                if (detailMapel) detailMapel.innerText = 'Sesi Khusus / Inval / Jam Tambahan';
+                if (detailKelas) detailKelas.innerText = 'Bebas / Pengganti';
+                if (detailJam) detailJam.innerHTML = '<i class="far fa-clock mr-1 text-slate-400"></i> Jam Sekarang: ' + (new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})) + ' WIB';
+                if (detailStatus) detailStatus.innerHTML = '<span class="text-emerald-600 font-bold"><i class="fas fa-circle text-[8px] mr-1"></i>Siap Check-In</span>';
+                
+                btn.disabled = false;
+                btn.className = 'w-full py-3.5 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95 cursor-pointer';
+                btnIcon.className = 'fas fa-door-open text-lg';
+                btnText.innerText = 'Mulai Mengajar (Check-In Inval)';
+                btn.setAttribute('data-status', 'belum_absen');
+                return;
+            }
+
+            if (boxInval) boxInval.classList.add('hidden');
+            const opt = select.options[select.selectedIndex];
+            const idx = parseInt(opt ? opt.getAttribute('data-index') : -1);
+            const sched = (idx >= 0 && typeof userSchedules !== 'undefined' && userSchedules) ? userSchedules[idx] : null;
+
+            if (!sched) return;
+
+            if (detailMapel) detailMapel.innerText = sched.nama_mapel;
+            if (detailKelas) detailKelas.innerText = sched.nama_kelas;
+            if (detailJam) detailJam.innerHTML = `<i class="far fa-clock mr-1 text-slate-400"></i> Jam ke-${sched.jam_ke} (${sched.slot_label || '-'})`;
+
+            if (sched.session_status === 'selesai') {
+                if (detailStatus) detailStatus.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fas fa-check-circle text-xs mr-1 text-emerald-600"></i>Selesai (${sched.durasi_kerja || 'Tercatat'})</span>`;
+                btn.disabled = true;
+                btn.className = 'w-full py-3.5 px-6 font-bold rounded-xl shadow border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed flex items-center justify-center gap-2.5';
+                btnIcon.className = 'fas fa-check-double text-lg';
+                btnText.innerText = 'Sesi KBM Ini Sudah Selesai ✅';
+                btn.setAttribute('data-status', 'selesai');
+            } else if (sched.session_status === 'sedang_mengajar') {
+                const waktuMasuk = sched.waktu_masuk ? sched.waktu_masuk.substring(11, 16) : '';
+                if (detailStatus) detailStatus.innerHTML = `<span class="text-amber-600 font-bold"><i class="fas fa-spinner fa-spin text-xs mr-1"></i>Sedang Berlangsung (Mulai: ${waktuMasuk} WIB)</span>`;
+                btn.disabled = false;
+                btn.className = 'w-full py-3.5 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2.5 bg-rose-600 hover:bg-rose-700 text-white hover:shadow-lg active:scale-95 cursor-pointer';
+                btnIcon.className = 'fas fa-door-closed text-lg';
+                btnText.innerText = 'Selesai Mengajar (Check-Out)';
+                btn.setAttribute('data-status', 'datang');
+            } else {
+                if (detailStatus) detailStatus.innerHTML = `<span class="text-slate-600 font-semibold"><i class="far fa-circle text-xs mr-1 text-amber-500"></i>Belum Check Log Mulai</span>`;
+                btn.disabled = false;
+                btn.className = 'w-full py-3.5 px-6 font-bold rounded-xl shadow-md transition-all duration-300 flex items-center justify-center gap-2.5 bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-lg active:scale-95 cursor-pointer';
+                btnIcon.className = 'fas fa-door-open text-lg';
+                btnText.innerText = 'Mulai Mengajar (Check-In)';
+                btn.setAttribute('data-status', 'belum_absen');
             }
         }
 
@@ -1732,8 +1902,8 @@ if ($total_alpa_sem >= 6) {
             const btnId = 'btn-absen-' + jenisAbsen.toLowerCase();
             const btn = document.getElementById(btnId);
 
-            // Syarat Geolocation untuk Pegawai: Harus di Gedung A, B, C, atau Masjid
-            if (jenisAbsen === 'Pegawai') {
+            // Syarat Geolocation untuk Pegawai & Mengajar: Harus di Gedung A, B, C, atau Masjid
+            if (jenisAbsen === 'Pegawai' || jenisAbsen === 'Mengajar') {
                 if (!isLocationValid) {
                     showAlertModal(
                         'Syarat Lokasi Belum Terpenuhi', 
@@ -1743,7 +1913,7 @@ if ($total_alpa_sem >= 6) {
                     return;
                 }
 
-                if (shiftData[currentShift] && shiftData[currentShift].masuk && shiftData[currentShift].pulang) {
+                if (jenisAbsen === 'Pegawai' && shiftData[currentShift] && shiftData[currentShift].masuk && shiftData[currentShift].pulang) {
                     showAlertModal('Shift Selesai', 'Anda sudah menyelesaikan absensi Masuk dan Pulang untuk ' + currentShift + ' hari ini.', 'warning');
                     return;
                 }
@@ -1791,6 +1961,31 @@ if ($total_alpa_sem >= 6) {
             formData.append('jenis_absen', jenisAbsen);
             if (jenisAbsen === 'Pegawai') {
                 formData.append('shift', currentShift);
+            } else if (jenisAbsen === 'Mengajar') {
+                const selectKbm = document.getElementById('select-sesi-mengajar');
+                if (selectKbm) {
+                    const selVal = selectKbm.value;
+                    if (selVal === 'inval') {
+                        formData.append('jadwal_id', 0);
+                        formData.append('jam_ke', 0);
+                        const invalMapel = document.getElementById('inval-nama-mapel') ? document.getElementById('inval-nama-mapel').value.trim() : '';
+                        const invalKelas = document.getElementById('inval-nama-kelas') ? document.getElementById('inval-nama-kelas').value.trim() : '';
+                        formData.append('nama_mapel', invalMapel || 'KBM Khusus/Inval');
+                        formData.append('nama_kelas', invalKelas || 'Reguler');
+                    } else {
+                        const opt = selectKbm.options[selectKbm.selectedIndex];
+                        const idx = parseInt(opt ? opt.getAttribute('data-index') : -1);
+                        if (idx >= 0 && typeof userSchedules !== 'undefined' && userSchedules[idx]) {
+                            const sched = userSchedules[idx];
+                            formData.append('jadwal_id', sched.id);
+                            formData.append('jam_ke', sched.jam_ke);
+                            formData.append('mapel_id', sched.mapel_id || 0);
+                            formData.append('kelas_id', sched.kelas_id || 0);
+                            formData.append('nama_mapel', sched.nama_mapel || '');
+                            formData.append('nama_kelas', sched.nama_kelas || '');
+                        }
+                    }
+                }
             }
 
             fetch('proses-absen.php', {
@@ -1840,6 +2035,16 @@ if ($total_alpa_sem >= 6) {
 
         // Inisialisasi UI Shift saat halaman pertama kali dibuka
         renderShiftUI(currentShift);
+
+        // Inisialisasi UI Sesi Mengajar & Event Listener Select
+        const selectSesiKbm = document.getElementById('select-sesi-mengajar');
+        if (selectSesiKbm) {
+            if (typeof initialActiveIndex !== 'undefined' && initialActiveIndex >= 0 && initialActiveIndex < selectSesiKbm.options.length) {
+                selectSesiKbm.selectedIndex = initialActiveIndex;
+            }
+            selectSesiKbm.addEventListener('change', updateSesiMengajarUI);
+            updateSesiMengajarUI();
+        }
 
         // Event listener click tombol absensi (dengan check existence)
         const btnPegawai = document.getElementById('btn-absen-pegawai');
@@ -1951,7 +2156,7 @@ if ($total_alpa_sem >= 6) {
         // ==========================================
         // SMART ALARM ABSEN MENGAJAR & JURNAL KBM
         // ==========================================
-        const userSchedules = <?= json_encode($jadwal_hari_ini) ?>;
+        // userSchedules telah diinisialisasi pada blok skrip utama
         const slotTimes = {
             1: { start: "05:00", end: "05:45" },
             2: { start: "05:45", end: "06:30" },
