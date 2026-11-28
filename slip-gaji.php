@@ -467,7 +467,12 @@ $active_menu = 'slip_gaji';
                                         <tr>
                                             <td class="px-3 py-2.5">
                                                 <span class="font-bold text-slate-800 block">Honor KBM / Mengajar</span>
-                                                <span class="text-[10px] text-slate-400 block"><?= htmlspecialchars($payroll['honor_note']) ?></span>
+                                                <span class="text-[10px] text-slate-500 block"><?= htmlspecialchars($payroll['honor_note']) ?></span>
+                                                <?php if (!empty($payroll['total_durasi_kbm_menit']) && $payroll['total_durasi_kbm_menit'] > 0): ?>
+                                                    <span class="text-[9.5px] text-emerald-600 font-medium block mt-0.5">
+                                                        <i class="fas fa-check-double text-[9px] mr-1"></i>Terverifikasi Log Presensi: <?= $payroll['sesi_lengkap_count'] ?> Sesi Penuh (Total: <?= floor($payroll['total_durasi_kbm_menit'] / 60) ?> Jam <?= $payroll['total_durasi_kbm_menit'] % 60 ?> Menit)
+                                                    </span>
+                                                <?php endif; ?>
                                             </td>
                                             <td class="px-3 py-2.5 text-right font-black text-slate-800">
                                                 Rp <?= number_format($payroll['honor'], 0, ',', '.') ?>

@@ -106,7 +106,16 @@ if (!function_exists('hitung_payroll_pegawai')) {
         $user_roles = !empty($role_str) ? array_map('trim', array_map('strtolower', explode(',', $role_str))) : [];
 
         // Deteksi Kategori Role Utama
-        $is_teacher = in_array('ustadz', $user_roles) || in_array('ustadzah', $user_roles) || in_array('guru', $user_roles) || in_array('tutor', $user_roles);
+        $is_teacher = in_array('ustadz', $user_roles) || in_array('ustadzah', $user_roles) || in_array('guru', $user_roles) || in_array('tutor', $user_roles) || in_array('trainer', $user_roles);
+        if (!$is_teacher) {
+            foreach ($user_roles as $ur) {
+                $ur_clean = strtolower(trim($ur));
+                if (strpos($ur_clean, 'guru') !== false || strpos($ur_clean, 'tutor') !== false || strpos($ur_clean, 'trainer') !== false || strpos($ur_clean, 'ustadz') !== false) {
+                    $is_teacher = true;
+                    break;
+                }
+            }
+        }
         $is_kepsek = in_array('kepala_sekolah', $user_roles);
         $is_mahad = in_array('kepala_mahad', $user_roles);
         $is_asrama = in_array('kepala_asrama', $user_roles) || in_array('kepala_asrama_rijal', $user_roles) || in_array('kepala_asrama_nisa', $user_roles);
@@ -345,12 +354,43 @@ if (!function_exists('hitung_payroll_pegawai')) {
         }
 
         // 7. Honor Mengajar
+        // Perhitungan Sesi Mengajar Terverifikasi (Adil untuk Pegawai & Yayasan)
+        $q_kbm_verified = $conn->query("
+            SELECT DATE(waktu_absen) as tgl_sesi, jadwal_id, jam_ke, nama_mapel, 
+                   COUNT(*) as total_logs,
+                   MAX(CASE WHEN status_kehadiran = 'Masuk' THEN 1 ELSE 0 END) as has_masuk,
+                   MAX(CASE WHEN status_kehadiran = 'Pulang' THEN 1 ELSE 0 END) as has_pulang,
+                   MAX(durasi_kerja) as durasi_str
+            FROM absensi_pegawai 
+            WHERE ustadz_id = $ust_id 
+              AND jenis_absen = 'Mengajar' 
+              AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'
+            GROUP BY DATE(waktu_absen), IFNULL(jadwal_id, jam_ke), nama_mapel
+        ");
+        
+        $sesi_lengkap_count = 0;
+        $sesi_parsial_count = 0;
+        $total_durasi_kbm_menit = 0;
+        
+        if ($q_kbm_verified) {
+            while ($r_kv = $q_kbm_verified->fetch_assoc()) {
+                $menit_sesi = (int)preg_replace('/[^0-9]/', '', $r_kv['durasi_str'] ?? '');
+                $total_durasi_kbm_menit += $menit_sesi;
+
+                if ($r_kv['has_masuk'] && $r_kv['has_pulang']) {
+                    $sesi_lengkap_count++;
+                } elseif ($r_kv['has_masuk'] || $r_kv['has_pulang']) {
+                    $sesi_parsial_count++;
+                }
+            }
+        }
+
+        // Ambil data jurnal mengajar pendukung (menjaga hak mengajar pegawai masa transisi)
         $res_jurnal_cnt = $conn->query("SELECT COUNT(*) as total FROM jurnal_mengajar WHERE ustadz_id = $ust_id AND tanggal BETWEEN '$start_date' AND '$end_date'");
         $cnt_jurnal = $res_jurnal_cnt ? (int)$res_jurnal_cnt->fetch_assoc()['total'] : 0;
         
-        $res_abs_cnt = $conn->query("SELECT COUNT(*) as total FROM absensi_pegawai WHERE ustadz_id = $ust_id AND jenis_absen = 'Mengajar' AND status_kehadiran = 'Masuk' AND DATE(waktu_absen) BETWEEN '$start_date' AND '$end_date'");
-        $cnt_abs = $res_abs_cnt ? (int)$res_abs_cnt->fetch_assoc()['total'] : 0;
-        $total_pertemuan = max($cnt_jurnal, $cnt_abs);
+        $total_pertemuan_verified = $sesi_lengkap_count + $sesi_parsial_count;
+        $total_pertemuan = max($total_pertemuan_verified, $cnt_jurnal);
 
         $has_ustadz_role = $is_teacher;
         $is_utama_or_muda = ($status_pegawai === 'Pegawai Utama' || $status_pegawai === 'Pegawai Muda');
@@ -358,10 +398,10 @@ if (!function_exists('hitung_payroll_pegawai')) {
         if ($is_utama_or_muda && $has_ustadz_role) {
             $kelebihan_jam = max(0, $total_pertemuan - 12);
             $honor = $kelebihan_jam * $rate_per_jam;
-            $honor_note = "Kelebihan {$kelebihan_jam}x @ Rp " . number_format($rate_per_jam, 0, ',', '.') . " (Grade {$grade})";
+            $honor_note = "Kelebihan {$kelebihan_jam}x @ Rp " . number_format($rate_per_jam, 0, ',', '.') . " (Wajib 12x, Total {$total_pertemuan}x, Grade {$grade})";
         } else {
             $honor = $total_pertemuan * $rate_per_jam;
-            $honor_note = "{$total_pertemuan}x @ Rp " . number_format($rate_per_jam, 0, ',', '.') . " (Grade {$grade})";
+            $honor_note = "{$total_pertemuan}x Pertemuan @ Rp " . number_format($rate_per_jam, 0, ',', '.') . " (Grade {$grade})";
         }
 
         // 8. Rincian Tunjangan (Disesuaikan Grade KPI)
@@ -466,6 +506,9 @@ if (!function_exists('hitung_payroll_pegawai')) {
             'honor' => $honor,
             'honor_note' => $honor_note,
             'total_pertemuan' => $total_pertemuan,
+            'sesi_lengkap_count' => $sesi_lengkap_count,
+            'sesi_parsial_count' => $sesi_parsial_count,
+            'total_durasi_kbm_menit' => $total_durasi_kbm_menit,
             'rate_per_jam' => $rate_per_jam,
             'total_penerimaan' => $total_penerimaan,
             // Potongan

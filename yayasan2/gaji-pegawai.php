@@ -381,6 +381,11 @@ $total_employees  = count($payroll_list);
                                         <td class="px-3 py-3 text-right bg-indigo-50/15">
                                             <span class="font-black text-indigo-900 block">Rp <?= number_format($p['honor'], 0, ',', '.') ?></span>
                                             <span class="text-[9px] text-gray-500 block mt-0.5"><?= htmlspecialchars($p['honor_note']) ?></span>
+                                            <?php if (!empty($p['total_durasi_kbm_menit']) && $p['total_durasi_kbm_menit'] > 0): ?>
+                                                <span class="text-[8.5px] text-emerald-600 block mt-0.5 font-medium">
+                                                    <i class="fas fa-check-circle text-[8px] mr-0.5"></i>Log Presensi: <?= (int)$p['sesi_lengkap_count'] ?> sesi (<?= floor($p['total_durasi_kbm_menit'] / 60) ?>j <?= $p['total_durasi_kbm_menit'] % 60 ?>m)
+                                                </span>
+                                            <?php endif; ?>
                                         </td>
 
                                         <!-- Total Take Home Pay -->
@@ -639,6 +644,7 @@ $total_employees  = count($payroll_list);
                                     <td class="px-3 py-2">
                                         <span class="font-bold text-slate-800 block">Honor KBM</span>
                                         <span class="text-[10px] text-slate-400">${p.honor_note}</span>
+                                        ${p.total_durasi_kbm_menit > 0 ? `<span class="text-[9px] text-emerald-600 block font-medium mt-0.5"><i class="fas fa-check-circle mr-1"></i>Presensi: ${p.sesi_lengkap_count} sesi (${Math.floor(p.total_durasi_kbm_menit / 60)}j ${p.total_durasi_kbm_menit % 60}m)</span>` : ''}
                                     </td>
                                     <td class="px-3 py-2 text-right font-black text-slate-800">${formatRupiah(p.honor)}</td>
                                 </tr>
